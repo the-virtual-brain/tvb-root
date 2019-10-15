@@ -69,7 +69,6 @@ class SettingsManager(object):
         self.config_file_location = config_file_location
         self.stored_settings = self._read_config_file()
 
-
     def _read_config_file(self):
         """
         Get data from the configurations file in the form of a dictionary.
@@ -86,7 +85,6 @@ class SettingsManager(object):
                 name, value = one_entry.split('=', 1)
                 config_dict[name] = value
         return config_dict
-
 
     def add_entries_to_config_file(self, input_data):
         """
@@ -107,7 +105,6 @@ class SettingsManager(object):
 
         self.stored_settings = self._read_config_file()
 
-
     def write_config_data(self, config_dict):
         """
         Overwrite anything already existent in the config file
@@ -118,7 +115,6 @@ class SettingsManager(object):
 
         self.stored_settings = self._read_config_file()
 
-
     def get_attribute(self, key, default=None, dtype=str):
         """
         Get a cfg attribute that could also be found in the settings file.
@@ -127,10 +123,9 @@ class SettingsManager(object):
             if key in self.stored_settings:
                 return dtype(self.stored_settings[key])
         except ValueError:
-            ## Invalid convert operation.
+            # Invalid convert operation.
             return default
         return default
-
 
     def is_first_run(self):
         return self.stored_settings is None or len(self.stored_settings) <= 2

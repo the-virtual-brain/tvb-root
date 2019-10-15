@@ -35,15 +35,13 @@ Prepare TVB settings to be grouped under various profile classes.
 """
 import os
 import sys
-import importlib
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
-from tvb.basic.config.utils import EnhancedDictionary, LibraryModulesFinder, LibraryImportError
+from tvb.basic.config.utils import LibraryModulesFinder
 
 
 class BaseSettingsProfile(object):
-
     TVB_USER_HOME = os.environ.get('TVB_USER_HOME', '~')
 
     TVB_CONFIG_FILE = os.path.expanduser(os.path.join(TVB_USER_HOME, '.tvb.configuration'))
@@ -56,15 +54,14 @@ class BaseSettingsProfile(object):
     # Access rights for TVB generated files/folders.
     ACCESS_MODE_TVB_FILES = 0o744
 
-    ## Number used for estimation of TVB used storage space
+    # Number used for estimation of TVB used storage space
     MAGIC_NUMBER = 9
-
 
     def __init__(self, web_enabled=True):
 
         self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
 
-        ## Actual storage of all TVB related files
+        # Actual storage of all TVB related files
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
@@ -94,12 +91,6 @@ class BaseSettingsProfile(object):
         # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = True
-
-
     @property
     def BIN_FOLDER(self):
         """
@@ -111,7 +102,6 @@ class BaseSettingsProfile(object):
         except ImportError:
             return "."
 
-
     @property
     def PYTHON_INTERPRETER_PATH(self):
         """
@@ -122,14 +112,12 @@ class BaseSettingsProfile(object):
 
         return sys.executable
 
-
     def prepare_for_operation_mode(self):
         """
         Overwrite PostgreSQL number of connections when executed in the context of a node.
         """
         self.db.MAX_CONNECTIONS = self.db.MAX_ASYNC_CONNECTIONS
         self.cluster.IN_OPERATION_EXECUTION_PROCESS = True
-
 
     def initialize_profile(self):
         """
@@ -143,7 +131,6 @@ class BaseSettingsProfile(object):
 
         if not os.path.exists(self.TVB_STORAGE):
             os.makedirs(self.TVB_STORAGE)
-
 
     def initialize_for_deployment(self):
 
@@ -171,14 +158,13 @@ class BaseSettingsProfile(object):
             self.env.setup_python_path(library_folder, os.path.join(library_folder, 'lib-tk'))
             self.env.setup_tk_tcl_environ(library_folder)
 
-            ### Correctly set MatplotLib Path, before start.
+            # Correctly set MatplotLib Path, before start.
             mpl_data_path_maybe = os.path.join(library_folder, 'mpl-data')
             try:
                 os.stat(mpl_data_path_maybe)
                 os.environ['MATPLOTLIBDATA'] = mpl_data_path_maybe
             except:
                 pass
-
 
 
 class LibrarySettingsProfile(BaseSettingsProfile):
@@ -189,16 +175,8 @@ class LibrarySettingsProfile(BaseSettingsProfile):
     TVB_STORAGE = os.path.expanduser(os.path.join("~", "TVB" + os.sep))
     LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
 
-
     def __init__(self):
-
         super(LibrarySettingsProfile, self).__init__(False)
-
-        ## Configure Traits
-        self.TRAITS_CONFIGURATION = EnhancedDictionary()
-        self.TRAITS_CONFIGURATION.interface_method_name = 'interface'
-        self.TRAITS_CONFIGURATION.use_storage = False
-
 
     def initialize_profile(self):
         """
@@ -206,8 +184,6 @@ class LibrarySettingsProfile(BaseSettingsProfile):
         """
         super(LibrarySettingsProfile, self).initialize_profile()
         sys.meta_path.append(LibraryModulesFinder())
-
-
 
 
 class TestLibraryProfile(LibrarySettingsProfile):
@@ -218,7 +194,6 @@ class TestLibraryProfile(LibrarySettingsProfile):
     LOGGER_CONFIG_FILE_NAME = "library_logger_test.conf"
 
     def __init__(self):
-
         super(TestLibraryProfile, self).__init__()
         self.TVB_LOG_FOLDER = "TEST_OUTPUT"
 

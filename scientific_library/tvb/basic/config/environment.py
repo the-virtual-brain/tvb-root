@@ -55,7 +55,6 @@ class Environment(object):
 
         return framework_present
 
-
     @staticmethod
     def is_distribution():
         """
@@ -82,13 +81,11 @@ class Environment(object):
             # Usage from tvb_distribution
             return True
 
-
     def is_linux_deployment(self):
         """
         Return True if current run is not development and is running on Linux.
         """
         return self.is_linux() and self.is_distribution()
-
 
     def is_mac_deployment(self):
         """
@@ -96,27 +93,22 @@ class Environment(object):
         """
         return self.is_mac() and self.is_distribution()
 
-
     def is_windows_deployment(self):
         """
         Return True if current run is not development and is running on Windows.
         """
         return self.is_windows() and self.is_distribution()
 
-
     def is_linux(self):
         return not self.is_windows() and not self.is_mac()
-
 
     @staticmethod
     def is_mac():
         return sys.platform == 'darwin'
 
-
     @staticmethod
     def is_windows():
         return sys.platform.startswith('win')
-
 
     def get_library_folder(self, default_mac):
         """
@@ -128,7 +120,6 @@ class Environment(object):
             return os.path.dirname(default_mac)
         if self.is_linux_deployment():
             return os.path.dirname(sys.executable)
-
 
     def setup_tk_tcl_environ(self, root_folder):
         """
@@ -145,7 +136,6 @@ class Environment(object):
         if tcl_folder:
             os.environ['TCL_LIBRARY'] = tcl_folder
 
-
     def _find_file(self, target_file, root_folder):
         """
         Search for a file in a folder directory. Return the folder in which the file can be found.
@@ -159,14 +149,12 @@ class Environment(object):
                 if file_n == target_file:
                     return root
 
-
     def setup_python_path(self, *paths):
         """
         Set PYTHONPATH
         :param paths: list of absolute folder paths to join.
         """
         os.environ['PYTHONPATH'] = os.pathsep.join(paths)
-
 
     def append_to_path(self, *paths):
         """
