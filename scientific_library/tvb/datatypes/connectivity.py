@@ -42,88 +42,118 @@ import numpy
 import scipy.stats
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
-from tvb.basic.traits import core, types_basic as basic
+#TODO: eliminate basic import: JSONType left
+from tvb.basic.traits import types_basic as basic
 from tvb.basic.traits.types_mapped import MappedType
-from tvb.datatypes import arrays
-
+from tvb.basic.traits.neotraits import Attr, HasTraits, NArray, List
 
 LOG = get_logger(__name__)
 
 
-class Connectivity(MappedType):
+class Connectivity(HasTraits):
 
     # data
-    region_labels = arrays.StringArray(
+    region_labels = NArray(
+        dtype=str,
         label="Region labels",
-        doc="""Short strings, 'labels', for the regions represented by the connectivity matrix.""")
+        doc="""Short strings, 'labels', for the regions represented by the connectivity matrix."""
+    )
 
-    weights = arrays.FloatArray(
+    weights = NArray(
+        dtype=float,
         label="Connection strengths",
-        stored_metadata=[key for key in MappedType.DEFAULT_WITH_ZERO_METADATA],
-        doc="""Matrix of values representing the strength of connections between regions, arbitrary units.""")
+        doc="""Matrix of values representing the strength of connections between regions, arbitrary units."""
+    )
 
-    undirected = basic.Integer(
-        default=0, required=False,
-        doc="1, when the weights matrix is square and symmetric over the main diagonal, 0 when directed graph.")
+    undirected = Attr(
+        int,
+        default=0,
+        required=False,
+        doc="1, when the weights matrix is square and symmetric over the main diagonal, 0 when directed graph."
+    )
 
-    tract_lengths = arrays.FloatArray(
+    tract_lengths = NArray(
+        dtype=float,
         label="Tract lengths",
-        stored_metadata=[key for key in MappedType.DEFAULT_WITH_ZERO_METADATA],
         doc="""The length of myelinated fibre tracts between regions.
-        If not provided Euclidean distance between region centres is used.""")
+            If not provided Euclidean distance between region centres is used."""
+    )
 
-    speed = arrays.FloatArray(
+    speed = NArray(
+        dtype=float,
         label="Conduction speed",
-        default=numpy.array([3.0]), file_storage=core.FILE_STORAGE_NONE,
-        doc="""A single number or matrix of conduction speeds for the myelinated fibre tracts between regions.""")
+        default=numpy.array([3.0]),
+        doc="""A single number or matrix of conduction speeds for the myelinated fibre tracts between regions."""
+    )
 
-    centres = arrays.FloatArray(
+    centres = NArray(
+        dtype=float,
         label="Region centres",
-        doc="An array specifying the location of the centre of each region.")
+        doc="An array specifying the location of the centre of each region."
+    )
 
-    cortical = arrays.BoolArray(
+    cortical = NArray(
+        dtype=bool,
         label="Cortical",
         required=False,
-        doc="""A boolean vector specifying whether or not a region is part of the cortex.""")
+        doc="""A boolean vector specifying whether or not a region is part of the cortex."""
+    )
 
-    hemispheres = arrays.BoolArray(
+    hemispheres = NArray(
+        dtype=bool,
         label="Hemispheres (True for Right and False for Left Hemisphere",
         required=False,
-        doc="""A boolean vector specifying whether or not a region is part of the right hemisphere""")
+        doc="""A boolean vector specifying whether or not a region is part of the right hemisphere"""
+    )
 
-    orientations = arrays.FloatArray(
+    orientations = NArray(
+        dtype=float,
         label="Average region orientation",
         required=False,
         doc="""Unit vectors of the average orientation of the regions represented in the connectivity matrix.
-        NOTE: Unknown data should be zeros.""")
+            NOTE: Unknown data should be zeros."""
+    )
 
-    areas = arrays.FloatArray(
+    areas = NArray(
+        dtype=float,
         label="Area of regions",
         required=False,
         doc="""Estimated area represented by the regions in the connectivity matrix.
-        NOTE: Unknown data should be zeros.""")
+            NOTE: Unknown data should be zeros."""
+    )
 
-    idelays = arrays.IntegerArray(
+    idelays = NArray(
+        dtype=int,
         label="Conduction delay indices",
-        required=False, file_storage=core.FILE_STORAGE_NONE,
-        doc="An array of time delays between regions in integration steps.")
+        required=False,
+        doc="An array of time delays between regions in integration steps."
+    )
 
-    delays = arrays.FloatArray(
+    delays = NArray(
+        dtype=float,
         label="Conduction delay",
-        file_storage=core.FILE_STORAGE_NONE, required=False,
+        required=False,
         doc="""Matrix of time delays between regions in physical units, setting conduction speed automatically
-        combines with tract lengths to update this matrix, i.e. don't try and change it manually.""")
+            combines with tract lengths to update this matrix, i.e. don't try and change it manually."""
+    )
 
-    number_of_regions = basic.Integer(
+    number_of_regions = Attr(
+        int,
         label="Number of regions",
-        doc="""The number of regions represented in this Connectivity """)
+        doc="""The number of regions represented in this Connectivity """
+    )
 
-    number_of_connections = basic.Integer(
+    number_of_connections = Attr(
+        int,
         label="Number of connections",
-        doc="""The number of non-zero entries represented in this Connectivity """)
+        doc="""The number of non-zero entries represented in this Connectivity """
+    )
 
     # Original Connectivity, from which current connectivity was edited.
-    parent_connectivity = basic.String(required=False)
+    parent_connectivity = Attr(
+        str,
+        required=False
+    )
 
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
