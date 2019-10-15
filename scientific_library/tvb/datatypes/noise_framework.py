@@ -37,8 +37,6 @@ Module to handle framework specific methods related to noise sources.
 """
 
 import numpy.random
-
-import tvb.basic.traits.parameters_factory as parameters_factory
 from tvb.datatypes import equations
 from tvb.simulator.noise import Noise
 
@@ -62,7 +60,7 @@ def build_noise(parent_parameters):
     if KEY_NOISE not in parent_parameters:
         return None
 
-    available_noise = parameters_factory.get_traited_subclasses(Noise)
+    available_noise = Noise.get_known_subclasses()
     if 'Noise' not in available_noise:
         available_noise['Noise'] = Noise
 
@@ -79,7 +77,7 @@ def build_noise(parent_parameters):
         noise_params[KEY_RANDOM_STREAM] = random_stream
 
     if PARAMS_EQUATION in noise_params:
-        available_equations = parameters_factory.get_traited_subclasses(equations.Equation)
+        available_equations = equations.Equation.get_known_subclasses()
         eq_parameters = noise_params[PARAMS_EQUATION]["parameters"]
         equation = noise_params[KEY_EQUATION]
         equation = available_equations[equation](parameters=eq_parameters)

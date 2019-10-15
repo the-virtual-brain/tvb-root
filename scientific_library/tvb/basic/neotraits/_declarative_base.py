@@ -107,25 +107,25 @@ class MetaType(abc.ABCMeta):
     # A record of all the classes we have created.
     # note: As this holds references and not weakrefs it will prevent class garbage collection.
     #       Deleting classes would break get_known_subclasses and this cache
-    __classes = []  # type: typing.List[type]
+    __classes = {}  # type: typing.Dict[str, type]
 
 
     def get_known_subclasses(cls, include_abstract=False):
-        # type: (bool) -> typing.Tuple[typing.Type[MetaType], ...]
+        # type: (bool) -> typing.Dict[str, typing.Type[MetaType]]
         """
         Returns all subclasses that exist *now*.
         New subclasses can be created after this call,
         after importing a new module or dynamically creating subclasses.
         Use with care. Use after most relevant modules have been imported.
         """
-        ret = []
+        ret = {}
 
-        for c in cls.__classes:
+        for k, c in cls.__classes.iteritems():
             if issubclass(c, cls):
                 if inspect.isabstract(c) and not include_abstract:
                     continue
-                ret.append(c)
-        return tuple(ret)
+                ret.update({k: c})
+        return ret
 
     def __walk_mro_inherit_declarations(cls, declaration):
         ret = []
@@ -212,7 +212,7 @@ class MetaType(abc.ABCMeta):
         setattr(cls, '__doc__', auto_docstring(cls))
 
         # update the HasTraits class registry
-        mcs.__classes.append(cls)
+        mcs.__classes.update({str(cls): cls})
         return cls
 
 
