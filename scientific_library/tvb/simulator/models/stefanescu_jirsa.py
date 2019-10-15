@@ -34,7 +34,7 @@ import numpy
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class ReducedSetBase(Model):
@@ -157,7 +157,8 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"xi": numpy.array([-4.0, 4.0]),
                  "eta": numpy.array([-3.0, 3.0]),
@@ -444,7 +445,8 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"xi": numpy.array([-4.0, 4.0]),
                  "eta": numpy.array([-25.0, 20.0]),

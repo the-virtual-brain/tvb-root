@@ -33,7 +33,7 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, List, Range, Final
+from tvb.basic.neotraits.api import NArray, List, Range, Attr
 
 
 @guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
@@ -262,8 +262,9 @@ class Epileptor(ModelNumbaDfun):
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
 
-    state_variable_range = Final(
-        {
+    state_variable_range = Attr(
+        field_type=dict,
+        default={
             "x1": numpy.array([-2., 1.]),
             "y1": numpy.array([-20., 2.]),
             "z": numpy.array([2.0, 5.0]),
@@ -406,7 +407,7 @@ class Epileptor2D(ModelNumbaDfun):
             [Proixetal_2017] Proix, T.; Bartolomei, F; Guye, M.; Jirsa, V.K. *Individual brain 
             structure and modelling predict seizure propagation.* Brain 2017, 140; 641–654.
     """
-    
+
     a = NArray(
         label="a",
         default=numpy.array([1.0]),
@@ -478,8 +479,9 @@ class Epileptor2D(ModelNumbaDfun):
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
 
-    state_variable_range = Final(
-        {"x1": numpy.array([-2., 1.]), "z": numpy.array([2.0, 5.0])},
+    state_variable_range = Attr(
+        field_type=dict,
+        default={"x1": numpy.array([-2., 1.]), "z": numpy.array([2.0, 5.0])},
         label="State variable ranges [lo, hi]",
         doc="Typical bounds on state-variables in the Epileptor 2D model.")
 
@@ -505,7 +507,7 @@ class Epileptor2D(ModelNumbaDfun):
 
         y = state_variables
         ydot = numpy.empty_like(state_variables)
-        
+
         Iext = self.Iext + local_coupling * y[0]
         c_pop = coupling[0, :]
 
@@ -514,23 +516,23 @@ class Epileptor2D(ModelNumbaDfun):
         else_ydot0 = - self.slope - 0.6 * (y[1] - 4.0) ** 2 + self.d * y[0]
 
         ydot[0] = self.tt * (self.c - y[1] + Iext + self.Kvf * c_pop - (where(y[0] < 0., if_ydot0, else_ydot0)) * y[0])
-        
+
         # energy
         if_ydot1 = - 0.1 * y[1] ** 7
         else_ydot1 = 0
-        
+
         if self.modification:
             h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
         else:
             h = 4 * (y[0] - self.x0) + where(y[1] < 0., if_ydot1, else_ydot1)
-        
+
         ydot[1] = self.tt * (self.r * (h - y[1] + self.Ks * c_pop))
 
         return ydot
 
     def dfun(self, x, c, local_coupling=0.0):
         """"The dfun using numba for speed."""
-        
+
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         Iext = self.Iext + local_coupling * x[0, :, 0]

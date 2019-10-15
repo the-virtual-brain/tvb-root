@@ -33,7 +33,7 @@ Generic linear model.
 
 import numpy
 from .base import Model
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class Linear(Model):
@@ -44,7 +44,8 @@ class Linear(Model):
         doc="The damping coefficient specifies how quickly the node's activity relaxes, must be larger"
             " than the node's in-degree in order to remain stable.")
 
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-1, 1])},
         doc="Range used for state variable initialization and visualization.")

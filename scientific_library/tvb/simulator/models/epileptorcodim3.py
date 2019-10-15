@@ -38,7 +38,7 @@ import numpy
 
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64, int_
-from tvb.basic.neotraits.api import NArray, List, Range, Final
+from tvb.basic.neotraits.api import NArray, List, Range, Attr
 
 
 class EpileptorCodim3(ModelNumbaDfun):
@@ -145,7 +145,8 @@ class EpileptorCodim3(ModelNumbaDfun):
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
             "dstar. If modification is False, then don't use the modification. The default value is True ")
 
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State variable ranges [lo, hi]",
         default={"x": numpy.array([0.4, 0.6]),
                  "y": numpy.array([-0.1, 0.1]),
@@ -469,7 +470,8 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
             "dstar. If modification is False, then don't use the modification. The default value is True ")
 
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State variable ranges [lo, hi]",
         default={"x": numpy.array([0.4, 0.6]),
                  "y": numpy.array([-0.1, 0.1]),

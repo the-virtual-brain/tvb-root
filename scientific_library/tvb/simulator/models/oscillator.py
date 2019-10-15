@@ -35,7 +35,7 @@ from .base import Model, ModelNumbaDfun
 import numexpr
 import numpy
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -307,7 +307,8 @@ class Generic2dOscillator(ModelNumbaDfun):
                excitatory input currents are negative.
                It scales both I and the long range coupling term.""")
 
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"V": numpy.array([-2.0, 4.0]),
                  "W": numpy.array([-6.0, 6.0])},
@@ -434,7 +435,8 @@ class Kuramoto(Model):
         doc=""":math:`\omega` sets the base line frequency for the
             Kuramoto oscillator in [rad/ms]""")
 
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"theta": numpy.array([0.0, numpy.pi * 2.0]), },
         doc="""The values for each state-variable should be set to encompass
@@ -530,7 +532,8 @@ class SupHopf(ModelNumbaDfun):
         doc="""Angular frequency.""")
 
     # Initialization.
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-5.0, 5.0]),
                  "y": numpy.array([-5.0, 5.0])},

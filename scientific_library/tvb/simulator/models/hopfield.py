@@ -32,7 +32,7 @@ Hopfield model with modifications following Golos & Daucé.
 """
 import numpy
 from .base import Model
-from tvb.basic.neotraits.api import NArray, List, Range, Final
+from tvb.basic.neotraits.api import NArray, List, Range, Attr
 
 
 class Hopfield(Model):
@@ -112,7 +112,8 @@ class Hopfield(Model):
         doc="""Boolean value for static/dynamic threshold theta for (0/1).""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Final(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-1., 2.]), "theta": numpy.array([0., 1.])},
         doc="""The values for each state-variable should be set to encompass

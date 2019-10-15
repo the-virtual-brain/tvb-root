@@ -3,7 +3,7 @@ Mean field model based on Master equation about adaptative exponential leacky in
 """
 import numpy
 import scipy.special as sp_spec
-from tvb.basic.neotraits.api import NArray, Range, Final, List
+from tvb.basic.neotraits.api import NArray, Range, Attr, List
 from tvb.simulator.models.base import Model
 
 
@@ -213,8 +213,9 @@ class ZerlautFirstOrder(Model):
         doc="""external drive""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Final(
-        {
+    state_variable_range = Attr(
+        field_type=dict,
+        default={
             "E": numpy.array([0.0, 0.1]),  # actually the 100Hz should be replaced by 1/T_refrac
             "I": numpy.array([0.0, 0.1]),
             "W": numpy.array([0.0, 100.0])
@@ -438,8 +439,9 @@ class ZerlautSecondOrder(ZerlautFirstOrder):
     """
 
     #  Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Final(
-        {
+    state_variable_range = Attr(
+        field_type=dict,
+        default={
             "E": numpy.array([0.0, 0.1]),  # actually the 100Hz should be replaced by 1/T_refrac
             "I": numpy.array([0.0, 0.1]),
             "C_ee": numpy.array([0.0, 0.0]),  # variance is positive or null
