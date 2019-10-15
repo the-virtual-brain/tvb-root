@@ -87,25 +87,6 @@ class FourierSpectrum(HasTraits):
 
     __generate_table__ = True
 
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = self.array_data.ndim
-        # for i in range(self.nr_dimensions):
-        #     setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
-        # if self.trait.use_storage is False and sum(self.get_data_shape('array_data')) != 0:
-        #     if self.amplitude.size == 0:
-        #         self.compute_amplitude()
-        #     if self.phase.size == 0:
-        #         self.compute_phase()
-        #     if self.power.size == 0:
-        #         self.compute_power()
-        #     if self.average_power.size == 0:
-        #         self.compute_average_power()
-        #     if self.normalised_average_power.size == 0:
-        #         self.compute_normalised_average_power()
-
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
