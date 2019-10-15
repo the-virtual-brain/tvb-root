@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -30,7 +30,7 @@
 
 """
 
-The Array datatypes. This brings together the scientific and framework
+The Array datatypes. This brings together the scientific and framework 
 methods that are associated with the Array datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
@@ -38,79 +38,23 @@ methods that are associated with the Array datatypes.
 """
 
 import numpy
-import tvb.basic.traits.core as core
-from tvb.basic.traits import types_basic as basic
-from tvb.basic.traits.types_mapped import MappedType, Array
 from tvb.basic.exceptions import ValidationException
 
-
-class BaseArray(Array):
-    """Base class for array-type traits."""
-
-    def _find_summary_info(self):
-        """Summarize array contents."""
-        summary = {"Array type": self.__class__.__name__,
-                   "Shape": self.shape,
-                   "Maximum": self.trait.value.max(),
-                   "Minimum": self.trait.value.min(),
-                   "Mean": self.trait.value.mean(),
-                   "Median": numpy.median(self.trait.value)}
-        return summary
+#TODO: tvb-framework uses MappedArray().parse_selected_items(ui_sel_items) in gettemplatefordimensionselect
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
-class FloatArray(BaseArray):
-    _ui_name = "Floating-point array"
-    dtype = numpy.float64
-
-
-class IntegerArray(BaseArray):
-    _ui_name = "Array of integers"
-    dtype = numpy.int_
-
-
-class ComplexArray(BaseArray):
-    _ui_name = "Array of complex numbers"
-    dtype = numpy.complex128
-    stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
-
-
-class BoolArray(BaseArray):
-    _ui_name = "Boolean array"
-    dtype = numpy.bool
-    stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
-
-    def _find_summary_info(self):
-        summary = {"Array type": self.__class__.__name__,
-                   "Shape": self.shape,
-                   'Number True': self.value.sum(),
-                   'Percent True': self.value.mean() * 100, }
-        return summary
-
-
-class StringArray(BaseArray):
-    _ui_name = "Array of strings"
-    # if you want variable length strings, you must use dtype=object
-    # otherwise, must specify max lenth as 'na' where n is integer,
-    # e.g. dtype='100a' for a string w/ max len 100 characters.
-    dtype = None
-    stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
-
-    def _find_summary_info(self):
-        summary = {"Array type": self.__class__.__name__,
-                   "Shape": self.shape}
-        return summary
-
-class MappedArray(MappedType):
+class MappedArray(HasTraits):
     "An array stored in the database."
     KEY_SIZE = "size"
     KEY_OPERATION = "operation"
 
-    title = basic.String
-    label_x, label_y = basic.String, basic.String
-    aggregation_functions = basic.JSONType(required=False)
-    dimensions_labels = basic.JSONType(required=False)
-    nr_dimensions, length_1d, length_2d, length_3d, length_4d = [basic.Integer] * 5
-    array_data = Array()
+    title = Attr(field_type=str)
+    label_x, label_y = Attr(field_type=str), Attr(field_type=str)
+    aggregation_functions = Attr(dict, required=False)
+    dimensions_labels = Attr(dict, required=False)
+    nr_dimensions, length_1d, length_2d, length_3d, length_4d = [Attr(field_type=int)] * 5
+    array_data = NArray()
 
     __generate_table__ = True
 
@@ -158,13 +102,13 @@ class MappedArray(MappedType):
 
     @staticmethod
     def accepted_filters():
-        filters = MappedType.accepted_filters()
-        filters.update({'datatype_class._nr_dimensions': {'type': 'int', 'display': 'Dimensionality',
+        # filters = MappedType.accepted_filters()
+        filters = {'datatype_class._nr_dimensions': {'type': 'int', 'display': 'Dimensionality',
                                                           'operations': ['==', '<', '>']},
                         'datatype_class._length_1d': {'type': 'int', 'display': 'Shape 1',
                                                       'operations': ['==', '<', '>']},
                         'datatype_class._length_2d': {'type': 'int', 'display': 'Shape 2',
-                                                      'operations': ['==', '<', '>']}})
+                                                      'operations': ['==', '<', '>']}}
         return filters
 
     def reduce_dimension(self, ui_selected_items):
