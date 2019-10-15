@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, Const, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, List
 
 
 def test_simple_declaration():

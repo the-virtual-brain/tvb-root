@@ -46,7 +46,7 @@ from tvb.datatypes.volumes import Volume
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.arguments_serialisation import parse_slice, preprocess_space_parameters
 from tvb.datatypes.structural import VolumetricDataMixin
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 

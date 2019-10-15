@@ -35,7 +35,7 @@ from .base import Model, ModelNumbaDfun
 import numexpr
 import numpy
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class Generic2dOscillator(ModelNumbaDfun):

@@ -34,7 +34,7 @@ import abc
 import typing
 import numpy
 from tvb.simulator.common import get_logger
-from tvb.basic.traits.neotraits import HasTraits
+from tvb.basic.neotraits.api import HasTraits
 
 LOG = get_logger(__name__)
 

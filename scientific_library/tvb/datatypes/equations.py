@@ -41,7 +41,7 @@ import numpy
 import numexpr
 from tvb.basic.logger.builder import get_logger
 from scipy.special import gamma as sp_gamma
-from tvb.basic.traits.neotraits import HasTraits, Attr, Const
+from tvb.basic.neotraits.api import HasTraits, Attr, Const
 
 
 LOG = get_logger(__name__)

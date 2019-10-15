@@ -36,7 +36,7 @@ methods that are associated with the surfaces data.
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 EEG_POLYMORPHIC_IDENTITY = "projEEG"

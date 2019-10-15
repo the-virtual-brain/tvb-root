@@ -47,7 +47,7 @@ from tvb.basic.traits import util, exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, Const
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const
 
 try:
     import gdist

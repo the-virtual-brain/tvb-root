@@ -49,7 +49,7 @@ import functools
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 

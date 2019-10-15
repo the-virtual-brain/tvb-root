@@ -44,15 +44,14 @@ import math
 import numpy
 import scipy.sparse
 from tvb.basic.profile import TvbProfile
-from tvb.basic.filters.chain import UIFilter, FilterChain
 
-from tvb.datatypes import cortex, connectivity, arrays, patterns
+from tvb.datatypes import cortex, connectivity, patterns
 from tvb.simulator import models, integrators, monitors, coupling
 
 from .common import psutil, get_logger, numpy_add_at
-from .history import SparseHistory, DenseHistory
+from .history import SparseHistory
 
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
 
 LOG = get_logger(__name__)
 

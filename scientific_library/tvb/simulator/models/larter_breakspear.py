@@ -33,7 +33,7 @@ Larter-Breakspear model based on the Morris-Lecar equations.
 
 import numpy
 from .base import Model
-from tvb.basic.traits.neotraits import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class LarterBreakspear(Model):

@@ -34,7 +34,7 @@ import numpy
 from scipy.integrate import trapz as scipy_integrate_trapz
 from scipy.stats import norm as scipy_stats_norm
 from .base import Model
-from tvb.basic.traits.neotraits import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class ReducedSetBase(Model):

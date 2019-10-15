@@ -38,7 +38,7 @@ import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import volumes
 from tvb.basic.arguments_serialisation import preprocess_space_parameters
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)

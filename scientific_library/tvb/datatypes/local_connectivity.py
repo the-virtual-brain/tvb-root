@@ -35,7 +35,7 @@ from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits import exceptions
 from tvb.datatypes import equations, surfaces
-from tvb.basic.traits.neotraits import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr
 
 
 LOG = get_logger(__name__)

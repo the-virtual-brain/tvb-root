@@ -1,13 +1,8 @@
-"""
-A simple traits declarative api
-todo: rename this module
-todo: document the new system here and put a link to extensive docs
-"""
 import inspect
 import typing
 import abc
 import logging
-from .neotraits_info import trait_object_str, auto_docstring, trait_object_repr_html
+from .info import trait_object_str, auto_docstring, trait_object_repr_html
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')

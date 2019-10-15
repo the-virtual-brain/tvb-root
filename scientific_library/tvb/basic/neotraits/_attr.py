@@ -2,7 +2,7 @@ import typing
 import collections
 import numpy
 import logging
-from .neotraits_impl import Attr
+from ._core import Attr
 
 
 # a logger for the whole traits system

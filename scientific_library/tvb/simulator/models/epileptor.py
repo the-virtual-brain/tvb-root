@@ -33,7 +33,7 @@ Hindmarsh-Rose-Jirsa Epileptor model.
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 @guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)

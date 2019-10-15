@@ -36,7 +36,7 @@ from tvb.basic.neotraits.info import narray_describe
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
 from . import local_connectivity, region_mapping, surfaces
-from tvb.basic.traits.neotraits import Attr, NArray, Range
+from tvb.basic.neotraits.api import Attr, NArray, Range
 
 LOG = get_logger(__name__)
 

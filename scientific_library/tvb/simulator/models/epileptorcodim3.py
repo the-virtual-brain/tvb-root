@@ -37,7 +37,7 @@ Saggio codimension 3 Epileptor model
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64, int_
-from tvb.basic.traits.neotraits import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Attr, List, Range
 
 
 class EpileptorCodim3(ModelNumbaDfun):

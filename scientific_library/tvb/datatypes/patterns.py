@@ -41,7 +41,7 @@ methods that are associated with the pattern datatypes.
 import numpy
 from tvb.datatypes import surfaces, volumes, connectivity, equations
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, NArray, Attr
+from tvb.basic.neotraits.api import HasTraits, NArray, Attr
 
 
 LOG = get_logger(__name__)

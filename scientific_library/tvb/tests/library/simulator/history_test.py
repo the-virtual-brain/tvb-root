@@ -37,7 +37,7 @@ Test history in simulator.
 
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.traits.neotraits import List
+from tvb.basic.neotraits.api import List
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import Identity

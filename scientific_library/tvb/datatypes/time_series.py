@@ -43,7 +43,7 @@ from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivi
 from tvb.basic.arguments_serialisation import (preprocess_space_parameters, preprocess_time_parameters,
     postprocess_voxel_ts)
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
 
 LOG = get_logger(__name__)
 

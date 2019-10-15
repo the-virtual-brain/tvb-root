@@ -42,7 +42,7 @@ Specific noises inherit from the abstract class Noise
 import numpy
 from tvb.datatypes import equations
 from .common import get_logger, simple_gen_astr
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, Range
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 
 LOG = get_logger(__name__)
 

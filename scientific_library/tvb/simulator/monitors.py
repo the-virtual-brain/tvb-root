@@ -68,7 +68,7 @@ from tvb.datatypes.projections import (ProjectionMatrix,
 import tvb.datatypes.equations as equations
 import tvb.basic.traits.util as util
 from tvb.simulator.common import iround, numpy_add_at
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 

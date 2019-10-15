@@ -82,7 +82,7 @@ following:
 
 """
 import numpy
-from tvb.basic.traits.neotraits import HasTraits, NArray, Attr, Range
+from tvb.basic.neotraits.api import HasTraits, NArray, Attr, Range
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 

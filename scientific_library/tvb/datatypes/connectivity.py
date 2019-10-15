@@ -42,7 +42,7 @@ import numpy
 import scipy.stats
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
-from tvb.basic.traits.neotraits import Attr, NArray, List, HasTraits
+from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits
 from tvb.basic.traits.types_mapped import MappedType
 
 
