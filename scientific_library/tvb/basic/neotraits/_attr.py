@@ -53,8 +53,16 @@ class Attr(_Attr):
         self.final = bool(final)
         self.choices = choices
 
-    # subclass api
 
+    def __validate(self, value):
+        """ check field_type and choices """
+        if not isinstance(value, self.field_type):
+            raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
+        if self.choices is not None:
+            if value not in self.choices:
+                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
+
+    # subclass api
 
     def _post_bind_validate(self):
         # type: () -> None
@@ -72,16 +80,8 @@ class Attr(_Attr):
 
         skip_default_checks = self.default is None or isinstance(self.default, types.FunctionType)
 
-        if not skip_default_checks and not isinstance(self.default, self.field_type):
-            msg = 'Attribute should have a default of type {} not {}'.format(
-                self.field_type, type(self.default)
-            )
-            raise TraitTypeError(msg, attr=self)
-
-        if self.choices is not None and not skip_default_checks:
-            if self.default not in self.choices:
-                msg = 'The default {} must be one of the choices {}'.format(self.default, self.choices)
-                raise TraitTypeError(msg, attr=self)
+        if not skip_default_checks:
+            self.__validate(self.default)
 
         # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
         try:
@@ -108,11 +108,7 @@ class Attr(_Attr):
             else:
                 return value
 
-        if not isinstance(value, self.field_type):
-            raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
-        if self.choices is not None:
-            if value not in self.choices:
-                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
+        self.__validate(value)
         return value
 
 
@@ -228,30 +224,8 @@ class List(Attr):
         self.element_choices = choices
 
 
-    def _post_bind_validate(self):
-        super(List, self)._post_bind_validate()
-        # check that the default contains elements of the declared type
-        for i, el in enumerate(self.default):
-            if not isinstance(el, self.element_type):
-                msg = 'default[{}] must have type {} not {}'.format(i, self.element_type, type(el))
-                raise TraitTypeError(msg, attr=self)
-
-        if self.element_choices is not None:
-            # check that the default respects the declared choices
-            for i, el in enumerate(self.default):
-                if el not in self.element_choices:
-                    msg = 'default[{}]=={} must be one of the choices {}'.format(
-                        i, self.default, self.element_choices
-                    )
-                    raise TraitTypeError(msg, attr=self)
-
-
-    def _validate_set(self, instance, value):
-        value = super(List, self)._validate_set(instance, value)
-        if value is None:
-            # value is optional and missing, nothing to do here
-            return
-
+    def __validate_elements(self, value):
+        """ check that all elements are of the declared type and one of the declared choices """
         for i, el in enumerate(value):
             if not isinstance(el, self.element_type):
                 raise TraitTypeError("value[{}] can't be of type {}".format(i, type(el)), attr=self)
@@ -263,6 +237,20 @@ class List(Attr):
                         "value[{}]=={!r} must be one of {}".format(i, el, self.element_choices),
                         attr=self
                     )
+
+
+    def _post_bind_validate(self):
+        super(List, self)._post_bind_validate()
+        # check that the default contains elements of the declared type
+        self.__validate_elements(self.default)
+
+
+    def _validate_set(self, instance, value):
+        value = super(List, self)._validate_set(instance, value)
+        if value is None:
+            # value is optional and missing, nothing to do here
+            return
+        self.__validate_elements(value)
         return value
 
 
@@ -285,17 +273,23 @@ class List(Attr):
 
 
 class _Number(Attr):
-    def _post_bind_validate(self):
-        if self.default is not None and not numpy.can_cast(self.default, self.field_type, 'safe'):
-            msg = 'can not safely cast default value {} to the declared type {}'.format(
-                self.default, self.field_type
-            )
-            raise TraitTypeError(msg, attr=self)
 
-        if self.choices is not None and self.default is not None:
-            if self.default not in self.choices:
-                msg = 'the default {} must be one of the choices {}'.format(self.default, self.choices)
-                raise TraitTypeError(msg, attr=self)
+    def __validate(self, value):
+        """ value should be safely cast to field type and choices must be enforced """
+        if not isinstance(value, (int, long, float, complex, numpy.number)):
+            # we have to check that the value is numeric before the can_cast check
+            # as can_cast works with dtype strings as well
+            # can_cast('i8', 'i32')
+            raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
+        if not numpy.can_cast(value, self.field_type, 'safe'):
+            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
+        if self.choices is not None:
+            if value not in self.choices:
+                raise TraitValueError("value {!r} must be one of {}".format(value, self.choices), attr=self)
+
+    def _post_bind_validate(self):
+        if self.default is not None:
+            self.__validate(self.default)
 
 
     def _validate_set(self, instance, value):
@@ -305,17 +299,7 @@ class _Number(Attr):
             else:
                 return value
 
-        if not isinstance(value, (int, long, float, complex, numpy.number)):
-            # we have to check that the value is numeric before the can_cast check
-            # as can_cast works with dtype strings as well
-            # can_cast('i8', 'i32')
-            raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
-
-        if not numpy.can_cast(value, self.field_type, 'safe'):
-            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
-        if self.choices is not None:
-            if value not in self.choices:
-                raise TraitValueError("value {!r} must be one of {}".format(value, self.choices), attr=self)
+        self.__validate(value)
         return self.field_type(value)
 
 
@@ -441,21 +425,23 @@ class NArray(Attr):
             self.ndim = len(dim_names)
 
 
+    def __validate(self, value):
+        """ check that ndim's and dtypes match"""
+        if self.ndim is not None and value.ndim != self.ndim:
+            raise TraitValueError("can't be set to an array with ndim {}".format(value.ndim), attr=self)
+
+        if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
+            raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
+
+
     def _post_bind_validate(self):
         if self.default is None:
             return
         if not isinstance(self.default, numpy.ndarray):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
             raise TraitTypeError(msg, attr=self)
-        if not numpy.can_cast(self.default, self.dtype, 'safe'):
-            msg = 'the default={} value can not be safely cast to the declared dtype={}'.format(
-                self.default, self.dtype
-            )
-            raise TraitValueError(msg, attr=self)
-        # if ndim is None we allow any ndim
-        if self.ndim is not None and self.default.ndim != self.ndim:
-            msg = 'default ndim={} is not the declared one={}'.format(self.default.ndim, self.ndim)
-            raise TraitValueError(msg, attr=self)
+
+        self.__validate(self.default)
 
         # we make the default a read only array
         self.default.setflags(write=False)
@@ -476,12 +462,7 @@ class NArray(Attr):
         if value is None:
             # value is optional and missing, nothing to do here
             return
-
-        if self.ndim is not None and value.ndim != self.ndim:
-            raise TraitTypeError("can't be set to an array with ndim {}".format(value.ndim), attr=self)
-
-        if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
-            raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
+        self.__validate(value)
 
         return value.astype(self.dtype)
 

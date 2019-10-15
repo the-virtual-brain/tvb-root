@@ -235,7 +235,7 @@ def test_narr_simple():
 
 
 def test_narr_enforcing():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         class Boo(HasTraits):
             x = NArray(dtype=np.dtype(np.int), default=np.eye(2))
 
@@ -330,7 +330,7 @@ def test_ndim_enforced():
         x = NArray(ndim=2)
 
     a = A()
-    with pytest.raises(TraitTypeError):
+    with pytest.raises(TraitValueError):
         a.x = numpy.arange(4)
 
 
@@ -364,7 +364,7 @@ def test_list_default_right_type():
 
 
 def test_list_default_must_respect_choices():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         class A(HasTraits):
             picked_dimensions = List(
                 of=str,
@@ -384,7 +384,7 @@ def test_str_ndarrays():
     assert 'Georg' == a.s[0]
 
     # dtype(str) is dtype('|S0') so it is the most restrictive thus useless
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         class A(HasTraits):
             s = NArray(dtype=str, default=np.array(['eli']))
         # fails because the declared type |S0 is different from |S3
@@ -532,7 +532,7 @@ def test_int_attribute():
 
 
 def test_numerics_respect_choices_and_null():
-    with pytest.raises(TraitTypeError):
+    with pytest.raises(TraitValueError):
         # choices are respected by numeric attributes
         class B(HasTraits):
             a = Int(default=1, choices=(3, 4))
