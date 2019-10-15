@@ -3,6 +3,7 @@ A simple traits declarative api
 todo: rename this module
 todo: document the new system here and put a link to extensive docs
 """
+import inspect
 import typing
 import abc
 import logging
@@ -27,7 +28,7 @@ class Attr(object):
     def __init__(self, field_type=object, default=None, doc='', label='',
                  required=True, readonly=False, choices=None):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
-        self.field_name = None  # to be set by metaclass
+        self.field_name = None  # type: str  # to be set by metaclass
         self.field_type = field_type
         self.default = default
         self.doc = doc
@@ -156,7 +157,27 @@ class MetaType(abc.ABCMeta):
 
     # here to avoid some hasattr; is None etc checks. And to make pycharm happy
     # should be harmless and shadowed by _declarative_attrs on the returned classes
-    _own_declarative_attrs = ()  # name of all declarative fields on this class
+    _own_declarative_attrs = ()  # type: typing.Tuple[str] # name of all declarative fields on this class
+
+    # A record of all the classes we have created, todo: should this hold weakrefs? are classes ever deleted in tvb?
+    __classes = []  # type: typing.List[type]
+
+
+    def get_known_subclasses(cls, include_abstract=False):
+        # type: (bool) -> typing.Tuple[typing.Type[MetaType], ...]
+        """
+        Returns all subclasses that exist *now*.
+        New subclasses can be created after this call (after importing a new module or dynamically created ones)
+        Use with care. Use after most relevant modules have been imported.
+        """
+        ret = []
+
+        for c in cls.__classes:
+            if issubclass(c, cls):
+                if inspect.isabstract(c) and not include_abstract:
+                    continue
+                ret.append(c)
+        return tuple(ret)
 
 
     @property
@@ -198,7 +219,9 @@ class MetaType(abc.ABCMeta):
         namespace['_own_declarative_attrs'] = tuple(attrs)
         namespace['__doc__'] = _auto_docstring(namespace)
 
-        return super(MetaType, mcs).__new__(mcs, type_name, bases, namespace)
+        cls = super(MetaType, mcs).__new__(mcs, type_name, bases, namespace)
+        mcs.__classes.append(cls)
+        return cls
 
 
     # note: Any methods defined here are metamethods, visible from all classes with this metatype
