@@ -40,10 +40,6 @@ from tvb.datatypes import equations
 
 
 class TestNoise(BaseTestCase):
-    def test_stream(self):
-        noise_stream = noise.RandomStream()
-        assert noise_stream.init_seed == 42
-
     def test_additive(self):
         noise_additive = noise.Additive()
         assert noise_additive.ntau == 0.0

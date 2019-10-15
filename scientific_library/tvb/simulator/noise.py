@@ -31,9 +31,7 @@
 """
 A collection of noise related classes and functions.
 
-Specific noises inherit from the abstract class Noise, with each instance having
-its own RandomStream attribute -- which is itself a Traited wrapper of Numpy's
-RandomState.
+Specific noises inherit from the abstract class Noise
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
@@ -48,53 +46,6 @@ from .common import get_logger, simple_gen_astr
 
 
 LOG = get_logger(__name__)
-
-
-class RandomStream(core.Type):
-    """
-    This class provides the ability to create multiple random streams which can
-    be independently seeded or set to an explicit state.
-
-    """
-    _ui_name = "Random state"
-    wraps = numpy.random.RandomState
-    defaults = ((42,), {})  # for init wrapped value: wraps(*def[0], **def[1])
-
-    init_seed = basic.Integer(
-        label="A random seed",
-        default=42,
-        doc="""A random seed used to initialise the state of an instance of
-        numpy's RandomState.""")
-
-    def configure(self):
-        """
-        Run base classes configure to setup traited attributes, then initialise
-        the stream's state using ``init_seed``.
-        """
-        super(RandomStream, self).configure()
-        self.reset()
-
-    def __str__(self):
-        return simple_gen_astr(self, 'init_seed')
-
-    # TODO how does this method work?
-    def set_state(self, value):
-        """
-        Set the state of the random number stream based on a previously stored
-        state. This is to enable consistent noise state on continuation from a
-        previous simulation.
-
-        """
-        try:
-            numpy.random.RandomState.set_state(self, state=value)
-        except TypeError:
-            msg = "%s: bad state, see numpy.random.set_state"
-            LOG.error(msg % str(self))
-            raise msg
-
-    def reset(self):
-        """Reset the random stream to its initial state, using initial seed."""
-        numpy.random.RandomState.__init__(self.value, seed=self.init_seed)
 
 
 class Noise(core.Type):
@@ -140,11 +91,10 @@ class Noise(core.Type):
         default=0.0, range=basic.Range(lo=0.0, hi=20.0, step=1.0),
         doc="""The noise correlation time""")
 
-    random_stream = RandomStream(
-        label="Random Stream",
-        required=True,
-        doc="""An instance of numpy's RandomState associated with this
-        specific Noise object.""")
+    noise_seed = basic.Float(default=142, doc='')
+
+    def __init__(self):
+        self.random_stream = numpy.random.RandomState(self.noise_seed)
 
     dt = None
     # For use if coloured
