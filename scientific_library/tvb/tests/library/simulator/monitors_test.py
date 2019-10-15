@@ -38,8 +38,6 @@ handling of projection matrices, etc.
 """
 
 import numpy
-import pytest
-
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
@@ -118,8 +116,8 @@ class TestMonitorsConfiguration(BaseTestCase):
         monitor = monitors.Bold()
         assert monitor.period == 2000.0
 
-@pytest.mark.skip
-class TestSubcorticalProjection(BaseTestCase):
+
+class TestProjectionMonitorsWithSubcorticalRegions(BaseTestCase):
     """
     Cortical surface with subcortical regions, sEEG, EEG & MEG, using a stochastic
     integration. This test verifies the shapes of the projection matrices, and
@@ -133,7 +131,9 @@ class TestSubcorticalProjection(BaseTestCase):
     coupling_a = numpy.array([0.014])
     n_regions = 192
 
-    def setup_method(self):
+    def test_surface_sim_with_projections(self):
+
+        # Setup Simulator obj
         oscillator = models.Generic2dOscillator()
         white_matter = connectivity.Connectivity.from_file('connectivity_%d.zip' % (self.n_regions,))
         white_matter.speed = numpy.array([self.speed])
@@ -150,50 +150,54 @@ class TestSubcorticalProjection(BaseTestCase):
         local_coupling_strength = numpy.array([2 ** -10])
         region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions,))
         default_cortex = Cortex.from_file()
-        default_cortex.region_mapping_data=region_mapping
+        default_cortex.region_mapping_data = region_mapping
         default_cortex.coupling_strength = local_coupling_strength
-        self.sim = simulator.Simulator(model=oscillator, connectivity=white_matter, coupling=white_matter_coupling,
-                                       integrator=heunint, monitors=mons, surface=default_cortex)
-        self.sim.configure()
 
-    def test_connectivity(self):
-        conn = self.sim.connectivity
+        sim = simulator.Simulator(model=oscillator, connectivity=white_matter, coupling=white_matter_coupling,
+                                  integrator=heunint, monitors=mons, surface=default_cortex)
+        sim.configure()
+
+        # check configured simulation connectivity attribute
+        conn = sim.connectivity
         assert conn.number_of_regions == self.n_regions
         assert conn.speed == self.speed
 
-    def test_monitor_properties(self):
-        lc_n_node = self.sim.surface.local_connectivity.matrix.shape[0]
-        for mon in self.sim.monitors:
+        # test monitor properties
+        lc_n_node = sim.surface.local_connectivity.matrix.shape[0]
+        for mon in sim.monitors:
             assert mon.period == self.period
             n_sens, g_n_node = mon.gain.shape
-            assert g_n_node == self.sim.number_of_nodes
+            assert g_n_node == sim.number_of_nodes
             assert n_sens == mon.sensors.number_of_sensors
             assert lc_n_node == g_n_node
 
-    def test_output_shape(self):
+        # check output shape
         ys = {}
         mons = 'eeg meg seeg'.split()
         for key in mons:
             ys[key] = []
-        for data in self.sim(simulation_length=3.0):
+        for data in sim(simulation_length=3.0):
             for key, dat in zip(mons, data):
                 if dat:
                     _, y = dat
                     ys[key].append(y)
-        for mon, key in zip(self.sim.monitors, mons):
+        for mon, key in zip(sim.monitors, mons):
             ys[key] = numpy.array(ys[key])
             assert ys[key].shape[2] == mon.gain.shape[0]
 
-    def teardown_method(self):
-        # gc sim so multiple test suites don't hog memory
-        del self.sim
+
+class TestProjectionMonitorsWithNoSubcortical(TestProjectionMonitorsWithSubcorticalRegions):
+    """
+    Idem. but with the 76 regions connectivity, where no sub-cortical regions are included
+    """
+    n_regions = 76
 
 
 class TestAllAnalyticWithSubcortical(BaseTestCase):
     """Test correct gain matrix shape for all analytic with subcortical nodes."""
 
-    def setup_method(self):
-        self.sim = simulator.Simulator(
+    def test_gain_size(self):
+        sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(
                 sensors=SensorsInternal.from_file(),
@@ -201,13 +205,7 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
             ),)
         ).configure()
 
-    def test_gain_size(self):
-        ieeg = self.sim.monitors[0]  # type: SensorsInternal
+        ieeg = sim.monitors[0]  # type: SensorsInternal
         n_sens, n_reg = ieeg.gain.shape
         assert ieeg.sensors.locations.shape[0] == n_sens
-        assert self.sim.connectivity.number_of_regions == n_reg
-
-
-class TestNoSubCorticalProjection(TestSubcorticalProjection):
-    """Idem. but with 76 region connectivity"""
-    n_regions = 76
+        assert sim.connectivity.number_of_regions == n_reg
