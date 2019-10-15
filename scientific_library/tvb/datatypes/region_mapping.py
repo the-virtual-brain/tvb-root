@@ -102,20 +102,6 @@ class RegionMapping(HasTraits):
         return numpy.array(result)
 
 
-    def generate_new_region_mapping(self, connectivity_gid, storage_path):
-        """
-        Generate a new region mapping with the given connectivity gid from an
-        existing mapping corresponding to the parent connectivity.
-        """
-        new_region_map = self.__class__()
-        new_region_map.storage_path = storage_path
-        new_region_map._connectivity = connectivity_gid
-        new_region_map._surface = self._surface
-        new_region_map.array_data = self.array_data
-        return new_region_map
-
-
-
 class RegionVolumeMapping(HasTraits):
     """
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
@@ -126,7 +112,4 @@ class RegionVolumeMapping(HasTraits):
     connectivity = Attr(Connectivity)
 
     volume = Attr(Volume)
-
-    apply_corrections = True
-    mappings_file = None
 

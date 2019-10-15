@@ -77,19 +77,6 @@ WHITE_MATTER = "White Matter"
 EEG_CAP = "EEG Cap"
 FACE = "Face"
 
-
-# TODO: This is just a temporary solution placed here to remove dependency from tvb.basic to tvb framework.
-# As soon as we implement a better solution to the datatype framework diamond problem this should be removed.
-def paths2url(datatype_entity, attribute_name, flatten=False, parameter=None, datatype_kwargs=None):
-    """Prepare a File System Path for passing into an URL."""
-    jskw = json.dumps(datatype_kwargs)
-    url = '%s%s/%s/%s/%s'
-    url %= TvbProfile.current.web.VISUALIZERS_URL_PREFIX, datatype_entity.gid, attribute_name, flatten, jskw
-    if parameter is None:
-        return url
-    return '%s?%s' % (url, parameter)
-
-
 # TODO document magic numbers here
 # Slices are for vertices [0.....SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE]
 # [SPLIT_MAX_SIZE ..... 2 * SPLIT_BUFFER_SIZE + SPLIT_BUFFER_SIZE]
@@ -191,11 +178,11 @@ class Surface(HasTraits):
 
     split_triangles = NArray(dtype=int, required=False)
 
-    number_of_split_slices = Int()
+    number_of_split_slices = Int(required=False)
 
-    split_slices = Attr(field_type=dict)
+    split_slices = Attr(field_type=dict, required=False)
 
-    bi_hemispheric = Attr(field_type=bool)
+    bi_hemispheric = Attr(field_type=bool, default=False)
 
     surface_type = Attr(field_type=str)
 
@@ -473,9 +460,9 @@ class Surface(HasTraits):
                 bad_normal_count += 1
         if bad_normal_count:
             self.logger.warn(" %d vertices have bad normals" % bad_normal_count)
+        self.vertex_normals = vert_norms
         LOG.debug("vertex_normals")
         LOG.debug(narray_describe(self.vertex_normals))
-        self.vertex_normals = vert_norms
 
     @property
     def triangle_areas(self):
@@ -1022,7 +1009,7 @@ class WhiteMatterSurface(Surface):
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
     _ui_name = "A cortical surface"
-    surface_type = Final(CORTICAL)
+    surface_type = Attr(field_type=basestring, default=CORTICAL)
 
 
 class SkinAir(Surface):
@@ -1113,10 +1100,10 @@ def center_vertices(vertices):
     return vertices - numpy.mean(vertices, axis=0).reshape((1, 3))
 
 
-ALL_SURFACES_SELECTION = [{'name': 'Cortical Surface', 'value': CORTICAL},
-                          {'name': 'Brain Skull', 'value': INNER_SKULL},
-                          {'name': 'Skull Skin', 'value': OUTER_SKULL},
-                          {'name': 'Skin Air', 'value': OUTER_SKIN},
-                          {'name': 'EEG Cap', 'value': EEG_CAP},
-                          {'name': 'Face Surface', 'value': FACE},
-                          {'name': 'White Matter Surface', 'value': WHITE_MATTER}]
+ALL_SURFACES_SELECTION = {'Cortical Surface': CORTICAL,
+                          'Brain Skull': INNER_SKULL,
+                          'Skull Skin': OUTER_SKULL,
+                          'Skin Air': OUTER_SKIN,
+                          'EEG Cap': EEG_CAP,
+                          'Face Surface': FACE,
+                          'White Matter Surface': WHITE_MATTER}

@@ -106,7 +106,7 @@ class TimeSeries(HasTraits):
 
     # Specify the measure unit for sample period (e.g sec, msec, usec, ...)
     sample_period_unit = Attr(
-        field_type=str,
+        field_type=basestring,
         label="Sample Period Measure Unit",
         default="ms"
     )
@@ -130,39 +130,6 @@ class TimeSeries(HasTraits):
         # for i in range(min(self.nr_dimensions, 4)):
         #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
-
-    def get_space_labels(self):
-        """
-        It assumes that we want to select in the 3'rd dimension,
-        and generates labels for each point in that dimension.
-        Subclasses are more specific.
-        :return: An array of strings.
-        """
-        if self.nr_dimensions > 2:
-            return ['signal-%d' % i for i in range(self._length_3d)]
-        else:
-            return []
-
-    def get_grouped_space_labels(self):
-        """
-        :return: A list of label groups. A label group is a tuple (name, [(label_idx, label)...]).
-                 Default all labels in a group named ''
-        """
-        return [('', list(enumerate(self.get_space_labels())))]
-
-    def get_default_selection(self):
-        """
-        :return: The measure point indices that have to be shown by default. By default show all.
-        """
-        return range(len(self.get_space_labels()))
-
-    def get_measure_points_selection_gid(self):
-        """
-        :return: a datatype gid with which to obtain al valid measure point selection for this time series
-                 We have to decide if the default should be all selections or none
-        """
-        return ''
-
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -184,26 +151,6 @@ class SensorsTSBase(TimeSeries):
     Add framework related functionality for TS Sensor classes
 
     """
-
-    def get_space_labels(self):
-        """
-        :return: An array of strings with the sensors labels.
-        """
-        if self.sensors is not None:
-            return list(self.sensors.labels)
-        return []
-
-    def get_measure_points_selection_gid(self):
-        if self.sensors is not None:
-            return self.sensors.gid
-        return ''
-
-    def get_default_selection(self):
-        if self.sensors is not None:
-            # select only the first 8 channels
-            return range(min(8, len(self.get_space_labels())))
-        return []
-
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -266,60 +213,12 @@ class TimeSeriesRegion(TimeSeries):
         })
         return summary
 
-    def get_space_labels(self):
-        """
-        :return: An array of strings with the connectivity node labels.
-        """
-        if self.connectivity is not None:
-            return list(self.connectivity.region_labels)
-        return []
-
-    def get_grouped_space_labels(self):
-        """
-        :return: A structure of this form [('left', [(idx, lh_label)...]), ('right': [(idx, rh_label) ...])]
-        """
-        if self.connectivity is not None:
-            return self.connectivity.get_grouped_space_labels()
-        else:
-            return super(TimeSeriesRegion, self).get_grouped_space_labels()
-
-    def get_default_selection(self):
-        """
-        :return: If the connectivity of this time series is edited from another
-                 return the nodes of the parent that are present in the connectivity.
-        """
-        if self.connectivity is not None:
-            return self.connectivity.get_default_selection()
-        else:
-            return super(TimeSeriesRegion, self).get_default_selection()
-
-    def get_measure_points_selection_gid(self):
-        """
-        :return: the associated connectivity gid
-        """
-        if self.connectivity is not None:
-            return self.connectivity.get_measure_points_selection_gid()
-        else:
-            return super(TimeSeriesRegion, self).get_measure_points_selection_gid()
-
-
-    @staticmethod
-    def out_of_range(min_value):
-        return round(min_value) - 1
-
 
 class TimeSeriesSurface(TimeSeries):
     """ A time-series associated with a Surface. """
     _ui_name = "Surface time-series"
     surface = Attr(field_type=surfaces.CorticalSurface)
     labels_ordering = List(of=basestring, default=("Time", "State Variable", "Vertex", "Mode"))
-    SELECTION_LIMIT = 100
-
-    def get_space_labels(self):
-        """
-        Return only the first `SELECTION_LIMIT` vertices/channels
-        """
-        return ['signal-%d' % i for i in range(min(self._length_3d, self.SELECTION_LIMIT))]
 
     def summary_info(self):
         """
