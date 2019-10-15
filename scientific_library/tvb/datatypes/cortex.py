@@ -32,7 +32,7 @@ import os
 import collections
 import numpy
 import scipy.sparse
-from tvb.basic.traits import util
+from tvb.basic.neotraits.info import narray_describe
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
 from . import local_connectivity, region_mapping, surfaces
@@ -242,7 +242,9 @@ class Cortex(surfaces.CorticalSurface):
                 region_triangles = set.union(*regs)
                 region_surface_area[k] = self.triangle_areas[list(region_triangles)].sum()
 
-        util.log_debug_array(LOG, region_surface_area, "region_areas", owner=self.__class__.__name__)
+        LOG.debug("region_areas")
+        LOG.debug(narray_describe(region_surface_area))
+
         self.region_areas = region_surface_area
 
     def compute_region_orientation(self):
@@ -271,7 +273,9 @@ class Cortex(surfaces.CorticalSurface):
                 avg_orient = numpy.mean(orient, axis=0)
                 average_orientation[k, :] = avg_orient / numpy.sqrt(numpy.sum(avg_orient ** 2))
 
-        util.log_debug_array(LOG, average_orientation, "region_orientation", owner=self.__class__.__name__)
+        LOG.debug("region_orientation")
+        LOG.debug(narray_describe(average_orientation))
+
         self.region_orientation = average_orientation
 
     @classmethod
