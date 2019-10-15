@@ -124,7 +124,7 @@ class Simulator(object):
             white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
 
-        white_matter_coupling = coupling.Linear(a=coupling_strength)
+        white_matter_coupling = coupling.Linear(a=numpy.array([coupling_strength]))
         white_matter.speed = numpy.array([speed])  # no longer allow scalars to numpy array promotion
 
         dynamics = model()

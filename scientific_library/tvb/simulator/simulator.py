@@ -100,15 +100,16 @@ class Simulator(core.Type):
         range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
-    coupling = coupling.Coupling(
-        label="Long-range coupling function",
-        default=coupling.Linear(),
-        required=True,
-        order=2,
-        doc="""The coupling function is applied to the activity propagated
-        between regions by the ``Long-range connectivity`` before it enters the local
-        dynamic equations of the Model. Its primary purpose is to 'rescale' the
-        incoming activity to a level appropriate to Model.""")
+    coupling = None
+    # coupling.Coupling(
+    #     label="Long-range coupling function",
+    #     default=coupling.Linear(),
+    #     required=True,
+    #     order=2,
+    #     doc="""The coupling function is applied to the activity propagated
+    #     between regions by the ``Long-range connectivity`` before it enters the local
+    #     dynamic equations of the Model. Its primary purpose is to 'rescale' the
+    #     incoming activity to a level appropriate to Model.""")
 
     surface = cortex.Cortex(
         label="Cortical surface",
