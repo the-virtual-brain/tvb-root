@@ -42,7 +42,7 @@ Specific noises inherit from the abstract class Noise
 import numpy
 from tvb.datatypes import equations
 from .common import get_logger, simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float
 
 LOG = get_logger(__name__)
 
@@ -83,15 +83,14 @@ class Noise(HasTraits):
     #      inital conditions noise source, and in that use the job of nsig is
     #      filled by the state_variable_range attribute of the Model.
 
-    ntau = Attr(
-        field_type=float,
+    ntau = Float(
         label=r":math:`\tau`",
         required=True,
         default=0.0,
         # range=basic.Range(lo=0.0, hi=20.0, step=1.0), #mh todo  support domains for simple floats?
         doc="""The noise correlation time""")
 
-    noise_seed = Attr(field_type=int, default=142)
+    noise_seed = Int(default=42)
 
     def __init__(self, **kwargs):
         super(Noise, self).__init__(**kwargs)

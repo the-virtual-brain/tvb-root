@@ -51,7 +51,7 @@ from tvb.simulator import models, integrators, monitors, coupling
 from .common import psutil, get_logger, numpy_add_at
 from .history import SparseHistory
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 
 LOG = get_logger(__name__)
 
@@ -89,8 +89,7 @@ class Simulator(HasTraits):
          connections. These couplings undergo a time delay via signal propagation
          with a propagation speed of ``Conduction Speed``""")
 
-    conduction_speed = Attr(
-        field_type=float,
+    conduction_speed = Float(
         label="Conduction Speed",
         default=3.0,
         required=False,
@@ -188,8 +187,7 @@ class Simulator(HasTraits):
         temporally downsampled from the raw integration rate to a sample rate of
         1024Hz.""")
 
-    simulation_length = Attr(
-        field_type=float,
+    simulation_length = Float(
         label="Simulation Length (ms, s, m, h)",
         default=1000.0,  # ie 1 second
         required=True,

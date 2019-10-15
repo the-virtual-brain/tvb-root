@@ -49,7 +49,7 @@ import functools
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
 
 LOG = get_logger(__name__)
 
@@ -71,9 +71,8 @@ class Integrator(HasTraits):
     """
     _base_classes = ['Integrator', 'IntegratorStochastic', 'RungeKutta4thOrderDeterministic']
 
-    dt = Attr(
-        field_type=float,
-        label = "Integration-step size (ms)",
+    dt = Float(
+        label = "Integration-step size (ms)", 
         default =  0.01220703125, #0.015625,
         #range = basic.Range(lo= 0.0048828125, hi=0.244140625, step= 0.1, base=2.)  mh: was commented
         required = True,

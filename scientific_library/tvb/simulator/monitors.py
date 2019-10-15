@@ -68,7 +68,7 @@ from tvb.datatypes.projections import (ProjectionMatrix,
 import tvb.datatypes.equations as equations
 import tvb.basic.traits.util as util
 from tvb.simulator.common import iround, numpy_add_at
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
 
 LOG = get_logger(__name__)
 
@@ -83,8 +83,7 @@ class Monitor(HasTraits):
     # list of class names not shown in UI
     _base_classes = ['Monitor', 'Projection', 'ProgressLogger']
 
-    period = Attr(
-        float,
+    period = Float(
         label="Sampling period (ms)", # order = 10
         default=0.9765625, #ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
         doc="""Sampling period in milliseconds, must be an integral multiple
@@ -180,7 +179,7 @@ class Raw(Monitor):
     """
     _ui_name = "Raw recording"
 
-    period = Attr(float, default=0.0, label="Sampling period is ignored for Raw Monitor")
+    period = Float(default=0.0, label="Sampling period is ignored for Raw Monitor")
     # order = -1
 
     variables_of_interest = NArray(
@@ -598,12 +597,12 @@ class EEG(Projection):
     sensors = Attr(SensorsEEG, required=True, label="EEG Sensors",  #order=1,
                    doc='Sensors to use for this EEG monitor')
 
-    sigma = Attr(float,
-                 default=1.0,  #order=4,
-                 label="Conductivity (w/o projection)",
-                 doc='When a projection matrix is not used, this provides '
-                     'the value of conductivity in the formula for the single '
-                     'sphere approximation of the head (Sarvas 1987).')
+    sigma = Float(
+        default=1.0,  #order=4,
+        label="Conductivity (w/o projection)",
+        doc='When a projection matrix is not used, this provides '
+            'the value of conductivity in the formula for the single '
+            'sphere approximation of the head (Sarvas 1987).')
 
 
     @classmethod
@@ -730,7 +729,7 @@ class iEEG(Projection):
         default=None, label='Projection matrix',  #order=2,
         doc='Projection matrix to apply to sources.')
 
-    sigma = Attr(float, label="conductivity", default=1.0)  #, order=4)
+    sigma = Float(label="conductivity", default=1.0)  #, order=4)
 
     sensors = Attr(
         sensors_module.SensorsInternal,
@@ -807,8 +806,7 @@ class Bold(Monitor):
     """
     _ui_name = "BOLD"
 
-    period = Attr(
-        float,
+    period = Float(
         label="Sampling period (ms)",
         default=2000.0,
         doc="""For the BOLD monitor, sampling period in milliseconds must be
@@ -823,8 +821,7 @@ class Bold(Monitor):
         doc="""A tvb.datatypes.equation object which describe the haemodynamic
         response function used to compute the BOLD signal.""")
 
-    hrf_length = Attr(
-        float,
+    hrf_length = Float(
         label="Duration (ms)",
         default=20000.,
         doc= """Duration of the hrf kernel""",)
