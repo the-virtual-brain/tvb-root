@@ -39,30 +39,17 @@ methods that are associated with the volume datatypes.
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
+
 LOG = get_logger(__name__)
 
 
 class Volume(HasTraits):
     """
     Data defined on a regular grid in three dimensions.
-
     """
-    origin = NArray(
-        dtype=float,
-        label="Volume origin coordinates"
-    )
-
-    voxel_size = NArray(
-        dtype=float,
-        label="Voxel size"
-    )
-    # need a triplet, xyz
-
-    voxel_unit = Attr(
-        str,
-        label="Voxel Measure Unit",
-        default="mm"
-    )
+    origin = NArray(label="Volume origin coordinates")
+    voxel_size = NArray(label="Voxel size") # need a triplet, xyz
+    voxel_unit = Attr(str, label="Voxel Measure Unit", default="mm")
 
     def _find_summary_info(self):
         summary = {"Volume type": self.__class__.__name__,

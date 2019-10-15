@@ -40,29 +40,28 @@ In FreeSurfer terms, a RegionMapping is a parcellation and a VolumeMapping is a 
 import numpy
 from tvb.basic.traits import exceptions
 from tvb.basic.readers import try_get_absolute_path, FileReader
-import tvb.datatypes.arrays as arrays
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.arguments_serialisation import parse_slice, preprocess_space_parameters
 from tvb.datatypes.structural import VolumetricDataMixin
-
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 
 
-class RegionMapping(arrays.MappedArray):
+class RegionMapping(HasTraits):
     """
     An array (of length Surface.vertices). Each value is representing the index in Connectivity regions
     to which the current vertex is mapped.
     """
 
-    array_data = arrays.IntegerArray()
+    array_data = NArray(dtype=int)
 
-    connectivity = Connectivity
+    connectivity = Attr(field_type=Connectivity)
 
-    surface = Surface
+    surface = Attr(field_type=Surface)
 
     __generate_table__ = True
 
@@ -132,16 +131,16 @@ class RegionMapping(arrays.MappedArray):
         return summary
 
 
-class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
+class RegionVolumeMapping(VolumetricDataMixin, HasTraits):
     """
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
     """
 
-    array_data = arrays.IntegerArray()
+    array_data = NArray(dtype=int)
 
-    connectivity = Connectivity
+    connectivity = Attr(Connectivity)
 
-    volume = Volume
+    volume = Attr(Volume)
 
     __generate_table__ = True
 

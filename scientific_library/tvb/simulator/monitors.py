@@ -374,6 +374,8 @@ class TemporalAverage(Monitor):
             return [time, avg_stock]
 
 
+# mhtodo: this is not a proper superclass but a mixin, it refers to fields that don't exist
+
 class Projection(Monitor):
     "Base class monitor providing lead field suppport."
     _ui_name = "Projection matrix"
@@ -515,6 +517,11 @@ class Projection(Monitor):
         LOG.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
         LOG.info('Projection configured gain shape %s', self.gain.shape)
+
+
+    def configure(self, *args, **kwargs):
+        self.sensors.configure()
+
 
     def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."

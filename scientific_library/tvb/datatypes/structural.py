@@ -36,9 +36,9 @@ methods that are associated with the volume datatypes.
 
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import types_basic as basic
-from tvb.datatypes import volumes, arrays
+from tvb.datatypes import volumes
 from tvb.basic.arguments_serialisation import preprocess_space_parameters
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
@@ -86,7 +86,7 @@ class VolumetricDataMixin(object):
         return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
 
 
-class StructuralMRI(VolumetricDataMixin, arrays.MappedArray):
+class StructuralMRI(VolumetricDataMixin, HasTraits):
     """
     Quantitative volumetric data recorded by means of Magnetic Resonance Imaging.
 
@@ -94,8 +94,8 @@ class StructuralMRI(VolumetricDataMixin, arrays.MappedArray):
     # without the field below weighting and volume columns are going to be added to the MAPPED_ARRAY table
     __generate_table__ = True
 
-    array_data = arrays.FloatArray(label="contrast")
+    array_data = NArray(label="contrast")
 
-    weighting = basic.String(label="MRI weighting")  # eg, "T1", "T2", "T2*", "PD", ...
+    weighting = Attr(str, label="MRI weighting")  # eg, "T1", "T2", "T2*", "PD", ...
 
-    volume = volumes.Volume
+    volume = Attr(volumes.Volume)

@@ -183,7 +183,7 @@ class TestSurfaces(BaseTestCase):
         assert dt.triangles.shape == (17224, 3)
 
     def test_regionmapping(self):
-        dt = RegionMapping(load_default=True)
+        dt = RegionMapping.from_file()
         assert isinstance(dt, RegionMapping)
         assert dt.array_data.shape == (16384,)
 

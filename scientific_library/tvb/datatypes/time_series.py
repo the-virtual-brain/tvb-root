@@ -38,8 +38,7 @@ methods that are associated with the time-series data.
 
 import json
 import numpy
-#TODO: eliminate import of old traits (Dict left)
-from tvb.basic.traits import types_basic as basic, exceptions, types_mapped
+from tvb.basic.traits import exceptions, types_mapped
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.arguments_serialisation import (preprocess_space_parameters, preprocess_time_parameters,
     postprocess_voxel_ts)
@@ -71,77 +70,61 @@ class TimeSeries(HasTraits):
     Base time-series dataType.
     """
 
-    title = Attr(
-        str
-    )
+    title = Attr(str)
 
     data = NArray(
-        dtype=float,
         label="Time-series data",
-        doc="""An array of time-series data, with a shape of [tpts, :], where ':' represents 1 or more dimensions"""
-    )
+        # file_storage=core.FILE_STORAGE_EXPAND,
+        doc="""An array of time-series data, with a shape of [tpts, :], where ':' represents 1 or more dimensions""")
 
+    # mhtodo: should this not be a property
     nr_dimensions = Attr(
-        int,
+        field_type=int,
         label="Number of dimension in timeseries",
         default=4
     )
 
-    length_1d, length_2d, length_3d, length_4d = [Attr(int)] * 4
+    length_1d, length_2d, length_3d, length_4d = [Attr(field_type=int)] * 4
 
     labels_ordering = List(
-        of=str,
         default=("Time", "State Variable", "Space", "Mode"),
         label="Dimension Names",
         doc="""List of strings representing names of each data dimension"""
     )
 
-    labels_dimensions = basic.Dict(
+    labels_dimensions = Attr(
+        field_type=dict,
         default={},
         label="Specific labels for each dimension for the data stored in this timeseries.",
         doc=""" A dictionary containing mappings of the form {'dimension_name' : [labels for this dimension] }""")
 
     time = NArray(
-        dtype=float,
+        # file_storage=core.FILE_STORAGE_EXPAND,
         label="Time-series time",
         required=False,
         doc="""An array of time values for the time-series, with a shape of [tpts,].
             This is 'time' as returned by the simulator's monitors."""
     )
 
-    start_time = Attr(
-        float,
-        label="Start Time:"
-    )
+    start_time = Attr(field_type=float, label="Start Time:")
 
-    sample_period = Attr(
-        float,
-        label="Sample period",
-        default=1.0
-    )
+    sample_period = Attr(field_type=float, label="Sample period", default=1.0)
 
     # Specify the measure unit for sample period (e.g sec, msec, usec, ...)
     sample_period_unit = Attr(
-        str,
+        field_type=str,
         label="Sample Period Measure Unit",
         default="ms"
     )
 
     sample_rate = Attr(
-        float,
+        field_type=float,
         label="Sample rate",
         doc="""The sample rate of the timeseries"""
     )
 
-    has_surface_mapping = Attr(
-        bool,
-        default=True
-    )
-
-    has_volume_mapping = Attr(
-        bool,
-        default=False
-    )
+    has_surface_mapping = Attr(field_type=bool, default=True)
+    has_volume_mapping = Attr(field_type=bool, default=False)
 
     def configure(self):
         """
@@ -386,50 +369,35 @@ class TimeSeriesEEG(SensorsTSBase):
     _ui_name = "EEG time-series"
     __generate_table__ = True
 
-    sensors = sensors.SensorsEEG
-    labels_ordering = List(
-        of=str,
-        default=("Time", "1", "EEG Sensor", "1")
-    )
+    sensors = Attr(field_type=sensors.SensorsEEG)
+    labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
+
 
 class TimeSeriesMEG(SensorsTSBase):
     """ A time series associated with a set of MEG sensors. """
     _ui_name = "MEG time-series"
     __generate_table__ = True
 
-    sensors = sensors.SensorsMEG
-    labels_ordering = List(
-        of=str,
-        default=("Time", "1", "MEG Sensor", "1")
-    )
+    sensors = Attr(field_type=sensors.SensorsMEG)
+    labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
+
 
 class TimeSeriesSEEG(SensorsTSBase):
     """ A time series associated with a set of Internal sensors. """
     _ui_name = "Stereo-EEG time-series"
     __generate_table__ = True
 
-    sensors = sensors.SensorsInternal
-    labels_ordering = List(
-        of=str,
-        default=("Time", "1", "sEEG Sensor", "1")
-    )
+    sensors = Attr(field_type=sensors.SensorsInternal)
+    labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
+
 
 class TimeSeriesRegion(TimeSeries):
     """ A time-series associated with the regions of a connectivity. """
     _ui_name = "Region time-series"
-    connectivity = connectivity.Connectivity
-    region_mapping_volume = Attr(
-        region_mapping.RegionVolumeMapping,
-        required=False
-    )
-    region_mapping = Attr(
-        region_mapping.RegionMapping,
-        required=False
-    )
-    labels_ordering = List(
-        of=str,
-        default=("Time", "State Variable", "Region", "Mode")
-    )
+    connectivity = Attr(field_type=connectivity.Connectivity)
+    region_mapping_volume = Attr(field_type=region_mapping.RegionVolumeMapping, required=False)
+    region_mapping = Attr(field_type=region_mapping.RegionMapping, required=False)
+    labels_ordering = List(of=str, default=("Time", "State Variable", "Region", "Mode"))
 
     def configure(self):
         """
@@ -572,11 +540,8 @@ class TimeSeriesRegion(TimeSeries):
 class TimeSeriesSurface(TimeSeries):
     """ A time-series associated with a Surface. """
     _ui_name = "Surface time-series"
-    surface = surfaces.CorticalSurface
-    labels_ordering = List(
-        of=str,
-        default=("Time", "State Variable", "Vertex", "Mode")
-    )
+    surface = Attr(field_type=surfaces.CorticalSurface)
+    labels_ordering = List(of=str, default=("Time", "State Variable", "Vertex", "Mode"))
     SELECTION_LIMIT = 100
 
     def get_space_labels(self):
@@ -610,11 +575,8 @@ class TimeSeriesSurface(TimeSeries):
 class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
     _ui_name = "Volume time-series"
-    volume = volumes.Volume
-    labels_ordering = List(
-        of=str,
-        default=("Time", "X", "Y", "Z")
-    )
+    volume = Attr(field_type=volumes.Volume)
+    labels_ordering = List(of=str, default=("Time", "X", "Y", "Z"))
 
     def _find_summary_info(self):
         """

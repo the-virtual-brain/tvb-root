@@ -65,27 +65,20 @@ class Sensors(HasTraits):
 
     labels = NArray(dtype='S128', label="Sensor labels")
 
-    locations = NArray(dtype=float, label="Sensor locations")
+    locations = NArray(label="Sensor locations")
 
-    has_orientation = Attr(bool, default=False)
+    has_orientation = Attr(field_type=bool, default=False)
 
-    orientations = NArray(dtype=float, required=False)
+    orientations = NArray(required=False)
 
-    number_of_sensors = Attr(
-        int,
-        label="Number of sensors",
-        doc="""The number of sensors described by these Sensors."""
-    )
+    number_of_sensors = Attr(field_type=long, label="Number of sensors",
+                             doc="""The number of sensors described by these Sensors.""")
 
     # introduced to accommodate real sensors sets which have sensors
     # that should be zero during simulation i.e. ECG (heart), EOG,
     # reference gradiometers, etc.
-    usable = NArray(
-        dtype=bool,
-        required=False,
-        label="Usable sensors",
-        doc="The sensors in set which are used for signal data."
-    )
+    usable = NArray(dtype=bool, required=False, label="Usable sensors",
+                    doc="The sensors in set which are used for signal data.")
 
     @classmethod
     def from_file(cls, source_file="eeg_brainstorm_65.txt", instance=None):
@@ -222,6 +215,7 @@ class SensorsEEG(Sensors):
 
     has_orientation = Attr(bool, default=False)
 
+
 class SensorsMEG(Sensors):
     """
     These are actually just SQUIDS. Axial or planar gradiometers are achieved
@@ -243,12 +237,11 @@ class SensorsMEG(Sensors):
 
     sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
 
-    orientations = NArray(
-        dtype=float,
-        label="Sensor orientations",
-        doc="An array representing the orientation of the MEG SQUIDs"
-    )
-    has_orientation = Attr(bool, default=True)
+    orientations = NArray(label="Sensor orientations",
+                          doc="An array representing the orientation of the MEG SQUIDs")
+
+    has_orientation = Attr(field_type=bool, default=True)
+
 
     @classmethod
     def from_file(cls, source_file="meg_151.txt.bz2", instance=None):
@@ -272,6 +265,7 @@ class SensorsInternal(Sensors):
     __mapper_args__ = {'polymorphic_identity': INTERNAL_POLYMORPHIC_IDENTITY}
 
     sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
+
 
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2", instance=None):
