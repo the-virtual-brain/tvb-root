@@ -35,7 +35,7 @@ pipeline {
                       python setup.py sdist
                       python  setup.py bdist_wheel
                 '''
-                archiveArtifacts artifacts: 'tvb*.tar.gz;tvb*.whl'
+                archiveArtifacts artifacts: 'tvb*.tar.gz, tvb*.whl'
             }
         }
 
