@@ -39,15 +39,14 @@ methods that are associated with the precalculated look up tables.
 
 import numpy
 from tvb.basic.readers import try_get_absolute_path
-from tvb.datatypes import arrays
-from tvb.basic.traits import types_basic as basic, types_mapped
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
 
 
-class LookUpTable(types_mapped.MappedType):
+class LookUpTable(HasTraits):
     """
     Lookup Tables for storing pre-computed functions.
     Specific table subclasses are implemented below.
@@ -55,41 +54,57 @@ class LookUpTable(types_mapped.MappedType):
 
     _base_classes = ['LookUpTables']
 
-    equation = basic.String(
+    equation = Attr(
+        str,
         label="String representation of the precalculated function",
         doc="""A latex representation of the function whose values are stored
-            in the table, with the extra escaping needed for interpretation via sphinx.""")
+                in the table, with the extra escaping needed for interpretation via sphinx."""
+    )
 
-    xmin = arrays.FloatArray(
+    xmin = NArray(
+        dtype=float,
         label="x-min",
-        doc="""Minimum value""")
+        doc="""Minimum value"""
+    )
 
-    xmax = arrays.FloatArray(
+    xmax = NArray(
+        dtype=float,
         label="x-max",
-        doc="""Maximum value""")
+        doc="""Maximum value"""
+    )
 
-    data = arrays.FloatArray(
+    data = NArray(
+        dtype=float,
         label="data",
-        doc="""Tabulated values""")
+        doc="""Tabulated values"""
+    )
 
-    number_of_values = basic.Integer(
+    number_of_values = Attr(
+        int,
         label="Number of values",
         default=0,
-        doc="""The number of values in the table """)
+        doc="""The number of values in the table """
+    )
 
-    df = arrays.FloatArray(
+    df = NArray(
+        dtype=float,
         label="df",
-        doc=""".""")
+        doc="""."""
+    )
 
-    dx = arrays.FloatArray(
+    dx = NArray(
+        dtype=float,
         label="dx",
         default=numpy.array([]),
-        doc="""Tabulation step""")
+        doc="""Tabulation step"""
+    )
 
-    invdx = arrays.FloatArray(
+    invdx = NArray(
+        dtype=float,
         label="invdx",
         default=numpy.array([]),
-        doc=""".""")
+        doc="""."""
+    )
 
     @staticmethod
     def populate_table(result, source_file):
