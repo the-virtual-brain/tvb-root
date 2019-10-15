@@ -40,8 +40,7 @@ from scipy import signal as sp_signal
 from tvb.basic.logger.builder import get_logger
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
+from tvb.basic.neotraits.api import HasTraits, Attr, List
 import tvb.basic.traits.util as util
 
 
@@ -54,7 +53,7 @@ SUPPORTED_WINDOWING_FUNCTIONS = dict(hamming = numpy.hamming,
 
 
 
-class FFT(core.Type):
+class FFT(HasTraits):
     """
     A class for calculating the FFT of a TimeSeries object of TVB and returning
     a FourierSpectrum object. A segment length and windowing function can be
@@ -62,40 +61,39 @@ class FFT(core.Type):
     blocks and no windowing function is applied.
     """
 
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
-        required=True,
-        doc="""The TimeSeries to which the FFT is to be applied.""",
-        order=1)
+        doc="""The TimeSeries to which the FFT is to be applied.""")
 
-    segment_length = basic.Float(
+    segment_length = Attr(
+        field_type=float,
         label="Segment(window) length (ms)",
         default=1000.0,
         required=False,
         doc="""The TimeSeries can be segmented into equally sized blocks
             (overlapping if necessary). The segment length determines the
             frequency resolution of the resulting power spectra -- longer
-            windows produce finer frequency resolution.""",
-        order=2)
+            windows produce finer frequency resolution.""")
 
-    window_function = basic.Enumerate(
+    # TODO: this was flagged required=False, but List attr is required by default
+    window_function = List(
+        of=str,
         label="Windowing function",
-        options=SUPPORTED_WINDOWING_FUNCTIONS,
-        default=None,
-        required=False,
-        select_multiple=False,
+        choices=tuple(SUPPORTED_WINDOWING_FUNCTIONS),
+        default=(None,),
+        # required=False,
         doc="""Windowing functions can be applied before the FFT is performed.
              Default is None, possibilities are: 'hamming'; 'bartlett';
-            'blackman'; and 'hanning'. See, numpy.<function_name>.""",
-        order=3)
+            'blackman'; and 'hanning'. See, numpy.<function_name>.""")
 
-    detrend = basic.Bool(
+    detrend = Attr(
+        field_type=bool,
         label="Detrending",
         default=True,
         required=False,
         doc="""Detrending is not always appropriate.
-            Default is True, False means no detrending is performed on the time series""",
-        order=4)
+            Default is True, False means no detrending is performed on the time series""")
     
     
     def evaluate(self):
