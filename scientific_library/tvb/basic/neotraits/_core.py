@@ -22,7 +22,7 @@ class Attr(object):
     # This class is a python data descriptor.
     # For an introduction see https://docs.python.org/2/howto/descriptor.html
 
-    def __init__(self, field_type=object, default=None, doc='', label='',
+    def __init__(self, field_type, default=None, doc='', label='',
                  required=True, readonly=False, choices=None):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
         """
@@ -44,6 +44,7 @@ class Attr(object):
         self.readonly = bool(readonly)
         self.choices = choices
 
+    # subclass api
 
     def _err_msg(self, msg):
         # type: (str) -> str
@@ -103,10 +104,12 @@ class Attr(object):
 
 
     def _assert_have_field_name(self):
+        """ check that the fields we expect the be set by metaclass have been set """
         if self.field_name is None:
             # this is the case if the descriptor is not in a class of type MetaType
             raise AttributeError("Declarative attributes can only be declared in subclasses of HasTraits")
 
+    # descriptor protocol
 
     def __get__(self, instance, owner):
         # type: (typing.Any, type) -> typing.Any
@@ -141,10 +144,20 @@ class Attr(object):
         return '{}(field_type={}, default={!r}, required={})'.format(
             type(self).__name__, self.field_type, self.default, self.required)
 
+    # A modest attempt of making Attr immutable
+
     def __setattr__(self, key, value):
+        """ After owner is set disallow any field assignment """
         if getattr(self, 'owner', None) is not None:
-            raise AttributeError("can't change any field after the Attr has been bound to a class")
+            raise AttributeError(
+                "Can't change an Attr after it has been bound to a class."
+                "Reusing Attr instances for different fields is not supported."
+            )
         super(Attr, self).__setattr__(key, value)
+
+
+    def __delattr__(self, item):
+        raise ValueError("Deleting an Attr field is not supported.")
 
 
 
@@ -195,7 +208,9 @@ class MetaType(abc.ABCMeta):
     _own_declarative_attrs = ()  # type: typing.Tuple[str] # name of all declarative fields on this class
     _own_declarative_props = ()
 
-    # A record of all the classes we have created, todo: should this hold weakrefs? are classes ever deleted in tvb?
+    # A record of all the classes we have created.
+    # note: As this holds references and not weakrefs it will prevent class garbage collection.
+    #       Deleting classes would break get_known_subclasses and this cache
     __classes = []  # type: typing.List[type]
 
 
@@ -333,15 +348,23 @@ class MetaType(abc.ABCMeta):
         cls._post_init_validate_(instance)
         return instance
 
+    # warn about dynamic Attributes
 
     def __setattr__(self, key, value):
         """
         Complain if TraitedClass.a = Attr()
-        todo: review this
+        Traits assumes that all attributes are statically declared in the class body
         """
         if isinstance(value, Attr):
             log.warning('dynamically assigned Attributes are not supported')
         super(MetaType, self).__setattr__(key, value)
+
+
+    def __delattr__(self, item):
+        if isinstance(getattr(self, item, None), Attr):
+            log.warning('Dynamically removing Attributes is not supported')
+        super(MetaType, self).__delattr__(item)
+
 
 
 class HasTraits(object):

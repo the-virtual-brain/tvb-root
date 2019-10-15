@@ -114,8 +114,9 @@ def test_declarative_attrs():
     class Inherit(B, A):
         c = Attr(str)
 
-    assert Inherit.declarative_attrs == ('c', 'b', 'a')
+    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a'}
     assert Inherit._own_declarative_attrs == ('c',)
+    assert Inherit.own_declarative_attrs == ('c', )
 
     t = Inherit(a="ana", c="are", b=2)
 
@@ -147,6 +148,7 @@ def test_late_attr_binding_fail():
         f = Attr(str)
 
     F.newdynamic = Attr(str)
+    del F.f
 
 
 def test_mro_fail():
@@ -284,5 +286,4 @@ def test_declarative_property():
     assert set(A.declarative_props) == {'x3', 'x2'}
     assert (a.x2 == a.x * 2).all()
     assert (a.x3 == a.x * 3).all()
-    assert A.__doc__ == 'a'
 
