@@ -83,15 +83,16 @@ class Equation(HasTraits):
 
     # sci
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Equation type": self.__class__.__name__,
-                   "equation": self.equation,
-                   "parameters": self.parameters}
-        return summary
+        return {
+            "Equation type": self.__class__.__name__,
+            "equation": self.equation,
+            "parameters": self.parameters
+        }
 
     def evaluate(self, var):
         """

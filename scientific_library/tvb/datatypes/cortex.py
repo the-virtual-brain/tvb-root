@@ -159,11 +159,11 @@ class Cortex(surfaces.CorticalSurface):
                                                self.local_connectivity.matrix.shape[1]))
             self.local_connectivity.matrix = scipy.sparse.vstack([self.local_connectivity.matrix, padding])
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Extend the base class's scientific summary information dictionary.
         """
-        summary = super(Cortex, self)._find_summary_info()
+        summary = super(Cortex, self).summary_info()
         summary["Number of regions"] = numpy.sum(self.region_areas > 0.0)
         summary["Region area, mean (mm:math:`^2`)"] = self.region_areas.mean()
         summary["Region area, minimum (mm:math:`^2`)"] = self.region_areas.min()

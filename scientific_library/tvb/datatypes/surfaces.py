@@ -270,21 +270,22 @@ class Surface(HasTraits):
     _edge_length_max = None
     _edge_triangles = None
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Surface type": self.__class__.__name__,
-                   "Valid for simulations": self.valid_for_simulations,
-                   "Number of vertices": self.number_of_vertices,
-                   "Number of triangles": self.number_of_triangles,
-                   "Number of edges": self.number_of_edges,
-                   "Has two hemispheres": self.bi_hemispheric,
-                   "Edge lengths, mean (mm)": self.edge_length_mean,
-                   "Edge lengths, shortest (mm)": self.edge_length_min,
-                   "Edge lengths, longest (mm)": self.edge_length_max}
-        return summary
+        return {
+            "Surface type": self.__class__.__name__,
+            "Valid for simulations": self.valid_for_simulations,
+            "Number of vertices": self.number_of_vertices,
+            "Number of triangles": self.number_of_triangles,
+            "Number of edges": self.number_of_edges,
+            "Has two hemispheres": self.bi_hemispheric,
+            "Edge lengths, mean (mm)": self.edge_length_mean,
+            "Edge lengths, shortest (mm)": self.edge_length_min,
+            "Edge lengths, longest (mm)": self.edge_length_max
+        }
 
     def geodesic_distance(self, sources, max_dist=None, targets=None):
         """

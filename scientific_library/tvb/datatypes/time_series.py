@@ -36,14 +36,14 @@ methods that are associated with the time-series data.
 
 """
 
-import json
 import numpy
+
 from tvb.basic.traits import exceptions, types_mapped
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.arguments_serialisation import (preprocess_space_parameters, preprocess_time_parameters,
     postprocess_voxel_ts)
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Int, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Int, Float, narray_summary_info
 
 LOG = get_logger(__name__)
 
@@ -196,17 +196,19 @@ class TimeSeries(HasTraits):
                                                   'operations': ['==', '!=', 'like']}})
         return filters
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
         """
-        summary = {"Time-series type": self.__class__.__name__,
-                   "Time-series name": self.title,
-                   "Dimensions": self.labels_ordering,
-                   "Time units": self.sample_period_unit,
-                   "Sample period": self.sample_period,
-                   "Length": self.sample_period * self.get_data_shape('data')[0]}
-        summary.update(self.get_info_about_array('data'))
+        summary = {
+            "Time-series type": self.__class__.__name__,
+            "Time-series name": self.title,
+            "Dimensions": self.labels_ordering,
+            "Time units": self.sample_period_unit,
+            "Sample period": self.sample_period,
+            "Length": self.sample_period * self.data.shape[0]
+        }
+        summary.update(narray_summary_info(self.data))
         return summary
 
 
@@ -237,12 +239,12 @@ class SensorsTSBase(TimeSeries):
             return range(min(8, len(self.get_space_labels())))
         return []
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
         """
-        summary = super(SensorsTSBase, self)._find_summary_info()
-        summary.update({"Source Sensors": self.sensors.display_name})
+        summary = super(SensorsTSBase, self).summary_info()
+        summary.update({"Source Sensors": self.sensors.title})
         return summary
 
 
@@ -289,15 +291,17 @@ class TimeSeriesRegion(TimeSeries):
         # self.has_surface_mapping = self.region_mapping is not None or self._region_mapping is not None
         # self.has_volume_mapping = self.region_mapping_volume is not None or self._region_mapping_volume is not None
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
         """
-        summary = super(TimeSeriesRegion, self)._find_summary_info()
-        summary.update({"Source Connectivity": self.connectivity.display_name,
-                        "Region Mapping": self.region_mapping.display_name if self.region_mapping else "None",
-                        "Region Mapping Volume": (self.region_mapping_volume.display_name
-                                                  if self.region_mapping_volume else "None")})
+        summary = super(TimeSeriesRegion, self).summary_info()
+        summary.update({
+            "Source Connectivity": self.connectivity.title,
+            "Region Mapping": self.region_mapping.title if self.region_mapping else "None",
+            "Region Mapping Volume": (self.region_mapping_volume.title
+                                      if self.region_mapping_volume else "None")
+        })
         return summary
 
     def get_space_labels(self):
@@ -434,12 +438,12 @@ class TimeSeriesSurface(TimeSeries):
         """
         return ['signal-%d' % i for i in range(min(self._length_3d, self.SELECTION_LIMIT))]
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
         """
-        summary = super(TimeSeriesSurface, self)._find_summary_info()
-        summary.update({"Source Surface": self.surface.display_name})
+        summary = super(TimeSeriesSurface, self).summary_info()
+        summary.update({"Source Surface": self.surface.title})
         return summary
 
     def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
@@ -462,12 +466,12 @@ class TimeSeriesVolume(TimeSeries):
     volume = Attr(field_type=volumes.Volume)
     labels_ordering = List(of=str, default=("Time", "X", "Y", "Z"))
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
         """
-        summary = super(TimeSeriesVolume, self)._find_summary_info()
-        summary.update({"Source Volume": self.volume.display_name})
+        summary = super(TimeSeriesVolume, self).summary_info()
+        summary.update({"Source Volume": self.volume.title})
         return summary
 
     def configure(self):

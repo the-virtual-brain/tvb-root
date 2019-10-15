@@ -71,17 +71,33 @@ class PrincipalComponents(HasTraits):
 
     normalised_component_time_series = NArray(label="Normalised component time series")
 
-    def _find_summary_info(self):
+
+    def configure(self):
+        """
+        Invoke the compute methods for computable attributes that haven't been
+        set during initialization.
+        """
+        super(PrincipalComponents, self).configure()
+
+        if self.trait.use_storage is False and sum(self.get_data_shape('weights')) != 0:
+            if self.norm_source.size == 0:
+                self.compute_norm_source()
+
+            if self.component_time_series.size == 0:
+                self.compute_component_time_series()
+
+            if self.normalised_component_time_series.size == 0:
+                self.compute_normalised_component_time_series()
+
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Mode decomposition type": self.__class__.__name__}
-        summary["Source"] = self.source.title
-        # summary["Number of variables"] = self...
-        # summary["Number of mewasurements"] = self...
-        # summary["Number of components"] = self...
-        # summary["Number required for 95%"] = self...
+        summary = {
+            "Mode decomposition type": self.__class__.__name__,
+            "Source": self.source.title
+        }
         return summary
 
     def compute_norm_source(self):
@@ -199,11 +215,12 @@ class IndependentComponents(HasTraits):
                 mixing_matrix[:, :, var, mode] = numpy.array(numpy.dot(temp.T, (numpy.dot(temp, temp.T)).T))
         self.mixing_matrix = mixing_matrix
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Mode decomposition type": self.__class__.__name__}
-        summary["Source"] = self.source.title
-        return summary
+        return {
+            "Mode decomposition type": self.__class__.__name__,
+            "Source": self.source.title
+        }

@@ -115,13 +115,12 @@ class LookUpTable(HasTraits):
         if self.dx.size == 0:
             self.compute_search_indices()
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this dataType, if any ...
         """
-        summary = {"Number of values": self.number_of_values}
-        return summary
+        return {"Number of values": self.number_of_values}
 
     def compute_search_indices(self):
         """

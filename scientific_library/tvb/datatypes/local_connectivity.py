@@ -31,11 +31,12 @@
 
 import numpy
 import scipy.sparse
+
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits import exceptions
 from tvb.datatypes import equations, surfaces
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
 
 
 LOG = get_logger(__name__)
@@ -145,16 +146,13 @@ class LocalConnectivity(HasTraits):
         metadata = self.get_metadata('matrix')
         return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        return self.get_info_about_array('matrix',
-                                         [self.METADATA_ARRAY_MAX,
-                                          self.METADATA_ARRAY_MIN,
-                                          self.METADATA_ARRAY_MEAN,
-                                          self.METADATA_ARRAY_SHAPE])
+        I, J, V = scipy.sparse.find(self.matrix)
+        return narray_summary_info(V, ar_name='matrix-nonzero')
 
     def compute_sparse_matrix(self):
         """

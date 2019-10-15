@@ -106,14 +106,15 @@ class Sensors(HasTraits):
         self.number_of_sensors = self.labels.shape[0]
 
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        summary = {"Sensor type": self.sensors_type,
-                   "Number of Sensors": self.number_of_sensors}
-        return summary
+        return {
+            "Sensor type": self.sensors_type,
+            "Number of Sensors": self.number_of_sensors
+        }
 
 
     def sensors_to_surface(self, surface_to_map):

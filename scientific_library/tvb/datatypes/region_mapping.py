@@ -118,16 +118,6 @@ class RegionMapping(HasTraits):
         new_region_map.array_data = self.array_data
         return new_region_map
 
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance of this datatype.
-        """
-        summary = super(RegionMapping, self)._find_summary_info()
-        summary.update({"Source Surface": self.surface.display_name,
-                        "Source Surface GID": self.surface.gid,
-                        "Connectivity GID": self.connectivity.gid,
-                        "Connectivity": self.connectivity.display_name})
-        return summary
 
 
 class RegionVolumeMapping(HasTraits):
@@ -229,13 +219,3 @@ class RegionVolumeMapping(HasTraits):
                 [result_y.tolist()],
                 [result_z.tolist()]]
 
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance of this datatype.
-        """
-        summary = super(RegionVolumeMapping, self)._find_summary_info()
-        summary.update({"Source Volume": self.volume.display_name,
-                        "Source Volume GID": self.volume.gid,
-                        "Connectivity GID": self.connectivity.gid,
-                        "Connectivity": self.connectivity.display_name})
-        return summary

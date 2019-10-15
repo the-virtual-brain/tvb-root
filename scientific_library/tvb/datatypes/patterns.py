@@ -57,7 +57,7 @@ class SpatialPattern(HasTraits):
     space = None
     _spatial_pattern = None
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this DataType.
         """
@@ -98,9 +98,9 @@ class SpatioTemporalPattern(SpatialPattern):
     time = None
     _temporal_pattern = None
 
-    def _find_summary_info(self):
+    def summary_info(self):
         """ Extend the base class's summary dictionary. """
-        summary = super(SpatioTemporalPattern, self)._find_summary_info()
+        summary = super(SpatioTemporalPattern, self).summary_info()
         summary["Temporal equation"] = self.temporal.__class__.__name__
         summary["Temporal parameters"] = self.temporal.parameters
         return summary

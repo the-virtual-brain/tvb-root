@@ -51,9 +51,11 @@ class Volume(HasTraits):
     voxel_size = NArray(label="Voxel size") # need a triplet, xyz
     voxel_unit = Attr(str, label="Voxel Measure Unit", default="mm")
 
-    def _find_summary_info(self):
-        summary = {"Volume type": self.__class__.__name__,
-                   "Origin": self.origin,
-                   "Voxel size": self.voxel_size,
-                   "Units": self.voxel_unit}
-        return summary
+    def summary_info(self):
+        return {
+            "Volume type": self.__class__.__name__,
+            "Origin": self.origin,
+            "Voxel size": self.voxel_size,
+            "Units": self.voxel_unit
+        }
+

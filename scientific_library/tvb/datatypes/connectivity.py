@@ -42,7 +42,7 @@ import numpy
 import scipy.stats
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
-from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int
+from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
 from tvb.basic.traits.types_mapped import MappedType
 
 
@@ -430,43 +430,30 @@ class Connectivity(HasTraits):
         if (self.weights.transpose() == self.weights).all():
             self.undirected = True
 
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance
-        of this dataType.
-        """
-        summary = {"Number of regions": self.number_of_regions,
-                   "Number of connections": self.number_of_connections,
-                   "Undirected": self.undirected}
-
-        summary.update(self.get_info_about_array('areas',
-                                                 [self.METADATA_ARRAY_MAX,
-                                                  self.METADATA_ARRAY_MIN,
-                                                  self.METADATA_ARRAY_MEAN]))
-
-        summary.update(self.get_info_about_array('weights',
-                                                 [self.METADATA_ARRAY_MAX,
-                                                  self.METADATA_ARRAY_MEAN,
-                                                  self.METADATA_ARRAY_VAR,
-                                                  self.METADATA_ARRAY_MIN_NON_ZERO,
-                                                  self.METADATA_ARRAY_MEAN_NON_ZERO,
-                                                  self.METADATA_ARRAY_VAR_NON_ZERO]))
-
-        summary.update(self.get_info_about_array('tract_lengths',
-                                                 [self.METADATA_ARRAY_MAX,
-                                                  self.METADATA_ARRAY_MEAN,
-                                                  self.METADATA_ARRAY_VAR,
-                                                  self.METADATA_ARRAY_MIN_NON_ZERO,
-                                                  self.METADATA_ARRAY_MEAN_NON_ZERO,
-                                                  self.METADATA_ARRAY_VAR_NON_ZERO]))
-
-        summary.update(self.get_info_about_array('tract_lengths',
-                                                 [self.METADATA_ARRAY_MAX_NON_ZERO,
-                                                  self.METADATA_ARRAY_MIN_NON_ZERO,
-                                                  self.METADATA_ARRAY_MEAN_NON_ZERO,
-                                                  self.METADATA_ARRAY_VAR_NON_ZERO],
-                                                 mask_array_name='weights', key_suffix=" (connections)"))
-
+    def summary_info(self):
+        summary = {
+            "Number of regions": self.number_of_regions,
+            "Number of connections": self.number_of_connections,
+            "Undirected": self.undirected,
+        }
+        summary.update(narray_summary_info(self.areas, ar_name='areas'))
+        summary.update(narray_summary_info(self.weights, ar_name='weights'))
+        summary.update(narray_summary_info(
+            self.weights[self.weights.nonzero()],
+            ar_name='weights-non-zero',
+            omit_shape=True))
+        summary.update(narray_summary_info(
+            self.tract_lengths,
+            ar_name='tract_lengths',
+            omit_shape=True))
+        summary.update(narray_summary_info(
+            self.tract_lengths[self.tract_lengths.nonzero()],
+            ar_name='tract_lengths-non-zero',
+            omit_shape=True))
+        summary.update(narray_summary_info(
+            self.tract_lengths[self.weights.nonzero()],
+            ar_name='tract_lengths (connections)',
+            omit_shape=True))
         return summary
 
     def set_idelays(self, dt):
