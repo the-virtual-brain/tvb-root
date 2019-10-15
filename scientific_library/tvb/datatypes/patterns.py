@@ -48,10 +48,79 @@ from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
 LOG = get_logger(__name__)
 
 
-class SpatioTemporalCall(object):
+class SpatialPattern(types_mapped.MappedType):
     """
-    A call method to be added to all Spatio- Temporal classes
+    Equation for space variation.
     """
+
+    spatial = equations.FiniteSupportEquation(label="Spatial Equation", order=2)
+    space = None
+    _spatial_pattern = None
+
+    def _find_summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this DataType.
+        """
+        return {"Type": self.__class__.__name__,
+                "Spatial equation": self.spatial.__class__.__name__,
+                "Spatial parameters": self.spatial.parameters}
+
+    @property
+    def spatial_pattern(self):
+        """
+        Return a discrete representation of the spatial pattern.
+        """
+        return self._spatial_pattern
+
+    def configure_space(self, distance):
+        """
+        Stores the distance vector as an attribute of the spatiotemporal pattern
+        and uses it to generate the spatial pattern vector.
+
+        Depending on equations used and interpretation distance can be an actual
+        physical distance, on a surface,  geodesic distance (along the surface)
+        away for some focal point, or a per node weighting...
+        """
+        # Set the discrete representation of space.
+        self.space = distance
+        # Generate a discrete representation of the spatial pattern.
+        # The argument x represents a distance, or effective distance, for each node in the space.
+        self._spatial_pattern = numpy.sum(self.spatial.evaluate(self.space), axis=1)[:, numpy.newaxis]
+
+
+class SpatioTemporalPattern(SpatialPattern):
+    """
+    Combine space and time equations.
+    """
+
+    temporal = equations.TemporalApplicableEquation(label="Temporal Equation", order=3)
+    #space must be shape (x, 1); time must be shape (1, t)
+    time = None
+    _temporal_pattern = None
+
+    def _find_summary_info(self):
+        """ Extend the base class's summary dictionary. """
+        summary = super(SpatioTemporalPattern, self)._find_summary_info()
+        summary["Temporal equation"] = self.temporal.__class__.__name__
+        summary["Temporal parameters"] = self.temporal.parameters
+        return summary
+
+    @property
+    def temporal_pattern(self):
+        """
+        Return a discrete representation of the temporal pattern.
+        """
+        return self._temporal_pattern
+
+    def configure_time(self, time):
+        """
+        Stores the time vector, physical units (ms), as an attribute of the
+        spatio-temporal pattern and uses it to generate the temporal pattern
+        vector.
+        """
+        self.time = time
+        # Generate a discrete representation of the temporal pattern.
+        self._temporal_pattern = numpy.reshape(self.temporal.evaluate(self.time), (1, -1))
 
     def __call__(self, temporal_indices=None, spatial_indices=None):
         """
@@ -70,109 +139,17 @@ class SpatioTemporalCall(object):
         potentially quite large.
         """
         pattern = None
-        if (temporal_indices is not None) and (spatial_indices is None):
-            pattern = (self.spatial_pattern * self.temporal_pattern[0, temporal_indices])
-
-        elif (temporal_indices is None) and (spatial_indices is None):
-            pattern = self.spatial_pattern * self.temporal_pattern
-
-        elif (temporal_indices is not None) and (spatial_indices is not None):
-            pattern = (self.spatial_pattern[spatial_indices, 0] * self.temporal_pattern[0, temporal_indices])
-
-        elif (temporal_indices is None) and (spatial_indices is not None):
-            pattern = (self.spatial_pattern[spatial_indices, 0] * self.temporal_pattern)
-
+        if temporal_indices is not None and spatial_indices is None:
+            pattern = self._spatial_pattern * self._temporal_pattern[0, temporal_indices]
+        elif temporal_indices is None and spatial_indices is None:
+            pattern = self._spatial_pattern * self._temporal_pattern
+        elif temporal_indices is not None and spatial_indices is not None:
+            pattern = self._spatial_pattern[spatial_indices, 0] * self._temporal_pattern[0, temporal_indices]
+        elif temporal_indices is None and spatial_indices is not None:
+            pattern = self._spatial_pattern[spatial_indices, 0] * self._temporal_pattern
         else:
             LOG.error("%s: Well, that shouldn't be possible..." % repr(self))
         return pattern
-
-
-class SpatialPattern(HasTraits):
-    """
-    Equation for space variation.
-    """
-
-    spatial = equations.FiniteSupportEquation(label="Spatial Equation", order=2)
-    space = None
-    _spatial_pattern = None
-
-    def _find_summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance of this DataType.
-        """
-        return {"Type": self.__class__.__name__,
-                "Spatial equation": self.spatial.__class__.__name__,
-                "Spatial parameters": self.spatial.parameters}
-
-    def _get_spatial_pattern(self):
-        """
-        Return a discrete representation of the spatial pattern.
-        """
-        return self._spatial_pattern
-
-    def _set_spatial_pattern(self, x):
-        """
-        Generate a discrete representation of the spatial pattern.
-        The argument x represents a distance, or effective distance, for each node in the space.
-        """
-        self._spatial_pattern = numpy.sum(self.spatial.evaluate(x), axis=1)[:, numpy.newaxis]
-
-    spatial_pattern = property(fget=_get_spatial_pattern, fset=_set_spatial_pattern)
-
-    def configure_space(self, distance):
-        """
-        Stores the distance vector as an attribute of the spatiotemporal pattern
-        and uses it to generate the spatial pattern vector.
-
-        Depending on equations used and interpretation distance can be an actual
-        physical distance, on a surface,  geodesic distance (along the surface)
-        away for some focal point, or a per node weighting...
-        """
-        # Set the discrete representation of space.
-        self.space = distance
-        self.spatial_pattern = self.space
-
-
-class SpatioTemporalPattern(SpatialPattern, SpatioTemporalCall):
-    """
-    Combine space and time equations.
-    """
-
-    temporal = equations.TemporalApplicableEquation(label="Temporal Equation", order=3)
-    #space must be shape (x, 1); time must be shape (1, t)
-    time = None
-    _temporal_pattern = None
-
-    def _find_summary_info(self):
-        """ Extend the base class's summary dictionary. """
-        summary = super(SpatioTemporalPattern, self)._find_summary_info()
-        summary["Temporal equation"] = self.temporal.__class__.__name__
-        summary["Temporal parameters"] = self.temporal.parameters
-        return summary
-
-    def _get_temporal_pattern(self):
-        """
-        Return a discrete representation of the temporal pattern.
-        """
-        return self._temporal_pattern
-
-
-    def _set_temporal_pattern(self, t):
-        """
-        Generate a discrete representation of the temporal pattern.
-        """
-        self._temporal_pattern = numpy.reshape(self.temporal.evaluate(t), (1, -1))
-
-    temporal_pattern = property(fget=_get_temporal_pattern, fset=_set_temporal_pattern)
-
-    def configure_time(self, time):
-        """
-        Stores the time vector, physical units (ms), as an attribute of the
-        spatio-temporal pattern and uses it to generate the temporal pattern
-        vector.
-        """
-        self.time = time
-        self.temporal_pattern = self.time
 
 
 class StimuliRegion(SpatioTemporalPattern):

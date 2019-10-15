@@ -44,7 +44,6 @@ class TestPatterns(BaseTestCase):
     def test_spatialpattern(self):
         dt = patterns.SpatialPattern()
         dt.spatial = equations.DoubleGaussian()
-        dt.spatial_pattern = numpy.arange(100).reshape((10, 10))
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
@@ -57,7 +56,6 @@ class TestPatterns(BaseTestCase):
         dt = patterns.SpatioTemporalPattern()
         dt.spatial = equations.DoubleGaussian()
         dt.temporal = equations.Gaussian()
-        dt.spatial_pattern = numpy.arange(100).reshape((10, 10))
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
