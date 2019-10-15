@@ -38,9 +38,8 @@ return a ComplexCoherence datatype.
 
 import numpy
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from scipy import signal as sp_signal
 from tvb.datatypes.time_series import TimeSeries
 from tvb.basic.logger.builder import get_logger
@@ -55,7 +54,7 @@ SUPPORTED_WINDOWING_FUNCTIONS = ("hamming", "bartlett", "blackman", "hanning")
 # Nested `for` loops seem a 'good' solution instead of creating enormous ndarrays
 # to compute the FFT and derived complex spectra at once
 
-class NodeComplexCoherence(core.Type):
+class NodeComplexCoherence(HasTraits):
     """
     A class for calculating the FFT of a TimeSeries and returning
     a ComplexCoherenceSpectrum datatype.
@@ -84,89 +83,90 @@ class NodeComplexCoherence(core.Type):
     
     """
 
-    time_series = TimeSeries(
+    time_series = Attr(
+        field_type=TimeSeries,
         label="Time Series",
         required=True,
         doc="""The timeseries for which the CrossCoherence and ComplexCoherence is to be computed.""")
 
-    epoch_length = basic.Float(
+    epoch_length = Attr(
+        field_type=float,
         label="Epoch length [ms]",
         default=1000.0,
-        order=-1,
         required=False,
         doc="""In general for lengthy EEG recordings (~30 min), the timeseries are divided into equally 
         sized segments (~ 20-40s). These contain the  event that is to be characterized by means of the 
         cross coherence. Additionally each epoch block will be further divided into segments to  which 
         the FFT will be applied.""")
 
-    segment_length = basic.Float(
+    segment_length = Attr(
+        field_type=float,
         label="Segment length [ms]",
         default=500.0,
-        order=-1,
         required=False,
         doc="""The timeseries can be segmented into equally sized blocks (overlapping if necessary). 
         The segment length determines the frequency resolution of the resulting power spectra -- 
         longer windows produce finer frequency resolution. """)
 
-    segment_shift = basic.Float(
+    segment_shift = Attr(
+        field_type=float,
         label="Segment shift [ms]",
         default=250.0,
         required=False,
-        order=-1,
         doc="""Time length by which neighboring segments are shifted. e.g. 
         `segment shift` = `segment_length` / 2 means 50% overlapping segments.""")
 
-    window_function = basic.String(
+    window_function = Attr(
+        field_type=str,
         label="Windowing function",
         default='hanning',
         required=False,
-        order=-1,
         doc="""Windowing functions can be applied before the FFT is performed. Default is `hanning`, 
         possibilities are: 'hamming'; 'bartlett'; 'blackman'; and 'hanning'. See, numpy.<function_name>.""")
 
-    average_segments = basic.Bool(
+    average_segments = Attr(
+        field_type=bool,
         label="Average across segments",
         default=True,
         required=False,
-        order=-1,
         doc="""Flag. If `True`, compute the mean Cross Spectrum across  segments.""")
 
-    subtract_epoch_average = basic.Bool(
+    subtract_epoch_average = Attr(
+        field_type=bool,
         label="Subtract average across epochs",
         default=True,
         required=False,
-        order=-1,
         doc="""Flag. If `True` and if the number of epochs is > 1, you can optionally subtract the 
         mean across epochs before computing the complex coherence.""")
 
-    zeropad = basic.Integer(
+    zeropad = Attr(
+        field_type=int,
         label="Zeropadding",
         default=0,
         required=False,
-        order=-1,
         doc="""Adds `n` zeros at the end of each segment and at the end of window_function. 
         It is not yet functional.""")
 
-    detrend_ts = basic.Bool(
+    detrend_ts = Attr(
+        field_type=bool,
         label="Detrend time series",
         default=False,
         required=False,
-        order=-1,
         doc="""Flag. If `True` removes linear trend along the time dimension before applying FFT.""")
 
-    max_freq = basic.Float(
+    max_freq = Attr(
+        field_type=float,
         label="Maximum frequency",
         default=1024.0,
-        order=-1,
         required=False,
         doc="""Maximum frequency points (e.g. 32., 64., 128.) represented in the output. 
         Default is segment_length / 2 + 1.""")
 
-    npat = basic.Float(
+    npat = Attr(
+        field_type=float,
         label="dummy variable",
         default=1.0,
         required=False,
-        order=-1,
         doc="""This attribute appears to be related to an input projection matrix... Which is not yet implemented""")
 
 

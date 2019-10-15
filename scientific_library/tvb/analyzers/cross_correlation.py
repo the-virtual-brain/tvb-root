@@ -39,8 +39,8 @@ temporal_correlations.CrossCorrelation dataype.
 import numpy
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.temporal_correlations as temporal_correlations
-import tvb.basic.traits.core as core
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from scipy.signal.signaltools import correlate
 from tvb.basic.logger.builder import get_logger
 
@@ -49,7 +49,7 @@ LOG = get_logger(__name__)
 
 
 
-class CrossCorrelate(core.Type):
+class CrossCorrelate(HasTraits):
     """
     Compute the node-pairwise cross-correlation of the given input 4D TimeSeries DataType.
     
@@ -59,7 +59,8 @@ class CrossCorrelate(core.Type):
     See: http://www.scipy.org/doc/api_docs/SciPy.signal.signaltools.html#correlate
     """
 
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
         required=True,
         doc="""The time-series for which the cross correlation sequences are calculated.""")

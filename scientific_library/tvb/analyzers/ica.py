@@ -40,16 +40,14 @@ import numpy
 from sklearn.decomposition import fastica
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 
 
 LOG = get_logger(__name__)
 
 
-class fastICA(core.Type):
+class fastICA(HasTraits):
     """
     Takes a TimeSeries datatype (x) and returns the unmixed temporal sources (S) 
     and the estimated mixing matrix (A).
@@ -65,12 +63,14 @@ class fastICA(core.Type):
 
     """
     
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
         required=True,
         doc="The timeseries to which the ICA is to be applied.")
             
-    n_components = basic.Integer(
+    n_components = Attr(
+        field_type=int,
         label="Number of principal components to unmix.",
         required=False,
         default=None,

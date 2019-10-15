@@ -42,9 +42,8 @@ import numpy
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.graph as graph
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -52,7 +51,7 @@ LOG = get_logger(__name__)
 
 
 
-class CorrelationCoefficient(core.Type):
+class CorrelationCoefficient(HasTraits):
     """
     Compute the node-pairwise pearson correlation coefficient of the
     given input 4D TimeSeries  datatype.
@@ -63,24 +62,27 @@ class CorrelationCoefficient(core.Type):
     See: http://docs.scipy.org/doc/numpy/reference/generated/numpy.corrcoef.html
     """
 
-    time_series = time_series.TimeSeries(
-        label = "Time Series",
-        required = True,
-        doc = """The time-series for which the cross correlation matrices are
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the cross correlation matrices are
         calculated.""")
 
-    t_start = basic.Float(
-        label = ":math:`t_{start}`",
-        default = 0.9765625,
-        required = True,
-        doc = """Time start point (ms). By default it uses the default Monitor sample period.
+    t_start = Attr(
+        field_type=float,
+        label=":math:`t_{start}`",
+        default=0.9765625,
+        required=True,
+        doc="""Time start point (ms). By default it uses the default Monitor sample period.
         The starting time point of a time series is not zero, but the monitor's sample period. """)
 
-    t_end = basic.Float(
-        label = ":math:`t_{end}`",
-        default = 1000.,
-        required = True,
-        doc = """ End time point (ms) """)
+    t_end = Attr(
+        field_type=float,
+        label=":math:`t_{end}`",
+        default=1000.,
+        required=True,
+        doc=""" End time point (ms) """)
 
 
     def evaluate(self):

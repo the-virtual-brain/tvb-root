@@ -44,15 +44,15 @@ import matplotlib.mlab as mlab
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
-import tvb.basic.traits.core as core
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
 
 
 
-class PCA(core.Type):
+class PCA(HasTraits):
     """
     Return principal component weights and the fraction of the variance that 
     they explain. 
@@ -64,7 +64,8 @@ class PCA(core.Type):
           sampled at 1024Hz, would need to be greater than 16 seconds long.
     """
     
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label = "Time Series",
         required = True,
         doc = """The timeseries to which the PCA is to be applied. NOTE: The 

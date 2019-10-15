@@ -37,7 +37,8 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 """
 import numpy as np
 import tvb.datatypes.time_series as time_series
-from tvb.basic.traits import core, types_basic, util
+from tvb.basic.traits import util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 from scipy.spatial.distance import pdist
 from sklearn.manifold import SpectralEmbedding
@@ -48,7 +49,7 @@ from numpy import linalg
 LOG = get_logger(__name__)
 
 
-class FcdCalculator(core.Type):
+class FcdCalculator(HasTraits):
     """
     The present class will do the following actions:
 
@@ -79,12 +80,14 @@ class FcdCalculator(core.Type):
 
     """
 
-    time_series = time_series.TimeSeriesRegion(
+    time_series = Attr(
+        field_type=time_series.TimeSeriesRegion,
         label="Time Series",
         required=True,
         doc="""The time-series for which the fcd matrices are calculated.""")
 
-    sw = types_basic.Float(
+    sw = Attr(
+        field_type=float,
         label="Sliding window length (ms)",
         default=120000,
         doc="""Length of the time window used to divided the time series.
@@ -93,7 +96,8 @@ class FcdCalculator(core.Type):
         calculate FC(ti) as Pearson correlation. The ij element of the FCD matrix is calculated as the Pearson
         Correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
-    sp = types_basic.Float(
+    sp = Attr(
+        field_type=float,
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
         doc="""Spanning= (time windows length)-(overlapping between two consecutive time window). FCD matrix is

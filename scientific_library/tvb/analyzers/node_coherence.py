@@ -42,9 +42,8 @@ from matplotlib.pylab import detrend_linear
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -122,15 +121,17 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     return numpy.transpose(C[..., mask], (4, 0, 1, 2, 3)), fs[mask]
 
 
-class NodeCoherence(core.Type):
+class NodeCoherence(HasTraits):
     "Adapter for cross-coherence algorithm(s)"
 
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
         required=True,
         doc="""The timeseries to which the FFT is to be applied.""")
 
-    nfft = basic.Integer(
+    nfft = Attr(
+        field_type=int,
         label="Data-points per block",
         default=256,
         doc="""Should be a power of 2...""")

@@ -33,12 +33,11 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
 import tvb.datatypes.time_series as time_series_module
+from tvb.basic.neotraits.api import HasTraits, Attr
 
 
-class BaseTimeseriesMetricAlgorithm(core.Type):
+class BaseTimeseriesMetricAlgorithm(HasTraits):
     """
     This is a base class for all metrics on timeSeries dataTypes.
     Metric means an algorithm computing a single value for an entire TimeSeries.
@@ -49,23 +48,26 @@ class BaseTimeseriesMetricAlgorithm(core.Type):
 
     accept_filter = None
 
-    time_series = time_series_module.TimeSeries(
+    time_series = Attr(
+        field_type=time_series_module.TimeSeries,
         label="Time Series",
-        required=True, order=1,
+        required=True,
         doc="The TimeSeries for which the metric(s) will be computed.")
 
-    start_point = basic.Float(
+    start_point = Attr(
+        field_type=float,
         label="Start point (ms)",
         default=500.0,
-        required=False, order=2,
+        required=False,
         doc=""" The start point determines how many points of the TimeSeries will
         be discarded before computing the metric. By default it drops the
         first 500 ms.""")
 
-    segment = basic.Integer(
+    segment = Attr(
+        field_type=int,
         label="Segmentation factor",
         default=4,
-        required=False, order=3,
+        required=False,
         doc=""" Divide the input time-series into discrete equally sized sequences and
         use the last segment to compute the metric. It is only used when
         the start point is larger than the time-series length.""")

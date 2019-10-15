@@ -39,8 +39,8 @@ import numpy
 #TODO: Currently built around the Simulator's 4D timeseries -- generalise...
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.graph as graph
-import tvb.basic.traits.core as core
 import tvb.basic.traits.util as util
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -48,13 +48,14 @@ LOG = get_logger(__name__)
 
 
 
-class NodeCovariance(core.Type):
+class NodeCovariance(HasTraits):
     """
     Compute the temporal covariance of nodes in a TimeSeries dataType.
     A nodes x nodes matrix is returned for each (state-variable, mode).
     """
 
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
         required=True,
         doc="""The timeseries to which the NodeCovariance is to be applied.""")

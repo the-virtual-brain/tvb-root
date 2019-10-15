@@ -57,16 +57,14 @@ References:
 
 import numpy
 import tvb.datatypes.time_series as time_series
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Range
 import tvb.simulator.integrators as integrators_module
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
 
 
-class BalloonModel(core.Type):
+class BalloonModel(HasTraits):
     """
 
     A class for calculating the simulated BOLD signal given a TimeSeries
@@ -79,137 +77,136 @@ class BalloonModel(core.Type):
     #NOTE: a potential problem when the input is a TimeSeriesSurface.
     #TODO: add an spatial averaging for TimeSeriesSurface.
 
-    time_series = time_series.TimeSeries(
+    time_series = Attr(
+        field_type=time_series.TimeSeries,
         label="Time Series",
         required=True,
-        doc="""The timeseries that represents the input neural activity""",
-        order=1)
+        doc="""The timeseries that represents the input neural activity""")
     # it also sets the bold sampling period.
-    dt = basic.Float(
+    dt = Attr(
+        field_type=float,
         label=":math:`dt`",
         default=0.002,
         required=True,
         doc="""The integration time step size for the balloon model (s).
-        If none is provided, by default, the TimeSeries sample period is used.""",
-        order=2)
+        If none is provided, by default, the TimeSeries sample period is used.""")
 
-    integrator = integrators_module.Integrator(
+    integrator = Attr(
+        field_type=integrators_module.Integrator,
         label="Integration scheme",
         default=integrators_module.HeunDeterministic,
         required=True,
-        order=-1,
         doc=""" A tvb.simulator.Integrator object which is
         an integration scheme with supporting attributes such as 
         integration step size and noise specification for stochastic 
         methods. It is used to compute the time courses of the balloon model state 
         variables.""")
 
-    bold_model = basic.Enumerate(
+    bold_model = List(
+        of=str,
         label="Select BOLD model equations",
-        options=["linear", "nonlinear"],
-        default=["nonlinear"],
-        select_multiple=False,
-        doc="""Select the set of equations for the BOLD model.""",
-        order=4)
+        choices=("linear", "nonlinear"),
+        default=("nonlinear",),
+        # select_multiple=False,
+        doc="""Select the set of equations for the BOLD model.""")
 
-    RBM = basic.Bool(
+    RBM = Attr(
+        field_type=bool,
         label="Revised BOLD Model",
         default=True,
         required=True,
         doc="""Select classical vs revised BOLD model (CBM or RBM).
-        Coefficients  k1, k2 and k3 will be derived accordingly.""",
-        order=5)
+        Coefficients  k1, k2 and k3 will be derived accordingly.""")
 
-    neural_input_transformation = basic.Enumerate(
+    neural_input_transformation = List(
+        of=str,
         label="Neural input transformation",
-        options=["none", "abs_diff", "sum"],
-        default=["none"],
-        select_multiple=False,
+        choices=("none", "abs_diff", "sum"),
+        default=("none",),
+        # select_multiple=False,
         doc=""" This represents the operation to perform on the state-variable(s) of
         the model used to generate the input TimeSeries. ``none`` takes the
         first state-variable as neural input; `` abs_diff`` is the absolute
         value of the derivative (first order difference) of the first state variable; 
-        ``sum``: sum all the state-variables of the input TimeSeries.""",
-        order=3)
+        ``sum``: sum all the state-variables of the input TimeSeries.""")
 
-    tau_s = basic.Float(
+    tau_s = Attr(
+        field_type=float,
         label=r":math:`\tau_s`",
         default=0.65,
         required=True,
-        doc="""Balloon model parameter. Time of signal decay (s)""",
-        order=-1)
+        doc="""Balloon model parameter. Time of signal decay (s)""")
 
-    tau_f = basic.Float(
+    tau_f = Attr(
+        field_type=float,
         label=r":math:`\tau_f`",
         default=0.41,
         required=True,
         doc=""" Balloon model parameter. Time of flow-dependent elimination or
         feedback regulation (s). The average  time blood take to traverse the
         venous compartment. It is the  ratio of resting blood volume (V0) to
-        resting blood flow (F0).""",
-        order=-1)
+        resting blood flow (F0).""")
 
-    tau_o = basic.Float(
+    tau_o = Attr(
+        field_type=float,
         label=r":math:`\tau_o`",
         default=0.98,
         required=True,
         doc="""
         Balloon model parameter. Haemodynamic transit time (s). The average
         time blood take to traverse the venous compartment. It is the  ratio
-        of resting blood volume (V0) to resting blood flow (F0).""",
-        order=-1)
+        of resting blood volume (V0) to resting blood flow (F0).""")
 
-    alpha = basic.Float(
+    alpha = Attr(
+        field_type=float,
         label=r":math:`\tau_f`",
         default=0.32,
         required=True,
-        doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""",
-        order=-1)
+        doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""")
 
-    TE = basic.Float(
+    TE = Attr(
+        field_type=float,
         label=":math:`TE`",
         default=0.04,
         required=True,
-        doc="""BOLD parameter. Echo Time""",
-        order=-1)
+        doc="""BOLD parameter. Echo Time""")
 
-    V0 = basic.Float(
+    V0 = Attr(
+        field_type=float,
         label=":math:`V_0`",
         default=4.0,
         required=True,
-        doc="""BOLD parameter. Resting blood volume fraction.""",
-        order=-1)
+        doc="""BOLD parameter. Resting blood volume fraction.""")
 
-    E0 = basic.Float(
+    E0 = Attr(
+        field_type=float,
         label=":math:`E_0`",
         default=0.4,
         required=True,
-        doc="""BOLD parameter. Resting oxygen extraction fraction.""",
-        order=-1)
+        doc="""BOLD parameter. Resting oxygen extraction fraction.""")
 
-    epsilon = arrays.FloatArray(
+    epsilon = NArray(
         label=":math:`\epsilon`",
         default=numpy.array([0.5]),
-        range=basic.Range(lo=0.5, hi=2.0, step=0.25),
+        domain=Range(lo=0.5, hi=2.0, step=0.25),
         required=True,
         doc=""" BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
-        parameter could be derived from empirical data and spatialized.""",
-        order=-1)
+        parameter could be derived from empirical data and spatialized.""")
 
-    nu_0 = basic.Float(
+    nu_0 = Attr(
+        field_type=float,
         label=r":math:`\nu_0`",
         default=40.3,
         required=True,
-        doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""",
-        order=-1)
+        doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""")
 
-    r_0 = basic.Float(
+    r_0 = Attr(
+        field_type=float,
         label=":math:`r_0`",
         default=25.,
         required=True,
         doc=""" BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for
-        ``revised`` coefficients. """,
-        order=-1)
+        ``revised`` coefficients. """)
 
 
 
