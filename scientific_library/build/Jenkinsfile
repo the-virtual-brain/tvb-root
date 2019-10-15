@@ -8,7 +8,7 @@ pipeline {
     }
 
     stages {
-        stage ('Run tests in python 2 environment') {
+        stage ('Run tests in Python 2') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY2_TAG}'
@@ -24,7 +24,7 @@ pipeline {
             }
         }
 
-        stage ('Build Pypi packages python 2') {
+        stage ('Build Pypi packages for Python 2') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY2_TAG}'
@@ -32,14 +32,16 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
+                      rm -Rf dist
                       python setup.py sdist
                       python  setup.py bdist_wheel
+                      ls dist
                 '''
                 archiveArtifacts artifacts: 'dist/tvb*.tar.gz, dist/tvb*.whl'
             }
         }
 
-        stage ('Run tests in python 3 environment') {
+        stage ('Run tests in Python 3') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY3_TAG}'
@@ -55,7 +57,7 @@ pipeline {
             }
         }
 
-        stage ('Build Pypi packages python 3') {
+        stage ('Build Pypi packages for Python 3') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${PY3_TAG}'
@@ -65,6 +67,7 @@ pipeline {
                 sh '''#!/bin/bash
                       python setup.py sdist
                       python  setup.py bdist_wheel
+                      ls dist
                 '''
                 archiveArtifacts artifacts: 'dist/tvb*.tar.gz, dist/tvb*.whl'
             }
