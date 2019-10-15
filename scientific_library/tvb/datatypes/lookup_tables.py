@@ -156,8 +156,8 @@ class PsiTable(LookUpTable):
     """
 
     @staticmethod
-    def from_file(source_file="psi.npz", instance=None):
-        return LookUpTable.populate_table(instance or PsiTable(), source_file)
+    def from_file(source_file="psi.npz"):
+        return LookUpTable.populate_table(PsiTable(), source_file)
 
 
 class NerfTable(LookUpTable):
@@ -169,5 +169,5 @@ class NerfTable(LookUpTable):
     """
 
     @staticmethod
-    def from_file(source_file="nerf_int.npz", instance=None):
-        return LookUpTable.populate_table(instance or NerfTable(), source_file)
+    def from_file(source_file="nerf_int.npz"):
+        return LookUpTable.populate_table(NerfTable(), source_file)

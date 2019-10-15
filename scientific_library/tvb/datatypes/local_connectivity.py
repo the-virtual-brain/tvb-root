@@ -113,12 +113,9 @@ class LocalConnectivity(HasTraits):
         self.matrix = homogenious_conn
 
     @staticmethod
-    def from_file(source_file="local_connectivity_16384.mat", instance=None):
+    def from_file(source_file="local_connectivity_16384.mat"):
 
-        if instance is None:
-            result = LocalConnectivity()
-        else:
-            result = instance
+        result = LocalConnectivity()
 
         source_full_path = try_get_absolute_path("tvb_data.local_connectivity", source_file)
         reader = FileReader(source_full_path)

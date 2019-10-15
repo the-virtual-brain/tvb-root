@@ -37,7 +37,6 @@ from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
-
 EEG_POLYMORPHIC_IDENTITY = "projEEG"
 MEG_POLYMORPHIC_IDENTITY = "projMEG"
 SEEG_POLYMORPHIC_IDENTITY = "projSEEG"
@@ -82,19 +81,14 @@ class ProjectionMatrix(HasTraits):
 
     projection_data = NArray(label="Projection Matrix Data", default=None, required=True)
 
-
     @property
     def shape(self):
         return self.projection_data.shape
 
-
     @classmethod
-    def from_file(cls, source_file, matlab_data_name=None, is_brainstorm=False, instance=None):
+    def from_file(cls, source_file, matlab_data_name=None, is_brainstorm=False):
 
-        if instance is None:
-            proj = cls()
-        else:
-            proj = instance
+        proj = cls()
 
         source_full_path = try_get_absolute_path("tvb_data.projectionMatrix", source_file)
         reader = FileReader(source_full_path)
@@ -116,9 +110,8 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
 
     @classmethod
     def from_file(cls, source_file='projection_eeg_65_surface_16k.npy', matlab_data_name="ProjectionMatrix",
-                  is_brainstorm=False, instance=None):
-        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
-                                                  instance)
+                  is_brainstorm=False):
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm)
 
 
 class ProjectionSurfaceMEG(ProjectionMatrix):
@@ -131,10 +124,8 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
     sensors = Attr(field_type=sensors.SensorsMEG)
 
     @classmethod
-    def from_file(cls, source_file='projection_meg_276_surface_16k.npy', matlab_data_name=None, is_brainstorm=False,
-                  instance=None):
-        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
-                                                  instance)
+    def from_file(cls, source_file='projection_meg_276_surface_16k.npy', matlab_data_name=None, is_brainstorm=False):
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm)
 
 
 class ProjectionSurfaceSEEG(ProjectionMatrix):
@@ -147,7 +138,5 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     sensors = Attr(field_type=sensors.SensorsInternal)
 
     @classmethod
-    def from_file(cls, source_file='projection_seeg_588_surface_16k.npy', matlab_data_name=None, is_brainstorm=False,
-                  instance=None):
-        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
-                                                  instance)
+    def from_file(cls, source_file='projection_seeg_588_surface_16k.npy', matlab_data_name=None, is_brainstorm=False):
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm)

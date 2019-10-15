@@ -411,21 +411,16 @@ class Projection(Monitor):
 
     @classmethod
     def from_file(cls, sensors_fname, projection_fname, rm_f_name="regionMapping_16k_76.txt",
-                  period=1e3/1024.0, instance=None, **kwds):
+                  period=1e3/1024.0, **kwds):
         """
         Build Projection-based monitor from sensors and projection files, and
         any extra keyword arguments are passed to the monitor class constructor.
 
         """
-        if instance is None:
-            result = cls(period=period, **kwds)
-        else:
-            result = instance
-
+        result = cls(period=period, **kwds)
         result.sensors = cls.sensors.field_type.from_file(sensors_fname)
         result.projection = cls._projection_class().from_file(projection_fname)
         result.region_mapping = RegionMapping.from_file(rm_f_name)
-
         return result
 
     def analytic(self, loc, ori):

@@ -61,45 +61,13 @@ class RegionMapping(HasTraits):
     surface = Attr(field_type=Surface)
 
     @staticmethod
-    def from_file(source_file="regionMapping_16k_76.txt", instance=None):
-
-        if instance is None:
-            result = RegionMapping()
-        else:
-            result = instance
-
+    def from_file(source_file="regionMapping_16k_76.txt"):
         source_full_path = try_get_absolute_path("tvb_data.regionMapping", source_file)
         reader = FileReader(source_full_path)
 
+        result = RegionMapping()
         result.array_data = reader.read_array(dtype=numpy.int32)
         return result
-
-    def get_region_mapping_slice(self, start_idx, end_idx):
-        """
-        Get a slice of the region mapping as used by the region viewers.
-        For each vertex on the surface, alpha-indices will be the closest
-        region-index
-        :param start_idx: vertex index on the surface
-        :param end_idx: vertex index on the surface
-        :return: NumPy array with [closest_reg_idx ...]
-        """
-        if isinstance(start_idx, str):
-            start_idx = int(start_idx)
-        if isinstance(end_idx, str):
-            end_idx = int(end_idx)
-
-        return self.array_data[start_idx: end_idx].T
-
-
-    def get_triangles_mapping(self):
-        """
-        :return Numpy array of length triangles and for each the region corresponding to one of its vertices.
-        """
-        triangles_no = self.surface.number_of_triangles
-        result = []
-        for i in range(triangles_no):
-            result.append(self.array_data[self.surface.triangles[i][0]])
-        return numpy.array(result)
 
 
 class RegionVolumeMapping(HasTraits):
@@ -112,4 +80,3 @@ class RegionVolumeMapping(HasTraits):
     connectivity = Attr(Connectivity)
 
     volume = Attr(Volume)
-

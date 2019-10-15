@@ -69,7 +69,7 @@ class Sensors(HasTraits):
     orientations = NArray(required=False)
 
     number_of_sensors = Int(field_type=int, label="Number of sensors",
-                             doc="""The number of sensors described by these Sensors.""")
+                            doc="""The number of sensors described by these Sensors.""")
 
     # introduced to accommodate real sensors sets which have sensors
     # that should be zero during simulation i.e. ECG (heart), EOG,
@@ -78,22 +78,15 @@ class Sensors(HasTraits):
                     doc="The sensors in set which are used for signal data.")
 
     @classmethod
-    def from_file(cls, source_file="eeg_brainstorm_65.txt", instance=None):
+    def from_file(cls, source_file="eeg_brainstorm_65.txt"):
 
-        if instance is None:
-            result = cls()
-        else:
-            result = instance
-
+        result = cls()
         source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
         reader = FileReader(source_full_path)
 
         result.labels = reader.read_array(dtype=numpy.str, use_cols=(0,))
-
         result.locations = reader.read_array(use_cols=(1, 2, 3))
-
         return result
-
 
     def configure(self):
         """
@@ -102,7 +95,6 @@ class Sensors(HasTraits):
         """
         super(Sensors, self).configure()
         self.number_of_sensors = int(self.labels.shape[0])
-
 
     def summary_info(self):
         """
@@ -113,7 +105,6 @@ class Sensors(HasTraits):
             "Sensor type": self.sensors_type,
             "Number of Sensors": self.number_of_sensors
         }
-
 
     def sensors_to_surface(self, surface_to_map):
         """
@@ -233,10 +224,9 @@ class SensorsMEG(Sensors):
 
     has_orientation = Attr(field_type=bool, default=True)
 
-
     @classmethod
-    def from_file(cls, source_file="meg_151.txt.bz2", instance=None):
-        result = super(SensorsMEG, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="meg_151.txt.bz2"):
+        result = super(SensorsMEG, cls).from_file(source_file)
 
         source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
         reader = FileReader(source_full_path)
@@ -253,7 +243,6 @@ class SensorsInternal(Sensors):
 
     sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
 
-
     @classmethod
-    def from_file(cls, source_file="seeg_39.txt.bz2", instance=None):
-        return super(SensorsInternal, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="seeg_39.txt.bz2"):
+        return super(SensorsInternal, cls).from_file(source_file)

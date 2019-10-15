@@ -153,21 +153,16 @@ class Surface(HasTraits):
     valid_for_simulations = Attr(field_type=bool, default=True)
 
     @classmethod
-    def from_file(cls, source_file="cortex_16384.zip", instance=None):
+    def from_file(cls, source_file="cortex_16384.zip"):
         """Construct a Surface from source_file."""
 
-        if instance is None:
-            result = cls()
-        else:
-            result = instance
-
+        result = cls()
         source_full_path = try_get_absolute_path("tvb_data.surfaceData", source_file)
         reader = ZipReader(source_full_path)
 
         result.vertices = reader.read_array_from_file("vertices.txt")
         result.vertex_normals = reader.read_array_from_file("normals.txt")
         result.triangles = reader.read_array_from_file("triangles.txt", dtype=numpy.int32)
-
         return result
 
     def configure(self):
@@ -703,8 +698,8 @@ class SkinAir(Surface):
     surface_type = Final(OUTER_SKIN)
 
     @classmethod
-    def from_file(cls, source_file="outer_skin_4096.zip", instance=None):
-        return super(SkinAir, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="outer_skin_4096.zip"):
+        return super(SkinAir, cls).from_file(source_file)
 
 
 class BrainSkull(Surface):
@@ -713,8 +708,8 @@ class BrainSkull(Surface):
     surface_type = Final(INNER_SKULL)
 
     @classmethod
-    def from_file(cls, source_file="inner_skull_4096.zip", instance=None):
-        return super(BrainSkull, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="inner_skull_4096.zip"):
+        return super(BrainSkull, cls).from_file(source_file)
 
 
 class SkullSkin(Surface):
@@ -723,8 +718,8 @@ class SkullSkin(Surface):
     surface_type = Final(OUTER_SKULL)
 
     @classmethod
-    def from_file(cls, source_file="outer_skull_4096.zip", instance=None):
-        return super(SkullSkin, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="outer_skull_4096.zip"):
+        return super(SkullSkin, cls).from_file(source_file)
 
 
 class OpenSurface(Surface):
@@ -737,8 +732,8 @@ class EEGCap(OpenSurface):
     surface_type = Final(EEG_CAP)
 
     @classmethod
-    def from_file(cls, source_file="scalp_1082.zip", instance=None):
-        return super(EEGCap, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="scalp_1082.zip"):
+        return super(EEGCap, cls).from_file(source_file)
 
 
 class FaceSurface(OpenSurface):
@@ -747,8 +742,8 @@ class FaceSurface(OpenSurface):
     surface_type = Final(FACE)
 
     @classmethod
-    def from_file(cls, source_file="face_8614.zip", instance=None):
-        return super(FaceSurface, cls).from_file(source_file, instance)
+    def from_file(cls, source_file="face_8614.zip"):
+        return super(FaceSurface, cls).from_file(source_file)
 
 
 def make_surface(surface_type):

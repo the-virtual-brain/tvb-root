@@ -708,13 +708,9 @@ class Connectivity(HasTraits):
         return numpy.setdiff1d(numpy.r_[:self.number_of_regions], region_mapping)
 
     @staticmethod
-    def from_file(source_file="connectivity_76.zip", instance=None):
+    def from_file(source_file="connectivity_76.zip"):
 
-        if instance is None:
-            result = Connectivity()
-        else:
-            result = instance
-
+        result = Connectivity()
         source_full_path = try_get_absolute_path("tvb_data.connectivity", source_file)
 
         if source_file.endswith(".h5"):

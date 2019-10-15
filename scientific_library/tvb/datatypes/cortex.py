@@ -272,20 +272,9 @@ class Cortex(surfaces.CorticalSurface):
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip",
                   region_mapping_file=os.path.join("regionMapping_16k_76.txt"),
-                  local_connectivity_file=None, eeg_projection_file=None, instance=None):
+                  local_connectivity_file=None, eeg_projection_file=None):
 
-        result = super(Cortex, cls).from_file(source_file, instance)
-
-        if instance is not None:
-            # Called through constructor directly
-            if result.region_mapping is None:
-                result.region_mapping_data = region_mapping.RegionMapping.from_file()
-
-            if not result.eeg_projection:
-                result.eeg_projection = Cortex.from_file_projection_array()
-
-            if result.local_connectivity is None:
-                result.local_connectivity = local_connectivity.LocalConnectivity.from_file()
+        result = super(Cortex, cls).from_file(source_file)
 
         if region_mapping_file is not None:
             result.region_mapping_data = region_mapping.RegionMapping.from_file(region_mapping_file)
