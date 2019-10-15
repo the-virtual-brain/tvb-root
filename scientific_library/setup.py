@@ -40,7 +40,7 @@ import shutil
 import setuptools
 
 
-LIBRARY_VERSION = "2.0.b"
+LIBRARY_VERSION = "2.0a0"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
