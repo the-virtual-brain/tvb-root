@@ -36,7 +36,7 @@ Following Deco et al 2014.
 
 import numpy
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator.models.base import ModelNumbaDfun
 
 
@@ -207,8 +207,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Inhibitory global coupling scaling""")
 
-    state_variable_range = Attr(
-        field_type=dict,
+    state_variable_range = Final(
         default={
             "S_e": numpy.array([0.0, 1.0]),
             "S_i": numpy.array([0.0, 1.0])

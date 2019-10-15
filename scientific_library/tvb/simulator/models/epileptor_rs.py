@@ -35,7 +35,7 @@
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Attr, List, Range
+from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 
 class EpileptorRestingState(ModelNumbaDfun):
@@ -272,8 +272,7 @@ class EpileptorRestingState(ModelNumbaDfun):
 
     # Initialization.
     # Epileptor model is set in fixed point by default.
-    state_variable_range = Attr(
-        field_type=dict,
+    state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={
             "x1": numpy.array([-1.8, -1.4]),
