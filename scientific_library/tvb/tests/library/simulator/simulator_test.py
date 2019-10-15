@@ -191,7 +191,7 @@ class TestSimShort(BaseTestCase):
     def test_reg(self):
         test_simulator = Simulator()
 
-        test_simulator.configure(model=Generic2dOscillator,
+        test_simulator.configure(model=Epileptor,
                                  method='HeunStochastic',
                                  surface_sim=False)
         result = test_simulator.run_simulation()

@@ -30,9 +30,11 @@
 Hindmarsh-Rose-Jirsa Epileptor model.
 
 """
-
-from .base import ModelNumbaDfun, LOG, numpy, basic, arrays
+import numpy
+from .base import ModelNumbaDfun
 from numba import guvectorize, float64
+from tvb.basic.traits.neotraits import NArray, Attr, List
+
 
 @guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
 def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau, modification, ydot):
@@ -161,127 +163,111 @@ class Epileptor(ModelNumbaDfun):
     _ui_name = "Epileptor"
     ui_configurable_parameters = ["Iext", "Iext2", "r", "x0", "slope"]
 
-    a = arrays.FloatArray(
+    a = NArray(
         label="a",
-        default=numpy.array([1]),
-        doc="Coefficient of the cubic term in the first state variable",
-        order=-1)
+        default=numpy.array([1.0]),
+        doc="Coefficient of the cubic term in the first state variable")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label="b",
-        default=numpy.array([3]),
-        doc="Coefficient of the squared term in the first state variabel",
-        order=-1)
+        default=numpy.array([3.0]),
+        doc="Coefficient of the squared term in the first state variabel")
 
-    c = arrays.FloatArray(
+    c = NArray(
         label="c",
-        default=numpy.array([1]),
+        default=numpy.array([1.0]),
         doc="Additive coefficient for the second state variable, \
-        called :math:`y_{0}` in Jirsa paper",
-        order=-1)
+        called :math:`y_{0}` in Jirsa paper")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label="d",
-        default=numpy.array([5]),
-        doc="Coefficient of the squared term in the second state variable",
-        order=-1)
+        default=numpy.array([5.0]),
+        doc="Coefficient of the squared term in the second state variable")
 
-    r = arrays.FloatArray(
+    r = NArray(
         label="r",
-        range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
+        # range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state variable, \
-        called :math:`1/\\tau_{0}` in Jirsa paper",
-        order=4)
+        called :math:`1/\\tau_{0}` in Jirsa paper")
 
-    s = arrays.FloatArray(
+    s = NArray(
         label="s",
-        default=numpy.array([4]),
-        doc="Linear coefficient in the third state variable",
-        order=-1)
+        default=numpy.array([4.0]),
+        doc="Linear coefficient in the third state variable")
 
-    x0 = arrays.FloatArray(
+    x0 = NArray(
         label="x0",
-        range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
+        # range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
-        doc="Epileptogenicity parameter",
-        order=3)
+        doc="Epileptogenicity parameter")
 
-    Iext = arrays.FloatArray(
+    Iext = NArray(
         label="Iext",
-        range=basic.Range(lo=1.5, hi=5.0, step=0.1),
+        # range=basic.Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
-        doc="External input current to the first population",
-        order=1)
+        doc="External input current to the first population")
 
-    slope = arrays.FloatArray(
+    slope = NArray(
         label="slope",
-        range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
+        # range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
-        doc="Linear coefficient in the first state variable",
-        order=5)
+        doc="Linear coefficient in the first state variable")
 
-    Iext2 = arrays.FloatArray(
+    Iext2 = NArray(
         label="Iext2",
-        range=basic.Range(lo=0.0, hi=1.0, step=0.05),
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
-        doc="External input current to the second population",
-        order=2)
+        doc="External input current to the second population")
 
-    tau = arrays.FloatArray(
+    tau = NArray(
         label="tau",
-        default=numpy.array([10]),
-        doc="Temporal scaling coefficient in fifth state variable",
-        order=-1)
+        default=numpy.array([10.0]),
+        doc="Temporal scaling coefficient in fifth state variable")
 
-    aa = arrays.FloatArray(
+    aa = NArray(
         label="aa",
-        default=numpy.array([6]),
-        doc="Linear coefficient in fifth state variable",
-        order=-1)
-        
-    bb = arrays.FloatArray(
-        label="bb",
-        default=numpy.array([2]),
-        doc="Linear coefficient of lowpass excitatory coupling in fourth state variable",
-        order=-1)
+        default=numpy.array([6.0]),
+        doc="Linear coefficient in fifth state variable")
 
-    Kvf = arrays.FloatArray(
+    bb = NArray(
+        label="bb",
+        default=numpy.array([2.0]),
+        doc="Linear coefficient of lowpass excitatory coupling in fourth state variable")
+
+    Kvf = NArray(
         label="K_vf",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
-        doc="Coupling scaling on a very fast time scale.",
-        order=6)
+        # range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Coupling scaling on a very fast time scale.")
 
-    Kf = arrays.FloatArray(
+    Kf = NArray(
         label="K_f",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
-        doc="Correspond to the coupling scaling on a fast time scale.",
-        order=7)
+        # range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Correspond to the coupling scaling on a fast time scale.")
 
-    Ks = arrays.FloatArray(
+    Ks = NArray(
         label="K_s",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
-        doc="Permittivity coupling, that is from the fast time scale toward the slow time scale",
-        order=8)
+        # range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
+        doc="Permittivity coupling, that is from the fast time scale toward the slow time scale")
 
-    tt = arrays.FloatArray(
+    tt = NArray(
         label="tt",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.001, hi=10.0, step=0.001),
-        doc="Time scaling of the whole system",
-        order=9)
-        
-    modification = arrays.BoolArray(
-        label="modification",
-        default=numpy.array([0]),
-        doc="When modification is True, then use nonlinear influence on z. \
-        The default value is False, i.e., linear influence.",
-        order=10)
+        # range=basic.Range(lo=0.001, hi=10.0, step=0.001),
+        doc="Time scaling of the whole system")
 
-    state_variable_range = basic.Dict(
+    modification = NArray(
+        dtype=bool,
+        label="modification",
+        default=numpy.array([False]),
+        doc="When modification is True, then use nonlinear influence on z. \
+        The default value is False, i.e., linear influence.")
+
+    state_variable_range = Attr(
+        field_type=dict,
         label="State variable ranges [lo, hi]",
         default={"x1": numpy.array([-2., 1.]),
                  "y1": numpy.array([-20., 2.]),
@@ -289,23 +275,21 @@ class Epileptor(ModelNumbaDfun):
                  "x2": numpy.array([-2., 0.]),
                  "y2": numpy.array([0., 2.]),
                  "g": numpy.array([-1., 1.])},
-        doc="Typical bounds on state variables in the Epileptor model.",
-        order=16
-        )
+        doc="Typical bounds on state variables in the Epileptor model.")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=['x1', 'y1', 'z', 'x2', 'y2', 'g', 'x2 - x1'],
-        default=["x2 - x1", 'z'],
-        select_multiple=True,
+        choices=('x1', 'y1', 'z', 'x2', 'y2', 'g', 'x2 - x1'),
+        default=("x2 - x1", 'z'),
         doc="Quantities of the Epileptor available to monitor.",
-        order=100
     )
 
-    state_variables = ['x1', 'y1', 'z', 'x2', 'y2', 'g']
+    state_variables = ('x1', 'y1', 'z', 'x2', 'y2', 'g')
 
     _nvar = 6
-    cvar = numpy.array([0, 3], dtype=numpy.int32)
+    cvar = numpy.array([0, 3], dtype=numpy.int32)  # should these not be constant Attr's?
+    cvar.setflags(write=False)  # todo review this
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
@@ -365,8 +349,8 @@ class Epileptor(ModelNumbaDfun):
         # energy
         if_ydot2 = - 0.1 * y[2] ** 7
         else_ydot2 = 0
-        if modification:
-            h = h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+        if self.modification:
+            h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
         else:
             h = 4 * (y[0] - self.x0) + where(y[2] < 0., if_ydot2, else_ydot2)
         ydot[2] = self.tt * (self.r * (h - y[2] + self.Ks * c_pop1))
@@ -430,104 +414,91 @@ class Epileptor2D(ModelNumbaDfun):
     _ui_name = "Epileptor2D"
     ui_configurable_parameters = ["r", "Iext", "x0"]
     
-    a = arrays.FloatArray(
+    a = NArray(
         label="a",
-        default=numpy.array([1]),
-        doc="Coefficient of the cubic term in the first state-variable.",
-        order=1)
+        default=numpy.array([1.0]),
+        doc="Coefficient of the cubic term in the first state-variable.")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label="b",
-        default=numpy.array([3]),
-        doc="Coefficient of the squared term in the first state-variable.",
-        order=2)
-    
-    c = arrays.FloatArray(
+        default=numpy.array([3.0]),
+        doc="Coefficient of the squared term in the first state-variable.")
+
+    c = NArray(
         label="c",
-        default=numpy.array([1]),
+        default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable x_{2}, \
-        called :math:`y_{0}` in Jirsa paper.",
-        order=3)
+        called :math:`y_{0}` in Jirsa paper.")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label="d",
-        default=numpy.array([5]),
-        doc="Coefficient of the squared term in the second state-variable x_{2}.",
-        order=4)
+        default=numpy.array([5.0]),
+        doc="Coefficient of the squared term in the second state-variable x_{2}.")
 
-    r = arrays.FloatArray(
+    r = NArray(
         label="r",
-        range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
+        # range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the slow state-variable, \
-        called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).",
-        order=5)
+        called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).")
 
-    x0 = arrays.FloatArray(
+    x0 = NArray(
         label="x0",
-        range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
+        # range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
-        doc="Epileptogenicity parameter.",
-        order=6)
+        doc="Epileptogenicity parameter.")
 
-    Iext = arrays.FloatArray(
+    Iext = NArray(
         label="Iext",
-        range=basic.Range(lo=1.5, hi=5.0, step=0.1),
+        # range=basic.Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
-        doc="External input current to the first state-variable.",
-        order=7)
+        doc="External input current to the first state-variable.")
 
-    slope = arrays.FloatArray(
+    slope = NArray(
         label="slope",
-        range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
+        # range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
-        doc="Linear coefficient in the first state-variable.",
-        order=8)
-        
-    Kvf = arrays.FloatArray(
+        doc="Linear coefficient in the first state-variable.")
+
+    Kvf = NArray(
         label="K_vf",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
-        doc="Coupling scaling on a very fast time scale.",
-        order=9)
+        # range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Coupling scaling on a very fast time scale.")
 
-    Ks = arrays.FloatArray(
+    Ks = NArray(
         label="K_s",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
-        doc="Permittivity coupling, that is from the fast time scale toward the slow time scale.",
-        order=10)
-        
-    tt = arrays.FloatArray(
+        # range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
+        doc="Permittivity coupling, that is from the fast time scale toward the slow time scale.")
+
+    tt = NArray(
         label="tt",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.001, hi=1.0, step=0.001),
-        doc="Time scaling of the whole system to the system in real time.",
-        order=11)
+        # range=basic.Range(lo=0.001, hi=1.0, step=0.001),
+        doc="Time scaling of the whole system to the system in real time.")
 
-    modification = arrays.BoolArray(
+    modification = NArray(
+        dtype=bool,
         label="modification",
-        default=numpy.array([0]),
+        default=numpy.array([False]),
         doc="When modification is True, then use nonlinear influence on z. \
-        The default value is False, i.e., linear influence.",
-        order=12)
+        The default value is False, i.e., linear influence.")
 
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State variable ranges [lo, hi]",
-        default={"x1": numpy.array([-2., 1.]),
-        "z": numpy.array([2.0, 5.0])},
-        doc="Typical bounds on state-variables in the Epileptor 2D model.",
-        order=99)
-    
-    variables_of_interest = basic.Enumerate(
+        default={"x1": numpy.array([-2., 1.]), "z": numpy.array([2.0, 5.0])},
+        doc="Typical bounds on state-variables in the Epileptor 2D model.")
+
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=['x1', 'z'],
-        default=['x1'],
-        select_multiple=True,
-        doc="Quantities of the Epileptor 2D available to monitor.",
-        order=100)
-    
-    state_variables = ['x1', 'z']
+        choices=('x1', 'z'),
+        default=('x1',),
+        doc="Quantities of the Epileptor 2D available to monitor.")
+
+    state_variables = ('x1', 'z')
 
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
@@ -576,6 +547,7 @@ class Epileptor2D(ModelNumbaDfun):
                             self.d, self.r, self.Kvf, self.Ks, self.tt, self.modification)
         return deriv.T[..., numpy.newaxis]
 
+
 @guvectorize([(float64[:],) * 15], '(n),(m)' + ',()'* 12 + '->(n)', nopython=True)
 def _numba_dfun_epi2d(y, c_pop, x0, Iext, a, b, slope, c, d, r, Kvf, Ks, tt, modification, ydot):
     "Gufunction for Epileptor 2D model equations."
@@ -589,7 +561,7 @@ def _numba_dfun_epi2d(y, c_pop, x0, Iext, a, b, slope, c, d, r, Kvf, Ks, tt, mod
         ydot[0] = - slope[0] - 0.6 * (y[1] - 4.0) ** 2 + d[0] * y[0]
     ydot[0] = tt[0] * (c[0] - y[1] + Iext[0] + Kvf[0] * c_pop - ydot[0] * y[0])
 
-     # energy
+    # energy
     if y[1] < 0.0:
         ydot[1] = - 0.1 * y[1] ** 7
     else:

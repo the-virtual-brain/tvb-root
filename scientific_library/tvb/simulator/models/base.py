@@ -55,9 +55,9 @@ class Model(HasTraits):
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
 
-    state_variables = []
-    variables_of_interest = []
-    _nvar = None
+    state_variables = ()
+    variables_of_interest = ()
+    _nvar = None   # todo make this a prop len(state_variables)
     number_of_modes = 1
     cvar = None
 

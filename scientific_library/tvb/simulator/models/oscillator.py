@@ -31,10 +31,11 @@ Oscillator models.
 
 """
 
-from .base import Model, ModelNumbaDfun, numpy
+from .base import Model, ModelNumbaDfun
 import numexpr
+import numpy
 from numba import guvectorize, float64
-from tvb.basic.traits.neotraits import HasTraits, NArray, Attr, List
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -356,7 +357,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         doc="The quantities of interest for monitoring for the generic 2D oscillator.")
         # order=12)
 
-    state_variables = ['V', 'W']
+    state_variables = ('V', 'W')
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
