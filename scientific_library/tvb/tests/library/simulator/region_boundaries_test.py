@@ -47,7 +47,7 @@ class TestRegionBoundaries(BaseTestCase):
 
     def test_region_boundaries(self):
         cortex = Cortex.from_file()
-        white_matter = connectivity.Connectivity(load_default=True)
+        white_matter = connectivity.Connectivity.from_file()
         white_matter.configure()
         rb = region_boundaries.RegionBoundaries(cortex)
         assert len(rb.region_neighbours.keys()) == white_matter.number_of_regions

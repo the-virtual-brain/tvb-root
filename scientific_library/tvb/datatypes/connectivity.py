@@ -907,7 +907,6 @@ class Connectivity(HasTraits):
             region_labels = [n for n in range(self.number_of_regions)]
             self.region_labels = numpy.array(region_labels).astype(str)
         elif mode in ("alphabetic", "alpha"):
-            import string
             if self.number_of_regions < 26:
                 self.region_labels = numpy.array(list(map(chr, range(65, 65 + self.number_of_regions)))).astype(str)
             else:

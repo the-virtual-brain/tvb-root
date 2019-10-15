@@ -110,7 +110,7 @@ class TestModels(BaseTestCase):
 
     def test_g2d_voi(self):
         model = models.Generic2dOscillator(
-            variables_of_interest=['W', 'W - V']
+            variables_of_interest=('W', 'V - W')
         )
         (V, W), (voi_W, voi_WmV) = self._validate_initialization(model, 2)
         numpy.testing.assert_allclose(voi_W, W)

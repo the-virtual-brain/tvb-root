@@ -108,11 +108,12 @@ class Simulator(HasTraits):
         dynamic equations of the Model. Its primary purpose is to 'rescale' the
         incoming activity to a level appropriate to Model.""")
 
-    surface = None  # cortex.Cortex(
-        # label="Cortical surface",
-        # default=None,
+    surface = Attr(
+        field_type=cortex.Cortex,
+        label="Cortical surface",
+        default=None,
         # order=3,
-        # required=False,
+        required=False,
         # filters_backend=FilterChain(fields=[FilterChain.datatype + '._valid_for_simulations'],
         #                             operations=["=="], values=[True]),
         # filters_ui=[UIFilter(linked_elem_name="projection_matrix_data",
@@ -123,11 +124,11 @@ class Simulator(HasTraits):
         #                      linked_elem_field=FilterChain.datatype + "._surface",
         #                      linked_elem_parent_name="surface",
         #                      linked_elem_parent_option=None)],
-        # doc="""By default, a Cortex object which represents the
-        # cortical surface defined by points in the 3D physical space and their
-        # neighborhood relationship. In the current TVB version, when setting up a
-        # surface-based simulation, the option to configure the spatial spread of
-        # the ``Local Connectivity`` is available.""")
+        doc="""By default, a Cortex object which represents the
+        cortical surface defined by points in the 3D physical space and their
+        neighborhood relationship. In the current TVB version, when setting up a
+        surface-based simulation, the option to configure the spatial spread of
+        the ``Local Connectivity`` is available.""")
 
     stimulus = Attr(
         field_type=patterns.SpatioTemporalPattern,

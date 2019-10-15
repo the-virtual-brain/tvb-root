@@ -128,7 +128,7 @@ class TestSubcorticalProjection(BaseTestCase):
     # hard code parameters to smoke test
     speed = 4.0
     period = 1e3 / 1024.0  # 1024 Hz
-    coupling_a = 0.014
+    coupling_a = numpy.array([0.014])
     n_regions = 192
 
     def setup_method(self):
@@ -195,7 +195,7 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
             monitors=(monitors.iEEG(
                 sensors=SensorsInternal(load_default=True),
                 region_mapping=RegionMapping.from_file('regionMapping_16k_192.txt')
-            ))
+            ),)
         ).configure()
 
     def test_gain_size(self):

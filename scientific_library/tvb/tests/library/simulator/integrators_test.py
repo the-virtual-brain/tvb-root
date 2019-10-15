@@ -44,7 +44,7 @@ from tvb.simulator import integrators
 from tvb.simulator import noise
 
 # For the moment all integrators inherit dt from the base class
-dt = integrators.Integrator.dt.interface['default']
+dt = integrators.Integrator.dt.default
 
 
 class TestIntegrators(BaseTestCase):
@@ -65,14 +65,9 @@ class TestIntegrators(BaseTestCase):
         nX = integrator.scheme(numpy.random.randn(*sh), self._dummy_dfun, 0.0, 0.0, 0.0)
         assert nX.shape == sh
 
-    def _call_base_scheme(self, integrator):
-        integrator.scheme(0.0, lambda x, y, z: 0.0, 0.0, 0.0, 0.0)
-
     def test_integrator_base_class(self):
-        integrator = integrators.Integrator()
-        assert integrator.dt == dt
-        with pytest.raises(NotImplementedError):
-            self._call_base_scheme(integrator)
+        with pytest.raises(TypeError):
+            integrators.Integrator()
 
     def test_heun(self):
         heun_det = integrators.HeunDeterministic()
