@@ -19,6 +19,7 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     pytest --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:TEST_OUTPUT/coverage_library.xml --junitxml=TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml
+                    exit 0
                 '''
                 junit 'TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml'
                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUTPUT/coverage_library.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
@@ -53,6 +54,7 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     pytest --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:TEST_OUTPUT/coverage_library.xml --junitxml=TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml
+                    exit 0
                 '''
                 junit 'TEST_OUTPUT/TEST-LIBRARY-RESULTS.xml'
                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUTPUT/coverage_library.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
