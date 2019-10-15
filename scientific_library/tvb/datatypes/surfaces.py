@@ -43,7 +43,8 @@ import scipy.sparse
 import warnings
 import json
 import numpy
-from tvb.basic.traits import util, exceptions
+from tvb.basic.traits import util
+from tvb.basic import exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
@@ -877,32 +878,6 @@ class Surface(HasTraits):
             raise exceptions.ValidationException(msg)
         return ValidationResult()
 
-    def get_urls_for_rendering(self, include_region_map=False, region_mapping=None):
-        """
-        Compose URLs for the JS code to retrieve a surface from the UI for rendering.
-        """
-        url_vertices = []
-        url_triangles = []
-        url_normals = []
-        url_lines = []
-        url_region_map = []
-        for i in range(self.number_of_split_slices):
-            param = "slice_number=" + str(i)
-            url_vertices.append(paths2url(self, 'get_vertices_slice', parameter=param, flatten=True))
-            url_triangles.append(paths2url(self, 'get_triangles_slice', parameter=param, flatten=True))
-            url_lines.append(paths2url(self, 'get_lines_slice', parameter=param, flatten=True))
-            url_normals.append(paths2url(self, 'get_vertex_normals_slice', parameter=param, flatten=True))
-            if not include_region_map or region_mapping is None:
-                continue
-
-            start_idx, end_idx = self._get_slice_vertex_boundaries(i)
-            url_region_map.append(paths2url(region_mapping, "get_region_mapping_slice", flatten=True,
-                                            parameter="start_idx=" + str(start_idx) + " ;end_idx=" + str(end_idx)))
-
-        if include_region_map:
-            return url_vertices, url_normals, url_lines, url_triangles, url_region_map
-        return url_vertices, url_normals, url_lines, url_triangles
-
     def _get_slice_vertex_boundaries(self, slice_idx):
         if str(slice_idx) in self.split_slices:
             start_idx = max(0, self.split_slices[str(slice_idx)][KEY_VERTICES][KEY_START])
@@ -950,27 +925,6 @@ class Surface(HasTraits):
     ####################################### Split for Picking
     #######################################
 
-    def get_urls_for_pick_rendering(self):
-        """
-        Compose URLS for the JS code to retrieve a surface for picking.
-        """
-        vertices = []
-        triangles = []
-        normals = []
-        number_of_split = self.number_of_triangles // SPLIT_PICK_MAX_TRIANGLE
-        if self.number_of_triangles % SPLIT_PICK_MAX_TRIANGLE > 0:
-            number_of_split += 1
-
-        for i in range(number_of_split):
-            param = "slice_number=" + str(i)
-            vertices.append(paths2url(self, 'get_pick_vertices_slice', parameter=param, flatten=True))
-            triangles.append(paths2url(self, 'get_pick_triangles_slice', parameter=param, flatten=True))
-            normals.append(paths2url(self, 'get_pick_vertex_normals_slice', parameter=param, flatten=True))
-
-        return vertices, normals, triangles
-
-    def get_url_for_region_boundaries(self, region_mapping):
-        return paths2url(self, 'generate_region_boundaries', datatype_kwargs={'region_mapping': region_mapping.gid})
 
     def center(self):
         """

@@ -34,7 +34,7 @@ import scipy.sparse
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import exceptions
+from tvb.basic import exceptions
 from tvb.datatypes import equations, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
 

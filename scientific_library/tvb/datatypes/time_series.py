@@ -36,12 +36,7 @@ methods that are associated with the time-series data.
 
 """
 
-import numpy
-
-from tvb.basic.traits import exceptions, types_mapped
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
-from tvb.basic.arguments_serialisation import (preprocess_space_parameters, preprocess_time_parameters,
-    postprocess_voxel_ts)
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Int, Float, narray_summary_info
 
@@ -135,21 +130,6 @@ class TimeSeries(HasTraits):
         # for i in range(min(self.nr_dimensions, 4)):
         #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
-    def read_data_shape(self):
-        """
-        Expose shape read on field data.
-        """
-        try:
-            return self.get_data_shape('data')
-        except exceptions.TVBException:
-            self.logger.exception("Could not read data shape for TS!")
-            raise exceptions.TVBException("Invalid empty TimeSeries!")
-
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-        """
-        No Split needed in case of basic TS (sensors and region level)
-        """
-        return self.read_data_page(from_idx, to_idx, step, specific_slices)
 
     def get_space_labels(self):
         """
@@ -185,7 +165,8 @@ class TimeSeries(HasTraits):
 
     @staticmethod
     def accepted_filters():
-        filters = types_mapped.MappedType.accepted_filters()
+        # filters = types_mapped.MappedType.accepted_filters()
+        filters = {}  # todo: resurrect this
         filters.update({'datatype_class._nr_dimensions': {'type': 'int', 'display': 'No of Dimensions',
                                                           'operations': ['==', '<', '>']},
                         'datatype_class._sample_period': {'type': 'float', 'display': 'Sample Period',
@@ -340,85 +321,6 @@ class TimeSeriesRegion(TimeSeries):
         else:
             return super(TimeSeriesRegion, self).get_measure_points_selection_gid()
 
-    # TODO: move to higher level
-    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
-        """
-        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
-
-        :param from_idx: int This will be the limit on the first dimension (time)
-        :param to_idx: int Also limit on the first Dimension (time)
-        :param x_plane: int coordinate
-        :param y_plane: int coordinate
-        :param z_plane: int coordinate
-
-        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
-        """
-
-        if self.region_mapping_volume is None:
-            raise exceptions.TVBException("Invalid method called for TS without Volume Mapping!")
-
-        volume_rm = self.region_mapping_volume
-
-        # Work with space inside Volume:
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm.length_1d,
-                                                                volume_rm.length_2d, volume_rm.length_3d)
-        var, mode = int(var), int(mode)
-        slice_x, slice_y, slice_z = self.region_mapping_volume.get_volume_slice(x_plane, y_plane, z_plane)
-
-        # Read from the current TS:
-        from_idx, to_idx, current_time_length = preprocess_time_parameters(from_idx, to_idx, self.read_data_shape()[0])
-        no_of_regions = self.read_data_shape()[2]
-        time_slices = slice(from_idx, to_idx), slice(var, var + 1), slice(no_of_regions), slice(mode, mode + 1)
-
-        min_signal = self.get_min_max_values()[0]
-        regions_ts = self.read_data_slice(time_slices)[:, 0, :, 0]
-        regions_ts = numpy.hstack((regions_ts, numpy.ones((current_time_length, 1)) * self.out_of_range(min_signal)))
-
-        # Index from TS with the space mapping:
-        result_x, result_y, result_z = [], [], []
-
-        for i in range(0, current_time_length):
-            result_x.append(regions_ts[i][slice_x].tolist())
-            result_y.append(regions_ts[i][slice_y].tolist())
-            result_z.append(regions_ts[i][slice_z].tolist())
-
-        return [result_x, result_y, result_z]
-
-    # TODO: move to higher level
-    def get_voxel_time_series(self, x, y, z, var=0, mode=0):
-        """
-        Retrieve for a given voxel (x,y,z) the entire timeline.
-
-        :param x: int coordinate
-        :param y: int coordinate
-        :param z: int coordinate
-
-        :return: A complex dictionary with information about current voxel.
-                The main part will be a vector with all the values over time from the x,y,z coordinates.
-        """
-
-        if self.region_mapping_volume is None:
-            raise exceptions.TVBException("Invalid method called for TS without Volume Mapping!")
-
-        volume_rm = self.region_mapping_volume
-        x, y, z = preprocess_space_parameters(x, y, z, volume_rm.length_1d, volume_rm.length_2d, volume_rm.length_3d)
-        idx_slices = slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
-
-        idx = int(volume_rm.get_data('array_data', idx_slices))
-
-        time_length = self.read_data_shape()[0]
-        var, mode = int(var), int(mode)
-        voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
-        label = volume_rm.connectivity.region_labels[idx]
-
-        background, back_min, back_max = None, None, None
-        if idx < 0:
-            back_min, back_max = self.get_min_max_values()
-            background = numpy.ones((time_length, 1)) * self.out_of_range(back_min)
-            label = 'background'
-
-        result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max, label)
-        return result
 
     @staticmethod
     def out_of_range(min_value):
@@ -446,18 +348,6 @@ class TimeSeriesSurface(TimeSeries):
         summary.update({"Source Surface": self.surface.title})
         return summary
 
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-
-        basic_result = self.read_data_page(from_idx, to_idx, step, specific_slices)
-        result = []
-        if self.surface.number_of_split_slices <= 1:
-            result.append(basic_result.tolist())
-        else:
-            for slice_number in range(self.surface.number_of_split_slices):
-                start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
-                result.append(basic_result[:,start_idx:end_idx].tolist())
-
-        return result
 
 
 class TimeSeriesVolume(TimeSeries):

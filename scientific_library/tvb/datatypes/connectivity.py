@@ -43,7 +43,6 @@ import scipy.stats
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
-from tvb.basic.traits.types_mapped import MappedType
 
 
 LOG = get_logger(__name__)
@@ -269,7 +268,8 @@ class Connectivity(HasTraits):
 
     @staticmethod
     def accepted_filters():
-        filters = MappedType.accepted_filters()
+        # filters = MappedType.accepted_filters()
+        filters = {}  # todo: resurrect this api on a higher level
         filters.update({'datatype_class._number_of_regions': {'type': 'int', 'display': 'No of Regions',
                                                               'operations': ['==', '<', '>']}})
         return filters

@@ -41,7 +41,7 @@ import numpy
 import tvb.basic.traits.core as core
 from tvb.basic.traits import types_basic as basic
 from tvb.basic.traits.types_mapped import MappedType, Array
-from tvb.basic.traits.exceptions import ValidationException
+from tvb.basic.exceptions import ValidationException
 
 
 class BaseArray(Array):
