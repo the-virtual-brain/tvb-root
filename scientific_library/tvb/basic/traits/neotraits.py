@@ -23,13 +23,14 @@ class Attr(object):
     # This class is a python data descriptor.
     # For an introduction see https://docs.python.org/2/howto/descriptor.html
 
-    def __init__(self, field_type=object, default=None, doc=None,
+    def __init__(self, field_type=object, default=None, doc='', label='',
                  required=True, readonly=False):
-        # type: (type, object, str, bool, bool) -> None
+        # type: (type, object, str, str, bool, bool) -> None
         self.field_name = None  # to be set by metaclass
         self.field_type = field_type
         self.default = default
         self.doc = doc
+        self.label = label
         self.required = required
         self.readonly = readonly
 

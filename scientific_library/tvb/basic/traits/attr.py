@@ -14,9 +14,10 @@ class Const(Attr):
     Note that if it is a mutable type, the value is shared with all instances of the owning class
     We cannot enforce true constancy in python
     """
-    def __init__(self, default, doc=None):
+    def __init__(self, default, doc='', label=''):
         # it would be nice if we could turn the default immutable. But this is unreasonable work in python
-        super(Const, self).__init__(field_type=type(default), default=default, required=True, doc=doc, readonly=True)
+        super(Const, self).__init__(field_type=type(default), default=default,
+                                    required=True, doc=doc, label=label, readonly=True)
 
 
 class NArray(Attr):
@@ -28,10 +29,11 @@ class NArray(Attr):
     Implicit conversions are not supported
     domain declares what values are allowed in this array. It can be any object that can be checked for membership
     """
-    def __init__(self, default=None, required=True, doc=None,
+    def __init__(self, default=None, required=True, doc='', label='',
                  dtype=numpy.dtype(numpy.float), ndim=None, domain=None):
-        # type: (numpy.ndarray, bool, str, numpy.dtype, int, typing.Container[float]) -> None
-        super(NArray, self).__init__(field_type=numpy.ndarray, default=default, required=required, doc=doc)
+        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Container[float]) -> None
+        super(NArray, self).__init__(field_type=numpy.ndarray, default=default,
+                                     required=required, doc=doc, label=label)
         self.dtype = dtype
         self.ndim = ndim
         self.domain = domain  # anything that supports 3.1 in domain
