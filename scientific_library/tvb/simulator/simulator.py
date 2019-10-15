@@ -44,8 +44,6 @@ import math
 import numpy
 import scipy.sparse
 from tvb.basic.profile import TvbProfile
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
 from tvb.basic.filters.chain import UIFilter, FilterChain
 
 from tvb.datatypes import cortex, connectivity, arrays, patterns
@@ -54,124 +52,121 @@ from tvb.simulator import models, integrators, monitors, coupling
 from .common import psutil, get_logger, numpy_add_at
 from .history import SparseHistory, DenseHistory
 
-from tvb.basic.traits.neotraits import Attr, NArray
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
 
 LOG = get_logger(__name__)
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
-class Simulator(core.Type):
+class Simulator(HasTraits):
     "A Simulator assembles components required to perform simulations."
 
-    # connectivity = Attr(
-    #     connectivity.Connectivity,
-    #     label="Long-range connectivity",
-    #     default=None,
-    #     # order=1,
-    #     required=True,
-    #     # filters_ui=[UIFilter(linked_elem_name="region_mapping_data",
-    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
-    #     #                      linked_elem_parent_name="surface",
-    #     #                      linked_elem_parent_option=None),
-    #     #             UIFilter(linked_elem_name="region_mapping",
-    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
-    #     #                      linked_elem_parent_name="monitors",
-    #     #                      linked_elem_parent_option="EEG"),
-    #     #             UIFilter(linked_elem_name="region_mapping",
-    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
-    #     #                      linked_elem_parent_name="monitors",
-    #     #                      linked_elem_parent_option="MEG"),
-    #     #             UIFilter(linked_elem_name="region_mapping",
-    #     #                      linked_elem_field=FilterChain.datatype + "._connectivity",
-    #     #                      linked_elem_parent_name="monitors",
-    #     #                      linked_elem_parent_option="iEEG")],
-    #     doc="""A tvb.datatypes.Connectivity object which contains the
-    #     structural long-range connectivity data (i.e., white-matter tracts). In
-    #     combination with the ``Long-range coupling function`` it defines the inter-regional
-    #     connections. These couplings undergo a time delay via signal propagation
-    #     with a propagation speed of ``Conduction Speed``""")
+    connectivity = Attr(
+        field_type=connectivity.Connectivity,
+        label="Long-range connectivity",
+        default=None,
+        # order=1,
+        required=True,
+        # filters_ui=[UIFilter(linked_elem_name="region_mapping_data",
+        #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+        #                      linked_elem_parent_name="surface",
+        #                      linked_elem_parent_option=None),
+        #             UIFilter(linked_elem_name="region_mapping",
+        #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+        #                      linked_elem_parent_name="monitors",
+        #                      linked_elem_parent_option="EEG"),
+        #             UIFilter(linked_elem_name="region_mapping",
+        #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+        #                      linked_elem_parent_name="monitors",
+        #                      linked_elem_parent_option="MEG"),
+        #             UIFilter(linked_elem_name="region_mapping",
+        #                      linked_elem_field=FilterChain.datatype + "._connectivity",
+        #                      linked_elem_parent_name="monitors",
+        #                      linked_elem_parent_option="iEEG")],
+        doc="""A tvb.datatypes.Connectivity object which contains the
+         structural long-range connectivity data (i.e., white-matter tracts). In
+         combination with the ``Long-range coupling function`` it defines the inter-regional
+         connections. These couplings undergo a time delay via signal propagation
+         with a propagation speed of ``Conduction Speed``""")
 
-    conduction_speed = basic.Float(
+    conduction_speed = Attr(
+        field_type=float,
         label="Conduction Speed",
         default=3.0,
-        order=2,
         required=False,
-        range=basic.Range(lo=0.01, hi=100.0, step=1.0),
+        # range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
-    coupling = None
-    # coupling.Coupling(
-    #     label="Long-range coupling function",
-    #     default=coupling.Linear(),
-    #     required=True,
-    #     order=2,
-    #     doc="""The coupling function is applied to the activity propagated
-    #     between regions by the ``Long-range connectivity`` before it enters the local
-    #     dynamic equations of the Model. Its primary purpose is to 'rescale' the
-    #     incoming activity to a level appropriate to Model.""")
+    coupling = Attr(
+        field_type=coupling.Coupling,
+        label="Long-range coupling function",
+        default=coupling.Linear(),
+        required=True,
+        doc="""The coupling function is applied to the activity propagated
+        between regions by the ``Long-range connectivity`` before it enters the local
+        dynamic equations of the Model. Its primary purpose is to 'rescale' the
+        incoming activity to a level appropriate to Model.""")
 
-    surface = cortex.Cortex(
-        label="Cortical surface",
-        default=None,
-        order=3,
-        required=False,
-        filters_backend=FilterChain(fields=[FilterChain.datatype + '._valid_for_simulations'],
-                                    operations=["=="], values=[True]),
-        filters_ui=[UIFilter(linked_elem_name="projection_matrix_data",
-                             linked_elem_field=FilterChain.datatype + "._sources",
-                             linked_elem_parent_name="monitors",
-                             linked_elem_parent_option="EEG"),
-                    UIFilter(linked_elem_name="local_connectivity",
-                             linked_elem_field=FilterChain.datatype + "._surface",
-                             linked_elem_parent_name="surface",
-                             linked_elem_parent_option=None)],
-        doc="""By default, a Cortex object which represents the
-        cortical surface defined by points in the 3D physical space and their 
-        neighborhood relationship. In the current TVB version, when setting up a 
-        surface-based simulation, the option to configure the spatial spread of 
-        the ``Local Connectivity`` is available.""")
+    surface = None  # cortex.Cortex(
+        # label="Cortical surface",
+        # default=None,
+        # order=3,
+        # required=False,
+        # filters_backend=FilterChain(fields=[FilterChain.datatype + '._valid_for_simulations'],
+        #                             operations=["=="], values=[True]),
+        # filters_ui=[UIFilter(linked_elem_name="projection_matrix_data",
+        #                      linked_elem_field=FilterChain.datatype + "._sources",
+        #                      linked_elem_parent_name="monitors",
+        #                      linked_elem_parent_option="EEG"),
+        #             UIFilter(linked_elem_name="local_connectivity",
+        #                      linked_elem_field=FilterChain.datatype + "._surface",
+        #                      linked_elem_parent_name="surface",
+        #                      linked_elem_parent_option=None)],
+        # doc="""By default, a Cortex object which represents the
+        # cortical surface defined by points in the 3D physical space and their
+        # neighborhood relationship. In the current TVB version, when setting up a
+        # surface-based simulation, the option to configure the spatial spread of
+        # the ``Local Connectivity`` is available.""")
 
-    stimulus = patterns.SpatioTemporalPattern(
-        label="Spatiotemporal stimulus",
-        default=None,
-        order=4,
-        required=False,
-        doc="""A ``Spatiotemporal stimulus`` can be defined at the region or surface level.
-        It's composed of spatial and temporal components. For region defined stimuli
-        the spatial component is just the strength with which the temporal
-        component is applied to each region. For surface defined stimuli,  a
-        (spatial) function, with finite-support, is used to define the strength 
-        of the stimuli on the surface centred around one or more focal points. 
-        In the current version of TVB, stimuli are applied to the first state 
-        variable of the ``Local dynamic model``.""")
+    stimulus = None  # patterns.SpatioTemporalPattern(
+        # label="Spatiotemporal stimulus",
+        # default=None,
+        # order=4,
+        # required=False,
+        # doc="""A ``Spatiotemporal stimulus`` can be defined at the region or surface level.
+        # It's composed of spatial and temporal components. For region defined stimuli
+        # the spatial component is just the strength with which the temporal
+        # component is applied to each region. For surface defined stimuli,  a
+        # (spatial) function, with finite-support, is used to define the strength
+        # of the stimuli on the surface centred around one or more focal points.
+        # In the current version of TVB, stimuli are applied to the first state
+        # variable of the ``Local dynamic model``.""")
 
-    model = None #models.Model(
-        # label="Local dynamic model",
-        # default=models.Generic2dOscillator,
-        # required=True,
-        # order=5,
-        # doc="""A tvb.simulator.Model object which describe the local dynamic
-        # equations, their parameters, and, to some extent, where connectivity
-        # (local and long-range) enters and which state-variables the Monitors
-        # monitor. By default the 'Generic2dOscillator' model is used. Read the
-        # Scientific documentation to learn more about this model.""")
+    model = Attr(
+        field_type=models.Model,
+        label="Local dynamic model",
+        default=models.Generic2dOscillator(),
+        required=True,
+        doc="""A tvb.simulator.Model object which describe the local dynamic
+        equations, their parameters, and, to some extent, where connectivity
+        (local and long-range) enters and which state-variables the Monitors
+        monitor. By default the 'Generic2dOscillator' model is used. Read the
+        Scientific documentation to learn more about this model.""")
 
-    integrator = None #integrators.Integrator(
-        # label="Integration scheme",
-        # default=integrators.HeunDeterministic,
-        # required=True,
-        # order=6,
-        # doc="""A tvb.simulator.Integrator object which is
-        #     an integration scheme with supporting attributes such as
-        #     integration step size and noise specification for stochastic
-        #     methods. It is used to compute the time courses of the model state
-        #     variables.""")
+    integrator = Attr(
+        field_type=integrators.Integrator,
+        label="Integration scheme",
+        default=integrators.HeunDeterministic(),
+        required=True,
+        doc="""A tvb.simulator.Integrator object which is
+            an integration scheme with supporting attributes such as
+            integration step size and noise specification for stochastic
+            methods. It is used to compute the time courses of the model state
+            variables.""")
 
-    initial_conditions = arrays.FloatArray(
+    initial_conditions = NArray(
         label="Initial Conditions",
-        default=None,
-        order=-1,
         required=False,
         doc="""Initial conditions from which the simulation will begin. By
         default, random initial conditions are provided. Needs to be the same shape
@@ -181,28 +176,26 @@ class Simulator(core.Type):
         array will be padded with random values based on the 'state_variables_range'
         attribute.""")
 
-    monitors = None #monitors.Monitor()
-        # label="Monitor(s)",
-        # default=monitors.TemporalAverage,
-        # required=True,
-        # order=8,
-      #  select_multiple=True,
-      #   doc="""A tvb.simulator.Monitor or a list of tvb.simulator.Monitor
-      #   objects that 'know' how to record relevant data from the simulation. Two
-      #   main types exist: 1) simple, spatial and temporal, reductions (subsets
-      #   or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
-      #   By default the Model's specified variables_of_interest are returned,
-      #   temporally downsampled from the raw integration rate to a sample rate of
-      #   1024Hz.""")
+    monitors = List(
+        of=monitors.Monitor,
+        label="Monitor(s)",
+        default=(monitors.TemporalAverage(),),
+        doc="""A tvb.simulator.Monitor or a list of tvb.simulator.Monitor
+        objects that 'know' how to record relevant data from the simulation. Two
+        main types exist: 1) simple, spatial and temporal, reductions (subsets
+        or averages); 2) physiological measurements, such as EEG, MEG and fMRI.
+        By default the Model's specified variables_of_interest are returned,
+        temporally downsampled from the raw integration rate to a sample rate of
+        1024Hz.""")
 
-    simulation_length = basic.Float(
+    simulation_length = Attr(
+        field_type=float,
         label="Simulation Length (ms, s, m, h)",
         default=1000.0,  # ie 1 second
         required=True,
-        order=9,
         doc="""The length of a simulation (default in milliseconds).""")
 
-    history = None # type: SparseHistory
+    history = None  # type: SparseHistory
 
     @property
     def good_history_shape(self):
@@ -395,7 +388,7 @@ class Simulator(core.Type):
 
         self.calls += 1
         if simulation_length is not None:
-            self.simulation_length = simulation_length
+            self.simulation_length = float(simulation_length)
 
         # intialization
         self._guesstimate_runtime()

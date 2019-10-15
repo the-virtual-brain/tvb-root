@@ -129,7 +129,7 @@ class Simulator(object):
 
         dynamics = model()
 
-        if isinstance(method, IntegratorStochastic):
+        if issubclass(method, IntegratorStochastic):
             hisss = noise.Additive(nsig=numpy.array([2 ** -11]))
             integrator = method(dt=dt, noise=hisss)
         else:
@@ -145,7 +145,8 @@ class Simulator(object):
             default_cortex = None
 
         # Order of monitors determines order of returned values.
-        self.sim = simulator.Simulator( surface=default_cortex)
+        self.sim = simulator.Simulator()
+        self.sim.surface = default_cortex
         self.sim.model = dynamics
         self.sim.integrator = integrator
         self.sim.connectivity = white_matter
