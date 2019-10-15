@@ -21,3 +21,4 @@ TEST_OUTPUT/
 # other tools
 .mypy_cache/
 
+dist/
