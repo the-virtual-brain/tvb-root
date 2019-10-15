@@ -93,10 +93,10 @@ class CorrelationCoefficient(HasTraits):
 
         """
         cls_attr_name = self.__class__.__name__ + ".time_series"
-        self.time_series.trait["data"].log_debug(owner=cls_attr_name)
+        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
         #(nodes, nodes, state-variables, modes)
-        input_shape = self.time_series.read_data_shape()
+        input_shape = self.time_series.data.shape
         result_shape = self.result_shape(input_shape)
         LOG.info("result shape will be: %s" % str(result_shape))
 
@@ -113,7 +113,8 @@ class CorrelationCoefficient(HasTraits):
             for var in range(result_shape[2]):
                 current_slice = tuple([slice(t_lo, t_hi + 1), slice(var, var + 1),
                                        slice(input_shape[2]), slice(mode, mode + 1)])
-                data = self.time_series.read_data_slice(current_slice).squeeze()
+                # TODO: Double check whether this should read from H5 and move to framework
+                data = self.time_series[current_slice].squeeze()
                 result[:, :, var, mode] = numpy.corrcoef(data.T)
 
 
