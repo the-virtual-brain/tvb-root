@@ -2,6 +2,7 @@ import inspect
 import typing
 import abc
 import logging
+import uuid
 from .info import trait_object_str, auto_docstring, trait_object_repr_html
 
 # a logger for the whole traits system
@@ -362,6 +363,11 @@ class HasTraits(object):
                 raise TypeError('Valid kwargs for type {!r} are: {}. You have given: {!r}'
                                 .format(cls, repr(cls.declarative_attrs), k))
             setattr(self, k, v)
+        # gid identifies a specific instance of the hastraits
+        # it is used by serializers as an identifier.
+        # For non-datatype HasTraits this is less usefull but still
+        # provides a unique id for example for a model configuration
+        self.gid = uuid.uuid4()
 
 
     def __str__(self):
