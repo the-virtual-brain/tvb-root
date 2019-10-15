@@ -145,7 +145,8 @@ class TestProjectionMonitorsWithSubcorticalRegions(BaseTestCase):
         mons = (
             monitors.EEG.from_file(period=self.period),
             monitors.MEG.from_file(period=self.period),
-            monitors.iEEG.from_file(period=self.period),
+            # monitors.iEEG.from_file(period=self.period),
+            # SEEG projection data is not part of tvb-data on Pypi, thus this can not work generic
         )
         local_coupling_strength = numpy.array([2 ** -10])
         region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions,))
