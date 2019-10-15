@@ -144,7 +144,7 @@ class MetaType(abc.ABCMeta):
     __classes = {}  # type: typing.Dict[str, type]
 
 
-    def get_known_subclasses(cls, include_abstract=False):
+    def get_known_subclasses(cls, include_abstract=False, include_itself=False):
         # type: (bool) -> typing.Dict[str, typing.Type[MetaType]]
         """
         Returns all subclasses that exist *now*.
@@ -157,6 +157,8 @@ class MetaType(abc.ABCMeta):
         for k, c in cls.__classes.items():
             if issubclass(c, cls):
                 if inspect.isabstract(c) and not include_abstract:
+                    continue
+                if c == cls and not include_itself:
                     continue
                 ret.update({k: c})
         return ret
@@ -246,7 +248,7 @@ class MetaType(abc.ABCMeta):
         setattr(cls, '__doc__', auto_docstring(cls))
 
         # update the HasTraits class registry
-        mcs.__classes.update({str(cls): cls})
+        mcs.__classes.update({cls.__name__: cls})
         return cls
 
 

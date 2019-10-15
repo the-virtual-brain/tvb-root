@@ -754,7 +754,9 @@ def test_get_known_subclasses():
         pass
 
     assert set(A.get_known_subclasses().values()) == {B, C}
-    assert set(A.get_known_subclasses(include_abstract=True).values()) == {A, B, C}
+    assert set(A.get_known_subclasses(include_abstract=True, include_itself=True).values()) == {A, B, C}
+    assert set(A.get_known_subclasses(include_abstract=True).values()) == {B, C}
+    assert set(A.get_known_subclasses(include_itself=True).values()) == {B, C}
 
 
 def test_summary_info():
