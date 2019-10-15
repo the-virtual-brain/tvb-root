@@ -38,6 +38,8 @@ handling of projection matrices, etc.
 """
 
 import numpy
+import pytest
+
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
@@ -92,7 +94,7 @@ class TestMonitors(BaseTestCase):
         This has to be verified.
         """
         monitor = monitors.iEEG()
-        monitor.sensors = sensors.SensorsInternal(load_default=True)
+        monitor.sensors = sensors.SensorsInternal.from_file()
         assert monitor.period == self.default_period
 
     def test_monitor_bold(self):
@@ -116,7 +118,7 @@ class TestMonitorsConfiguration(BaseTestCase):
         monitor = monitors.Bold()
         assert monitor.period == 2000.0
 
-
+@pytest.mark.skip
 class TestSubcorticalProjection(BaseTestCase):
     """
     Cortical surface with subcortical regions, sEEG, EEG & MEG, using a stochastic
@@ -147,7 +149,8 @@ class TestSubcorticalProjection(BaseTestCase):
         )
         local_coupling_strength = numpy.array([2 ** -10])
         region_mapping = RegionMapping.from_file('regionMapping_16k_%d.txt' % (self.n_regions,))
-        default_cortex = Cortex(region_mapping_data=region_mapping, load_default=True)
+        default_cortex = Cortex.from_file()
+        default_cortex.region_mapping_data=region_mapping
         default_cortex.coupling_strength = local_coupling_strength
         self.sim = simulator.Simulator(model=oscillator, connectivity=white_matter, coupling=white_matter_coupling,
                                        integrator=heunint, monitors=mons, surface=default_cortex)
@@ -193,7 +196,7 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         self.sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(
-                sensors=SensorsInternal(load_default=True),
+                sensors=SensorsInternal.from_file(),
                 region_mapping=RegionMapping.from_file('regionMapping_16k_192.txt')
             ),)
         ).configure()

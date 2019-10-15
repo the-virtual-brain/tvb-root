@@ -33,10 +33,13 @@
 """
 
 import numpy
+import pytest
+
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import mapped_values, time_series
 
 
+@pytest.mark.skip
 class TestMapped(BaseTestCase):
     """
     Tests the defaults for `tvb.datatypes.mapped_values` module.

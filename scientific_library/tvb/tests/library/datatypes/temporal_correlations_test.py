@@ -45,12 +45,12 @@ class TestTemporalCorrelations(BaseTestCase):
 
     def test_crosscorrelation(self):
         data = numpy.random.random((10, 10))
-        ts = time_series.TimeSeries(data=data)
+        ts = time_series.TimeSeries(data=data, title='meh')
         dt = temporal_correlations.CrossCorrelation(source=ts)
-        summary_info = dt.summary_info
-        assert summary_info['Dimensions'] == ['Offsets', 'Node', 'Node', 'State Variable', 'Mode']
-        assert summary_info['Source'] == ''
+        summary_info = dt.summary_info()
+        assert summary_info['Dimensions'] == ('Offsets', 'Node', 'Node', 'State Variable', 'Mode')
+        assert summary_info['Source'] == 'meh'
         assert summary_info['Temporal correlation type'] == 'CrossCorrelation'
-        assert dt.labels_ordering == ['Offsets', 'Node', 'Node', 'State Variable', 'Mode']
+        assert dt.labels_ordering == ('Offsets', 'Node', 'Node', 'State Variable', 'Mode')
         assert dt.source is not None
-        assert dt.time.shape == (0,)
+        assert dt.time is None

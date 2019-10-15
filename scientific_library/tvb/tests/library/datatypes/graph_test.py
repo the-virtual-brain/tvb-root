@@ -47,10 +47,9 @@ class TestGraph(BaseTestCase):
         ts = time_series.TimeSeries(data=data, title="test")
         dt = graph.Covariance(source=ts, array_data=data)
 
-        assert dt.shape == (10, 10)
         assert dt.array_data.shape == (10, 10)
 
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Graph type'] == "Covariance"
         assert summary['Source'] == "test"
 
@@ -59,21 +58,19 @@ class TestGraph(BaseTestCase):
         ts = time_series.TimeSeries(data=data, title="test-ts")
         dt = graph.CorrelationCoefficients(source=ts, array_data=data)
 
-        assert dt.shape == (13, 14)
         assert dt.array_data.shape == (13, 14)
 
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Graph type'] == "CorrelationCoefficients"
         assert summary['Source'] == "test-ts"
         assert summary['Dimensions'] == dt.labels_ordering
 
-        assert dt.labels_ordering == ["Node", "Node", "State Variable", "Mode"]
+        assert dt.labels_ordering == ("Node", "Node", "State Variable", "Mode")
 
     def test_connectivitymeasure(self):
         conn = connectivity.Connectivity()
         dt = graph.ConnectivityMeasure(connectivity=conn)
-        assert dt.shape == (0,)
-        assert dt.dimensions_labels is None
+        assert dt.array_data is None
         assert dt.connectivity is not None
-        summary = dt.summary_info
+        summary = dt.summary_info()
         assert summary['Graph type'] == 'ConnectivityMeasure'

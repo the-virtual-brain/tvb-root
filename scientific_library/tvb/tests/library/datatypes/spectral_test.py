@@ -45,23 +45,22 @@ class TestSpectral(BaseTestCase):
 
     def test_fourierspectrum(self):
         data = numpy.random.random((10, 10))
-        ts = time_series.TimeSeries(data=data)
+        ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.FourierSpectrum(source=ts,
                                       segment_length=100)
-        dt.configure()
-        summary_info = dt.summary_info
+        # dt.configure()
+        summary_info = dt.summary_info()
         assert summary_info['Frequency step'] == 0.01
         assert summary_info['Maximum frequency'] == 0.5
         assert summary_info['Segment length'] == 100
-        assert summary_info['Windowing function'] == ''
-        assert summary_info['Source'] == ''
+        assert summary_info['Windowing function'] is None
+        assert summary_info['Source'] == 'meh'
         assert summary_info['Spectral type'] == 'FourierSpectrum'
-        assert dt.aggregation_functions is None
-        assert dt.normalised_average_power.shape == (0,)
+        assert dt.normalised_average_power is None
         assert dt.segment_length == 100.0
-        assert dt.shape == (0,)
+        assert dt.array_data is None
         assert dt.source is not None
-        assert dt.windowing_function == ''
+        assert dt.windowing_function is None
 
     def test_waveletcoefficients(self):
         data = numpy.random.random((10, 10))
@@ -69,12 +68,12 @@ class TestSpectral(BaseTestCase):
         dt = spectral.WaveletCoefficients(source=ts,
                                           mother='morlet',
                                           sample_period=7.8125,
-                                          frequencies=[0.008, 0.028, 0.048, 0.068],
+                                          frequencies=numpy.array([0.008, 0.028, 0.048, 0.068]),
                                           normalisation="energy",
                                           q_ratio=5.0,
                                           array_data=numpy.random.random((10, 10)), )
-        dt.configure()
-        summary_info = dt.summary_info
+        # dt.configure()
+        summary_info = dt.summary_info()
         assert summary_info['Maximum frequency'] == 0.068
         assert summary_info['Minimum frequency'] == 0.008
         assert summary_info['Normalisation'], 'energy'
@@ -85,41 +84,40 @@ class TestSpectral(BaseTestCase):
         assert summary_info['Wavelet type'] == 'morlet'
         assert dt.q_ratio == 5.0
         assert dt.sample_period == 7.8125
-        assert dt.shape == (10, 10)
+        assert dt.array_data.shape == (10, 10)
         assert dt.source is not None
 
     def test_coherencespectrum(self):
         data = numpy.random.random((10, 10))
-        ts = time_series.TimeSeries(data=data)
+        ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.CoherenceSpectrum(source=ts,
                                         nfft=4,
                                         array_data=numpy.random.random((10, 10)),
                                         frequency=numpy.random.random((10,)))
-        summary_info = dt.summary_info
+        summary_info = dt.summary_info()
         assert summary_info['Number of frequencies'] == 10
         assert summary_info['Spectral type'] == 'CoherenceSpectrum'
         assert summary_info['FFT length (time-points)'] == 4
-        assert summary_info['Source'] == ''
+        assert summary_info['Source'] == 'meh'
         assert dt.nfft == 4
-        assert dt.shape == (10, 10)
+        assert dt.array_data.shape == (10, 10)
         assert dt.source is not None
 
     def test_complexcoherence(self):
         data = numpy.random.random((10, 10))
-        ts = time_series.TimeSeries(data=data)
+        ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.ComplexCoherenceSpectrum(source=ts,
                                                array_data=numpy.random.random((10, 10)),
                                                cross_spectrum=numpy.random.random((10, 10)),
                                                epoch_length=10,
                                                segment_length=5)
-        summary_info = dt.summary_info
+        summary_info = dt.summary_info()
         assert summary_info['Frequency step'] == 0.2
         assert summary_info['Maximum frequency'] == 0.5
-        assert summary_info['Source'] == ''
+        assert summary_info['Source'] == 'meh'
         assert summary_info['Spectral type'] == 'ComplexCoherenceSpectrum'
-        assert dt.aggregation_functions is None
         assert dt.epoch_length == 10
         assert dt.segment_length == 5
-        assert dt.shape, (10 == 10)
+        assert dt.array_data.shape, (10 == 10)
         assert dt.source is not None
-        assert dt.windowing_function == ''
+        assert dt.windowing_function is None

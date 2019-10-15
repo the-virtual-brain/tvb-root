@@ -49,10 +49,10 @@ class TestModeDecompositions(BaseTestCase):
         dt = mode_decompositions.PrincipalComponents(source=ts,
                                                      fractions=numpy.random.random((10, 10, 10)),
                                                      weights=data)
-        dt.configure()
         dt.compute_norm_source()
         dt.compute_component_time_series()
         dt.compute_normalised_component_time_series()
+        dt.configure()
         summary = dt.summary_info()
         assert summary['Mode decomposition type'] == 'PrincipalComponents'
         assert dt.source is not None

@@ -85,7 +85,7 @@ class TestsExactPropagation(BaseTestCase):
             integrator=Identity(dt=1.0),
             initial_conditions=numpy.ones((n * n, 1, n, 1)),
             simulation_length=10.0,
-            connectivity=Connectivity(weights=self.conn, tract_lengths=self.dist, speed=numpy.array([1.0])),
+            connectivity=Connectivity(weights=self.conn, tract_lengths=self.dist, speed=numpy.array([1.0]), centres=numpy.array([0.0])),
             model=Sum(),
             monitors=(Raw(),),
         )

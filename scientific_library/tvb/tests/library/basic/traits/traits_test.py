@@ -34,6 +34,9 @@
 import numpy
 import json
 from copy import deepcopy
+
+import pytest
+
 from tvb.tests.library.base_testcase import BaseTestCase
 import tvb.datatypes.equations as equations
 import tvb.datatypes.arrays as arrays
@@ -44,6 +47,7 @@ from tvb.basic.traits import types_basic as basic
 from tvb.simulator.models import WilsonCowan, ReducedSetHindmarshRose
 
 
+@pytest.mark.skip(reason='traits obsolete')
 class TestTraits(BaseTestCase):
     """
     Test class for traits.core and traits.base

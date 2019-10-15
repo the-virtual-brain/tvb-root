@@ -160,6 +160,7 @@ class Simulator(object):
 
 
 class TestSimulator(BaseTestCase):
+    @pytest.mark.slow
     @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
     def test_simulator_region(self, model_class, method_class):
 
@@ -175,6 +176,7 @@ class TestSimulator(BaseTestCase):
             assert len(ts) > 0
 
 
+    @pytest.mark.slow
     @pytest.mark.parametrize('default_connectivity', [True, False])
     def test_simulator_surface(self, default_connectivity):
         """

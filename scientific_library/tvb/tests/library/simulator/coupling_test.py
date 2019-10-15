@@ -37,6 +37,7 @@ Test for tvb.simulator.coupling module
 
 import copy
 import numpy
+import pytest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
@@ -141,6 +142,7 @@ class TestCoupling(BaseTestCase):
 
 
 class TestCouplingShape(BaseTestCase):
+    @pytest.mark.slow
     def test_shape(self):
 
         # try to avoid introspector picking up this model

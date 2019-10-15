@@ -32,6 +32,7 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -47,13 +48,14 @@ class TestConsoleTraited(BaseTestCase):
         Test scientific methods are executed
         """
         default_cortex = Cortex.from_file()
-        default_cortex.coupling_strength = 0.0121
+        default_cortex.coupling_strength = numpy.array([0.0121])
         assert default_cortex.local_connectivity is None
 
         # default_cortex.local_connectivity = surfaces.LocalConnectivity(cutoff=2, surface=default_cortex)
         # default_cortex.compute_local_connectivity()
         # self.assertTrue(default_cortex.local_connectivity is not None)
 
-        default_lc = LocalConnectivity(load_default=True, cutoff=2)
+        default_lc = LocalConnectivity.from_file()
+        default_lc.cutoff = 2
         other_cortex = Cortex(local_connectivity=default_lc)
         assert other_cortex.local_connectivity is not None
