@@ -30,8 +30,7 @@
 
 """
 
-The Connectivity datatype. This brings together the scientific and framework 
-methods that are associated with the connectivity data.
+The Connectivity datatype.
 
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 

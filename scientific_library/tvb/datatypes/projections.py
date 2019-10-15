@@ -28,8 +28,7 @@
 #
 #
 """
-The ProjectionMatrices DataTypes. This brings together the scientific and framework 
-methods that are associated with the surfaces data.
+The ProjectionMatrices DataTypes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """

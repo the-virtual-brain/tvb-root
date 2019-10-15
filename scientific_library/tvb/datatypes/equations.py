@@ -30,8 +30,7 @@
 
 """
 
-The Equation datatypes. This brings together the scientific and framework 
-methods that are associated with the Equation datatypes.
+The Equation datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 

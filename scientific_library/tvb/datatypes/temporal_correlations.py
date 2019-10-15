@@ -30,8 +30,7 @@
 
 """
 
-The Temporal Correlation datatypes. This brings together the scientific and
-framework methods that are associated with the Temporal Correlation datatypes.
+The Temporal Correlation datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 

@@ -29,8 +29,7 @@
 #
 
 """
-The Volume datatypes. This brings together the scientific and framework 
-methods that are associated with the volume datatypes.
+The Volume datatypes.
 
 """
 

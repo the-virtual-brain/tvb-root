@@ -30,8 +30,7 @@
 
 """
 
-The LookUpTable datatype. This brings together the scientific and framework 
-methods that are associated with the precalculated look up tables.
+The LookUpTable datatype.
 
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 

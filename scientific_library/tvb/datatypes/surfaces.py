@@ -29,11 +29,8 @@
 #
 
 """
-Surface relates DataTypes. This brings together the scientific and framework 
-methods that are associated with the surfaces data.
+Surface relates DataTypes.
 
-.. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
-.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
 .. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
@@ -44,7 +41,6 @@ import warnings
 import numpy
 from tvb.basic import exceptions
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
 
@@ -217,17 +213,6 @@ class Surface(HasTraits):
 
         if self._edge_lengths is None:
             self._find_edge_lengths()
-
-        self.framework_configure()
-
-    def validate(self):
-        """
-        Combines scientific and framework surface validations.
-        """
-        result_sci = self.scientific_validate()
-        result_fr = self.framework_validate()
-
-        return result_sci.merge(result_fr)
 
     # from scientific surfaces
     _vertex_neighbours = None
@@ -694,7 +679,7 @@ class Surface(HasTraits):
 
         return lbo
 
-    def scientific_validate(self):
+    def validate(self):
         self.number_of_vertices = self.vertices.shape[0]
         self.number_of_triangles = self.triangles.shape[0]
 
@@ -707,178 +692,12 @@ class Surface(HasTraits):
 
         return validation_result
 
-    def compute_equation(self, focal_points, equation):
-        """
-        focal_points - a list of focal points. Used for specifying the vertices
-        from which the distance is calculated.
-        equation - the equation which should be evaluated
-        """
-        focal_points = numpy.array(focal_points, dtype=numpy.int32)
-        dist = self.geodesic_distance(focal_points)
-        return equation.evaluate(dist)
-
-    # framework methods
-    def load_from_metadata(self, meta_dictionary):
-        self.edge_mean_length = 0
-        self.edge_min_length = 0
-        self.edge_max_length = 0
-        self.valid_for_simulations = True
-        super(Surface, self).load_from_metadata(meta_dictionary)
-
     @staticmethod
     def _triangles_to_lines(triangles):
         lines_array = []
         for a, b, c in triangles:
             lines_array.extend([a, b, b, c, c, a])
         return numpy.array(lines_array)
-
-    def framework_configure(self):
-        """
-        Before storing Surface in DB, make sure vertices/triangles are split in
-        slices that are readable by WebGL.
-        WebGL only supports triangle indices in interval [0.... 2^16]
-        """
-
-        self.number_of_vertices = int(self.vertices.shape[0])
-        self.number_of_triangles = int(self.triangles.shape[0])
-
-        # Do not split again, if split-data is already computed:
-        if 1 < self.number_of_split_slices == len(self.split_slices):
-            return
-
-        # Do not split when size is conveniently small:
-        self.bi_hemispheric = self.hemisphere_mask is not None and numpy.unique(self.hemisphere_mask).size > 1
-        if self.number_of_vertices <= SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE and not self.bi_hemispheric:
-            self.number_of_split_slices = 1
-            self.split_slices = {0: {KEY_TRIANGLES: {KEY_START: 0, KEY_END: self.number_of_triangles},
-                                     KEY_VERTICES: {KEY_START: 0, KEY_END: self.number_of_vertices},
-                                     KEY_HEMISPHERE: HEMISPHERE_UNKNOWN}}
-            return
-
-        # Compute the number of split slices:
-        left_hemisphere_slices = 0
-        left_hemisphere_vertices_no = 0
-        if self.bi_hemispheric:
-            # when more than one hemisphere
-            right_hemisphere_vertices_no = numpy.count_nonzero(self.hemisphere_mask)
-            left_hemisphere_vertices_no = self.number_of_vertices - right_hemisphere_vertices_no
-            LOG.debug("Right %d Left %d" % (right_hemisphere_vertices_no, left_hemisphere_vertices_no))
-            left_hemisphere_slices = self._get_slices_number(left_hemisphere_vertices_no)
-            self.number_of_split_slices = left_hemisphere_slices
-            self.number_of_split_slices += self._get_slices_number(right_hemisphere_vertices_no)
-            LOG.debug("Hemispheres Total %d Left %d" % (self.number_of_split_slices, left_hemisphere_slices))
-        else:
-            # when a single hemisphere
-            self.number_of_split_slices = self._get_slices_number(self.number_of_vertices)
-
-        LOG.debug("Start to compute surface split triangles and vertices")
-        split_triangles = []
-        ignored_triangles_counter = 0
-        self.split_slices = {}
-
-        for i in range(self.number_of_split_slices):
-            split_triangles.append([])
-            if not self.bi_hemispheric:
-                self.split_slices[i] = {KEY_VERTICES: {KEY_START: i * SPLIT_MAX_SIZE,
-                                                       KEY_END: min(self.number_of_vertices,
-                                                                    (i + 1) * SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE)},
-                                        KEY_HEMISPHERE: HEMISPHERE_UNKNOWN}
-            else:
-                if i < left_hemisphere_slices:
-                    self.split_slices[i] = {KEY_VERTICES: {KEY_START: i * SPLIT_MAX_SIZE,
-                                                           KEY_END: min(left_hemisphere_vertices_no,
-                                                                        (i + 1) * SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE)},
-                                            KEY_HEMISPHERE: HEMISPHERE_LEFT}
-                else:
-                    self.split_slices[i] = {KEY_VERTICES: {KEY_START: left_hemisphere_vertices_no +
-                                                                      (i - left_hemisphere_slices) * SPLIT_MAX_SIZE,
-                                                           KEY_END: min(self.number_of_vertices,
-                                                                        left_hemisphere_vertices_no + SPLIT_MAX_SIZE *
-                                                                        (i + 1 - left_hemisphere_slices)
-                                                                        + SPLIT_BUFFER_SIZE)},
-                                            KEY_HEMISPHERE: HEMISPHERE_RIGHT}
-
-        # Iterate Triangles and find the slice where it fits best, based on its vertices indexes:
-        for i in range(self.number_of_triangles):
-            current_triangle = [self.triangles[i][j] for j in range(3)]
-            fit_slice, transformed_triangle = self._find_slice(current_triangle)
-
-            if fit_slice is not None:
-                split_triangles[fit_slice].append(transformed_triangle)
-            else:
-                # triangle ignored, as it has vertices over multiple slices.
-                ignored_triangles_counter += 1
-                continue
-
-        final_split_triangles = []
-        last_triangles_idx = 0
-
-        # Concatenate triangles, to be stored in a single HDF5 array.
-        for slice_idx, split_ in enumerate(split_triangles):
-            self.split_slices[slice_idx][KEY_TRIANGLES] = {KEY_START: last_triangles_idx,
-                                                           KEY_END: last_triangles_idx + len(split_)}
-            final_split_triangles.extend(split_)
-            last_triangles_idx += len(split_)
-        self.split_triangles = numpy.array(final_split_triangles, dtype=numpy.int32)
-
-        if ignored_triangles_counter > 0:
-            LOG.warning("Ignored triangles from multiple hemispheres: " + str(ignored_triangles_counter))
-        LOG.debug("End compute surface split triangles and vertices " + str(self.split_slices))
-
-    def framework_validate(self):
-        # First check if the surface has a valid number of vertices
-        self.number_of_vertices = self.vertices.shape[0]
-        self.number_of_triangles = self.triangles.shape[0]
-
-        if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
-            msg_ = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
-            msg_ += " Please upload a new surface or change max number in application settings."
-            raise exceptions.ValidationException(msg_)
-        return ValidationResult()
-
-    def _get_slice_vertex_boundaries(self, slice_idx):
-        if str(slice_idx) in self.split_slices:
-            start_idx = max(0, self.split_slices[str(slice_idx)][KEY_VERTICES][KEY_START])
-            end_idx = min(self.split_slices[str(slice_idx)][KEY_VERTICES][KEY_END], self.number_of_vertices)
-            return start_idx, end_idx
-        else:
-            LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
-            return 0, min(SPLIT_BUFFER_SIZE, self.number_of_vertices)
-
-    def _get_slice_triangle_boundaries(self, slice_idx):
-        if str(slice_idx) in self.split_slices:
-            start_idx = max(0, self.split_slices[str(slice_idx)][KEY_TRIANGLES][KEY_START])
-            end_idx = min(self.split_slices[str(slice_idx)][KEY_TRIANGLES][KEY_END], self.number_of_triangles)
-            return start_idx, end_idx
-        else:
-            LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
-            return 0, self.number_of_triangles
-
-    @staticmethod
-    def _get_slices_number(vertices_number):
-        """
-        Slices are for vertices [SPLIT_MAX_SIZE * i ... SPLIT_MAX_SIZE * (i + 1) + SPLIT_BUFFER_SIZE]
-        Slices will overlap :
-        |........SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|                           <-- split 1
-                               |......... SPLIT_MAX_SIZE|...SPLIT_BUFFER_SIZE|  <-- split 2
-        If we have trailing data smaller than the SPLIT_BUFFER_SIZE,
-        then we no longer split but we need to have at least 1 slice.
-        """
-        slices_number, trailing = divmod(vertices_number, SPLIT_MAX_SIZE)
-        if trailing > SPLIT_BUFFER_SIZE or (slices_number == 0 and trailing > 0):
-            slices_number += 1
-        return slices_number
-
-    def _find_slice(self, triangle):
-        split_slices = self.split_slices  # because of performance: 1.5 times slower without this
-        mn = min(triangle)
-        mx = max(triangle)
-        for i in range(self.number_of_split_slices):
-            v = split_slices[i][KEY_VERTICES]  # extracted for performance
-            slice_start = v[KEY_START]
-            if slice_start <= mn and mx < v[KEY_END]:
-                return i, [triangle[j] - slice_start for j in range(3)]
-        return None, triangle
 
     def center(self):
         """
@@ -888,77 +707,6 @@ class Surface(HasTraits):
         return [float(numpy.mean(self.vertices[:, 0])),
                 float(numpy.mean(self.vertices[:, 1])),
                 float(numpy.mean(self.vertices[:, 2]))]
-
-    @staticmethod
-    def _process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
-                          region_mapping_array, vertices, normals):
-        """
-        Process a triangle and generate the required data for a region separation.
-        :param triangle: the actual triangle as a 3 element vector
-        :param reg_idx1: the first vertex that is in a 'conflicting' region
-        :param reg_idx2: the second vertex that is in a 'conflicting' region
-        :param dangling_idx: the third vector for which we know nothing yet.
-                    Depending on this we might generate a line, or a 3 star centered in the triangle
-        :param indices_offset: to take into account the slicing
-        :param region_mapping_array: the region mapping raw array for which the regions are computed
-        :param vertices: the current vertex slice
-        :param normals: the current normals slice
-        """
-
-        def _star_triangle(point0, point1, point2, result_array):
-            """
-            Helper function that for a given triangle generates a 3-way star centered in the triangle center
-            """
-            center_vertex = [(point0[i] + point1[i] + point2[i]) / 3 for i in range(3)]
-            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
-            mid_line2 = [(point1[i] + point2[i]) / 2 for i in range(3)]
-            mid_line3 = [(point2[i] + point0[i]) / 2 for i in range(3)]
-            result_array.extend(center_vertex)
-            result_array.extend(mid_line1)
-            result_array.extend(mid_line2)
-            result_array.extend(mid_line3)
-
-        def _slice_triangle(point0, point1, point2, result_array):
-            """
-            Helper function that for a given triangle generates a line cutting thtough the middle of two edges.
-            """
-            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
-            mid_line2 = [(point0[i] + point2[i]) / 2 for i in range(3)]
-            result_array.extend(mid_line1)
-            result_array.extend(mid_line2)
-
-        # performance opportunity: we are computing some values available in caller
-
-        p0 = vertices[triangle[reg_idx1] - indices_offset]
-        p1 = vertices[triangle[reg_idx2] - indices_offset]
-        p2 = vertices[triangle[dangling_idx] - indices_offset]
-        n0 = normals[triangle[reg_idx1] - indices_offset]
-        n1 = normals[triangle[reg_idx2] - indices_offset]
-        n2 = normals[triangle[dangling_idx] - indices_offset]
-        result_vertices = []
-        result_normals = []
-
-        dangling_reg = region_mapping_array[triangle[dangling_idx]]
-        reg_1 = region_mapping_array[triangle[reg_idx1]]
-        reg_2 = region_mapping_array[triangle[reg_idx2]]
-
-        if dangling_reg != reg_1 and dangling_reg != reg_2:
-            # Triangle is actually spanning 3 regions. Create a vertex in the center of the triangle, which connects to
-            # the middle of each edge
-            _star_triangle(p0, p1, p2, result_vertices)
-            _star_triangle(n0, n1, n2, result_normals)
-            result_lines = [0, 1, 0, 2, 0, 3]
-        elif dangling_reg == reg_1:
-            # Triangle spanning only 2 regions, draw a line through the middle of the triangle
-            _slice_triangle(p1, p0, p2, result_vertices)
-            _slice_triangle(n1, n0, n2, result_normals)
-            result_lines = [0, 1]
-        else:
-            # Triangle spanning only 2 regions, draw a line through the middle of the triangle
-            _slice_triangle(p0, p1, p2, result_vertices)
-            _slice_triangle(n0, n1, n2, result_normals)
-            result_lines = [0, 1]
-        return result_vertices, result_lines, result_normals
 
 
 class WhiteMatterSurface(Surface):
@@ -1058,4 +806,3 @@ def center_vertices(vertices):
     :returns: the centered array
     """
     return vertices - numpy.mean(vertices, axis=0).reshape((1, 3))
-

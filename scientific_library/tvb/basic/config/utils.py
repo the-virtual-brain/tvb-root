@@ -57,14 +57,13 @@ class LibraryImportError(ImportError):
 
 
 
-class LibraryModulesFinder():
+class LibraryModulesFinder(object):
     """
     In case users run TVB in 'library' profile access should be restricted to some parts of tvb,
     to avoid errors from those parts (which are not excepted to run with library settings).
     """
 
     restricted_modules = ['tvb.interfaces',
-                          'tvb.datatype_removers',
                           'tvb.core',
                           'tvb.config',
                           'tvb.adapters']

@@ -30,8 +30,7 @@
 
 """
 
-The Spectral datatypes. This brings together the scientific and framework
-methods that are associated with the Spectral datatypes.
+The Spectral datatypes.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
