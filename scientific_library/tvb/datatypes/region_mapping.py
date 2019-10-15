@@ -83,9 +83,9 @@ class RegionMapping(HasTraits):
         :param end_idx: vertex index on the surface
         :return: NumPy array with [closest_reg_idx ...]
         """
-        if isinstance(start_idx, (str, unicode)):
+        if isinstance(start_idx, str):
             start_idx = int(start_idx)
-        if isinstance(end_idx, (str, unicode)):
+        if isinstance(end_idx, str):
             end_idx = int(end_idx)
 
         return self.array_data[start_idx: end_idx].T
@@ -97,7 +97,7 @@ class RegionMapping(HasTraits):
         """
         triangles_no = self.surface.number_of_triangles
         result = []
-        for i in xrange(triangles_no):
+        for i in range(triangles_no):
             result.append(self.array_data[self.surface.triangles[i][0]])
         return numpy.array(result)
 

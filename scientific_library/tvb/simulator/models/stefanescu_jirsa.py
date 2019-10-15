@@ -283,8 +283,8 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         V = numpy.zeros((self.number_of_modes, self.nv))
         U = numpy.zeros((self.number_of_modes, self.nu))
 
-        nv_per_mode = self.nv / self.number_of_modes
-        nu_per_mode = self.nu / self.number_of_modes
+        nv_per_mode = self.nv // self.number_of_modes
+        nu_per_mode = self.nu // self.number_of_modes
 
         for i in range(self.number_of_modes):
             V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)
@@ -588,8 +588,8 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         V = numpy.zeros((self.number_of_modes, self.nv))
         U = numpy.zeros((self.number_of_modes, self.nu))
 
-        nv_per_mode = self.nv / self.number_of_modes
-        nu_per_mode = self.nu / self.number_of_modes
+        nv_per_mode = self.nv // self.number_of_modes
+        nu_per_mode = self.nu // self.number_of_modes
 
         for i in range(self.number_of_modes):
             V[i, i * nv_per_mode:(i + 1) * nv_per_mode] = numpy.ones(nv_per_mode)

@@ -67,12 +67,12 @@ class TestSensors(BaseTestCase):
 
         ## Mapping on a surface with holes should fail
         dummy_surf = SkinAir()
-        dummy_surf.vertices = numpy.array(range(30)).reshape(10, 3).astype('f')
-        dummy_surf.triangles = numpy.array(range(9)).reshape(3, 3)
+        dummy_surf.vertices = numpy.array(list(range(30))).reshape(10, 3).astype('f')
+        dummy_surf.triangles = numpy.array(list(range(9))).reshape(3, 3)
         dummy_surf.configure()
         try:
             dt.sensors_to_surface(dummy_surf)
-            pytest.fail("Should have failed for this simple surface!")
+            self.fail("Should have failed for this simple surface!")
         except Exception:
             pass
 

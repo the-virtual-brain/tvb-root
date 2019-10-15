@@ -32,7 +32,7 @@ import pyopencl
 import pyopencl.array
 import numpy
 import os
-from models import CLComponent,CLModel
+from .models import CLComponent,CLModel
 from ..models.oscillator import Generic2dOscillator,Kuramoto
 from ..models.jansen_rit import JansenRit, ZetterbergJansen
 from ..models.linear import Linear

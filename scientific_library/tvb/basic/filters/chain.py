@@ -187,7 +187,7 @@ class FilterChain(object):
         Internal method, to build a DataType class instance, from possible class string-name.
         """
         data_class = data_name
-        if isinstance(data_name, (str, unicode)):
+        if isinstance(data_name, str):
             try:
                 module_name, class_name = str(data_name).rsplit('.', 1)
                 module = __import__(module_name, globals(), locals(), [class_name])
@@ -241,7 +241,7 @@ class FilterChain(object):
 
             #### Any filter validations checks end here #####
             my_filter = self.__prepare_filter_string(self.fields[i]) + ' ' + self.operations[i] + " "
-            if type(self.values[i]) in (str, unicode):
+            if type(self.values[i]) in (str, str):
                 prepared_value = self.__prepare_filter_string(self.values[i])
                 if prepared_value != self.values[i]:
                     ## It's not just some string, but a FilterChain expression.
@@ -304,7 +304,7 @@ class FilterChain(object):
         result = ""
         if operation in ("not in", "in"):
             prepared_value = self.__prepare_filter_string(str(value))
-            if type(value) in (str, unicode):
+            if type(value) in (str, str):
                 if prepared_value == value:
                     ## It was just a regular string, need to add quotes so it's not evaluated to a variable
                     prepared_value = '"' + prepared_value + '"'
@@ -323,7 +323,7 @@ class FilterChain(object):
             result = result + field
             result = result + operation
             prepared_value = self.__prepare_filter_string(str(value))
-            if type(value) in (str, unicode, datetime.datetime):
+            if type(value) in (str, str, datetime.datetime):
                 if prepared_value == str(value):
                     ## It was just a regular string, need to add quotes so it's not evaluated to a variable
                     prepared_value = '"' + prepared_value + '"'

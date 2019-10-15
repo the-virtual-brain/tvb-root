@@ -119,7 +119,7 @@ class Equation(HasTraits):
         var = var[numpy.newaxis, :]
 
         y = self.evaluate(var)
-        result = zip(var.flat, y.flat)
+        result = list(zip(var.flat, y.flat))
         return result, False
 
     @staticmethod

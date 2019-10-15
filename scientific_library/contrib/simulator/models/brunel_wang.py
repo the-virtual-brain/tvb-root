@@ -444,7 +444,7 @@ class BrunelWang(models.Model):
         decl += '\n'.join(inspect.getsource(self.dfun).split('\n')[1:]).replace("self.", "")
         dikt = {'vint': self.vint, 'array': numpy.array, 'int32': numpy.int32, 'numpy': numpy}
         #print decl
-        exec decl in dikt
+        exec(decl, dikt)
         self.dfun = dikt[fnname]
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):

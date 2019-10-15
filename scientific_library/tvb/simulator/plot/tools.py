@@ -283,7 +283,7 @@ def show_me_the_colours():
     """
     Create a plot of matplotlibs built-in "named" colours...
     """
-    colours = matplotlib.colors.cnames.keys()
+    colours = list(matplotlib.colors.cnames.keys())
     number_of_colors = len(colours)
     colours_fig = pyplot.figure(num="Built-in colours")
     rows = int(numpy.ceil(numpy.sqrt(number_of_colors)))
@@ -598,7 +598,7 @@ def plot_fast_kde(x, y, kern_nx = None, kern_ny = None, gridsize=(500, 500),
         xmin, xmax = x.min(), x.max()
         ymin, ymax = y.min(), y.max()
     else:
-        xmin, xmax, ymin, ymax = map(float, extents)
+        xmin, xmax, ymin, ymax = list(map(float, extents))
         
     dx = (xmax - xmin) / (nx - 1)
     dy = (ymax - ymin) / (ny - 1)

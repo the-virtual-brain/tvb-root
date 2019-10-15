@@ -164,7 +164,7 @@ class NodeCoherence(HasTraits):
         Returns the storage size in Bytes of the main result of NodeCoherence.
         """
         # TODO This depends on input array dtype!
-        result_size = numpy.sum(map(numpy.prod, self.result_shape(input_shape))) * 8.0 #Bytes
+        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape)))) * 8.0 #Bytes
         return result_size
 
     def extended_result_size(self, input_shape):

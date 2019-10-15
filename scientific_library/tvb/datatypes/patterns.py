@@ -230,4 +230,4 @@ class SpatialPatternVolume(SpatialPattern):
 
     volume = Attr(volumes.Volume, label="Volume")
 
-    focal_points_volume = NArray(dtype=long, label="Focal points")
+    focal_points_volume = NArray(dtype=int, label="Focal points")

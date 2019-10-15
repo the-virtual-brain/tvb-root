@@ -118,7 +118,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
     @classmethod
     def from_file(cls, source_file='projection_eeg_65_surface_16k.npy', matlab_data_name="ProjectionMatrix",
                   is_brainstorm=False, instance=None):
-        return ProjectionMatrix.from_file.im_func(cls, source_file, matlab_data_name, is_brainstorm,
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
                                                   instance)
 
 
@@ -134,7 +134,7 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
     @classmethod
     def from_file(cls, source_file='projection_meg_276_surface_16k.npy', matlab_data_name=None, is_brainstorm=False,
                   instance=None):
-        return ProjectionMatrix.from_file.im_func(cls, source_file, matlab_data_name, is_brainstorm,
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
                                                   instance)
 
 
@@ -150,5 +150,5 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     @classmethod
     def from_file(cls, source_file='projection_seeg_588_surface_16k.npy', matlab_data_name=None, is_brainstorm=False,
                   instance=None):
-        return ProjectionMatrix.from_file.im_func(cls, source_file, matlab_data_name, is_brainstorm,
+        return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm,
                                                   instance)

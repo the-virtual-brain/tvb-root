@@ -48,8 +48,8 @@ def make_jr():
     "Construct CUDA device function for the Jansen-Rit model."
 
     # parameters
-    A   ,    B,   a,    b,   v0, nu_max,    r,     J, a_1, a_2,  a_3,  a_4, p_min, p_max,   mu = map(float32, [
-    3.25, 22.0, 0.1, 0.05, 5.52, 0.0025, 0.56, 135.0, 1.0, 0.8, 0.25, 0.25,  0.12,  0.32, 0.22])
+    A   ,    B,   a,    b,   v0, nu_max,    r,     J, a_1, a_2,  a_3,  a_4, p_min, p_max,   mu = list(map(float32, [
+    3.25, 22.0, 0.1, 0.05, 5.52, 0.0025, 0.56, 135.0, 1.0, 0.8, 0.25, 0.25,  0.12,  0.32, 0.22]))
 
     # jit maps this to CUDA exp
     from math import exp

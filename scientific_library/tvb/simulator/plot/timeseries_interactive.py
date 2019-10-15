@@ -181,7 +181,7 @@ class TimeSeriesInteractive(HasTraits):
         #Current state
         self.window_length = self.tpts * self.period
         self.view_step = max(int(self.tpts / TIME_RESOLUTION), 1)
-        self.time_view = range(0, self.tpts, self.view_step)
+        self.time_view = list(range(0, self.tpts, self.view_step))
 
 
     def show(self):
@@ -427,7 +427,7 @@ class TimeSeriesInteractive(HasTraits):
         window_start = self.time_view[0]
         window_end = min(window_start + self.view_step * (TIME_RESOLUTION-1),
                          self.tpts)
-        self.time_view = range(window_start, window_end, self.view_step)
+        self.time_view = list(range(window_start, window_end, self.view_step))
 
 
     ##------------------------------------------------------------------------##

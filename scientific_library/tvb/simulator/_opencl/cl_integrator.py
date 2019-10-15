@@ -31,9 +31,9 @@
 import pyopencl
 import pyopencl.array
 import numpy
-from models import CLComponent, CLModel
+from .models import CLComponent, CLModel
 from ..integrators import HeunDeterministic, HeunStochastic, EulerDeterministic, EulerStochastic, RungeKutta4thOrderDeterministic , Identity
-from util import *
+from .util import *
 
 grw = lambda arr, ctx: pyopencl.Buffer(ctx, pyopencl.mem_flags.COPY_HOST_PTR, hostbuf=arr)
 
@@ -81,7 +81,7 @@ class CLIntegrator(CLComponent):
         if stochasticVariant:
             arrays['noise'] = (n_states, n_nodes, n_mode)
 
-        for name, shape in arrays.items():
+        for name, shape in list(arrays.items()):
             self._arrays[name] = pyopencl.array.Array(self._queue, shape, 'f')
             #print "Name: type:",isinstance(self._arrays[name],pyopencl.Buffer)
             #print "name: %s, shape %s"%(name,shape)
@@ -90,12 +90,12 @@ class CLIntegrator(CLComponent):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:",X.shape
+        print("X shape:",X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl( n_nodes,n_states = n_states, n_mode = n_mode , stochasticVariant = True )
 
-        print "self: %s %s X: %s %s"%(self._arrays['state'].dtype, self._arrays['state'].size, X.dtype, X.size)
+        print("self: %s %s X: %s %s"%(self._arrays['state'].dtype, self._arrays['state'].size, X.dtype, X.size))
         self._arrays['state'].set( X )
 
         self._arrays['coupling'].set( coupling )
@@ -125,7 +125,7 @@ class CL_EulerDeterministic( CLIntegrator, EulerDeterministic ):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl(n_nodes, n_states=n_states, n_mode=n_mode, stochasticVariant=True)
@@ -145,7 +145,7 @@ class CL_Identity(CLIntegrator, Identity):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl(n_nodes, n_states=n_states, n_mode=n_mode, stochasticVariant=True)
@@ -169,7 +169,7 @@ class CL_HeunDeterministic(CLIntegrator, HeunDeterministic):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl(n_nodes, n_states=n_states, n_mode=n_mode)
@@ -203,7 +203,7 @@ class CL_EulerStochastic(CLIntegrator, EulerStochastic):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl( n_nodes, n_states=n_states, n_mode=n_mode )
@@ -231,7 +231,7 @@ class CL_HeunStochastic( CLIntegrator, HeunStochastic ):
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl(n_nodes, n_states=n_states, n_mode=n_mode )
@@ -273,7 +273,7 @@ class CL_RungeKutta4thOrderDeterministic( CLIntegrator, RungeKutta4thOrderDeterm
         n_states = X.shape[0]
         n_nodes = X.shape[1]
         n_mode = X.shape[2]
-        print "X shape:", X.shape
+        print("X shape:", X.shape)
         # check for openclArray buffer
         if not hasattr(self, '_arrays'):
             self._alloc_opencl(n_nodes, n_states=n_states, n_mode=n_mode)

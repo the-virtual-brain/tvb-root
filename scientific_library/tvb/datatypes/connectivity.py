@@ -353,7 +353,7 @@ class Connectivity(HasTraits):
         if sel is not None and len(sel) > 0:
             return sel
         else:
-            return range(len(self.region_labels))
+            return list(range(len(self.region_labels)))
 
     def get_measure_points_selection_gid(self):
         """
@@ -495,6 +495,9 @@ class Connectivity(HasTraits):
             hemispheres = []
             ## Check if all labels are prefixed with R / L
             for label in self.region_labels:
+                ## Decode the label in case it is an instance of bytes
+                if isinstance(label, bytes):
+                    label = label.decode('ascii')
                 if label is not None and label.lower().startswith('r'):
                     hemispheres.append(True)
                 elif label is not None and label.lower().startswith('l'):
@@ -506,6 +509,9 @@ class Connectivity(HasTraits):
             if hemispheres is None:
                 hemispheres = []
                 for label in self.region_labels:
+                    ## Decode the label in case it is an instance of bytes
+                    if isinstance(label, bytes):
+                        label = label.decode('ascii')
                     if label is not None and label.lower().endswith('r'):
                         hemispheres.append(True)
                     elif label is not None and label.lower().endswith('l'):
@@ -625,7 +631,7 @@ class Connectivity(HasTraits):
 
         elif mode == 'shuffle':
 
-            for i in reversed(range(1, D.shape[0])):
+            for i in reversed(list(range(1, D.shape[0]))):
                 j = int(numpy.random.rand() * (i + 1))
                 D[:, i], D[:, j] = D[:, j].copy(), D[:, i].copy()
                 D[i, :], D[j, :] = D[j, :].copy(), D[i, :].copy()
@@ -889,7 +895,7 @@ class Connectivity(HasTraits):
             self.region_labels = numpy.array(region_labels).astype(str)
         elif mode in ("alphabetic", "alpha"):
             if self.number_of_regions < 26:
-                self.region_labels = numpy.array(list(map(chr, range(65, 65 + self.number_of_regions)))).astype(str)
+                self.region_labels = numpy.array(list(map(chr, list(range(65, 65 + self.number_of_regions))))).astype(str)
             else:
                 LOG.info("I'm too lazy to create several strategies to label regions. \\")
                 LOG.info("Please choose mode 'numeric' or set your own labels\\")

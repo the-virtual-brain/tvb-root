@@ -54,7 +54,7 @@ def convert_brainstorm_to_tvb(tvb_data_path, chan_paths):
     """
 
     bst_path = tvb_data_path + 'brainstorm/data/TVB-Subject/'
-    for sens_type, sens_path in chan_paths.iteritems():
+    for sens_type, sens_path in chan_paths.items():
         # only MEG channels require orientation information
         use_ori = sens_type in ('meg', )
         # read from MAT file necessary fields

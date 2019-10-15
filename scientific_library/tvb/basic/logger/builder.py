@@ -78,7 +78,7 @@ class LoggerBuilder(object):
         return logger
 
     def set_loggers_level(self, level):
-        for logger in self._loggers.values():
+        for logger in list(self._loggers.values()):
             logger.setLevel(level)
 
 

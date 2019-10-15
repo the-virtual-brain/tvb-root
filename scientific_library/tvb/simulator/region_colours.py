@@ -80,13 +80,13 @@ class RegionColours(object):
         """
         self._neighbours = neighbours
         self._number_of_colours = number_of_colours
-        self._regions = neighbours.keys()
+        self._regions = list(neighbours.keys())
         self._region_degree = [len(neighbours[r]) for r in self.regions]
 
         max_degree_index = numpy.array(self.region_degree).argmax()
         self._max_degree_region = self.regions[max_degree_index]
 
-        domains = range(self.number_of_colours)
+        domains = list(range(self.number_of_colours))
         self.possible_colours = dict()
         for region in self.neighbours:
             self.possible_colours[region] = list(domains) 

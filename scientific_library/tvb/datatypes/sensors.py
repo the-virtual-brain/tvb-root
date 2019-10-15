@@ -89,7 +89,9 @@ class Sensors(HasTraits):
         source_full_path = try_get_absolute_path("tvb_data.sensors", source_file)
         reader = FileReader(source_full_path)
 
-        result.labels = reader.read_array(dtype="string", use_cols=(0,))
+        bytes_labels = reader.read_array(dtype=numpy.bytes_, use_cols=(0,)).tolist()
+
+        result.labels = numpy.array([l.decode("ascii", "replace") for l in bytes_labels])
         result.locations = reader.read_array(use_cols=(1, 2, 3))
 
         return result

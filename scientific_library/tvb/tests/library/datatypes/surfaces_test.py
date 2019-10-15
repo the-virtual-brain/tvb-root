@@ -48,8 +48,8 @@ class TestSurfaces(BaseTestCase):
 
     def test_surface(self):
         dt = surfaces.Surface()
-        dt.vertices = numpy.array(range(30)).reshape(10, 3).astype(numpy.float64)
-        dt.triangles = numpy.array(range(9)).reshape(3, 3)
+        dt.vertices = numpy.array(list(range(30))).reshape(10, 3).astype(numpy.float64)
+        dt.triangles = numpy.array(list(range(9))).reshape(3, 3)
         dt.configure()
         summary_info = dt.summary_info()
         assert summary_info['Number of edges'] == 9

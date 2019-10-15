@@ -235,7 +235,7 @@ class Zerlaut_adaptation_first_order(Model):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.\n
         E: firing rate of excitatory population in KHz\n
-        I: firing rate of inhibitory population in KHz\N
+        I: firing rate of inhibitory population in KHz\n
         W: level of adaptation
         """)
 

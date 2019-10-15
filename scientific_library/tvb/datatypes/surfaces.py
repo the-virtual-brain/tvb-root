@@ -367,7 +367,7 @@ class Surface(HasTraits):
             neighbours[self.triangles[k, 2]].append(self.triangles[k, 0])
             neighbours[self.triangles[k, 2]].append(self.triangles[k, 1])
 
-        neighbours = map(frozenset, neighbours)
+        neighbours = list(map(frozenset, neighbours))
 
         return neighbours
 
@@ -390,7 +390,7 @@ class Surface(HasTraits):
             vertex_triangles[triangles[k, 1]].append(k)
             vertex_triangles[triangles[k, 2]].append(k)
 
-        vertex_triangles = map(frozenset, vertex_triangles)
+        vertex_triangles = list(map(frozenset, vertex_triangles))
 
         return vertex_triangles
 
@@ -648,9 +648,9 @@ class Surface(HasTraits):
         We call isolated vertices those who do not belong to at least 3 triangles.
         """
         euler = self.number_of_vertices + self.number_of_triangles - self.number_of_edges
-        triangles_per_vertex = numpy.array(map(len, self.vertex_triangles))
+        triangles_per_vertex = numpy.array(list(map(len, self.vertex_triangles)))
         isolated = numpy.nonzero(triangles_per_vertex < 3)
-        triangles_per_edge = numpy.array(map(len, self.edge_triangles))
+        triangles_per_edge = numpy.array(list(map(len, self.edge_triangles)))
         pinched_off = numpy.nonzero(triangles_per_edge > 2)
         holes = numpy.nonzero(triangles_per_edge < 2)
         return euler, isolated[0], pinched_off[0], holes[0]

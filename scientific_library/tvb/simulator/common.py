@@ -204,7 +204,7 @@ def unravel_history(history, horizon, step, arange=numpy.arange):
 
     given some step. This function does that. 
     """
-    allt, allv, allr = map(arange, history.shape)
+    allt, allv, allr = list(map(arange, history.shape))
     # ISomething like(?):
     # return numpy.roll(history, step, axis=0) 
     return history[ (allt + step) % horizon, allv, allr ]

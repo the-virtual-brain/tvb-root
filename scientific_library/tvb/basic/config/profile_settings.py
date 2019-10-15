@@ -65,7 +65,7 @@ class BaseSettingsProfile(object):
         self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
 
         ## Actual storage of all TVB related files
-        self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, unicode)
+        self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
 
