@@ -266,7 +266,7 @@ class PhasePlaneInteractive(HasTraits):
         self.pp_splt = self.ipp_fig.add_subplot(212)
         self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.765,
                                      top=0.3, wspace=0.1, hspace=None)
-        self.pp_splt.set_color_cycle(get_color(self.model.nvar))
+        self.pp_splt.set_prop_cycle(color=get_color(self.model.nvar))
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS+1) * self.integrator.dt,
                           numpy.zeros((TRAJ_STEPS+1, self.model.nvar)))
         if hasattr(self.pp_splt, 'autoscale'):
