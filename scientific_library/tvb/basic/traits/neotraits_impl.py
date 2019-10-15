@@ -29,6 +29,15 @@ class Attr(object):
     def __init__(self, field_type=object, default=None, doc='', label='',
                  required=True, readonly=False, choices=None):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
+        """
+        :param field_type: the python type of this attribute
+        :param default: A shared default value. Behaves like class level attribute assignment. Take care with mutable defaults.
+        :param doc: Documentation for this field.
+        :param label: A short description.
+        :param required: required fields should not be None. Not strongly enforced.
+        :param readonly: If assignment should be prohibited.
+        :param choices: A tuple of the values that this field is allowed to take.
+        """
         self.field_name = None  # type: str  # to be set by metaclass
         self.owner = None  # type: type  # to be set by metaclass
         self.field_type = field_type
@@ -145,7 +154,6 @@ class MetaType(abc.ABCMeta):
     We inherit ABCMeta so that the users may use @abstractmethod without having to
     deal with 2 meta-classes.
     Even though we do this we don't support the dynamic registration of subtypes to these abc's
-    todo: Review if supporting abstract methods outweighs the complexity of python abc's.
     """
     # This is a python metaclass.
     # For an introduction see https://docs.python.org/2/reference/datamodel.html

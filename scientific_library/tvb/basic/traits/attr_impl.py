@@ -16,6 +16,9 @@ class Const(Attr):
     We cannot enforce true constancy in python
     """
     def __init__(self, default, doc='', label=''):
+        """
+        :param default: The constant value
+        """
         # it would be nice if we could turn the default immutable. But this is unreasonable work in python
         super(Const, self).__init__(field_type=type(default), default=default,
                                     doc=doc, label=label, required=True, readonly=True)
@@ -97,7 +100,14 @@ class NArray(Attr):
     """
     def __init__(self, default=None, required=True, doc='', label='',
                  dtype=numpy.float, ndim=None, dim_names=(), domain=None):
-        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Tuple[str, ...], typing.Container) -> None
+        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type, str], int, typing.Tuple[str, ...], typing.Container) -> None
+        """
+        :param dtype: The numpy datatype. Defaults to float64. This is checked by neotraits.
+        :param ndim: If given then only arrays of this many dimensions are allowed
+        :param dim_names: Optional names for the names of the dimensions
+        :param domain: Any type that can be checked for membership like xrange.
+                       Represents the expected domain of the values in the array.
+        """
 
         self.dtype = numpy.dtype(dtype)
         # default to zero-dimensional arrays, these behave somewhat curious and similar to numbers
@@ -128,10 +138,8 @@ class NArray(Attr):
         if not isinstance(self.default, numpy.ndarray):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
             raise TypeError(self._err_msg(msg))
-        # we check strict dtype conformance. Compatible dtypes are not ok
-        # todo: review this choice, maybe it is better to be less strict and just check numpy.can_cast('safe')
-        if self.default.dtype != self.dtype:
-            msg = 'default dtype={} is not the declared one={}'.format(self.default.dtype, self.dtype)
+        if not numpy.can_cast(self.default.dtype, self.dtype, 'safe'):
+            msg = 'the dtype of the default={} is not compatible with the declared one={}'.format(self.default.dtype, self.dtype)
             raise ValueError(self._err_msg(msg))
         # if ndim is None we allow any ndim
         if self.ndim is not None and self.default.ndim != self.ndim:
@@ -157,14 +165,7 @@ class NArray(Attr):
         if self.ndim is not None and value.ndim != self.ndim:
             raise TypeError(self._err_msg("can't be set to an array with ndim {}".format(value.ndim)))
 
-        # todo review this special case: string dtypes
-        # tvb treats numpy string arrays like python lists
-        # this goes bad with their fixed size type and the strict dtype checks that we do here
-        if self.dtype.kind == 'S' == value.dtype.kind:
-            return
-        # endtodo
-
-        if value.dtype != self.dtype:
+        if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
             raise TypeError(self._err_msg("can't be set to an array of dtype {}".format(value.dtype)))
 
     # here only for typing purposes, so ide's can get better suggestions

@@ -63,7 +63,7 @@ class Sensors(HasTraits):
 
     __mapper_args__ = {'polymorphic_on': 'sensors_type'}
 
-    labels = NArray(dtype=str, label="Sensor labels")
+    labels = NArray(dtype='S128', label="Sensor labels")
 
     locations = NArray(dtype=float, label="Sensor locations")
 
