@@ -299,8 +299,7 @@ class NodeComplexCoherence(HasTraits):
                                                     cross_spectrum=cs,
                                                     epoch_length=self.epoch_length,
                                                     segment_length=self.segment_length,
-                                                    windowing_function=self.window_function,
-                                                    use_storage=False)
+                                                    windowing_function=self.window_function)
         return spectra
 
 

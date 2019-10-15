@@ -99,8 +99,7 @@ class CrossCorrelate(HasTraits):
         cross_corr = temporal_correlations.CrossCorrelation(
             source=self.time_series,
             array_data=result,
-            time=offset,
-            use_storage=False)
+            time=offset)
         
         return cross_corr
     

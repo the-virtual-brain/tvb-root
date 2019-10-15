@@ -101,7 +101,7 @@ class fastICA(HasTraits):
                 K[sl], W[sl], src[sl] = fastica(data[:, var, :, mode], self.n_components)
 
         return mode_decompositions.IndependentComponents(source=self.time_series, component_time_series=src,
-            prewhitening_matrix=K, unmixing_matrix=W, n_components=n_comp, use_storage=False)
+            prewhitening_matrix=K, unmixing_matrix=W, n_components=n_comp)
     
     def result_shape(self, input_shape):
         "Returns the shape of the mixing matrix."

@@ -116,8 +116,7 @@ class PCA(HasTraits):
         pca_result = mode_decompositions.PrincipalComponents(
             source = self.time_series,
             fractions = fractions,
-            weights = weights,
-            use_storage = False)
+            weights = weights)
         
         return pca_result
     

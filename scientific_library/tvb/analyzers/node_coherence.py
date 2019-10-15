@@ -147,8 +147,7 @@ class NodeCoherence(HasTraits):
             source=self.time_series,
             nfft=self.nfft,
             array_data=coh,
-            frequency=freq,
-            use_storage=False)
+            frequency=freq)
         return spec
 
     def result_shape(self, input_shape):

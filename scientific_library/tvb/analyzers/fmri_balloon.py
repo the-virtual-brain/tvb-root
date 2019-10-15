@@ -297,8 +297,7 @@ class BalloonModel(HasTraits):
             data=y_b,
             time=t_int,
             sample_period=sample_period,
-            sample_period_unit='s',
-            use_storage=False)
+            sample_period_unit='s')
 
         return bold_signal
 
