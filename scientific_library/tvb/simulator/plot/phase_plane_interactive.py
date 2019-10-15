@@ -72,7 +72,7 @@ LOG = get_logger(__name__)
 import tvb.simulator.models as models_module
 import tvb.simulator.integrators as integrators_module
 
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
 BACKGROUNDCOLOUR = "lightgray"
@@ -81,7 +81,7 @@ AXCOLOUR = "steelblue"
 BUTTONCOLOUR = "steelblue"
 HOVERCOLOUR = "darkred"
 
-#Set the resolution of the phase-plane and sample trajectories. 
+#Set the resolution of the phase-plane and sample trajectories.
 NUMBEROFGRIDPOINTS = 42
 TRAJ_STEPS = 4096
 
@@ -132,7 +132,7 @@ class PhasePlaneInteractive(HasTraits):
         initialise the place-holder attributes that aren't filled until the
         show() method is called.
         """
-        super(PhasePlaneInteractive, self).__init__(**kwargs) 
+        super(PhasePlaneInteractive, self).__init__(**kwargs)
         LOG.debug(str(kwargs))
 
         #figure
@@ -155,7 +155,6 @@ class PhasePlaneInteractive(HasTraits):
         self.default_sv = None
         self.no_coupling = None
         self.mode = None
-        self.parameters = None
 
         #Selectors
         self.state_variable_x = None
@@ -189,7 +188,6 @@ class PhasePlaneInteractive(HasTraits):
         self.svx = self.model.state_variables[0] #x-axis: 1st state variable
         self.svy = self.model.state_variables[1] #y-axis: 2nd state variable
         self.mode = 0
-        self.set_parameters()
         self.set_state_vector()
 
         #Make the figure:
@@ -203,7 +201,7 @@ class PhasePlaneInteractive(HasTraits):
         self.add_axes_range_sliders()
         self.add_state_variable_sliders()
         self.add_param_sliders()
-        if isinstance(self.integrator, integrators_module.IntegratorStochastic): 
+        if isinstance(self.integrator, integrators_module.IntegratorStochastic):
             if self.integrator.noise.ntau > 0.0:
                 self.integrator.noise.configure_coloured(self.integrator.dt,
                                                          (1, self.model.nvar, 1,
@@ -230,7 +228,7 @@ class PhasePlaneInteractive(HasTraits):
         self.plot_phase_plane()
 
         # add mouse handler for trajectory clicking
-        self.ipp_fig.canvas.mpl_connect('button_press_event', 
+        self.ipp_fig.canvas.mpl_connect('button_press_event',
                                         self.click_trajectory)
         #import pdb; pdb.set_trace()
 
@@ -251,18 +249,18 @@ class PhasePlaneInteractive(HasTraits):
             figure_window_title += "   --   %s" % integrator_name
             self.ipp_fig = pylab.figure(num = figure_window_title,
                                         figsize = figsize,
-                                        facecolor = BACKGROUNDCOLOUR, 
+                                        facecolor = BACKGROUNDCOLOUR,
                                         edgecolor = EDGECOLOUR)
         except ValueError:
             LOG.info("My life would be easier if you'd update your PyLab...")
             self.ipp_fig = pylab.figure(num = 42, figsize = figsize,
-                                        facecolor = BACKGROUNDCOLOUR, 
+                                        facecolor = BACKGROUNDCOLOUR,
                                         edgecolor = EDGECOLOUR)
 
         self.pp_ax = self.ipp_fig.add_axes([0.265, 0.2, 0.5, 0.75])
 
         self.pp_splt = self.ipp_fig.add_subplot(212)
-        self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.765, 
+        self.ipp_fig.subplots_adjust(left=0.265, bottom=0.02, right=0.765,
                                      top=0.3, wspace=0.1, hspace=None)
         self.pp_splt.set_color_cycle(get_color(self.model.nvar))
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS+1) * self.integrator.dt,
@@ -316,7 +314,7 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders = dict()
 
         default_range_x = (self.model.state_variable_range[self.svx][1] -
-                           self.model.state_variable_range[self.svx][0]) 
+                           self.model.state_variable_range[self.svx][0])
         default_range_y = (self.model.state_variable_range[self.svy][1] -
                            self.model.state_variable_range[self.svy][0])
         min_val_x = self.model.state_variable_range[self.svx][0] - 4.0 * default_range_x
@@ -379,8 +377,14 @@ class PhasePlaneInteractive(HasTraits):
         """
         offset = 0.0
         self.param_sliders = dict()
-        #import pdb; pdb.set_trace()
-        for param, default_param in self.parameters.items():
+        # import pdb; pdb.set_trace()
+        for param_name in self.model.__class__.own_declarative_attrs:
+            param_def = getattr(self.model.__class__, param_name)
+            if not isinstance(param_def, NArray) or not param_def.dtype == numpy.float :
+                continue
+            param_range = param_def.domain
+            if param_range is None:
+                continue
             offset += 0.035
             sax = self.ipp_fig.add_axes([0.825, 0.865 - offset, 0.125, 0.025], 
                                          facecolor=AXCOLOUR)
@@ -434,8 +438,8 @@ class PhasePlaneInteractive(HasTraits):
         their default values.
         """
         bax = self.ipp_fig.add_axes([0.04, 0.60, 0.125, 0.04])
-        self.reset_sv_button = widgets.Button(bax, 'Reset state-variables', 
-                                      color=BUTTONCOLOUR, 
+        self.reset_sv_button = widgets.Button(bax, 'Reset state-variables',
+                                      color=BUTTONCOLOUR,
                                       hovercolor=HOVERCOLOUR)
         def reset_state_variables(event):
             for svsl in self.sv_sliders.itervalues():
@@ -449,8 +453,8 @@ class PhasePlaneInteractive(HasTraits):
         Add a button to the figure for reseting the noise to its default value.
         """
         bax = self.ipp_fig.add_axes([0.825, 0.135, 0.125, 0.04])
-        self.reset_noise_button = widgets.Button(bax, 'Reset noise strength', 
-                                         color=BUTTONCOLOUR, 
+        self.reset_noise_button = widgets.Button(bax, 'Reset noise strength',
+                                         color=BUTTONCOLOUR,
                                          hovercolor=HOVERCOLOUR)
         def reset_noise(event):
             self.noise_slider.reset()
@@ -464,8 +468,8 @@ class PhasePlaneInteractive(HasTraits):
         its intial state. For reproducible noise...
         """
         bax = self.ipp_fig.add_axes([0.825, 0.05, 0.125, 0.04])
-        self.reset_seed_button = widgets.Button(bax, 'Reset random stream', 
-                                        color=BUTTONCOLOUR, 
+        self.reset_seed_button = widgets.Button(bax, 'Reset random stream',
+                                        color=BUTTONCOLOUR,
                                         hovercolor=HOVERCOLOUR)
         def reset_seed(event):
             self.integrator.noise.trait["random_stream"].reset()
@@ -495,7 +499,7 @@ class PhasePlaneInteractive(HasTraits):
     ##------------------- Functions for updating the figure ------------------##
     ##------------------------------------------------------------------------##
 
-    #NOTE: All the ax.set_xlim, poly.xy, etc, garbage below is fragile. It works 
+    #NOTE: All the ax.set_xlim, poly.xy, etc, garbage below is fragile. It works
     #      at the moment, but there are currently bugs in Slider and the hackery
     #      below takes these into account... If the bugs are fixed/changed then
     #      this could break. As an example, the Slider doc says poly is a
@@ -623,13 +627,13 @@ class PhasePlaneInteractive(HasTraits):
         self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor(AXCOLOUR)
         self.axes_range_sliders["sl_y_max"].ax.set_axis_bgcolor(AXCOLOUR)
 
-        if (self.axes_range_sliders["sl_x_min"].val >= 
+        if (self.axes_range_sliders["sl_x_min"].val >=
             self.axes_range_sliders["sl_x_max"].val):
             LOG.error("X-axis min must be less than max...")
             self.axes_range_sliders["sl_x_min"].ax.set_axis_bgcolor("Red")
             self.axes_range_sliders["sl_x_max"].ax.set_axis_bgcolor("Red")
             return
-        if (self.axes_range_sliders["sl_y_min"].val >= 
+        if (self.axes_range_sliders["sl_y_min"].val >=
             self.axes_range_sliders["sl_y_max"].val):
             LOG.error("Y-axis min must be less than max...")
             self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor("Red")
@@ -672,20 +676,6 @@ class PhasePlaneInteractive(HasTraits):
         self.update_phase_plane()
 
 
-    def set_parameters(self):
-        """
-        Hopefully a temporary hack, new traits should take care of this, ie 
-        provide simple access to this info... 
-        """
-        self.parameters = {}
-        #import pdb; pdb.set_trace()
-        for key in self.model.trait.keys():  # TODO: uses "trait" attribute
-            attr = getattr(self.model, key)
-            if (isinstance(attr, numpy.ndarray) and (attr.size == 1) and 
-                attr.dtype.type in (numpy.float, numpy.float64)):
-                self.parameters[key] = attr
-
-
     def set_mesh_grid(self):
         """
         Generate the phase-plane gridding based on currently selected 
@@ -710,7 +700,7 @@ class PhasePlaneInteractive(HasTraits):
         sv_mean = numpy.array([self.model.state_variable_range[key].mean() for key in self.model.state_variables])
         sv_mean = sv_mean.reshape((self.model.nvar, 1, 1))
         self.default_sv = sv_mean.repeat(self.model.number_of_modes, axis=2)
-        self.no_coupling = numpy.zeros((self.model.nvar, 1, 
+        self.no_coupling = numpy.zeros((self.model.nvar, 1,
                                         self.model.number_of_modes))
 
 
@@ -760,17 +750,17 @@ class PhasePlaneInteractive(HasTraits):
             X, Y = numpy.meshgrid(self.X, self.Y)
             self.pp_quivers = self.pp_ax.scatter(X, Y, s=8, marker=".", c="k")
         else:
-            self.pp_quivers = self.pp_ax.quiver(self.X, self.Y, 
+            self.pp_quivers = self.pp_ax.quiver(self.X, self.Y,
                                                 self.U[:, :, self.mode],
                                                 self.V[:, :, self.mode],
                                                 #self.UVmag[:, :, self.mode],
                                                 width=0.001, headwidth=8)
 
         #Plot the nullclines
-        self.nullcline_x = self.pp_ax.contour(self.X, self.Y, 
+        self.nullcline_x = self.pp_ax.contour(self.X, self.Y,
                                               self.U[:, :, self.mode],
                                               [0], colors="r")
-        self.nullcline_y = self.pp_ax.contour(self.X, self.Y, 
+        self.nullcline_y = self.pp_ax.contour(self.X, self.Y,
                                               self.V[:, :, self.mode],
                                               [0], colors="g")
         pylab.draw()
