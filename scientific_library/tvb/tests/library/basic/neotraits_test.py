@@ -192,3 +192,37 @@ def test_choices():
     with pytest.raises(ValueError):
         a.x = 'hell'
 
+
+def test_named_dimensions():
+    class A(HasTraits):
+        x = attr.NArray(dim_names=('time', 'space'), required=False)
+
+    assert A.x.ndim == 2
+    a = A()
+    a.x = np.eye(4)
+    assert a.x.shape == (4, 4)
+    assert type(a).x.dim_names[0] == 'time'
+
+
+def test_lists():
+    class A(HasTraits):
+        picked_dimensions = attr.List(of=str, default=('time', 'space'), choices=('time', 'space', 'measurement'))
+
+    a = A()
+
+    with pytest.raises(ValueError):
+        a.picked_dimensions = ['times']
+
+    # on set we can complain about types and wrong choices
+    with pytest.raises(TypeError):
+        a.picked_dimensions = [76]
+
+    a.picked_dimensions = ['time', 'space']
+    # however there is little we can do against mutation
+    a.picked_dimensions.append(76)
+
+    # unless you assign a tuple
+    with pytest.raises(AttributeError):
+        a.picked_dimensions = ('time', 'space')
+        a.picked_dimensions.append(76)
+

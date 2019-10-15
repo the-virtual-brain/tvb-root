@@ -17,26 +17,83 @@ class Const(Attr):
     def __init__(self, default, doc='', label=''):
         # it would be nice if we could turn the default immutable. But this is unreasonable work in python
         super(Const, self).__init__(field_type=type(default), default=default,
-                                    required=True, doc=doc, label=label, readonly=True)
+                                    doc=doc, label=label, required=True, readonly=True)
+
+
+
+class List(Attr):
+    """
+    The attribute is a list of values.
+    Choices and type are reinterpreted as applying not to the list but to the elements of it
+    """
+    def __init__(self, of=object, default=(), doc='', label='',
+                 readonly=False, choices=None):
+        super(List, self).__init__(field_type=typing.Sequence, default=default,
+                                   doc=doc, label=label,
+                                   required=True, readonly=readonly, choices=None)
+        self.element_type = of
+        self.element_choices = choices
+
+
+    def _post_bind_validate(self, defined_in_type_name):
+        super(List, self)._post_bind_validate(defined_in_type_name)
+        # check that the default contains elements of the declared type
+        for i, el in enumerate(self.default):
+            if not isinstance(el, self.element_type):
+                msg = 'default[{}] must have type {} not {}'.format(
+                    i, self.element_type, type(self.default))
+                raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+
+        if self.element_choices is not None:
+            # check that the default respects the declared choices
+            for i, el in enumerate(self.default):
+                if el not in self.element_choices:
+                    msg = 'default[{}]=={} must be one of the choices {}'.format(
+                        i, self.default, self.element_choices)
+                    raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+
+
+    def _validate_set(self, instance, value):
+        super(List, self)._validate_set(instance, value)
+        for i, el in enumerate(value):
+            if not isinstance(el, self.element_type):
+                msg_where = self._err_msg_where(type(instance).__name__)
+                raise TypeError(msg_where + "value[{}] can't be of type {}".format(i, type(el)))
+
+        if self.element_choices is not None:
+            for i, el in enumerate(value):
+                if el not in self.element_choices:
+                    msg_where = self._err_msg_where(type(instance).__name__)
+                    raise ValueError(msg_where + "value[{}]=={} must be one of {}".format(i, el, self.choices))
 
 
 class NArray(Attr):
     """
     Declares a numpy array.
     If specified ndim enforces the number of dimensions.
-    dtype enforces the precise dtype. Create one like this np.dtype(np.float32)
-    The default dtype is float32.
-    Implicit conversions are not supported
-    domain declares what values are allowed in this array. It can be any object that can be checked for membership
+    dtype enforces the precise dtype. No implicit conversions. The default dtype is float32.
+    domain declares what values are allowed in this array.
+    It can be any object that can be checked for membership
+    Defaults are checked if they are in the declared domain.
+    For performance reasons this does not happen on every attribute set.
     """
     def __init__(self, default=None, required=True, doc='', label='',
-                 dtype=numpy.dtype(numpy.float), ndim=None, domain=None):
-        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Container[float]) -> None
+                 dtype=numpy.float, ndim=None, dim_names=(), domain=None):
+        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Tuple[str, ...], typing.Container) -> None
         super(NArray, self).__init__(field_type=numpy.ndarray, default=default,
                                      required=required, doc=doc, label=label)
         self.dtype = dtype
         self.ndim = ndim
         self.domain = domain  # anything that supports 3.1 in domain
+        self.dim_names = dim_names
+
+        if dim_names:
+            # dimensions are named, infer ndim
+            if ndim is not None:
+                if ndim != len(dim_names):
+                    raise ValueError('dim_names contradicts ndim')
+                log.warn('if you declare dim_names ndim is not necessary')
+            self.ndim = len(dim_names)
 
 
     def _post_bind_validate(self, defined_in_type_name):
