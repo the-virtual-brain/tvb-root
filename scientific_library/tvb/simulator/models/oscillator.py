@@ -561,22 +561,20 @@ class supHopf(ModelNumbaDfun):
     ui_configurable_parameters = ['a', 'omega']
 
     #supHopf's parameters.
-    a = arrays.FloatArray(
+    a = NArray(
         label=r":math:`a`",
         default=numpy.array([-0.5]),
-        range=basic.Range(lo=-10.0, hi=10.0, step=0.01),
-        doc="""Local bifurcation parameter.""",
-        order=1)
+        domain=Range(lo=-10.0, hi=10.0, step=0.01),
+        doc="""Local bifurcation parameter.""")
 
-    omega = arrays.FloatArray(
+    omega = NArray(
         label=r":math:`\omega`",
         default=numpy.array([1.]),
-        range=basic.Range(lo=0.05, hi=630.0, step=0.01),
-        doc="""Angular frequency.""",
-        order=2)
+        domain=Range(lo=0.05, hi=630.0, step=0.01),
+        doc="""Angular frequency.""")
 
     # Initialization.
-    state_variable_range = basic.Dict(
+    state_variable_range = Const(
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-5.0, 5.0]),
                  "y": numpy.array([-5.0, 5.0])},
@@ -584,16 +582,14 @@ class supHopf(ModelNumbaDfun):
                the expected dynamic range of that state-variable for the current
                parameters, it is used as a mechanism for bounding random initial
                conditions when the simulation isn't started from an explicit
-               history, it is also provides the default range of phase-plane plots.""",
-        order=3)
+               history, it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["x", "y"],
-        default=["x"],
-        select_multiple=True,
-        doc="Quantities of supHopf available to monitor.",
-        order=4)
+        choices=("x", "y"),
+        default=("x",),
+        doc="Quantities of supHopf available to monitor.")
 
     state_variables = ["x", "y"]
     
