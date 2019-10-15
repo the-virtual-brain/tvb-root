@@ -77,7 +77,7 @@ KEY_OPERATOR = 'operator'
 LOGGER = get_logger(__name__)
 
 
-
+#TODO: move to tvb-framework when forms are ready
 class FilterChain(object):
     """
     Class used to filter tables displayed in UI, based on few criteria.
