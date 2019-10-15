@@ -50,19 +50,19 @@ class VersionSettings(object):
     BASE_VERSION = "2.0"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
-    DB_STRUCTURE_VERSION = 17
+    DB_STRUCTURE_VERSION = 18
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
     # data in TVB format, in case data structure changes.
     # Value should be updated every time data structure is changed.
-    DATA_VERSION = 4
+    DATA_VERSION = 5
     DATA_VERSION_ATTRIBUTE = "Data_version"
 
     # This is the version of the tvb project.
     # It should be updated every time the project structure changes
     # Should this be sync-ed with data version changes?
-    PROJECT_VERSION = 2
+    PROJECT_VERSION = 3
 
 
     def __init__(self, manager, bin_folder):
