@@ -39,9 +39,10 @@ methods that are associated with the pattern datatypes.
 
 
 import numpy
-from tvb.basic.traits import types_basic as basic, types_mapped
-from tvb.datatypes import arrays, surfaces, volumes, connectivity, equations
+#TODO: Eliminate equations import
+from tvb.datatypes import surfaces, volumes, connectivity, equations
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
 
 
 LOG = get_logger(__name__)
@@ -86,7 +87,7 @@ class SpatioTemporalCall(object):
         return pattern
 
 
-class SpatialPattern(types_mapped.MappedType):
+class SpatialPattern(HasTraits):
     """
     Equation for space variation.
     """
@@ -182,12 +183,12 @@ class StimuliRegion(SpatioTemporalPattern):
     list of scaling weights of the regions where it will applied.
     """
 
-    connectivity = connectivity.Connectivity(label="Connectivity", order=1)
+    connectivity = Attr(connectivity.Connectivity, label="Connectivity")
 
     spatial = equations.DiscreteEquation(label="Spatial Equation", default=equations.DiscreteEquation,
                                          fixed_type=True, order=-1)
 
-    weight = basic.List(label="scaling", locked=True, order=4)
+    weight = List(label="scaling")
 
     @staticmethod
     def get_default_weights(number_of_regions):
@@ -224,11 +225,11 @@ class StimuliSurface(SpatioTemporalPattern):
     It includes the list of focal points.
     """
 
-    surface = surfaces.CorticalSurface(label="Surface", order=1)
+    surface = Attr(surfaces.CorticalSurface, label="Surface")
 
-    focal_points_surface = basic.List(label="Focal points", locked=True, order=4)
+    focal_points_surface = List(label="Focal points")
 
-    focal_points_triangles = basic.List(label="Focal points triangles", locked=True, order=4)
+    focal_points_triangles = List(label="Focal points triangles")
 
     def configure_space(self, region_mapping=None):
         """
@@ -252,6 +253,6 @@ class StimuliSurface(SpatioTemporalPattern):
 class SpatialPatternVolume(SpatialPattern):
     """ A spatio-temporal pattern defined in a volume. """
 
-    volume = volumes.Volume(label="Volume")
+    volume = Attr(volumes.Volume, label="Volume")
 
-    focal_points_volume = arrays.IntegerArray(label="Focal points")
+    focal_points_volume  = NArray(dtype=int, label="Focal points")

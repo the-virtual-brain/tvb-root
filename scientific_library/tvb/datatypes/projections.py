@@ -35,10 +35,10 @@ methods that are associated with the surfaces data.
 """
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
+#TODO: Eliminate basic import: Dict attribute missing
 import tvb.basic.traits.types_basic as basic
-import tvb.datatypes.arrays as arrays
 from tvb.datatypes import surfaces, sensors
-from tvb.basic.traits.types_mapped import MappedType
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 
 EEG_POLYMORPHIC_IDENTITY = "projEEG"
@@ -46,36 +46,57 @@ MEG_POLYMORPHIC_IDENTITY = "projMEG"
 SEEG_POLYMORPHIC_IDENTITY = "projSEEG"
 
 
-class ProjectionMatrix(MappedType):
+class ProjectionMatrix(HasTraits):
     """
     Base DataType for representing a ProjectionMatrix.
     The projection is between a source of type CorticalSurface and a set of Sensors.
     """
 
-    projection_type = basic.String
+    projection_type = Attr(str)
 
     __mapper_args__ = {'polymorphic_on': 'projection_type'}
 
-    brain_skull = surfaces.BrainSkull(label="Brain Skull", default=None, required=False,
-                                      doc="""Boundary between skull and cortex domains.""")
+    brain_skull = Attr(
+        surfaces.BrainSkull,
+        label="Brain Skull",
+        required=False,
+        doc="""Boundary between skull and cortex domains."""
+    )
 
-    skull_skin = surfaces.SkullSkin(label="Skull Skin", default=None, required=False,
-                                    doc="""Boundary between skull and skin domains.""")
+    skull_skin = Attr(
+        surfaces.SkullSkin,
+        label="Skull Skin",
+        required=False,
+        doc="""Boundary between skull and skin domains."""
+    )
 
-    skin_air = surfaces.SkinAir(label="Skin Air", default=None, required=False,
-                                doc="""Boundary between skin and air domains.""")
+    skin_air = Attr(
+        surfaces.SkinAir,
+        label="Skin Air",
+        required=False,
+        doc="""Boundary between skin and air domains."""
+    )
 
     conductances = basic.Dict(label="Domain conductances", required=False,
                               default={'air': 0.0, 'skin': 1.0, 'skull': 0.01, 'brain': 1.0},
                               doc=""" A dictionary representing the conductances of ... """)
 
-    sources = surfaces.CorticalSurface(label="surface or region", default=None, required=True)
+    sources = Attr(
+        surfaces.CorticalSurface,
+        label="surface or region",
+    )
 
-    sensors = sensors.Sensors(label="Sensors", default=None, required=False,
-                              doc=""" A set of sensors to compute projection matrix for them. """)
+    sensors = Attr(
+        sensors.Sensors,
+        label="Sensors",
+        required=False,
+        doc=""" A set of sensors to compute projection matrix for them. """
+    )
 
-    projection_data = arrays.FloatArray(label="Projection Matrix Data", default=None, required=True)
-
+    projection_data = NArray(
+        dtype=float,
+        label="Projection Matrix Data"
+    )
 
     @property
     def shape(self):
@@ -108,7 +129,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
 
     __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
 
-    projection_type = basic.String(default=EEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
     sensors = sensors.SensorsEEG
 
@@ -128,7 +149,7 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
 
     __mapper_args__ = {'polymorphic_identity': MEG_POLYMORPHIC_IDENTITY}
 
-    projection_type = basic.String(default=MEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
 
     sensors = sensors.SensorsMEG
 
@@ -148,7 +169,7 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
 
     __mapper_args__ = {'polymorphic_identity': SEEG_POLYMORPHIC_IDENTITY}
 
-    projection_type = basic.String(default=SEEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(str, default=SEEG_POLYMORPHIC_IDENTITY)
 
     sensors = sensors.SensorsInternal
 

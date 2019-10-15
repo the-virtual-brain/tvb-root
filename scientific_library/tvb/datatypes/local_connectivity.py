@@ -33,20 +33,24 @@ import numpy
 import scipy.sparse
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import types_basic as basic, exceptions, types_mapped
+#TODO: eliminate import types_mapped (SparseMatrix) and equations
+from tvb.basic.traits import exceptions, types_mapped
 from tvb.datatypes import equations, surfaces
-
+from tvb.basic.traits.neotraits import HasTraits, Attr
 
 LOG = get_logger(__name__)
 
 
-class LocalConnectivity(types_mapped.MappedType):
+class LocalConnectivity(HasTraits):
     """
     A sparse matrix for representing the local connectivity within the Cortex.
     """
     _ui_name = "Local connectivity"
 
-    surface = surfaces.CorticalSurface(label="Surface", order=1)
+    surface = Attr(
+        surfaces.CorticalSurface,
+        label="Surface"
+    )
 
     matrix = types_mapped.SparseMatrix(order=-1)
 
@@ -56,11 +60,12 @@ class LocalConnectivity(types_mapped.MappedType):
         default=equations.Gaussian,
         order=2)
 
-    cutoff = basic.Float(
+    cutoff = Attr(
+        float,
         label="Cutoff distance (mm)",
         default=40.0,
-        doc="Distance at which to truncate the evaluation in mm.",
-        order=3)
+        doc="Distance at which to truncate the evaluation in mm."
+    )
 
     def compute(self):
         """
