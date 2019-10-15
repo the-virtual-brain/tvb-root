@@ -31,35 +31,35 @@ Generic linear model.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+import numpy
+from .base import Model
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
 
 class Linear(Model):
     _ui_name = "Linear model"
     ui_configurable_parameters = ['gamma']
 
-    gamma = arrays.FloatArray(
+    gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([-10.0]),
-        range=basic.Range(lo=-100.0, hi=0.0, step=1.0),
+        # range=basic.Range(lo=-100.0, hi=0.0, step=1.0),
         doc="The damping coefficient specifies how quickly the node's activity relaxes, must be larger"
-            " than the node's in-degree in order to remain stable.",
-        order=1)
+            " than the node's in-degree in order to remain stable.")
 
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-1, 1])},
-        doc="Range used for state variable initialization and visualization.",
-        order=2)
+        doc="Range used for state variable initialization and visualization.")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["x"],
-        default=["x"],
-        select_multiple=True,
-        order=3)
+        choices=("x",),
+        default=("x",),)
 
-    state_variables = ['x']
+    state_variables = ('x',)
     _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)
 

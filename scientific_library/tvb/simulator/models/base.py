@@ -31,14 +31,9 @@ This module defines the common imports and abstract base class for model definit
 
 """
 import abc
+import typing
 import numpy
-from scipy.integrate import trapz as scipy_integrate_trapz
-from scipy.stats import norm as scipy_stats_norm
 from tvb.simulator.common import get_logger
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.simulator.noise as noise_module
 from tvb.basic.traits.neotraits import HasTraits
 
 LOG = get_logger(__name__)
@@ -55,7 +50,7 @@ class Model(HasTraits):
     # editable from the ui in an visual manner
     ui_configurable_parameters = []
 
-    state_variables = ()
+    state_variables = ()  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
     number_of_modes = 1

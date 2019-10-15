@@ -31,7 +31,9 @@ Larter-Breakspear model based on the Morris-Lecar equations.
 
 """
 
-from .base import Model, LOG, numpy, basic, arrays
+import numpy
+from .base import Model
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
 
 class LarterBreakspear(Model):
@@ -217,232 +219,231 @@ class LarterBreakspear(Model):
                                   'd_Z', 'QV_max', 'QZ_max', 't_scale']
 
     #Define traited attributes for this model, these represent possible kwargs.
-    gCa = arrays.FloatArray(
-        label = ":math:`g_{Ca}`",
-        default = numpy.array([1.1]),
-        range = basic.Range(lo = 0.9, hi = 1.5, step = 0.1),
-        doc = """Conductance of population of Ca++ channels.""")
+    gCa = NArray(
+        label=":math:`g_{Ca}`",
+        default=numpy.array([1.1]),
+        # range=basic.Range(lo=0.9, hi=1.5, step=0.1),
+        doc="""Conductance of population of Ca++ channels.""")
 
-    gK = arrays.FloatArray(
-        label = ":math:`g_{K}`",
-        default = numpy.array([2.0]),
-        range = basic.Range(lo = 1.95, hi= 2.05, step = 0.025),
-        doc = """Conductance of population of K channels.""")
+    gK = NArray(
+        label=":math:`g_{K}`",
+        default=numpy.array([2.0]),
+        # range=basic.Range(lo=1.95, hi= 2.05, step=0.025),
+        doc="""Conductance of population of K channels.""")
 
-    gL = arrays.FloatArray(
-        label = ":math:`g_{L}`",
-        default = numpy.array([0.5]),
-        range = basic.Range(lo = 0.45 , hi = 0.55, step = 0.05),
-        doc = """Conductance of population of leak channels.""")
+    gL = NArray(
+        label=":math:`g_{L}`",
+        default=numpy.array([0.5]),
+        # range=basic.Range(lo=0.45 , hi=0.55, step=0.05),
+        doc="""Conductance of population of leak channels.""")
 
-    phi = arrays.FloatArray(
-        label = r":math:`\phi`",
-        default = numpy.array([0.7]),
-        range = basic.Range(lo = 0.3, hi = 0.9, step = 0.1),
-        doc = """Temperature scaling factor.""")
+    phi = NArray(
+        label=r":math:`\phi`",
+        default=numpy.array([0.7]),
+        # range=basic.Range(lo=0.3, hi=0.9, step=0.1),
+        doc="""Temperature scaling factor.""")
 
-    gNa = arrays.FloatArray(
-        label = ":math:`g_{Na}`",
-        default = numpy.array([6.7]),
-        range = basic.Range(lo = 0.0, hi = 10.0, step = 0.1),
-        doc = """Conductance of population of Na channels.""")
+    gNa = NArray(
+        label=":math:`g_{Na}`",
+        default=numpy.array([6.7]),
+        # range=basic.Range(lo=0.0, hi=10.0, step=0.1),
+        doc="""Conductance of population of Na channels.""")
 
-    TK = arrays.FloatArray(
-        label = ":math:`T_{K}`",
-        default = numpy.array([0.0]),
-        range = basic.Range(lo = 0.0, hi = 0.0001, step = 0.00001),
-        doc = """Threshold value for K channels.""")
+    TK = NArray(
+        label=":math:`T_{K}`",
+        default=numpy.array([0.0]),
+        # range=basic.Range(lo=0.0, hi=0.0001, step=0.00001),
+        doc="""Threshold value for K channels.""")
 
-    TCa = arrays.FloatArray(
-        label = ":math:`T_{Ca}`",
-        default = numpy.array([-0.01]),
-        range = basic.Range(lo = -0.02, hi=-0.01, step = 0.0025),
-        doc = "Threshold value for Ca channels.")
+    TCa = NArray(
+        label=":math:`T_{Ca}`",
+        default=numpy.array([-0.01]),
+        # range=basic.Range(lo=-0.02, hi=-0.01, step=0.0025),
+        doc="Threshold value for Ca channels.")
 
-    TNa = arrays.FloatArray(
-        label = ":math:`T_{Na}`",
-        default = numpy.array([0.3]),
-        range = basic.Range(lo = 0.25, hi= 0.3, step = 0.025),
-        doc = "Threshold value for Na channels.")
+    TNa = NArray(
+        label=":math:`T_{Na}`",
+        default=numpy.array([0.3]),
+        # range=basic.Range(lo=0.25, hi= 0.3, step=0.025),
+        doc="Threshold value for Na channels.")
 
-    VCa = arrays.FloatArray(
-        label = ":math:`V_{Ca}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.9, hi = 1.1, step = 0.05),
-        doc = """Ca Nernst potential.""")
+    VCa = NArray(
+        label=":math:`V_{Ca}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.9, hi=1.1, step=0.05),
+        doc="""Ca Nernst potential.""")
 
-    VK = arrays.FloatArray(
-        label = ":math:`V_{K}`",
-        default = numpy.array([-0.7]),
-        range = basic.Range(lo = -0.8, hi = 1., step = 0.1),
-        doc = """K Nernst potential.""")
+    VK = NArray(
+        label=":math:`V_{K}`",
+        default=numpy.array([-0.7]),
+        # range=basic.Range(lo=-0.8, hi=1., step=0.1),
+        doc="""K Nernst potential.""")
 
-    VL = arrays.FloatArray(
-        label = ":math:`V_{L}`",
-        default = numpy.array([-0.5]),
-        range = basic.Range(lo = -0.7, hi = -0.4, step = 0.1),
-        doc = """Nernst potential leak channels.""")
+    VL = NArray(
+        label=":math:`V_{L}`",
+        default=numpy.array([-0.5]),
+        # range=basic.Range(lo=-0.7, hi=-0.4, step=0.1),
+        doc="""Nernst potential leak channels.""")
 
-    VNa = arrays.FloatArray(
-        label = ":math:`V_{Na}`",
-        default = numpy.array([0.53]),
-        range = basic.Range(lo = 0.51, hi = 0.55, step = 0.01),
-        doc = """Na Nernst potential.""")
+    VNa = NArray(
+        label=":math:`V_{Na}`",
+        default=numpy.array([0.53]),
+        # range=basic.Range(lo=0.51, hi=0.55, step=0.01),
+        doc="""Na Nernst potential.""")
 
-    d_K = arrays.FloatArray(
-        label = r":math:`\delta_{K}`",
-        default = numpy.array([0.3]),
-        range = basic.Range(lo = 0.1, hi = 0.4, step = 0.1),
-        doc = """Variance of K channel threshold.""")
+    d_K = NArray(
+        label=r":math:`\delta_{K}`",
+        default=numpy.array([0.3]),
+        # range=basic.Range(lo=0.1, hi=0.4, step=0.1),
+        doc="""Variance of K channel threshold.""")
 
-    tau_K = arrays.FloatArray(
-        label = r":math:`\tau_{K}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 1.0, hi = 10.0, step = 1.0),
-        doc = """Time constant for K relaxation time (ms)""")
+    tau_K = NArray(
+        label=r":math:`\tau_{K}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=1.0, hi=10.0, step=1.0),
+        doc="""Time constant for K relaxation time (ms)""")
 
-    d_Na = arrays.FloatArray(
-        label = r":math:`\delta_{Na}`",
-        default = numpy.array([0.15]),
-        range = basic.Range(lo = 0.1, hi = 0.2, step = 0.05),
-        doc = "Variance of Na channel threshold.")
+    d_Na = NArray(
+        label=r":math:`\delta_{Na}`",
+        default=numpy.array([0.15]),
+        # range=basic.Range(lo=0.1, hi=0.2, step=0.05),
+        doc="Variance of Na channel threshold.")
 
-    d_Ca = arrays.FloatArray(
-        label = r":math:`\delta_{Ca}`",
-        default = numpy.array([0.15]),
-        range = basic.Range(lo = 0.1, hi = 0.2, step = 0.05),
-        doc = "Variance of Ca channel threshold.")
+    d_Ca = NArray(
+        label=r":math:`\delta_{Ca}`",
+        default=numpy.array([0.15]),
+        # range=basic.Range(lo=0.1, hi=0.2, step=0.05),
+        doc="Variance of Ca channel threshold.")
 
-    aei = arrays.FloatArray(
-        label = ":math:`a_{ei}`",
-        default = numpy.array([2.0]),
-        range = basic.Range(lo = 0.1, hi = 2.0, step = 0.1),
-        doc = """Excitatory-to-inhibitory synaptic strength.""")
+    aei = NArray(
+        label=":math:`a_{ei}`",
+        default=numpy.array([2.0]),
+        # range=basic.Range(lo=0.1, hi=2.0, step=0.1),
+        doc="""Excitatory-to-inhibitory synaptic strength.""")
 
-    aie = arrays.FloatArray(
-        label = ":math:`a_{ie}`",
-        default = numpy.array([2.0]),
-        range = basic.Range(lo = 0.5, hi = 2.0, step = 0.1),
-        doc = """Inhibitory-to-excitatory synaptic strength.""")
+    aie = NArray(
+        label=":math:`a_{ie}`",
+        default=numpy.array([2.0]),
+        # range=basic.Range(lo=0.5, hi=2.0, step=0.1),
+        doc="""Inhibitory-to-excitatory synaptic strength.""")
 
-    b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([0.1]),
-        range = basic.Range(lo = 0.0001, hi = 1.0, step = 0.0001),
-        doc = """Time constant scaling factor. The original value is 0.1""")
+    b = NArray(
+        label=":math:`b`",
+        default=numpy.array([0.1]),
+        # range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
+        doc="""Time constant scaling factor. The original value is 0.1""")
 
-    C = arrays.FloatArray(
-        label = ":math:`C`",
-        default = numpy.array([0.1]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Strength of excitatory coupling. Balance between internal and
+    C = NArray(
+        label=":math:`C`",
+        default=numpy.array([0.1]),
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Strength of excitatory coupling. Balance between internal and
         local (and global) coupling strength. C > 0 introduces interdependences between
         consecutive columns/nodes. C=1 corresponds to maximum coupling between node and no self-coupling.
         This strenght should be set to sensible values when a whole network is connected. """)
 
-    ane = arrays.FloatArray(
-        label = ":math:`a_{ne}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.4, hi = 1.0, step = 0.05),
-        doc = """Non-specific-to-excitatory synaptic strength.""")
+    ane = NArray(
+        label=":math:`a_{ne}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.4, hi=1.0, step=0.05),
+        doc="""Non-specific-to-excitatory synaptic strength.""")
 
-    ani = arrays.FloatArray(
-        label = ":math:`a_{ni}`",
-        default = numpy.array([0.4]),
-        range = basic.Range(lo = 0.3, hi = 0.5, step = 0.05),
-        doc = """Non-specific-to-inhibitory synaptic strength.""")
+    ani = NArray(
+        label=":math:`a_{ni}`",
+        default=numpy.array([0.4]),
+        # range=basic.Range(lo=0.3, hi=0.5, step=0.05),
+        doc="""Non-specific-to-inhibitory synaptic strength.""")
 
-    aee = arrays.FloatArray(
-        label = ":math:`a_{ee}`",
-        default = numpy.array([0.4]),
-        range = basic.Range(lo = 0.0, hi = 0.6, step = 0.05),
-        doc = """Excitatory-to-excitatory synaptic strength.""")
+    aee = NArray(
+        label=":math:`a_{ee}`",
+        default=numpy.array([0.4]),
+        # range=basic.Range(lo=0.0, hi=0.6, step=0.05),
+        doc="""Excitatory-to-excitatory synaptic strength.""")
 
-    Iext = arrays.FloatArray(
-       label = ":math:`I_{ext}`",
-       default = numpy.array([0.3]),
-       range = basic.Range(lo = 0.165, hi = 0.3, step = 0.005),
-       doc = """Subcortical input strength. It represents a non-specific
+    Iext = NArray(
+       label=":math:`I_{ext}`",
+       default=numpy.array([0.3]),
+       # range=basic.Range(lo=0.165, hi=0.3, step=0.005),
+       doc="""Subcortical input strength. It represents a non-specific
        excitation or thalamic inputs.""")
 
-    rNMDA = arrays.FloatArray(
-        label = ":math:`r_{NMDA}`",
-        default = numpy.array([0.25]),
-        range = basic.Range(lo = 0.2, hi = 0.3, step = 0.05),
-        doc = """Ratio of NMDA to AMPA receptors.""")
+    rNMDA = NArray(
+        label=":math:`r_{NMDA}`",
+        default=numpy.array([0.25]),
+        # range=basic.Range(lo=0.2, hi=0.3, step=0.05),
+        doc="""Ratio of NMDA to AMPA receptors.""")
 
-    VT = arrays.FloatArray(
-        label = ":math:`V_{T}`",
-        default = numpy.array([0.0]),
-        range = basic.Range(lo = 0.0, hi = 0.7, step = 0.01),
-        doc = """Threshold potential (mean) for excitatory neurons.
+    VT = NArray(
+        label=":math:`V_{T}`",
+        default=numpy.array([0.0]),
+        # range=basic.Range(lo=0.0, hi=0.7, step=0.01),
+        doc="""Threshold potential (mean) for excitatory neurons.
         In [Breaksetal_2003_b]_ this value is 0.""")
 
-    d_V = arrays.FloatArray(
-        label = r":math:`\delta_{V}`",
-        default = numpy.array([0.65]),
-        range = basic.Range(lo = 0.49, hi = 0.7, step = 0.01),
-        doc = """Variance of the excitatory threshold. It is one of the main
+    d_V = NArray(
+        label=r":math:`\delta_{V}`",
+        default=numpy.array([0.65]),
+        # range=basic.Range(lo=0.49, hi=0.7, step=0.01),
+        doc="""Variance of the excitatory threshold. It is one of the main
         parameters explored in [Breaksetal_2003_b]_.""")
 
-    ZT = arrays.FloatArray(
-        label = ":math:`Z_{T}`",
-        default = numpy.array([0.0]),
-        range = basic.Range(lo = 0.0, hi = 0.1, step = 0.005),
-        doc = """Threshold potential (mean) for inihibtory neurons.""")
+    ZT = NArray(
+        label=":math:`Z_{T}`",
+        default=numpy.array([0.0]),
+        # range=basic.Range(lo=0.0, hi=0.1, step=0.005),
+        doc="""Threshold potential (mean) for inihibtory neurons.""")
 
-    d_Z = arrays.FloatArray(
-        label = r":math:`\delta_{Z}`",
-        default = numpy.array([0.7]),
-        range = basic.Range(lo = 0.001, hi = 0.75, step = 0.05),
-        doc = """Variance of the inhibitory threshold.""")
+    d_Z = NArray(
+        label=r":math:`\delta_{Z}`",
+        default=numpy.array([0.7]),
+        # range=basic.Range(lo=0.001, hi=0.75, step=0.05),
+        doc="""Variance of the inhibitory threshold.""")
 
     # NOTE: the values were not in the article.
-    QV_max = arrays.FloatArray(
-        label = ":math:`Q_{max}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.1, hi = 1., step = 0.001),
-        doc = """Maximal firing rate for excitatory populations (kHz)""")
+    QV_max = NArray(
+        label=":math:`Q_{max}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.1, hi=1., step=0.001),
+        doc="""Maximal firing rate for excitatory populations (kHz)""")
 
-    QZ_max = arrays.FloatArray(
-        label = ":math:`Q_{max}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.1, hi = 1., step = 0.001),
-        doc = """Maximal firing rate for excitatory populations (kHz)""")
-
-
-    t_scale = arrays.FloatArray(
-        label = ":math:`t_{scale}`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.1, hi = 1., step = 0.001),
-        doc = """Time scale factor""")
+    QZ_max = NArray(
+        label=":math:`Q_{max}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.1, hi=1., step=0.001),
+        doc="""Maximal firing rate for excitatory populations (kHz)""")
 
 
-    variables_of_interest = basic.Enumerate(
+    t_scale = NArray(
+        label=":math:`t_{scale}`",
+        default=numpy.array([1.0]),
+        # range=basic.Range(lo=0.1, hi=1., step=0.001),
+        doc="""Time scale factor""")
+
+
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["V", "W", "Z"],
-        default=["V"],
-        select_multiple=True,
+        choices=("V", "W", "Z"),
+        default=("V",),
         doc="""This represents the default state-variables of this Model to be
-        monitored. It can be overridden for each Monitor if desired.""",
-        order=10)
+        monitored. It can be overridden for each Monitor if desired.""")
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = basic.Dict(
-        label = "State Variable ranges [lo, hi]",
-        default = {"V": numpy.array([-1.5, 1.5]),
-                   "W": numpy.array([-1.5, 1.5]),
-                   "Z": numpy.array([-1.5, 1.5])},
-        doc = """The values for each state-variable should be set to encompass
+    state_variable_range = Attr(
+        field_type=dict,
+        label="State Variable ranges [lo, hi]",
+        default={
+            "V": numpy.array([-1.5, 1.5]),
+            "W": numpy.array([-1.5, 1.5]),
+            "Z": numpy.array([-1.5, 1.5])},
+        doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random inital
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""",
-        order=99
-    )
+            history, it is also provides the default range of phase-plane plots.""")
 
-    state_variables = 'V W Z'.split()
-    _state_variables = ["V", "W", "Z"]
+    state_variables = tuple('V W Z'.split())
+    _state_variables = ("V", "W", "Z")
     _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
 

@@ -32,8 +32,10 @@
    .. moduleauthor:: courtiol.julie@gmail.com
 """
 
-from .base import ModelNumbaDfun, LOG, numpy, basic, arrays
+import numpy
+from .base import ModelNumbaDfun
 from numba import guvectorize, float64
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
 
 class JC_Epileptor(ModelNumbaDfun):
@@ -94,239 +96,208 @@ class JC_Epileptor(ModelNumbaDfun):
     ui_configurable_parameters = ["Iext", "Iext2", "r", "x0", "slope", "tau_rs", "a_rs", "b_rs", "I_rs", "d_rs", "e_rs", "f_rs", "alpha_rs", "beta_rs", "gamma_rs"]
 
     # Epileptor's parameters
-    a = arrays.FloatArray(
+    a = NArray(
         label="a",
-        default=numpy.array([1]),
-        doc="Coefficient of the cubic term in the first state-variable x1.",
-        order=1)
+        default=numpy.array([1.0]),
+        doc="Coefficient of the cubic term in the first state-variable x1.")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label="b",
-        default=numpy.array([3]),
-        doc="Coefficient of the squared term in the first state-variable x1.",
-        order=2)
+        default=numpy.array([3.0]),
+        doc="Coefficient of the squared term in the first state-variable x1.")
 
-    c = arrays.FloatArray(
+    c = NArray(
         label="c",
-        default=numpy.array([1]),
+        default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable y1, \
-        called :math:'y_{0}' in Jirsa et al. (2014).",
-        order=3)
+        called :math:'y_{0}' in Jirsa et al. (2014).")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label="d",
-        default=numpy.array([5]),
-        doc="Coefficient of the squared term in the second state-variable y1.",
-        order=4)
+        default=numpy.array([5.0]),
+        doc="Coefficient of the squared term in the second state-variable y1.")
 
-    r = arrays.FloatArray(
+    r = NArray(
         label="r",
-        range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
+        # range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state-variable z, \
-        called :math:'1/\tau_{0}' in Jirsa et al. (2014).",
-        order=5)
+        called :math:'1/\tau_{0}' in Jirsa et al. (2014).")
 
-    s = arrays.FloatArray(
+    s = NArray(
         label="s",
-        default=numpy.array([4]),
-        doc="Linear coefficient in the third state-variable z.",
-        order=6)
+        default=numpy.array([4.0]),
+        doc="Linear coefficient in the third state-variable z.")
 
-    x0 = arrays.FloatArray(
+    x0 = NArray(
         label="x0",
-        range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
+        # range=basic.Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
-        doc="Epileptogenicity parameter.",
-        order=7)
+        doc="Epileptogenicity parameter.")
 
-    Iext = arrays.FloatArray(
+    Iext = NArray(
         label="Iext",
-        range=basic.Range(lo=1.5, hi=5.0, step=0.1),
+        # range=basic.Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
-        doc="External input current to the first population (x1, y1).",
-        order=8)
+        doc="External input current to the first population (x1, y1).")
 
-    slope = arrays.FloatArray(
+    slope = NArray(
         label="slope",
-        range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
+        # range=basic.Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
-        doc="Linear coefficient in the first state-variable x1.",
-        order=9)
+        doc="Linear coefficient in the first state-variable x1.")
 
-    Iext2 = arrays.FloatArray(
+    Iext2 = NArray(
         label="Iext2",
-        range=basic.Range(lo=0.0, hi=1.0, step=0.05),
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
-        doc="External input current to the second population (x2, y2).",
-        order=10)
+        doc="External input current to the second population (x2, y2).")
 
-    tau = arrays.FloatArray(
+    tau = NArray(
         label="tau",
-        default=numpy.array([10]),
-        doc="Temporal scaling coefficient in the fifth state-variable y2.",
-        order=11)
+        default=numpy.array([10.0]),
+        doc="Temporal scaling coefficient in the fifth state-variable y2.")
 
-    aa = arrays.FloatArray(
+    aa = NArray(
         label="aa",
-        default=numpy.array([6]),
-        doc="Linear coefficient in the fifth state-variable y2.",
-        order=12)
+        default=numpy.array([6.0]),
+        doc="Linear coefficient in the fifth state-variable y2.")
         
-    bb = arrays.FloatArray(
+    bb = NArray(
         label="bb",
-        default=numpy.array([2]),
+        default=numpy.array([2.0]),
         doc="Linear coefficient of lowpass excitatory coupling in the fourth \
-        state-variable x2.",
-        order=13)
+        state-variable x2.")
 
-    Kvf = arrays.FloatArray(
+    Kvf = NArray(
         label="K_vf",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
-        doc="Coupling scaling on a very fast time scale.",
-        order=14)
+        # range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Coupling scaling on a very fast time scale.")
 
-    Kf = arrays.FloatArray(
+    Kf = NArray(
         label="K_f",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
-        doc="Coupling scaling on a fast time scale.",
-        order=15)
+        # range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        doc="Coupling scaling on a fast time scale.")
 
-    Ks = arrays.FloatArray(
+    Ks = NArray(
         label="K_s",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
+        # range=basic.Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the very fast time scale \
-        toward the slow time scale.",
-        order=16)
+        toward the slow time scale.")
 
-    tt = arrays.FloatArray(
+    tt = NArray(
         label="tt",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.001, hi=10.0, step=0.001),
-        doc="Time scaling of the Epileptor.",
-        order=17)
+        # range=basic.Range(lo=0.001, hi=10.0, step=0.001),
+        doc="Time scaling of the Epileptor.")
         
     # Generic-2D's parameters
-    tau_rs = arrays.FloatArray(
+    tau_rs = NArray(
         label=r":math:'\tau_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=1.0, hi=5.0, step=0.01),
-        doc="Temporal scaling coefficient in the third population (x_rs, y_rs).",
-        order=18)
+        # range=basic.Range(lo=1.0, hi=5.0, step=0.01),
+        doc="Temporal scaling coefficient in the third population (x_rs, y_rs).")
         
-    I_rs = arrays.FloatArray(
+    I_rs = NArray(
         label=":math:'I_rs'",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
-        doc="External input current to the third population (x_rs, y_rs).",
-        order=19)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        doc="External input current to the third population (x_rs, y_rs).")
         
-    a_rs = arrays.FloatArray(
+    a_rs = NArray(
         label=":math:'a_rs'",
         default=numpy.array([-2.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
         doc="Vertical shift of the configurable nullcline \
-        in the state-variable y_rs.",
-        order=20)
+        in the state-variable y_rs.")
         
-    b_rs = arrays.FloatArray(
+    b_rs = NArray(
         label=":math:'b_rs'",
         default=numpy.array([-10.0]),
-        range=basic.Range(lo=-20.0, hi=15.0, step=0.01),
-        doc="Linear coefficient of the state-variable y_rs.",
-        order=21)
+        # range=basic.Range(lo=-20.0, hi=15.0, step=0.01),
+        doc="Linear coefficient of the state-variable y_rs.")
         
-    d_rs = arrays.FloatArray(
+    d_rs = NArray(
         label=":math:'d_rs'",
         default=numpy.array([0.02]),
-        range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
-        doc="Temporal scaling of the whole third system (x_rs, y_rs).",
-        order=22)
+        # range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
+        doc="Temporal scaling of the whole third system (x_rs, y_rs).")
         
-    e_rs = arrays.FloatArray(
+    e_rs = NArray(
         label=":math:'e_rs'",
         default=numpy.array([3.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="Coefficient of the squared term in the sixth state-variable x_rs.",
-        order=23)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="Coefficient of the squared term in the sixth state-variable x_rs.")
     
-    f_rs = arrays.FloatArray(
+    f_rs = NArray(
         label=":math:'f_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="Coefficient of the cubic term in the sixth state-variable x_rs.",
-        order=24)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="Coefficient of the cubic term in the sixth state-variable x_rs.")
 
-    alpha_rs = arrays.FloatArray(
+    alpha_rs = NArray(
         label=r":math:'\alpha_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
-        slow variable y_rs to the fast variable x_rs.",
-        order=25)
+        slow variable y_rs to the fast variable x_rs.")
         
-    beta_rs = arrays.FloatArray(
+    beta_rs = NArray(
         label=r":math:'\beta_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
-        slow variable y_rs to itself.",
-        order=26)
+        slow variable y_rs to itself.")
         
-    gamma_rs = arrays.FloatArray(
+    gamma_rs = NArray(
         label=r":math:'\gamma_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
+        # range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
         doc="Constant parameter to reproduce FHN dynamics where \
         excitatory input currents are negative.\
-        Note: It scales both I_rs and the long-range coupling term.",
-        order=27)
+        Note: It scales both I_rs and the long-range coupling term.")
         
-    K_rs = arrays.FloatArray(
+    K_rs = NArray(
         label=r":math:'K_rs'",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.0, hi=10.0, step=0.001),
-        doc="Coupling scaling on a fast time scale.",
-        order=28)
+        # range=basic.Range(lo=0.0, hi=10.0, step=0.001),
+        doc="Coupling scaling on a fast time scale.")
 
 
     # Combination 2 models
-    p = arrays.FloatArray(
+    p = NArray(
         label=r":math:'p'",
         default=numpy.array([0.]),
-        range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
-        doc="Linear coefficient.",
-        order=29)
+        # range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
+        doc="Linear coefficient.")
 
     # Initialization.
     # Epileptor model is set in fixed point by default.
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State variable ranges [lo, hi]",
-        default={"x1": numpy.array([-1.8, -1.4]),
-        "y1": numpy.array([-15, -10]),
-        "z": numpy.array([3.6, 4.0]),
-        "x2": numpy.array([-1.1, -0.9]),
-        "y2": numpy.array([0.001, 0.01]),
-        "g": numpy.array([-1., 1.]),
-        "x_rs": numpy.array([-2.0, 4.0]),
-        "y_rs": numpy.array([-6.0, 6.0])},
-        doc="Typical bounds on state-variables in JC_Epileptor model.",
-        order=99
-        )
+        default={
+            "x1": numpy.array([-1.8, -1.4]),
+            "y1": numpy.array([-15, -10]),
+            "z": numpy.array([3.6, 4.0]),
+            "x2": numpy.array([-1.1, -0.9]),
+            "y2": numpy.array([0.001, 0.01]),
+            "g": numpy.array([-1., 1.]),
+            "x_rs": numpy.array([-2.0, 4.0]),
+            "y_rs": numpy.array([-6.0, 6.0])},
+        doc="Typical bounds on state-variables in JC_Epileptor model.")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs", "x2 - x1"],
-        default=["x2 - x1", "z", "x_rs"],
-        select_multiple=True,
-        doc="Quantities of JC_Epileptor available to monitor.",
-        order=100
-        )
+        choices=("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs", "x2 - x1"),
+        default=("x2 - x1", "z", "x_rs"),
+        doc="Quantities of JC_Epileptor available to monitor.")
 
-    state_variables = ["x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs"]
+    state_variables = ("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs")
 
     _nvar = 8                                           # number of state-variables
     cvar = numpy.array([0, 3, 6], dtype=numpy.int32)    # coupling variables

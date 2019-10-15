@@ -50,13 +50,12 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.basic.traits.parameters_factory import get_traited_subclasses
 
 LOG = get_logger(__name__)
+import tvb.simulator.models.JCepileptor
 
-AVAILABLE_MODELS = get_traited_subclasses(models.Model)
+MODEL_CLASSES = models.Model.get_known_subclasses()
 AVAILABLE_METHODS = integrators.Integrator.get_known_subclasses()
-MODEL_CLASSES = AVAILABLE_MODELS.values()
 METHOD_NAMES = [m.__name__ for m in AVAILABLE_METHODS]
 METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
 
@@ -184,7 +183,6 @@ class TestSimulator(BaseTestCase):
 
 
 from tvb.simulator.models.epileptor import Epileptor
-from tvb.simulator.models.oscillator import Generic2dOscillator
 
 
 class TestSimShort(BaseTestCase):

@@ -30,13 +30,18 @@
 Models developed by Stefanescu-Jirsa, based on reduced-set analyses of infinite populations.
 
 """
+import numpy
+from scipy.integrate import trapz as scipy_integrate_trapz
+from scipy.stats import norm as scipy_stats_norm
+from .base import Model
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
-from .base import Model, LOG, numpy, basic, arrays, scipy_integrate_trapz, scipy_stats_norm
 
 class ReducedSetBase(Model):
     number_of_modes = 3
     nu = 1500
     nv = 1500
+
     def configure(self):
         super(ReducedSetBase, self).configure()
         if numpy.mod(self.nv, self.number_of_modes):
@@ -108,64 +113,57 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
                                   'mu']
 
     # Define traited attributes for this model, these represent possible kwargs.
-    tau = arrays.FloatArray(
+    tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([3.0]),
-        range=basic.Range(lo=1.5, hi=4.5, step=0.01),
-        doc="""doc...(prob something about timescale seperation)""",
-        order=1)
+        # range=basic.Range(lo=1.5, hi=4.5, step=0.01),
+        doc="""doc...(prob something about timescale seperation)""")
 
-    a = arrays.FloatArray(
+    a = NArray(
         label=":math:`a`",
         default=numpy.array([0.45]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""doc...""",
-        order=2)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""doc...""")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label=":math:`b`",
         default=numpy.array([0.9]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""doc...""",
-        order=3)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""doc...""")
 
-    K11 = arrays.FloatArray(
+    K11 = NArray(
         label=":math:`K_{11}`",
         default=numpy.array([0.5]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to excitatory""",
-        order=4)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, excitatory to excitatory""")
 
-    K12 = arrays.FloatArray(
+    K12 = NArray(
         label=":math:`K_{12}`",
         default=numpy.array([0.15]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, inhibitory to excitatory""",
-        order=5)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, inhibitory to excitatory""")
 
-    K21 = arrays.FloatArray(
+    K21 = NArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to inhibitory""",
-        order=6)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, excitatory to inhibitory""")
 
-    sigma = arrays.FloatArray(
+    sigma = NArray(
         label=r":math:`\sigma`",
         default=numpy.array([0.35]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Standard deviation of Gaussian distribution""",
-        order=7)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Standard deviation of Gaussian distribution""")
 
-    mu = arrays.FloatArray(
+    mu = NArray(
         label=r":math:`\mu`",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Mean of Gaussian distribution""",
-        order=8)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"xi": numpy.array([-4.0, 4.0]),
                  "eta": numpy.array([-3.0, 3.0]),
@@ -175,8 +173,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""",
-        order=9)
+        it is also provides the default range of phase-plane plots.""")
 
     #    variables_of_interest = arrays.IntegerArray(
     #        label = "Variables watched by Monitors",
@@ -188,18 +185,17 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     #        :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""",
     #        order = 10)
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["xi", "eta", "alpha", "beta"],
-        default=["xi", "alpha"],
-        select_multiple=True,
+        choices=("xi", "eta", "alpha", "beta"),
+        default=("xi", "alpha"),
         doc=r"""This represents the default state-variables of this Model to be
-                                    monitored. It can be overridden for each Monitor if desired. The
-                                    corresponding state-variable indices for this model are :math:`\xi = 0`,
-                                    :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""",
-        order=10)
+                monitored. It can be overridden for each Monitor if desired. The
+                corresponding state-variable indices for this model are :math:`\xi = 0`,
+                :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""")
 
-    state_variables = 'xi eta alpha beta'.split()
+    state_variables = tuple('xi eta alpha beta'.split())
     _nvar = 4
     cvar = numpy.array([0, 2], dtype=numpy.int32)
     # Derived parameters
@@ -394,92 +390,81 @@ class ReducedSetHindmarshRose(ReducedSetBase):
                                   'K12', 'K21', 'sigma', 'mu']
 
     # Define traited attributes for this model, these represent possible kwargs.
-    r = arrays.FloatArray(
+    r = NArray(
         label=":math:`r`",
         default=numpy.array([0.006]),
-        range=basic.Range(lo=0.0, hi=0.1, step=0.0005),
-        doc="""Adaptation parameter""",
-        order=1)
+        # range=basic.Range(lo=0.0, hi=0.1, step=0.0005),
+        doc="""Adaptation parameter""")
 
-    a = arrays.FloatArray(
+    a = NArray(
         label=":math:`a`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""",
-        order=2)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label=":math:`b`",
         default=numpy.array([3.0]),
-        range=basic.Range(lo=0.0, hi=3.0, step=0.01),
-        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""",
-        order=3)
+        # range=basic.Range(lo=0.0, hi=3.0, step=0.01),
+        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
-    c = arrays.FloatArray(
+    c = NArray(
         label=":math:`c`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""",
-        order=4)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label=":math:`d`",
         default=numpy.array([5.0]),
-        range=basic.Range(lo=2.5, hi=7.5, step=0.01),
-        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""",
-        order=5)
+        # range=basic.Range(lo=2.5, hi=7.5, step=0.01),
+        doc="""Dimensionless parameter as in the Hindmarsh-Rose model""")
 
-    s = arrays.FloatArray(
+    s = NArray(
         label=":math:`s`",
         default=numpy.array([4.0]),
-        range=basic.Range(lo=2.0, hi=6.0, step=0.01),
-        doc="""Adaptation paramters, governs feedback""",
-        order=6)
+        # range=basic.Range(lo=2.0, hi=6.0, step=0.01),
+        doc="""Adaptation paramters, governs feedback""")
 
-    xo = arrays.FloatArray(
+    xo = NArray(
         label=":math:`x_{o}`",
         default=numpy.array([-1.6]),
-        range=basic.Range(lo=-2.4, hi=-0.8, step=0.01),
-        doc="""Leftmost equilibrium point of x""",
-        order=7)
+        # range=basic.Range(lo=-2.4, hi=-0.8, step=0.01),
+        doc="""Leftmost equilibrium point of x""")
 
-    K11 = arrays.FloatArray(
+    K11 = NArray(
         label=":math:`K_{11}`",
         default=numpy.array([0.5]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to excitatory""",
-        order=8)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, excitatory to excitatory""")
 
-    K12 = arrays.FloatArray(
+    K12 = NArray(
         label=":math:`K_{12}`",
         default=numpy.array([0.1]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, inhibitory to excitatory""",
-        order=9)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, inhibitory to excitatory""")
 
-    K21 = arrays.FloatArray(
+    K21 = NArray(
         label=":math:`K_{21}`",
         default=numpy.array([0.15]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Internal coupling, excitatory to inhibitory""",
-        order=10)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Internal coupling, excitatory to inhibitory""")
 
-    sigma = arrays.FloatArray(
+    sigma = NArray(
         label=r":math:`\sigma`",
         default=numpy.array([0.3]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Standard deviation of Gaussian distribution""",
-        order=11)
+        # range=basic.Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Standard deviation of Gaussian distribution""")
 
-    mu = arrays.FloatArray(
+    mu = NArray(
         label=r":math:`\mu`",
         default=numpy.array([3.3]),
-        range=basic.Range(lo=1.1, hi=3.3, step=0.01),
-        doc="""Mean of Gaussian distribution""",
-        order=12)
+        # range=basic.Range(lo=1.1, hi=3.3, step=0.01),
+        doc="""Mean of Gaussian distribution""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"xi": numpy.array([-4.0, 4.0]),
                  "eta": numpy.array([-25.0, 20.0]),
@@ -491,20 +476,18 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""",
-        order=13)
+        it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["xi", "eta", "tau", "alpha", "beta", "gamma"],
-        default=["xi", "eta", "tau"],
-        select_multiple=True,
+        choices=("xi", "eta", "tau", "alpha", "beta", "gamma"),
+        default=("xi", "eta", "tau"),
         doc=r"""This represents the default state-variables of this Model to be
                 monitored. It can be overridden for each Monitor if desired. The
                 corresponding state-variable indices for this model are :math:`\xi = 0`,
                 :math:`\eta = 1`, :math:`\tau = 2`, :math:`\alpha = 3`,
-                :math:`\beta = 4`, and :math:`\gamma = 5`""",
-        order=14)
+                :math:`\beta = 4`, and :math:`\gamma = 5`""")
 
     state_variables = 'xi eta tau alpha beta gamma'.split()
     _nvar = 6

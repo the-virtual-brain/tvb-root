@@ -30,8 +30,9 @@
 Hopfield model with modifications following Golos & Daucé.
 
 """
-
-from .base import Model, LOG, numpy, basic, arrays
+import numpy
+from .base import Model
+from tvb.basic.traits.neotraits import NArray, Attr, List
 
 
 class Hopfield(Model):
@@ -95,52 +96,48 @@ class Hopfield(Model):
     ui_configurable_parameters = ['taux', 'tauT', 'dynamic']
 
     # Define traited attributes for this model, these represent possible kwargs.
-    taux = arrays.FloatArray(
+    taux = NArray(
         label=":math:`\\tau_{x}`",
         default=numpy.array([1.]),
-        range=basic.Range(lo=0.01, hi=100., step=0.01),
-        doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""",
-        order=1)
+        # range=basic.Range(lo=0.01, hi=100., step=0.01),
+        doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""")
 
-    tauT = arrays.FloatArray(
+    tauT = NArray(
         label=":math:`\\tau_{\\theta}`",
         default=numpy.array([5.]),
-        range=basic.Range(lo = 0.01, hi = 100., step = 0.01),
-        doc="""The slow time-scale for threshold calculus :math:`\theta`, state-variable of the model.""",
-        order=2)
+        # range=basic.Range(lo = 0.01, hi = 100., step = 0.01),
+        doc="""The slow time-scale for threshold calculus :math:`\theta`, state-variable of the model.""")
 
-    dynamic = arrays.IntegerArray(
+    dynamic = NArray(
+        dtype=int,
         label="Dynamic",
-        default=numpy.array([0, ]),
-        range=basic.Range(lo=0, hi=1., step=1),
-        doc="""Boolean value for static/dynamic threshold theta for (0/1).""",
-        order=3)
+        default=numpy.array([0]),
+        # range=basic.Range(lo=0, hi=1., step=1),
+        doc="""Boolean value for static/dynamic threshold theta for (0/1).""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
-        default={"x": numpy.array([-1., 2.]),
-                   "theta": numpy.array([0., 1.])},
+        default={"x": numpy.array([-1., 2.]), "theta": numpy.array([0., 1.])},
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random inital
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""",
-        order = 4)
+            history, it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["x", "theta"],
-        default=["x"],
-        select_multiple=True,
+        choices=("x", "theta"),
+        default=("x",),
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""",
-        order=5)
+            history, it is also provides the default range of phase-plane plots.""")
 
-    state_variables = ['x', 'theta']
+    state_variables = ('x', 'theta')
 
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
