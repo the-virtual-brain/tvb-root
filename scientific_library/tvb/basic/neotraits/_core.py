@@ -10,7 +10,7 @@ import uuid
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
-from .ex import TraitAttributeError, TraitTypeError, TraitValueError
+from .ex import TraitAttributeError, TraitTypeError, TraitValueError, TraitError
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -215,11 +215,14 @@ class HasTraits(object):
             ret['title'] = str(self.title)
 
         for aname in cls.declarative_attrs:
-            attr_field = getattr(self, aname)
-            if isinstance(attr_field, numpy.ndarray):
-                ret.update(narray_summary_info(attr_field, ar_name=aname))
-            elif isinstance(attr_field, HasTraits):
-                ret[aname] = attr_field.title
-            else:
-                ret[aname] = repr(attr_field)
+            try:
+                attr_field = getattr(self, aname)
+                if isinstance(attr_field, numpy.ndarray):
+                    ret.update(narray_summary_info(attr_field, ar_name=aname))
+                elif isinstance(attr_field, HasTraits):
+                    ret[aname] = attr_field.title
+                else:
+                    ret[aname] = repr(attr_field)
+            except TraitError:
+                ret[aname] = 'unavailable'
         return ret
