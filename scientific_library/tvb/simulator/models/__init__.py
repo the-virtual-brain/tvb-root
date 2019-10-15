@@ -29,8 +29,7 @@
 """
 A collection of neuronal dynamics models.
 
-Specific models inherit from the abstract class Model, which in turn inherits
-from the class Trait from the tvb.basic.traits module.
+Specific models inherit from the abstract class Model.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>

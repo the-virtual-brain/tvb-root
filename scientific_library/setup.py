@@ -40,7 +40,7 @@ import shutil
 import setuptools
 
 
-LIBRARY_VERSION = "1.5.10"
+LIBRARY_VERSION = "2.0.b"
 
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
@@ -61,7 +61,7 @@ setuptools.setup(name='tvb-library',
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
-                 download_url='https://github.com/the-virtual-brain/tvb-library',
+                 download_url='https://github.com/the-virtual-brain/tvb-root',
                  keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
 
 # Cleanup after EGG install. These are created by running setup.py in the source tree
