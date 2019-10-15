@@ -61,8 +61,6 @@ class Sensors(HasTraits):
 
     sensors_type = Attr(str, required=False)
 
-    __mapper_args__ = {'polymorphic_on': 'sensors_type'}
-
     labels = NArray(dtype='S128', label="Sensor labels")
 
     locations = NArray(label="Sensor locations")
@@ -208,10 +206,6 @@ class SensorsEEG(Sensors):
     """
     _ui_name = "EEG Sensors"
 
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
-
     sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
     has_orientation = Attr(bool, default=False)
@@ -231,10 +225,6 @@ class SensorsMEG(Sensors):
 
     """
     _ui_name = "MEG sensors"
-
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': MEG_POLYMORPHIC_IDENTITY}
 
     sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
 
@@ -260,10 +250,6 @@ class SensorsInternal(Sensors):
     Sensors inside the brain...
     """
     _ui_name = "Internal Sensors"
-
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': INTERNAL_POLYMORPHIC_IDENTITY}
 
     sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
 

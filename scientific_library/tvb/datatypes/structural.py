@@ -48,7 +48,6 @@ class StructuralMRI(HasTraits):
 
     """
     # without the field below weighting and volume columns are going to be added to the MAPPED_ARRAY table
-    __generate_table__ = True
 
     array_data = NArray(label="contrast")
 

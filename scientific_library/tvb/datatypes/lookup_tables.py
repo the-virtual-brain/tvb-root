@@ -155,7 +155,6 @@ class PsiTable(LookUpTable):
     :math:`\\psi(\\nu)` as a function of the presynaptic rates :math:`\\nu`
 
     """
-    __tablename__ = None
 
     @staticmethod
     def from_file(source_file="psi.npz", instance=None):
@@ -169,7 +168,6 @@ class NerfTable(LookUpTable):
     defining the statistical properties of the membrane potential in presence of synaptic inputs.
 
     """
-    __tablename__ = None
 
     @staticmethod
     def from_file(source_file="nerf_int.npz", instance=None):

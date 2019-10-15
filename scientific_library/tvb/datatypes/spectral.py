@@ -83,8 +83,6 @@ class FourierSpectrum(HasTraits):
     _freq_step = None
     _max_freq = None
 
-    __generate_table__ = True
-
     def configure(self):
         """ compute dependent fields like amplitude """
         self.compute_amplitude()
@@ -194,22 +192,6 @@ class WaveletCoefficients(HasTraits):
     _frequency = None
     _time = None
 
-    __generate_table__ = True
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = len(self.read_data_shape())
-        for i in range(self.nr_dimensions):
-            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
-        if self.trait.use_storage is False and sum(self.get_data_shape('array_data')) != 0:
-            if self.amplitude.size == 0:
-                self.compute_amplitude()
-            if self.phase.size == 0:
-                self.compute_phase()
-            if self.power.size == 0:
-                self.compute_power()
 
     def summary_info(self):
         """
@@ -270,12 +252,6 @@ class CoherenceSpectrum(HasTraits):
 
     frequency = NArray(label="Frequency")
 
-    __generate_table__ = True
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.configure_chunk_safe()
 
     def summary_info(self):
         """
@@ -335,8 +311,6 @@ class ComplexCoherenceSpectrum(HasTraits):
         label="Windowing function",
         doc="""The windowing function applied to each time segment prior to
                 application of the FFT.""")
-
-    __generate_table__ = True
 
     _frequency = None
     _freq_step = None

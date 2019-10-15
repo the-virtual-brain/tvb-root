@@ -60,8 +60,6 @@ class RegionMapping(HasTraits):
 
     surface = Attr(field_type=Surface)
 
-    __generate_table__ = True
-
     @staticmethod
     def from_file(source_file="regionMapping_16k_76.txt", instance=None):
 
@@ -128,8 +126,6 @@ class RegionVolumeMapping(HasTraits):
     connectivity = Attr(Connectivity)
 
     volume = Attr(Volume)
-
-    __generate_table__ = True
 
     apply_corrections = True
     mappings_file = None

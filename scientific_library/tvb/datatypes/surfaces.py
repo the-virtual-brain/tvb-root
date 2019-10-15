@@ -201,8 +201,6 @@ class Surface(HasTraits):
 
     valid_for_simulations = Attr(field_type=bool)
 
-    __mapper_args__ = {'polymorphic_on': 'surface_type'}
-
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip", instance=None):
         """Construct a Surface from source_file."""
@@ -1017,8 +1015,6 @@ class Surface(HasTraits):
 
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""
-    __tablename__ = None
-    __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
     _ui_name = "A white matter - gray  surface"
     surface_type = Const(WHITE_MATTER)
 
@@ -1027,14 +1023,10 @@ class CorticalSurface(Surface):
     """Cortical or pial surface."""
     _ui_name = "A cortical surface"
     surface_type = Const(CORTICAL)
-    __tablename__ = None
-    __mapper_args__ = {'polymorphic_identity': CORTICAL}
 
 
 class SkinAir(Surface):
     """Skin - air interface surface."""
-    __tablename__ = None
-    __mapper_args__ = {'polymorphic_identity': OUTER_SKIN}
     _ui_name = "Skin"
     surface_type = Const(OUTER_SKIN)
 
@@ -1045,8 +1037,6 @@ class SkinAir(Surface):
 
 class BrainSkull(Surface):
     """Brain - inner skull interface surface."""
-    __tablename__ = None
-    __mapper_args__ = {'polymorphic_identity': INNER_SKULL}
     _ui_name = "Brain - inner skull interface surface."
     surface_type = Const(INNER_SKULL)
 
@@ -1058,8 +1048,6 @@ class BrainSkull(Surface):
 
 class SkullSkin(Surface):
     """Outer-skull - scalp interface surface."""
-    __tablename__ = None
-    __mapper_args__ = {'polymorphic_identity': OUTER_SKULL}
     _ui_name = "Outer-skull - scalp interface surface"
     surface_type = Const(OUTER_SKULL)
 
@@ -1070,12 +1058,10 @@ class SkullSkin(Surface):
 
 class OpenSurface(Surface):
     """Base class for open surfaces."""
-    __tablename__ = None
 
 
 class EEGCap(OpenSurface):
     """EEG cap surface."""
-    __mapper_args__ = {'polymorphic_identity': EEG_CAP}
     _ui_name = "EEG Cap"
     surface_type = Const(EEG_CAP)
 
@@ -1086,7 +1072,6 @@ class EEGCap(OpenSurface):
 
 class FaceSurface(OpenSurface):
     """Face surface."""
-    __mapper_args__ = {'polymorphic_identity': FACE}
     _ui_name = "Face surface"
     surface_type = Const(FACE)
 

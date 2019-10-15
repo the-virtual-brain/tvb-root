@@ -56,15 +56,6 @@ class Covariance(HasTraits):
         label="Source time-series",
         doc="Links to the time-series on which NodeCovariance is applied.")
 
-    __generate_table__ = True
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = len(self.read_data_shape())
-        for i in range(self.nr_dimensions):
-            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
     def summary_info(self):
         summary = {
             "Graph type": self.__class__.__name__,
@@ -94,15 +85,6 @@ class CorrelationCoefficients(HasTraits):
         default=("Node", "Node", "State Variable", "Mode"),
         doc="""List of strings representing names of each data dimension""")
 
-    __generate_table__ = True
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = len(self.read_data_shape())
-        for i in range(self.nr_dimensions):
-            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
-
     def summary_info(self):
         summary = {
             "Graph type": self.__class__.__name__,
@@ -130,4 +112,3 @@ class ConnectivityMeasure(HasTraits):
         summary.update(narray_summary_info(self.array_data))
         return summary
 
-    __generate_table__ = True

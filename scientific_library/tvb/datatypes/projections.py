@@ -52,8 +52,6 @@ class ProjectionMatrix(HasTraits):
 
     projection_type = Attr(field_type=str)
 
-    __mapper_args__ = {'polymorphic_on': 'projection_type'}
-
     brain_skull = Attr(
         field_type=surfaces.BrainSkull,
         label="Brain Skull", default=None, required=False,
@@ -113,10 +111,6 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to EEG sensors.
     """
 
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': EEG_POLYMORPHIC_IDENTITY}
-
     projection_type = Attr(field_type=str, default=EEG_POLYMORPHIC_IDENTITY)
 
     sensors = Attr(field_type=sensors.SensorsEEG)
@@ -133,10 +127,6 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to MEG sensors.
     """
 
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': MEG_POLYMORPHIC_IDENTITY}
-
     projection_type = Attr(field_type=str, default=MEG_POLYMORPHIC_IDENTITY)
 
     sensors = Attr(field_type=sensors.SensorsMEG)
@@ -152,10 +142,6 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     """
     Specific projection, from a CorticalSurface to SEEG sensors.
     """
-
-    __tablename__ = None
-
-    __mapper_args__ = {'polymorphic_identity': SEEG_POLYMORPHIC_IDENTITY}
 
     projection_type = Attr(field_type=str, default=SEEG_POLYMORPHIC_IDENTITY)
 
