@@ -79,6 +79,9 @@ class List(Attr):
         # type: (object, typing.Sequence) -> None
         super(List, self).__set__(instance, value)
 
+    def __str__(self):
+        return '{}(of={}, default={}, required={})'.format(
+            type(self).__name__, self.element_type, self.default, self.required)
 
 
 class NArray(Attr):
@@ -94,9 +97,17 @@ class NArray(Attr):
     def __init__(self, default=None, required=True, doc='', label='',
                  dtype=numpy.float, ndim=None, dim_names=(), domain=None):
         # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Tuple[str, ...], typing.Container) -> None
+
+        self.dtype = numpy.dtype(dtype)
+        # default to zero-dimensional arrays, these behave somewhat curious and similar to numbers
+        # this eliminates the is None state. But the empty array is not much better. Shape will be ()
+        #
+        # todo: review this concept.
+        # if default is None:
+        #     default = numpy.zeros((), dtype=dtype)
+
         super(NArray, self).__init__(field_type=numpy.ndarray, default=default,
                                      required=required, doc=doc, label=label)
-        self.dtype = numpy.dtype(dtype)
         self.ndim = int(ndim) if ndim is not None else None
         self.domain = domain  # anything that supports 3.1 in domain
         self.dim_names = tuple(dim_names)
@@ -117,6 +128,7 @@ class NArray(Attr):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
             raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
         # we check strict dtype conformance. Compatible dtypes are not ok
+        # todo: review this choice, maybe it is better to be less strict and just check numpy.can_cast('safe')
         if self.default.dtype != self.dtype:
             msg = 'default dtype={} is not the declared one={}'.format(self.default.dtype, self.dtype)
             raise ValueError(self._err_msg_where(defined_in_type_name) + msg)

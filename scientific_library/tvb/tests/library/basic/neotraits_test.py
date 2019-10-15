@@ -225,3 +225,26 @@ def test_lists():
         a.picked_dimensions = ('time', 'space')
         a.picked_dimensions.append(76)
 
+
+def test_str_ndarrays_are_problematic():
+    class A(HasTraits):
+        s = NArray(dtype=str)
+
+    a = A(s=np.array(['ana', 'a', 'adus', 'mere']))
+    # all seems well and a.s is indeed a np.issubdtype of str
+    # but users will expect python list[str] like behaviour and then this happens
+    a.s[0] = 'Georgiana'
+    assert 'Georgiana' != a.s[0]
+    assert 'Geor' == a.s[0]
+
+    # dtype(str) is dtype('|S0') so it is the most restrictive thus useless
+    with pytest.raises(ValueError):
+        class A(HasTraits):
+            s = NArray(dtype=str, default=np.array(['eli']))
+        # fails because the declared type |S0 is different from |S3
+        # it is not only different but not compatible
+    # so do we eliminate strict dtype checks for strings?
+    # do we start with a default like |S64?
+    # do we create a new attribute String that has relaxed checks and infers dtype from default if it exists?
+    # do we burden the user with giving a precise dtype like |S32?
+    # do we discourage ndarray[str] in favor of plain python lists? and let storage deal with string sizes
