@@ -38,6 +38,7 @@ methods that are associated with the Array datatypes.
 """
 
 import numpy
+import tvb.basic.traits.core as core
 from tvb.basic.traits import types_basic as basic
 from tvb.basic.traits.types_mapped import MappedType, Array
 from tvb.basic.traits.exceptions import ValidationException
@@ -98,6 +99,32 @@ class StringArray(BaseArray):
         summary = {"Array type": self.__class__.__name__,
                    "Shape": self.shape}
         return summary
+
+class PositionArray(FloatArray):
+    _ui_name = "Array of positions"
+
+    coordinate_system = basic.String(label="Coordinate system",
+                                     default="cartesian",
+                                     doc="""The coordinate system used to specify the positions.
+                                     Eg: 'spherical', 'polar'""")
+
+    coordinate_space = basic.String(label="Coordinate space",
+                                    default="None",
+                                    doc="The standard space the positions are in, eg, 'MNI', 'colin27'")
+
+
+class OrientationArray(FloatArray):
+    _ui_name = "Array of orientations"
+    coordinate_system_or = basic.String(label="Coordinate system",
+                                        default="cartesian")
+
+
+class IndexArray(BaseArray):
+    _ui_name = "Index array"
+    target = Array(label="Indexed array",
+                   file_storage=core.FILE_STORAGE_NONE,
+                   doc="A link to the array that the indices index.")
+
 
 
 class MappedArray(MappedType):
