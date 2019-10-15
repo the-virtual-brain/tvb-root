@@ -59,7 +59,7 @@ class List(Attr):
 
 
     def _validate_set(self, instance, value):
-        super(List, self)._validate_set(instance, value)
+        value = super(List, self)._validate_set(instance, value)
         for i, el in enumerate(value):
             if not isinstance(el, self.element_type):
                 raise TypeError(self._err_msg("value[{}] can't be of type {}".format(i, type(el))))
@@ -68,6 +68,7 @@ class List(Attr):
             for i, el in enumerate(value):
                 if el not in self.element_choices:
                     raise ValueError(self._err_msg("value[{}]=={} must be one of {}".format(i, el, self.element_choices)))
+        return value
 
 
     # __get__ __set__ here only for typing purposes, for better ide checking and autocomplete
@@ -85,6 +86,77 @@ class List(Attr):
     def __str__(self):
         return '{}(of={}, default={!r}, required={})'.format(
             type(self).__name__, self.element_type, self.default, self.required)
+
+
+class _Number(Attr):
+    def _post_bind_validate(self):
+        if self.default is not None and not numpy.can_cast(self.default, self.field_type, 'safe'):
+            msg = 'can not safely cast default value {} to the declared type {}'.format(
+                self.default, self.field_type)
+            raise TypeError(self._err_msg(msg))
+
+        if self.choices is not None and self.default is not None:
+            if self.default not in self.choices:
+                msg = 'the default {} must be one of the choices {}'.format(
+                    self.default, self.choices)
+                raise TypeError(self._err_msg(msg))
+
+
+    def _validate_set(self, instance, value):
+        if value is None and not self.required:
+            return value
+        if not numpy.can_cast(value, self.field_type, 'safe'):
+            raise TypeError(self._err_msg("can't be set to {}. No safe cast.".format(value)))
+        if self.choices is not None:
+            if value not in self.choices:
+                raise ValueError(self._err_msg("value {} must be one of {}".format(value, self.choices)))
+        return self.field_type(value)
+
+
+
+class Int(_Number):
+    """
+    Declares an integer
+    This is different from Attr(field_type=int).
+    The former enforces int subtypes
+    This allows all integer types, including numpy ones that can be safely cast to the declared type
+    according to numpy rules
+    """
+    def __init__(self, field_type=int, default=0, doc='', label='',
+                 required=True, readonly=False, choices=None):
+        super(_Number, self).__init__(field_type=field_type, default=default, doc=doc, label=label,
+                                      required=required, readonly=readonly, choices=choices)
+
+
+    def _post_bind_validate(self):
+        if not issubclass(self.field_type, (int, long, numpy.integer)):
+            msg = 'field_type must be a python int or a numpy.integer not {!r}.'.format(self.field_type)
+            raise TypeError(self._err_msg(msg))
+        # super call after the field_type check above
+        super(Int, self)._post_bind_validate()
+
+
+
+class Float(_Number):
+    """
+    Declares a float.
+    This is different from Attr(field_type=float).
+    The former enforces float subtypes.
+    This allows any type that can be safely cast to the declared float type
+    according to numpy rules
+    """
+    def __init__(self, field_type=float, default=0, doc='', label='',
+                 required=True, readonly=False, choices=None):
+        super(_Number, self).__init__(field_type=field_type, default=default, doc=doc, label=label,
+                                      required=required, readonly=readonly, choices=choices)
+
+
+    def _post_bind_validate(self):
+        if not issubclass(self.field_type, (float, numpy.floating)):
+            msg = 'field_type must be a python float or a numpy.floating not {!r}.'.format(self.field_type)
+            raise TypeError(self._err_msg(msg))
+        # super call after the field_type check above
+        super(Float, self)._post_bind_validate()
 
 
 
@@ -138,8 +210,8 @@ class NArray(Attr):
         if not isinstance(self.default, numpy.ndarray):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
             raise TypeError(self._err_msg(msg))
-        if not numpy.can_cast(self.default.dtype, self.dtype, 'safe'):
-            msg = 'the dtype of the default={} is not compatible with the declared one={}'.format(self.default.dtype, self.dtype)
+        if not numpy.can_cast(self.default, self.dtype, 'safe'):
+            msg = 'the default={} value can not be safely cast to the declared dtype={}'.format(self.default, self.dtype)
             raise ValueError(self._err_msg(msg))
         # if ndim is None we allow any ndim
         if self.ndim is not None and self.default.ndim != self.ndim:
@@ -160,13 +232,15 @@ class NArray(Attr):
 
 
     def _validate_set(self, instance, value):
-        super(NArray, self)._validate_set(instance, value)
+        value = super(NArray, self)._validate_set(instance, value)
 
         if self.ndim is not None and value.ndim != self.ndim:
             raise TypeError(self._err_msg("can't be set to an array with ndim {}".format(value.ndim)))
 
         if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
             raise TypeError(self._err_msg("can't be set to an array of dtype {}".format(value.dtype)))
+
+        return value.astype(self.dtype)
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):

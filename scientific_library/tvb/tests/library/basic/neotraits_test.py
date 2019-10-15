@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+
+from tvb.basic.neotraits._attr import Int, Float
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, List, traitproperty
 
@@ -245,7 +247,7 @@ def test_str_ndarrays():
     # but users will expect python list[str] like behaviour and then this happens
     a.s[0] = 'Georgiana'
     assert 'Georgiana' != a.s[0]
-    assert 'Geor' == a.s[0]
+    assert 'Georg' == a.s[0]
 
     # dtype(str) is dtype('|S0') so it is the most restrictive thus useless
     with pytest.raises(ValueError):
@@ -286,4 +288,72 @@ def test_declarative_property():
     assert set(A.declarative_props) == {'x3', 'x2'}
     assert (a.x2 == a.x * 2).all()
     assert (a.x3 == a.x * 3).all()
+
+
+def test_int_attribute():
+    class A(HasTraits):
+        a = Int()
+        b = Int(field_type=np.int8)
+        c = Int(field_type=np.uint16)
+
+    ainst = A()
+    assert ainst.b == 0
+
+    # type is out of bounds but value is within the bounds. So this is ok
+    ainst.b = long(42)
+    # values are not only checked for compatibility but converted to the declared type
+    assert type(ainst.b) == np.int8
+    ainst.b = np.int(4)
+
+    with pytest.raises(TypeError):
+        # out of bounds for a int8
+        ainst.b = 102345
+
+    with pytest.raises(TypeError):
+        # floats can't be safely cast to int
+        ainst.a = 3.12
+
+    with pytest.raises(TypeError):
+        # floats are not ok even when they don't have decimals
+        ainst.a = 4.0
+
+    with pytest.raises(TypeError):
+        # negative value is not ok in a unsigned int field
+        ainst.c = -1
+
+    # signed to unsigned is ok when value fits
+
+    ainst.c = 42
+
+    with pytest.raises(TypeError):
+        # incompatible field type
+        class B(HasTraits):
+            a = Int(field_type=float)
+
+    with pytest.raises(TypeError):
+        # incompatible field default
+        class B(HasTraits):
+            a = Int(default=1.0)
+
+
+def test_float_attribute():
+    class A(HasTraits):
+        a = Float()
+        b = Float(field_type=np.float32)
+        c = Float(field_type=np.float16)
+
+    ainst = A()
+    # int's are ok
+    ainst.a = 1
+    ainst.a = 2**61
+    # larger floats as well if they actually fit
+    ainst.c = np.float64(4)
+    # they are converted to the declared types
+    assert type(ainst.c) == np.float16
+
+    with pytest.raises(TypeError):
+        # out of bounds
+        ainst.c = 2**30
+
+
 
