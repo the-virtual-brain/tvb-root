@@ -37,20 +37,22 @@ that are associated with the Graph datatypes.
 .. moduleauthor:: Paula Sanz Leon <paula.sanz-leon@univ-amu.fr>
 
 """
-
-from tvb.basic.traits import core, types_basic as basic
+import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes import arrays, time_series, connectivity
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
+from tvb.datatypes import time_series, connectivity
 
 LOG = get_logger(__name__)
 
 
-class Covariance(arrays.MappedArray):
+class Covariance(HasTraits):
     """Covariance datatype."""
 
-    array_data = arrays.ComplexArray(file_storage=core.FILE_STORAGE_EXPAND)
+    array_data = NArray(dtype=numpy.complex128) # file_storage=core.FILE_STORAGE_EXPAND
+    # FROM ComplexArray: stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which NodeCovariance is applied.")
 
@@ -77,22 +79,24 @@ class Covariance(arrays.MappedArray):
         return summary
 
 
-class CorrelationCoefficients(arrays.MappedArray):
+class CorrelationCoefficients(HasTraits):
     """Correlation coefficients datatype."""
 
     # Extreme values for pearson Correlation Coefficients
     PEARSON_MIN = -1
     PEARSON_MAX = 1
 
-    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_DEFAULT)
+    array_data = NArray() # file_storage=core.FILE_STORAGE_DEFAULT
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which Correlation (coefficients) is applied.")
 
-    labels_ordering = basic.List(
+    labels_ordering = List(
+        of=str,
         label="Dimension Names",
-        default=["Node", "Node", "State Variable", "Mode"],
+        default=("Node", "Node", "State Variable", "Mode"),
         doc="""List of strings representing names of each data dimension""")
 
     __generate_table__ = True
@@ -116,10 +120,10 @@ class CorrelationCoefficients(arrays.MappedArray):
         return list(matrix_to_display.flat)
 
 
-class ConnectivityMeasure(arrays.MappedArray):
+class ConnectivityMeasure(HasTraits):
     """Measurement of based on a connectivity."""
 
-    connectivity = connectivity.Connectivity
+    connectivity = Attr(field_type=connectivity.Connectivity)
 
     def _find_summary_info(self):
         summary = {"Graph type": self.__class__.__name__}

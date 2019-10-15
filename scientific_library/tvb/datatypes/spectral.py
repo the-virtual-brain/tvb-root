@@ -39,54 +39,48 @@ methods that are associated with the Spectral datatypes.
 import json
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import util, core, types_basic as basic
-from tvb.datatypes import arrays, time_series
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.datatypes import time_series
 
 LOG = get_logger(__name__)
 
 
-class FourierSpectrum(arrays.MappedArray):
+class FourierSpectrum(HasTraits):
     """
     Result of a Fourier  Analysis.
     """
     # Overwrite attribute from superclass
-    array_data = arrays.ComplexArray(file_storage=core.FILE_STORAGE_EXPAND)
+    array_data = NArray(dtype=numpy.complex128)  # file_storage=core.FILE_STORAGE_EXPAND
+    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which the FFT is applied.")
 
-    segment_length = basic.Float(
+    segment_length = Attr(
+        field_type=float,
         label="Segment length",
         doc="""The timeseries was segmented into equally sized blocks
             (overlapping if necessary), prior to the application of the FFT.
             The segement length determines the frequency resolution of the
             resulting spectra.""")
 
-    windowing_function = basic.String(
+    windowing_function = Attr(
+        field_type=str,
         label="Windowing function",
         doc="""The windowing function applied to each time segment prior to
             application of the FFT.""")
 
-    amplitude = arrays.FloatArray(
-        label="Amplitude",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    amplitude = NArray(label="Amplitude")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    phase = arrays.FloatArray(
-        label="Phase",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    phase = NArray(label="Phase")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    power = arrays.FloatArray(
-        label="Power",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    power = NArray(label="Power")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    average_power = arrays.FloatArray(
-        label="Average Power",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    average_power = NArray(label="Average Power")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    normalised_average_power = arrays.FloatArray(
-        label="Normalised Power",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    normalised_average_power = NArray(label="Normalised Power")  # file_storage=core.FILE_STORAGE_EXPAND
 
     _frequency = None
     _freq_step = None
@@ -225,46 +219,42 @@ class FourierSpectrum(arrays.MappedArray):
                     ymax=ymax)
 
 
-class WaveletCoefficients(arrays.MappedArray):
+class WaveletCoefficients(HasTraits):
     """
     This class bundles all the elements of a Wavelet Analysis into a single
     object, including the input TimeSeries datatype and the output results as
     arrays (FloatArray)
     """
     # Overwrite attribute from superclass
-    array_data = arrays.ComplexArray()
+    array_data = NArray(dtype=numpy.complex128)
+    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
-    source = time_series.TimeSeries(label="Source time-series")
+    source = Attr(field_type=time_series.TimeSeries, label="Source time-series")
 
-    mother = basic.String(
+    mother = Attr(
+        field_type=str,
         label="Mother wavelet",
         default="morlet",
         doc="""A string specifying the type of mother wavelet to use,
             default is 'morlet'.""")  # default to 'morlet'
 
-    sample_period = basic.Float(label="Sample period")
+    sample_period = Attr(field_type=float, label="Sample period")
     # sample_rate = basic.Integer(label = "")  inversely related
 
-    frequencies = arrays.FloatArray(
+    frequencies = NArray(
         label="Frequencies",
         doc="A vector that maps scales to frequencies.")
 
-    normalisation = basic.String(label="Normalisation type")
+    normalisation = Attr(field_type=str, label="Normalisation type")
     # 'unit energy' | 'gabor'
 
-    q_ratio = basic.Float(label="Q-ratio", default=5.0)
+    q_ratio = Attr(field_type=float, label="Q-ratio", default=5.0)
 
-    amplitude = arrays.FloatArray(
-        label="Amplitude",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    amplitude = NArray(label="Amplitude")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    phase = arrays.FloatArray(
-        label="Phase",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    phase = NArray(label="Phase")  # file_storage=core.FILE_STORAGE_EXPAND
 
-    power = arrays.FloatArray(
-        label="Power",
-        file_storage=core.FILE_STORAGE_EXPAND)
+    power = NArray(label="Power")  # file_storage=core.FILE_STORAGE_EXPAND
 
     _frequency = None
     _time = None
@@ -339,24 +329,26 @@ class WaveletCoefficients(arrays.MappedArray):
         self.store_data_chunk('power', partial_result.power, grow_dimension=2, close_file=False)
 
 
-class CoherenceSpectrum(arrays.MappedArray):
+class CoherenceSpectrum(HasTraits):
     """
     Result of a NodeCoherence Analysis.
     """
     # Overwrite attribute from superclass
-    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_EXPAND)
+    array_data = NArray()  # file_storage=core.FILE_STORAGE_EXPAND
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="""Links to the time-series on which the node_coherence is
             applied.""")
 
-    nfft = basic.Integer(
+    nfft = Attr(
+        field_type=int,
         label="Data-points per block",
         default=256,
         doc="""NOTE: must be a power of 2""")
 
-    frequency = arrays.FloatArray(label="Frequency")
+    frequency = NArray(label="Frequency")
 
     __generate_table__ = True
 
@@ -384,44 +376,52 @@ class CoherenceSpectrum(arrays.MappedArray):
         self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=3, close_file=False)
 
 
-class ComplexCoherenceSpectrum(arrays.MappedArray):
+class ComplexCoherenceSpectrum(HasTraits):
     """
     Result of a NodeComplexCoherence Analysis.
     """
 
-    cross_spectrum = arrays.ComplexArray(
+    cross_spectrum = NArray(
+        dtype=numpy.complex128,
         label="The cross spectrum",
-        file_storage=core.FILE_STORAGE_EXPAND,
+        # file_storage=core.FILE_STORAGE_EXPAND,
         doc=""" A complex ndarray that contains the nodes x nodes cross
                 spectrum for every frequency frequency and for every segment.""")
+    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
-    array_data = arrays.ComplexArray(
+    array_data = NArray(
+        dtype=numpy.complex128,
         label="Complex Coherence",
-        file_storage=core.FILE_STORAGE_EXPAND,
+        # file_storage=core.FILE_STORAGE_EXPAND,
         doc="""The complex coherence coefficients calculated from the cross
                 spectrum. The imaginary values of this complex ndarray represent the
                 imaginary coherence.""")
+    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="""Links to the time-series on which the node_coherence is
                 applied.""")
 
-    epoch_length = basic.Float(
+    epoch_length = Attr(
+        field_type=float,
         label="Epoch length",
         doc="""The timeseries was segmented into equally sized blocks
                 (overlapping if necessary), prior to the application of the FFT.
                 The segement length determines the frequency resolution of the
                 resulting spectra.""")
 
-    segment_length = basic.Float(
+    segment_length = Attr(
+        field_type=float,
         label="Segment length",
         doc="""The timeseries was segmented into equally sized blocks
                 (overlapping if necessary), prior to the application of the FFT.
                 The segement length determines the frequency resolution of the
                 resulting spectra.""")
 
-    windowing_function = basic.String(
+    windowing_function = Attr(
+        field_type=str,
         label="Windowing function",
         doc="""The windowing function applied to each time segment prior to
                 application of the FFT.""")

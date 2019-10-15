@@ -38,24 +38,24 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 from tvb.basic.logger.builder import get_logger
 
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.datatypes.arrays as arrays
 import tvb.datatypes.time_series as time_series
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
 
 
 
 LOG = get_logger(__name__)
 
-class Fcd(arrays.MappedArray):
+class Fcd(HasTraits):
 
-    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_DEFAULT)
+    array_data = NArray() #file_storage=core.FILE_STORAGE_DEFAULT
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        field_type=time_series.TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which FCD is calculated.")
 
-    sw = basic.Float(
+    sw = Attr(
+        field_type=float,
         label="Sliding window length (ms)",
         default=120000,
         doc="""Length of the time window used to divided the time series.
@@ -63,7 +63,8 @@ class Fcd(arrays.MappedArray):
                 The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
                 The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
-    sp = basic.Float(
+    sp = Attr(
+        field_type=float,
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
         doc="""Spanning= (time windows length)-(overlapping between two consecutive time window).
@@ -71,9 +72,10 @@ class Fcd(arrays.MappedArray):
                 The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
                 The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector""")
 
-    labels_ordering = basic.List(
+    labels_ordering = List(
+        of=str,
         label="Dimension Names",
-        default=["Time", "Time", "State Variable", "Mode"],
+        default=("Time", "Time", "State Variable", "Mode"),
         doc="""List of strings representing names of each data dimension""")
 
     __generate_table__ = True
