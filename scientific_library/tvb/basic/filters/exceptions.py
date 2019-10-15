@@ -32,7 +32,7 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 
 
 class InvalidFilterChainInput(TVBException):

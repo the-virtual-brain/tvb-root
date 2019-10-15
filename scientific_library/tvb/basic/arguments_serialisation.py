@@ -37,7 +37,8 @@ This module contains functions to parse those strings and construct those respon
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
-from tvb.basic.traits import exceptions
+from tvb.basic import exceptions
+
 
 
 def parse_slice(slice_string):
