@@ -180,7 +180,7 @@ def test_declarative_attrs():
     class Inherit(B, A):
         c = Attr(str)
 
-    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a'}
+    assert set(Inherit.declarative_attrs) == {'gid', 'c', 'b', 'a'}
     assert Inherit._own_declarative_attrs == ('c',)
     assert Inherit.own_declarative_attrs == ('c',)
 
@@ -191,7 +191,7 @@ def test_declarative_attrs():
     with pytest.raises(AttributeError):
         t.declarative_attrs
 
-    assert set(type(t).declarative_attrs) == {'c', 'b', 'a'}
+    assert set(type(t).declarative_attrs) == {'gid', 'c', 'b', 'a'}
 
 
 def test_mutable_defaults():
@@ -652,7 +652,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result, no b in the declarative attr list
-    assert set(A.declarative_attrs) == {'a'}
+    assert set(A.declarative_attrs) == {'a', 'gid'}
 
     # this fails
     with pytest.raises(AttributeError):
@@ -665,7 +665,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result a not deleted from declarative attr list
-    assert set(B.declarative_attrs) == {'a'}
+    assert set(B.declarative_attrs) == {'a', 'gid'}
 
 
 def test_declarative_properties():

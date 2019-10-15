@@ -142,7 +142,6 @@ def cached_trait_property(attr):
 
 @add_metaclass(MetaType)
 class HasTraits(object):
-    __metaclass__ = MetaType
 
     # The base __init__ and __str__ rely upon metadata gathered by MetaType
     # we could have injected these in MetaType, but we don't need meta powers
