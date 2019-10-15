@@ -187,7 +187,7 @@ class Surface(HasTraits):
 
     surface_type = Attr(field_type=str)
 
-    valid_for_simulations = Attr(field_type=bool)
+    valid_for_simulations = Attr(field_type=bool, default=True)
 
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip", instance=None):

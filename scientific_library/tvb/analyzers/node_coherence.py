@@ -94,13 +94,13 @@ def coherence_mlab(data, sample_rate, nfft=256):
 def coherence(data, sample_rate, nfft=256, imag=False):
     "Vectorized coherence calculation by windowed FFT"
     nt, ns, nn, nm = data.shape
-    nwin = nt / nfft
+    nwin = nt // nfft
     if nwin < 1:
         raise ValueError(
             "Not enough time points ({0}) to compute an FFT, given a "
             "window size of nfft={1}.".format(nt, nfft))
     # ignore leftover data; need shape (nn, ... , nwin, nfft)
-    wins = data[:nwin * nfft]\
+    wins = data[:int(nwin * nfft)]\
         .copy()\
         .transpose((2, 1, 3, 0))\
         .reshape((nn, ns, nm, nwin, nfft))
