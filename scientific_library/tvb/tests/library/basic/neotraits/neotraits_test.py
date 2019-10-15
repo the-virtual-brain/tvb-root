@@ -1,10 +1,38 @@
+# -*- coding: utf-8 -*-
+#
+#
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
+
 import abc
 import uuid
-
 import numpy
 import numpy as np
 import pytest
-import sys
 
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
@@ -12,7 +40,6 @@ from tvb.basic.neotraits.api import (
     Int, Float, Range, cached_trait_property, LinspaceRange, Dim
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
-
 
 
 def test_simple_declaration():
@@ -78,6 +105,7 @@ def test_default_compatible_with_field_type_and_choices():
     with pytest.raises(TraitError):
         class A(HasTraits):
             fi = Attr(int, choices=(1.2, 4.2))
+
         a = A()
         a.fi = 1.2  # the error is late, but better than never
 
@@ -154,7 +182,7 @@ def test_declarative_attrs():
 
     assert set(Inherit.declarative_attrs) == {'c', 'b', 'a'}
     assert Inherit._own_declarative_attrs == ('c',)
-    assert Inherit.own_declarative_attrs == ('c', )
+    assert Inherit.own_declarative_attrs == ('c',)
 
     t = Inherit(a="ana", c="are", b=2)
 
@@ -164,7 +192,6 @@ def test_declarative_attrs():
         t.declarative_attrs
 
     assert set(type(t).declarative_attrs) == {'c', 'b', 'a'}
-
 
 
 def test_mutable_defaults():
@@ -209,7 +236,6 @@ def test_mutable_unassigned_defaults():
     assert bok2.mut_shared == [3, 4, 42]
 
 
-
 def test_late_attr_binding_fail():
     class F(HasTraits):
         f = Attr(str)
@@ -220,6 +246,7 @@ def test_late_attr_binding_fail():
 
 def test_mro_fail():
     class A(HasTraits): pass
+
     class B(A): pass
 
     with pytest.raises(TypeError) as ex:
@@ -227,6 +254,7 @@ def test_mro_fail():
             """
             simple mro contradiction. rule 1 Inherit(A, B) => A < B in mro ; rule 2 B subclass A => B < A
             """
+
         assert 'consistent method resolution' in str(ex.value)
 
 
@@ -471,7 +499,6 @@ def test_declarative_property():
             d = self.x[:, numpy.newaxis]
             return d + d.T
 
-
     a = A()
     a.x = np.arange(12)
     assert set(A.declarative_props) == {'x3', 'x2', 'expensive_once'}
@@ -585,7 +612,6 @@ def test_numerics_respect_choices_and_null():
         binst.a = None
 
 
-
 def test_float_attribute():
     class A(HasTraits):
         a = Float()
@@ -595,7 +621,7 @@ def test_float_attribute():
     ainst = A()
     # int's are ok
     ainst.a = 1
-    ainst.a = int(2**31-1)
+    ainst.a = int(2 ** 31 - 1)
     # larger floats as well if they actually fit
     ainst.c = np.float64(4)
     # they are converted to the declared types
@@ -603,7 +629,7 @@ def test_float_attribute():
 
     with pytest.raises(TypeError):
         # out of bounds
-        ainst.c = 2**30
+        ainst.c = 2 ** 30
 
 
 def test_deleting_a_declared_attribute_not_supported():
@@ -642,7 +668,6 @@ def test_dynamic_attributes_behave_statically_and_warn():
     assert set(B.declarative_attrs) == {'a'}
 
 
-
 def test_declarative_properties():
     class A(HasTraits):
         def __init__(self):
@@ -663,7 +688,6 @@ def test_declarative_properties():
         @trait_property(Attr(int))
         def lyin_prop(self):
             return 'trickster'
-
 
     a = A()
     # read
@@ -714,7 +738,6 @@ def test_declarative_props_enforcing_shapes():
 
     with pytest.raises(TraitValueError):
         a.weights = numpy.zeros((2, 3))
-
 
 
 def test_get_known_subclasses():
@@ -859,4 +882,3 @@ def test_perf_trait(benchmark):
         arr = NArray(shape=(Dim.any, Dim.any), default=numpy.eye(3))
 
     benchmark(access_attr, A())
-
