@@ -37,9 +37,9 @@ IndependentComponents datatype.
 """
 
 import numpy
-from sklearn.decomposition import fastica
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
+from tvb.analyzers.independent_component_analysis import fastica
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.basic.logger.builder import get_logger
 
