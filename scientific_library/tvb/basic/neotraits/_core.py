@@ -138,7 +138,12 @@ class Attr(object):
                 default = self.default()
             else:
                 default = self.default
-            return default
+
+            # Unless we store the default on the instance, this will keep returning self.default()
+            # when the default is a function. So if the default is mutable, any changes to it are
+            # lost as a new one is created every time.
+            instance.__dict__[self.field_name] = default
+
         return instance.__dict__[self.field_name]
 
 
