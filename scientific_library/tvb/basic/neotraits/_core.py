@@ -95,8 +95,12 @@ class Attr(object):
         Raise if checks fail.
         You should return a cleaned up value if validation passes
         """
-        if value is None and not self.required:
-            return value
+        if value is None:
+            if self.required:
+                raise ValueError(self._err_msg("is required. Can't set to None"))
+            else:
+                return value
+
         if not isinstance(value, self.field_type):
             raise TypeError(self._err_msg("can't be set to an instance of {}".format(type(value))))
         if self.choices is not None:

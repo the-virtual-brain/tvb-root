@@ -60,6 +60,10 @@ class List(Attr):
 
     def _validate_set(self, instance, value):
         value = super(List, self)._validate_set(instance, value)
+        if value is None:
+            # value is optional and missing, nothing to do here
+            return
+
         for i, el in enumerate(value):
             if not isinstance(el, self.element_type):
                 raise TypeError(self._err_msg("value[{}] can't be of type {}".format(i, type(el))))
@@ -103,8 +107,12 @@ class _Number(Attr):
 
 
     def _validate_set(self, instance, value):
-        if value is None and not self.required:
-            return value
+        if value is None:
+            if self.required:
+                raise ValueError(self._err_msg("is required. Can't set to None"))
+            else:
+                return value
+
         if not numpy.can_cast(value, self.field_type, 'safe'):
             raise TypeError(self._err_msg("can't be set to {}. No safe cast.".format(value)))
         if self.choices is not None:
@@ -233,6 +241,9 @@ class NArray(Attr):
 
     def _validate_set(self, instance, value):
         value = super(NArray, self)._validate_set(instance, value)
+        if value is None:
+            # value is optional and missing, nothing to do here
+            return
 
         if self.ndim is not None and value.ndim != self.ndim:
             raise TypeError(self._err_msg("can't be set to an array with ndim {}".format(value.ndim)))
