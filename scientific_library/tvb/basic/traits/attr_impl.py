@@ -80,7 +80,7 @@ class List(Attr):
         super(List, self).__set__(instance, value)
 
     def __str__(self):
-        return '{}(of={}, default={}, required={})'.format(
+        return '{}(of={}, default={!r}, required={})'.format(
             type(self).__name__, self.element_type, self.default, self.required)
 
 
@@ -177,9 +177,8 @@ class NArray(Attr):
         super(NArray, self).__set__(instance, value)
 
     def __str__(self):
-        return '{}(dtype={}, default={}, required={})'.format(
-            type(self).__name__, self.dtype, self.default, self.required)
-
+        return '{}(label={!r}, dtype={}, default={!r}, dim_names={}, ndim={}, required={})'.format(
+            type(self).__name__, self.label, self.dtype, self.default, self.dim_names, self.ndim, self.required)
 
 
 class Range(object):

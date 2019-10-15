@@ -7,6 +7,7 @@ import inspect
 import typing
 import abc
 import logging
+from .neotraits_info import trait_object_str, auto_docstring, trait_object_repr_html
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -128,24 +129,13 @@ class Attr(object):
 
 
     def __str__(self):
-        return '{}(field_type={}, default={}, required={})'.format(
+        return '{}(field_type={}, default={!r}, required={})'.format(
             type(self).__name__, self.field_type, self.default, self.required)
 
     def __setattr__(self, key, value):
         if getattr(self, 'owner', None) is not None:
             raise AttributeError("can't change any field after the Attr has been bound to a class")
         super(Attr, self).__setattr__(key, value)
-
-
-def _auto_docstring(namespace):
-    """ generate a docstring for the new class in which the Attrs are documented """
-    doc = ['declarative attr on class']
-
-    for k, v in namespace.iteritems():
-        if isinstance(v, Attr):
-            doc.append(str(v))
-
-    return namespace.get('__doc__', '') + '\n'.join(doc)
 
 
 
@@ -229,7 +219,6 @@ class MetaType(abc.ABCMeta):
             raise TypeError('class attribute _own_declarative_attrs is reserved in traited classes')
 
         namespace['_own_declarative_attrs'] = tuple(attrs)
-        namespace['__doc__'] = _auto_docstring(namespace)
         # construct the class
         cls = super(MetaType, mcs).__new__(mcs, type_name, bases, namespace)
 
@@ -239,6 +228,9 @@ class MetaType(abc.ABCMeta):
             v.field_name = attr_name
             v.owner = cls
             v._post_bind_validate()
+
+        # update docstring. Note that this is only possible if cls was created by a metatype in python
+        setattr(cls, '__doc__', auto_docstring(cls))
 
         # update the HasTraits class registry
         mcs.__classes.append(cls)
@@ -307,19 +299,14 @@ class HasTraits(object):
                                 .format(cls, repr(cls.declarative_attrs), k))
             setattr(self, k, v)
 
+
     def __str__(self):
-        cls = type(self)
-        result = ['{} ('.format(self.__class__.__name__)]
-        for aname in cls.declarative_attrs:
-            attr_field = getattr(self, aname)
-            # str would be pretty. but recursive types will stack overflow then
-            # use serialization.to_str
-            attr_repr = repr(attr_field).splitlines()
-            attr_repr = attr_repr[:1] + ['  ' + s for s in attr_repr[1:]]
-            attr_repr = '\n'.join(attr_repr)
-            result.append('  {} = {},'.format(aname, attr_repr))
-        result.append(')')
-        return '\n'.join(result)
+        return trait_object_str(self)
+
+
+    def _repr_html_(self):
+        return trait_object_repr_html(self)
+
 
     def configure(self, *args, **kwargs):
         """
