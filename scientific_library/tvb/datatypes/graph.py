@@ -94,10 +94,6 @@ class CorrelationCoefficients(HasTraits):
         summary.update(narray_summary_info(self.array_data))
         return summary
 
-    def get_correlation_data(self, selected_state, selected_mode):
-        matrix_to_display = self.array_data[:, :, int(selected_state), int(selected_mode)]
-        return list(matrix_to_display.flat)
-
 
 class ConnectivityMeasure(HasTraits):
     """Measurement of based on a connectivity."""
