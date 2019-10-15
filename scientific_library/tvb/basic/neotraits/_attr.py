@@ -1,15 +1,174 @@
+"""
+This private module implements concrete declarative attributes
+"""
 import typing
+import types
 import collections
 import numpy
 import logging
-from ._core import Attr
-from .ex import TraitValueError, TraitTypeError
+from ._declarative_base import _Attr
+from .ex import TraitValueError, TraitTypeError, TraitAttributeError
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits, MetaType
+    from ._core import HasTraits
+    from tvb.basic.neotraits._declarative_base import MetaType
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
+
+
+class Attr(_Attr):
+    """
+    An Attr declares the following about the attribute it describes:
+    * the type
+    * a default value shared by all instances
+    * if the value might be missing
+    * documentation
+    It will resolve to attributes on the instance.
+    """
+
+    # This class is a python data descriptor.
+    # For an introduction see https://docs.python.org/2/howto/descriptor.html
+
+    def __init__(
+            self, field_type, default=None, doc='', label='', required=True, readonly=False, choices=None
+    ):
+        # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
+        """
+        :param field_type: the python type of this attribute
+        :param default: A shared default value. Behaves like class level attribute assignment.
+                        Take care with mutable defaults.
+        :param doc: Documentation for this field.
+        :param label: A short description.
+        :param required: required fields should not be None. Not strongly enforced.
+        :param readonly: If assignment should be prohibited.
+        :param choices: A tuple of the values that this field is allowed to take.
+        """
+        super(Attr, self).__init__()
+        self.field_type = field_type
+        self.default = default
+        self.doc = doc
+        self.label = label
+        self.required = bool(required)
+        self.readonly = bool(readonly)
+        self.choices = choices
+
+    # subclass api
+
+
+    def _post_bind_validate(self):
+        # type: () -> None
+        """
+        Validates this instance of Attr.
+        This is called just after field_name is set, by MetaType.
+        We do checks here and not in init in order to give better error messages.
+        Attr should be considered initialized only after this has run
+        """
+        if not isinstance(self.field_type, type):
+            msg = 'Field_type must be a type not {!r}. Did you mean to declare a default?'.format(
+                self.field_type
+            )
+            raise TraitTypeError(msg, attr=self)
+
+        skip_default_checks = self.default is None or isinstance(self.default, types.FunctionType)
+
+        if not skip_default_checks and not isinstance(self.default, self.field_type):
+            msg = 'Attribute should have a default of type {} not {}'.format(
+                self.field_type, type(self.default)
+            )
+            raise TraitTypeError(msg, attr=self)
+
+        if self.choices is not None and not skip_default_checks:
+            if self.default not in self.choices:
+                msg = 'The default {} must be one of the choices {}'.format(self.default, self.choices)
+                raise TraitTypeError(msg, attr=self)
+
+        # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
+        try:
+            hash(self.default)
+        except TypeError:
+            log.warning('Field seems mutable and has a default value. '
+                        'Consider using a lambda as a value factory \n   attribute {}'.format(self))
+        # we do not check here if we have a value for a required field
+        # it is too early for that, owner.__init__ has not run yet
+
+
+    def _validate_set(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> typing.Any
+        """
+        Called before updating the value of an attribute.
+        It checks the type *AND* returns the valid value.
+        You can override this for further checks. Call super to retain this check.
+        Raise if checks fail.
+        You should return a cleaned up value if validation passes
+        """
+        if value is None:
+            if self.required:
+                raise TraitValueError("Attribute is required. Can't set to None", attr=self)
+            else:
+                return value
+
+        if not isinstance(value, self.field_type):
+            raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
+        if self.choices is not None:
+            if value not in self.choices:
+                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
+        return value
+
+
+    # descriptor protocol
+
+    def __get__(self, instance, owner):
+        # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Any
+        self._assert_have_field_name()
+        if instance is None:
+            # called from class, not an instance
+            return self
+        # data is stored on the instance in a field with the same name
+        # If field is not on the instance yet, return the class level default
+        # (this attr instance is a class field, so the default is for the class)
+        # This is consistent with how class fields work before they are assigned and become instance bound
+        if self.field_name not in instance.__dict__:
+            if isinstance(self.default, types.FunctionType):
+                default = self.default()
+            else:
+                default = self.default
+
+            # Unless we store the default on the instance, this will keep returning self.default()
+            # when the default is a function. So if the default is mutable, any changes to it are
+            # lost as a new one is created every time.
+            instance.__dict__[self.field_name] = default
+
+        return instance.__dict__[self.field_name]
+
+
+    def __set__(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> None
+        self._assert_have_field_name()
+        if self.readonly:
+            raise TraitAttributeError("can't set readonly attribute")
+        value = self._validate_set(instance, value)
+
+        instance.__dict__[self.field_name] = value
+
+
+    def _defined_on_str_helper(self):
+        if self.owner is not None:
+            return '{}.{}.{} = {}'.format(
+                self.owner.__module__,
+                self.owner.__name__,
+                self.field_name,
+                type(self).__name__
+            )
+        else:
+            return '{}'.format(type(self).__name__)
+
+
+    def __str__(self):
+        return '{}(field_type={}, default={!r}, required={})'.format(
+            self._defined_on_str_helper(), self.field_type, self.default, self.required
+        )
+
 
 
 class Const(Attr):
