@@ -34,7 +34,6 @@ def test_types_enforced():
         ai.fi = 'ana'
 
 
-@pytest.mark.skip('required checks not yet strict. feature under review')
 def test_defaults_and_required():
     class A(HasTraits):
         fi = Attr(int, default=3)
@@ -42,9 +41,10 @@ def test_defaults_and_required():
         vi = Attr(str, required=False)
 
     aok = A(ra='opaline')
+    aincomplete = A()
 
     with pytest.raises(ValueError):
-        a2 = A()
+        aincomplete.validate()
 
 
 def test_postinitchecks():
@@ -402,6 +402,10 @@ def test_dynamic_attributes_behave_statically_and_warn():
     # these are logged warnings not errors. hard to test. here for coverage
     A.b = Attr(int)
 
+    # the rest of the api assumes you don't change the attributes
+    # this is the surprising result, no b in the declarative attr list
+    assert A.declarative_attrs == ('a',)
+
     # this fails
     with pytest.raises(AttributeError):
         A().b
@@ -411,8 +415,9 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     del B.a
 
-    with pytest.raises(AttributeError):
-        B()
+    # the rest of the api assumes you don't change the attributes
+    # this is the surprising result a not deleted from declarative attr list
+    assert B.declarative_attrs == ('a',)
 
 
 
@@ -506,8 +511,6 @@ def test_special_attributes_disallowed():
     with pytest.raises(TypeError):
         class A(HasTraits):
             _own_declarative_props = ('a')
-
-
 
 
 def test_linspacerange():

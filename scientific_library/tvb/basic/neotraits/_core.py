@@ -233,7 +233,8 @@ class MetaType(abc.ABCMeta):
         # type: (bool) -> typing.Tuple[typing.Type[MetaType], ...]
         """
         Returns all subclasses that exist *now*.
-        New subclasses can be created after this call (after importing a new module or dynamically created ones)
+        New subclasses can be created after this call,
+        after importing a new module or dynamically creating subclasses.
         Use with care. Use after most relevant modules have been imported.
         """
         ret = []
@@ -340,32 +341,8 @@ class MetaType(abc.ABCMeta):
     # double __ not for any privacy but to reduce namespace pollution
     # double __ will mangle the names and make such lookups fail
 
-
-    def _post_init_validate_(cls, instance):
-        """
-        The code below executes after __init__ body but before object call returns
-        It it time to complain about missing required attrs
-        Can be overridden in subclasses
-        """
-        for k in cls.declarative_attrs:
-            # these getattr's call the descriptors, should we bypass them?
-            attr = getattr(cls, k)
-            if attr.required and getattr(instance, k) is None:
-                log.warning(
-                    'attribute {}.{} = {} is required. '
-                    'Initialize it in __init__ or declare a default '.format(cls.__name__, k, attr)
-                )
-
-    def __call__(cls, *args, **kwargs):
-        """
-        Checks that __init__ has initialized required fields
-        """
-        # call __init__
-        instance = super(MetaType, cls).__call__(*args, **kwargs)
-        cls._post_init_validate_(instance)
-        return instance
-
     # warn about dynamic Attributes
+
 
     def __setattr__(self, key, value):
         """
@@ -444,12 +421,36 @@ class HasTraits(object):
         """
         self.tags[str(tag_name)] = str(tag_value)
 
+
+    def validate(self):
+        """
+        Check that the internal invariants of this class are satisfied.
+        Not meant to ensure that that is the case.
+        Use configure for that.
+        The default configure calls this before it returns.
+        It complains about missing required attrs
+        Can be overridden in subclasses
+        """
+        cls = type(self)
+
+        for k in cls.declarative_attrs:
+            # these getattr's call the descriptors, should we bypass them?
+            attr = getattr(cls, k)
+            if attr.required and getattr(self, k) is None:
+                # log.warning(
+                raise ValueError(
+                    'attribute {}.{} = {} is required. '
+                    'You should set it or declare a default '.format(cls.__name__, k, attr)
+                )
+
+
     def configure(self, *args, **kwargs):
         """
-        This is here only because a lot of code relies on configure calls.
-        This is the default do nothing base implementation
-        todo: deleteme
+        Ensures that invariant of the class are satisfied.
+        Override to compute uninitialized state of the class.
         """
+        self.validate()
+
 
     def summary_info(self):
         # type: () -> typing.Dict[str, str]
