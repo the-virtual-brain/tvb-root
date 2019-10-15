@@ -41,7 +41,7 @@ methods that are associated with the sensor dataTypes.
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import FileReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 
 LOG = get_logger(__name__)
 
@@ -71,7 +71,7 @@ class Sensors(HasTraits):
 
     orientations = NArray(required=False)
 
-    number_of_sensors = Attr(field_type=long, label="Number of sensors",
+    number_of_sensors = Int(field_type=long, label="Number of sensors",
                              doc="""The number of sensors described by these Sensors.""")
 
     # introduced to accommodate real sensors sets which have sensors

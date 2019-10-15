@@ -32,8 +32,7 @@ DataType for storing a simulator's state in files and as DB reference.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, NArray, Int
 
 
 class SimulationState(HasTraits):
@@ -48,7 +47,7 @@ class SimulationState(HasTraits):
     current_state = NArray(required=False)
 
     # Simulator's current step number (in time)
-    current_step = Attr(field_type=int)
+    current_step = Int()
 
     # Array with _stock array for every monitor configured in current simulation.
     # As the monitors are dynamic, we prepare a bunch of arrays for storage in H5 file.

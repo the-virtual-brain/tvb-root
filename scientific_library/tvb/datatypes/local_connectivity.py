@@ -35,7 +35,7 @@ from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits import exceptions
 from tvb.datatypes import equations, surfaces
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Float
 
 
 LOG = get_logger(__name__)
@@ -57,8 +57,7 @@ class LocalConnectivity(HasTraits):
         required=False,
         default=equations.Gaussian())
 
-    cutoff = Attr(
-        field_type=float,
+    cutoff = Float(
         label="Cutoff distance (mm)",
         default=40.0,
         doc="Distance at which to truncate the evaluation in mm.")

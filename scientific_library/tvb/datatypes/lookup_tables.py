@@ -40,7 +40,7 @@ methods that are associated with the precalculated look up tables.
 import numpy
 from tvb.basic.readers import try_get_absolute_path
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 
 
 LOG = get_logger(__name__)
@@ -72,8 +72,7 @@ class LookUpTable(HasTraits):
         label="data",
         doc="""Tabulated values""")
 
-    number_of_values = Attr(
-        field_type=int,
+    number_of_values = Int(
         label="Number of values",
         default=0,
         doc="""The number of values in the table """)

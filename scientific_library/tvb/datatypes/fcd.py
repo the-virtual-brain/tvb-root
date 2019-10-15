@@ -39,7 +39,7 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 from tvb.basic.logger.builder import get_logger
 
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 
 
 
@@ -54,8 +54,7 @@ class Fcd(HasTraits):
         label="Source time-series",
         doc="Links to the time-series on which FCD is calculated.")
 
-    sw = Attr(
-        field_type=float,
+    sw = Float(
         label="Sliding window length (ms)",
         default=120000,
         doc="""Length of the time window used to divided the time series.
@@ -63,8 +62,7 @@ class Fcd(HasTraits):
                 The datapoints within each window, centered at time ti, are used to calculate FC(ti) as Pearson correlation.
                 The ij element of the FCD matrix is calculated as the Pearson correlation between FC(ti) and FC(tj) arranged in a vector.""")
 
-    sp = Attr(
-        field_type=float,
+    sp = Float(
         label="Spanning between two consecutive sliding window (ms)",
         default=2000,
         doc="""Spanning= (time windows length)-(overlapping between two consecutive time window).

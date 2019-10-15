@@ -39,7 +39,7 @@ methods that are associated with the Spectral datatypes.
 import json
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int,Float
 from tvb.datatypes import time_series
 
 LOG = get_logger(__name__)
@@ -58,8 +58,7 @@ class FourierSpectrum(HasTraits):
         label="Source time-series",
         doc="Links to the time-series on which the FFT is applied.")
 
-    segment_length = Attr(
-        field_type=float,
+    segment_length = Float(
         label="Segment length",
         doc="""The timeseries was segmented into equally sized blocks
             (overlapping if necessary), prior to the application of the FFT.
@@ -238,7 +237,7 @@ class WaveletCoefficients(HasTraits):
         doc="""A string specifying the type of mother wavelet to use,
             default is 'morlet'.""")  # default to 'morlet'
 
-    sample_period = Attr(field_type=float, label="Sample period")
+    sample_period = Float(label="Sample period")
     # sample_rate = basic.Integer(label = "")  inversely related
 
     frequencies = NArray(
@@ -248,7 +247,7 @@ class WaveletCoefficients(HasTraits):
     normalisation = Attr(field_type=str, label="Normalisation type")
     # 'unit energy' | 'gabor'
 
-    q_ratio = Attr(field_type=float, label="Q-ratio", default=5.0)
+    q_ratio = Float(label="Q-ratio", default=5.0)
 
     amplitude = NArray(label="Amplitude")  # file_storage=core.FILE_STORAGE_EXPAND
 
@@ -342,8 +341,7 @@ class CoherenceSpectrum(HasTraits):
         doc="""Links to the time-series on which the node_coherence is
             applied.""")
 
-    nfft = Attr(
-        field_type=int,
+    nfft = Int(
         label="Data-points per block",
         default=256,
         doc="""NOTE: must be a power of 2""")
@@ -406,16 +404,14 @@ class ComplexCoherenceSpectrum(HasTraits):
         doc="""Links to the time-series on which the node_coherence is
                 applied.""")
 
-    epoch_length = Attr(
-        field_type=float,
+    epoch_length = Float(
         label="Epoch length",
         doc="""The timeseries was segmented into equally sized blocks
                 (overlapping if necessary), prior to the application of the FFT.
                 The segement length determines the frequency resolution of the
                 resulting spectra.""")
 
-    segment_length = Attr(
-        field_type=float,
+    segment_length = Float(
         label="Segment length",
         doc="""The timeseries was segmented into equally sized blocks
                 (overlapping if necessary), prior to the application of the FFT.

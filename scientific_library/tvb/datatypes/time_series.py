@@ -43,7 +43,7 @@ from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivi
 from tvb.basic.arguments_serialisation import (preprocess_space_parameters, preprocess_time_parameters,
     postprocess_voxel_ts)
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Int, Float
 
 LOG = get_logger(__name__)
 
@@ -78,13 +78,12 @@ class TimeSeries(HasTraits):
         doc="""An array of time-series data, with a shape of [tpts, :], where ':' represents 1 or more dimensions""")
 
     # mhtodo: should this not be a property
-    nr_dimensions = Attr(
-        field_type=int,
+    nr_dimensions = Int(
         label="Number of dimension in timeseries",
         default=4
     )
 
-    length_1d, length_2d, length_3d, length_4d = [Attr(field_type=int) for _ in range(4)]
+    length_1d, length_2d, length_3d, length_4d = [Int() for _ in range(4)]
 
     labels_ordering = List(
         default=("Time", "State Variable", "Space", "Mode"),
@@ -106,9 +105,9 @@ class TimeSeries(HasTraits):
             This is 'time' as returned by the simulator's monitors."""
     )
 
-    start_time = Attr(field_type=float, label="Start Time:")
+    start_time = Float(label="Start Time:")
 
-    sample_period = Attr(field_type=float, label="Sample period", default=1.0)
+    sample_period = Float(label="Sample period", default=1.0)
 
     # Specify the measure unit for sample period (e.g sec, msec, usec, ...)
     sample_period_unit = Attr(
@@ -117,8 +116,7 @@ class TimeSeries(HasTraits):
         default="ms"
     )
 
-    sample_rate = Attr(
-        field_type=float,
+    sample_rate = Float(
         label="Sample rate",
         doc="""The sample rate of the timeseries"""
     )

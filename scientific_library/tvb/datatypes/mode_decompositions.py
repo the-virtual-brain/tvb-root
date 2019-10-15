@@ -40,7 +40,7 @@ framework methods that are associated with the Mode Decomposition datatypes.
 import numpy
 from tvb.basic.logger.builder import get_logger
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 
 
 LOG = get_logger(__name__)
@@ -207,8 +207,7 @@ class IndependentComponents(HasTraits):
         label="Pre-whitening matrix",
         doc=""" """)
 
-    n_components = Attr(
-        field_type=int,
+    n_components = Int(
         label="Number of independent components",
         doc=""" Observed data matrix is considered to be a linear combination
             of :math:`n` non-Gaussian independent components""")
