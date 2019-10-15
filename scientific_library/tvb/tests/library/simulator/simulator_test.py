@@ -57,8 +57,8 @@ import tvb.simulator.models.JCepileptor
 from tvb.simulator.integrators import (RungeKutta4thOrderDeterministic, HeunDeterministic,
                                        IntegratorStochastic, HeunStochastic)
 
-MODEL_CLASSES = models.Model.get_known_subclasses()
-METHOD_CLASSES = integrators.Integrator.get_known_subclasses()
+MODEL_CLASSES = models.Model.get_known_subclasses().values()
+METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
 
 
 class Simulator(object):

@@ -151,7 +151,7 @@ def test_declarative_attrs():
     class Inherit(B, A):
         c = Attr(str)
 
-    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a', 'gid'}
+    assert set(Inherit.declarative_attrs) == {'c', 'b', 'a'}
     assert Inherit._own_declarative_attrs == ('c',)
     assert Inherit.own_declarative_attrs == ('c', )
 
@@ -162,7 +162,7 @@ def test_declarative_attrs():
     with pytest.raises(AttributeError):
         t.declarative_attrs
 
-    assert set(type(t).declarative_attrs) == {'c', 'b', 'a', 'gid'}
+    assert set(type(t).declarative_attrs) == {'c', 'b', 'a'}
 
 
 
@@ -625,7 +625,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result, no b in the declarative attr list
-    assert set(A.declarative_attrs) == {'a', 'gid'}
+    assert set(A.declarative_attrs) == {'a'}
 
     # this fails
     with pytest.raises(AttributeError):
@@ -638,7 +638,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
     # the rest of the api assumes you don't change the attributes
     # this is the surprising result a not deleted from declarative attr list
-    assert set(B.declarative_attrs) == {'a', 'gid'}
+    assert set(B.declarative_attrs) == {'a'}
 
 
 
@@ -729,8 +729,8 @@ def test_get_known_subclasses():
     class C(B):
         pass
 
-    assert set(A.get_known_subclasses()) == {B, C}
-    assert set(A.get_known_subclasses(include_abstract=True)) == {A, B, C}
+    assert set(A.get_known_subclasses().values()) == {B, C}
+    assert set(A.get_known_subclasses(include_abstract=True).values()) == {A, B, C}
 
 
 def test_summary_info():
@@ -758,7 +758,6 @@ def test_summary_info():
         'b shape': '(3L,)',
         'b [min, median, max]': '[0, 1, 2]',
         'ref': 'Z zuzu',
-        'gid': "UUID('00000000-0000-0000-0000-000000000000')"
     }
 
 
