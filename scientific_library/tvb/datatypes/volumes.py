@@ -37,9 +37,7 @@ methods that are associated with the volume datatypes.
 """
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.neotraits import HasTraits, Attr
-import tvb.basic.traits.attr as attr
-
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 
@@ -49,12 +47,12 @@ class Volume(HasTraits):
     Data defined on a regular grid in three dimensions.
 
     """
-    origin = attr.NArray(
+    origin = NArray(
         dtype=float,
         label="Volume origin coordinates"
     )
 
-    voxel_size = attr.NArray(
+    voxel_size = NArray(
         dtype=float,
         label="Voxel size"
     )
