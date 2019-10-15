@@ -83,7 +83,7 @@ class TimeSeries(HasTraits):
         default=4
     )
 
-    length_1d, length_2d, length_3d, length_4d = [Int() for _ in range(4)]
+    # length_1d, length_2d, length_3d, length_4d = [Int() for _ in range(4)]
 
     labels_ordering = List(
         default=("Time", "State Variable", "Space", "Mode"),
@@ -133,8 +133,8 @@ class TimeSeries(HasTraits):
         self.nr_dimensions = len(data_shape)
         self.sample_rate = 1.0 / self.sample_period
 
-        for i in range(min(self.nr_dimensions, 4)):
-            setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
+        # for i in range(min(self.nr_dimensions, 4)):
+        #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
     def read_data_shape(self):
         """
@@ -146,126 +146,11 @@ class TimeSeries(HasTraits):
             self.logger.exception("Could not read data shape for TS!")
             raise exceptions.TVBException("Invalid empty TimeSeries!")
 
-    def read_data_slice(self, data_slice):
-        """
-        Expose chunked-data access.
-        """
-        return self.get_data('data', data_slice)
-
-    def read_time_page(self, current_page, page_size, max_size=None):
-        """
-        Compute time for current page.
-        :param current_page: Starting from 0
-        """
-        current_page = int(current_page)
-        page_size = int(page_size)
-
-        if max_size is None:
-            max_size = page_size
-        else:
-            max_size = int(max_size)
-
-        page_real_size = page_size * self.sample_period
-        start_time = self.start_time + current_page * page_real_size
-        end_time = start_time + min(page_real_size, max_size * self.sample_period)
-
-        return numpy.arange(start_time, end_time, self.sample_period)
-
-    def read_channels_page(self, from_idx, to_idx, step=None, specific_slices=None, channels_list=None):
-        """
-        Read and return only the data page for the specified channels list.
-
-        :param from_idx: the starting time idx from which to read data
-        :param to_idx: the end time idx up until to which you read data
-        :param step: increments in which to read the data. Optional, default to 1.
-        :param specific_slices: optional parameter. If speficied slices the data accordingly.
-        :param channels_list: the list of channels for which we want data
-        """
-        if channels_list:
-            channels_list = json.loads(channels_list)
-            for i in range(len(channels_list)):
-                channels_list[i] = int(channels_list[i])
-
-        if channels_list:
-            channel_slice = tuple(channels_list)
-        else:
-            channel_slice = slice(None)
-
-        data_page = self.read_data_page(from_idx, to_idx, step, specific_slices)
-        # This is just a 1D array like in the case of Global Average monitor.
-        # No need for the channels list
-        if len(data_page.shape) == 1:
-            return data_page.reshape(data_page.shape[0], 1)
-        else:
-            return data_page[:, channel_slice]
-
-    def read_data_page(self, from_idx, to_idx, step=None, specific_slices=None):
-        """
-        Retrieve one page of data (paging done based on time).
-        """
-        from_idx, to_idx = int(from_idx), int(to_idx)
-
-        if isinstance(specific_slices, basestring):
-            specific_slices = json.loads(specific_slices)
-        if step is None:
-            step = 1
-        else:
-            step = int(step)
-
-        slices = []
-        overall_shape = self.read_data_shape()
-        for i in range(len(overall_shape)):
-            if i == 0:
-                # Time slice
-                slices.append(
-                    slice(from_idx, min(to_idx, overall_shape[0]), step))
-                continue
-            if i == 2:
-                # Read full of the main_dimension (space for the simulator)
-                slices.append(slice(overall_shape[i]))
-                continue
-            if specific_slices is None:
-                slices.append(slice(0, 1))
-            else:
-                slices.append(slice(specific_slices[i], min(specific_slices[i] + 1, overall_shape[i]), 1))
-
-        data = self.read_data_slice(tuple(slices))
-        if len(data) == 1:
-            # Do not allow time dimension to get squeezed, a 2D result need to
-            # come out of this method.
-            data = data.squeeze()
-            data = data.reshape((1, len(data)))
-        else:
-            data = data.squeeze()
-
-        return data
-
     def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
         """
         No Split needed in case of basic TS (sensors and region level)
         """
         return self.read_data_page(from_idx, to_idx, step, specific_slices)
-
-
-    def write_time_slice(self, partial_result):
-        """
-        Append a new value to the ``time`` attribute.
-        """
-        self.store_data_chunk("time", partial_result, grow_dimension=0, close_file=False)
-
-    def write_data_slice(self, partial_result, grow_dimension=0):
-        """
-        Append a chunk of time-series data to the ``data`` attribute.
-        """
-        self.store_data_chunk("data", partial_result, grow_dimension=grow_dimension, close_file=False)
-
-    def get_min_max_values(self):
-        """
-        Retrieve the minimum and maximum values from the metadata.
-        :returns: (minimum_value, maximum_value)
-        """
-        metadata = self.get_metadata('data')
-        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
 
     def get_space_labels(self):
         """
@@ -591,51 +476,3 @@ class TimeSeriesVolume(TimeSeries):
         super(TimeSeriesVolume, self).configure()
         self.has_volume_mapping = True
 
-    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, **kwargs):
-        """
-        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
-
-        :param from_idx: int This will be the limit on the first dimension (time)
-        :param to_idx: int Also limit on the first Dimension (time)
-        :param x_plane: int coordinate
-        :param y_plane: int coordinate
-        :param z_plane: int coordinate
-
-        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
-        """
-
-        overall_shape = self.read_data_shape()
-        from_idx, to_idx, time = preprocess_time_parameters(from_idx, to_idx, overall_shape[0])
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane,
-                                                                overall_shape[1], overall_shape[2], overall_shape[3])
-
-        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(z_plane, z_plane + 1)
-        slicex = self.read_data_slice(slices)[:, :, :, 0].tolist()
-
-        slices = slice(from_idx, to_idx), slice(x_plane, x_plane + 1), slice(overall_shape[2]), slice(overall_shape[3])
-        slicey = self.read_data_slice(slices)[:, 0, :, :][..., ::-1].tolist()
-
-        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(y_plane, y_plane + 1), slice(overall_shape[3])
-        slicez = self.read_data_slice(slices)[:, :, 0, :][..., ::-1].tolist()
-
-        return [slicex, slicey, slicez]
-
-    def get_voxel_time_series(self, x, y, z, **kwargs):
-        """
-        Retrieve for a given voxel (x,y,z) the entire timeline.
-
-        :param x: int coordinate
-        :param y: int coordinate
-        :param z: int coordinate
-
-        :return: A complex dictionary with information about current voxel.
-                The main part will be a vector with all the values over time from the x,y,z coordinates.
-        """
-
-        overall_shape = self.read_data_shape()
-        x, y, z = preprocess_space_parameters(x, y, z, overall_shape[1], overall_shape[2], overall_shape[3])
-
-        slices = prepare_time_slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
-
-        result = postprocess_voxel_ts(self, slices)
-        return result

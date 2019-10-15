@@ -45,7 +45,6 @@ from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.arguments_serialisation import parse_slice, preprocess_space_parameters
-from tvb.datatypes.structural import VolumetricDataMixin
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
@@ -102,7 +101,7 @@ class RegionMapping(HasTraits):
         """
         triangles_no = self.surface.number_of_triangles
         result = []
-        for i in range(triangles_no):
+        for i in xrange(triangles_no):
             result.append(self.array_data[self.surface.triangles[i][0]])
         return numpy.array(result)
 
@@ -131,7 +130,7 @@ class RegionMapping(HasTraits):
         return summary
 
 
-class RegionVolumeMapping(VolumetricDataMixin, HasTraits):
+class RegionVolumeMapping(HasTraits):
     """
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
     """

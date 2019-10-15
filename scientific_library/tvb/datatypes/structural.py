@@ -34,59 +34,15 @@ methods that are associated with the volume datatypes.
 
 """
 
-import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import volumes
-from tvb.basic.arguments_serialisation import preprocess_space_parameters
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
 LOG = get_logger(__name__)
 
 
-class VolumetricDataMixin(object):
-    """Provides subclasses with useful methods for volumes."""
-
-    def write_data_slice(self, data):
-        """
-        We are using here the same signature as in TS, just to allow easier parsing code.
-        This is not a chunked write.
-
-        """
-        self.store_data("array_data", data)
-
-    def get_volume_slice(self, x_plane, y_plane, z_plane):
-        slices = slice(self.length_1d), slice(self.length_2d), slice(z_plane, z_plane + 1)
-        slice_x = self.read_data_slice(slices)[:, :, 0]  # 2D
-        slice_x = numpy.array(slice_x, dtype=int)
-
-        slices = slice(x_plane, x_plane + 1), slice(self.length_2d), slice(self.length_3d)
-        slice_y = self.read_data_slice(slices)[0, :, :][..., ::-1]
-        slice_y = numpy.array(slice_y, dtype=int)
-
-        slices = slice(self.length_1d), slice(y_plane, y_plane + 1), slice(self.length_3d)
-        slice_z = self.read_data_slice(slices)[:, 0, :][..., ::-1]
-        slice_z = numpy.array(slice_z, dtype=int)
-
-        return [slice_x, slice_y, slice_z]
-
-    def get_volume_view(self, x_plane, y_plane, z_plane, **kwargs):
-        # Work with space inside Volume:
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, self.length_1d,
-                                                                self.length_2d, self.length_3d)
-        slice_x, slice_y, slice_z = self.get_volume_slice(x_plane, y_plane, z_plane)
-        return [[slice_x.tolist()], [slice_y.tolist()], [slice_z.tolist()]]
-
-    def get_min_max_values(self):
-        """
-        Retrieve the minimum and maximum values from the metadata.
-        :returns: (minimum_value, maximum_value)
-        """
-        metadata = self.get_metadata('array_data')
-        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
-
-
-class StructuralMRI(VolumetricDataMixin, HasTraits):
+class StructuralMRI(HasTraits):
     """
     Quantitative volumetric data recorded by means of Magnetic Resonance Imaging.
 

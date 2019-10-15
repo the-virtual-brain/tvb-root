@@ -372,8 +372,8 @@ class Surface(HasTraits):
         """
         .
         """
-        neighbours = [[] for _ in range(self.number_of_vertices)]
-        for k in range(self.number_of_triangles):
+        neighbours = [[] for _ in xrange(self.number_of_vertices)]
+        for k in xrange(self.number_of_triangles):
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 1])
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 2])
             neighbours[self.triangles[k, 1]].append(self.triangles[k, 0])
@@ -764,50 +764,6 @@ class Surface(HasTraits):
         self.valid_for_simulations = True
         super(Surface, self).load_from_metadata(meta_dictionary)
 
-    def get_vertices_slice(self, slice_number=0):
-        """
-        Read vertices slice, to be used by WebGL visualizer.
-        """
-        slice_number = int(slice_number)
-        start_idx, end_idx = self._get_slice_vertex_boundaries(slice_number)
-        return self.get_data('vertices', slice(start_idx, end_idx, 1))
-
-    def get_vertex_normals_slice(self, slice_number=0):
-        """
-        Read vertex-normal slice, to be used by WebGL visualizer.
-        """
-        slice_number = int(slice_number)
-        start_idx, end_idx = self._get_slice_vertex_boundaries(slice_number)
-        return self.get_data('vertex_normals', slice(start_idx, end_idx, 1))
-
-    def get_triangles_slice(self, slice_number=0):
-        """
-        Read split-triangles slice, to be used by WebGL visualizer.
-        """
-        if self.number_of_split_slices == 1:
-            return self.triangles
-        slice_number = int(slice_number)
-        start_idx, end_idx = self._get_slice_triangle_boundaries(slice_number)
-        return self.get_data('split_triangles', slice(start_idx, end_idx, 1))
-
-    def get_lines_slice(self, slice_number=0):
-        """
-        Read the gl lines values for the current slice number.
-        """
-        return self._triangles_to_lines(self.get_triangles_slice(slice_number))
-
-    def get_slices_to_hemisphere_mask(self):
-        """
-        :return: a vector af length number_of_slices, with 1 when current chunk belongs to the Right hemisphere
-        """
-        if not self.bi_hemispheric or self.split_slices is None:
-            return None
-        result = [1] * self.number_of_split_slices
-        for key, value in self.split_slices.iteritems():
-            if value[KEY_HEMISPHERE] == HEMISPHERE_LEFT:
-                result[int(key)] = 0
-        return result
-
     @staticmethod
     def _triangles_to_lines(triangles):
         lines_array = []
@@ -992,45 +948,6 @@ class Surface(HasTraits):
 
     ####################################### Split for Picking
     #######################################
-    def get_pick_vertices_slice(self, slice_number=0):
-        """
-        Read vertices slice, to be used by WebGL visualizer with pick.
-        """
-        slice_number = int(slice_number)
-        slice_triangles = self.get_data('triangles', slice(slice_number * SPLIT_PICK_MAX_TRIANGLE,
-                                                           min(self.number_of_triangles,
-                                                               (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
-        result_vertices = []
-        for triang in slice_triangles:
-            result_vertices.append(self.vertices[triang[0]])
-            result_vertices.append(self.vertices[triang[1]])
-            result_vertices.append(self.vertices[triang[2]])
-        return numpy.array(result_vertices)
-
-    def get_pick_vertex_normals_slice(self, slice_number=0):
-        """
-        Read vertex-normals slice, to be used by WebGL visualizer with pick.
-        """
-        slice_number = int(slice_number)
-        slice_triangles = self.get_data('triangles', slice(slice_number * SPLIT_PICK_MAX_TRIANGLE,
-                                                           min(self.number_of_triangles,
-                                                               (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)))
-        result_normals = []
-        for triang in slice_triangles:
-            result_normals.append(self.vertex_normals[triang[0]])
-            result_normals.append(self.vertex_normals[triang[1]])
-            result_normals.append(self.vertex_normals[triang[2]])
-        return numpy.array(result_normals)
-
-    def get_pick_triangles_slice(self, slice_number=0):
-        """
-        Read triangles slice, to be used by WebGL visualizer with pick.
-        """
-        slice_number = int(slice_number)
-        no_of_triangles = (min(self.number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
-                           - slice_number * SPLIT_PICK_MAX_TRIANGLE)
-        triangles_array = numpy.arange(no_of_triangles * 3).reshape((no_of_triangles, 3))
-        return triangles_array
 
     def get_urls_for_pick_rendering(self):
         """
@@ -1062,53 +979,6 @@ class Surface(HasTraits):
         return [float(numpy.mean(self.vertices[:, 0])),
                 float(numpy.mean(self.vertices[:, 1])),
                 float(numpy.mean(self.vertices[:, 2]))]
-
-    def generate_region_boundaries(self, region_mapping):
-        """
-        Return the full region boundaries, including: vertices, normals and lines indices.
-        """
-        boundary_vertices = []
-        boundary_lines = []
-        boundary_normals = []
-        array_data = region_mapping.array_data
-
-        for slice_idx in range(self.number_of_split_slices):
-            # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
-            slice_triangles = self.get_triangles_slice(slice_idx)
-            slice_vertices = self.get_vertices_slice(slice_idx)
-            slice_normals = self.get_vertex_normals_slice(slice_idx)
-            first_index_in_slice = self.split_slices[str(slice_idx)][KEY_VERTICES][KEY_START]
-            # These will keep track of the vertices / triangles / normals for this slice that have
-            # been processed and were found as a part of the boundary
-            processed_vertices = []
-            processed_triangles = []
-            processed_normals = []
-            for triangle in slice_triangles:
-                triangle += first_index_in_slice
-                # Check if there are two points from a triangles that are in separate regions
-                # then send this to further processing that will generate the corresponding
-                # region separation lines depending on the 3rd point from the triangle
-                rt0, rt1, rt2 = array_data[triangle]
-                if rt0 - rt1:
-                    reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
-                elif rt1 - rt2:
-                    reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
-                elif rt2 - rt0:
-                    reg_idx1, reg_idx2, dangling_idx = 2, 0, 1
-                else:
-                    continue
-
-                lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx,
-                                                                           first_index_in_slice, array_data,
-                                                                           slice_vertices, slice_normals)
-                ind_offset = len(processed_vertices) / 3
-                processed_vertices.extend(lines_vert)
-                processed_normals.extend(lines_norm)
-                processed_triangles.extend([ind + ind_offset for ind in lines_ind])
-            boundary_vertices.append(processed_vertices)
-            boundary_lines.append(processed_triangles)
-            boundary_normals.append(processed_normals)
-        return numpy.array([boundary_vertices, boundary_lines, boundary_normals])
 
     @staticmethod
     def _process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,

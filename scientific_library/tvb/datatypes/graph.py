@@ -65,12 +65,6 @@ class Covariance(HasTraits):
         # for i in range(self.nr_dimensions):
         #     setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('array_data', partial_result, grow_dimension=2, close_file=False)
-
     def _find_summary_info(self):
         summary = {"Graph type": self.__class__.__name__,
                    "Source": self.source.title}

@@ -72,52 +72,6 @@ class PrincipalComponents(HasTraits):
     normalised_component_time_series = NArray(label="Normalised component time series")
 
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('weights', partial_result.weights, grow_dimension=2, close_file=False)
-
-        self.store_data_chunk('fractions', partial_result.fractions, grow_dimension=1, close_file=False)
-
-        partial_result.compute_norm_source()
-        self.store_data_chunk('norm_source', partial_result.norm_source, grow_dimension=1, close_file=False)
-
-        partial_result.compute_component_time_series()
-        self.store_data_chunk('component_time_series', partial_result.component_time_series,
-                              grow_dimension=1, close_file=False)
-
-        partial_result.compute_normalised_component_time_series()
-        self.store_data_chunk('normalised_component_time_series', partial_result.normalised_component_time_series,
-                              grow_dimension=1, close_file=False)
-
-    def read_fractions_data(self, from_comp, to_comp):
-        """
-        Return a list with fractions for components in interval from_comp, to_comp and in
-        addition have in position n the sum of the fractions for the rest of the components.
-        """
-        from_comp = int(from_comp)
-        to_comp = int(to_comp)
-        all_data = self.get_data('fractions').flat
-        sum_others = 0
-        for idx, val in enumerate(all_data):
-            if idx < from_comp or idx > to_comp:
-                sum_others += val
-        return numpy.array(all_data[from_comp:to_comp].tolist() + [sum_others])
-
-    def read_weights_data(self, from_comp, to_comp):
-        """
-        Return the weights data for the components in the interval [from_comp, to_comp].
-        """
-        from_comp = int(from_comp)
-        to_comp = int(to_comp)
-        data_slice = slice(from_comp, to_comp, None)
-        weights_shape = self.get_data_shape('weights')
-        weights_slice = [slice(size) for size in weights_shape]
-        weights_slice[0] = data_slice
-        weights_data = self.get_data('weights', tuple(weights_slice))
-        return weights_data.flatten()
-
     def configure(self):
         """
         Invoke the compute methods for computable attributes that haven't been
@@ -218,24 +172,6 @@ class IndependentComponents(HasTraits):
 
     normalised_component_time_series = NArray(label="Normalised component time series")
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-
-        """
-        self.store_data_chunk('unmixing_matrix', partial_result.unmixing_matrix, grow_dimension=2, close_file=False)
-        self.store_data_chunk('prewhitening_matrix', partial_result.prewhitening_matrix,
-                              grow_dimension=2, close_file=False)
-        partial_result.compute_norm_source()
-        self.store_data_chunk('norm_source', partial_result.norm_source, grow_dimension=1, close_file=False)
-        partial_result.compute_component_time_series()
-        self.store_data_chunk('component_time_series', partial_result.component_time_series,
-                              grow_dimension=1, close_file=False)
-        partial_result.compute_normalised_component_time_series()
-        self.store_data_chunk('normalised_component_time_series', partial_result.normalised_component_time_series,
-                              grow_dimension=1, close_file=False)
-        partial_result.compute_mixing_matrix()
-        self.store_data_chunk('mixing_matrix', partial_result.mixing_matrix, grow_dimension=2, close_file=False)
 
     def configure(self):
         """

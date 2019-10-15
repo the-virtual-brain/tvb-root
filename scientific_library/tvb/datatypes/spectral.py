@@ -106,30 +106,6 @@ class FourierSpectrum(HasTraits):
         #     if self.normalised_average_power.size == 0:
         #         self.compute_normalised_average_power()
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        # self.store_data_chunk('array_data', partial_result, grow_dimension=2, close_file=False)
-
-        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=2, close_file=False)
-
-        partial_result.compute_amplitude()
-        self.store_data_chunk('amplitude', partial_result.amplitude, grow_dimension=2, close_file=False)
-
-        partial_result.compute_phase()
-        self.store_data_chunk('phase', partial_result.phase, grow_dimension=2, close_file=False)
-
-        partial_result.compute_power()
-        self.store_data_chunk('power', partial_result.power, grow_dimension=2, close_file=False)
-
-        partial_result.compute_average_power()
-        self.store_data_chunk('average_power', partial_result.average_power, grow_dimension=2, close_file=False)
-
-        partial_result.compute_normalised_average_power()
-        self.store_data_chunk('normalised_average_power', partial_result.normalised_average_power,
-                              grow_dimension=2, close_file=False)
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -196,26 +172,6 @@ class FourierSpectrum(HasTraits):
                                          numpy.sum(self.average_power, axis=0))
         # self.trait["normalised_average_power"].log_debug(owner=self.__class__.__name__)
 
-    def get_fourier_data(self, selected_state, selected_mode, normalized):
-        shape = list(self.read_data_shape())
-
-        slices = (slice(shape[0]),
-                  slice(int(selected_state), min(int(selected_state) + 1, shape[1]), None),
-                  slice(shape[2]),
-                  slice(int(selected_mode), min(int(selected_mode) + 1, shape[3]), None))
-
-        if normalized == "yes":
-            data_matrix = self.get_data('normalised_average_power', slices)
-        else:
-            data_matrix = self.get_data('average_power', slices)
-
-        data_matrix = data_matrix.reshape((shape[0], shape[2]))
-        ymin = numpy.amin(data_matrix)
-        ymax = numpy.amax(data_matrix)
-        data_matrix = data_matrix.transpose()
-        return dict(data_matrix=json.dumps(data_matrix.tolist()),
-                    ymin=ymin,
-                    ymax=ymax)
 
 
 class WaveletCoefficients(HasTraits):
@@ -312,20 +268,6 @@ class WaveletCoefficients(HasTraits):
         """ Power of the complex Wavelet coefficients."""
         self.power = numpy.abs(self.array_data) ** 2
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=2, close_file=False)
-
-        partial_result.compute_amplitude()
-        self.store_data_chunk('amplitude', partial_result.amplitude, grow_dimension=2, close_file=False)
-
-        partial_result.compute_phase()
-        self.store_data_chunk('phase', partial_result.phase, grow_dimension=2, close_file=False)
-
-        partial_result.compute_power()
-        self.store_data_chunk('power', partial_result.power, grow_dimension=2, close_file=False)
 
 
 class CoherenceSpectrum(HasTraits):
@@ -369,11 +311,6 @@ class CoherenceSpectrum(HasTraits):
                    "FFT length (time-points)": self.nfft}
         return summary
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=3, close_file=False)
 
 
 class ComplexCoherenceSpectrum(HasTraits):
@@ -438,14 +375,6 @@ class ComplexCoherenceSpectrum(HasTraits):
         # for i in range(min(self.nr_dimensions, 4)):
         #     setattr(self, 'length_%dd' % (i + 1), int(data_shape[i]))
 
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('cross_spectrum', partial_result.cross_spectrum, grow_dimension=2, close_file=False)
-
-        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=2, close_file=False)
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
@@ -488,34 +417,3 @@ class ComplexCoherenceSpectrum(HasTraits):
         util.log_debug_array(LOG, self._frequency, "frequency")
         return self._frequency
 
-    def get_spectrum_data(self, selected_spectrum):
-        shape = list(self.read_data_shape())
-        slices = (slice(shape[0]), slice(shape[1]), slice(shape[2]),)
-
-        if selected_spectrum == self.spectrum_types[0]:
-            data_matrix = self.get_data('array_data', slices).imag
-            indices = numpy.triu_indices(shape[0], 1)
-            data_matrix = data_matrix[indices]
-
-        elif selected_spectrum == self.spectrum_types[1]:
-            data_matrix = self.get_data('array_data', slices).real
-            data_matrix = data_matrix.reshape(shape[0] * shape[0], shape[2])
-
-        else:
-            data_matrix = self.get_data('array_data', slices)
-            data_matrix = numpy.absolute(data_matrix)
-            data_matrix = data_matrix.reshape(shape[0] * shape[0], shape[2])
-
-        coh_spec_sd = numpy.std(data_matrix, axis=0)
-        coh_spec_av = numpy.mean(data_matrix, axis=0)
-
-        ymin = numpy.amin(coh_spec_av - coh_spec_sd)
-        ymax = numpy.amax(coh_spec_av + coh_spec_sd)
-
-        coh_spec_sd = json.dumps(coh_spec_sd.tolist())
-        coh_spec_av = json.dumps(coh_spec_av.tolist())
-
-        return dict(coh_spec_sd=coh_spec_sd,
-                    coh_spec_av=coh_spec_av,
-                    ymin=ymin,
-                    ymax=ymax)

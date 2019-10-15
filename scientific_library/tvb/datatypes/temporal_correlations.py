@@ -72,24 +72,6 @@ class CrossCorrelation(HasTraits):
         # for i in range(self.nr_dimensions):
         #     setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
 
-    def read_data_shape(self):
-        """
-        Expose shape read on field 'data'
-        """
-        return self.get_data_shape('array_data')
-
-    def read_data_slice(self, data_slice):
-        """
-        Expose chunked-data access.
-        """
-        return self.get_data('array_data', data_slice)
-
-    def write_data_slice(self, partial_result):
-        """
-        Append chunk.
-        """
-        self.store_data_chunk('array_data', partial_result.array_data, grow_dimension=3, close_file=False)
-
     def _find_summary_info(self):
         """
         Gather scientifically interesting summary information from an instance of this datatype.
