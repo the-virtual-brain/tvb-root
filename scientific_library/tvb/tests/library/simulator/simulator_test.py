@@ -40,7 +40,7 @@ schemes (region and surface based simulations).
 
 # TODO: check the defaults of simulator.Simulator() (?)
 # TODO: continuation support or maybe test that particular feature elsewhere
-
+import pytest
 import numpy
 import itertools
 from tvb.tests.library.base_testcase import BaseTestCase
@@ -52,12 +52,13 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 
 LOG = get_logger(__name__)
+# unused ones here to ensure that the classes in these modules get created and registered with traits
 import tvb.simulator.models.JCepileptor
+from tvb.simulator.integrators import (RungeKutta4thOrderDeterministic, HeunDeterministic,
+                                       IntegratorStochastic, HeunStochastic)
 
 MODEL_CLASSES = models.Model.get_known_subclasses()
-AVAILABLE_METHODS = integrators.Integrator.get_known_subclasses()
-METHOD_NAMES = [m.__name__ for m in AVAILABLE_METHODS]
-METHOD_NAMES.append('RungeKutta4thOrderDeterministic')
+METHOD_CLASSES = integrators.Integrator.get_known_subclasses()
 
 
 class Simulator(object):
@@ -105,7 +106,7 @@ class Simulator(object):
         return results
 
     def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
-                  coupling_strength=0.00042, method="HeunDeterministic",
+                  coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
                   default_connectivity=True):
         """
@@ -128,11 +129,11 @@ class Simulator(object):
 
         dynamics = model()
 
-        if method[-10:] == "Stochastic":
+        if isinstance(method, IntegratorStochastic):
             hisss = noise.Additive(nsig=numpy.array([2 ** -11]))
-            integrator = eval("integrators." + method + "(dt=dt, noise=hisss)")
+            integrator = method(dt=dt, noise=hisss)
         else:
-            integrator = eval("integrators." + method + "(dt=dt)")
+            integrator = method(dt=dt)
 
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
@@ -154,20 +155,21 @@ class Simulator(object):
 
 
 class TestSimulator(BaseTestCase):
-    def test_simulator_region(self):
+    @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
+    def test_simulator_region(self, model_class, method_class):
 
         test_simulator = Simulator()
-        for model_class, method_name in itertools.product(MODEL_CLASSES, METHOD_NAMES):
-            test_simulator.configure(model=model_class,
-                                     method=method_name,
-                                     surface_sim=False)
-            result = test_simulator.run_simulation()
+        test_simulator.configure(model=model_class,
+                                 method=method_class,
+                                 surface_sim=False)
+        result = test_simulator.run_simulation()
 
-            self.assert_equal(len(test_simulator.monitors), len(result))
-            for ts in result:
-                assert ts is not None
-                assert len(ts) > 0
+        self.assert_equal(len(test_simulator.monitors), len(result))
+        for ts in result:
+            assert ts is not None
+            assert len(ts) > 0
 
+    @pytest.mark.skip
     def test_simulator_surface(self):
         """
         This test evaluates if surface simulations run as basic flow.
@@ -181,21 +183,4 @@ class TestSimulator(BaseTestCase):
             assert len(test_simulator.monitors) == len(result)
             LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
 
-
-from tvb.simulator.models.epileptor import Epileptor
-
-
-class TestSimShort(BaseTestCase):
-    def test_reg(self):
-        test_simulator = Simulator()
-
-        test_simulator.configure(model=Epileptor,
-                                 method='HeunStochastic',
-                                 surface_sim=False)
-        result = test_simulator.run_simulation()
-
-        self.assert_equal(len(test_simulator.monitors), len(result))
-        for ts in result:
-            assert ts is not None
-            assert len(ts) > 0
 
