@@ -39,19 +39,15 @@ methods that are associated with the surfaces data.
 .. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
 
 """
-
+import scipy.sparse
 import warnings
 import json
 import numpy
-#TODO: Old traits "Dict" and "SparseMatrix" import
-import tvb.basic.traits.types_basic as basic
 from tvb.basic.traits import util, exceptions
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_mapped import SparseMatrix
-from tvb.basic.traits.core import FILE_STORAGE_NONE
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
-from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, Const
 
 try:
     import gdist
@@ -144,94 +140,66 @@ class Surface(HasTraits):
     """A base class for other surfaces."""
 
     vertices = NArray(
-        dtype=float,
         label="Vertex positions",
-        doc="""An array specifying coordinates for the surface vertices."""
-    )
+        doc="""An array specifying coordinates for the surface vertices.""")
 
     triangles = NArray(
-        dtype=float,
+        dtype=int,
         label="Triangles",
-        doc="""Array of indices into the vertices, specifying the triangles which define the surface."""
-    )
+        doc="""Array of indices into the vertices, specifying the triangles which define the surface.""")
 
     vertex_normals = NArray(
-        dtype=float,
         label="Vertex normal vectors",
-        doc="""An array of unit normal vectors for the surfaces vertices."""
-    )
+        doc="""An array of unit normal vectors for the surfaces vertices.""")
 
     triangle_normals = NArray(
-        dtype=float,
         label="Triangle normal vectors",
-        doc="""An array of unit normal vectors for the surfaces triangles."""
-    )
+        doc="""An array of unit normal vectors for the surfaces triangles.""")
 
-    geodesic_distance_matrix = SparseMatrix(
+    geodesic_distance_matrix = Attr(
+        field_type=scipy.sparse.csc_matrix,
         label="Geodesic distance matrix",
-        order=-1,
         required=False,
-        file_storage=FILE_STORAGE_NONE,
+        # file_storage=FILE_STORAGE_NONE,
         doc="""A sparse matrix of truncated geodesic distances""")  # 'CS'
 
     number_of_vertices = Attr(
-        int,
+        field_type=long,
         label="Number of vertices",
-        doc="""The number of vertices making up this surface."""
-    )
+        doc="""The number of vertices making up this surface.""")
 
     number_of_triangles = Attr(
-        int,
+        field_type=long,
         label="Number of triangles",
-        doc="""The number of triangles making up this surface."""
-    )
+        doc="""The number of triangles making up this surface.""")
 
-    edge_mean_length = Attr(
-        float
-    )
+    edge_mean_length = Attr(field_type=float)
 
-    edge_min_length = Attr(
-        float
-    )
+    edge_min_length = Attr(field_type=float)
 
-    edge_max_length = Attr(
-        float
-    )
+    edge_max_length = Attr(field_type=float)
 
     ##--------------------- FRAMEWORK ATTRIBUTES -----------------------------##
 
     hemisphere_mask = NArray(
         dtype=bool,
         label="An array specifying if a vertex belongs to the right hemisphere",
-        required=False
-    )
+        # file_storage=FILE_STORAGE_NONE,
+        required=False)
 
-    zero_based_triangles = Attr(
-        bool
-    )
+    zero_based_triangles = Attr(field_type=bool)
 
-    split_triangles = Attr(
-        int,
-        required=False
-    )
+    split_triangles = NArray(dtype=int, required=False)
 
-    number_of_split_slices = Attr(
-        int
-    )
+    number_of_split_slices = Attr(field_type=int)
 
-    split_slices = basic.Dict(order=-1)
+    split_slices = Attr(field_type=dict)
 
-    bi_hemispheric = Attr(
-        bool
-    )
+    bi_hemispheric = Attr(field_type=bool)
 
-    surface_type = Attr(
-        str
-    )
+    surface_type = Attr(field_type=str)
 
-    valid_for_simulations = Attr(
-        bool
-    )
+    valid_for_simulations = Attr(field_type=bool)
 
     __mapper_args__ = {'polymorphic_on': 'surface_type'}
 
@@ -260,12 +228,12 @@ class Surface(HasTraits):
         self.number_of_vertices = self.vertices.shape[0]
         self.number_of_triangles = self.triangles.shape[0]
 
-        if self.triangle_normals.size == 0:
+        if self.triangle_normals is None or self.triangle_normals.size == 0:
             LOG.debug("Triangle normals not available. Start to compute them.")
             self.compute_triangle_normals()
             LOG.debug("End computing triangles normals")
 
-        if self.vertex_normals.size == 0:
+        if self.vertex_normals is None or self.vertex_normals.size == 0:
             LOG.debug("Vertex normals not available. Start to compute them.")
             self.compute_vertex_normals()
             LOG.debug("End computing vertex normals")
@@ -1222,19 +1190,13 @@ class WhiteMatterSurface(Surface):
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': WHITE_MATTER}
     _ui_name = "A white matter - gray  surface"
-    surface_type = Attr(
-        str,
-        default=WHITE_MATTER
-    )
+    surface_type = Const(WHITE_MATTER)
 
 
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
     _ui_name = "A cortical surface"
-    surface_type = Attr(
-        str,
-        default=CORTICAL
-    )
+    surface_type = Const(CORTICAL)
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': CORTICAL}
 
@@ -1244,10 +1206,7 @@ class SkinAir(Surface):
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKIN}
     _ui_name = "Skin"
-    surface_type = Attr(
-        str,
-        default=OUTER_SKIN
-    )
+    surface_type = Const(OUTER_SKIN)
 
     @classmethod
     def from_file(cls, source_file="outer_skin_4096.zip", instance=None):
@@ -1259,10 +1218,7 @@ class BrainSkull(Surface):
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': INNER_SKULL}
     _ui_name = "Brain - inner skull interface surface."
-    surface_type = Attr(
-        str,
-        default=INNER_SKULL
-    )
+    surface_type = Const(INNER_SKULL)
 
     @classmethod
     def from_file(cls, source_file="inner_skull_4096.zip", instance=None):
@@ -1275,10 +1231,7 @@ class SkullSkin(Surface):
     __tablename__ = None
     __mapper_args__ = {'polymorphic_identity': OUTER_SKULL}
     _ui_name = "Outer-skull - scalp interface surface"
-    surface_type = Attr(
-        str,
-        default=OUTER_SKULL
-    )
+    surface_type = Const(OUTER_SKULL)
 
     @classmethod
     def from_file(cls, source_file="outer_skull_4096.zip", instance=None):
@@ -1294,10 +1247,7 @@ class EEGCap(OpenSurface):
     """EEG cap surface."""
     __mapper_args__ = {'polymorphic_identity': EEG_CAP}
     _ui_name = "EEG Cap"
-    surface_type = Attr(
-        str,
-        default = EEG_CAP
-    )
+    surface_type = Const(EEG_CAP)
 
     @classmethod
     def from_file(cls, source_file="scalp_1082.zip", instance=None):
@@ -1308,10 +1258,7 @@ class FaceSurface(OpenSurface):
     """Face surface."""
     __mapper_args__ = {'polymorphic_identity': FACE}
     _ui_name = "Face surface"
-    surface_type = Attr(
-        str,
-        default=FACE
-    )
+    surface_type = Const(FACE)
 
     @classmethod
     def from_file(cls, source_file="face_8614.zip", instance=None):

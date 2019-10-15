@@ -137,10 +137,14 @@ class Simulator(object):
 
         if surface_sim:
             local_coupling_strength = numpy.array([2 ** -10])
-            default_cortex = Cortex(load_default=True, region_mapping_data=region_mapping)
+            default_cortex = Cortex.from_file()
+            default_cortex.region_mapping_data=region_mapping
             default_cortex.coupling_strength = local_coupling_strength
-            default_cortex.local_connectivity = LocalConnectivity(load_default=default_connectivity,
-                                                                  surface=default_cortex)
+            if default_connectivity:
+                default_cortex.local_connectivity = LocalConnectivity.from_file()
+            else:
+                default_cortex.local_connectivity = LocalConnectivity()
+            default_cortex.local_connectivity.surface = default_cortex
         else:
             default_cortex = None
 
@@ -170,18 +174,18 @@ class TestSimulator(BaseTestCase):
             assert ts is not None
             assert len(ts) > 0
 
-    @pytest.mark.skip
-    def test_simulator_surface(self):
+
+    @pytest.mark.parametrize('default_connectivity', [True, False])
+    def test_simulator_surface(self, default_connectivity):
         """
         This test evaluates if surface simulations run as basic flow.
         """
         test_simulator = Simulator()
 
-        for default_connectivity in [True, False]:
-            test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
-            result = test_simulator.run_simulation(simulation_length=2)
+        test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
+        result = test_simulator.run_simulation(simulation_length=2)
 
-            assert len(test_simulator.monitors) == len(result)
-            LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
+        assert len(test_simulator.monitors) == len(result)
+        LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))
 
 
