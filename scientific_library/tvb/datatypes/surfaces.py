@@ -47,7 +47,7 @@ from tvb.basic.traits import util, exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, Int, Float
 
 try:
     import gdist
@@ -163,21 +163,21 @@ class Surface(HasTraits):
         # file_storage=FILE_STORAGE_NONE,
         doc="""A sparse matrix of truncated geodesic distances""")  # 'CS'
 
-    number_of_vertices = Attr(
+    number_of_vertices = Int(
         field_type=long,
         label="Number of vertices",
         doc="""The number of vertices making up this surface.""")
 
-    number_of_triangles = Attr(
+    number_of_triangles = Int(
         field_type=long,
         label="Number of triangles",
         doc="""The number of triangles making up this surface.""")
 
-    edge_mean_length = Attr(field_type=float)
+    edge_mean_length = Float()
 
-    edge_min_length = Attr(field_type=float)
+    edge_min_length = Float()
 
-    edge_max_length = Attr(field_type=float)
+    edge_max_length = Float()
 
     ##--------------------- FRAMEWORK ATTRIBUTES -----------------------------##
 
@@ -191,7 +191,7 @@ class Surface(HasTraits):
 
     split_triangles = NArray(dtype=int, required=False)
 
-    number_of_split_slices = Attr(field_type=int)
+    number_of_split_slices = Int()
 
     split_slices = Attr(field_type=dict)
 

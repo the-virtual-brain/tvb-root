@@ -42,7 +42,7 @@ import numpy
 import scipy.stats
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
-from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits
+from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int
 from tvb.basic.traits.types_mapped import MappedType
 
 
@@ -127,13 +127,13 @@ class Connectivity(HasTraits):
             combines with tract lengths to update this matrix, i.e. don't try and change it manually."""
     )
 
-    number_of_regions = Attr(
+    number_of_regions = Int(
         field_type=long,
         label="Number of regions",
         doc="""The number of regions represented in this Connectivity """
     )
 
-    number_of_connections = Attr(
+    number_of_connections = Int(
         field_type=long,
         label="Number of connections",
         doc="""The number of non-zero entries represented in this Connectivity """
