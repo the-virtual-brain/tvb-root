@@ -884,13 +884,13 @@ class Bold(Monitor):
         # At stock's period update it with the temporal average of interim-stock
         if step % self._interim_istep == 0:
             avg_interim_stock = numpy.mean(self._interim_stock, axis=0)
-            self._stock[((step/self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
+            self._stock[((step//self._interim_istep % self._stock_steps) - 1), :] = avg_interim_stock
         # At the monitor's period, apply the heamodynamic response function to
         # the stock and return the resulting BOLD signal.
         if step % self.istep == 0:
             time = step * self.dt
             hrf = numpy.roll(self.hemodynamic_response_function,
-                             ((step/self._interim_istep % self._stock_steps) - 1),
+                             ((step//self._interim_istep % self._stock_steps) - 1),
                              axis=1)
             if isinstance(self.hrf_kernel, equations.FirstOrderVolterra):
                 k1_V0 = self.hrf_kernel.parameters["k_1"] * self.hrf_kernel.parameters["V_0"]
