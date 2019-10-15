@@ -3,6 +3,7 @@ A simple traits declarative api
 todo: rename this module
 todo: document the new system here and put a link to extensive docs
 """
+import typing
 import abc
 import logging
 
@@ -24,8 +25,8 @@ class Attr(object):
     # For an introduction see https://docs.python.org/2/howto/descriptor.html
 
     def __init__(self, field_type=object, default=None, doc='', label='',
-                 required=True, readonly=False):
-        # type: (type, object, str, str, bool, bool) -> None
+                 required=True, readonly=False, choices=None):
+        # type: (type, object, str, str, bool, bool, typing.Optional[tuple]) -> None
         self.field_name = None  # to be set by metaclass
         self.field_type = field_type
         self.default = default
@@ -33,6 +34,7 @@ class Attr(object):
         self.label = label
         self.required = required
         self.readonly = readonly
+        self.choices = choices
 
 
     def _err_msg_where(self, defined_in_type_name):
@@ -53,6 +55,12 @@ class Attr(object):
             msg = 'should have a default of type {} not {}'.format(
                 self.field_type, type(self.default))
             raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+
+        if self.choices is not None and self.default is not None:
+            if self.default not in self.choices:
+                msg = 'the default {} must be one of the choices {}'.format(
+                    self.default, self.choices)
+                raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
 
         # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
         try:
@@ -76,11 +84,17 @@ class Attr(object):
         if not isinstance(value, self.field_type):
             msg_where = self._err_msg_where(type(instance).__name__)
             raise TypeError(msg_where + "can't be set to an instance of {}".format(type(value)))
+        if self.choices is not None:
+            if value not in self.choices:
+                msg_where = self._err_msg_where(type(instance).__name__)
+                raise ValueError(msg_where + "value {} must be one of {}".format(value, self.choices))
+
 
     def _assert_have_field_name(self):
         if self.field_name is None:
             # this is the case if the descriptor is not in a class of type MetaType
             raise AttributeError("Declarative attributes can only be declared in subclasses of HasTraits")
+
 
     def __get__(self, instance, owner):
         # type: (object, type) -> object

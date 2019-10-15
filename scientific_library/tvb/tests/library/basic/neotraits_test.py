@@ -180,3 +180,15 @@ def test_narr_enforcing():
     boo.x = np.eye(2, dtype=float)
     # only the defaults are checked for domain compliance
     boo.y = np.arange(12)
+
+
+def test_choices():
+    class A(HasTraits):
+        x = attr.Attr(str, default='ana', choices=('ana', 'are', 'mere'))
+        cx = attr.Const('ana')
+
+    a = A()
+
+    with pytest.raises(ValueError):
+        a.x = 'hell'
+
