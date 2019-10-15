@@ -87,13 +87,6 @@ class Float(core.Type):
     wraps = (float, numpy.float32, int)
 
 
-class Complex(core.Type):
-    """
-    Traits type that wraps Numpy's complex64.
-    """
-    wraps = numpy.complex64
-
-
 class MapAsJson():
     """Add functionality of converting from/to JSON"""
 
@@ -201,28 +194,6 @@ class Dict(Sequence):
     wraps = dict
 
 
-class Set(Sequence):
-    """
-    Traits type that wraps a python set.
-    """
-    wraps = set
-
-
-class Tuple(Sequence):
-    """
-    Traits type that wraps a python tuple.
-    """
-    wraps = tuple
-
-
-    def __get__(self, inst, cls):
-        list_value = super(Tuple, self).__get__(inst, cls)
-
-        if isinstance(list_value, list):
-            return list_value[0], list_value[1]
-
-        return list_value
-
 
 class List(Sequence):
     """
@@ -230,12 +201,6 @@ class List(Sequence):
     """
     wraps = (list, numpy.ndarray)
 
-
-class Slice(Sequence):
-    """
-    Useful of for specifying views or slices of containers.
-    """
-    wraps = slice
 
 
 class Range(core.Type):
@@ -374,11 +339,6 @@ class Range(core.Type):
         return start, stop, step
 
 
-class ValidationRange(core.Type):
-    """
-    ValidationRange represents a Range used only for validating a number.
-    """
-
 
 class JSONType(String):
     """
@@ -403,22 +363,3 @@ class JSONType(String):
             value = json.dumps(value)
         super(JSONType, self).__set__(inst, value)
 
-
-class DType(String):
-    """
-    Traits type that wraps a Numpy dType specification.
-    """
-
-    wraps = (numpy.dtype, str)
-    defaults = ((numpy.float64,), {})
-
-
-    def __get__(self, inst, cls):
-        if inst:
-            type_ = super(DType, self).__get__(inst, cls)
-            return str(type_).replace("<type '", '').replace("'>", '')
-        return super(DType, self).__get__(inst, cls)
-
-
-    def __set__(self, inst, value):
-        super(DType, self).__set__(inst, str(value))

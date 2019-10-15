@@ -123,7 +123,7 @@ class AnnotationArray(Array):
     To be stored in a compound DS in H5.
     """
 
-    dtype = types_basic.DType(default=ANNOTATION_DTYPE)
+    dtype = ANNOTATION_DTYPE
 
     stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
 

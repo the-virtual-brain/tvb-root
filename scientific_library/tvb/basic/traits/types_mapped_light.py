@@ -50,7 +50,6 @@ from scipy import sparse
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.util import get
 from tvb.basic.traits.core import Type
-from tvb.basic.traits.types_basic import DType
 
 
 class MappedTypeLight(Type):
@@ -185,7 +184,7 @@ class Array(Type):
     """
 
     wraps = numpy.ndarray
-    dtype = DType()
+    dtype = numpy.float
     defaults = ((0,), {})
     data = None
     stored_metadata = [key for key in MappedTypeLight.DEFAULT_STORED_ARRAY_METADATA]

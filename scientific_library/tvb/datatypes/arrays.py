@@ -59,23 +59,23 @@ class BaseArray(Array):
 
 class FloatArray(BaseArray):
     _ui_name = "Floating-point array"
-    dtype = basic.DType(default=numpy.float64)
+    dtype = numpy.float64
 
 
 class IntegerArray(BaseArray):
     _ui_name = "Array of integers"
-    dtype = basic.DType(default=numpy.int_)
+    dtype = numpy.int_
 
 
 class ComplexArray(BaseArray):
     _ui_name = "Array of complex numbers"
-    dtype = basic.DType(default=numpy.complex128)
+    dtype = numpy.complex128
     stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
 
 class BoolArray(BaseArray):
     _ui_name = "Boolean array"
-    dtype = basic.DType(default=numpy.bool)
+    dtype = numpy.bool
     stored_metadata = [MappedType.METADATA_ARRAY_SHAPE]
 
     def _find_summary_info(self):
