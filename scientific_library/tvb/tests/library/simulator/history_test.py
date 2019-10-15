@@ -37,7 +37,7 @@ Test history in simulator.
 
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
-import tvb.basic.traits.types_basic as basic
+from tvb.basic.traits.neotraits import List
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import Identity
@@ -59,8 +59,8 @@ class Sum(Model):
     nvar = 1
     _nvar = 1
     state_variable_range = {'x': [0, 100]}
-    variables_of_interest = basic.Enumerate(default=['x'], options=['x'])
-    state_variables = ['x']
+    variables_of_interest = List(of=str, default=('x',), choices=('x',))
+    state_variables = ('x',)
     cvar = numpy.array([0])
 
     def dfun(self, X, coupling, local_coupling=0):
@@ -70,20 +70,22 @@ class Sum(Model):
 class TestsExactPropagation(BaseTestCase):
     def build_simulator(self, n=4):
 
-        self.conn = numpy.zeros((n, n), numpy.int32)
+        self.conn = numpy.zeros((n, n))  # , numpy.int32)
         for i in range(self.conn.shape[0] - 1):
             self.conn[i, i + 1] = 1
 
         self.dist = numpy.r_[:n * n].reshape((n, n))
+        self.dist = numpy.array(self.dist, dtype=float)
+
         self.sim = Simulator(
-            conduction_speed=1,
+            conduction_speed=1.0,
             coupling=IdCoupling(),
             surface=None,
             stimulus=None,
-            integrator=Identity(dt=1),
+            integrator=Identity(dt=1.0),
             initial_conditions=numpy.ones((n * n, 1, n, 1)),
-            simulation_length=10,
-            connectivity=Connectivity(weights=self.conn, tract_lengths=self.dist, speed=1),
+            simulation_length=10.0,
+            connectivity=Connectivity(weights=self.conn, tract_lengths=self.dist, speed=numpy.array([1.0])),
             model=Sum(),
             monitors=(Raw(),),
         )

@@ -411,10 +411,13 @@ class Connectivity(HasTraits):
         self.trait["orientations"].log_debug(owner=self.__class__.__name__)
         self.trait["areas"].log_debug(owner=self.__class__.__name__)
 
-        if self.tract_lengths.size == 0:
-            self.compute_tract_lengths()
+        # todo: review these 2 following is None checks
+        # the neotraits do not default declarative numpy arrays to 0 dimensional empty ones
+        # we let a missing array be represented by None
 
-        if self.region_labels.size == 0:
+        if self.tract_lengths is None or self.tract_lengths.size == 0:
+            self.compute_tract_lengths()
+        if self.region_labels is None or self.region_labels.size == 0:
             self.compute_region_labels()
 
         if self.hemispheres is None or self.hemispheres.size == 0:
