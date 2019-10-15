@@ -33,12 +33,8 @@ The Volume datatypes.
 
 """
 
-from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import volumes
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
-
-LOG = get_logger(__name__)
 
 
 class StructuralMRI(HasTraits):

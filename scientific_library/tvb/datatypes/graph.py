@@ -37,18 +37,14 @@ The Graph datatypes.
 
 """
 import numpy
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, narray_summary_info
 from tvb.datatypes import time_series, connectivity
-
-LOG = get_logger(__name__)
 
 
 class Covariance(HasTraits):
     """Covariance datatype."""
 
-    array_data = NArray(dtype=numpy.complex128) # file_storage=core.FILE_STORAGE_EXPAND
-    # FROM ComplexArray: stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
+    array_data = NArray(dtype=numpy.complex128)
 
     source = Attr(
         field_type=time_series.TimeSeries,
@@ -71,7 +67,7 @@ class CorrelationCoefficients(HasTraits):
     PEARSON_MIN = -1
     PEARSON_MAX = 1
 
-    array_data = NArray() # file_storage=core.FILE_STORAGE_DEFAULT
+    array_data = NArray()
 
     source = Attr(
         field_type=time_series.TimeSeries,
@@ -103,7 +99,5 @@ class ConnectivityMeasure(HasTraits):
 
     def summary_info(self):
         summary = {"Graph type": self.__class__.__name__}
-        # summary["Source"] = self.connectivity.title
         summary.update(narray_summary_info(self.array_data))
         return summary
-

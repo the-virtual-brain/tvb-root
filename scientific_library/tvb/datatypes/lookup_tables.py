@@ -38,11 +38,7 @@ The LookUpTable datatype.
 
 import numpy
 from tvb.basic.readers import try_get_absolute_path
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
-
-
-LOG = get_logger(__name__)
 
 
 class LookUpTable(HasTraits):
@@ -50,8 +46,6 @@ class LookUpTable(HasTraits):
     Lookup Tables for storing pre-computed functions.
     Specific table subclasses are implemented below.
     """
-
-    _base_classes = ['LookUpTables']
 
     equation = Attr(
         field_type=str,

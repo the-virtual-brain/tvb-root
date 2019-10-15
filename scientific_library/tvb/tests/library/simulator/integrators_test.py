@@ -98,7 +98,7 @@ class TestIntegrators(BaseTestCase):
         self._test_scheme(rk4)
 
     def test_identity_scheme(self):
-        "Verify identity scheme works"
+        """Verify identity scheme works"""
         x, c, lc, s = 1, 2, 3, 4
 
         def dfun(x, c, lc):
@@ -110,9 +110,9 @@ class TestIntegrators(BaseTestCase):
         self._test_scheme(integ)
 
     def _scipy_scheme_tester(self, name):
-        "Test a SciPy integration scheme."
+        """Test a SciPy integration scheme."""
         for name_ in (name, name + 'Stochastic'):
-            cls = getattr(integrators, name)
+            cls = getattr(integrators, name_)
             obj = cls()
             assert dt == obj.dt
             self._test_scheme(obj)
@@ -125,6 +125,30 @@ class TestIntegrators(BaseTestCase):
 
     def test_scipy_dopri5(self):
         self._scipy_scheme_tester('Dopri5')
+
+    def test_bound(self):
+        vode = integrators.VODE(
+            bounded_state_variable_indices=numpy.r_[0, 1, 2, 3],
+            state_variable_boundaries=numpy.array([[0.0, 1.0], [None, 1.0], [0.0, None], [None, None]], dtype=float)
+        )
+        x = numpy.ones((5, 4, 2))
+        x[:, 0, ] = -x[:, 0, ]
+        x[:, 1, ] = 2 * x[:, 1, ]
+        x0 = numpy.array(x)
+        for i in range(10):
+            x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
+        for idx, val in zip(vode.bounded_state_variable_indices, vode.state_variable_boundaries):
+            if idx == 0:
+                assert numpy.all(x[idx] >= val[0])
+                assert numpy.all(x[idx] <= val[1])
+            elif idx == 1:
+                assert numpy.all(x[idx] <= val[1])
+                assert numpy.allclose(x[idx, 0], x0[idx, 0], atol=0.2)
+            elif idx == 2:
+                assert numpy.all(x[idx] >= val[0])
+                assert numpy.allclose(x[idx, 1], x0[idx, 1], atol=0.3)
+            else:
+                assert numpy.all(numpy.isfinite(x[idx]))
 
     def test_clamp(self):
         vode = integrators.VODE(

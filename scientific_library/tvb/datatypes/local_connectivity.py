@@ -32,11 +32,8 @@
 import numpy
 import scipy.sparse
 from tvb.basic.readers import try_get_absolute_path, FileReader
-from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import equations, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
-
-LOG = get_logger(__name__)
 
 
 class LocalConnectivity(HasTraits):
@@ -67,7 +64,7 @@ class LocalConnectivity(HasTraits):
         """
         Compute current Matrix.
         """
-        LOG.info("Mapping geodesic distance through the LocalConnectivity.")
+        self.log.info("Mapping geodesic distance through the LocalConnectivity.")
 
         # Start with data being geodesic_distance_matrix, then map it through equation
         # Then replace original data with result...
@@ -91,13 +88,13 @@ class LocalConnectivity(HasTraits):
         if ((pos_mean != 0.0 and any(pos_contrib == 0.0)) or
                 (neg_mean != 0.0 and any(neg_contrib == 0.0))):
             msg = "Cortical mesh is too coarse for requested LocalConnectivity."
-            LOG.warning(msg)
+            self.log.warning(msg)
             bad_verts = ()
             if pos_mean != 0.0:
                 bad_verts = bad_verts + numpy.nonzero(pos_contrib == 0.0)
             if neg_mean != 0.0:
                 bad_verts = bad_verts + numpy.nonzero(neg_contrib == 0.0)
-            LOG.debug("Problem vertices are: %s" % str(bad_verts))
+            self.log.debug("Problem vertices are: %s" % str(bad_verts))
         pos_hf = numpy.zeros(shape=pos_contrib.shape)
         pos_hf[pos_contrib != 0] = pos_mean / pos_contrib[pos_contrib != 0]
         neg_hf = numpy.zeros(shape=neg_contrib.shape)

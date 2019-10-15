@@ -31,11 +31,9 @@
 import os
 import numpy
 import scipy.sparse
-from tvb.basic.logger.builder import get_logger
 from . import local_connectivity, region_mapping, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 
-LOG = get_logger(__name__)
 
 
 class Cortex(HasTraits):
@@ -130,7 +128,7 @@ class Cortex(HasTraits):
         # Pad the local connectivity matrix with zeros when non-cortical regions
         # are included in the long range connectivity...
         if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
-            LOG.info("There are non-cortical regions, will pad local connectivity")
+            self.log.info("There are non-cortical regions, will pad local connectivity")
             padding = scipy.sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
                                                self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
             self.local_connectivity.matrix = scipy.sparse.hstack([self.local_connectivity.matrix, padding])
@@ -142,14 +140,14 @@ class Cortex(HasTraits):
     def compute_local_connectivity(self):
         """
         """
-        LOG.info("Computing local connectivity matrix")
+        self.log.info("Computing local connectivity matrix")
         loc_con_cutoff = self.local_connectivity.cutoff
         self.local_connectivity.surface.compute_geodesic_distance_matrix(max_dist=loc_con_cutoff)
 
         self.local_connectivity.matrix_gdist = self.local_connectivity.surface.geodesic_distance_matrix.copy()
         self.local_connectivity.compute()  # Evaluate equation based distance
 
-        #HACK FOR DEBUGGING CAUSE TRAITS REPORTS self.local_connectivity.trait["matrix"] AS BEING EMPTY...
+        # HACK FOR DEBUGGING CAUSE TRAITS REPORTS self.local_connectivity.trait["matrix"] AS BEING EMPTY...
         lcmat = self.local_connectivity.matrix
         sts = str(lcmat.__class__)
         # mhtodo: the trait.name is the file name for mapped,
@@ -163,12 +161,12 @@ class Cortex(HasTraits):
             array_min = lcmat.data.min()
         else:
             array_max = array_min = 0.0
-        LOG.debug("%s: %s shape: %s" % (sts, name, shape))
-        LOG.debug("%s: %s format: %s" % (sts, name, sparse_format))
-        LOG.debug("%s: %s number of non-zeros: %s" % (sts, name, nnz))
-        LOG.debug("%s: %s dtype: %s" % (sts, name, dtype))
-        LOG.debug("%s: %s maximum: %s" % (sts, name, array_max))
-        LOG.debug("%s: %s minimum: %s" % (sts, name, array_min))
+        self.log.debug("%s: %s shape: %s" % (sts, name, shape))
+        self.log.debug("%s: %s format: %s" % (sts, name, sparse_format))
+        self.log.debug("%s: %s number of non-zeros: %s" % (sts, name, nnz))
+        self.log.debug("%s: %s dtype: %s" % (sts, name, dtype))
+        self.log.debug("%s: %s maximum: %s" % (sts, name, array_max))
+        self.log.debug("%s: %s minimum: %s" % (sts, name, array_min))
 
     @classmethod
     def from_file(cls, source_file='cortex_16384.zip', region_mapping_file=os.path.join("regionMapping_16k_76.txt"),

@@ -37,13 +37,9 @@ Calculate an FFT on a TimeSeries DataType and return a FourierSpectrum DataType.
 
 import numpy
 import scipy.signal
-from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.spectral import FourierSpectrum
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_describe
-
-
-LOG = get_logger(__name__)
 
 SUPPORTED_WINDOWING_FUNCTIONS = {
     'hamming': numpy.hamming,
@@ -51,7 +47,6 @@ SUPPORTED_WINDOWING_FUNCTIONS = {
     'blackman': numpy.blackman,
     'hanning': numpy.hanning
 }
-
 
 
 class FFT(HasTraits):
@@ -92,8 +87,7 @@ class FFT(HasTraits):
         required=False,
         doc="""Detrending is not always appropriate.
             Default is True, False means no detrending is performed on the time series""")
-    
-    
+
     def evaluate(self):
         """
         Calculate the FFT of time_series broken into segments of length
@@ -102,7 +96,7 @@ class FFT(HasTraits):
 
         tpts = self.time_series.data.shape[0]
         time_series_length = tpts * self.time_series.sample_period
-        
+
         # Segment time-series, overlapping if necessary
         nseg = int(numpy.ceil(time_series_length / self.segment_length))
         if nseg > 1:
@@ -117,19 +111,19 @@ class FFT(HasTraits):
             self.segment_length = time_series_length
             time_series = self.time_series.data[:, :, :, :, numpy.newaxis]
             seg_tpts = time_series.shape[0]
-        
-        LOG.debug("Segment length being used is: %s" % self.segment_length)
-        
+
+        self.log.debug("Segment length being used is: %s" % self.segment_length)
+
         # Base-line correct the segmented time-series
         if self.detrend:
             time_series = scipy.signal.detrend(time_series, axis=0)
-            LOG.debug("time_series " + narray_describe(time_series))
+            self.log.debug("time_series " + narray_describe(time_series))
 
         # Apply windowing function
         if self.window_function is not None:
             window_function = SUPPORTED_WINDOWING_FUNCTIONS[self.window_function]
             window_mask = numpy.reshape(window_function(int(seg_tpts)),
-                                            (int(seg_tpts), 1, 1, 1, 1))
+                                        (int(seg_tpts), 1, 1, 1, 1))
             time_series = time_series * window_mask
 
         # Calculate the FFT
@@ -137,7 +131,7 @@ class FFT(HasTraits):
         nfreq = result.shape[0] // 2
         result = result[1:nfreq + 1, :]
 
-        LOG.debug("result " + narray_describe(result))
+        self.log.debug("result " + narray_describe(result))
 
         spectra = FourierSpectrum(
             source=self.time_series,
@@ -148,8 +142,7 @@ class FFT(HasTraits):
         spectra.configure()
 
         return spectra
-    
-    
+
     def result_shape(self, input_shape, segment_length, sample_period):
         """Returns the shape of the main result (complex array) of the FFT."""
         freq_len = (segment_length / sample_period) / 2.0
@@ -157,8 +150,7 @@ class FFT(HasTraits):
         nseg = max((1, int(numpy.ceil(input_shape[0] * sample_period / segment_length))))
         result_shape = (freq_len, input_shape[1], input_shape[2], input_shape[3], nseg)
         return result_shape
-    
-    
+
     def result_size(self, input_shape, segment_length, sample_period):
         """
         Returns the storage size in Bytes of the main result (complex array) of 
@@ -168,7 +160,6 @@ class FFT(HasTraits):
                                                    sample_period)) * 2.0 * 8.0  # complex*Bytes
         return result_size
 
-
     def extended_result_size(self, input_shape, segment_length, sample_period):
         """
         Returns the storage size in Bytes of the extended result of the FFT. 
@@ -177,13 +168,11 @@ class FFT(HasTraits):
         """
         result_shape = self.result_shape(input_shape, segment_length, sample_period)
         result_size = self.result_size(input_shape, segment_length, sample_period)
-        extend_size = result_size           # Main array
-        extend_size += 0.5 * result_size    # Amplitude
-        extend_size += 0.5 * result_size    # Phase
-        extend_size += 0.5 * result_size    # Power
+        extend_size = result_size  # Main array
+        extend_size += 0.5 * result_size  # Amplitude
+        extend_size += 0.5 * result_size  # Phase
+        extend_size += 0.5 * result_size  # Power
         extend_size += 0.5 * result_size / result_shape[4]  # Average power
         extend_size += 0.5 * result_size / result_shape[4]  # Normalised Average power
-        extend_size += result_shape[0] * 8.0    # Frequency
+        extend_size += result_shape[0] * 8.0  # Frequency
         return extend_size
-
-

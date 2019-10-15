@@ -57,11 +57,8 @@ References:
 
 import numpy
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Range, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Float
 import tvb.simulator.integrators as integrators_module
-from tvb.basic.logger.builder import get_logger
-
-LOG = get_logger(__name__)
 
 
 class BalloonModel(HasTraits):
@@ -73,9 +70,9 @@ class BalloonModel(HasTraits):
     The haemodynamic model parameters based on constants for a 1.5 T scanner.
         
     """
-    
-    #NOTE: a potential problem when the input is a TimeSeriesSurface.
-    #TODO: add an spatial averaging for TimeSeriesSurface.
+
+    # NOTE: a potential problem when the input is a TimeSeriesSurface.
+    # TODO: add an spatial averaging for TimeSeriesSurface.
 
     time_series = Attr(
         field_type=time_series.TimeSeries,
@@ -196,8 +193,6 @@ class BalloonModel(HasTraits):
         doc=""" BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for
         ``revised`` coefficients. """)
 
-
-
     def evaluate(self):
         """
         Calculate simulated BOLD signal
@@ -205,28 +200,28 @@ class BalloonModel(HasTraits):
         cls_attr_name = self.__class__.__name__ + ".time_series"
         # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
-        #NOTE: Just using the first state variable, although in the Bold monitor
+        # NOTE: Just using the first state variable, although in the Bold monitor
         #      input is the sum over the state-variables. Only time-series
         #      from basic monitors should be used as inputs.
 
         neural_activity, t_int = self.input_transformation(self.time_series, self.neural_input_transformation)
         input_shape = neural_activity.shape
         result_shape = self.result_shape(input_shape)
-        LOG.debug("Result shape will be: %s" % str(result_shape))
+        self.log.debug("Result shape will be: %s" % str(result_shape))
 
         if self.dt is None:
-            self.dt = self.time_series.sample_period / 1000.    # (s) integration time step
+            self.dt = self.time_series.sample_period / 1000.  # (s) integration time step
             msg = "Integration time step size for the balloon model is %s seconds" % str(self.dt)
-            LOG.debug(msg)
+            self.log.debug(msg)
 
-        #NOTE: Avoid upsampling ...
+        # NOTE: Avoid upsampling ...
         if self.dt < (self.time_series.sample_period / 1000.):
-            msg = "Integration time step shouldn't be smaller than the sampling period of the input signal." 
-            LOG.error(msg)
+            msg = "Integration time step shouldn't be smaller than the sampling period of the input signal."
+            self.log.error(msg)
 
-        balloon_nvar = 4           
+        balloon_nvar = 4
 
-        #NOTE: hard coded initial conditions
+        # NOTE: hard coded initial conditions
         state = numpy.zeros((input_shape[0], balloon_nvar, input_shape[2], input_shape[3]))  # s
         state[0, 1, :] = 1.  # f
         state[0, 2, :] = 1.  # v
@@ -239,7 +234,7 @@ class BalloonModel(HasTraits):
         # prepare integrator
         self.integrator.dt = self.dt
         self.integrator.configure()
-        LOG.debug("Integration time step size will be: %s seconds" % str(self.integrator.dt))
+        self.log.debug("Integration time step size will be: %s seconds" % str(self.integrator.dt))
 
         scheme = self.integrator.scheme
 
@@ -251,7 +246,7 @@ class BalloonModel(HasTraits):
 
         # Do some checks:
         if numpy.isnan(neural_activity).any():
-            LOG.warning("NaNs detected in the neural activity!!")
+            self.log.warning("NaNs detected in the neural activity!!")
 
         # normalise the time-series.
         neural_activity = neural_activity - neural_activity.mean(axis=0)[numpy.newaxis, :]
@@ -261,7 +256,7 @@ class BalloonModel(HasTraits):
             state[step, :] = scheme(state[step - 1, :], self.balloon_dfun,
                                     neural_activity[step, :], local_coupling, stimulus)
             if numpy.isnan(state[step, :]).any():
-                LOG.warning("NaNs detected...")
+                self.log.warning("NaNs detected...")
 
         # NOTE: just for the sake of clarity, define the variables used in the BOLD model
         s = state[:, 0, :]
@@ -269,7 +264,7 @@ class BalloonModel(HasTraits):
         v = state[:, 2, :]
         q = state[:, 3, :]
 
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         # BOLD models
         if self.bold_model == "nonlinear":
@@ -279,7 +274,7 @@ class BalloonModel(HasTraits):
             """
             y_bold = numpy.array(self.V0 * (k1 * (1. - q) + k2 * (1. - q / v) + k3 * (1. - v)))
             y_b = y_bold[:, numpy.newaxis, :, :]
-            LOG.debug("Max value: %s" % str(y_b.max()))
+            self.log.debug("Max value: %s" % str(y_b.max()))
 
         else:
             """
@@ -298,7 +293,6 @@ class BalloonModel(HasTraits):
             sample_period_unit='s')
 
         return bold_signal
-
 
     def compute_derived_parameters(self):
         """
@@ -325,13 +319,12 @@ class BalloonModel(HasTraits):
 
         return numpy.array([k1, k2, k3])
 
-
     def input_transformation(self, time_series, mode):
         """
         Perform an operation on the input time-series.
         """
 
-        LOG.debug("Computing: %s on the input time series" % str(mode))
+        self.log.debug("Computing: %s on the input time series" % str(mode))
 
         if mode == "none":
             ts = time_series.data[:, 0, :, :]
@@ -348,13 +341,11 @@ class BalloonModel(HasTraits):
             t_int = time_series.time / 1000.  # (s)
 
         else:
-            LOG.error("Bad operation/transformation mode, must be one of:")
-            LOG.error("('abs_diff', 'sum', 'none')")
-            raise Exception("Bad transformation mode") 
+            self.log.error("Bad operation/transformation mode, must be one of:")
+            self.log.error("('abs_diff', 'sum', 'none')")
+            raise Exception("Bad transformation mode")
 
         return ts, t_int
-
-
 
     def balloon_dfun(self, state_variables, neural_input, local_coupling=0.0):
         r"""
@@ -383,13 +374,11 @@ class BalloonModel(HasTraits):
 
         return numpy.array([ds, df, dv, dq])
 
-
     def result_shape(self, input_shape):
         """Returns the shape of the main result of fmri balloon ..."""
         result_shape = (input_shape[0], input_shape[1],
                         input_shape[2], input_shape[3])
         return result_shape
-
 
     def result_size(self, input_shape):
         """
@@ -397,7 +386,6 @@ class BalloonModel(HasTraits):
         """
         result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape)))) * 8.0  # Bytes
         return result_size
-
 
     def extended_result_size(self, input_shape):
         """

@@ -40,7 +40,6 @@ import scipy.sparse
 import warnings
 import numpy
 from tvb.basic import exceptions
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
 
@@ -61,7 +60,6 @@ except ImportError:
     msg = "Geodesic distance module is unavailable; some functionality for surfaces will be unavailable."
     warnings.warn(msg)
 
-LOG = get_logger(__name__)
 
 OUTER_SKIN = "Skin Air"
 OUTER_SKULL = "Skull Skin"
@@ -79,17 +77,18 @@ class ValidationResult(object):
     Used by surface validate methods to report non-fatal failed validations
     """
 
-    def __init__(self):
+    def __init__(self, logger):
         self.warnings = []
+        self.log = logger
 
     def add_warning(self, message, data):
         self.warnings.append((message, data))
-        LOG.warn(message)
+        self.log.warn(message)
         if data:
-            LOG.debug(data)
+            self.log.debug(data)
 
     def merge(self, other):
-        r = ValidationResult()
+        r = ValidationResult(self.log)
         r.warnings = self.warnings + other.warnings
         return r
 
@@ -173,14 +172,14 @@ class Surface(HasTraits):
         self.bi_hemispheric = self.hemisphere_mask is not None and numpy.unique(self.hemisphere_mask).size > 1
 
         if self.triangle_normals is None or self.triangle_normals.size == 0:
-            LOG.debug("Triangle normals not available. Start to compute them.")
+            self.log.debug("Triangle normals not available. Start to compute them.")
             self.compute_triangle_normals()
-            LOG.debug("End computing triangles normals")
+            self.log.debug("End computing triangles normals")
 
         if self.vertex_normals is None or self.vertex_normals.size == 0:
-            LOG.debug("Vertex normals not available. Start to compute them.")
+            self.log.debug("Vertex normals not available. Start to compute them.")
             self.compute_vertex_normals()
-            LOG.debug("End computing vertex normals")
+            self.log.debug("End computing vertex normals")
 
         if self._edge_lengths is None:
             self._find_edge_lengths()
@@ -357,8 +356,8 @@ class Surface(HasTraits):
             # TODO: NaN generation would stop execution, however for normals this case could maybe be
             # handled in a better way.
             self.triangle_normals = tri_norm
-        LOG.debug("triangle_normals")
-        LOG.debug(narray_describe(self.triangle_normals))
+        self.log.debug("triangle_normals")
+        self.log.debug(narray_describe(self.triangle_normals))
 
     def compute_vertex_normals(self):
         """
@@ -387,8 +386,8 @@ class Surface(HasTraits):
         if bad_normal_count:
             self.logger.warn(" %d vertices have bad normals" % bad_normal_count)
         self.vertex_normals = vert_norms
-        LOG.debug("vertex_normals")
-        LOG.debug(narray_describe(self.vertex_normals))
+        self.log.debug("vertex_normals")
+        self.log.debug(narray_describe(self.vertex_normals))
 
     @property
     def triangle_areas(self):
@@ -405,8 +404,8 @@ class Surface(HasTraits):
         tri_norm = numpy.cross(tri_u, tri_v)
         triangle_areas = numpy.sqrt(numpy.sum(tri_norm ** 2, axis=1)) / 2.0
         triangle_areas = triangle_areas[:, numpy.newaxis]
-        LOG.debug("triangle_areas")
-        LOG.debug(narray_describe(triangle_areas))
+        self.log.debug("triangle_areas")
+        self.log.debug(narray_describe(triangle_areas))
 
         return triangle_areas
 
@@ -425,8 +424,8 @@ class Surface(HasTraits):
         """
         tri_verts = self.vertices[self.triangles, :]
         tri_centres = numpy.mean(tri_verts, axis=1)
-        LOG.debug("tri_centres")
-        LOG.debug(narray_describe(tri_centres))
+        self.log.debug("tri_centres")
+        self.log.debug(narray_describe(tri_centres))
         return tri_centres
 
     @property
@@ -462,8 +461,8 @@ class Surface(HasTraits):
         a1 = _angle(edges[:, 0, :], - edges[:, 1, :])
         a2 = 2 * numpy.pi - a0 - a1
         angles = numpy.hstack([a0, a1, a2])
-        LOG.debug("triangle_angles")
-        LOG.debug(narray_describe(angles))
+        self.log.debug("triangle_angles")
+        self.log.debug(narray_describe(angles))
 
         return angles
 
@@ -592,7 +591,7 @@ class Surface(HasTraits):
 
         :return: a ValidationResult
         """
-        r = ValidationResult()
+        r = ValidationResult(self.log)
 
         euler, isolated, pinched_off, holes = self.compute_topological_constants()
 

@@ -38,11 +38,8 @@ The Sensors dataType.
 """
 
 import numpy
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
-
-LOG = get_logger(__name__)
 
 EEG_POLYMORPHIC_IDENTITY = "EEG"
 MEG_POLYMORPHIC_IDENTITY = "MEG"
@@ -167,8 +164,8 @@ class Sensors(HasTraits):
 
             elif len(local_triangle_index) < 1:
                 # No triangle was found in proximity. Draw the sensor somehow in the surface extension area
-                LOG.warning("Could not find a proper position on the given surface for sensor %d:%s. "
-                            "with direction %s" % (k, self.labels[k], str(self.locations[k])))
+                self.log.warning("Could not find a proper position on the given surface for sensor %d:%s. "
+                                 "with direction %s" % (k, self.labels[k], str(self.locations[k])))
                 distances = (abs(tuv[:, 1] + tuv[:, 2]))
                 local_triangle_index = distances.argmin()
                 # Scale sensor unit vector by t so that it lies on the surface.

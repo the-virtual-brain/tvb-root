@@ -42,11 +42,9 @@ from matplotlib.pylab import detrend_linear
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
 from tvb.basic.neotraits.api import HasTraits, Attr, Int, narray_describe
-from tvb.basic.logger.builder import get_logger
 
-LOG = get_logger(__name__)
 
-#TODO: Should do this properly, ie not with mlab, returning both coherence and
+# TODO: Should do this properly, ie not with mlab, returning both coherence and
 #      the complex coherence spectra, then supporting magnitude squared
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...
 
@@ -74,7 +72,6 @@ def coherence_mlab(data, sample_rate, nfft=256):
     _, nsvar, nnode, nmode = data.shape
     # (frequency, nodes, nodes, state-variables, modes)
     coh_shape = nfft/2 + 1, nnode, nnode, nsvar, nmode
-    LOG.info("coh shape will be: %s" % (coh_shape, ))
     coh = numpy.zeros(coh_shape)
     for mode in range(nmode):
         for var in range(nsvar):
@@ -138,10 +135,10 @@ class NodeCoherence(HasTraits):
         # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
         srate = self.time_series.sample_rate
         coh, freq = coherence(self.time_series.data, srate, nfft=self.nfft)
-        LOG.debug("coherence")
-        LOG.debug(narray_describe(coh))
-        LOG.debug("freq")
-        LOG.debug(narray_describe(freq))
+        self.log.debug("coherence")
+        self.log.debug(narray_describe(coh))
+        self.log.debug("freq")
+        self.log.debug(narray_describe(freq))
 
         spec = spectral.CoherenceSpectrum(
             source=self.time_series,

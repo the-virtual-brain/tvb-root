@@ -43,15 +43,12 @@ import numpy
 import itertools
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator.common import get_logger
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
-
-LOG = get_logger(__name__)
 
 MODEL_CLASSES = models.Model.get_known_subclasses().values()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
@@ -181,4 +178,3 @@ class TestSimulator(BaseTestCase):
         result = test_simulator.run_simulation(simulation_length=2)
 
         assert len(test_simulator.monitors) == len(result)
-        LOG.debug("Surface simulation finished for defaultConnectivity= %s" % str(default_connectivity))

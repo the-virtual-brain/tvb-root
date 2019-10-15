@@ -42,13 +42,10 @@ from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.simulator import monitors, models, coupling, integrators, noise, simulator
-from tvb.basic.logger.builder import get_logger
 from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import SensorsInternal
-
-LOG = get_logger(__name__)
 
 
 class TestMonitors(BaseTestCase):

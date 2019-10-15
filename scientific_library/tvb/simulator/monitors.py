@@ -53,38 +53,31 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 .. moduleauthor:: Jan Fousek <izaak@mail.muni.cz>
 
 """
-import abc
 
+import abc
 import numpy
-from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion,
-    TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface)
-from tvb.simulator.common import get_logger
+from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
+                                       TimeSeriesSurface)
 from tvb.simulator import noise
 import tvb.datatypes.sensors as sensors_module
 from tvb.datatypes.sensors import SensorsEEG
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.projections import (ProjectionMatrix,
-    ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG)
+from tvb.datatypes.projections import (ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG,
+                                       ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import iround, numpy_add_at
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-
-LOG = get_logger(__name__)
 
 
 
 class Monitor(HasTraits):
     """
     Abstract base class for monitor implementations.
-
     """
 
-    # list of class names not shown in UI
-    _base_classes = ['Monitor', 'Projection', 'ProgressLogger']
-
     period = Float(
-        label="Sampling period (ms)", # order = 10
-        default=0.9765625, #ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
+        label="Sampling period (ms)",  # order = 10
+        default=0.9765625,  # ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
         doc="""Sampling period in milliseconds, must be an integral multiple
         of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;  
         1024 Hz => 0.9765625 ms ; 512 Hz => 1.953125 ms.""")
@@ -96,7 +89,6 @@ class Monitor(HasTraits):
              "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
              "V+W, and W is selected, and this monitor should record W, then the correct index is 0."),
         required=False)
-        #order = -1
 
     istep = None
     dt = None
@@ -186,7 +178,7 @@ class Raw(Monitor):
 
     def config_for_sim(self, simulator):
         if self.period != simulator.integrator.dt:
-            LOG.debug('Raw period not equal to integration time step, overriding')
+            self.log.debug('Raw period not equal to integration time step, overriding')
         self.period = simulator.integrator.dt
         super(Raw, self).config_for_sim(simulator)
         self.istep = 1
@@ -285,17 +277,17 @@ class SpatialAverage(Monitor):
                     "contiguous set of indices starting from zero.")
             raise Exception(msg)
 
-        LOG.debug("spatial_mask")
-        LOG.debug(narray_describe(self.spatial_mask))
+        self.log.debug("spatial_mask")
+        self.log.debug(narray_describe(self.spatial_mask))
         spatial_sum = numpy.zeros((number_of_nodes, number_of_areas))
         spatial_sum[numpy.arange(number_of_nodes), self.spatial_mask] = 1
         spatial_sum = spatial_sum.T
-        LOG.debug("spatial_sum")
-        LOG.debug(narray_describe(spatial_sum))
+        self.log.debug("spatial_sum")
+        self.log.debug(narray_describe(spatial_sum))
         nodes_per_area = numpy.sum(spatial_sum, axis=1)[:, numpy.newaxis]
         self.spatial_mean = spatial_sum / nodes_per_area
-        LOG.debug("spatial_mean")
-        LOG.debug(narray_describe(self.spatial_mean))
+        self.log.debug("spatial_mean")
+        self.log.debug(narray_describe(self.spatial_mean))
 
 
     def sample(self, step, state):
@@ -355,7 +347,7 @@ class TemporalAverage(Monitor):
         stock_size = (self.istep, self.voi.shape[0],
                       simulator.number_of_nodes,
                       simulator.model.number_of_modes)
-        LOG.debug("Temporal average stock_size is %s" % (str(stock_size), ))
+        self.log.debug("Temporal average stock_size is %s" % (str(stock_size), ))
         self._stock = numpy.zeros(stock_size)
 
 
@@ -467,7 +459,7 @@ class Projection(Monitor):
             else:
                 self.rmap = self.region_mapping
 
-            LOG.debug('Projection used in region sim has %d non-cortical regions', non_cortical_indices.size)
+            self.log.debug('Projection used in region sim has %d non-cortical regions', non_cortical_indices.size)
 
         have_subcortical = len(non_cortical_indices) > 0
 
@@ -479,14 +471,14 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if not hasattr(self, 'projection'):
-            LOG.debug('Precomputed projection not unavailable using analytic approximation.')
+            self.log.debug('Precomputed projection not unavailable using analytic approximation.')
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
         if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy_add_at(gain.T, self.rmap, self.gain.T)
-            LOG.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
+            self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
         # append analytic sub-cortical to lead field
@@ -494,24 +486,24 @@ class Projection(Monitor):
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
             self.gain = numpy.hstack((self.gain, self.analytic(*src)))
-            LOG.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
+            self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
             mask_unusable = ~self.sensors.usable
             self.gain[mask_unusable] = 0.0
-            LOG.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
+            self.log.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
         nan_mask = numpy.isfinite(self.gain).all(axis=1)
         self.gain[~nan_mask] = 0.0
-        LOG.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
+        self.log.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
-        LOG.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
+        self.log.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
-        LOG.info('Projection configured gain shape %s', self.gain.shape)
+        self.log.info('Projection configured gain shape %s', self.gain.shape)
 
 
     def configure(self, *args, **kwargs):
@@ -841,7 +833,7 @@ class Bold(Monitor):
         stock_time_max    = magic_number/1000.0                                # [s]
         stock_time_step   = stock_time_max / self._stock_steps                 # [s]
         self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
-        LOG.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
+        self.log.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
         #Compute the HRF kernel
         G = self.hrf_kernel.evaluate(self._stock_time)
         #Reverse it, need it into the past for matrix-multiply of stock
@@ -850,7 +842,7 @@ class Bold(Monitor):
         #Interim stock configuration
         self._interim_period = 1.0 / self._stock_sample_rate #period in ms
         self._interim_istep = int(round(self._interim_period / self.dt)) # interim period in integration time steps
-        LOG.debug('Bold HRF shape %s, interim period & istep %d & %d',
+        self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
                   self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
     def config_for_sim(self, simulator):
@@ -858,10 +850,10 @@ class Bold(Monitor):
         self.compute_hrf()
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
-        LOG.debug("BOLD inner buffer %s %.2f MB" % (
+        self.log.debug("BOLD inner buffer %s %.2f MB" % (
             self._interim_stock.shape, self._interim_stock.nbytes/2**20))
         self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
-        LOG.debug("BOLD outer buffer %s %.2f MB" % (
+        self.log.debug("BOLD outer buffer %s %.2f MB" % (
             self._stock.shape, self._stock.nbytes/2**20))
 
 
@@ -921,7 +913,6 @@ class ProgressLogger(Monitor):
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)
-        self.logger = get_logger('Sim Progress')
 
     def config_for_sim(self, simulator):
         self._dt = simulator.integrator.dt
@@ -933,7 +924,7 @@ class ProgressLogger(Monitor):
         except:
             self._last_step = step
         if (step - self._last_step) % self._istep == 0:
-            self.logger.info('step %d time %.4f s', step, step * self._dt / 1e3)
+            self.log.info('step %d time %.4f s', step, step * self._dt / 1e3)
 
     def sample(self, step, state):
         raise NotImplementedError

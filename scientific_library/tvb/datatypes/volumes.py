@@ -35,11 +35,7 @@ The Volume datatypes.
 
 """
 
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
-
-LOG = get_logger(__name__)
 
 
 class Volume(HasTraits):
@@ -47,7 +43,7 @@ class Volume(HasTraits):
     Data defined on a regular grid in three dimensions.
     """
     origin = NArray(label="Volume origin coordinates")
-    voxel_size = NArray(label="Voxel size") # need a triplet, xyz
+    voxel_size = NArray(label="Voxel size")  # need a triplet, xyz
     voxel_unit = Attr(str, label="Voxel Measure Unit", default="mm")
 
     def summary_info(self):
@@ -57,4 +53,3 @@ class Volume(HasTraits):
             "Voxel size": self.voxel_size,
             "Units": self.voxel_unit
         }
-

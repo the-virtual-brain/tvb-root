@@ -43,10 +43,6 @@ class BaseTimeseriesMetricAlgorithm(HasTraits):
     Metric means an algorithm computing a single value for an entire TimeSeries.
 
     """
-    ### Make sure this "abstract" class does not get listed in UI.
-    _base_classes = ['BaseTimeseriesMetricAlgorithm']
-
-    accept_filter = None
 
     time_series = Attr(
         field_type=time_series_module.TimeSeries,
@@ -70,7 +66,6 @@ class BaseTimeseriesMetricAlgorithm(HasTraits):
         use the last segment to compute the metric. It is only used when
         the start point is larger than the time-series length.""")
 
-
     def evaluate(self):
         """
         This method needs to be implemented in each subclass.
@@ -79,4 +74,3 @@ class BaseTimeseriesMetricAlgorithm(HasTraits):
         :return: single numeric value or a dictionary (displayLabel: numeric value) to be persisted.
         """
         raise Exception("Every metric algorithm should implement an 'evaluate' method that returns the metric result.")
-

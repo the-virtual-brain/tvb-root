@@ -35,20 +35,15 @@ It is private only to shield public usage of the imports and logger.
 import sys
 import uuid
 import numpy
-import logging
 from six import add_metaclass
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
-from .ex import TraitAttributeError, TraitTypeError, TraitValueError, TraitError
+from .ex import TraitAttributeError, TraitTypeError, TraitError
+from tvb.basic.logger.builder import get_logger
 
 if sys.version_info[0] == 3:
     import typing
-
-# a logger for the whole traits system
-log = logging.getLogger('tvb.traits')
-
-# once in python > 3.6 simplify the name book keeping with __set_name__
 
 
 
@@ -185,6 +180,8 @@ class HasTraits(object):
         nor should any other code. They should not alter behaviour
         They should describe the instance for the user
         """
+
+        self.log = get_logger(self.__class__.__module__)
 
 
     def __str__(self):

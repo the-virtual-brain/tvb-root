@@ -48,13 +48,10 @@ Proxy synchrony (S) : the reciprocal of mean spatial variance across time.
 .. moduleauthor:: Paula Sanz Leon <paula.sanz-leon@univ-amu.fr>
 
 """
+
 import numpy
-
 import tvb.analyzers.metrics_base as metrics_base
-from tvb.basic.logger.builder import get_logger
 
-
-LOG = get_logger(__name__)
 
 
 def remove_mean(x, axis):
@@ -95,21 +92,19 @@ class ProxyMetastabilitySynchrony(metrics_base.BaseTimeseriesMetricAlgorithm):
         """
         Compute the zero centered variance of node variances for the time_series.
         """
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
-        
+
         shape = self.time_series.data.shape
         tpts = shape[0]
 
         if self.start_point != 0.0:
             start_tpt = self.start_point / self.time_series.sample_period
-            LOG.debug("Will discard: %s time points" % start_tpt)
-        else: 
+            self.log.debug("Will discard: %s time points" % start_tpt)
+        else:
             start_tpt = 0
 
         if start_tpt > tpts:
-            LOG.warning("The time-series is shorter than the starting point")
-            LOG.debug("Will divide the time-series into %d segments." % self.segment)
+            self.log.warning("The time-series is shorter than the starting point")
+            self.log.debug("Will divide the time-series into %d segments." % self.segment)
             # Lazy strategy
             start_tpt = int((self.segment - 1) * (tpts // self.segment))
 
@@ -117,12 +112,11 @@ class ProxyMetastabilitySynchrony(metrics_base.BaseTimeseriesMetricAlgorithm):
         time_series_diffs = remove_mean(self.time_series.data[start_tpt:, :], axis=2)
         v_data = abs(time_series_diffs).mean(axis=2)
 
-        #handle state-variables & modes
+        # handle state-variables & modes
         cat_tpts = v_data.shape[0] * shape[1] * shape[3]
-        v_data = v_data.reshape((cat_tpts, ), order="F")
-        #std across time-points
+        v_data = v_data.reshape((cat_tpts,), order="F")
+        # std across time-points
         metastability = v_data.std(axis=0)
         synchrony = 1. / v_data.mean(axis=0)
         return {"Metastability": metastability,
                 "Synchrony": synchrony}
-

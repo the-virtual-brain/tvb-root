@@ -39,11 +39,9 @@ The Connectivity datatype.
 import numpy
 import scipy.stats
 from copy import copy
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
 
-LOG = get_logger(__name__)
 
 
 class Connectivity(HasTraits):
@@ -280,7 +278,7 @@ class Connectivity(HasTraits):
         #      necessary for delays to never be stored but always calculated
         #      from tract-lengths and speed...
         if self.speed is None:  # TODO: this is a hack fix...
-            LOG.warning("Connectivity.speed attribute not initialized properly, setting it to 3.0...")
+            self.log.warning("Connectivity.speed attribute not initialized properly, setting it to 3.0...")
             self.speed = numpy.array([3.0])  # F£$%^&*!!!#self.trait["speed"].value
 
         # NOTE: Because of the conduction_speed hack for UI this must be evaluated here, even if delays
@@ -332,7 +330,6 @@ class Connectivity(HasTraits):
         """
         # Express delays in integration steps
         self.idelays = numpy.rint(self.delays / dt).astype(numpy.int32)
-        # self.trait["idelays"].log_debug(owner=self.__class__.__name__)
 
     def compute_tract_lengths(self):
         """
@@ -423,7 +420,7 @@ class Connectivity(HasTraits):
         #      'scaling' and 'normalisation'. Normalisation implies that the norm
         #      of the samples is equal to 1, while here it is only scaling by a factor.
 
-        LOG.info("Starting to normalize to mode: %s" % str(mode))
+        self.log.info("Starting to normalize to mode: %s" % str(mode))
 
         normalisation_factor = None
         if mode in ("tract", "edge"):
@@ -435,11 +432,11 @@ class Connectivity(HasTraits):
         elif mode in (None, "none"):
             normalisation_factor = 1.0
         else:
-            LOG.error("Bad weights normalisation mode, must be one of:")
-            LOG.error("('tract', 'edge', 'region', 'node', 'none')")
+            self.log.error("Bad weights normalisation mode, must be one of:")
+            self.log.error("('tract', 'edge', 'region', 'node', 'none')")
             raise Exception("Bad weights normalisation mode")
 
-        LOG.debug("Normalization factor is: %s" % str(normalisation_factor))
+        self.log.debug("Normalization factor is: %s" % str(normalisation_factor))
         mask = self.weights != 0.0
         result = copy(self.weights)
         result[mask] = self.weights[mask] / normalisation_factor
@@ -449,7 +446,7 @@ class Connectivity(HasTraits):
         """
         Transforms the weights matrix into a binary (unweighted) matrix
         """
-        LOG.info("Transforming weighted matrix into unweighted matrix")
+        self.log.info("Transforming weighted matrix into unweighted matrix")
 
         result = copy(self.weights)
         result = numpy.where(result > 0, 1, result)
@@ -666,7 +663,7 @@ class Connectivity(HasTraits):
         elif motif == 'linear' and not undirected:
             self.motif_linear_directed(number_of_regions=number_of_regions)
         else:
-            LOG.info("Generating all-to-all connectivity \\")
+            self.log.info("Generating all-to-all connectivity \\")
             self.motif_all_to_all(number_of_regions=number_of_regions)
 
         # centres
@@ -681,7 +678,7 @@ class Connectivity(HasTraits):
         Assumes weights already exists
         """
 
-        LOG.info("Create labels: %s" % str(mode))
+        self.log.info("Create labels: %s" % str(mode))
 
         if mode in ("numeric", "num"):
             region_labels = [n for n in range(self.number_of_regions)]
@@ -691,11 +688,11 @@ class Connectivity(HasTraits):
                 self.region_labels = numpy.array(list(map(chr, list(range(65, 65 + self.number_of_regions))))).astype(
                     str)
             else:
-                LOG.info("I'm too lazy to create several strategies to label regions. \\")
-                LOG.info("Please choose mode 'numeric' or set your own labels\\")
+                self.log.info("I'm too lazy to create several strategies to label regions. \\")
+                self.log.info("Please choose mode 'numeric' or set your own labels\\")
         else:
-            LOG.error("Bad region labels mode, must be one of:")
-            LOG.error("('numeric', 'num', 'alphabetic', 'alpha')")
+            self.log.error("Bad region labels mode, must be one of:")
+            self.log.error("('numeric', 'num', 'alphabetic', 'alpha')")
             raise Exception("Bad region labels mode")
 
     def unmapped_indices(self, region_mapping):

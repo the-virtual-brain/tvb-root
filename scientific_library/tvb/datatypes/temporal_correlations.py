@@ -37,10 +37,7 @@ The Temporal Correlation datatypes.
 """
 
 import tvb.datatypes.time_series as time_series
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, narray_summary_info
-
-LOG = get_logger(__name__)
 
 
 class CrossCorrelation(HasTraits):
@@ -63,13 +60,6 @@ class CrossCorrelation(HasTraits):
         default=("Offsets", "Node", "Node", "State Variable", "Mode"),
         doc="""List of strings representing names of each data dimension"""
     )
-
-    def configure(self):
-        """After populating few fields, compute the rest of the fields"""
-        # Do not call super, because that accesses data not-chunked
-        self.nr_dimensions = len(self.read_data_shape())
-        for i in range(self.nr_dimensions):
-            setattr(self, 'length_%dd' % (i + 1), int(self.read_data_shape()[i]))
 
     def summary_info(self):
         """

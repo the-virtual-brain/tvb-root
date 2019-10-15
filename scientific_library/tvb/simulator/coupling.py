@@ -83,9 +83,6 @@ following:
 """
 import numpy
 from tvb.basic.neotraits.api import HasTraits, NArray, Attr, Range
-from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
 from .history import SparseHistory
 from .common import simple_gen_astr
 
@@ -119,15 +116,14 @@ class Coupling(HasTraits):
     .. automethod:: PreSigmoidal.__call__
 
     """
-    _base_classes = ["Coupling", 'SparseCoupling']
 
     def __call__(self, step, history):
         g_ij = history.es_weights
         x_i, x_j = history.query(step)
-        x_i = x_i[numpy.newaxis].transpose((2, 1, 0, 3)) # (to, ncv, from, m)
+        x_i = x_i[numpy.newaxis].transpose((2, 1, 0, 3))  # (to, ncv, from, m)
         pre = self.pre(x_i, x_j)
-        sum = (g_ij * pre).sum(axis=2) # (to, ncv, m)
-        return self.post(sum).transpose((1, 0, 2)) # (ncv, to, m)
+        sum = (g_ij * pre).sum(axis=2)  # (to, ncv, m)
+        return self.post(sum).transpose((1, 0, 2))  # (ncv, to, m)
 
     def pre(self, x_i, x_j):
         return x_j
@@ -149,7 +145,7 @@ class SparseCoupling(Coupling):
             rows = numpy.r_[-1, nnz_row_el_idx]
             self._cached_lri, = numpy.argwhere(numpy.diff(rows)).T
             self._cached_nzr = numpy.unique(nnz_row_el_idx)
-            LOG.debug('lri.size %d nzr.size %d', self._cached_lri.size, self._cached_nzr.size)
+            self.log.debug('lri.size %d nzr.size %d', self._cached_lri.size, self._cached_nzr.size)
         return self._cached_lri, self._cached_nzr
 
     def __call__(self, step, history):

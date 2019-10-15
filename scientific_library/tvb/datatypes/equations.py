@@ -38,12 +38,10 @@ The Equation datatypes.
 import json
 import numpy
 import numexpr
-from tvb.basic.logger.builder import get_logger
 from scipy.special import gamma as sp_gamma
 from tvb.basic.neotraits.api import HasTraits, Attr, Final
 
 
-LOG = get_logger(__name__)
 # In how many points should the equation be evaluated for the plot. Increasing this will
 # give smoother results at the cost of some performance
 DEFAULT_PLOT_GRANULARITY = 1024
@@ -53,17 +51,7 @@ DEFAULT_PLOT_GRANULARITY = 1024
 # todo: handle the MapAsJson functionality
 
 class Equation(HasTraits):
-    "Base class for Equation data types."
-
-    # data
-
-    _base_classes = ['Equation', 'FiniteSupportEquation', "DiscreteEquation",
-                     "TemporalApplicableEquation", "SpatialApplicableEquation", "HRFKernelEquation",
-                     # TODO: There should be a refactor of Coupling which may make these unnecessary
-                     'Coupling', 'CouplingData', 'CouplingScientific', 'CouplingFramework',
-                     'LinearCoupling', 'LinearCouplingData', 'LinearCouplingScientific', 'LinearCouplingFramework',
-                     'SigmoidalCoupling', 'SigmoidalCouplingData', 'SigmoidalCouplingScientific',
-                     'SigmoidalCouplingFramework']
+    """Base class for Equation data types."""
 
     equation = Attr(
         field_type=str,
@@ -71,7 +59,6 @@ class Equation(HasTraits):
         doc=""" the equation as it should be interpreted by numexpr""")
 
     # todo: transform these parameters into plain declarative attrs
-
     parameters = Attr(
         field_type=dict,
         label="Parameters in a dictionary.",
@@ -80,7 +67,6 @@ class Equation(HasTraits):
                 should be able to take defaults and sensible ranges from any
                 traited information that was provided.""")
 
-    # sci
 
     def summary_info(self):
         """

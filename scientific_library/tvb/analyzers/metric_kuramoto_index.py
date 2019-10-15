@@ -38,10 +38,7 @@ Filler analyzer: Takes a TimeSeries object and returns a Float.
 import cmath
 import numpy
 import tvb.analyzers.metrics_base as metrics_base
-from tvb.basic.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 
-LOG = get_logger(__name__)
 
 
 
@@ -76,28 +73,22 @@ class KuramotoIndex(metrics_base.BaseTimeseriesMetricAlgorithm):
     analyzer.
     
     """
-    accept_filter = FilterChain(operations=["==", ">="], values=[4, 2],
-                                fields=[FilterChain.datatype + '._nr_dimensions', FilterChain.datatype + '._length_2d'])
-
 
     def evaluate(self):
         """
         Kuramoto Synchronization Index
         """
 
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
-
         if self.time_series.data.shape[1] < 2:
             msg = " The number of state variables should be at least 2."
-            LOG.error(msg)
+            self.log.error(msg)
             raise Exception(msg)
                 
-        #TODO: Should be computed for each possible combination of var, mode
+        # TODO: Should be computed for each possible combination of var, mode
         #      for var, mode in itertools.product(range(self.time_series.data.shape[1]), 
         #                                         range(self.time_series.data.shape[3])):
         
-        #TODO: Generalise. The Kuramoto order parameter is computed over sliding 
+        # TODO: Generalise. The Kuramoto order parameter is computed over sliding
         #      time windows and then normalised    
 
         theta_sum = numpy.sum(numpy.exp(0.0 + 1j * (numpy.vectorize(cmath.polar)

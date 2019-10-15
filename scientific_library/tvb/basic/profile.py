@@ -46,7 +46,7 @@ from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 
 
-class TvbProfile():
+class TvbProfile(object):
     """
     ENUM-like class with current TVB profile and accepted values.
     """
@@ -70,17 +70,16 @@ class TvbProfile():
     current = BaseSettingsProfile(False)
     env = Environment()
 
-
     @classmethod
     def set_profile(cls, selected_profile, in_operation=False, run_init=True):
         """
         Sets TVB profile and do related initializations.
         """
 
-        ### Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
-        ### We should make sure UTF-8 gets set before reading from any TVB files
-        ### e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
-        ### most of the comments in the simulator are having pieces outside of ascii coverage
+        # Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
+        # We should make sure UTF-8 gets set before reading from any TVB files
+        # e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
+        # most of the comments in the simulator are having pieces outside of ascii coverage
         if not cls.env.is_distribution() and sys.getdefaultencoding().lower() != 'utf-8':
             old_out = sys.stdout
             if sys.version_info[0] < 3:
@@ -94,7 +93,6 @@ class TvbProfile():
         if selected_profile is not None:
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
-
 
     @classmethod
     def _build_profile_class(cls, selected_profile, in_operation=False, run_init=True):
@@ -125,7 +123,6 @@ class TvbProfile():
             msg %= (selected_profile, cls.ALL)
             raise Exception(msg)
 
-
     @classmethod
     def _load_framework_profiles(cls, new_profile):
 
@@ -147,7 +144,6 @@ class TvbProfile():
             except ImportError:
                 pass
 
-
     @staticmethod
     def is_library_mode(new_profile=None):
 
@@ -162,7 +158,6 @@ class TvbProfile():
             TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
         return result
-
 
     @staticmethod
     def is_first_run():

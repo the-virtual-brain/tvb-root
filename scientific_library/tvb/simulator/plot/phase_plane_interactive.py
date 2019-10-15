@@ -388,21 +388,14 @@ class PhasePlaneInteractive(HasTraits):
             if param_range is None:
                 continue
             offset += 0.035
-            sax = self.ipp_fig.add_axes([0.825, 0.865 - offset, 0.125, 0.025], 
-                                         facecolor=AXCOLOUR)
-            default_param = default_param[0]
-            param_range = self.model.trait[param].trait.inits.kwd.get('range', None)
-            if param_range:
-                self.param_sliders[param] = widgets.Slider(sax, param,
-                                                   param_range.lo, 
-                                                   param_range.hi,
-                                                   valinit=default_param)
-            else:
-                self.param_sliders[param] = widgets.Slider(sax, param, -1.0, 1.0, 
-                                                   valinit=default_param)
-
-            self.param_sliders[param].on_changed(self.update_parameters)
-
+            sax = self.ipp_fig.add_axes([0.825, 0.865 - offset, 0.125, 0.025],
+                                        facecolor=AXCOLOUR)
+            param_value = getattr(self.model, param_name)[0]
+            self.param_sliders[param_name] = widgets.Slider(sax, param_name,
+                                                                param_range.lo,
+                                                                param_range.hi,
+                                                                valinit=param_value)
+            self.param_sliders[param_name].on_changed(self.update_parameters)
 
     def add_noise_slider(self):
         """

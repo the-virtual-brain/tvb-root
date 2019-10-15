@@ -37,12 +37,8 @@ The Mode Decomposition datatypes.
 """
 
 import numpy
-from tvb.basic.logger.builder import get_logger
 import tvb.datatypes.time_series as time_series
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
-
-
-LOG = get_logger(__name__)
 
 
 class PrincipalComponents(HasTraits):
@@ -69,24 +65,6 @@ class PrincipalComponents(HasTraits):
     component_time_series = NArray(label="Component time series")
 
     normalised_component_time_series = NArray(label="Normalised component time series")
-
-
-    def configure(self):
-        """
-        Invoke the compute methods for computable attributes that haven't been
-        set during initialization.
-        """
-        super(PrincipalComponents, self).configure()
-
-        if self.trait.use_storage is False and sum(self.get_data_shape('weights')) != 0:
-            if self.norm_source.size == 0:
-                self.compute_norm_source()
-
-            if self.component_time_series.size == 0:
-                self.compute_component_time_series()
-
-            if self.normalised_component_time_series.size == 0:
-                self.compute_normalised_component_time_series()
 
     def summary_info(self):
         """

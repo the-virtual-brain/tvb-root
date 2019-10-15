@@ -36,14 +36,9 @@ The Pattern datatypes.
 
 """
 
-
 import numpy
 from tvb.datatypes import surfaces, volumes, connectivity, equations
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, NArray, Attr
-
-
-LOG = get_logger(__name__)
 
 
 class SpatialPattern(HasTraits):
@@ -93,7 +88,7 @@ class SpatioTemporalPattern(SpatialPattern):
     """
 
     temporal = Attr(field_type=equations.TemporalApplicableEquation, label="Temporal Equation")
-    #space must be shape (x, 1); time must be shape (1, t)
+    # space must be shape (x, 1); time must be shape (1, t)
     time = None
     _temporal_pattern = None
 
@@ -147,7 +142,7 @@ class SpatioTemporalPattern(SpatialPattern):
         elif temporal_indices is None and spatial_indices is not None:
             pattern = self._spatial_pattern[spatial_indices, 0] * self._temporal_pattern
         else:
-            LOG.error("%s: Well, that shouldn't be possible..." % repr(self))
+            self.log.error("%s: Well, that shouldn't be possible..." % repr(self))
         return pattern
 
 
@@ -186,7 +181,7 @@ class StimuliRegion(SpatioTemporalPattern):
         It no needs to be used in stimulus viewer also.
         """
         if region_mapping is not None:
-            #TODO: smooth at surface region boundaries
+            # TODO: smooth at surface region boundaries
             distance = self.weight_array[region_mapping, :]
         else:
             distance = self.weight_array

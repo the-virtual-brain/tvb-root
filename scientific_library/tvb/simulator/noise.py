@@ -39,13 +39,11 @@ Specific noises inherit from the abstract class Noise
 
 """
 import abc
-
 import numpy
 from tvb.datatypes import equations
-from .common import get_logger, simple_gen_astr
+from .common import simple_gen_astr
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float
 
-LOG = get_logger(__name__)
 
 
 class Noise(HasTraits):
@@ -132,7 +130,7 @@ class Noise(HasTraits):
     def configure_white(self, dt, shape=None):
         """Set the time step (dt) of noise or integration time"""
         self.dt = dt
-        LOG.info('White noise configured with dt=%g', self.dt)
+        self.log.info('White noise configured with dt=%g', self.dt)
 
     def configure_coloured(self, dt, shape):
         r"""
@@ -174,7 +172,7 @@ class Noise(HasTraits):
         self._sqrt_1_E2 = numpy.sqrt((1.0 - self._E ** 2))
         self._eta = self.random_stream.normal(size=shape)
         self._dt_sqrt_lambda = self.dt * numpy.sqrt(1.0 / self.ntau)
-        LOG.info('Colored noise configured with dt=%g E=%g sqrt_1_E2=%g eta=%g & dt_sqrt_lambda=%g',
+        self.log.info('Colored noise configured with dt=%g E=%g sqrt_1_E2=%g eta=%g & dt_sqrt_lambda=%g',
                   self.dt, self._E, self._sqrt_1_E2, self._eta, self._dt_sqrt_lambda)
 
     def generate(self, shape, lo=-1.0, hi=1.0):

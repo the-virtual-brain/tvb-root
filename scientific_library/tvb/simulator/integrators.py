@@ -71,11 +71,11 @@ class Integrator(HasTraits):
     """
 
     dt = Float(
-        label = "Integration-step size (ms)", 
-        default =  0.01220703125, #0.015625,
+        label="Integration-step size (ms)",
+        default=0.01220703125, #0.015625,
         #range = basic.Range(lo= 0.0048828125, hi=0.244140625, step= 0.1, base=2.)  mh: was commented
-        required = True,
-        doc = """The step size used by the integration routine in ms. This
+        required=True,
+        doc="""The step size used by the integration routine in ms. This
         should be chosen to be small enough for the integration to be
         numerically stable. It is also necessary to consider the desired sample
         period of the Monitors, as they are restricted to being integral
@@ -85,6 +85,16 @@ class Integrator(HasTraits):
         powers of 2 from 128 to 4096Hz."""
     )
 
+    bounded_state_variable_indices = NArray(
+        dtype=int,
+        label="indices of the state variables to be bounded by the integrators "
+              "within the boundaries in the boundaries' values array",
+        required=False)
+
+    state_variable_boundaries = NArray(
+        label="The boundary values of the state variables",
+        required=False)
+
     clamped_state_variable_indices = NArray(
         dtype=int,
         label="indices of the state variables to be clamped by the integrators to the values in the clamped_values array",
@@ -93,7 +103,6 @@ class Integrator(HasTraits):
     clamped_state_variable_values = NArray(
         label="The values of the state variables which are clamped ",
         required=False)
-        # order=-1)
 
 
     @abc.abstractmethod
@@ -105,9 +114,17 @@ class Integrator(HasTraits):
 
         """
 
+    def bound_state(self, X):
+        for sv_ind, sv_bounds in \
+                zip(self.bounded_state_variable_indices,
+                    self.state_variable_boundaries):
+            if sv_bounds[0] is not None:
+                X[sv_ind][X[sv_ind] < sv_bounds[0]] = sv_bounds[0]
+            if sv_bounds[1] is not None:
+                X[sv_ind][X[sv_ind] > sv_bounds[1]] = sv_bounds[1]
+
     def clamp_state(self, X):
-        if self.clamped_state_variable_values is not None:
-            X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
+        X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
 
     def __str__(self):
         return simple_gen_astr(self, 'dt')
@@ -175,13 +192,19 @@ class HeunDeterministic(Integrator):
         """
         #import pdb; pdb.set_trace()
         m_dx_tn = dfun(X, coupling, local_coupling)
-        inter = X + self.dt * (m_dx_tn  + stimulus)
-        self.clamp_state(inter)
+        inter = X + self.dt * (m_dx_tn + stimulus)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(inter)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + self.dt * stimulus
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 
@@ -219,12 +242,19 @@ class HeunStochastic(IntegratorStochastic):
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
-        self.clamp_state(inter)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(inter)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + noise + self.dt * stimulus
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
+
         return X_next
 
 
@@ -252,7 +282,10 @@ class EulerDeterministic(Integrator):
         self.dX = dfun(X, coupling, local_coupling) 
 
         X_next = X + self.dt * (self.dX + stimulus)
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 
@@ -286,7 +319,10 @@ class EulerStochastic(IntegratorStochastic):
         dX = dfun(X, coupling, local_coupling) * self.dt 
         noise_gfun = self.noise.gfun(X)
         X_next = X + dX + noise_gfun * noise + self.dt * stimulus
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 
@@ -324,19 +360,31 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
         k1 = dfun(X, coupling, local_coupling)
         inter_k1 = X + dt2 * k1
-        self.clamp_state(inter_k1)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(inter_k1)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(inter_k1)
         k2 = dfun(inter_k1, coupling, local_coupling)
         inter_k2 = X + dt2 * k2
-        self.clamp_state(inter_k2)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(inter_k2)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(inter_k2)
         k3 = dfun(inter_k2, coupling, local_coupling)
         inter_k3 = X + dt * k3
-        self.clamp_state(inter_k3)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(inter_k3)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(inter_k3)
         k4 = dfun(inter_k3, coupling, local_coupling)
 
         dX = dt6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
         X_next = X + dX + self.dt * stimulus
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 
@@ -399,7 +447,10 @@ class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
@@ -407,7 +458,10 @@ class SciPySDE(SciPyODEBase):
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
-        self.clamp_state(X_next)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 class VODE(SciPyODE, Integrator):

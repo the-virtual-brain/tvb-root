@@ -33,11 +33,9 @@ module docstring
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
-LOG = get_logger(__name__)
 TRACTS_CHUNK_SIZE = 100
 
 
@@ -76,4 +74,3 @@ class Tracts(HasTraits):
     @property
     def tracts_count(self):
         return len(self.tract_start_idx) - 1
-

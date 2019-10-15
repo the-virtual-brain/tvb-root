@@ -42,10 +42,7 @@ from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface
 from tvb.datatypes.volumes import Volume
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
-LOG = get_logger(__name__)
 
 
 class RegionMapping(HasTraits):

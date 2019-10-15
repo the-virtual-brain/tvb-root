@@ -37,10 +37,6 @@ Filler analyzer: Takes a TimeSeries object and returns a Float.
 """
 
 import tvb.analyzers.metrics_base as metrics_base
-from tvb.basic.logger.builder import get_logger
-
-
-LOG = get_logger(__name__)
 
 
 
@@ -58,32 +54,28 @@ class GlobalVariance(metrics_base.BaseTimeseriesMetricAlgorithm):
     This is a crude indicator of "excitability" or oscillation amplitude of the
     models over the entire network.
     """
-    
+
     def evaluate(self):
         """
         Compute the zero centered global variance of the time_series. 
         """
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
-
 
         shape = self.time_series.data.shape
-        tpts  = shape[0]
+        tpts = shape[0]
 
         if self.start_point != 0.0:
             start_tpt = self.start_point / self.time_series.sample_period
-            LOG.debug("Will discard: %s time points" % start_tpt)
-        else: 
+            self.log.debug("Will discard: %s time points" % start_tpt)
+        else:
             start_tpt = 0
 
         if start_tpt > tpts:
-            LOG.warning("The time-series is shorter than the starting point")
-            LOG.debug("Will divide the time-series into %d segments." % self.segment)
+            self.log.warning("The time-series is shorter than the starting point")
+            self.log.debug("Will divide the time-series into %d segments." % self.segment)
             # Lazy strategy
             start_tpt = int((self.segment - 1) * (tpts // self.segment))
 
         start_tpt = int(start_tpt)
         zero_mean_data = (self.time_series.data[start_tpt:, :] - self.time_series.data[start_tpt:, :].mean(axis=0))
         global_variance = zero_mean_data.var()
-        return global_variance  
-
+        return global_variance

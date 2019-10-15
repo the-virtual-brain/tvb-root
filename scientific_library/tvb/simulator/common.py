@@ -40,26 +40,16 @@ A module of classes and functions of common use.
 import numpy
 import os
 import re
-import zipfile
+import six
 import logging
-from ..basic.logger.builder import GLOBAL_LOGGER_BUILDER
-
-# route framework imports through this module so they are more easily updated
-
-try:
-    from tvb.basic.logger.builder import get_logger
-except ImportError:
-    import logging
-    get_logger = logging.getLogger
-
-
-LOG = get_logger(__name__)
+from tvb.basic.logger.builder import GLOBAL_LOGGER_BUILDER, get_logger
 
 
 def log_debug(debug=False, timestamp=False, prefix=''):
     level_name = 'DEBUG' if debug else 'INFO'
     level = getattr(logging, level_name)
     GLOBAL_LOGGER_BUILDER.set_loggers_level(level)
+    LOG = get_logger(__name__)
     for handler in LOG.root.handlers:
         handler.setLevel(level)
         # reset formatter more friendly for console work
@@ -67,13 +57,11 @@ def log_debug(debug=False, timestamp=False, prefix=''):
             if prefix:
                 prefix += ' '
             handler.setFormatter(logging.Formatter(prefix + '%(levelname)07s  %(message)s'))
-    LOG.info('log level set to %s' % (level_name, ))
+    LOG.info('log level set to %s' % (level_name,))
 
-
-import six
 
 def astr(ary):
-    "Make short str repr of numerical value."
+    """Make short str repr of numerical value."""
     if isinstance(ary, numpy.ndarray):
         if ary.size == 1:
             val = ary[0]
@@ -92,13 +80,13 @@ def astr(ary):
         is_py_int = isinstance(val, six.integer_types)
         is_np_int = hasattr(val, 'dtype') and numpy.issubdtype(ary.dtype, numpy.integer)
         if is_py_int or is_np_int:
-            return '%d' % (val, )
+            return '%d' % (val,)
         else:
-            return '%g' % (val, )
+            return '%g' % (val,)
 
 
 def map_astr(self, names):
-    "Helper for generating a sequence of astr representation of attributes on self"
+    """Helper for generating a sequence of astr representation of attributes on self"""
     strs = []
     for name in names.split():
         strs.append(astr(getattr(self, name)))
@@ -106,10 +94,10 @@ def map_astr(self, names):
 
 
 def simple_gen_astr(self, names):
-    "Helper for generating str for object with only numerical attributes."
+    """Helper for generating str for object with only numerical attributes."""
     strs = []
-    for name, str in zip(names.split(), map_astr(self, names)):
-        strs.append('%s=%s' % (name, str))
+    for name, str_ in zip(names.split(), map_astr(self, names)):
+        strs.append('%s=%s' % (name, str_))
     clsname = self.__class__.__name__
     return '%s(%s)' % (clsname, ', '.join(strs))
 
@@ -117,8 +105,9 @@ def simple_gen_astr(self, names):
 # workaround lack of ufunc at method for older NumPy versions
 def _add_at(dest, map, src):
     for i in numpy.unique(map):
-        dest[i] += src[i==map].sum(axis=0)
+        dest[i] += src[i == map].sum(axis=0)
     return dest
+
 
 try:
     numpy_add_at = numpy.add.at
@@ -129,10 +118,12 @@ except AttributeError:
 try:
     import psutil
 except ImportError:
-    msg  = """psutil module not available: no warnings will be issued when a
+    msg = """psutil module not available: no warnings will be issued when a
     simulation may require more memory than available"""
+    LOG = get_logger(__name__)
     LOG.warning(msg)
     psutil = None
+
 
 class Struct(dict):
     """
@@ -145,7 +136,7 @@ class Struct(dict):
     >>> parameters.x_init = 6
     >>> parameters.x_init + 1
     7
-    >>> print parameters.y
+    >>> print(parameters.y)
     None
 
     note that this class returns None if the field does not exist!
@@ -154,6 +145,7 @@ class Struct(dict):
 
     def __getattr__(self, attr):
         return self.get(attr, None)
+
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
@@ -188,8 +180,8 @@ def heaviside(array):
         ret[array > 0.0] = 1.0
         return ret
 
-# FIXME: this may not work yet
-# FIXME: write a numpy array subclass that takes care of this 
+
+# FIXME: this may not work yet: write a numpy array subclass that takes care of this
 #         using indexing magic. makes our life easier.
 def unravel_history(history, horizon, step, arange=numpy.arange):
     """
@@ -207,7 +199,7 @@ def unravel_history(history, horizon, step, arange=numpy.arange):
     allt, allv, allr = list(map(arange, history.shape))
     # ISomething like(?):
     # return numpy.roll(history, step, axis=0) 
-    return history[ (allt + step) % horizon, allv, allr ]
+    return history[(allt + step) % horizon, allv, allr]
 
 
 def iround(x):
@@ -244,10 +236,10 @@ class Buffer(object):
         raise NotImplementedError
 
     def __getindex__(self, idx):
-        return self.raw[(idx + self.step)% self.horizon, :, :]
+        return self.raw[(idx + self.step) % self.horizon, :, :]
 
     def __setindex__(self, idx, rawin):
-        self.raw[(idx + self.step)% self.horizon, :, :] = rawin
+        self.raw[(idx + self.step) % self.horizon, :, :] = rawin
 
 
 def zip_directory(path, zip_file):

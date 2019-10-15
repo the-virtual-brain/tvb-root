@@ -41,9 +41,8 @@ import tvb.datatypes.spectral as spectral
 from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float, narray_describe
 from scipy import signal as sp_signal
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.logger.builder import get_logger
 
-LOG = get_logger(__name__)
+
 SUPPORTED_WINDOWING_FUNCTIONS = ("hamming", "bartlett", "blackman", "hanning")
 
 
@@ -211,8 +210,8 @@ class NodeComplexCoherence(HasTraits):
         # Apply windowing function
         if self.window_function is not None:
             if self.window_function not in SUPPORTED_WINDOWING_FUNCTIONS:
-                LOG.error("Windowing function is: %s" % self.window_function)
-                LOG.error("Must be in: %s" % str(SUPPORTED_WINDOWING_FUNCTIONS))
+                self.log.error("Windowing function is: %s" % self.window_function)
+                self.log.error("Must be in: %s" % str(SUPPORTED_WINDOWING_FUNCTIONS))
 
             window_function = eval("".join(("numpy.", self.window_function)))
             win = window_function(seg_tpts)
@@ -292,8 +291,8 @@ class NodeComplexCoherence(HasTraits):
                     temp = numpy.matrix(numpy.squeeze(cs[:, :, i, j]))
                     coh[:, :, i, j] = temp / numpy.sqrt(temp.diagonal().conj().T * temp.diagonal().T)
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(cs))
+        self.log.debug("result")
+        self.log.debug(narray_describe(cs))
         spectra = spectral.ComplexCoherenceSpectrum(source=self.time_series,
                                                     array_data=coh,
                                                     cross_spectrum=cs,
