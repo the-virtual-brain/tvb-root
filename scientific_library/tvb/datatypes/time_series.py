@@ -232,7 +232,7 @@ class TimeSeriesEEG(SensorsTSBase):
     _ui_name = "EEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsEEG)
-    labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
+    labels_ordering = List(of=basestring, default=("Time", "1", "EEG Sensor", "1"))
 
 
 class TimeSeriesMEG(SensorsTSBase):
@@ -240,7 +240,7 @@ class TimeSeriesMEG(SensorsTSBase):
     _ui_name = "MEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsMEG)
-    labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
+    labels_ordering = List(of=basestring, default=("Time", "1", "MEG Sensor", "1"))
 
 
 class TimeSeriesSEEG(SensorsTSBase):
@@ -248,7 +248,7 @@ class TimeSeriesSEEG(SensorsTSBase):
     _ui_name = "Stereo-EEG time-series"
 
     sensors = Attr(field_type=sensors.SensorsInternal)
-    labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
+    labels_ordering = List(of=basestring, default=("Time", "1", "sEEG Sensor", "1"))
 
 
 class TimeSeriesRegion(TimeSeries):
@@ -257,7 +257,7 @@ class TimeSeriesRegion(TimeSeries):
     connectivity = Attr(field_type=connectivity.Connectivity)
     region_mapping_volume = Attr(field_type=region_mapping.RegionVolumeMapping, required=False)
     region_mapping = Attr(field_type=region_mapping.RegionMapping, required=False)
-    labels_ordering = List(of=str, default=("Time", "State Variable", "Region", "Mode"))
+    labels_ordering = List(of=basestring, default=("Time", "State Variable", "Region", "Mode"))
 
     def configure(self):
         """
@@ -326,7 +326,7 @@ class TimeSeriesSurface(TimeSeries):
     """ A time-series associated with a Surface. """
     _ui_name = "Surface time-series"
     surface = Attr(field_type=surfaces.CorticalSurface)
-    labels_ordering = List(of=str, default=("Time", "State Variable", "Vertex", "Mode"))
+    labels_ordering = List(of=basestring, default=("Time", "State Variable", "Vertex", "Mode"))
     SELECTION_LIMIT = 100
 
     def get_space_labels(self):
@@ -349,7 +349,7 @@ class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
     _ui_name = "Volume time-series"
     volume = Attr(field_type=volumes.Volume)
-    labels_ordering = List(of=str, default=("Time", "X", "Y", "Z"))
+    labels_ordering = List(of=basestring, default=("Time", "X", "Y", "Z"))
 
     def summary_info(self):
         """
