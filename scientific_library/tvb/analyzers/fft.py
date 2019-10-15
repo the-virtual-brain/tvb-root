@@ -143,6 +143,7 @@ class FFT(HasTraits):
             source=self.time_series,
             segment_length=self.segment_length,
             array_data=result,
+            windowing_function=self.window_function
         )
         spectra.configure()
 
