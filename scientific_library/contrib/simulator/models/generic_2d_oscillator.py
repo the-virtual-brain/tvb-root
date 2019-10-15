@@ -38,12 +38,10 @@ A abstract 2d oscillator model.
 # Third party python libraries
 import numpy
 
-#The Virtual Brain
+# The Virtual Brain
 from tvb.simulator.common import psutil, get_logger
 LOG = get_logger(__name__)
-
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.types_basic as basic 
+from tvb.basic.neotraits.api import NArray, Range, Final
 import tvb.simulator.models as models
 
 
@@ -78,89 +76,92 @@ class Generic2dOscillator(models.Model):
     .. automethod:: Generic2dOscillator.dfun
     
     """
-    
+
     _ui_name = "Generic 2d Oscillator"
     ui_configurable_parameters = ['tau', 'a', 'b', 'omega', 'upsilon', 'gamma', 'eta']
-    #Define traited attributes for this model, these represent possible kwargs.
-    tau = arrays.FloatArray(
-        label = ":math:`\\tau`",
-        default = numpy.array([1.25]),
-        range = Range(lo = 0.01, hi = 5.0, step = 0.01),
-        doc = """A time-scale separation between the fast, :math:`V`, and slow,
+    # Define traited attributes for this model, these represent possible kwargs.
+    tau = NArray(
+        label=":math:`\\tau`",
+        default=numpy.array([1.25]),
+        domain=Range(lo=0.01, hi=5.0, step=0.01),
+        doc="""A time-scale separation between the fast, :math:`V`, and slow,
             :math:`W`, state-variables of the model.""")
-    
-    a = arrays.FloatArray(
-        label = ":math:`a`",
-        default = numpy.array([1.05]),
-        range = basic.Range(lo = -1.0, hi = 1.5, step = 0.01),
-        doc = """ratio a/b gives W-nullcline slope""")
-    
-    b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([0.2]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """dimensionless parameter""")
-    
-    omega = arrays.FloatArray(
-        label = ":math:`\\omega`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """dimensionless parameter""")
-    
-    upsilon = arrays.FloatArray(
-        label = ":math:`\\upsilon`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """dimensionless parameter""")
-    
-    gamma = arrays.FloatArray(
-        label = ":math:`\\gamma`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """dimensionless parameter""")
-    
-    eta = arrays.FloatArray(
-        label = ":math:`\\eta`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """ratio :math:`\\eta/b` gives W-nullcline intersect(V=0)""")
-    
-    variables_of_interest = arrays.IntegerArray(
-        label = "Variables watched by Monitors.",
-        range = basic.Range(lo = 0, hi = 2, step=1),
-        default = numpy.array([0], dtype=numpy.int32),
-        doc = """This represents the default state-variables of this Model to be
+
+    a = NArray(
+        label=":math:`a`",
+        default=numpy.array([1.05]),
+        domain=Range(lo=-1.0, hi=1.5, step=0.01),
+        doc="""ratio a/b gives W-nullcline slope""")
+
+    b = NArray(
+        label=":math:`b`",
+        default=numpy.array([0.2]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""dimensionless parameter""")
+
+    omega = NArray(
+        label=":math:`\\omega`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""dimensionless parameter""")
+
+    upsilon = NArray(
+        label=":math:`\\upsilon`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""dimensionless parameter""")
+
+    gamma = NArray(
+        label=":math:`\\gamma`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""dimensionless parameter""")
+
+    eta = NArray(
+        label=":math:`\\eta`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""ratio :math:`\\eta/b` gives W-nullcline intersect(V=0)""")
+
+    variables_of_interest = NArray(
+        dtype=numpy.int,
+        label="Variables watched by Monitors.",
+        domain=Range(lo=0, hi=2, step=1),
+        default=numpy.array([0], dtype=numpy.int32),
+        doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired.""")
-    
-    #Informational attribute, used for phase-plane and initial()
-    state_variable_range = basic.Dict(
-        label = "State Variable ranges [lo, hi]",
-        default = {"V": numpy.array([-2.0, 4.0]),
-                   "W": numpy.array([-6.0, 6.0])},
-        doc = """The values for each state-variable should be set to encompass
+
+    # Informational attribute, used for phase-plane and initial()
+    state_variable_range = Final(
+        {
+            "V": numpy.array([-2.0, 4.0]),
+            "W": numpy.array([-6.0, 6.0])
+        },
+        label="State Variable ranges [lo, hi]",
+        doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current 
             parameters, it is used as a mechanism for bounding random inital 
             conditions when the simulation isn't started from an explicit
             history, it is also provides the default range of phase-plane plots.""")
-    
-    
+
+
     def __init__(self, **kwargs):
         """
         May need to put kwargs back if we can't get them from trait...
         
         """
-        
+
         LOG.info("%s: initing..." % str(self))
-        
+
         super(Generic2dOscillator, self).__init__(**kwargs)
-        
+
         self._state_variables = ["V", "W"]
         self._nvar = 2 #len(self._state_variables)
         self.cvar = numpy.array([0], dtype=numpy.int32)
-        
+
         LOG.debug("%s: inited." % repr(self))
-    
-    
+
+
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
         The fast, :math:`V`, and slow, :math:`W`, state variables are typically
@@ -192,20 +193,20 @@ class Generic2dOscillator(models.Model):
         :ref:`Fitzhugh-Nagumo phase-plane <phase-plane-FHN>`.
         
         """
-        
+
         V = state_variables[0, :]
         W = state_variables[1, :]
-        
+
         #[State_variables, nodes]
         c_0 = coupling[0, :]
-        
-        dV = self.tau * (self.omega * W + self.upsilon * V - 
+
+        dV = self.tau * (self.omega * W + self.upsilon * V -
                          self.gamma * V**3.0 / 3.0 +
                          c_0 + local_coupling * V)
-        
+
         dW = (self.a - self.eta * V - self.b * W) / self.tau
         derivative = numpy.array([dV, dW])
-        
+
         return derivative
 
 

@@ -41,12 +41,10 @@ A contributed model: Hindmarsh-Rose
 # Third party python libraries
 import numpy
 
-#The Virtual Brain
+# The Virtual Brain
 from tvb.simulator.common import psutil, get_logger
 LOG = get_logger(__name__)
-
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.types_basic as basic 
+from tvb.basic.neotraits.api import NArray, Range, Final
 import tvb.simulator.models as models
 
 
@@ -80,91 +78,85 @@ class HindmarshRose(models.Model):
     """
     _ui_name = "Hindmarsh-Rose"
     ui_configurable_parameters = ['r', 'a', 'b', 'c', 'd', 's', 'x_1']
-    
-    #Define traited attributes for this model, these represent possible kwargs.
-    r = arrays.FloatArray(
-        label = ":math:`r`",
-        default = numpy.array([0.001]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.001),
-        doc = """Adaptation parameter, governs time-scale of the state variable
-        :math:`z`.""",
-        order = 1)
-    
-    a = arrays.FloatArray(
-        label = ":math:`a`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Dimensionless parameter, governs x-nullcline""",
-        order = 2)
-    
-    b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([3.0]),
-        range = basic.Range(lo = 0.0, hi = 3.0, step = 0.01),
-        doc = """Dimensionless parameter, governs x-nullcline""",
-        order = 3)
-    
-    c = arrays.FloatArray(
-        label = ":math:`c`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Dimensionless parameter, governs y-nullcline""",
-        order = 4)
-    
-    d = arrays.FloatArray(
-        label = ":math:`d`",
-        default = numpy.array([5.0]),
-        range = basic.Range(lo = 0.0, hi = 5.0, step = 0.01),
-        doc =  """Dimensionless parameter, governs y-nullcline""",
-        order = 5)
-    
-    s = arrays.FloatArray(
-        label = ":math:`s`",
-        default = numpy.array([1.0]),
-        range = basic.Range(lo = 0.0, hi = 1.0, step = 0.01),
-        doc = """Adaptation parameter, governs feedback""",
-        order = 6)
-    
-    x_1 = arrays.FloatArray(
-        label = ":math:`x_{1}`",
-        default = numpy.array([-1.6]),
-        range = basic.Range(lo = -1.6, hi = 1.0, step = 0.01),
-        doc = """Governs leftmost equilibrium point of x""",
-        order = 7)
-    
-    #Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = basic.Dict(
-        label = "State Variable ranges [lo, hi]",
-        default = {"x": numpy.array([-4.0, 4.0]),
-                   "y": numpy.array([-60.0, 20.0]),
-                   "z": numpy.array([-2.0, 18.0])},
-        doc = """The values for each state-variable should be set to encompass
+
+    # Define traited attributes for this model, these represent possible kwargs.
+    r = NArray(
+        label=":math:`r`",
+        default=numpy.array([0.001]),
+        domain=Range(lo=0.0, hi=1.0, step=0.001),
+        doc="""Adaptation parameter, governs time-scale of the state variable
+        :math:`z`.""")
+
+    a = NArray(
+        label=":math:`a`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Dimensionless parameter, governs x-nullcline""")
+
+    b = NArray(
+        label=":math:`b`",
+        default=numpy.array([3.0]),
+        domain=Range(lo=0.0, hi=3.0, step=0.01),
+        doc="""Dimensionless parameter, governs x-nullcline""")
+
+    c = NArray(
+        label=":math:`c`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Dimensionless parameter, governs y-nullcline""")
+
+    d = NArray(
+        label=":math:`d`",
+        default=numpy.array([5.0]),
+        domain=Range(lo=0.0, hi=5.0, step=0.01),
+        doc="""Dimensionless parameter, governs y-nullcline""")
+
+    s = NArray(
+        label=":math:`s`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc="""Adaptation parameter, governs feedback""")
+
+    x_1 = NArray(
+        label=":math:`x_{1}`",
+        default=numpy.array([-1.6]),
+        domain=Range(lo=-1.6, hi=1.0, step=0.01),
+        doc="""Governs leftmost equilibrium point of x""")
+
+    # Used for phase-plane axis ranges and to bound random initial() conditions.
+    state_variable_range = Final(
+        {
+            "x": numpy.array([-4.0, 4.0]),
+            "y": numpy.array([-60.0, 20.0]),
+            "z": numpy.array([-2.0, 18.0])
+        },
+        label="State Variable ranges [lo, hi]",
+        doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current 
         parameters, it is used as a mechanism for bounding random inital 
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""",
-        order = 8)
-    
-    variables_of_interest = arrays.IntegerArray(
-        label = "Variables watched by Monitors",
-        range = basic.Range(lo = 0, hi = 3, step=1),
-        default = numpy.array([0], dtype=numpy.int32),
-        doc = """This represents the default state-variables of this Model to be
+        it is also provides the default range of phase-plane plots.""")
+
+    variables_of_interest = NArray(
+        dtype=numpy.int,
+        label="Variables watched by Monitors",
+        domain=Range(lo=0, hi=3, step=1),
+        default=numpy.array([0], dtype=numpy.int32),
+        doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired. The 
         corresponding state-variable indices for this model are :math:`x = 0`,
-        :math:`y = 1`,and :math:`z = 2`.""",
-        order = 9)
-    
+        :math:`y = 1`,and :math:`z = 2`.""")
+
 #    coupling_variables = arrays.IntegerArray(
 #        label = "Variables to couple activity through",
 #        default = numpy.array([0], dtype=numpy.int32))
-    
+
 #    nsig = arrays.FloatArray(
 #        label = "Noise dispersion",
 #        default = numpy.array([0.0]),
 #        range = basic.Range(lo = 0.0, hi = 1.0))
-    
-    
+
+
     def __init__(self, **kwargs):
         """
         Initialize the HindmarshRose model's traited attributes, any provided
@@ -173,15 +165,15 @@ class HindmarshRose(models.Model):
         """
         LOG.info('%s: initing...' % str(self))
         super(HindmarshRose, self).__init__(**kwargs)
-        
+
         self._state_variables = ["x", "y", "z"]
         self._nvar = 3
-        
+
         self.cvar = numpy.array([0], dtype=numpy.int32)
-        
+
         LOG.debug('%s: inited.' % repr(self))
-    
-    
+
+
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
         As in the FitzHugh-Nagumo model ([FH_1961]_), :math:`x` and :math:`y`
@@ -201,18 +193,18 @@ class HindmarshRose(models.Model):
         [HR_1984]_ so that the model shows repetitive bursting when :math:`I=2`.
         
         """
-        
+
         x = state_variables[0, :]
         y = state_variables[1, :]
         z = state_variables[2, :]
-        
+
         c_0 = coupling[0, :]
-        
+
         dx = y - self.a * x**3 + self.b * x**2 - z + c_0 + local_coupling * x
         dy = self.c - self.d * x**2 - y
         dz = self.r * (self.s * (x - self.x_1) - z)
-        
+
         derivative = numpy.array([dx, dy, dz])
-        
+
         return derivative
 

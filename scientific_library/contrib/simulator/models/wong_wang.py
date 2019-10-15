@@ -41,12 +41,11 @@ The original Wong and Wang model
 # Third party python libraries
 import numpy
 
-#The Virtual Brain
+# The Virtual Brain
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.types_basic as basic 
+from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
 
 class WongWang(models.Model):
@@ -56,7 +55,7 @@ class WongWang(models.Model):
                 Journal of Neuroscience 26(4), 1314-1328, 2006.
 
     .. [WW_2006_SI] Supplementary Information
-                
+
     .. [WW_2007] Kong-Fatt Wong, Alexander C. Huk2, Michael N. Shadlen,
                 Xiao-Jing Wang, *Neural circuit dynamics underlying accumulation
                 of time-varying evidence during perceptual decision making*.
@@ -70,7 +69,7 @@ class WongWang(models.Model):
     corresponding to AMPAand GABA gating variables, it is assumed that is 
     :math:`S_{NMDA}` that dominates the time evolution of the system.
 
-    The model (:math:`Sl`, :math:`Sr`) phase-plane, including a representation 
+    The model (:math:`Sl`, :math:`Sr`) phase-plane, including a representation
     of the vector field as well as its nullclines, using default parameters, 
     can be seen below:
 
@@ -82,7 +81,7 @@ class WongWang(models.Model):
         J_ext = 1.1e-3
         I_o = 0.3297
         mu_o = 30
-        c = 6.4 
+        c = 6.4
 
     To reproduce C & D vary c parameter respectively.
 
@@ -91,129 +90,114 @@ class WongWang(models.Model):
     """
     _ui_name = "Wong-Wang (2D)"
 
-    #Define traited attributes for this model, these represent possible kwargs.
-    a = arrays.FloatArray(
+    # Define traited attributes for this model, these represent possible kwargs.
+    a = NArray(
         label=":math:`a`",
-        default=numpy.array([270., ]),
-        range=basic.Range(lo=0.0, hi=1000.0),
-        doc="""[Hz/nA] Parameter chosen to ﬁt numerical solutions.""")
+        default=numpy.array([0.270, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc=""" (mVnC)^{-1}. Parameter chosen to ﬁt numerical solutions.""")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label=":math:`b`",
-        default=numpy.array([108, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc="""[Hz]. Parameter chosen to ﬁt numerical solutions.""")
+        default=numpy.array([0.108, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc="""[kHz]. Parameter chosen to ﬁt numerical solutions.""")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label=":math:`d`",
-        default=numpy.array([0.154, ]),
-        range=basic.Range(lo=0.0, hi=200.0),
-        doc="""[s]. Parameter chosen to ﬁt numerical solutions.""")
+        default=numpy.array([154.0, ]),
+        domain=Range(lo=0.0, hi=200.0),
+        doc="""[ms]. Parameter chosen to ﬁt numerical solutions.""")
 
-    gamma = arrays.FloatArray(
+    gamma = NArray(
         label=r":math:`\gamma`",
-        default=numpy.array([0.641, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc="""Kinetic parameter""")
+        default=numpy.array([0.0641, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc="""Kinetic parameter divided by 1000 to set the time scale in ms""")
 
-    tau_s = arrays.FloatArray(
+    tau_s = NArray(
         label=r":math:`\tau_S`",
-        default=numpy.array([60., ]),
-        range=basic.Range(lo=50.0, hi=150.0),
-        doc="""[ms] Kinetic parameter. NMDA decay time constant.""")
+        default=numpy.array([100., ]),
+        domain=Range(lo=50.0, hi=150.0),
+        doc="""Kinetic parameter. NMDA decay time constant.""")
 
-    tau_noise = arrays.FloatArray(
-        label=r":math:`\tau_{noise}`",
+    tau_ampa = NArray(
+        label=r":math:`\tau_{ampa}`",
         default=numpy.array([2., ]),
-        range=basic.Range(lo=1.0, hi=10.0),
-        doc="""[ms] Noise decay time constant.""",
-        order=-1)
+        domain=Range(lo=1.0, hi=10.0),
+        doc="""Kinetic parameter. AMPA decay time constant.""")
 
-    Jll = arrays.FloatArray(
-        label=":math:`J_{ll}`",
-        default=numpy.array([0.3725, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+    J11 = NArray(
+        label=":math:`J_{11}`",
+        default=numpy.array([0.2609, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    Jrr = arrays.FloatArray(
-        label=":math:`J_{rr}`",
-        default=numpy.array([0.3725, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+    J22 = NArray(
+        label=":math:`J_{22}`",
+        default=numpy.array([0.2609, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    Jlr = arrays.FloatArray(
-        label=":math:`J_{lr}`",
-        default=numpy.array([0.1137, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+    J12 = NArray(
+        label=":math:`J_{12}`",
+        default=numpy.array([0.0497, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    Jrl = arrays.FloatArray(
-        label=":math:`J_{rl}`",
-        default=numpy.array([0.1137, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+    J21 = NArray(
+        label=":math:`J_{21}`",
+        default=numpy.array([0.0497, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
-    J_N = arrays.FloatArray(
-        label=":math:`J_{N}`",
-        default=numpy.array([0.1137, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
-        doc="""External synaptic coupling""")
-
-    J_ext = arrays.FloatArray(
+    J_ext = NArray(
         label=":math:`J_{ext}`",
-        default=numpy.array([1.1e-3, ]),
-        range=basic.Range(lo=0.0, hi=0.01),
-        doc="""[nA/Hz] Synaptic coupling""")
+        default=numpy.array([0.52, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc="""Synaptic coupling""")
 
-    I_o = arrays.FloatArray(
+    I_o = NArray(
         label=":math:`I_{o}`",
-        default=numpy.array([0.3297, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+        default=numpy.array([0.3255, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Effective external input""")
 
-    sigma_noise = arrays.FloatArray(
+    sigma_noise = NArray(
         label=r":math:`\sigma_{noise}`",
-        default=numpy.array([0.009, ]),
-        range=basic.Range(lo=0.0, hi=1.0),
+        default=numpy.array([0.02, ]),
+        domain=Range(lo=0.0, hi=1.0),
         doc="""Noise amplitude. Take this value into account for stochatic
         integration schemes.""")
 
-    mu_o = arrays.FloatArray(
+    mu_o = NArray(
         label=r":math:`\mu_{0}`",
-        default=numpy.array([30, ]),
-        range=basic.Range(lo=0.0, hi=50.0),
-        doc="""[Hz] Stimulus amplitude""")
+        default=numpy.array([0.03, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc="""Stimulus amplitude""")
 
-    c = arrays.FloatArray(
+    c = NArray(
         label=":math:`c`",
         default=numpy.array([51.0, ]),
-        range=basic.Range(lo=0.0, hi=100.0),
+        domain=Range(lo=0.0, hi=100.0),
         doc="""[%].  Percentage coherence or motion strength. This parameter
         comes from experiments in MT cells.""")
 
-    f = arrays.FloatArray(
-        label=":math:`f`",
-        default=numpy.array([1., ]), #0.45
-        range=basic.Range(lo=0.0, hi=100.0),
-        doc=""" Gain of MT firing rates""")
-
-    state_variable_range = basic.Dict(
+    state_variable_range = Final(
+        {
+            "S1": numpy.array([0.0, 0.3]),
+            "S2": numpy.array([0.0, 0.3])
+        },
         label="State variable ranges [lo, hi]",
-        default={"Sl": numpy.array([0., 1.]),
-                 "Sr": numpy.array([0., 1.])},
-        doc="n/a",
-        order=-1
+        doc="n/a"
     )
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["Sl", "Sr"],
-        default=["Sl"],
-        select_multiple=True,
-        doc="""default state variables to be monitored""",
-        order=10)
-
-    state_variables = ['Sl', 'Sr']
+        choices=("S1", "S2"),
+        default=("S1",),
+        doc="""default state variables to be monitored""")
 
     def __init__(self, **kwargs):
         """
@@ -279,25 +263,23 @@ class WongWang(models.Model):
 if __name__ == "__main__":
     # Do some stuff that tests or makes use of this module...
     LOG.info("Testing %s module..." % __file__)
-    
+
     # Check that the docstring examples, if there are any, are accurate.
     import doctest
     doctest.testmod()
-    
+
     #Initialise Models in their default state:
     WW = WongWang()
-    WW.c = 11
-    WW.configure()
-        
+
     LOG.info("Model initialised in its default state without error...")
-    
+
     LOG.info("Testing phase plane interactive ... ")
-    
+
     # Check the Phase Plane
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
     import tvb.simulator.integrators
-        
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=0.1)
+
+    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
     ppi_fig = PhasePlaneInteractive(model=WW, integrator=INTEGRATOR)
     ppi_fig.show()
 

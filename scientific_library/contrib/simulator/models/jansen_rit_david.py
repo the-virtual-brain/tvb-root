@@ -38,12 +38,10 @@ A contributed model: The Jansen and Rit model as presented in (David et al., 200
 # Third party python libraries
 import numpy
 
-#The Virtual Brain
+# The Virtual Brain
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
-
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.types_basic as basic 
+from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
 
 
@@ -56,115 +54,102 @@ class JansenRitDavid(models.Model):
 
     _ui_name = "Jansen-Rit (David et al., 2005)"
 
-
-    #Define traited attributes for this model, these represent possible kwargs.
-    He = arrays.FloatArray(
+    # Define traited attributes for this model, these represent possible kwargs.
+    He = NArray(
         label=":math:`He`",
         default=numpy.array([3.25]),
-        range=basic.Range(lo=2.6, hi=9.75, step=0.05),
-        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""",
-        order=1)
+        domain=Range(lo=2.6, hi=9.75, step=0.05),
+        doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
 
-    Hi = arrays.FloatArray(
+    Hi = NArray(
         label=":math:`B`",
         default=numpy.array([29.3]),
-        range=basic.Range(lo=17.6, hi=110.0, step=0.2),
-        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""",
-        order=2)
+        domain=Range(lo=17.6, hi=110.0, step=0.2),
+        doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
 
-    tau_e = arrays.FloatArray(
+    tau_e = NArray(
         label=":math:`a`",
         default=numpy.array([0.1]),
-        range=basic.Range(lo=0.05, hi=0.15, step=0.01),
-        doc="""time constant""",
-        order=3)
+        domain=Range(lo=0.05, hi=0.15, step=0.01),
+        doc="""time constant""")
 
-    tau_i = arrays.FloatArray(
+    tau_i = NArray(
         label=":math:`b`",
         default=numpy.array([0.15]),
-        range=basic.Range(lo=0.025, hi=0.075, step=0.005),
-        doc="""time constant""",
-        order=4)
+        domain=Range(lo=0.025, hi=0.075, step=0.005),
+        doc="""time constant""")
 
-    eo = arrays.FloatArray(
+    eo = NArray(
         label=":math:`v_0`",
         default=numpy.array([0.0025]),
-        range=basic.Range(lo=3.12, hi=6.0, step=0.02),
+        domain=Range(lo=3.12, hi=6.0, step=0.02),
         doc="""Firing threshold (PSP) for which a 50% firing rate is achieved.
         In other words, it is the value of the average membrane potential
-        corresponding to the inflection point of the sigmoid [mV].""",
-        order=5)
+        corresponding to the inflection point of the sigmoid [mV].""")
 
-
-    r = arrays.FloatArray(
+    r = NArray(
         label=":math:`r`",
         default=numpy.array([0.56]),
-        range=basic.Range(lo=0.28, hi=0.84, step=0.01),
-        doc="""Steepness of the sigmoidal transformation [mV^-1].""",
-        order=7)
+        domain=Range(lo=0.28, hi=0.84, step=0.01),
+        doc="""Steepness of the sigmoidal transformation [mV^-1].""")
 
-
-    gamma_1 = arrays.FloatArray(
+    gamma_1 = NArray(
         label=r":math:`\alpha_1`",
         default=numpy.array([50.0]),
-        range=basic.Range(lo=0.5, hi=1.5, step=0.1),
+        domain=Range(lo=0.5, hi=1.5, step=0.1),
         doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
-        order=9)
+        excitatory loop.""")
 
-    gamma_2 = arrays.FloatArray(
+    gamma_2 = NArray(
         label=r":math:`\alpha_2`",
         default=numpy.array([40.]),
-        range=basic.Range(lo=0.4, hi=1.2, step=0.1),
+        domain=Range(lo=0.4, hi=1.2, step=0.1),
         doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
-        order=10)
+        excitatory loop.""")
 
-    gamma_3 = arrays.FloatArray(
+    gamma_3 = NArray(
         label=r":math:`\alpha_3`",
         default=numpy.array([12.]),
-        range=basic.Range(lo=0.125, hi=0.375, step=0.005),
+        domain=Range(lo=0.125, hi=0.375, step=0.005),
         doc="""Average probability of synaptic contacts in the feedback
-        excitatory loop.""",
-        order=11)
+        excitatory loop.""")
 
-    gamma_4 = arrays.FloatArray(
+    gamma_4 = NArray(
         label=r":math:`\alpha_4`",
         default=numpy.array([12.]),
-        range=basic.Range(lo=0.125, hi=0.375, step=0.005),
+        domain=Range(lo=0.125, hi=0.375, step=0.005),
         doc="""Average probability of synaptic contacts in the slow feedback
-        inhibitory loop.""",
-        order=12)
+        inhibitory loop.""")
 
-    #Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = basic.Dict(
+    # Used for phase-plane axis ranges and to bound random initial() conditions.
+    state_variable_range = Final(
+        {
+            "x0": numpy.array([-1.0, 1.0]),
+            "x1": numpy.array([-1.0, 1.0]),
+            "x2": numpy.array([-5.0, 5.0]),
+            "x3": numpy.array([-6.0, 6.0]),
+            "x4": numpy.array([-2.0, 2.0]),
+            "x5": numpy.array([-5.0, 5.0]),
+            "x6": numpy.array([-5.0, 5.0]),
+            "x7": numpy.array([-5.0, 5.0])
+        },
         label="State Variable ranges [lo, hi]",
-        default={"x0": numpy.array([-1.0, 1.0]),
-                 "x1": numpy.array([-1.0, 1.0]),
-                 "x2": numpy.array([-5.0, 5.0]),
-                 "x3": numpy.array([-6.0, 6.0]),
-                 "x4": numpy.array([-2.0, 2.0]),
-                 "x5": numpy.array([-5.0, 5.0]),
-                 "x6": numpy.array([-5.0, 5.0]),
-                 "x7": numpy.array([-5.0, 5.0])},
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current 
         parameters, it is used as a mechanism for bounding random inital 
         conditions when the simulation isn't started from an explicit history,
-        it is also provides the default range of phase-plane plots.""",
-        order=16)
+        it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"],
-        default=["x0", "x1", "x2", "x3"],
-        select_multiple=True,
+        choices=("x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"),
+        default=("x0", "x1", "x2", "x3"),
         doc="""This represents the default state-variables of this Model to be
                                     monitored. It can be overridden for each Monitor if desired. The 
                                     corresponding state-variable indices for this model are :math:`y0 = 0`,
                                     :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
-                                    :math:`y5 = 5`""",
-        order=17)
+                                    :math:`y5 = 5`""")
 
 
 
@@ -210,7 +195,7 @@ class JansenRitDavid(models.Model):
 
         y   = x1 - x2
         #delayed activity x1 - x2
-        c_12   = coupling[0, :] -  coupling[1, :] 
+        c_12   = coupling[0, :] -  coupling[1, :]
         c_12_f = AF * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)
         c_12_b = AB * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)
         c_12_l = AL * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)

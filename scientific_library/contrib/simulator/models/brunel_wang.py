@@ -42,9 +42,8 @@ TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
 
 import inspect
 import numpy
-import tvb.datatypes.arrays as arrays
+from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.datatypes.lookup_tables as lookup_tables
-import tvb.basic.traits.types_basic as basic 
 import tvb.simulator.models as models
 from tvb.simulator.common import get_logger
 
@@ -79,322 +78,283 @@ class BrunelWang(models.Model):
                                   'taum_i', 'taurp_e', 'taurp_i', 'Cext', 'C',
                                   'nuext', 'wplus', 'wminus', 'W']
 
-    #Define traited attributes for this model, these represent possible kwargs.
-    tau = arrays.FloatArray(
-        label = ":math:`\\tau`",
-        default = numpy.array([1.25,]),
-        range = basic.Range(lo = 0.01, hi = 5.0, step = 0.01),
-        doc = """A time-scale separation between the fast, :math:`V`, and slow,
-        :math:`W`, state-variables of the model.""",
-        order = 1)
+    # Define traited attributes for this model, these represent possible kwargs.
+    tau = NArray(
+        label=":math:`\\tau`",
+        default=numpy.array([1.25, ]),
+        domain=Range(lo=0.01, hi=5.0, step=0.01),
+        doc="""A time-scale separation between the fast, :math:`V`, and slow,
+        :math:`W`, state-variables of the model.""")
 
-    calpha = arrays.FloatArray(
-        label = ":math:`c_{\\alpha}`",
-        default = numpy.array([0.5,]),
-        range = basic.Range(lo = 0.4, hi = 0.5, step = 0.05),
-        doc = """NMDA saturation parameter (kHz)""",
-        order = 2)
+    calpha = NArray(
+        label=":math:`c_{\\alpha}`",
+        default=numpy.array([0.5, ]),
+        domain=Range(lo=0.4, hi=0.5, step=0.05),
+        doc="""NMDA saturation parameter (kHz)""")
 
-    cbeta = arrays.FloatArray(
-        label = ":math:`c_{\\beta}`",
-        default = numpy.array([0.062,]),
-        range = basic.Range(lo = 0.06, hi = 0.062, step = 0.002),
-        doc = """Inverse MG2+ blockade potential(mV-1)""",
-        order = 3)
+    cbeta = NArray(
+        label=":math:`c_{\\beta}`",
+        default=numpy.array([0.062, ]),
+        domain=Range(lo=0.06, hi=0.062, step=0.002),
+        doc="""Inverse MG2+ blockade potential(mV-1)""")
 
-    cgamma = arrays.FloatArray(
-        label = ":math:`c_{\\gamma}`",
-        default = numpy.array([0.2801120448,]),
-        range = basic.Range(lo = 0.2801120440, hi = 0.2801120448, step = 0.0000000001),
-        doc = """Strength of Mg2+ blockade""",
-        order = -1)
+    cgamma = NArray(
+        label=":math:`c_{\\gamma}`",
+        default=numpy.array([0.2801120448, ]),
+        domain=Range(lo=0.2801120440, hi=0.2801120448, step=0.0000000001),
+        doc="""Strength of Mg2+ blockade""")
 
-    tauNMDArise = arrays.FloatArray(
-        label = ":math:`\\tau_{NMDA_{rise}}`",
-        default = numpy.array([2.0,]),
-        range = basic.Range(lo = 0.0, hi = 2.0, step = 0.5),
-        doc="""NMDA time constant (rise) (ms)""",
-        order = 4)
+    tauNMDArise = NArray(
+        label=":math:`\\tau_{NMDA_{rise}}`",
+        default=numpy.array([2.0, ]),
+        domain=Range(lo=0.0, hi=2.0, step=0.5),
+        doc="""NMDA time constant (rise) (ms)""")
 
-    tauNMDAdecay = arrays.FloatArray(
-        label = ":math:`\\tau_{NMDA_{decay}}`",
-        default = numpy.array([100.,]),
-        range = basic.Range(lo = 50.0, hi = 100.0, step = 10.0),
-        doc = """NMDA time constant (decay) (ms)""",
-        order = 5)
+    tauNMDAdecay = NArray(
+        label=":math:`\\tau_{NMDA_{decay}}`",
+        default=numpy.array([100., ]),
+        domain=Range(lo=50.0, hi=100.0, step=10.0),
+        doc="""NMDA time constant (decay) (ms)""")
 
-    tauAMPA = arrays.FloatArray(
-        label = ":math:`\\tau_{AMPA}`",
-        default = numpy.array([2.0,]),
-        range = basic.Range(lo = 1.0, hi = 2.0, step = 1.0),
-        doc = """AMPA time constant (decay) (ms)""",
-        order = 6)
+    tauAMPA = NArray(
+        label=":math:`\\tau_{AMPA}`",
+        default=numpy.array([2.0, ]),
+        domain=Range(lo=1.0, hi=2.0, step=1.0),
+        doc="""AMPA time constant (decay) (ms)""")
 
-    tauGABA = arrays.FloatArray(
-        label = ":math:`\\tau_{GABA}`",
-        default = numpy.array([10.0,]),
-        range = basic.Range(lo = 5.0, hi = 15.0, step = 1.0),
-        doc = """GABA time constant (decay) (ms)""",
-        order = 7)
+    tauGABA = NArray(
+        label=":math:`\\tau_{GABA}`",
+        default=numpy.array([10.0, ]),
+        domain=Range(lo=5.0, hi=15.0, step=1.0),
+        doc="""GABA time constant (decay) (ms)""")
 
-    VE = arrays.FloatArray(
-        label = ":math:`V_E`",
-        default = numpy.array([0.0,]),
-        range = basic.Range(lo = 0.0, hi = 10.0, step = 2.0),
-        doc = """Extracellular potential (mV)""",
-        order = 8)
+    VE = NArray(
+        label=":math:`V_E`",
+        default=numpy.array([0.0, ]),
+        domain=Range(lo=0.0, hi=10.0, step=2.0),
+        doc="""Extracellular potential (mV)""")
 
-    VI = arrays.FloatArray(
-        label = ":math:`V_I`",
-        default = numpy.array([-70.0,]),
-        range = basic.Range(lo = -70.0, hi = -50.0, step = 5.0),
-        doc = """.""",
-        order = -1)
+    VI = NArray(
+        label=":math:`V_I`",
+        default=numpy.array([-70.0, ]),
+        domain=Range(lo=-70.0, hi=-50.0, step=5.0),
+        doc=""".""")
 
-    VL = arrays.FloatArray(
-        label = ":math:`V_L`",
-        default = numpy.array([-70.0,]),
-        range = basic.Range(lo = -70.0, hi = -50.0, step = 5.0),
-        doc = """Resting potential (mV)""",
-        order = -1)
+    VL = NArray(
+        label=":math:`V_L`",
+        default=numpy.array([-70.0, ]),
+        domain=Range(lo=-70.0, hi=-50.0, step=5.0),
+        doc="""Resting potential (mV)""")
 
-    Vthr = arrays.FloatArray(
-        label = ":math:`V_{thr}`",
-        default = numpy.array([-50.0,]),
-        range = basic.Range(lo = -50.0, hi = -30.0, step = 5.0),
-        doc = """Threshold potential (mV)""",
-        order = -1)
+    Vthr = NArray(
+        label=":math:`V_{thr}`",
+        default=numpy.array([-50.0, ]),
+        domain=Range(lo=-50.0, hi=-30.0, step=5.0),
+        doc="""Threshold potential (mV)""")
 
-    Vreset = arrays.FloatArray(
-        label = ":math:`V_{reset}`",
-        default = numpy.array([-55.0,]),
-        range = basic.Range(lo = -70.0, hi = -30.0, step = 5.0),
-        doc = """Reset potential (mV)""",
-        order = 9)
+    Vreset = NArray(
+        label=":math:`V_{reset}`",
+        default=numpy.array([-55.0, ]),
+        domain=Range(lo=-70.0, hi=-30.0, step=5.0),
+        doc="""Reset potential (mV)""")
 
-    gNMDA_e = arrays.FloatArray(
-        label = ":math:`g_{NMDA_{e}}`",
-        default = numpy.array([0.327,]),
-        range = basic.Range(lo = 0.320, hi = 0.350, step = 0.0035),
-        doc = """NMDA conductance on post-synaptic excitatory (nS)""",
-        order = -1)
+    gNMDA_e = NArray(
+        label=":math:`g_{NMDA_{e}}`",
+        default=numpy.array([0.327, ]),
+        domain=Range(lo=0.320, hi=0.350, step=0.0035),
+        doc="""NMDA conductance on post-synaptic excitatory (nS)""")
 
-    gNMDA_i = arrays.FloatArray(
-        label = ":math:`g_{NMDA_{i}}`",
-        default = numpy.array([0.258,]),
-        range = basic.Range(lo = 0.250, hi = 0.270, step = 0.002),
-        doc = """NMDA conductance on post-synaptic inhibitory (nS)""",
-        order = -1)
+    gNMDA_i = NArray(
+        label=":math:`g_{NMDA_{i}}`",
+        default=numpy.array([0.258, ]),
+        domain=Range(lo=0.250, hi=0.270, step=0.002),
+        doc="""NMDA conductance on post-synaptic inhibitory (nS)""")
 
-    gGABA_e = arrays.FloatArray(
-        label = ":math:`g_{GABA_{e}}`",
-        default = numpy.array([1.25 * 3.5, ]),
-        range = basic.Range(lo = 1.25, hi = 4.375, step = 0.005),
-        doc = """GABA conductance on excitatory post-synaptic (nS)""",
-        order = 10)
+    gGABA_e = NArray(
+        label=":math:`g_{GABA_{e}}`",
+        default=numpy.array([1.25 * 3.5, ]),
+        domain=Range(lo=1.25, hi=4.375, step=0.005),
+        doc="""GABA conductance on excitatory post-synaptic (nS)""")
 
-    gGABA_i = arrays.FloatArray(
-        label = ":math:`g_{GABA_{i}}`",
-        default = numpy.array([0.973 * 3.5, ]),
-        range = basic.Range(lo = 0.9730, hi = 3.4055, step = 0.0005),
-        doc = """GABA conductance on inhibitory post-synaptic (nS)""",
-        order = 11)
+    gGABA_i = NArray(
+        label=":math:`g_{GABA_{i}}`",
+        default=numpy.array([0.973 * 3.5, ]),
+        domain=Range(lo=0.9730, hi=3.4055, step=0.0005),
+        doc="""GABA conductance on inhibitory post-synaptic (nS)""")
 
-    gAMPArec_e = arrays.FloatArray(
-        label = ":math:`g_{AMPA_{rec_e}}`",
-        default = numpy.array([0.104,]),
-        range = basic.Range(lo = 0.1, hi = 0.11, step = 0.001),
-        doc = """AMPA(recurrent) cond on post-synaptic (nS)""",
-        order = -1)
+    gAMPArec_e = NArray(
+        label=":math:`g_{AMPA_{rec_e}}`",
+        default=numpy.array([0.104, ]),
+        domain=Range(lo=0.1, hi=0.11, step=0.001),
+        doc="""AMPA(recurrent) cond on post-synaptic (nS)""")
 
-    gAMPArec_i = arrays.FloatArray(
-        label = ":math:`g_{AMPA_{rec_i}}`",
-        default = numpy.array([0.081,]),
-        range = basic.Range(lo = 0.081, hi = 0.1, step = 0.001),
-        doc = """AMPA(recurrent) cond on post-synaptic (nS)""",
-        order = -1)
+    gAMPArec_i = NArray(
+        label=":math:`g_{AMPA_{rec_i}}`",
+        default=numpy.array([0.081, ]),
+        domain=Range(lo=0.081, hi=0.1, step=0.001),
+        doc="""AMPA(recurrent) cond on post-synaptic (nS)""")
 
-    gAMPAext_e = arrays.FloatArray(
-        label = ":math:`g_{AMPA_{ext_e}}`",
-        default = numpy.array([2.08 * 1.2,]),
-        range = basic.Range(lo = 2.08, hi = 2.496, step = 0.004),
-        doc = """AMPA(external) cond on post-synaptic (nS)""",
-        order = 12)
+    gAMPAext_e = NArray(
+        label=":math:`g_{AMPA_{ext_e}}`",
+        default=numpy.array([2.08 * 1.2, ]),
+        domain=Range(lo=2.08, hi=2.496, step=0.004),
+        doc="""AMPA(external) cond on post-synaptic (nS)""")
 
-    gAMPAext_i = arrays.FloatArray(
-        label = ":math:`g_{AMPA_{ext_i}}`",
-        default = numpy.array([1.62 * 1.2,]),
-        range = basic.Range(lo = 1.62, hi = 1.944, step = 0.004),
-        doc = """AMPA(external) cond on post-synaptic (nS)""",
-        order = 13)
+    gAMPAext_i = NArray(
+        label=":math:`g_{AMPA_{ext_i}}`",
+        default=numpy.array([1.62 * 1.2, ]),
+        domain=Range(lo=1.62, hi=1.944, step=0.004),
+        doc="""AMPA(external) cond on post-synaptic (nS)""")
 
-    gm_e = arrays.FloatArray(
-        label = ":math:`gm_e`",
-        default = numpy.array([25.0,]),
-        range = basic.Range(lo = 20.0, hi = 25.0, step = 1.0),
-        doc = """Excitatory membrane conductance (nS)""",
-        order = 13)
+    gm_e = NArray(
+        label=":math:`gm_e`",
+        default=numpy.array([25.0, ]),
+        domain=Range(lo=20.0, hi=25.0, step=1.0),
+        doc="""Excitatory membrane conductance (nS)""")
 
-    gm_i = arrays.FloatArray(
-        label = ":math:`gm_i`",
-        default = numpy.array([20.,]),
-        range = basic.Range(lo = 15.0, hi = 21.0, step = 1.0),
-        doc = """Inhibitory membrane conductance (nS)""",
-        order = 14)
+    gm_i = NArray(
+        label=":math:`gm_i`",
+        default=numpy.array([20., ]),
+        domain=Range(lo=15.0, hi=21.0, step=1.0),
+        doc="""Inhibitory membrane conductance (nS)""")
 
-    Cm_e = arrays.FloatArray(
-        label = ":math:`Cm_e`",
-        default = numpy.array([500.,]),
-        range = basic.Range(lo = 200.0, hi = 600.0, step = 50.0),
-        doc = """Excitatory membrane capacitance (mF)""",
-        order = 15)
+    Cm_e = NArray(
+        label=":math:`Cm_e`",
+        default=numpy.array([500., ]),
+        domain=Range(lo=200.0, hi=600.0, step=50.0),
+        doc="""Excitatory membrane capacitance (mF)""")
 
-    Cm_i = arrays.FloatArray(
-        label = ":math:`Cm_i`",
-        default = numpy.array([200.,]),
-        range = basic.Range(lo = 150.0, hi = 250.0, step = 50.0),
-        doc = """Inhibitory membrane capacitance (mF)""",
-        order = 16)
+    Cm_i = NArray(
+        label=":math:`Cm_i`",
+        default=numpy.array([200., ]),
+        domain=Range(lo=150.0, hi=250.0, step=50.0),
+        doc="""Inhibitory membrane capacitance (mF)""")
 
-    taum_e = arrays.FloatArray(
-        label = ":math:`\\tau_{m_{e}}`",
-        default = numpy.array([20.,]),
-        range = basic.Range(lo = 10.0, hi = 25.0, step = 5.0),
-        doc = """Excitatory membrane leak time (ms)""",
-        order = 17)
+    taum_e = NArray(
+        label=":math:`\\tau_{m_{e}}`",
+        default=numpy.array([20., ]),
+        domain=Range(lo=10.0, hi=25.0, step=5.0),
+        doc="""Excitatory membrane leak time (ms)""")
 
-    taum_i = arrays.FloatArray(
-        label = ":math:`\\tau_{m_{i}}`",
-        default = numpy.array([10.0,]),
-        range = basic.Range(lo = 5.0, hi = 15.0, step = 5.),
-        doc = """Inhibitory Membrane leak time (ms)""",
-        order = 18)
+    taum_i = NArray(
+        label=":math:`\\tau_{m_{i}}`",
+        default=numpy.array([10.0, ]),
+        domain=Range(lo=5.0, hi=15.0, step=5.),
+        doc="""Inhibitory Membrane leak time (ms)""")
 
-    taurp_e = arrays.FloatArray(
-        label = ":math:`\\tau_{rp_{e}}`",
-        default = numpy.array([2.0,]),
-        range = basic.Range(lo = 0.0, hi = 4.0, step = 1.),
-        doc = """Excitatory absolute refractory period (ms)""",
-        order = 19)
+    taurp_e = NArray(
+        label=":math:`\\tau_{rp_{e}}`",
+        default=numpy.array([2.0, ]),
+        domain=Range(lo=0.0, hi=4.0, step=1.),
+        doc="""Excitatory absolute refractory period (ms)""")
 
-    taurp_i = arrays.FloatArray(
-        label = ":math:`\\tau_{rp_{i}}`",
-        default = numpy.array([1.0,]),
-        range = basic.Range(lo = 0.0, hi = 2.0, step = 0.5),
-        doc= """Inhibitory absolute refractory period (ms)""",
-        order = 20)
+    taurp_i = NArray(
+        label=":math:`\\tau_{rp_{i}}`",
+        default=numpy.array([1.0, ]),
+        domain=Range(lo=0.0, hi=2.0, step=0.5),
+        doc="""Inhibitory absolute refractory period (ms)""")
 
-    Cext = arrays.IntegerArray(
-        label = ":math:`C_{ext}`",
-        default = numpy.array([800,]),
-        range = basic.Range(lo = 500, hi = 1200, step = 100),
-        doc = """Number of external (excitatory) connections""",
-        order = -1)
+    Cext = NArray(
+        dtype=numpy.int,
+        label=":math:`C_{ext}`",
+        default=numpy.array([800, ]),
+        domain=Range(lo=500, hi=1200, step=100),
+        doc="""Number of external (excitatory) connections""")
 
-    C = arrays.IntegerArray(
-        label = ":math:`C`",
-        default = numpy.array([200,]),
-        range = basic.Range(lo = 100, hi = 500, step = 100),
-        doc = "Number of neurons for each node",
-        order = -1)
+    C = NArray(
+        dtype=numpy.int,
+        label=":math:`C`",
+        default=numpy.array([200, ]),
+        domain=Range(lo=100, hi=500, step=100),
+        doc="Number of neurons for each node")
 
-    nuext = arrays.FloatArray(
-        label = ":math:`\\nu_{ext}`",
-        default = numpy.array([0.003,]),
-        range = basic.Range(lo = 0.002, hi = 0.01, step = 0.001),
-        doc = """External firing rate (kHz)""",
-        order = -1)
+    nuext = NArray(
+        label=":math:`\\nu_{ext}`",
+        default=numpy.array([0.003, ]),
+        domain=Range(lo=0.002, hi=0.01, step=0.001),
+        doc="""External firing rate (kHz)""")
 
-    wplus = arrays.FloatArray(
-        label = ":math:`w_{+}`",
-        default = numpy.array([1.5,]),
-        range = basic.Range(lo = 0.5, hi = 3., step = 0.05),
-        doc = """Synaptic coupling strength [w+] (dimensionless)""",
-        order = -1)
+    wplus = NArray(
+        label=":math:`w_{+}`",
+        default=numpy.array([1.5, ]),
+        domain=Range(lo=0.5, hi=3., step=0.05),
+        doc="""Synaptic coupling strength [w+] (dimensionless)""")
 
-    wminus = arrays.FloatArray(
-        label = ":math:`w_{-}`",
-        default = numpy.array([1.,]),
-        range = basic.Range(lo = 0.2, hi = 2., step = 0.05),
-        doc = """Synaptic coupling strength [w-] (dimensionless)""",
-        order = -1)
+    wminus = NArray(
+        label=":math:`w_{-}`",
+        default=numpy.array([1., ]),
+        domain=Range(lo=0.2, hi=2., step=0.05),
+        doc="""Synaptic coupling strength [w-] (dimensionless)""")
 
-
-    NMAX = arrays.IntegerArray(
-        label = ":math:`N_{MAX}`",
-        default = numpy.array([8, ], dtype=numpy.int32),
-        range = basic.Range(lo = 2, hi = 8, step=1),
-        doc = """This is a magic number as given in the original code.
+    NMAX = NArray(
+        dtype=numpy.int,
+        label=":math:`N_{MAX}`",
+        default=numpy.array([8, ], dtype=numpy.int32),
+        domain=Range(lo=2, hi=8, step=1),
+        doc="""This is a magic number as given in the original code.
         It is used to compute the phi and psi -- computationally expensive --
-        functions""",
-        order = -1)
+        functions""")
 
-    pool_nodes = arrays.FloatArray(
-        label = ":math:`p_{nodes}`",
-        default = numpy.array([74.0, ]),
-        range = basic.Range(lo = 1.0, hi = 74.0, step = 1.0),
-        doc = """Scale coupling weight sby the number of nodes in the network""",
-        order = 23)
+    pool_nodes = NArray(
+        label=":math:`p_{nodes}`",
+        default=numpy.array([74.0, ]),
+        domain=Range(lo=1.0, hi=74.0, step=1.0),
+        doc="""Scale coupling weight sby the number of nodes in the network""")
 
-    a = arrays.FloatArray(
-        label = ":math:`a`",
-        default = numpy.array([0.80823563, ]),
-        range = basic.Range(lo = 0.80, hi = 0.88, step = 0.01),
-        doc = """.""",
-        order = -1)
+    a = NArray(
+        label=":math:`a`",
+        default=numpy.array([0.80823563, ]),
+        domain=Range(lo=0.80, hi=0.88, step=0.01),
+        doc=""".""")
 
-    b = arrays.FloatArray(
-        label = ":math:`b`",
-        default = numpy.array([67.06177975, ]),
-        range =  basic.Range(lo = 66.0, hi = 69.0, step = 0.5 ),
-        doc = """.""",
-        order = -1)
+    b = NArray(
+        label=":math:`b`",
+        default=numpy.array([67.06177975, ]),
+        domain=Range(lo=66.0, hi=69.0, step=0.5),
+        doc=""".""")
 
-    ve = arrays.FloatArray(
-        label = ":math:`ve`",
-        default = numpy.array([- 52.5, ]),
-        range = basic.Range(lo = -50.0, hi = -45.0, step = 0.2),
-        doc = """.""",
-        order = -1)
+    ve = NArray(
+        label=":math:`ve`",
+        default=numpy.array([- 52.5, ]),
+        domain=Range(lo=-50.0, hi=-45.0, step=0.2),
+        doc=""".""")
 
-    vi = arrays.FloatArray(
-        label = ":math:`vi`",
-        default = numpy.array([- 52.5,]),
-        range = basic.Range(lo = -50.0, hi = -45.0, step = 0.2 ),
-        doc = """.""",
-        order = -1)
+    vi = NArray(
+        label=":math:`vi`",
+        default=numpy.array([- 52.5, ]),
+        domain=Range(lo=-50.0, hi=-45.0, step=0.2),
+        doc=""".""")
 
-    W = arrays.FloatArray(
-        label = ":math:`W`",
-        default = numpy.array([1.65,]),
-        range = basic.Range(lo = 1.4, hi = 1.9, step = 0.05),
-        doc = """Global scaling weight [W] (dimensionless)""",
-        order = -1)
+    W = NArray(
+        label=":math:`W`",
+        default=numpy.array([1.65, ]),
+        domain=Range(lo=1.4, hi=1.9, step=0.05),
+        doc="""Global scaling weight [W] (dimensionless)""")
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        options=["E", "I"],
-        default=["E"],
-        select_multiple=True,
+        choices=("E", "I"),
+        default=("E",),
+        # select_multiple=True,
         doc="""This represents the default state-variables of this Model to be
                                     monitored. It can be overridden for each Monitor if desired. The
                                     corresponding state-variable indices for this model are :math:`E = 0`
-                                    and :math:`I = 1`.""",
-        order=21)
+                                    and :math:`I = 1`.""")
 
-        #Informational attribute, used for phase-plane and initial()
-    state_variable_range = basic.Dict(
-        label = "State Variable ranges [lo, hi]",
-        default = {"E": numpy.array([0.001, 0.01]),
-                   "I": numpy.array([0.001, 0.01])},
-        doc = """The values for each state-variable should be set to encompass
+    # Informational attribute, used for phase-plane and initial()
+    state_variable_range = Final(
+        {
+            "E": numpy.array([0.001, 0.01]),
+            "I": numpy.array([0.001, 0.01])
+        },
+        label="State Variable ranges [lo, hi]",
+        doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
             history, it is also provides the default range of phase-plane plots.
-            The corresponding state-variable units for this model are kHz.""",
-        order = 22)
-
+            The corresponding state-variable units for this model are kHz.""")
 
     # psi_table = lookup_tables.PsiTable(required=True,
     #                                    default=lookup_tables.PsiTable(),
@@ -649,24 +609,24 @@ class BrunelWang(models.Model):
 if __name__ == "__main__":
     # Do some stuff that tests or makes use of this module...
     LOG.info("Testing %s module..." % __file__)
-    
+
     # Check that the docstring examples, if there are any, are accurate.
     import doctest
     doctest.testmod()
-    
+
     #Initialise Models in their default state:
     BW = BrunelWang()
-        
+
     LOG.info("Model initialised in its default state without error...")
-    
+
     LOG.info("Testing phase plane interactive ... ")
-    
+
     # Check the Phase Plane
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
     import tvb.simulator.integrators
-        
+
     INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
     ppi_fig = PhasePlaneInteractive(model=BW, integrator=INTEGRATOR)
     ppi_fig.show()
 
-    
+

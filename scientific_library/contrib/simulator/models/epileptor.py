@@ -38,12 +38,10 @@ The Epileptor model
 # Third party python libraries
 import numpy
 
-#The Virtual Brain
+# The Virtual Brain
 from tvb.simulator.common import psutil, get_logger
 LOG = get_logger(__name__)
-
-import tvb.datatypes.arrays as arrays
-import tvb.basic.traits.types_basic as basic 
+from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
 
 
@@ -62,123 +60,108 @@ class HMJEpileptor(models.Model):
     _ui_name = "Epileptor"
     ui_configurable_parameters = ["Iext", "Iext2", "r", "x0"]
 
-    a = arrays.FloatArray(
+    a = NArray(
         label="a",
         default=numpy.array([1]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    b = arrays.FloatArray(
+    b = NArray(
         label="b",
         default=numpy.array([3]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    c = arrays.FloatArray(
+    c = NArray(
         label="c",
         default=numpy.array([1]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    d = arrays.FloatArray(
+    d = NArray(
         label="d",
         default=numpy.array([5]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    r = arrays.FloatArray(
+    r = NArray(
         label="r",
-        range=basic.Range(lo=0.0, hi=0.001, step=0.00005),
+        domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
-        doc="n/a",
-        order=4)
+        doc="n/a")
 
-    s = arrays.FloatArray(
+    s = NArray(
         label="s",
         default=numpy.array([4]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    x0 = arrays.FloatArray(
+    x0 = NArray(
         label="x0",
-        range=basic.Range(lo=-3.0, hi=0.0, step=0.1),
+        domain=Range(lo=-3.0, hi=0.0, step=0.1),
         default=numpy.array([-1.6]),
-        doc="n/a",
-        order=3)
+        doc="n/a")
 
-    Iext = arrays.FloatArray(
+    Iext = NArray(
         label="Iext",
-        range=basic.Range(lo=1.5, hi=5.0, step=0.1),
+        domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
-        doc="n/a",
-        order=1)
+        doc="n/a")
 
-    omega2 = arrays.FloatArray(
+    omega2 = NArray(
         label="omega2",
         default=numpy.array([0.1]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    slope = arrays.FloatArray(
+    slope = NArray(
         label="slope",
         default=numpy.array([0.]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    Iext2 = arrays.FloatArray(
+    Iext2 = NArray(
         label="Iext2",
-        range=basic.Range(lo=0.0, hi=1.0, step=0.05),
+        domain=Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
-        doc="n/a",
-        order=2)
+        doc="n/a")
 
-    tau = arrays.FloatArray(
+    tau = NArray(
         label="tau",
         default=numpy.array([10]),
-        doc="n/a",
-        order=-1)
+        doc="n/a")
 
-    aa = arrays.FloatArray(
+    aa = NArray(
         label="aa",
         default=numpy.array([6]),
-        doc="n/a",
-        order=-1)
-        
-    Kpop1 = arrays.FloatArray(
+        doc="n/a")
+
+    Kpop1 = NArray(
         label="K_11",
         default=numpy.array([0.5]),
-        range=basic.Range(lo=0.0, hi=4.0, step=0.5),
+        domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc='''Test parameter. Correspond to the coupling scaling. Move outside to be
-        consistent with the general TVB implementation.''',
-        order=-1)
-        
-    Kpop2 = arrays.FloatArray(
+        consistent with the general TVB implementation.''')
+
+    Kpop2 = NArray(
         label="K_22",
         default=numpy.array([0.2]),
-        range=basic.Range(lo=0.0, hi=1.0, step=0.5),
+        domain=Range(lo=0.0, hi=1.0, step=0.5),
         doc='''Test parameter. Correspond to the coupling scaling. Move outside to be
-        consistent with the general TVB implementation.''',
-        order=-1)
+        consistent with the general TVB implementation.''')
 
-    state_variable_range = basic.Dict(
+    state_variable_range = Final(
+        {
+            "y0": numpy.array([0., 1e-10]),
+            "y1": numpy.array([-5., 0.]),
+            "y2": numpy.array([3., 4.]),
+            "y3": numpy.array([0., 1e-10]),
+            "y4": numpy.array([0., 1e-10]),
+            "y5": numpy.array([0., 1e-2])
+        },
         label="State variable ranges [lo, hi]",
-        default = {"y0": numpy.array([0., 1e-10]),
-                   "y1": numpy.array([-5., 0.]),
-                   "y2": numpy.array([3., 4.]),
-                   "y3": numpy.array([0., 1e-10]),
-                   "y4": numpy.array([0., 1e-10]),
-                   "y5": numpy.array([0., 1e-2]) },
-        doc = "n/a",
-        order=-1
-        )
+        doc="n/a"
+    )
 
-    variables_of_interest = basic.Enumerate(
-                              label = "Variables watched by Monitors",
-                              options = ["y0", "y1", "y2", "y3", "y4", "y5"],
-                              default = ["y0", "y3"],
-                              select_multiple = True,
-                              doc = """default state variables to be monitored""",
-                              order = 10)
+    variables_of_interest = List(
+        of=str,
+        label="Variables watched by Monitors",
+        choices=("y0", "y1", "y2", "y3", "y4", "y5"),
+        default=("y0", "y3"),
+        doc="""default state variables to be monitored""")
 
 #    variables_of_interest = arrays.IntegerArray(
 #        label="Variables watched by Monitors",
@@ -286,7 +269,7 @@ class HMJEpileptor(models.Model):
         #  ydot6 = -0.01*(y(6)-0.1*y(1)) ;
 
         energy = array([ -0.01*(y[5] - 0.1*y[0])])
-        
+
         # 
         # ydot = [ydot1;ydot2;ydot3;ydot4;ydot5;ydot6];
 
