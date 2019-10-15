@@ -373,11 +373,26 @@ class Float(_Number):
 
 
 
+class Dim(Final):
+    """
+    A symbol that defines a dimension in a numpy array shape.
+    It can only be set once. It is an int.
+    Dimensions have to be set before any NArrays that reference them are used.
+    """
+
+    any = object()  # sentinel
+
+    def __init__(self, doc=''):
+        super(Dim, self).__init__(field_type=int, doc=doc)
+
+
+
 class NArray(Attr):
     """
     Declares a numpy array.
-    If specified ndim enforces the number of dimensions.
-    dtype enforces the precise dtype. No implicit conversions. The default dtype is float32.
+    dtype enforces the dtype. The default dtype is float32.
+    An optional symbolic shape can be given, as a tuple of Dim attributes from the owning class.
+    The shape will be enforced, but no broadcasting will be done.
     domain declares what values are allowed in this array.
     It can be any object that can be checked for membership
     Defaults are checked if they are in the declared domain.
@@ -391,42 +406,43 @@ class NArray(Attr):
         doc='',
         label='',
         dtype=numpy.float,
-        ndim=None,
+        shape=None,
         dim_names=(),
         domain=None,
     ):
-        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type, str], int, typing.Tuple[str, ...], typing.Container) -> None
+        # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type, str], typing.Optional[typing.Tuple[Dim, ...]], typing.Tuple[str, ...], typing.Container) -> None
         """
         :param dtype: The numpy datatype. Defaults to float64. This is checked by neotraits.
-        :param ndim: If given then only arrays of this many dimensions are allowed
+        :param shape: An optional symbolic shape, tuple of Dim's declared on the owning class
         :param dim_names: Optional names for the names of the dimensions
         :param domain: Any type that can be checked for membership like xrange.
                        Represents the expected domain of the values in the array.
         """
 
         self.dtype = numpy.dtype(dtype)
-        # default to zero-dimensional arrays, these behave somewhat curious and similar to numbers
-        # this eliminates the is None state. But the empty array is not much better. Shape will be ()
-        #
-        # todo: review this concept.
-        # if default is None:
-        #     default = numpy.zeros((), dtype=dtype)
 
         super(NArray, self).__init__(
             field_type=numpy.ndarray, default=default, required=required, doc=doc, label=label
         )
-        self.ndim = int(ndim) if ndim is not None else None
+        self.shape = shape
         self.domain = domain  # anything that supports 3.1 in domain
-        self.dim_names = tuple(dim_names)
+        self.dim_names = dim_names
 
-        if dim_names:
-            # dimensions are named, infer ndim
-            if ndim is not None:
-                if ndim != len(dim_names):
-                    raise TraitValueError('dim_names contradicts ndim')
-                log.warning('If you declare dim_names ndim is not necessary. attr {}'.format(self))
-            self.ndim = len(dim_names)
+        if self.shape is not None:  # we have a shape
+            if self.dim_names:  # and dim_names
+                # ensure that len(shape) == len(dim_names)
+                if len(self.shape) != len(self.dim_names):
+                    raise TraitValueError('shape contradicts dim_names', attr=self)
 
+            # maybe a over zealous type check
+            for d in self.shape:
+                if d is not Dim.any and type(d) != Dim:
+                    raise TraitValueError("shape elements must be Dim's not {}".format(type(d)), attr=self)
+            self.ndim = len(self.shape)
+        elif self.dim_names:   # no shape but dim_names
+            self.ndim = len(self.dim_names)
+        else:
+            self.ndim = None
 
     def __validate(self, value):
         """ check that ndim's and dtypes match"""
@@ -460,14 +476,50 @@ class NArray(Attr):
                     break
 
 
+    def _lookup_expected_shape(self, instance):
+        """ look up expected shape on the instance """
+        expected_shape = []
+
+        for dim_attr in self.shape:
+            if dim_attr is Dim.any:
+                expected_dim = Dim.any
+            else:
+                try:
+                    # invoke Dim's __get__(instance)
+                    expected_dim = getattr(instance, dim_attr.field_name)
+                except TraitAttributeError:
+                    # re-raise with a better error message
+                    msg = "Narray's shape references undefined dimension <{}>. " \
+                          "Set it before accessing this array"
+                    raise TraitAttributeError(msg.format(dim_attr.field_name), attr=self)
+            expected_shape.append(expected_dim)
+        return expected_shape
+
+
     def _validate_set(self, instance, value):
         value = super(NArray, self)._validate_set(instance, value)
         if value is None:
             # value is optional and missing, nothing to do here
             return
         self.__validate(value)
+        # we should know here the concrete shape
+        # check it
+
+        if self.shape is not None:
+            expected_shape = self._lookup_expected_shape(instance)
+
+            for expected_dim, value_dim in zip(expected_shape, value.shape):
+                if expected_dim is Dim.any:
+                    continue
+                if value_dim != expected_dim:
+                    raise TraitValueError(
+                        'Shape mismatch. Expected {}. Given {}. Not broadcasting'.format(
+                            expected_shape, value.shape
+                        )
+                    )
 
         return value.astype(self.dtype)
+
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):

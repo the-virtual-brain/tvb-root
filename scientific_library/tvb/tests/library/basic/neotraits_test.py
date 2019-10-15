@@ -8,7 +8,7 @@ import pytest
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
     HasTraits, Attr, NArray, Final, List, trait_property,
-    Int, Float, Range, cached_trait_property, LinspaceRange
+    Int, Float, Range, cached_trait_property, LinspaceRange, Dim
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
 
@@ -231,7 +231,7 @@ def test_mro_fail():
 
 def test_narr_simple():
     class Boo(HasTraits):
-        x = NArray(ndim=2, dtype=np.dtype(np.int))
+        x = NArray(shape=(Dim.any, Dim.any), dtype=np.dtype(np.int))
 
     boo = Boo(x=np.array([[1, 4]]))
     boo.x = np.array([[1], [2]])
@@ -245,7 +245,7 @@ def test_narr_enforcing():
     with pytest.raises(ValueError):
         # bad ndim default
         class Boo(HasTraits):
-            x = NArray(ndim=3, default=np.linspace(1, 3, 10))
+            x = NArray(shape=(Dim.any, Dim.any, Dim.any), default=np.linspace(1, 3, 10))
 
     with pytest.raises(TypeError):
         # default should be ndarray
@@ -253,7 +253,7 @@ def test_narr_enforcing():
             x = NArray(default=[1, 2, 4])
 
     class Boo(HasTraits):
-        x = NArray(ndim=2, default=np.eye(2))
+        x = NArray(shape=(Dim.any, Dim.any), default=np.eye(2))
         y = NArray(dtype=np.dtype(int), default=np.arange(12), domain=xrange(5))
 
     # only the defaults are checked for domain compliance
@@ -327,16 +327,41 @@ def test_named_dimensions():
 
     with pytest.raises(TraitValueError):
         # ndim dim_names contradiction
-        NArray(dim_names=('time', 'space'), ndim=4)
+        NArray(dim_names=('time', 'space'), shape=(Dim.any, Dim.any, Dim.any, Dim.any))
 
 
 def test_ndim_enforced():
     class A(HasTraits):
-        x = NArray(ndim=2)
+        x = NArray(shape=(Dim.any, Dim.any))
 
     a = A()
     with pytest.raises(TraitValueError):
         a.x = numpy.arange(4)
+
+
+def test_dims():
+    class A(HasTraits):
+        n_nodes = Dim(doc='number of nodes')
+        n_sv = Dim()
+        w = NArray(shape=(n_nodes, n_nodes))
+
+    class B(A):
+        tsr = NArray(shape=(Dim.any, A.n_nodes, A.n_sv))
+
+    a = A(n_sv=2)
+
+    with pytest.raises(TraitAttributeError):
+        # dims are required, so reading a non-initialized one fails
+        a.n_nodes
+
+    a.n_nodes = 42
+    assert a.n_sv == 2
+
+    b = B(n_sv=2)
+
+    with pytest.raises(TraitAttributeError):
+        # w references the undefined n_nodes
+        b.w = numpy.eye(2)
 
 
 def test_lists():
@@ -673,7 +698,7 @@ def test_declarative_props_enforcing_shapes():
             super(A, self).__init__(**kwargs)
             self._weights = None
 
-        @trait_property(NArray(ndim=2))
+        @trait_property(NArray(shape=(Dim.any, Dim.any)))
         def weights(self):
             return self._weights
 
@@ -833,7 +858,7 @@ def test_perf_plain(benchmark):
 def test_perf_trait(benchmark):
     class A(HasTraits):
         s = Attr(str, choices=('Ana', 'has', 'some', 'apples'))
-        arr = NArray(ndim=2, default=numpy.eye(3))
+        arr = NArray(shape=(Dim.any, Dim.any), default=numpy.eye(3))
 
     benchmark(access_attr, A())
 
