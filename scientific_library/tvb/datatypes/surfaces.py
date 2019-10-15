@@ -51,7 +51,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, 
 try:
     import gdist
 except ImportError:
-    class ExceptionRaisingGdistModule:
+    class ExceptionRaisingGdistModule(object):
         msg = "Geodesic distance module is unavailable, cannot compute gdist matrix."
 
         def local_gdist_matrix(self, *args, **kwds):
@@ -74,6 +74,8 @@ CORTICAL = "Cortical Surface"
 WHITE_MATTER = "White Matter"
 EEG_CAP = "EEG Cap"
 FACE = "Face"
+
+ALL_SURFACES = [CORTICAL, INNER_SKULL, OUTER_SKULL, OUTER_SKIN, EEG_CAP, FACE, WHITE_MATTER]
 
 # Slices are for vertices [0.....SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE]
 # [SPLIT_MAX_SIZE ..... 2 * SPLIT_BUFFER_SIZE + SPLIT_BUFFER_SIZE]
@@ -1057,11 +1059,3 @@ def center_vertices(vertices):
     """
     return vertices - numpy.mean(vertices, axis=0).reshape((1, 3))
 
-
-ALL_SURFACES_SELECTION = {'Cortical Surface': CORTICAL,
-                          'Brain Skull': INNER_SKULL,
-                          'Skull Skin': OUTER_SKULL,
-                          'Skin Air': OUTER_SKIN,
-                          'EEG Cap': EEG_CAP,
-                          'Face Surface': FACE,
-                          'White Matter Surface': WHITE_MATTER}
