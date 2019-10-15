@@ -46,7 +46,7 @@ from .hopfield import Hopfield
 from .jansen_rit import JansenRit, ZetterbergJansen
 from .larter_breakspear import LarterBreakspear
 from .linear import Linear
-from .oscillator import Generic2dOscillator, Kuramoto
+from .oscillator import Generic2dOscillator, Kuramoto, SupHopf
 from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
 from .wilson_cowan import WilsonCowan
 from .wong_wang import ReducedWongWang
