@@ -72,7 +72,6 @@ class Hopfield(Model):
     .. #This model can use a global threshold permitting multistable dynamic for
     .. #a positive structural connectivity matrix.
 
-    .. automethod:: Hopfield.__init__
     .. automethod:: Hopfield.configure
 
     Dynamic equations:
@@ -91,9 +90,6 @@ class Hopfield(Model):
         The phase-plane for the Hopfield model.
 
     """
-
-    _ui_name = "Hopfield"
-    ui_configurable_parameters = ['taux', 'tauT', 'dynamic']
 
     # Define traited attributes for this model, these represent possible kwargs.
     taux = NArray(

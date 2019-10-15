@@ -190,7 +190,6 @@ class LarterBreakspear(Model):
 
             The (:math:`V`, :math:`W`) phase-plane for the Larter-Breakspear model.
 
-    .. automethod:: LarterBreakspear.__init__
 
     Dynamic equations:
 
@@ -211,14 +210,7 @@ class LarterBreakspear(Model):
 
     """
 
-    _ui_name = "Larter-Breakspear"
-    ui_configurable_parameters = ['gCa', 'gK', 'gL', 'phi', 'gNa', 'TK', 'TCa',
-                                  'TNa', 'VCa', 'VK', 'VL', 'VNa', 'd_K', 'tau_K',
-                                  'd_Na', 'd_Ca', 'aei', 'aie', 'b', 'C', 'ane',
-                                  'ani', 'aee', 'Iext', 'rNMDA', 'VT', 'd_V', 'ZT',
-                                  'd_Z', 'QV_max', 'QZ_max', 't_scale']
-
-    #Define traited attributes for this model, these represent possible kwargs.
+    # Define traited attributes for this model, these represent possible kwargs.
     gCa = NArray(
         label=":math:`g_{Ca}`",
         default=numpy.array([1.1]),

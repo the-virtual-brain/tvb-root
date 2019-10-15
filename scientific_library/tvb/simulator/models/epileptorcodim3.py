@@ -60,14 +60,7 @@ class EpileptorCodim3(ModelNumbaDfun):
     c16b as classified by [Saggioetal_2017] Table 2. The default model
     parameters correspond to class c2s.
 
-    .. automethod:: EpileptorCodim3.__init__
-
     """
-
-    _ui_name = "Epileptor codim 3"
-    ui_configurable_parameters = ['mu1_start', 'mu2_start', 'nu_start',
-                                  'mu1_stop', 'mu2_stop', 'nu_stop', 'b', 'R',
-                                  'c', 'dstar', 'N', 'Ks']
 
     mu1_start = NArray(
         label="mu1 start",
@@ -349,16 +342,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     modulation of the path through the parameter space we can switch between
     different classes of bursters.
 
-    .. automethod:: EpileptorCodim3.__init__
-
     """
-
-    _ui_name = "Epileptor codim 3 ultra-slow modulations"
-    ui_configurable_parameters = ['mu1_Ain', 'mu2_Ain', 'nu_Ain', 'mu1_Bin',
-                                  'mu2_Bin', 'nu_Bin', 'mu1_Aend',
-                                  'mu2_Aend', 'nu_Aend', 'mu1_Bend', 'mu2_Bend',
-                                  'nu_Bend', 'b', 'R',
-                                  'c', 'dstar', 'N']
 
     mu1_Ain = NArray(
         label="mu1 Ain",

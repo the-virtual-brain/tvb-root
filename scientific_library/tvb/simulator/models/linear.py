@@ -37,9 +37,6 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 class Linear(Model):
-    _ui_name = "Linear model"
-    ui_configurable_parameters = ['gamma']
-
     gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([-10.0]),
@@ -56,7 +53,7 @@ class Linear(Model):
         of=str,
         label="Variables watched by Monitors",
         choices=("x",),
-        default=("x",),)
+        default=("x",), )
 
     state_variables = ('x',)
     _nvar = 1

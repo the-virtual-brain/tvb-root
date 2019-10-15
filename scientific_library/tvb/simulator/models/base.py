@@ -49,10 +49,6 @@ class Model(HasTraits):
 
     """
 
-    # NOTE: the parameters that are contained in the following list will be
-    # editable from the ui in an visual manner
-    ui_configurable_parameters = []
-
     state_variables = ()  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
@@ -61,14 +57,14 @@ class Model(HasTraits):
 
     def _build_observer(self):
         template = ("def observe(state):\n"
-                            "    {svars} = state\n"
-                            "    return numpy.array([{voi_names}])")
+                    "    {svars} = state\n"
+                    "    return numpy.array([{voi_names}])")
         svars = ','.join(self.state_variables)
         if len(self.state_variables) == 1:
             svars += ','
         code = template.format(
-            svars = svars,
-            voi_names = ','.join(self.variables_of_interest)
+            svars=svars,
+            voi_names=','.join(self.variables_of_interest)
         )
         namespace = {'numpy': numpy}
         LOG.debug('building observer with code:\n%s', code)

@@ -84,8 +84,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
             a reduced set of Fitz-Hugh Nagumo oscillators.
 
 
-    .. automethod:: ReducedSetFitzHughNagumo.__init__
-
     The system's equations for the i-th mode at node q are:
 
     .. math::
@@ -108,9 +106,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     #NOTE: In the Article this modelis called StefanescuJirsa2D
 
     """
-    _ui_name = "Stefanescu-Jirsa 2D"
-    ui_configurable_parameters = ['tau', 'a', 'b', 'K11', 'K12', 'K21', 'sigma',
-                                  'mu']
 
     # Define traited attributes for this model, these represent possible kwargs.
     tau = NArray(
@@ -174,15 +169,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-    #    variables_of_interest = arrays.IntegerArray(
-    #        label = "Variables watched by Monitors",
-    #        range = basic.Range(lo = 0.0, hi = 4.0, step = 1.0),
-    #        default = numpy.array([0, 2], dtype=numpy.int32),
-    #        doc = r"""This represents the default state-variables of this Model to be
-    #        monitored. It can be overridden for each Monitor if desired. The
-    #        corresponding state-variable indices for this model are :math:`\xi = 0`,
-    #        :math:`\eta = 1`, :math:`\alpha = 2`, and :math:`\beta= 3`.""",
-    #        order = 10)
 
     variables_of_interest = List(
         of=str,
@@ -354,7 +340,6 @@ class ReducedSetHindmarshRose(ReducedSetBase):
             The (:math:`\xi`, :math:`\eta`) phase-plane for the third mode of
             a reduced set of Hindmarsh-Rose oscillators.
 
-    .. automethod:: ReducedSetHindmarshRose.__init__
 
     The dynamic equations were orginally taken from [SJ_2008]_.
 
@@ -384,9 +369,6 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     #NOTE: In the Article this modelis called StefanescuJirsa3D
 
     """
-    _ui_name = "Stefanescu-Jirsa 3D"
-    ui_configurable_parameters = ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11',
-                                  'K12', 'K21', 'sigma', 'mu']
 
     # Define traited attributes for this model, these represent possible kwargs.
     r = NArray(

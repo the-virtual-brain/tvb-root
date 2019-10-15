@@ -38,7 +38,7 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
-class JC_Epileptor(ModelNumbaDfun):
+class Epileptor_resting_state(ModelNumbaDfun):
     r"""
         JC_Epileptor is a combination of Epileptor [Jirsaetal_2014], reproducing realistically 
         temporal seizure dynamics, and Generic 2-dimensional Oscillator (close to a Hopf Bifurcation)
@@ -92,10 +92,6 @@ class JC_Epileptor(ModelNumbaDfun):
 
     """
 
-    _ui_name = "JC_Epileptor"
-    ui_configurable_parameters = ["Iext", "Iext2", "r", "x0", "slope", "tau_rs", "a_rs", "b_rs", "I_rs", "d_rs", "e_rs", "f_rs", "alpha_rs", "beta_rs", "gamma_rs"]
-
-    # Epileptor's parameters
     a = NArray(
         label="a",
         default=numpy.array([1.0]),

@@ -58,8 +58,6 @@ class JansenRit(ModelNumbaDfun):
 
         The (:math:`y_4`, :math:`y_5`) phase-plane for the Jansen and Rit model.
 
-    .. automethod:: JansenRit.__init__
-
     The dynamic equations were taken from [JR_1995]_
 
     .. math::
@@ -74,11 +72,6 @@ class JansenRit(ModelNumbaDfun):
         S[v] &= \frac{2\, \nu_{max}}{1 + \exp^{r(v_0 - v)}}
 
     """
-
-    _ui_name = "Jansen-Rit"
-    ui_configurable_parameters = ['A', 'B', 'a', 'b', 'v0', 'nu_max', 'r', 'J',
-                                  'a_1', 'a_2', 'a_3', 'a_4', 'p_min', 'p_max',
-                                  'mu']
 
     # Define traited attributes for this model, these represent possible kwargs.
     A = NArray(
@@ -206,17 +199,6 @@ class JansenRit(ModelNumbaDfun):
                                     :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
                                     :math:`y5 = 5`""")
 
-    #    variables_of_interest = arrays.IntegerArray(
-    #        label = "Variables watched by Monitors",
-    #        range = basic.Range(lo = 0.0, hi = 6.0, step = 1.0),
-    #        default = numpy.array([0, 3], dtype=numpy.int32),
-    #        doc = """This represents the default state-variables of this Model to be
-    #        monitored. It can be overridden for each Monitor if desired. The
-    #        corresponding state-variable indices for this model are :math:`y0 = 0`,
-    #        :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
-    #        :math:`y5 = 5`""",
-    #        order = 17)
-
     state_variables = tuple('y0 y1 y2 y3 y4 y5'.split())
     _nvar = 6
     cvar = numpy.array([1, 2], dtype=numpy.int32)
@@ -336,11 +318,7 @@ class ZetterbergJansen(Model):
 
     """
 
-    _ui_name = "Zetterberg-Jansen"
-    ui_configurable_parameters = ['He', 'Hi', 'ke', 'ki', 'e0', 'rho_2', 'rho_1', 'gamma_1',
-                                  'gamma_2', 'gamma_3', 'gamma_4', 'gamma_5', 'P', 'U', 'Q']
-
-    #Define traited attributes for this model, these represent possible kwargs.
+    # Define traited attributes for this model, these represent possible kwargs.
     He = NArray(
         label=":math:`H_e`",
         default=numpy.array([3.25]),
@@ -369,13 +347,11 @@ class ZetterbergJansen(Model):
         other spatially distributed delays in the dendritic network [ms^-1].
         Also called average synaptic time constant.""")
 
-
     e0 = NArray(
         label=r":math:`e_0`",
         default=numpy.array([0.0025]),
         domain=Range(lo=0.00125, hi=0.00375, step=0.00001),
         doc="""Half of the maximum population mean firing rate [ms^-1].""")
-
 
     rho_2 = NArray(
         label=r":math:`\rho_2`",
@@ -556,7 +532,7 @@ class ZetterbergJansen(Model):
         sv represents a membrane potential state variable (V).
 
         """
-        #HACKERY: Hackery for exponential s that blow up.
+        # HACKERY: Hackery for exponential s that blow up.
         # Set to inf, so the result will be effectively zero.
         magic_exp_number = 709
         temp = self.rho_1 * (self.rho_2 - sv)

@@ -136,7 +136,6 @@ class WilsonCowan(Model):
 
             The (:math:`E`, :math:`I`) phase-plane for the Wilson-Cowan model.
 
-    .. automethod:: WilsonCowan.__init__
 
     The general formulation for the \textit{\textbf{Wilson-Cowan}} model as a
     dynamical unit at a node $k$ in a BNM with $l$ nodes reads:
@@ -146,11 +145,6 @@ class WilsonCowan(Model):
             \dot{I}_k &= \dfrac{1}{\tau_i} (-I_k  + (k_i - r_i I_k) \mathcal{S}_i (\alpha_i \left( c_{ie} E_k - c_{ee} I_k  + Q_k - \theta_i + \mathbf{\Gamma}(E_k, E_j, u_{kj}) + W_{\zeta}\cdot E_j + W_{\zeta}\cdot I_j\right) )),
 
     """
-    _ui_name = "Wilson-Cowan"
-    ui_configurable_parameters = ['c_ee', 'c_ei', 'c_ie', 'c_ii', 'tau_e', 'tau_i',
-                                  'a_e', 'b_e', 'c_e', 'a_i', 'b_i', 'c_i', 'r_e',
-                                  'r_i', 'k_e', 'k_i', 'P', 'Q', 'theta_e', 'theta_i',
-                                  'alpha_e', 'alpha_i']
 
     # Define traited attributes for this model, these represent possible kwargs.
     c_ee = NArray(

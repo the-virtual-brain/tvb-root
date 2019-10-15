@@ -72,10 +72,8 @@ class ReducedWongWang(ModelNumbaDfun):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
     """
-    _ui_name = "Reduced Wong-Wang"
-    ui_configurable_parameters = ['a', 'b', 'd', 'gamma', 'tau_s', 'w', 'J_N', 'I_o']
 
-    #Define traited attributes for this model, these represent possible kwargs.
+    # Define traited attributes for this model, these represent possible kwargs.
     a = NArray(
         label=":math:`a`",
         default=numpy.array([0.270, ]),

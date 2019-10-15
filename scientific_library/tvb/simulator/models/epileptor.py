@@ -118,7 +118,6 @@ class Epileptor(ModelNumbaDfun):
         Ivanov, A. I.; Bernard, C. *On the nature of seizure dynamics.* Brain,
         2014.
 
-    .. automethod:: Epileptor.__init__
 
     Variables of interest to be used by monitors: -y[0] + y[3]
 
@@ -159,9 +158,6 @@ class Epileptor(ModelNumbaDfun):
         partial epilepsy.* J Neurosci 2014, 34:15009-21.
 
     """
-
-    _ui_name = "Epileptor"
-    ui_configurable_parameters = ["Iext", "Iext2", "r", "x0", "slope"]
 
     a = NArray(
         label="a",
@@ -410,10 +406,6 @@ class Epileptor2D(ModelNumbaDfun):
             [Proixetal_2017] Proix, T.; Bartolomei, F; Guye, M.; Jirsa, V.K. *Individual brain 
             structure and modelling predict seizure propagation.* Brain 2017, 140; 641–654.
     """
-
-
-    _ui_name = "Epileptor2D"
-    ui_configurable_parameters = ["r", "Iext", "x0"]
     
     a = NArray(
         label="a",
