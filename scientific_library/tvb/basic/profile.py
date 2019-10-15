@@ -41,19 +41,9 @@ based on current running environment (e.g. dev vs deployment), or developer prof
 """
 
 import sys
+import importlib
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
-from tvb.basic.config.utils import LibraryModulesFinder
-import importlib
-
-
-def cleanup_metapath():
-    """
-    Restore sys.meta_path, as some profiles (Library) are adding something
-    """
-    for meta in sys.meta_path:
-        if isinstance(meta, LibraryModulesFinder):
-            sys.meta_path.remove(meta)
 
 
 class TvbProfile():
@@ -102,8 +92,6 @@ class TvbProfile():
             sys.stdout = old_out
 
         if selected_profile is not None:
-            cleanup_metapath()
-
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
 

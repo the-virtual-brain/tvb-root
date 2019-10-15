@@ -48,39 +48,3 @@ class EnhancedDictionary(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
-
-
-class LibraryImportError(ImportError):
-    """
-    This is just a flag telling us at "reload" that a module was rejected due to our custom exception
-    """
-
-
-
-class LibraryModulesFinder(object):
-    """
-    In case users run TVB in 'library' profile access should be restricted to some parts of tvb,
-    to avoid errors from those parts (which are not excepted to run with library settings).
-    """
-
-    restricted_modules = ['tvb.interfaces',
-                          'tvb.core',
-                          'tvb.config',
-                          'tvb.adapters']
-
-
-    def find_module(self, fullname, path=None):
-
-        for restricted in self.restricted_modules:
-            if fullname.startswith(restricted):
-                return self
-
-
-    def load_module(self, module_name):
-        info_message = str("You are trying to import the module `%s` in library mode."
-                           "The library profile is a lightweight version of TVB and you "
-                           "only have access to the simulator, analyzers and datatypes packages."
-                           "If you want to use the entire TVB Framework start it either in command "
-                           "or web interface profile." % module_name)
-        raise LibraryImportError(info_message)
-

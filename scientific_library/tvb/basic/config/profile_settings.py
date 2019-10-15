@@ -38,7 +38,6 @@ import sys
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
-from tvb.basic.config.utils import LibraryModulesFinder
 
 
 class BaseSettingsProfile(object):
@@ -177,13 +176,6 @@ class LibrarySettingsProfile(BaseSettingsProfile):
 
     def __init__(self):
         super(LibrarySettingsProfile, self).__init__(False)
-
-    def initialize_profile(self):
-        """
-        Make sure some warning are thrown when trying to import from framework.
-        """
-        super(LibrarySettingsProfile, self).initialize_profile()
-        sys.meta_path.append(LibraryModulesFinder())
 
 
 class TestLibraryProfile(LibrarySettingsProfile):
