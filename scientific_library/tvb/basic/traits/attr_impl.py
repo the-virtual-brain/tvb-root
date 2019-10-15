@@ -1,7 +1,7 @@
 import typing
 import numpy
 import logging
-from .neotraits import Attr
+from .neotraits_impl import Attr
 
 
 # a logger for the whole traits system

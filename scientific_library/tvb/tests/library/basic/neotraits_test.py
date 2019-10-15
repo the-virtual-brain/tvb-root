@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
-from tvb.basic.traits.neotraits import HasTraits, Attr
-from tvb.basic.traits import attr
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, Const, List
 
 
 def test_simple_declaration():
@@ -155,7 +154,7 @@ def test_mro_fail():
 
 def test_narr_simple():
     class Boo(HasTraits):
-        x = attr.NArray(ndim=2, dtype=np.dtype(np.int))
+        x = NArray(ndim=2, dtype=np.dtype(np.int))
 
     boo = Boo(x=np.array([[1, 4]]))
     boo.x = np.array([[1], [2]])
@@ -164,15 +163,15 @@ def test_narr_simple():
 def test_narr_enforcing():
     with pytest.raises(ValueError):
         class Boo(HasTraits):
-            x = attr.NArray(dtype=np.dtype(np.int), default=np.eye(2))
+            x = NArray(dtype=np.dtype(np.int), default=np.eye(2))
 
     with pytest.raises(ValueError):
         class Boo(HasTraits):
-            x = attr.NArray(ndim=3, default=np.linspace(1, 3, 10))
+            x = NArray(ndim=3, default=np.linspace(1, 3, 10))
 
     class Boo(HasTraits):
-        x = attr.NArray(ndim=2, default=np.eye(2))
-        y = attr.NArray(dtype=np.dtype(int), default=np.arange(12), domain=xrange(5))
+        x = NArray(ndim=2, default=np.eye(2))
+        y = NArray(dtype=np.dtype(int), default=np.arange(12), domain=xrange(5))
 
     # only the defaults are checked for domain compliance
     boo = Boo(y=np.arange(10))
@@ -184,8 +183,8 @@ def test_narr_enforcing():
 
 def test_choices():
     class A(HasTraits):
-        x = attr.Attr(str, default='ana', choices=('ana', 'are', 'mere'))
-        cx = attr.Const('ana')
+        x = Attr(str, default='ana', choices=('ana', 'are', 'mere'))
+        cx = Const('ana')
 
     a = A()
 
@@ -195,7 +194,7 @@ def test_choices():
 
 def test_named_dimensions():
     class A(HasTraits):
-        x = attr.NArray(dim_names=('time', 'space'), required=False)
+        x = NArray(dim_names=('time', 'space'), required=False)
 
     assert A.x.ndim == 2
     a = A()
@@ -206,7 +205,7 @@ def test_named_dimensions():
 
 def test_lists():
     class A(HasTraits):
-        picked_dimensions = attr.List(of=str, default=('time', 'space'), choices=('time', 'space', 'measurement'))
+        picked_dimensions = List(of=str, default=('time', 'space'), choices=('time', 'space', 'measurement'))
 
     a = A()
 
