@@ -39,9 +39,9 @@ methods that are associated with the Equation datatypes.
 import json
 import numpy
 import numexpr
-from tvb.basic.traits import core, parameters_factory, types_basic as basic
 from tvb.basic.logger.builder import get_logger
 from scipy.special import gamma as sp_gamma
+from tvb.basic.traits.neotraits import HasTraits, Attr, Const
 
 
 LOG = get_logger(__name__)
@@ -50,7 +50,10 @@ LOG = get_logger(__name__)
 DEFAULT_PLOT_GRANULARITY = 1024
 
 
-class Equation(basic.MapAsJson, core.Type):
+# class Equation(basic.MapAsJson, core.Type):
+# todo: handle the MapAsJson functionality
+
+class Equation(HasTraits):
     "Base class for Equation data types."
 
     # data
@@ -63,12 +66,15 @@ class Equation(basic.MapAsJson, core.Type):
                      'SigmoidalCoupling', 'SigmoidalCouplingData', 'SigmoidalCouplingScientific',
                      'SigmoidalCouplingFramework']
 
-    equation = basic.String(
+    equation = Attr(
+        field_type=str,
         label="Equation as a string",
-        doc="""A latex representation of the equation, with the extra
-                escaping needed for interpretation via sphinx.""")
+        doc=""" the equation as it should be interpreted by numexpr""")
 
-    parameters = basic.Dict(
+    # todo: transform these parameters into plain declarative attrs
+
+    parameters = Attr(
+        field_type=dict,
         label="Parameters in a dictionary.",
         default={},
         doc="""Should be a list of the parameters and their meaning, Traits
@@ -121,30 +127,32 @@ class Equation(basic.MapAsJson, core.Type):
         Builds from the given data dictionary the equation for the specified field name.
         The dictionary should have the data collapsed.
         """
-        if equation_field_name not in submitted_data_dict:
-            return None
-
-        eq_param_str = equation_field_name + '_parameters'
-        eq = submitted_data_dict.get(eq_param_str)
-
-        equation_parameters = {}
-        if eq:
-            if 'parameters' in eq:
-                equation_parameters = eq['parameters']
-            if 'parameters_parameters' in eq:
-                equation_parameters = eq['parameters_parameters']
-
-        for k in equation_parameters:
-            equation_parameters[k] = float(equation_parameters[k])
-
-        equation_type = submitted_data_dict[equation_field_name]
-        equation = parameters_factory.get_traited_instance_for_name(equation_type, Equation,
-                                                                    {'parameters': equation_parameters})
-        if alter_submitted_dictionary:
-            del submitted_data_dict[eq_param_str]
-            submitted_data_dict[equation_field_name] = equation
-
-        return equation
+        # todo : this is a type deserialization use case. not yet supported by neotraits
+        raise NotImplemented
+        # if equation_field_name not in submitted_data_dict:
+        #     return None
+        #
+        # eq_param_str = equation_field_name + '_parameters'
+        # eq = submitted_data_dict.get(eq_param_str)
+        #
+        # equation_parameters = {}
+        # if eq:
+        #     if 'parameters' in eq:
+        #         equation_parameters = eq['parameters']
+        #     if 'parameters_parameters' in eq:
+        #         equation_parameters = eq['parameters_parameters']
+        #
+        # for k in equation_parameters:
+        #     equation_parameters[k] = float(equation_parameters[k])
+        #
+        # equation_type = submitted_data_dict[equation_field_name]
+        # equation = parameters_factory.get_traited_instance_for_name(equation_type, Equation,
+        #                                                             {'parameters': equation_parameters})
+        # if alter_submitted_dictionary:
+        #     del submitted_data_dict[eq_param_str]
+        #     submitted_data_dict[equation_field_name] = equation
+        #
+        # return equation
 
     @staticmethod
     def to_json(entity):
@@ -210,10 +218,11 @@ class DiscreteEquation(FiniteSupportEquation):
     in the space is effectively just assigned a value.
 
     """
-    equation = basic.String(
+    equation = Attr(
+        field_type=str,
         label="Discrete Equation",
         default="var",
-        locked=True,
+        # locked=True,
         doc="""The equation defines a function of :math:`x`""")
 
 
@@ -222,13 +231,14 @@ class Linear(TemporalApplicableEquation):
     A linear equation.
 
     """
-    equation = basic.String(
+    equation = Const(
         label="Linear Equation",
         default="a * var + b",
-        locked=True,
+        # locked=True,
         doc=""":math:`result = a * x + b`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Linear Parameters",
         default={"a": 1.0,
                  "b": 0.0})
@@ -242,14 +252,15 @@ class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
 
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Gaussian Equation",
         default="(amp * exp(-((var-midpoint)**2 / (2.0 * sigma**2))))+offset",
-        locked=True,
+        # locked=True,
         doc=""":math:`(amp \\exp\\left(-\\left(\\left(x-midpoint\\right)^2 /
         \\left(2.0 \\sigma^2\\right)\\right)\\right)) + offset`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Gaussian Parameters",
         default={"amp": 1.0, "sigma": 1.0, "midpoint": 0.0, "offset": 0.0})
 
@@ -261,16 +272,17 @@ class DoubleGaussian(FiniteSupportEquation):
     """
     _ui_name = "Mexican-hat"
 
-    equation = basic.String(
+    equation = Const(
         label="Double Gaussian Equation",
         default="(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - (amp_2 * exp(-((var-midpoint_2)**2 / (2.0 * sigma_2**2))))",
-        locked=True,
+        # locked=True,
         doc=""":math:`amp_1 \\exp\\left(-\\left((x-midpoint_1)^2 / \\left(2.0
         \\sigma_1^2\\right)\\right)\\right) -
         amp_2 \\exp\\left(-\\left((x-midpoint_2)^2 / \\left(2.0
         \\sigma_2^2\\right)\\right)\\right)`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Double Gaussian Parameters",
         default={"amp_1": 0.5, "sigma_1": 20.0, "midpoint_1": 0.0,
                  "amp_2": 1.0, "sigma_2": 10.0, "midpoint_2": 0.0})
@@ -283,14 +295,14 @@ class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
     when spatializing model parameters.
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Sigmoid Equation",
         default="(amp / (1.0 + exp(-1.8137993642342178 * (radius-var)/sigma))) + offset",
-        locked=True,
         doc=""":math:`(amp / (1.0 + \\exp(-\\pi/\\sqrt(3.0)
             (radius-x)/\\sigma))) + offset`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Sigmoid Parameters",
         default={"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
 
@@ -300,14 +312,14 @@ class GeneralizedSigmoid(TemporalApplicableEquation):
     A General Sigmoid equation.
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Generalized Sigmoid Equation",
         default="low + (high - low) / (1.0 + exp(-1.8137993642342178 * (var-midpoint)/sigma))",
-        locked=True,
         doc=""":math:`low + (high - low) / (1.0 + \\exp(-\\pi/\\sqrt(3.0)
             (x-midpoint)/\\sigma))`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Sigmoid Parameters",
         default={"low": 0.0, "high": 1.0, "midpoint": 1.0, "sigma": 0.3}) #,
     #"pi": numpy.pi})
@@ -318,13 +330,13 @@ class Sinusoid(TemporalApplicableEquation):
     A Sinusoid equation.
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Sinusoid Equation",
         default="amp * sin(6.283185307179586 * frequency * var)",
-        locked=True,
         doc=""":math:`amp \\sin(2.0 \\pi frequency x)` """)
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Sinusoid Parameters",
         default={"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
@@ -334,13 +346,13 @@ class Cosine(TemporalApplicableEquation):
     A Cosine equation.
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Cosine Equation",
         default="amp * cos(6.283185307179586 * frequency * var)",
-        locked=True,
         doc=""":math:`amp \\cos(2.0 \\pi frequency x)` """)
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Cosine Parameters",
         default={"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
@@ -350,14 +362,14 @@ class Alpha(TemporalApplicableEquation):
     An Alpha function belonging to the Exponential function family.
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Alpha Equation",
         default="where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) - exp(-beta * (var-onset))), 0.0 * var)",
-        locked=True,
         doc=""":math:`(\\alpha * \\beta) / (\\beta - \\alpha) *
             (\\exp(-\\alpha * (x-onset)) - \\exp(-\\beta * (x-onset)))` for :math:`(x-onset) > 0`""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Alpha Parameters",
         default={"onset": 0.5, "alpha": 13.0, "beta": 42.0})
 
@@ -375,10 +387,9 @@ class PulseTrain(TemporalApplicableEquation):
     * onset time    :
     """
 
-    equation = basic.String(
+    equation = Const(
         label="Pulse Train",
         default="where((var % T) < tau, amp, 0)",
-        locked=True,
         doc=""":math:`\\frac{\\tau}{T}
         +\\sum_{n=1}^{\\infty}\\frac{2}{n\\pi}
         \\sin\\left(\\frac{\\pi\\,n\\tau}{T}\\right)
@@ -389,7 +400,8 @@ class PulseTrain(TemporalApplicableEquation):
     # onset is in milliseconds
     # T and tau are in milliseconds as well
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         default={"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
         label="Pulse Train Parameters")
 
@@ -451,13 +463,13 @@ class Gamma(HRFKernelEquation):
     # time-series to the beginning of the gamma hrf.
     # delay cannot be negative or greater than the hrf duration.
 
-    equation = basic.String(
+    equation = Const(
         label="Gamma Equation",
         default="((var / tau) ** (n - 1) * exp(-(var / tau)) )/ (tau * factorial)",
-        locked=True,
         doc=""":math:`h(var) = \\frac{(\\frac{var}{\\tau})^{(n-1)}\\exp{-(\\frac{var}{\\tau})}}{\\tau(n-1)!}`.""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Gamma Parameters",
         default={"tau": 1.08, "n": 3.0, "factorial": 2.0, "a": 0.1})
 
@@ -510,15 +522,15 @@ class DoubleExponential(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Difference of Exponentials"
 
-    equation = basic.String(
+    equation = Const(
         label="Double Exponential Equation",
         default="((amp_1 * exp(-var/tau_1) * sin(2.*pi*f_1*var)) - (amp_2 * exp(-var/ tau_2) * sin(2.*pi*f_2*var)))",
-        locked=True,
         doc=""":math:`h(var) = amp_1\\exp(\\frac{-var}{\tau_1})
         \\sin(2\\cdot\\pi f_1 \\cdot var) - amp_2\\cdot \\exp(-\\frac{var}
         {\\tau_2})*\\sin(2\\pi f_2 var)`.""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Double Exponential Parameters",
         default={"tau_1": 7.22, "f_1": 0.03, "amp_1": 0.1,
                  "tau_2": 7.4, "f_2": 0.12, "amp_2": 0.1,
@@ -561,10 +573,9 @@ class FirstOrderVolterra(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Volterra Kernel"
 
-    equation = basic.String(
+    equation = Const(
         label="First Order Volterra Kernel",
         default="1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / (sqrt(1./tau_f - 1./(4.*tau_s**2)))",
-        locked=True,
         doc=""":math:`G(t - t^{\\prime}) =
              e^{\\frac{1}{2} \\left(\\frac{t - t^{\\prime}}{\\tau_s} \\right)}
              \\frac{\sin\\left((t - t^{\\prime})
@@ -573,7 +584,8 @@ class FirstOrderVolterra(HRFKernelEquation):
              \\; \\; \\; \\; \\; \\;  for \\; \\; \\; t \\geq t^{\\prime}
              = 0 \\; \\; \\; \\; \\; \\;  for \\; \\; \\;  t < t^{\\prime}`.""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Mixture of Gammas Parameters",
         default={"tau_s": 0.8, "tau_f": 0.4, "k_1": 5.6, "V_0": 0.02})
 
@@ -627,14 +639,14 @@ class MixtureOfGammas(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Mixture of Gammas"
 
-    equation = basic.String(
+    equation = Const(
         label="Mixture of Gammas",
         default="(l * var)**(a_1-1) * exp(-l*var) / gamma_a_1 - c * (l*var)**(a_2-1) * exp(-l*var) / gamma_a_2",
-        locked=True,
         doc=""":math:`\\frac{\\lambda \\,t^{a_{1} - 1} \\,\\, \\exp^{-\\lambda \\,t}}{\\Gamma(a_{1})}
         - 0.5 \\frac{\\lambda \\,t^{a_{2} - 1} \\,\\, \\exp^{-\\lambda \\,t}}{\\Gamma(a_{2})}`.""")
 
-    parameters = basic.Dict(
+    parameters = Attr(
+        field_type=dict,
         label="Double Exponential Parameters",
         default={"a_1": 6.0, "a_2": 13.0, "l": 1.0, "c": 0.4, "gamma_a_1": 1.0, "gamma_a_2": 1.0})
 
