@@ -265,6 +265,9 @@ def trait_property(attr):
     A read only property that has a declarative attribute associated with.
     :param attr: the declarative attribute that describes this property
     """
+    if not isinstance(attr, Attr):
+        raise TypeError('@trait_property(attr) attribute argument required.')
+
     def deco(func):
         return TraitProperty(func, attr)
     return deco
@@ -280,6 +283,9 @@ def cached_trait_property(attr):
     the same name as the decorated function.
     :param attr: the declarative attribute that describes this property
     """
+    if not isinstance(attr, Attr):
+        raise TypeError('@cached_trait_property(attr) attribute argument required.')
+
     def deco(func):
         return CachedTraitProperty(func, attr)
     return deco
