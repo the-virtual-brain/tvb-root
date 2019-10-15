@@ -246,7 +246,7 @@ class Cortex(surfaces.CorticalSurface):
             # Count how many vertices each region has.
             counter = collections.Counter(self.region_mapping)
             # Presumably non-cortical regions will have len 1 vertex assigned.
-            vertices_per_region = numpy.asarray(list(counter.values()))
+            vertices_per_region = numpy.asarray(list(dict(sorted(counter.items())).values()))
             non_cortical_regions = numpy.where(vertices_per_region == 1)
             cortical_regions = numpy.where(vertices_per_region > 1)
             cortical_region_mapping = [x for x in self.region_mapping if x in cortical_regions[0]]

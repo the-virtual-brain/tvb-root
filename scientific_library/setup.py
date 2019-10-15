@@ -45,7 +45,7 @@ LIBRARY_VERSION = "2.0.b"
 TVB_TEAM = "Stuart Knock, Marmaduke Woodman, Paula Sanz Leon, Laurent Pezard, Viktor Jirsa"
 
 TVB_INSTALL_REQUIREMENTS = ["typing", "networkx", "numpy", "numba", "numexpr", "matplotlib",
-                            "pytest", "scikit-learn", "scipy", "tvb-gdist", "tvb-data"]
+                            "pytest", "pytest-benchmark" "scikit-learn", "scipy", "tvb-gdist", "tvb-data"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
