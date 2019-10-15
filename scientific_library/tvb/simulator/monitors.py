@@ -234,6 +234,7 @@ class SpatialAverage(Monitor):
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
         label="An index mask of nodes into areas",
+        required=False,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
             for mapping a surface based simulation back to the regions used in 
