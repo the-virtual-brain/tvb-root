@@ -35,47 +35,45 @@ module docstring
 
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits import core
-from tvb.basic.traits.types_mapped import MappedType
-from tvb.datatypes import arrays
 from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray
 
 LOG = get_logger(__name__)
 TRACTS_CHUNK_SIZE = 100
 
 
-class Tracts(MappedType):
+class Tracts(HasTraits):
     """Datatype for results of diffusion imaging tractography."""
 
     MAX_N_VERTICES = 2 ** 16
 
-    vertices = arrays.FloatArray(
+    vertices = NArray(
+        dtype=float,
         label="Vertex positions",
-        file_storage=core.FILE_STORAGE_EXPAND,
-        order=-1,
-        doc="""An array specifying coordinates for the tracts vertices.""")
+        doc="""An array specifying coordinates for the tracts vertices."""
+    )
 
-    tract_start_idx = arrays.IntegerArray(
+    tract_start_idx = NArray(
+        dtype=int,
         label="Tract starting indices",
-        order=-1,
-        doc="""Where is the first vertex of a tract in the vertex array""")
+        doc="""Where is the first vertex of a tract in the vertex array"""
+    )
 
-    tract_region = arrays.IntegerArray(
+    tract_region = NArray(
+        dtype=int,
         label="Tract region index",
         required=False,
-        order=-1,
         doc="""
-        An index used to find quickly all tract emerging from a region
-        tract_region[i] is the region of the i'th tract. -1 represents the background
-        """
+            An index used to find quickly all tract emerging from a region
+            tract_region[i] is the region of the i'th tract. -1 represents the background
+            """
     )
 
-    region_volume_map = RegionVolumeMapping(
+    region_volume_map = Attr(
+        RegionVolumeMapping,
         label="Region volume Mapping used to create the tract_region index",
-        required=False,
-        order=-1
+        required=False
     )
-
 
     @property
     def tracts_count(self):
