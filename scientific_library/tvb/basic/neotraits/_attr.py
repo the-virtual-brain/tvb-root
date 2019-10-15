@@ -31,7 +31,7 @@ class Attr(_Attr):
     # For an introduction see https://docs.python.org/2/howto/descriptor.html
 
     def __init__(
-            self, field_type, default=None, doc='', label='', required=True, readonly=False, choices=None
+            self, field_type, default=None, doc='', label='', required=True, final=False, choices=None
     ):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
         """
@@ -41,7 +41,7 @@ class Attr(_Attr):
         :param doc: Documentation for this field.
         :param label: A short description.
         :param required: required fields should not be None. Not strongly enforced.
-        :param readonly: If assignment should be prohibited.
+        :param final: Final fields can only be assigned once.
         :param choices: A tuple of the values that this field is allowed to take.
         """
         super(Attr, self).__init__()
@@ -50,7 +50,7 @@ class Attr(_Attr):
         self.doc = doc
         self.label = label
         self.required = bool(required)
-        self.readonly = bool(readonly)
+        self.final = bool(final)
         self.choices = choices
 
     # subclass api
@@ -139,14 +139,24 @@ class Attr(_Attr):
             # lost as a new one is created every time.
             instance.__dict__[self.field_name] = default
 
+        # todo: consider raising AttributeError instead of returning None if required is True
+
         return instance.__dict__[self.field_name]
 
 
     def __set__(self, instance, value):
         # type: ('HasTraits', typing.Any) -> None
         self._assert_have_field_name()
-        if self.readonly:
-            raise TraitAttributeError("can't set readonly attribute")
+
+        if self.final:
+            # non-set to set final transition happens when instance stored value becomes not none
+            # getattr will call __get__. We want that.
+            # If __set__ is called before a __get__ then no defaults have been assigned.
+            # Note that if the default is None, then this is still write-able
+            present_value = getattr(instance, self.field_name)
+            if present_value is not None:
+                raise TraitAttributeError("can't write final attribute")
+
         value = self._validate_set(instance, value)
 
         instance.__dict__[self.field_name] = value
@@ -171,20 +181,29 @@ class Attr(_Attr):
 
 
 
-class Const(Attr):
+class Final(Attr):
     """
-    An attribute that resolves to the given default.
-    Note that if it is a mutable type, the value is shared with all instances of the owning class
+    An attribute that can only be set once.
+    If a default is provided it counts as a set, so it cannot be written to.
+    Note that if the default is a mutable type, the value is shared with all instances
+    of the owning class.
     We cannot enforce true constancy in python
     """
 
-    def __init__(self, default, doc='', label=''):
+    def __init__(self, default=None, field_type=None, doc='', label=''):
         """
         :param default: The constant value
         """
         # it would be nice if we could turn the default immutable. But this is unreasonable work in python
-        super(Const, self).__init__(
-            field_type=type(default), default=default, doc=doc, label=label, required=True, readonly=True
+        # maybe a deep copy?
+        if default is not None:
+            field_type = type(default)
+
+        if default is None and field_type is None:
+            raise ValueError('Either a default or a field_type is required')
+
+        super(Final, self).__init__(
+            field_type=field_type, default=default, doc=doc, label=label, required=True, final=True
         )
 
 
@@ -194,7 +213,7 @@ class List(Attr):
     Choices and type are reinterpreted as applying not to the list but to the elements of it
     """
 
-    def __init__(self, of=object, default=(), doc='', label='', readonly=False, choices=None):
+    def __init__(self, of=object, default=(), doc='', label='', final=False, choices=None):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
         super(List, self).__init__(
             field_type=collections.Sequence,
@@ -202,7 +221,7 @@ class List(Attr):
             doc=doc,
             label=label,
             required=True,
-            readonly=readonly,
+            final=final,
             choices=None,
         )
         self.element_type = of
@@ -311,7 +330,7 @@ class Int(_Number):
     """
 
     def __init__(
-        self, field_type=int, default=0, doc='', label='', required=True, readonly=False, choices=None
+        self, field_type=int, default=0, doc='', label='', required=True, final=False, choices=None
     ):
         super(_Number, self).__init__(
             field_type=field_type,
@@ -319,7 +338,7 @@ class Int(_Number):
             doc=doc,
             label=label,
             required=required,
-            readonly=readonly,
+            final=final,
             choices=choices,
         )
 
@@ -346,7 +365,7 @@ class Float(_Number):
     """
 
     def __init__(
-        self, field_type=float, default=0, doc='', label='', required=True, readonly=False, choices=None
+        self, field_type=float, default=0, doc='', label='', required=True, final=False, choices=None
     ):
         super(_Number, self).__init__(
             field_type=field_type,
@@ -354,7 +373,7 @@ class Float(_Number):
             doc=doc,
             label=label,
             required=required,
-            readonly=readonly,
+            final=final,
             choices=choices,
         )
 

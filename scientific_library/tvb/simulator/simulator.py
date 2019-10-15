@@ -448,7 +448,7 @@ class Simulator(HasTraits):
                 return self._configure_history(initial_conditions)
             elif ic_shape[1:] != self.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
-                                 % ic_shape[1:], self.good_history_shape[1:])
+                                 % (ic_shape[1:], self.good_history_shape[1:]))
             else:
                 if ic_shape[0] >= self.horizon:
                     LOG.debug("Using last %d time-steps for history.", self.horizon)

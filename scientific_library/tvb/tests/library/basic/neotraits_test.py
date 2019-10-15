@@ -7,7 +7,7 @@ import pytest
 
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
-    HasTraits, Attr, NArray, Const, List, trait_property,
+    HasTraits, Attr, NArray, Final, List, trait_property,
     Int, Float, Range, cached_trait_property, LinspaceRange
 )
 from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
@@ -281,7 +281,7 @@ def test_narr_accepts_safely_convertible_values():
 def test_choices():
     class A(HasTraits):
         x = Attr(str, default='ana', choices=('ana', 'are', 'mere'))
-        cx = Const('ana')
+        cx = Final('ana')
 
     a = A()
 
@@ -291,11 +291,23 @@ def test_choices():
 
 def test_const_attr():
     class A(HasTraits):
-        cx = Const('ana')
+        cx = Final('ana')
+        final_c = Attr(int, final=True)
 
     a = A()
+    # in neotraits uninitialized attrs with no defaults return None even if required!
+    assert a.final_c is None
+    a.final_c = 42
+
     with pytest.raises(TraitAttributeError):
         a.cx = 'hell'
+
+    with pytest.raises(TraitAttributeError):
+        a.final_c = 'hell'
+
+    # revealing the insides.
+    a.__dict__['final_c'] = None
+    a.final_c = 24
 
 
 def test_named_dimensions():

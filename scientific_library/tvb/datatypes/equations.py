@@ -41,7 +41,7 @@ import numpy
 import numexpr
 from tvb.basic.logger.builder import get_logger
 from scipy.special import gamma as sp_gamma
-from tvb.basic.neotraits.api import HasTraits, Attr, Const
+from tvb.basic.neotraits.api import HasTraits, Attr, Final
 
 
 LOG = get_logger(__name__)
@@ -232,7 +232,7 @@ class Linear(TemporalApplicableEquation):
     A linear equation.
 
     """
-    equation = Const(
+    equation = Final(
         label="Linear Equation",
         default="a * var + b",
         # locked=True,
@@ -252,7 +252,7 @@ class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
 
     """
 
-    equation = Const(
+    equation = Final(
         label="Gaussian Equation",
         default="(amp * exp(-((var-midpoint)**2 / (2.0 * sigma**2))))+offset",
         # locked=True,
@@ -272,7 +272,7 @@ class DoubleGaussian(FiniteSupportEquation):
     """
     _ui_name = "Mexican-hat"
 
-    equation = Const(
+    equation = Final(
         label="Double Gaussian Equation",
         default="(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - (amp_2 * exp(-((var-midpoint_2)**2 / (2.0 * sigma_2**2))))",
         # locked=True,
@@ -295,7 +295,7 @@ class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
     when spatializing model parameters.
     """
 
-    equation = Const(
+    equation = Final(
         label="Sigmoid Equation",
         default="(amp / (1.0 + exp(-1.8137993642342178 * (radius-var)/sigma))) + offset",
         doc=""":math:`(amp / (1.0 + \\exp(-\\pi/\\sqrt(3.0)
@@ -312,7 +312,7 @@ class GeneralizedSigmoid(TemporalApplicableEquation):
     A General Sigmoid equation.
     """
 
-    equation = Const(
+    equation = Final(
         label="Generalized Sigmoid Equation",
         default="low + (high - low) / (1.0 + exp(-1.8137993642342178 * (var-midpoint)/sigma))",
         doc=""":math:`low + (high - low) / (1.0 + \\exp(-\\pi/\\sqrt(3.0)
@@ -330,7 +330,7 @@ class Sinusoid(TemporalApplicableEquation):
     A Sinusoid equation.
     """
 
-    equation = Const(
+    equation = Final(
         label="Sinusoid Equation",
         default="amp * sin(6.283185307179586 * frequency * var)",
         doc=""":math:`amp \\sin(2.0 \\pi frequency x)` """)
@@ -346,7 +346,7 @@ class Cosine(TemporalApplicableEquation):
     A Cosine equation.
     """
 
-    equation = Const(
+    equation = Final(
         label="Cosine Equation",
         default="amp * cos(6.283185307179586 * frequency * var)",
         doc=""":math:`amp \\cos(2.0 \\pi frequency x)` """)
@@ -362,7 +362,7 @@ class Alpha(TemporalApplicableEquation):
     An Alpha function belonging to the Exponential function family.
     """
 
-    equation = Const(
+    equation = Final(
         label="Alpha Equation",
         default="where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) - exp(-beta * (var-onset))), 0.0 * var)",
         doc=""":math:`(\\alpha * \\beta) / (\\beta - \\alpha) *
@@ -387,7 +387,7 @@ class PulseTrain(TemporalApplicableEquation):
     * onset time    :
     """
 
-    equation = Const(
+    equation = Final(
         label="Pulse Train",
         default="where((var % T) < tau, amp, 0)",
         doc=""":math:`\\frac{\\tau}{T}
@@ -463,7 +463,7 @@ class Gamma(HRFKernelEquation):
     # time-series to the beginning of the gamma hrf.
     # delay cannot be negative or greater than the hrf duration.
 
-    equation = Const(
+    equation = Final(
         label="Gamma Equation",
         default="((var / tau) ** (n - 1) * exp(-(var / tau)) )/ (tau * factorial)",
         doc=""":math:`h(var) = \\frac{(\\frac{var}{\\tau})^{(n-1)}\\exp{-(\\frac{var}{\\tau})}}{\\tau(n-1)!}`.""")
@@ -522,7 +522,7 @@ class DoubleExponential(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Difference of Exponentials"
 
-    equation = Const(
+    equation = Final(
         label="Double Exponential Equation",
         default="((amp_1 * exp(-var/tau_1) * sin(2.*pi*f_1*var)) - (amp_2 * exp(-var/ tau_2) * sin(2.*pi*f_2*var)))",
         doc=""":math:`h(var) = amp_1\\exp(\\frac{-var}{\tau_1})
@@ -573,7 +573,7 @@ class FirstOrderVolterra(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Volterra Kernel"
 
-    equation = Const(
+    equation = Final(
         label="First Order Volterra Kernel",
         default="1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / (sqrt(1./tau_f - 1./(4.*tau_s**2)))",
         doc=""":math:`G(t - t^{\\prime}) =
@@ -639,7 +639,7 @@ class MixtureOfGammas(HRFKernelEquation):
 
     _ui_name = "HRF kernel: Mixture of Gammas"
 
-    equation = Const(
+    equation = Final(
         label="Mixture of Gammas",
         default="(l * var)**(a_1-1) * exp(-l*var) / gamma_a_1 - c * (l*var)**(a_2-1) * exp(-l*var) / gamma_a_2",
         doc=""":math:`\\frac{\\lambda \\,t^{a_{1} - 1} \\,\\, \\exp^{-\\lambda \\,t}}{\\Gamma(a_{1})}

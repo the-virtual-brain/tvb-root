@@ -34,7 +34,7 @@ Models based on Wong-Wang's work.
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Const, List, Range
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 @guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
@@ -131,7 +131,7 @@ class ReducedWongWang(ModelNumbaDfun):
         doc="""[nA] Noise amplitude. Take this value into account for stochatic
         integration schemes.""")
 
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={"S": numpy.array([0.0, 1.0])},
         doc="Population firing rate")

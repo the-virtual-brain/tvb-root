@@ -34,7 +34,7 @@ import math
 import numpy
 from .base import ModelNumbaDfun, Model
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, List, Range, Const
+from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 
 class JansenRit(ModelNumbaDfun):
@@ -181,7 +181,7 @@ class JansenRit(ModelNumbaDfun):
         doc="""Mean input firing rate""")
 
     #Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"y0": numpy.array([-1.0, 1.0]),
                  "y1": numpy.array([-500.0, 500.0]),
@@ -462,7 +462,7 @@ class ZetterbergJansen(Model):
         (External stimulus. Constant intensity.Entry point for coupling.)""")
 
     #Used for phase-plane axis ranges and to bound random initial() conditions.
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"v1": numpy.array([-100.0, 100.0]),
                  "y1": numpy.array([-500.0, 500.0]),

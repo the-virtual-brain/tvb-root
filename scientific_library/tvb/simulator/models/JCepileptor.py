@@ -35,7 +35,7 @@
 import numpy
 from .base import ModelNumbaDfun
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Const, List, Range
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 class JC_Epileptor(ModelNumbaDfun):
@@ -276,7 +276,7 @@ class JC_Epileptor(ModelNumbaDfun):
 
     # Initialization.
     # Epileptor model is set in fixed point by default.
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={
             "x1": numpy.array([-1.8, -1.4]),

@@ -35,7 +35,7 @@ from .base import Model, ModelNumbaDfun
 import numexpr
 import numpy
 from numba import guvectorize, float64
-from tvb.basic.neotraits.api import NArray, Const, List, Range
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -327,7 +327,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         # order=13)
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"V": numpy.array([-2.0, 4.0]),
                  "W": numpy.array([-6.0, 6.0])},
@@ -471,7 +471,7 @@ class Kuramoto(Model):
         # order=1)
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"theta": numpy.array([0.0, numpy.pi * 2.0]), },
         doc="""The values for each state-variable should be set to encompass
@@ -573,7 +573,7 @@ class supHopf(ModelNumbaDfun):
         doc="""Angular frequency.""")
 
     # Initialization.
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"x": numpy.array([-5.0, 5.0]),
                  "y": numpy.array([-5.0, 5.0])},

@@ -47,7 +47,7 @@ from tvb.basic import exceptions
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.basic.readers import ZipReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Const, Int, Float, narray_describe
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
 
 try:
     import gdist
@@ -1016,19 +1016,19 @@ class Surface(HasTraits):
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""
     _ui_name = "A white matter - gray  surface"
-    surface_type = Const(WHITE_MATTER)
+    surface_type = Final(WHITE_MATTER)
 
 
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
     _ui_name = "A cortical surface"
-    surface_type = Const(CORTICAL)
+    surface_type = Final(CORTICAL)
 
 
 class SkinAir(Surface):
     """Skin - air interface surface."""
     _ui_name = "Skin"
-    surface_type = Const(OUTER_SKIN)
+    surface_type = Final(OUTER_SKIN)
 
     @classmethod
     def from_file(cls, source_file="outer_skin_4096.zip", instance=None):
@@ -1038,7 +1038,7 @@ class SkinAir(Surface):
 class BrainSkull(Surface):
     """Brain - inner skull interface surface."""
     _ui_name = "Brain - inner skull interface surface."
-    surface_type = Const(INNER_SKULL)
+    surface_type = Final(INNER_SKULL)
 
     @classmethod
     def from_file(cls, source_file="inner_skull_4096.zip", instance=None):
@@ -1049,7 +1049,7 @@ class BrainSkull(Surface):
 class SkullSkin(Surface):
     """Outer-skull - scalp interface surface."""
     _ui_name = "Outer-skull - scalp interface surface"
-    surface_type = Const(OUTER_SKULL)
+    surface_type = Final(OUTER_SKULL)
 
     @classmethod
     def from_file(cls, source_file="outer_skull_4096.zip", instance=None):
@@ -1063,7 +1063,7 @@ class OpenSurface(Surface):
 class EEGCap(OpenSurface):
     """EEG cap surface."""
     _ui_name = "EEG Cap"
-    surface_type = Const(EEG_CAP)
+    surface_type = Final(EEG_CAP)
 
     @classmethod
     def from_file(cls, source_file="scalp_1082.zip", instance=None):
@@ -1073,7 +1073,7 @@ class EEGCap(OpenSurface):
 class FaceSurface(OpenSurface):
     """Face surface."""
     _ui_name = "Face surface"
-    surface_type = Const(FACE)
+    surface_type = Final(FACE)
 
     @classmethod
     def from_file(cls, source_file="face_8614.zip", instance=None):

@@ -33,7 +33,7 @@ Larter-Breakspear model based on the Morris-Lecar equations.
 
 import numpy
 from .base import Model
-from tvb.basic.neotraits.api import NArray, Const, List, Range
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 class LarterBreakspear(Model):
@@ -429,7 +429,7 @@ class LarterBreakspear(Model):
         monitored. It can be overridden for each Monitor if desired.""")
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = Const(
+    state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={
             "V": numpy.array([-1.5, 1.5]),
