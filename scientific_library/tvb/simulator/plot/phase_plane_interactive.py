@@ -66,6 +66,7 @@ import numpy
 import pylab
 import matplotlib.widgets as widgets
 
+from tvb.basic.neotraits._attr import List
 from tvb.simulator.common import get_logger
 LOG = get_logger(__name__)
 
@@ -125,6 +126,9 @@ class PhasePlaneInteractive(HasTraits):
         doc="""The integration scheme used to for generating sample
         trajectories on the phase-plane. NOTE: This is not used for generating
         the phase-plane itself, ie the vector field and nulclines.""")
+
+    exclude_sliders = List(
+        of=str)
 
     def __init__(self, **kwargs):
         """
@@ -378,8 +382,10 @@ class PhasePlaneInteractive(HasTraits):
         offset = 0.0
         self.param_sliders = dict()
         # import pdb; pdb.set_trace()
-        for param_name in self.model.__class__.own_declarative_attrs:
-            param_def = getattr(self.model.__class__, param_name)
+        for param_name in type(self.model).own_declarative_attrs:
+            if self.exclude_sliders is not None and param_name in self.exclude_sliders:
+                continue
+            param_def = getattr(type(self.model), param_name)
             if not isinstance(param_def, NArray) or not param_def.dtype == numpy.float :
                 continue
             param_range = param_def.domain
