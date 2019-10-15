@@ -43,7 +43,7 @@ from matplotlib.pylab import detrend_linear
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
 import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -130,8 +130,7 @@ class NodeCoherence(HasTraits):
         required=True,
         doc="""The timeseries to which the FFT is to be applied.""")
 
-    nfft = Attr(
-        field_type=int,
+    nfft = Int(
         label="Data-points per block",
         default=256,
         doc="""Should be a power of 2...""")

@@ -45,7 +45,7 @@ import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
 import tvb.basic.traits.types_basic as basic
 import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr, Range
+from tvb.basic.neotraits.api import HasTraits, Attr, Range, Float
 from tvb.simulator.common import iround
 from tvb.basic.logger.builder import get_logger
 
@@ -83,8 +83,7 @@ class ContinuousWaveletTransform(HasTraits):
         doc="""The mother wavelet function used in the transform. Default is
             'morlet', possibilities are: 'morlet'...""")
     
-    sample_period = Attr(
-        field_type=float,
+    sample_period = Float(
         label="Sample period of result (ms)",
         default=7.8125, #7.8125 => 128 Hz
         doc="""The sampling period of the computed wavelet spectrum. NOTE:
@@ -106,8 +105,7 @@ class ContinuousWaveletTransform(HasTraits):
         doc="""The type of normalisation for the resulting wavet spectrum.
             Default is 'energy', options are: 'energy'; 'gabor'.""")
     
-    q_ratio = Attr(
-        field_type=float,
+    q_ratio = Float(
         label="Q-ratio",
         default=5.0,
         doc="""NFC. Must be greater than 5. Ratios of the center frequencies to bandwidths.""")

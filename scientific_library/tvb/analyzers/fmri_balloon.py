@@ -57,7 +57,7 @@ References:
 
 import numpy
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Range
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Range, Float
 import tvb.simulator.integrators as integrators_module
 from tvb.basic.logger.builder import get_logger
 
@@ -83,8 +83,7 @@ class BalloonModel(HasTraits):
         required=True,
         doc="""The timeseries that represents the input neural activity""")
     # it also sets the bold sampling period.
-    dt = Attr(
-        field_type=float,
+    dt = Float(
         label=":math:`dt`",
         default=0.002,
         required=True,
@@ -130,15 +129,13 @@ class BalloonModel(HasTraits):
         value of the derivative (first order difference) of the first state variable; 
         ``sum``: sum all the state-variables of the input TimeSeries.""")
 
-    tau_s = Attr(
-        field_type=float,
+    tau_s = Float(
         label=r":math:`\tau_s`",
         default=0.65,
         required=True,
         doc="""Balloon model parameter. Time of signal decay (s)""")
 
-    tau_f = Attr(
-        field_type=float,
+    tau_f = Float(
         label=r":math:`\tau_f`",
         default=0.41,
         required=True,
@@ -147,8 +144,7 @@ class BalloonModel(HasTraits):
         venous compartment. It is the  ratio of resting blood volume (V0) to
         resting blood flow (F0).""")
 
-    tau_o = Attr(
-        field_type=float,
+    tau_o = Float(
         label=r":math:`\tau_o`",
         default=0.98,
         required=True,
@@ -157,29 +153,25 @@ class BalloonModel(HasTraits):
         time blood take to traverse the venous compartment. It is the  ratio
         of resting blood volume (V0) to resting blood flow (F0).""")
 
-    alpha = Attr(
-        field_type=float,
+    alpha = Float(
         label=r":math:`\tau_f`",
         default=0.32,
         required=True,
         doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""")
 
-    TE = Attr(
-        field_type=float,
+    TE = Float(
         label=":math:`TE`",
         default=0.04,
         required=True,
         doc="""BOLD parameter. Echo Time""")
 
-    V0 = Attr(
-        field_type=float,
+    V0 = Float(
         label=":math:`V_0`",
         default=4.0,
         required=True,
         doc="""BOLD parameter. Resting blood volume fraction.""")
 
-    E0 = Attr(
-        field_type=float,
+    E0 = Float(
         label=":math:`E_0`",
         default=0.4,
         required=True,
@@ -193,15 +185,13 @@ class BalloonModel(HasTraits):
         doc=""" BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
         parameter could be derived from empirical data and spatialized.""")
 
-    nu_0 = Attr(
-        field_type=float,
+    nu_0 = Float(
         label=r":math:`\nu_0`",
         default=40.3,
         required=True,
         doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""")
 
-    r_0 = Attr(
-        field_type=float,
+    r_0 = Float(
         label=":math:`r_0`",
         default=25.,
         required=True,

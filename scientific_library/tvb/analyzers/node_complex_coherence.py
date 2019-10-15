@@ -39,7 +39,7 @@ return a ComplexCoherence datatype.
 import numpy
 import tvb.datatypes.spectral as spectral
 import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float
 from scipy import signal as sp_signal
 from tvb.datatypes.time_series import TimeSeries
 from tvb.basic.logger.builder import get_logger
@@ -89,8 +89,7 @@ class NodeComplexCoherence(HasTraits):
         required=True,
         doc="""The timeseries for which the CrossCoherence and ComplexCoherence is to be computed.""")
 
-    epoch_length = Attr(
-        field_type=float,
+    epoch_length = Float(
         label="Epoch length [ms]",
         default=1000.0,
         required=False,
@@ -99,8 +98,7 @@ class NodeComplexCoherence(HasTraits):
         cross coherence. Additionally each epoch block will be further divided into segments to  which 
         the FFT will be applied.""")
 
-    segment_length = Attr(
-        field_type=float,
+    segment_length = Float(
         label="Segment length [ms]",
         default=500.0,
         required=False,
@@ -108,8 +106,7 @@ class NodeComplexCoherence(HasTraits):
         The segment length determines the frequency resolution of the resulting power spectra -- 
         longer windows produce finer frequency resolution. """)
 
-    segment_shift = Attr(
-        field_type=float,
+    segment_shift = Float(
         label="Segment shift [ms]",
         default=250.0,
         required=False,
@@ -139,8 +136,7 @@ class NodeComplexCoherence(HasTraits):
         doc="""Flag. If `True` and if the number of epochs is > 1, you can optionally subtract the 
         mean across epochs before computing the complex coherence.""")
 
-    zeropad = Attr(
-        field_type=int,
+    zeropad = Int(
         label="Zeropadding",
         default=0,
         required=False,
@@ -154,16 +150,14 @@ class NodeComplexCoherence(HasTraits):
         required=False,
         doc="""Flag. If `True` removes linear trend along the time dimension before applying FFT.""")
 
-    max_freq = Attr(
-        field_type=float,
+    max_freq = Float(
         label="Maximum frequency",
         default=1024.0,
         required=False,
         doc="""Maximum frequency points (e.g. 32., 64., 128.) represented in the output. 
         Default is segment_length / 2 + 1.""")
 
-    npat = Attr(
-        field_type=float,
+    npat = Float(
         label="dummy variable",
         default=1.0,
         required=False,

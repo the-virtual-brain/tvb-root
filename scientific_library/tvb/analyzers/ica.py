@@ -40,7 +40,7 @@ import numpy
 from sklearn.decomposition import fastica
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.basic.logger.builder import get_logger
 
 
@@ -69,8 +69,7 @@ class fastICA(HasTraits):
         required=True,
         doc="The timeseries to which the ICA is to be applied.")
             
-    n_components = Attr(
-        field_type=int,
+    n_components = Int(
         label="Number of principal components to unmix.",
         required=False,
         default=None,

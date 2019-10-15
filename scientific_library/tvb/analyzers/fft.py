@@ -40,7 +40,7 @@ from scipy import signal as sp_signal
 from tvb.basic.logger.builder import get_logger
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-from tvb.basic.neotraits.api import HasTraits, Attr, List
+from tvb.basic.neotraits.api import HasTraits, Attr, List, Float
 import tvb.basic.traits.util as util
 
 
@@ -66,8 +66,7 @@ class FFT(HasTraits):
         label="Time Series",
         doc="""The TimeSeries to which the FFT is to be applied.""")
 
-    segment_length = Attr(
-        field_type=float,
+    segment_length = Float(
         label="Segment(window) length (ms)",
         default=1000.0,
         required=False,

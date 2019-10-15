@@ -43,7 +43,7 @@ import numpy
 import tvb.datatypes.time_series as time_series
 import tvb.datatypes.graph as graph
 import tvb.basic.traits.util as util
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.logger.builder import get_logger
 
 LOG = get_logger(__name__)
@@ -69,16 +69,14 @@ class CorrelationCoefficient(HasTraits):
         doc="""The time-series for which the cross correlation matrices are
         calculated.""")
 
-    t_start = Attr(
-        field_type=float,
+    t_start = Float(
         label=":math:`t_{start}`",
         default=0.9765625,
         required=True,
         doc="""Time start point (ms). By default it uses the default Monitor sample period.
         The starting time point of a time series is not zero, but the monitor's sample period. """)
 
-    t_end = Attr(
-        field_type=float,
+    t_end = Float(
         label=":math:`t_{end}`",
         default=1000.,
         required=True,

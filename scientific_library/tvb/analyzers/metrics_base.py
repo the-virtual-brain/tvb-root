@@ -34,7 +34,7 @@
 """
 
 import tvb.datatypes.time_series as time_series_module
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float
 
 
 class BaseTimeseriesMetricAlgorithm(HasTraits):
@@ -54,8 +54,7 @@ class BaseTimeseriesMetricAlgorithm(HasTraits):
         required=True,
         doc="The TimeSeries for which the metric(s) will be computed.")
 
-    start_point = Attr(
-        field_type=float,
+    start_point = Float(
         label="Start point (ms)",
         default=500.0,
         required=False,
@@ -63,8 +62,7 @@ class BaseTimeseriesMetricAlgorithm(HasTraits):
         be discarded before computing the metric. By default it drops the
         first 500 ms.""")
 
-    segment = Attr(
-        field_type=int,
+    segment = Int(
         label="Segmentation factor",
         default=4,
         required=False,
