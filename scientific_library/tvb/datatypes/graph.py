@@ -123,6 +123,8 @@ class CorrelationCoefficients(HasTraits):
 class ConnectivityMeasure(HasTraits):
     """Measurement of based on a connectivity."""
 
+    array_data = NArray()
+
     connectivity = Attr(field_type=connectivity.Connectivity)
 
     def _find_summary_info(self):
