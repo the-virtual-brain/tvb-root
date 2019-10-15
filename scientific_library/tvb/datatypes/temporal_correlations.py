@@ -37,32 +37,38 @@ framework methods that are associated with the Temporal Correlation datatypes.
 
 """
 
-import tvb.basic.traits.core as core
-import tvb.basic.traits.types_basic as basic
-import tvb.datatypes.arrays as arrays
 import tvb.datatypes.time_series as time_series
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_mapped import MappedType
+from tvb.basic.traits.neotraits import HasTraits, Attr, NArray, List
 
 LOG = get_logger(__name__)
 
 
-class CrossCorrelation(MappedType):
+class CrossCorrelation(HasTraits):
     """
     Result of a CrossCorrelation Analysis.
     """
-    array_data = arrays.FloatArray(file_storage=core.FILE_STORAGE_EXPAND)
+    array_data = NArray(
+        dtype=float,
+    )
 
-    source = time_series.TimeSeries(
+    source = Attr(
+        time_series.TimeSeries,
         label="Source time-series",
-        doc="""Links to the time-series on which the cross_correlation is applied.""")
+        doc="""Links to the time-series on which the cross_correlation is applied."""
+    )
 
-    time = arrays.FloatArray(label="Temporal Offsets")
+    time = NArray(
+        dtype=float,
+        label="Temporal Offsets"
+    )
 
-    labels_ordering = basic.List(
+    labels_ordering = List(
+        of=str,
         label="Dimension Names",
-        default=["Offsets", "Node", "Node", "State Variable", "Mode"],
-        doc="""List of strings representing names of each data dimension""")
+        default=("Offsets", "Node", "Node", "State Variable", "Mode"),
+        doc="""List of strings representing names of each data dimension"""
+    )
 
     def configure(self):
         """After populating few fields, compute the rest of the fields"""
