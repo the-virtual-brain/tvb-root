@@ -134,7 +134,7 @@ class FFT(HasTraits):
 
         # Calculate the FFT
         result = numpy.fft.fft(time_series, axis=0)
-        nfreq = result.shape[0] / 2
+        nfreq = result.shape[0] // 2
         result = result[1:nfreq + 1, :]
 
         LOG.debug("result " + narray_describe(result))
