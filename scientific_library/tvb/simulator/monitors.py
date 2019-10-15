@@ -150,20 +150,17 @@ class Monitor(HasTraits):
         Otherwise a plain TimeSeries will be returned
         """
         if surface is not None:
-            return TimeSeriesSurface(storage_path=storage_path,
-                                     surface=surface,
+            return TimeSeriesSurface(surface=surface,
                                      sample_period=self.period,
                                      title='Surface ' + self.__class__.__name__)
         if connectivity is not None:
-            return TimeSeriesRegion(storage_path=storage_path,
-                                    connectivity=connectivity,
+            return TimeSeriesRegion(connectivity=connectivity,
                                     region_mapping=region_map,
                                     region_mapping_volume=region_volume_map,
                                     sample_period=self.period,
                                     title='Regions ' + self.__class__.__name__)
 
-        return TimeSeries(storage_path=storage_path,
-                          sample_period=self.period,
+        return TimeSeries(sample_period=self.period,
                           title=' ' + self.__class__.__name__)
 
 
