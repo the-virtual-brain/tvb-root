@@ -41,7 +41,6 @@ methods that are associated with the surfaces data.
 """
 import scipy.sparse
 import warnings
-import json
 import numpy
 from tvb.basic import exceptions
 from tvb.basic.logger.builder import get_logger
@@ -61,13 +60,12 @@ except ImportError:
         def compute_gdist(self, *args, **kwds):
             raise RuntimeError(self.msg)
 
+
     gdist = ExceptionRaisingGdistModule()
     msg = "Geodesic distance module is unavailable; some functionality for surfaces will be unavailable."
     warnings.warn(msg)
 
-
 LOG = get_logger(__name__)
-
 
 OUTER_SKIN = "Skin Air"
 OUTER_SKULL = "Skull Skin"
@@ -101,15 +99,13 @@ class ValidationResult(object):
     """
     Used by surface validate methods to report non-fatal failed validations
     """
+
     def __init__(self):
         self.warnings = []
 
-    def add_warning(self, msg, data):
-        self.warnings.append((msg, data))
-        self._log(msg, data)
-
-    def _log(self, msg, data):
-        LOG.warn(msg)
+    def add_warning(self, message, data):
+        self.warnings.append((message, data))
+        LOG.warn(message)
         if data:
             LOG.debug(data)
 
@@ -119,7 +115,7 @@ class ValidationResult(object):
         return r
 
     def summary(self):
-        return '  |  '.join(msg for msg, _ in self.warnings)
+        return '  |  '.join(message for message, _ in self.warnings)
 
 
 class Surface(HasTraits):
@@ -148,8 +144,7 @@ class Surface(HasTraits):
         field_type=scipy.sparse.csc_matrix,
         label="Geodesic distance matrix",
         required=False,
-        # file_storage=FILE_STORAGE_NONE,
-        doc="""A sparse matrix of truncated geodesic distances""")  # 'CS'
+        doc="""A sparse matrix of truncated geodesic distances""")
 
     number_of_vertices = Int(
         field_type=int,
@@ -167,13 +162,8 @@ class Surface(HasTraits):
 
     edge_max_length = Float()
 
-    ##--------------------- FRAMEWORK ATTRIBUTES -----------------------------##
-
-    hemisphere_mask = NArray(
-        dtype=bool,
-        label="An array specifying if a vertex belongs to the right hemisphere",
-        # file_storage=FILE_STORAGE_NONE,
-        required=False)
+    hemisphere_mask = NArray(dtype=bool, required=False,
+                             label="An array specifying if a vertex belongs to the right hemisphere")
 
     zero_based_triangles = Attr(field_type=bool)
 
@@ -207,9 +197,8 @@ class Surface(HasTraits):
 
         return result
 
-
     def configure(self):
-        "Compute additional attributes on surface data required for full functionality."
+        """Compute additional attributes on surface data required for full functionality."""
 
         self.number_of_vertices = int(self.vertices.shape[0])
         self.number_of_triangles = int(self.triangles.shape[0])
@@ -229,7 +218,6 @@ class Surface(HasTraits):
 
         self.framework_configure()
 
-
     def validate(self):
         """
         Combines scientific and framework surface validations.
@@ -237,10 +225,7 @@ class Surface(HasTraits):
         result_sci = self.scientific_validate()
         result_fr = self.framework_validate()
 
-        validation_result = result_sci.merge(result_fr)
-
-        self.user_tag_3 = validation_result.summary()
-        return validation_result
+        return result_sci.merge(result_fr)
 
     # from scientific surfaces
     _vertex_neighbours = None
@@ -327,13 +312,6 @@ class Surface(HasTraits):
         value for max_dist...
 
         """
-        # TODO: Probably should check that max_dist isn't "too" large or too
-        #      small, min should probably be max edge length...
-
-        # if NO_GEODESIC_DISTANCE:
-        #    LOG.error("%s: The geodesic distance library didn't load" % repr(self))
-        #    return
-
         dist = gdist.local_gdist_matrix(self.vertices.astype(numpy.float64),
                                         self.triangles.astype(numpy.int32),
                                         max_distance=max_dist)
@@ -350,9 +328,6 @@ class Surface(HasTraits):
         return self._vertex_neighbours
 
     def _find_vertex_neighbours(self):
-        """
-        .
-        """
         neighbours = [[] for _ in range(self.number_of_vertices)]
         for k in range(self.number_of_triangles):
             neighbours[self.triangles[k, 0]].append(self.triangles[k, 1])
@@ -397,9 +372,8 @@ class Surface(HasTraits):
         surf_obj.vertex_neighbours[vertex] setting contains=True returns all
         vertices from rings 1 to n inclusive.
         """
-
-        ring = set([vertex])
-        local_vertices = set([vertex])
+        ring = {vertex}
+        local_vertices = {vertex}
 
         for _ in range(neighbourhood):
             neighbours = [self.vertex_neighbours[indx] for indx in ring]
@@ -585,7 +559,6 @@ class Surface(HasTraits):
         Calculate the Euclidean distance between the pair of vertices that
         define the edges in the ``edges`` attribute.
         """
-        # TODO: Would a Sparse matrix be a more useful data structure for these???
         elem = numpy.sqrt(((self.vertices[self.edges, :][:, 0, :] -
                             self.vertices[self.edges, :][:, 1, :]) ** 2).sum(axis=1))
 
@@ -695,6 +668,7 @@ class Surface(HasTraits):
 
 
         :param fv: a function evaluated on each vertex, shape (n, )
+        :param h: default 1.0
         :return: matrix of evaluated L-B operator
 
         """
@@ -762,16 +736,15 @@ class Surface(HasTraits):
         slices that are readable by WebGL.
         WebGL only supports triangle indices in interval [0.... 2^16]
         """
-        # super(SurfaceFramework, self).configure()
 
         self.number_of_vertices = int(self.vertices.shape[0])
         self.number_of_triangles = int(self.triangles.shape[0])
 
-        ### Do not split again, if split-data is already computed:
+        # Do not split again, if split-data is already computed:
         if 1 < self.number_of_split_slices == len(self.split_slices):
             return
 
-        ### Do not split when size is conveniently small:
+        # Do not split when size is conveniently small:
         self.bi_hemispheric = self.hemisphere_mask is not None and numpy.unique(self.hemisphere_mask).size > 1
         if self.number_of_vertices <= SPLIT_MAX_SIZE + SPLIT_BUFFER_SIZE and not self.bi_hemispheric:
             self.number_of_split_slices = 1
@@ -780,11 +753,11 @@ class Surface(HasTraits):
                                      KEY_HEMISPHERE: HEMISPHERE_UNKNOWN}}
             return
 
-        ### Compute the number of split slices:
+        # Compute the number of split slices:
         left_hemisphere_slices = 0
         left_hemisphere_vertices_no = 0
         if self.bi_hemispheric:
-            ## when more than one hemisphere
+            # when more than one hemisphere
             right_hemisphere_vertices_no = numpy.count_nonzero(self.hemisphere_mask)
             left_hemisphere_vertices_no = self.number_of_vertices - right_hemisphere_vertices_no
             LOG.debug("Right %d Left %d" % (right_hemisphere_vertices_no, left_hemisphere_vertices_no))
@@ -793,7 +766,7 @@ class Surface(HasTraits):
             self.number_of_split_slices += self._get_slices_number(right_hemisphere_vertices_no)
             LOG.debug("Hemispheres Total %d Left %d" % (self.number_of_split_slices, left_hemisphere_slices))
         else:
-            ## when a single hemisphere
+            # when a single hemisphere
             self.number_of_split_slices = self._get_slices_number(self.number_of_vertices)
 
         LOG.debug("Start to compute surface split triangles and vertices")
@@ -823,7 +796,7 @@ class Surface(HasTraits):
                                                                         + SPLIT_BUFFER_SIZE)},
                                             KEY_HEMISPHERE: HEMISPHERE_RIGHT}
 
-        ### Iterate Triangles and find the slice where it fits best, based on its vertices indexes:
+        # Iterate Triangles and find the slice where it fits best, based on its vertices indexes:
         for i in range(self.number_of_triangles):
             current_triangle = [self.triangles[i][j] for j in range(3)]
             fit_slice, transformed_triangle = self._find_slice(current_triangle)
@@ -838,7 +811,7 @@ class Surface(HasTraits):
         final_split_triangles = []
         last_triangles_idx = 0
 
-        ### Concatenate triangles, to be stored in a single HDF5 array.
+        # Concatenate triangles, to be stored in a single HDF5 array.
         for slice_idx, split_ in enumerate(split_triangles):
             self.split_slices[slice_idx][KEY_TRIANGLES] = {KEY_START: last_triangles_idx,
                                                            KEY_END: last_triangles_idx + len(split_)}
@@ -856,9 +829,9 @@ class Surface(HasTraits):
         self.number_of_triangles = self.triangles.shape[0]
 
         if self.number_of_vertices > TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER:
-            msg = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
-            msg += " Please upload a new surface or change max number in application settings."
-            raise exceptions.ValidationException(msg)
+            msg_ = "This surface has too many vertices (max: %d)." % TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
+            msg_ += " Please upload a new surface or change max number in application settings."
+            raise exceptions.ValidationException(msg_)
         return ValidationResult()
 
     def _get_slice_vertex_boundaries(self, slice_idx):
@@ -904,10 +877,6 @@ class Surface(HasTraits):
             if slice_start <= mn and mx < v[KEY_END]:
                 return i, [triangle[j] - slice_start for j in range(3)]
         return None, triangle
-
-    ####################################### Split for Picking
-    #######################################
-
 
     def center(self):
         """
@@ -990,7 +959,6 @@ class Surface(HasTraits):
         return result_vertices, result_lines, result_normals
 
 
-
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""
     _ui_name = "A white matter - gray  surface"
@@ -1021,7 +989,6 @@ class BrainSkull(Surface):
     @classmethod
     def from_file(cls, source_file="inner_skull_4096.zip", instance=None):
         return super(BrainSkull, cls).from_file(source_file, instance)
-
 
 
 class SkullSkin(Surface):

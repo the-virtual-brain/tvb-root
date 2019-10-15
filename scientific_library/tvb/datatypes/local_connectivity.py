@@ -31,13 +31,10 @@
 
 import numpy
 import scipy.sparse
-
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.basic.logger.builder import get_logger
-from tvb.basic import exceptions
 from tvb.datatypes import equations, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
-
 
 LOG = get_logger(__name__)
 
@@ -63,17 +60,20 @@ class LocalConnectivity(HasTraits):
         default=40.0,
         doc="Distance at which to truncate the evaluation in mm.")
 
+    # Temporary obj
+    matrix_gdist = None
+
     def compute(self):
         """
         Compute current Matrix.
         """
         LOG.info("Mapping geodesic distance through the LocalConnectivity.")
 
-        #Start with data being geodesic_distance_matrix, then map it through equation
-        #Then replace original data with result...
+        # Start with data being geodesic_distance_matrix, then map it through equation
+        # Then replace original data with result...
         self.matrix_gdist.data = self.equation.evaluate(self.matrix_gdist.data)
 
-        #Homogenise spatial discretisation effects across the surface
+        # Homogenise spatial discretisation effects across the surface
         nv = self.matrix_gdist.shape[0]
         ind = numpy.arange(nv, dtype=int)
         pos_mask = self.matrix_gdist.data > 0.0
@@ -106,23 +106,11 @@ class LocalConnectivity(HasTraits):
         neg_hf_diag = scipy.sparse.csc_matrix((neg_hf, (ind, ind)), shape=(nv, nv))
         homogenious_conn = (pos_hf_diag * pos_con) + (neg_hf_diag * neg_con)
 
-        #Then replace unhomogenised result with the spatially homogeneous one...
+        # Then replace unhomogenised result with the spatially homogeneous one...
         if not homogenious_conn.has_sorted_indices:
             homogenious_conn.sort_indices()
 
         self.matrix = homogenious_conn
-
-    def _validate_before_store(self):
-        """
-        Overrides MappedType._validate_before_store to use a custom error for missing matrix.
-        """
-        # Sparse Matrix is required so we should check if there is any data stored for it
-        if self.matrix is None:
-            msg = ("LocalConnectivity can not be stored because it "
-                   "has no SparseMatrix attached.")
-            raise exceptions.ValidationException(msg)
-
-        super(LocalConnectivity, self)._validate_before_store()
 
     @staticmethod
     def from_file(source_file="local_connectivity_16384.mat", instance=None):
@@ -151,8 +139,8 @@ class LocalConnectivity(HasTraits):
         Gather scientifically interesting summary information from an instance
         of this datatype.
         """
-        I, J, V = scipy.sparse.find(self.matrix)
-        return narray_summary_info(V, ar_name='matrix-nonzero')
+        _, _, v = scipy.sparse.find(self.matrix)
+        return narray_summary_info(v, ar_name='matrix-nonzero')
 
     def compute_sparse_matrix(self):
         """
