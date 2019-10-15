@@ -78,7 +78,7 @@ class H5Reader(object):
         try:
             return self.read_field(field, log_exception=False)
         except ReaderException:
-            return numpy.array([])
+            return None
 
 
 

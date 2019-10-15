@@ -33,15 +33,8 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-try:
-    H5PY_SUPPORT = True
-    import h5py as hdf5
-except ImportError:
-    H5PY_SUPPORT = False
-
 import os
 import numpy
-import pytest
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import connectivity
 
@@ -108,7 +101,7 @@ class TestConnectivity(BaseTestCase):
         assert conn.parent_connectivity is None
         summary = conn.summary_info()
         assert summary['Number of regions'] == n
-        ## Call connectivity methods and make sure no compilation or runtime erros
+        # Call connectivity methods and make sure no compilation or runtime erros
         conn.compute_tract_lengths()
         conn.compute_region_labels()
         conn.try_compute_hemispheres()
@@ -120,7 +113,6 @@ class TestConnectivity(BaseTestCase):
             # http://projects.scipy.org/scipy/ticket/1735
             # http://comments.gmane.org/gmane.comp.python.scientific.devel/14816
             # http://permalink.gmane.org/gmane.comp.python.numeric.general/42082
-            # conn.switch_distribution(mode=mode)
             assert conn.scaled_weights(mode=mode).shape == (n, n)
 
     def test_connectivity_reload(self):
@@ -148,8 +140,6 @@ class TestConnectivity(BaseTestCase):
         assert conn.saved_selection is ()
         assert conn.parent_connectivity is None
 
-    # @pytest.mark.skipif(not H5PY_SUPPORT, reason="HDF5 and H5PY not found on this system")
-    @pytest.mark.skip(reason='edited connectivity.h5 needs migration')
     def test_connectivity_h5py_reload(self):
         """
         Reload a connectivity and check that defaults changes accordingly.
@@ -163,11 +153,11 @@ class TestConnectivity(BaseTestCase):
         assert conn.undirected == 0
         assert conn.speed == numpy.array([3.0])
         assert conn.hemispheres.shape == (74,)
-        assert conn.idelays.shape == (0,)
-        assert conn.delays.shape == (0,)
+        assert conn.idelays is None
+        assert conn.delays is None
         assert conn.number_of_regions == 0
-        assert conn.saved_selection is None
-        assert conn.parent_connectivity == ''
+        assert conn.saved_selection == ()
+        assert conn.parent_connectivity is None
 
     def test_connectivity_bzip_in_zip(self):
         conn = connectivity.Connectivity.from_file("connectivity_68.zip")
