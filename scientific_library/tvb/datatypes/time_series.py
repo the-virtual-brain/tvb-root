@@ -164,7 +164,7 @@ class TimeSeriesEEG(SensorsTSBase):
     """ A time series associated with a set of EEG sensors. """
     _ui_name = "EEG time-series"
 
-    sensors = Attr(field_type=sensors.SensorsEEG)
+    sensors = Attr(field_type=sensors.SensorsEEG, required=False)
     labels_ordering = List(of=basestring, default=("Time", "1", "EEG Sensor", "1"))
 
 
@@ -172,7 +172,7 @@ class TimeSeriesMEG(SensorsTSBase):
     """ A time series associated with a set of MEG sensors. """
     _ui_name = "MEG time-series"
 
-    sensors = Attr(field_type=sensors.SensorsMEG)
+    sensors = Attr(field_type=sensors.SensorsMEG, required=False)
     labels_ordering = List(of=basestring, default=("Time", "1", "MEG Sensor", "1"))
 
 

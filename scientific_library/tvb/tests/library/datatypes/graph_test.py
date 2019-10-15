@@ -69,8 +69,8 @@ class TestGraph(BaseTestCase):
 
     def test_connectivitymeasure(self):
         conn = connectivity.Connectivity()
-        dt = graph.ConnectivityMeasure(connectivity=conn)
-        assert dt.array_data is None
+        dt = graph.ConnectivityMeasure(connectivity=conn, array_data = numpy.array([]))
+        assert dt.array_data is not None
         assert dt.connectivity is not None
         summary = dt.summary_info()
         assert summary['Graph type'] == 'ConnectivityMeasure'

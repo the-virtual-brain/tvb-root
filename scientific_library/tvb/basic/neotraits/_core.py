@@ -108,13 +108,7 @@ def cached_trait_property(attr):
 
 
 
-class HasTraits(object):
-    __metaclass__ = MetaType
-
-    # The base __init__ and __str__ rely upon metadata gathered by MetaType
-    # we could have injected these in MetaType, but we don't need meta powers
-    # this is simpler to grok
-
+class HasTraits(object, metaclass=MetaType):
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs
@@ -128,7 +122,7 @@ class HasTraits(object):
         self.title = '{}'.format(self.__class__.__name__)
         """ a generic name that the user can set to easily recognize the instance """
 
-        for k, v in kwargs.iteritems():
+        for k, v in list(kwargs.items()):
             if k not in cls.declarative_attrs:
                 raise TraitTypeError(
                     'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(

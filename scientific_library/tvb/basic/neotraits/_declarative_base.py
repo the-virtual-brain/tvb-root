@@ -175,7 +175,7 @@ class MetaType(abc.ABCMeta):
         attrs = []
         props = []
 
-        for k, v in namespace.iteritems():
+        for k, v in list(namespace.items()):
             if isinstance(v, _Attr):
                 attrs.append(k)
             elif isinstance(v, _Property):

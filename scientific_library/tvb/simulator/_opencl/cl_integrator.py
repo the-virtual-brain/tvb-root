@@ -108,7 +108,7 @@ class CLIntegrator(CLComponent):
 
 
 
-    def setUp(self):
+    def setup_method(self):
         self._context, self._queue = context_and_queue(create_cpu_context())
 
     def configure_opencl(self, context, queue):

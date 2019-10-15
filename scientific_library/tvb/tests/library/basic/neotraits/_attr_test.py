@@ -39,7 +39,7 @@ class TestRange(BaseTestCase):
 
     def assert_with_epsilon_error(self, list_one, list_two):
         epsilon = 0.000001
-        valueForReturn = True
+        value_for_return = True
         print(("Value: ", len(list_one)))
         if(len(list_one) != len(list_two)):
             return False
@@ -53,8 +53,8 @@ class TestRange(BaseTestCase):
             elif ((list_one[i] + epsilon) <= list_two[i] <= (list_one[i] - epsilon)):
                 continue
             else:
-                valueForReturn = False
-        return valueForReturn
+                value_for_return = False
+        return value_for_return
 
 
     def test_generates_range_with_start_and_stop_provided(self):

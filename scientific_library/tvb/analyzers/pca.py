@@ -102,8 +102,8 @@ class PCA(HasTraits):
         fractions = numpy.zeros(fractions_shape)
         
         #One inter-node temporal covariance matrix for each state-var & mode.
-        for mode in xrange(ts_shape[3]):
-            for var in xrange(ts_shape[1]):
+        for mode in range(ts_shape[3]):
+            for var in range(ts_shape[1]):
                 data = self.time_series.data[:, var, :, mode]
                 data_pca = mlab.PCA(data)
                 fractions[:, var, mode ] = data_pca.fracs

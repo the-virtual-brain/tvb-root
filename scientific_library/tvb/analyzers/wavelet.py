@@ -185,9 +185,9 @@ class ContinuousWaveletTransform(HasTraits):
             wvlt = numpy.hstack((numpy.conjugate(wvlt[-1:0:-1]), wvlt))
             #util.log_debug_array(LOG, wvlt, "wvlt")
             
-            for var in xrange(ts_shape[1]):
-                for node in xrange(ts_shape[2]):
-                    for mode in xrange(ts_shape[3]):
+            for var in range(ts_shape[1]):
+                for node in range(ts_shape[2]):
+                    for mode in range(ts_shape[3]):
                         data = self.time_series.data[:, var, node, mode]
                         wt = signal.convolve(data, wvlt, 'same')
                         #util.log_debug_array(LOG, wt, "wt")

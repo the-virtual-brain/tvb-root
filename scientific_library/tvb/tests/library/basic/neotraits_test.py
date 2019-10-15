@@ -254,7 +254,7 @@ def test_narr_enforcing():
 
     class Boo(HasTraits):
         x = NArray(shape=(Dim.any, Dim.any), default=np.eye(2))
-        y = NArray(dtype=np.dtype(int), default=np.arange(12), domain=xrange(5))
+        y = NArray(dtype=np.dtype(int), default=np.arange(12), domain=list(range(5)))
 
     # only the defaults are checked for domain compliance
     boo = Boo(y=np.arange(10))
@@ -405,7 +405,7 @@ def test_list_default_must_respect_choices():
 
 def test_str_ndarrays():
     class A(HasTraits):
-        s = NArray(dtype='S5')
+        s = NArray(dtype='U5')
 
     a = A(s=np.array(['ana', 'a', 'adus', 'mere']))
     # but users will expect python list[str] like behaviour and then this happens
@@ -525,7 +525,7 @@ def test_int_attribute():
     assert ainst.b == 0
 
     # type is out of bounds but value is within the bounds. So this is ok
-    ainst.b = long(42)
+    ainst.b = int(42)
     # values are not only checked for compatibility but converted to the declared type
     assert type(ainst.b) == np.int8
     ainst.b = np.int(4)
@@ -755,7 +755,7 @@ def test_summary_info():
         'title': 'the red rose',
         'a': "'ana'",
         'b dtype': 'int32',
-        'b shape': '(3L,)',
+        'b shape': '(3,)',
         'b [min, median, max]': '[0, 1, 2]',
         'ref': 'Z zuzu',
     }

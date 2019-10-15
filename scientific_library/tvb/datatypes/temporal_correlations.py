@@ -56,7 +56,7 @@ class CrossCorrelation(HasTraits):
         doc="""Links to the time-series on which the cross_correlation is applied."""
     )
 
-    time = NArray(label="Temporal Offsets")
+    time = NArray(label="Temporal Offsets", required=False)
 
     labels_ordering = List(
         of=str,

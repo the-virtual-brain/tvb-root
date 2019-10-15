@@ -74,7 +74,7 @@ class ProjectionMatrix(HasTraits):
 
     sources = Attr(
         field_type=surfaces.CorticalSurface,
-        label="surface or region", default=None, required=True)
+        label="surface or region", default=None, required=False)
 
     sensors = Attr(
         field_type=sensors.Sensors,
@@ -113,7 +113,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
 
     projection_type = Attr(field_type=str, default=EEG_POLYMORPHIC_IDENTITY)
 
-    sensors = Attr(field_type=sensors.SensorsEEG)
+    sensors = Attr(field_type=sensors.SensorsEEG, required=False)
 
     @classmethod
     def from_file(cls, source_file='projection_eeg_65_surface_16k.npy', matlab_data_name="ProjectionMatrix",
@@ -129,7 +129,7 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
 
     projection_type = Attr(field_type=str, default=MEG_POLYMORPHIC_IDENTITY)
 
-    sensors = Attr(field_type=sensors.SensorsMEG)
+    sensors = Attr(field_type=sensors.SensorsMEG, required=False)
 
     @classmethod
     def from_file(cls, source_file='projection_meg_276_surface_16k.npy', matlab_data_name=None, is_brainstorm=False,

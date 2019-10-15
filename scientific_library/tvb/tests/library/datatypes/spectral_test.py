@@ -47,8 +47,7 @@ class TestSpectral(BaseTestCase):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.FourierSpectrum(source=ts,
-                                      segment_length=100)
-        # dt.configure()
+                                      segment_length=100, array_data=numpy.array([]))
         summary_info = dt.summary_info()
         assert summary_info['Frequency step'] == 0.01
         assert summary_info['Maximum frequency'] == 0.5
@@ -58,7 +57,7 @@ class TestSpectral(BaseTestCase):
         assert summary_info['Spectral type'] == 'FourierSpectrum'
         assert dt.normalised_average_power is None
         assert dt.segment_length == 100.0
-        assert dt.array_data is None
+        assert dt.array_data is not None
         assert dt.source is not None
         assert dt.windowing_function is None
 

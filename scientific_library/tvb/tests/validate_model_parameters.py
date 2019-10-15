@@ -51,14 +51,13 @@ def sample_parameter_space_cartesian(path_assignments):
     Samples the parameter space systematically based on explicit values for each dimension (parameter).
     :param path_assignments: a list of (param_name, [param_values])
     >>> list(sample_parameter_space_cartesian([('a', [1, 2]), ('b', [3, 4])]))
-    ... [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
+    [{'a': 1, 'b': 3}, {'a': 1, 'b': 4}, {'a': 2, 'b': 3}, {'a': 2, 'b': 4}]
     """
     # 'transpose' path_assignments
     paths, values = list(zip(*path_assignments))
     # cartesian product of value assignments
     for value_assignment in itertools.product(*values):
         yield dict(list(zip(paths, value_assignment)))
-
 
 def _set_sim_values(sim, path_assignment):
     """

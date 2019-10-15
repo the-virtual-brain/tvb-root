@@ -61,7 +61,7 @@ class Sensors(HasTraits):
 
     sensors_type = Attr(str, required=False)
 
-    labels = NArray(dtype='S128', label="Sensor labels")
+    labels = NArray(dtype='U128', label="Sensor labels")
 
     locations = NArray(label="Sensor locations")
 

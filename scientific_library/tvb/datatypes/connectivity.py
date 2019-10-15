@@ -52,10 +52,10 @@ class Connectivity(HasTraits):
 
     # data
     region_labels = NArray(
-        dtype='S128',
+        dtype='U128',
         label="Region labels",
-        doc="""Short strings, 'labels', for the regions represented by the connectivity matrix."""
-    )
+        required=False,
+        doc="""Short strings, 'labels', for the regions represented by the connectivity matrix.""")
 
     weights = NArray(
         label="Connection strengths",
@@ -398,7 +398,6 @@ class Connectivity(HasTraits):
             self.compute_tract_lengths()
         if self.region_labels is None or self.region_labels.size == 0:
             self.compute_region_labels()
-
         if self.hemispheres is None or self.hemispheres.size == 0:
             self.try_compute_hemispheres()
 

@@ -149,6 +149,7 @@ class IndependentComponents(HasTraits):
 
     mixing_matrix = NArray(
         label="Mixing matrix - Spatial Maps",
+        required=False,
         doc="""The linear mixing matrix (Mixing matrix) """)
 
     unmixing_matrix = NArray(

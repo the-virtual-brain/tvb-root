@@ -32,6 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import projections
 
@@ -42,23 +43,23 @@ class TestPatterns(BaseTestCase):
     """
 
     def test_projectionmatrix(self):
-        dt = projections.ProjectionMatrix()
+        dt = projections.ProjectionMatrix(projection_data=numpy.array([]))
         assert dt.sources is None
         assert dt.sensors is None
-        assert dt.projection_data is None
+        assert dt.projection_data is not None
 
     def test_projection_surface_eeg(self):
-        dt = projections.ProjectionSurfaceEEG()
+        dt = projections.ProjectionSurfaceEEG(projection_data=numpy.array([]))
         assert dt.sources is None
         assert dt.skin_air is None
         assert dt.skull_skin is None
         assert dt.sensors is None
-        assert dt.projection_data is None
+        assert dt.projection_data is not None
 
     def test_projection_surface_meg(self):
-        dt = projections.ProjectionSurfaceMEG()
+        dt = projections.ProjectionSurfaceMEG(projection_data=numpy.array([]))
         assert dt.sources is None
         assert dt.skin_air is None
         assert dt.skull_skin is None
         assert dt.sensors is None
-        assert dt.projection_data is None
+        assert dt.projection_data is not None

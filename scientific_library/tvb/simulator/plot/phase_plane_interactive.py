@@ -448,7 +448,7 @@ class PhasePlaneInteractive(HasTraits):
                                       color=BUTTONCOLOUR,
                                       hovercolor=HOVERCOLOUR)
         def reset_state_variables(event):
-            for svsl in self.sv_sliders.values():
+            for svsl in list(self.sv_sliders.values()):
                 svsl.reset()
 
         self.reset_sv_button.on_clicked(reset_state_variables)

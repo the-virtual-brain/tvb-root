@@ -52,7 +52,7 @@ class SpatialPattern(HasTraits):
     Equation for space variation.
     """
 
-    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
+    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation", required=False)
 
     space = None
     _spatial_pattern = None
@@ -228,6 +228,6 @@ class StimuliSurface(SpatioTemporalPattern):
 class SpatialPatternVolume(SpatialPattern):
     """ A spatio-temporal pattern defined in a volume. """
 
-    volume = Attr(volumes.Volume, label="Volume")
+    volume = Attr(volumes.Volume, label="Volume", required=False)
 
-    focal_points_volume = NArray(dtype=int, label="Focal points")
+    focal_points_volume = NArray(dtype=int, label="Focal points", required=False)

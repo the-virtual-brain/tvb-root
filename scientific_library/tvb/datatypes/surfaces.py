@@ -137,10 +137,12 @@ class Surface(HasTraits):
 
     vertex_normals = NArray(
         label="Vertex normal vectors",
+        required=False,
         doc="""An array of unit normal vectors for the surfaces vertices.""")
 
     triangle_normals = NArray(
         label="Triangle normal vectors",
+        required=False,
         doc="""An array of unit normal vectors for the surfaces triangles.""")
 
     geodesic_distance_matrix = Attr(
@@ -186,7 +188,7 @@ class Surface(HasTraits):
 
     surface_type = Attr(field_type=str)
 
-    valid_for_simulations = Attr(field_type=bool)
+    valid_for_simulations = Attr(field_type=bool, required=False)
 
     @classmethod
     def from_file(cls, source_file="cortex_16384.zip", instance=None):

@@ -78,12 +78,12 @@ def coherence_mlab(data, sample_rate, nfft=256):
     coh_shape = nfft/2 + 1, nnode, nnode, nsvar, nmode
     LOG.info("coh shape will be: %s" % (coh_shape, ))
     coh = numpy.zeros(coh_shape)
-    for mode in xrange(nmode):
-        for var in xrange(nsvar):
+    for mode in range(nmode):
+        for var in range(nsvar):
             data = data[:, var, :, mode].copy()
             data -= data.mean(axis=0)[numpy.newaxis, :]
-            for n1 in xrange(nnode):
-                for n2 in xrange(nnode):
+            for n1 in range(nnode):
+                for n2 in range(nnode):
                     cxy, freq = mlab.cohere(data[:, n1], data[:, n2],
                                             NFFT=nfft,
                                             Fs=sample_rate,
@@ -113,7 +113,7 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     G = F[:, numpy.newaxis] * F.conj()
     if imag:
         G = G.imag
-    dG = numpy.array([G[i, i] for i in xrange(nn)])
+    dG = numpy.array([G[i, i] for i in range(nn)])
     C = (numpy.abs(G)**2 / (dG[:, numpy.newaxis] * dG)).mean(axis=-2)
     mask = fs > 0.0
     # C_ = numpy.abs(C.mean(axis=0).mean(axis=0))

@@ -487,7 +487,7 @@ class Projection(Monitor):
             sources = {'loc': conn.centres[conn.cortical], 'ori': conn.orientations[conn.cortical]}
 
         # compute analytic if not provided
-        if self.projection is None:
+        if not hasattr(self, 'projection'):
             LOG.debug('Precomputed projection not unavailable using analytic approximation.')
             self.gain = self.analytic(**sources)
 

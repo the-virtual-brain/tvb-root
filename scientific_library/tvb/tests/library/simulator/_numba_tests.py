@@ -67,7 +67,7 @@ skip_if_no_numba = pytest.mark.skipif(not HAVE_NUMBA, reason="Numba unavailable"
 
 class CudaBaseCase(BaseTestCase):
 
-    def setUp(self): pass
+    def setup_method(self): pass
 
     # Implementations and tests written for a 1D block & 1D grid layout.
     # Results in 4 threads under simulator.

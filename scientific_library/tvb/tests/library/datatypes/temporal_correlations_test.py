@@ -46,7 +46,7 @@ class TestTemporalCorrelations(BaseTestCase):
     def test_crosscorrelation(self):
         data = numpy.random.random((10, 10))
         ts = time_series.TimeSeries(data=data, title='meh')
-        dt = temporal_correlations.CrossCorrelation(source=ts)
+        dt = temporal_correlations.CrossCorrelation(source=ts, array_data=numpy.array([0]))
         summary_info = dt.summary_info()
         assert summary_info['Dimensions'] == ('Offsets', 'Node', 'Node', 'State Variable', 'Mode')
         assert summary_info['Source'] == 'meh'

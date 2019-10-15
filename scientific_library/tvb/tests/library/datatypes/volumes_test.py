@@ -33,6 +33,7 @@ Created on Mar 20, 2013
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import volumes
 
@@ -43,12 +44,12 @@ class TestVolumes(BaseTestCase):
     """
 
     def test_volume(self):
-        dt = volumes.Volume()
+        dt = volumes.Volume(origin=numpy.array([]))
         summary_info = dt.summary_info()
-        assert summary_info['Origin'] is None
+        assert summary_info['Origin'] is not None
         assert summary_info['Voxel size'] is None
         assert summary_info['Volume type'] == 'Volume'
         assert summary_info['Units'] == 'mm'
-        assert dt.origin is None
+        assert dt.origin is not None
         assert dt.voxel_size is None
         assert dt.voxel_unit == 'mm'

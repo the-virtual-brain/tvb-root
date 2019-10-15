@@ -48,9 +48,9 @@ class LocalConnectivity(HasTraits):
     """
     _ui_name = "Local connectivity"
 
-    surface = Attr(field_type=surfaces.CorticalSurface, label="Surface")
+    surface = Attr(field_type=surfaces.CorticalSurface, label="Surface", required=False)
 
-    matrix = Attr(field_type=scipy.sparse.spmatrix)
+    matrix = Attr(field_type=scipy.sparse.spmatrix, required=False)
 
     equation = Attr(
         field_type=equations.FiniteSupportEquation,

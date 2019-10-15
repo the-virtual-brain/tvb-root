@@ -49,7 +49,7 @@ except ImportError:
 @pytest.mark.skipif(not PYOPENCL_AVAILABLE, reason='PyOpenCL not available')
 class TestCLRWW():
 
-    def setUp(self):
+    def setup_method(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
         self.context, self.queue = context_and_queue(create_cpu_context())
         self.n_nodes = 100
@@ -72,7 +72,7 @@ class TestCLRWW():
 
 @pytest.mark.skipif(not PYOPENCL_AVAILABLE, reason='PyOpenCL not available')
 class TestModels():
-    def setUp(self):
+    def setup_method(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
         self.context, self.queue = context_and_queue(create_cpu_context())
         self.n_nodes = 100
@@ -192,7 +192,7 @@ class TestModels():
 #     TEST_RUNNER.run(TEST_SUITE)
 @pytest.mark.skipif(not PYOPENCL_AVAILABLE, 'PyOpenCL not available')
 class TestIntegrator():
-    def setUp(self):
+    def setup_method(self):
         from tvb.simulator._opencl.util import create_cpu_context, context_and_queue
         from tvb.simulator._opencl.cl_models import CL_Linear
         self.context, self.queue = context_and_queue(create_cpu_context())

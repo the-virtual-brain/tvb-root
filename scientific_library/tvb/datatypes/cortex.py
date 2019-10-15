@@ -113,7 +113,7 @@ class Cortex(surfaces.CorticalSurface):
                 setattr(self, name, getattr(cortex_surface, name))
             except Exception as exc:
                 LOG.exception("Could not set attribute '" + name + "' on Cortex")
-        for key, value in cortex_parameters.items():
+        for key, value in list(cortex_parameters.items()):
             setattr(self, key, value)
         return self
 
@@ -253,7 +253,7 @@ class Cortex(surfaces.CorticalSurface):
             #Average orientation of the region
 
             for k in cortical_regions[0]:
-                orient = self.vertex_normals[cortical_region_mapping == k, :]
+                orient = self.vertex_normals[:len(cortical_region_mapping)][cortical_region_mapping == k, :]
                 avg_orient = numpy.mean(orient, axis=0)
                 average_orientation[k, :] = avg_orient / numpy.sqrt(numpy.sum(avg_orient ** 2))
             for nk in non_cortical_regions[0]:
