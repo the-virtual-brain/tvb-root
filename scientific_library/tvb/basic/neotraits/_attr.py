@@ -17,14 +17,15 @@ class Const(Attr):
     Note that if it is a mutable type, the value is shared with all instances of the owning class
     We cannot enforce true constancy in python
     """
+
     def __init__(self, default, doc='', label=''):
         """
         :param default: The constant value
         """
         # it would be nice if we could turn the default immutable. But this is unreasonable work in python
-        super(Const, self).__init__(field_type=type(default), default=default,
-                                    doc=doc, label=label, required=True, readonly=True)
-
+        super(Const, self).__init__(
+            field_type=type(default), default=default, doc=doc, label=label, required=True, readonly=True
+        )
 
 
 class List(Attr):
@@ -32,12 +33,18 @@ class List(Attr):
     The attribute is a list of values.
     Choices and type are reinterpreted as applying not to the list but to the elements of it
     """
-    def __init__(self, of=object, default=(), doc='', label='',
-                 readonly=False, choices=None):
+
+    def __init__(self, of=object, default=(), doc='', label='', readonly=False, choices=None):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
-        super(List, self).__init__(field_type=collections.Sequence, default=default,
-                                   doc=doc, label=label,
-                                   required=True, readonly=readonly, choices=None)
+        super(List, self).__init__(
+            field_type=collections.Sequence,
+            default=default,
+            doc=doc,
+            label=label,
+            required=True,
+            readonly=readonly,
+            choices=None,
+        )
         self.element_type = of
         self.element_choices = choices
 
@@ -47,8 +54,7 @@ class List(Attr):
         # check that the default contains elements of the declared type
         for i, el in enumerate(self.default):
             if not isinstance(el, self.element_type):
-                msg = 'default[{}] must have type {} not {}'.format(
-                    i, self.element_type, type(el))
+                msg = 'default[{}] must have type {} not {}'.format(i, self.element_type, type(el))
                 raise TypeError(self._err_msg(msg))
 
         if self.element_choices is not None:
@@ -56,7 +62,8 @@ class List(Attr):
             for i, el in enumerate(self.default):
                 if el not in self.element_choices:
                     msg = 'default[{}]=={} must be one of the choices {}'.format(
-                        i, self.default, self.element_choices)
+                        i, self.default, self.element_choices
+                    )
                     raise TypeError(self._err_msg(msg))
 
 
@@ -73,7 +80,9 @@ class List(Attr):
         if self.element_choices is not None:
             for i, el in enumerate(value):
                 if el not in self.element_choices:
-                    raise ValueError(self._err_msg("value[{}]=={} must be one of {}".format(i, el, self.element_choices)))
+                    raise ValueError(
+                        self._err_msg("value[{}]=={} must be one of {}".format(i, el, self.element_choices))
+                    )
         return value
 
 
@@ -91,20 +100,21 @@ class List(Attr):
 
     def __str__(self):
         return '{}(of={}, default={!r}, required={})'.format(
-            type(self).__name__, self.element_type, self.default, self.required)
+            type(self).__name__, self.element_type, self.default, self.required
+        )
 
 
 class _Number(Attr):
     def _post_bind_validate(self):
         if self.default is not None and not numpy.can_cast(self.default, self.field_type, 'safe'):
             msg = 'can not safely cast default value {} to the declared type {}'.format(
-                self.default, self.field_type)
+                self.default, self.field_type
+            )
             raise TypeError(self._err_msg(msg))
 
         if self.choices is not None and self.default is not None:
             if self.default not in self.choices:
-                msg = 'the default {} must be one of the choices {}'.format(
-                    self.default, self.choices)
+                msg = 'the default {} must be one of the choices {}'.format(self.default, self.choices)
                 raise TypeError(self._err_msg(msg))
 
 
@@ -138,11 +148,19 @@ class Int(_Number):
     This allows all integer types, including numpy ones that can be safely cast to the declared type
     according to numpy rules
     """
-    def __init__(self, field_type=int, default=0, doc='', label='',
-                 required=True, readonly=False, choices=None):
-        super(_Number, self).__init__(field_type=field_type, default=default, doc=doc, label=label,
-                                      required=required, readonly=readonly, choices=choices)
 
+    def __init__(
+        self, field_type=int, default=0, doc='', label='', required=True, readonly=False, choices=None
+    ):
+        super(_Number, self).__init__(
+            field_type=field_type,
+            default=default,
+            doc=doc,
+            label=label,
+            required=required,
+            readonly=readonly,
+            choices=choices,
+        )
 
     def _post_bind_validate(self):
         if not issubclass(self.field_type, (int, long, numpy.integer)):
@@ -161,11 +179,19 @@ class Float(_Number):
     This allows any type that can be safely cast to the declared float type
     according to numpy rules
     """
-    def __init__(self, field_type=float, default=0, doc='', label='',
-                 required=True, readonly=False, choices=None):
-        super(_Number, self).__init__(field_type=field_type, default=default, doc=doc, label=label,
-                                      required=required, readonly=readonly, choices=choices)
 
+    def __init__(
+        self, field_type=float, default=0, doc='', label='', required=True, readonly=False, choices=None
+    ):
+        super(_Number, self).__init__(
+            field_type=field_type,
+            default=default,
+            doc=doc,
+            label=label,
+            required=required,
+            readonly=readonly,
+            choices=choices,
+        )
 
     def _post_bind_validate(self):
         if not issubclass(self.field_type, (float, numpy.floating)):
@@ -186,8 +212,18 @@ class NArray(Attr):
     Defaults are checked if they are in the declared domain.
     For performance reasons this does not happen on every attribute set.
     """
-    def __init__(self, default=None, required=True, doc='', label='',
-                 dtype=numpy.float, ndim=None, dim_names=(), domain=None):
+
+    def __init__(
+        self,
+        default=None,
+        required=True,
+        doc='',
+        label='',
+        dtype=numpy.float,
+        ndim=None,
+        dim_names=(),
+        domain=None,
+    ):
         # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type, str], int, typing.Tuple[str, ...], typing.Container) -> None
         """
         :param dtype: The numpy datatype. Defaults to float64. This is checked by neotraits.
@@ -205,8 +241,9 @@ class NArray(Attr):
         # if default is None:
         #     default = numpy.zeros((), dtype=dtype)
 
-        super(NArray, self).__init__(field_type=numpy.ndarray, default=default,
-                                     required=required, doc=doc, label=label)
+        super(NArray, self).__init__(
+            field_type=numpy.ndarray, default=default, required=required, doc=doc, label=label
+        )
         self.ndim = int(ndim) if ndim is not None else None
         self.domain = domain  # anything that supports 3.1 in domain
         self.dim_names = tuple(dim_names)
@@ -227,7 +264,9 @@ class NArray(Attr):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
             raise TypeError(self._err_msg(msg))
         if not numpy.can_cast(self.default, self.dtype, 'safe'):
-            msg = 'the default={} value can not be safely cast to the declared dtype={}'.format(self.default, self.dtype)
+            msg = 'the default={} value can not be safely cast to the declared dtype={}'.format(
+                self.default, self.dtype
+            )
             raise ValueError(self._err_msg(msg))
         # if ndim is None we allow any ndim
         if self.ndim is not None and self.default.ndim != self.ndim:
@@ -272,7 +311,14 @@ class NArray(Attr):
 
     def __str__(self):
         return '{}(label={!r}, dtype={}, default={!r}, dim_names={}, ndim={}, required={})'.format(
-            type(self).__name__, self.label, self.dtype, self.default, self.dim_names, self.ndim, self.required)
+            type(self).__name__,
+            self.label,
+            self.dtype,
+            self.default,
+            self.dim_names,
+            self.ndim,
+            self.required,
+        )
 
 
 class Range(object):
@@ -280,6 +326,7 @@ class Range(object):
     Defines a domain like the one that numpy.arange generates
     Points are precisely equidistant but the largest point is <= hi
     """
+
     def __init__(self, lo, hi, step=1.0):
         self.lo = lo
         self.hi = hi
@@ -301,6 +348,7 @@ class LinspaceRange(object):
     Defines a domain with precise endpoints but the points are not precisely equidistant
     Similar to numpy.linspace
     """
+
     def __init__(self, lo, hi, npoints=50):
         self.lo = lo
         self.hi = hi
@@ -315,4 +363,3 @@ class LinspaceRange(object):
 
     def __repr__(self):
         return 'LinspaceRange(lo={}, hi={}, step={})'.format(self.lo, self.hi, self.npoints)
-

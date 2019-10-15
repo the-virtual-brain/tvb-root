@@ -67,10 +67,7 @@ def narray_summary_info(ar, ar_name='', omit_shape=False):
 
     ret = {}
     if not omit_shape:
-        ret.update({
-            'shape': str(ar.shape),
-            'dtype': str(ar.dtype),
-        })
+        ret.update({'shape': str(ar.shape), 'dtype': str(ar.dtype)})
 
     if ar.size == 0:
         ret['is empty'] = 'True'
@@ -100,6 +97,7 @@ def narray_describe(ar):
 # these are here and not on HasTraits just so that that class is not
 # complicated by irrelevant string formatting
 
+
 def trait_object_str(self):
     cls = type(self)
     summary = self.summary_info()
@@ -118,7 +116,8 @@ def trait_object_repr_html(self):
         '<table>',
         '<h3>{}</h3>'.format(cls.__name__),
         '<thead><tr><th></th><th style="text-align:left;width:40%">value</th></tr></thead>',
-        '<tbody>']
+        '<tbody>',
+    ]
 
     summary = self.summary_info()
 

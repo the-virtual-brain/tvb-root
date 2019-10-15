@@ -9,4 +9,3 @@ The public api is in the neotraits.api module
 # importing neotraits.some_module will run __init__
 # and that one will import most modules in order to provide the api.
 # That is not ideal because circular imports become likely and over-importing can slow startup.
-

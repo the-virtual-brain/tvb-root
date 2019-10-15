@@ -5,12 +5,7 @@ import typing
 import abc
 import logging
 import uuid
-from .info import (
-    trait_object_str,
-    auto_docstring,
-    trait_object_repr_html,
-    narray_summary_info,
-)
+from .info import trait_object_str, auto_docstring, trait_object_repr_html, narray_summary_info
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -26,11 +21,13 @@ class Attr(object):
     * documentation
     It will resolve to attributes on the instance.
     """
+
     # This class is a python data descriptor.
     # For an introduction see https://docs.python.org/2/howto/descriptor.html
 
-    def __init__(self, field_type, default=None, doc='', label='',
-                 required=True, readonly=False, choices=None):
+    def __init__(
+        self, field_type, default=None, doc='', label='', required=True, readonly=False, choices=None
+    ):
         # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
         """
         :param field_type: the python type of this attribute
@@ -59,9 +56,7 @@ class Attr(object):
         """
         Adds to a error message information about the Attribute where it occured
         """
-        return 'attribute {}.{} = {} : {}'.format(
-            self.owner.__name__, self.field_name, self, msg)
-
+        return 'attribute {}.{} = {} : {}'.format(self.owner.__name__, self.field_name, self, msg)
 
     def _post_bind_validate(self):
         # type: () -> None
@@ -72,18 +67,18 @@ class Attr(object):
         Attr should be considered initialized only after this has run
         """
         if not isinstance(self.field_type, type):
-            msg = 'field_type must be a type not {!r}. Did you mean to use it as the default?'.format(self.field_type)
+            msg = 'field_type must be a type not {!r}. Did you mean to use it as the default?'.format(
+                self.field_type
+            )
             raise TypeError(self._err_msg(msg))
 
         if self.default is not None and not isinstance(self.default, self.field_type):
-            msg = 'should have a default of type {} not {}'.format(
-                self.field_type, type(self.default))
+            msg = 'should have a default of type {} not {}'.format(self.field_type, type(self.default))
             raise TypeError(self._err_msg(msg))
 
         if self.choices is not None and self.default is not None:
             if self.default not in self.choices:
-                msg = 'the default {} must be one of the choices {}'.format(
-                    self.default, self.choices)
+                msg = 'the default {} must be one of the choices {}'.format(self.default, self.choices)
                 raise TypeError(self._err_msg(msg))
 
         # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
@@ -158,7 +153,8 @@ class Attr(object):
 
     def __str__(self):
         return '{}(field_type={}, default={!r}, required={})'.format(
-            type(self).__name__, self.field_type, self.default, self.required)
+            type(self).__name__, self.field_type, self.default, self.required
+        )
 
     # A modest attempt of making Attr immutable
 
@@ -218,6 +214,7 @@ class MetaType(abc.ABCMeta):
     deal with 2 meta-classes.
     Even though we do this we don't support the dynamic registration of subtypes to these abc's
     """
+
     # This is a python metaclass.
     # For an introduction see https://docs.python.org/2/reference/datamodel.html
 
@@ -354,10 +351,10 @@ class MetaType(abc.ABCMeta):
             # these getattr's call the descriptors, should we bypass them?
             attr = getattr(cls, k)
             if attr.required and getattr(instance, k) is None:
-                log.warning('attribute {}.{} = {} is required. '
-                            'Initialize it in __init__ or declare a default '
-                            .format(cls.__name__, k, attr))
-
+                log.warning(
+                    'attribute {}.{} = {} is required. '
+                    'Initialize it in __init__ or declare a default '.format(cls.__name__, k, attr)
+                )
 
     def __call__(cls, *args, **kwargs):
         """
@@ -403,8 +400,11 @@ class HasTraits(object):
         cls = type(self)
         for k, v in kwargs.iteritems():
             if k not in cls.declarative_attrs:
-                raise TypeError('Valid kwargs for type {!r} are: {}. You have given: {!r}'
-                                .format(cls, repr(cls.declarative_attrs), k))
+                raise TypeError(
+                    'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(
+                        cls, repr(cls.declarative_attrs), k
+                    )
+                )
             setattr(self, k, v)
 
         self.gid = uuid.uuid4()
