@@ -115,8 +115,7 @@ class SpatialPattern(HasTraits):
         Generate a discrete representation of the spatial pattern.
         The argument x represents a distance, or effective distance, for each node in the space.
         """
-        self.spatial.pattern = x
-        self._spatial_pattern = numpy.sum(self.spatial.pattern, axis=1)[:, numpy.newaxis]
+        self._spatial_pattern = numpy.sum(self.spatial.evaluate(x), axis=1)[:, numpy.newaxis]
 
     spatial_pattern = property(fget=_get_spatial_pattern, fset=_set_spatial_pattern)
 
@@ -162,8 +161,7 @@ class SpatioTemporalPattern(SpatialPattern, SpatioTemporalCall):
         """
         Generate a discrete representation of the temporal pattern.
         """
-        self.temporal.pattern = t
-        self._temporal_pattern = numpy.reshape(self.temporal.pattern, (1, -1))
+        self._temporal_pattern = numpy.reshape(self.temporal.evaluate(t), (1, -1))
 
     temporal_pattern = property(fget=_get_temporal_pattern, fset=_set_temporal_pattern)
 

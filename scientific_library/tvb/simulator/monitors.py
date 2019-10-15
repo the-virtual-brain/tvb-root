@@ -846,8 +846,7 @@ class Bold(Monitor):
         self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
         LOG.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
         #Compute the HRF kernel
-        self.hrf_kernel.pattern = self._stock_time
-        G = self.hrf_kernel.pattern
+        G = self.hrf_kernel.evaluate(self._stock_time)
         #Reverse it, need it into the past for matrix-multiply of stock
         G = G[::-1]
         self.hemodynamic_response_function = G[numpy.newaxis, :]

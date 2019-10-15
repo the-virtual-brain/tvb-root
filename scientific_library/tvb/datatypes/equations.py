@@ -41,6 +41,7 @@ import numpy
 import numexpr
 from tvb.basic.traits import core, parameters_factory, types_basic as basic
 from tvb.basic.logger.builder import get_logger
+from scipy.special import gamma as sp_gamma
 
 
 LOG = get_logger(__name__)
@@ -86,14 +87,7 @@ class Equation(basic.MapAsJson, core.Type):
                    "parameters": self.parameters}
         return summary
 
-    # ------------------------------ pattern -----------------------------------#
-    def _get_pattern(self):
-        """
-        Return a discrete representation of the equation.
-        """
-        return self._pattern
-
-    def _set_pattern(self, var):
+    def evaluate(self, var):
         """
         Generate a discrete representation of the equation for the space
         represented by ``var``.
@@ -103,12 +97,8 @@ class Equation(basic.MapAsJson, core.Type):
         `` space ``. ``var`` can be a single number, a numpy.ndarray or a
         ?scipy.sparse_matrix? TODO: think this last one is true, need to check
         as we need it for LocalConnectivity...
-
         """
-
-        self._pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
-
-    pattern = property(fget=_get_pattern, fset=_set_pattern)
+        return numexpr.evaluate(self.equation, global_dict=self.parameters)
 
     def get_series_data(self, min_range=0, max_range=100, step=None):
         """
@@ -121,8 +111,7 @@ class Equation(basic.MapAsJson, core.Type):
         var = numpy.arange(min_range, max_range+step, step)
         var = var[numpy.newaxis, :]
 
-        self.pattern = var
-        y = self.pattern
+        y = self.evaluate(var)
         result = zip(var.flat, y.flat)
         return result, False
 
@@ -197,7 +186,6 @@ class TemporalApplicableEquation(Equation):
     Abstract class introduced just for filtering what equations to be displayed in UI,
     for setting the temporal component in Stimulus on region and surface.
     """
-    pass
 
 
 class FiniteSupportEquation(TemporalApplicableEquation):
@@ -207,7 +195,6 @@ class FiniteSupportEquation(TemporalApplicableEquation):
     class, are . The main purpose of this class is to facilitate filtering in the UI,
     for patters on surface (stimuli surface and localConnectivity).
     """
-    pass
 
 
 class SpatialApplicableEquation(Equation):
@@ -215,7 +202,6 @@ class SpatialApplicableEquation(Equation):
     Abstract class introduced just for filtering what equations to be displayed in UI,
     for setting model parameters on the Surface level.
     """
-    pass
 
 
 class DiscreteEquation(FiniteSupportEquation):
@@ -407,13 +393,7 @@ class PulseTrain(TemporalApplicableEquation):
         default={"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
         label="Pulse Train Parameters")
 
-    def _get_pattern(self):
-        """
-        Return a discrete representation of the equation.
-        """
-        return self._pattern
-
-    def _set_pattern(self, var):
+    def evaluate(self, var):
         """
         Generate a discrete representation of the equation for the space
         represented by ``var``.
@@ -425,21 +405,19 @@ class PulseTrain(TemporalApplicableEquation):
         as we need it for LocalConnectivity...
 
         """
-
         # rolling in the deep ...
         onset = self.parameters["onset"]
         off = var < onset
         var = numpy.roll(var, off.sum() + 1)
         var[..., off] = 0.0
-        self._pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
-        self._pattern[..., off] = 0.0
+        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern[..., off] = 0.0
+        return _pattern
 
-    pattern = property(fget=_get_pattern, fset=_set_pattern)
 
 
 class HRFKernelEquation(Equation):
     "Base class for hemodynamic response functions."
-    pass
 
 
 class Gamma(HRFKernelEquation):
@@ -483,13 +461,7 @@ class Gamma(HRFKernelEquation):
         label="Gamma Parameters",
         default={"tau": 1.08, "n": 3.0, "factorial": 2.0, "a": 0.1})
 
-    def _get_pattern(self):
-        """
-        Return a discrete representation of the equation.
-        """
-        return self._pattern
-
-    def _set_pattern(self, var):
+    def evaluate(self, var):
         """
         Generate a discrete representation of the equation for the space
         represented by ``var``.
@@ -505,12 +477,12 @@ class Gamma(HRFKernelEquation):
             product *= i + 1
 
         self.parameters["factorial"] = product
-        self._pattern = numexpr.evaluate(self.equation,
+        _pattern = numexpr.evaluate(self.equation,
                                          global_dict=self.parameters)
-        self._pattern /= max(self._pattern)
-        self._pattern *= self.parameters["a"]
+        _pattern /= max(_pattern)
+        _pattern *= self.parameters["a"]
+        return _pattern
 
-    pattern = property(fget=_get_pattern, fset=_set_pattern)
 
 
 class DoubleExponential(HRFKernelEquation):
@@ -552,25 +524,17 @@ class DoubleExponential(HRFKernelEquation):
                  "tau_2": 7.4, "f_2": 0.12, "amp_2": 0.1,
                  "a": 0.1, "pi": numpy.pi})
 
-    def _get_pattern(self):
-        """
-        Return a discrete representation of the equation.
-        """
-        return self._pattern
-
-    def _set_pattern(self, var):
+    def evaluate(self, var):
         """
         Generate a discrete representation of the equation for the space
         represented by ``var``.
-
         """
+        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern /= max(_pattern)
 
-        self._pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
-        self._pattern /= max(self._pattern)
+        _pattern *= self.parameters["a"]
+        return _pattern
 
-        self._pattern *= self.parameters["a"]
-
-    pattern = property(fget=_get_pattern, fset=_set_pattern)
 
 
 class FirstOrderVolterra(HRFKernelEquation):
@@ -674,26 +638,16 @@ class MixtureOfGammas(HRFKernelEquation):
         label="Double Exponential Parameters",
         default={"a_1": 6.0, "a_2": 13.0, "l": 1.0, "c": 0.4, "gamma_a_1": 1.0, "gamma_a_2": 1.0})
 
-    def _get_pattern(self):
-        """
-        Return a discrete representation of the equation.
-        """
-        return self._pattern
-
-    def _set_pattern(self, var):
+    def evaluate(self, var):
         """
         Generate a discrete representation of the equation for the space
         represented by ``var``.
 
         .. note: numexpr doesn't support gamma function
-
         """
-
         # get gamma functions
-        from scipy.special import gamma as sp_gamma
         self.parameters["gamma_a_1"] = sp_gamma(self.parameters["a_1"])
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
-        self._pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        return numexpr.evaluate(self.equation, global_dict=self.parameters)
 
-    pattern = property(fget=_get_pattern, fset=_set_pattern)

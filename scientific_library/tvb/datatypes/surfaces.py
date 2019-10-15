@@ -786,8 +786,7 @@ class Surface(HasTraits):
         """
         focal_points = numpy.array(focal_points, dtype=numpy.int32)
         dist = self.geodesic_distance(focal_points)
-        equation.pattern = dist
-        return equation.pattern
+        return equation.evaluate(dist)
 
     # framework methods
     def load_from_metadata(self, meta_dictionary):

@@ -259,6 +259,5 @@ class Multiplicative(Noise):
         Equation 4.6, page 119.
 
         """
-        self.b.pattern = state_variables
-        g_x = numpy.sqrt(2.0 * self.nsig) * self.b.pattern
+        g_x = numpy.sqrt(2.0 * self.nsig) * self.b.evaluate(state_variables)
         return g_x

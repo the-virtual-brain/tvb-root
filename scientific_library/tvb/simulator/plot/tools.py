@@ -215,32 +215,28 @@ def plot_local_connectivity(cortex, cutoff=None):
     hi_res = 1024
     step = 2.0 * cutoff_2 / (hi_res - 1)
     hi_x = numpy.arange(-cutoff_2, cutoff_2 + step, step)
-    cortex.local_connectivity.equation.pattern = numpy.abs(hi_x)
-    pyplot.plot(hi_x, cortex.local_connectivity.equation.pattern, 'k',
+    pyplot.plot(hi_x, cortex.local_connectivity.equation.evaluate(numpy.abs(hi_x)), 'k',
                 linestyle=dashes[-1], linewidth=3)
 
     #What we'll mostly get
     avg_res = 2 * int(cutoff / cortex.edge_length_mean)
     step = cutoff_2 / (avg_res - 1)
     avg_x = numpy.arange(-cutoff, cutoff + step, step)
-    cortex.local_connectivity.equation.pattern = numpy.abs(avg_x)
-    pyplot.plot(avg_x, cortex.local_connectivity.equation.pattern, 'b',
+    pyplot.plot(avg_x, cortex.local_connectivity.equation.evaluate(numpy.abs(avg_x)), 'b',
                 linestyle=dashes[0], linewidth=3)
 
     #It can be this bad
     worst_res = 2 * int(cutoff / cortex.edge_length_max)
     step = cutoff_2 / (worst_res - 1)
     worst_x = numpy.arange(-cutoff, cutoff + step, step)
-    cortex.local_connectivity.equation.pattern = numpy.abs(worst_x)
-    pyplot.plot(worst_x, cortex.local_connectivity.equation.pattern, 'r',
+    pyplot.plot(worst_x, cortex.local_connectivity.equation.evaluate(numpy.abs(worst_x)), 'r',
                 linestyle=dashes[1], linewidth=3)
 
     #This is as good as it gets...
     best_res = 2 * int(cutoff / cortex.edge_length_min)
     step = cutoff_2 / (best_res - 1)
     best_x = numpy.arange(-cutoff, cutoff + step, step)
-    cortex.local_connectivity.equation.pattern = numpy.abs(best_x)
-    pyplot.plot(best_x, cortex.local_connectivity.equation.pattern, 'g',
+    pyplot.plot(best_x, cortex.local_connectivity.equation.evaluate(numpy.abs(best_x)), 'g',
                 linestyle=dashes[2], linewidth=3)
 
     #Plot the cutoff
