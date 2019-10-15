@@ -57,14 +57,12 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 import numpy
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion,
     TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG, TimeSeriesSurface)
-from tvb.simulator.common import get_logger, simple_gen_astr
+from tvb.simulator.common import get_logger
 from tvb.simulator import noise
 import tvb.datatypes.sensors as sensors_module
-from tvb.datatypes.sensors import SensorsMEG, SensorsInternal, SensorsEEG, Sensors
+from tvb.datatypes.sensors import SensorsEEG
 import tvb.datatypes.arrays as arrays
-from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import (ProjectionMatrix,
     ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
@@ -159,24 +157,18 @@ class Monitor(core.Type):
             return TimeSeriesSurface(storage_path=storage_path,
                                      surface=surface,
                                      sample_period=self.period,
-                                     title='Surface ' + self.__class__.__name__,
-                                     **self._transform_user_tags())
+                                     title='Surface ' + self.__class__.__name__)
         if connectivity is not None:
             return TimeSeriesRegion(storage_path=storage_path,
                                     connectivity=connectivity,
                                     region_mapping=region_map,
                                     region_mapping_volume=region_volume_map,
                                     sample_period=self.period,
-                                    title='Regions ' + self.__class__.__name__,
-                                    **self._transform_user_tags())
+                                    title='Regions ' + self.__class__.__name__)
 
         return TimeSeries(storage_path=storage_path,
                           sample_period=self.period,
-                          title=' ' + self.__class__.__name__,
-                          **self._transform_user_tags())
-
-    def _transform_user_tags(self):
-        return {}
+                          title=' ' + self.__class__.__name__)
 
 
 class Raw(Monitor):
@@ -321,8 +313,7 @@ class SpatialAverage(Monitor):
                                     region_mapping=region_map,
                                     region_mapping_volume=region_volume_map,
                                     title='Regions ' + self.__class__.__name__,
-                                    connectivity=connectivity,
-                                    **self._transform_user_tags())
+                                    connectivity=connectivity)
         else:
             # mask does not correspond to the number of regions
             # let the parent create a plain TimeSeries
@@ -541,32 +532,33 @@ class Projection(Monitor):
 
     _gain = None
 
-    def _get_gain(self):
+    @property
+    def gain(self):
         if self._gain is None:
             self._gain = self.projection.projection_data
         return self._gain
 
-    def _set_gain(self, new_gain):
+    @gain.setter
+    def gain(self, new_gain):
         self._gain = new_gain
-
-    gain = property(_get_gain, _set_gain)
 
     _rmap = None
 
     def _reg_map_data(self, reg_map):
         return getattr(reg_map, 'array_data', reg_map)
 
-    def _get_rmap(self):
+    @property
+    def rmap(self):
         "Normalize obtaining reg map vector over various possibilities."
         if self._rmap is None:
             self._rmap = self._reg_map_data(self.region_mapping)
         return self._rmap
 
-    def _set_rmap(self, reg_map):
+    @rmap.setter
+    def rmap(self, reg_map):
         if self._rmap is not None:
             self._rmap = self._reg_map_data(self.region_mapping)
 
-    rmap = property(_get_rmap, _set_rmap)
 
 
 class EEG(Projection):
@@ -649,8 +641,7 @@ class EEG(Projection):
         return TimeSeriesEEG(storage_path=storage_path,
                              sensors=self.sensors,
                              sample_period=self.period,
-                             title=' ' + self.__class__.__name__,
-                             **self._transform_user_tags())
+                             title=' ' + self.__class__.__name__)
 
 
 class MEG(Projection):
@@ -713,8 +704,7 @@ class MEG(Projection):
         return TimeSeriesMEG(storage_path=storage_path,
                              sensors=self.sensors,
                              sample_period=self.period,
-                             title=' ' + self.__class__.__name__,
-                             **self._transform_user_tags())
+                             title=' ' + self.__class__.__name__)
 
 
 class iEEG(Projection):
@@ -756,8 +746,7 @@ class iEEG(Projection):
         return TimeSeriesSEEG(storage_path=storage_path,
                               sensors=self.sensors,
                               sample_period=self.period,
-                              title=' ' + self.__class__.__name__,
-                              **self._transform_user_tags())
+                              title=' ' + self.__class__.__name__)
 
 
 class Bold(Monitor):
