@@ -201,45 +201,44 @@ class ContinuousWaveletTransform(HasTraits):
             source = self.time_series,
             mother = self.mother,
             sample_period = self.sample_period,
-            frequencies = self.frequencies,
+            frequencies = self.frequencies.to_array(),
             normalisation = self.normalisation,
             q_ratio = self.q_ratio,
-            array_data = coef,
-            use_storage = False)
+            array_data = coef)
         
         return spectra
-    
-    
-    def result_shape(self, input_shape):
+
+
+    def result_shape(self, input_shape, input_sample_period):
         """
         Returns the shape of the main result (complex array) of the continuous
         wavelet transform.
         """
         freq_len = int((self.frequencies.hi - self.frequencies.lo) / self.frequencies.step)
-        temporal_step = max((1, self.sample_period / self.time_series.sample_period))
+        temporal_step = max((1, self.sample_period / input_sample_period))
         nt = int(round(input_shape[0] /  temporal_step))
         result_shape = (freq_len, nt, ) + input_shape[1:]
         return result_shape
     
     
-    def result_size(self, input_shape):
+    def result_size(self, input_shape, input_sample_period):
         """
         Returns the storage size in Bytes of the main result (complex array) of
         the continuous wavelet transform.
         """
-        result_size = numpy.prod(self.result_shape(input_shape)) * 2.0 * 8.0 #complex*Bytes
+        result_size = numpy.prod(self.result_shape(input_shape, input_sample_period)) * 2.0 * 8.0 #complex*Bytes
         return result_size
     
     
-    def extended_result_size(self, input_shape):
+    def extended_result_size(self, input_shape, input_sample_period):
         """
         Returns the storage size in Bytes of the extended result of the 
         continuous wavelet transform.  That is, it includes storage of the
         evaluated WaveletCoefficients attributes such as power, phase, 
         amplitude, etc.
         """
-        result_shape = self.result_shape(input_shape)
-        result_size = self.result_size(input_shape)
+        result_shape = self.result_shape(input_shape, input_sample_period)
+        result_size = self.result_size(input_shape, input_sample_period)
         extend_size = result_size #Main array
         extend_size = extend_size + 0.5 * result_size #Amplitude
         extend_size = extend_size + 0.5 * result_size #Phase
