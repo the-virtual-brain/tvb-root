@@ -90,11 +90,23 @@ class Noise(HasTraits):
         # range=basic.Range(lo=0.0, hi=20.0, step=1.0), #mh todo  support domains for simple floats?
         doc="""The noise correlation time""")
 
-    noise_seed = Int(default=42)
+    noise_seed = Int(
+        default=42,
+        doc="A random seed used to initialise the random_stream if it is missing."
+    )
+
+    random_stream = Attr(
+        field_type=numpy.random.RandomState,
+        required=False,
+        label="Random Stream",
+        doc="An instance of numpy's RandomState associated with this"
+            "specific Noise object. Used when you need to resume a simulation from a state saved to disk"
+    )
 
     def __init__(self, **kwargs):
         super(Noise, self).__init__(**kwargs)
-        self.random_stream = numpy.random.RandomState(self.noise_seed)
+        if self.random_stream is None:
+            self.random_stream = numpy.random.RandomState(self.noise_seed)
 
         self.dt = None
         # For use if coloured
@@ -110,7 +122,8 @@ class Noise(HasTraits):
 
         """
         super(Noise, self).configure()
-        self.random_stream.seed(self.noise_seed)
+        # XXX: reseeding here will destroy a maybe carefully set random_stream!
+        # self.random_stream.seed(self.noise_seed)
 
     def __str__(self):
         return simple_gen_astr(self, 'dt ntau')
