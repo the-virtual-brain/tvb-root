@@ -170,10 +170,22 @@ def test_mutable_defaults():
 
         def __init__(self, **kwargs):
             super(A, self).__init__(**kwargs)
+            # copy the default in the constructor
+            # and avoid the common shared default
             self.mut = self.mut[:]
+
     aok = A()
 
     assert aok.mut is not A.mut.default
+    assert aok.mut2 is A.mut2.default
+
+    class B(HasTraits):
+        # a better option is to use a lambda default
+        mut_better = Attr(list, default=lambda: [3, 4])
+
+    bok = B()
+
+    assert bok.mut_better is not B.mut_better.default
     assert aok.mut2 is A.mut2.default
 
 

@@ -1,4 +1,5 @@
 import inspect
+import types
 
 import numpy
 import typing
@@ -68,13 +69,15 @@ class Attr(object):
             )
             raise TraitTypeError(msg, attr=self)
 
-        if self.default is not None and not isinstance(self.default, self.field_type):
+        skip_default_checks = self.default is None or isinstance(self.default, types.FunctionType)
+
+        if not skip_default_checks and not isinstance(self.default, self.field_type):
             msg = 'Attribute should have a default of type {} not {}'.format(
                 self.field_type, type(self.default)
             )
             raise TraitTypeError(msg, attr=self)
 
-        if self.choices is not None and self.default is not None:
+        if self.choices is not None and not skip_default_checks:
             if self.default not in self.choices:
                 msg = 'The default {} must be one of the choices {}'.format(self.default, self.choices)
                 raise TraitTypeError(msg, attr=self)
@@ -83,7 +86,8 @@ class Attr(object):
         try:
             hash(self.default)
         except TypeError:
-            log.warning('Field seems mutable and has a default value. \n   attribute {}'.format(self))
+            log.warning('Field seems mutable and has a default value. '
+                        'Consider using a lambda as a value factory \n   attribute {}'.format(self))
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
@@ -130,7 +134,11 @@ class Attr(object):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            return self.default
+            if isinstance(self.default, types.FunctionType):
+                default = self.default()
+            else:
+                default = self.default
+            return default
         return instance.__dict__[self.field_name]
 
 
@@ -428,14 +436,8 @@ class HasTraits(object):
         """
         # cls just to emphasise that the metadata is on the class not on instances
         cls = type(self)
-        for k, v in kwargs.iteritems():
-            if k not in cls.declarative_attrs:
-                raise TraitTypeError(
-                    'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(
-                        cls, repr(cls.declarative_attrs), k
-                    )
-                )
-            setattr(self, k, v)
+
+        # defined before the kwargs loop, so that a title or gid Attr can overwrite this defaults
 
         self.gid = uuid.uuid4()
         """ 
@@ -447,6 +449,15 @@ class HasTraits(object):
 
         self.title = '{} gid: {}'.format(self.__class__.__name__, self.gid)
         """ a generic name that the user can set to easily recognize the instance """
+
+        for k, v in kwargs.iteritems():
+            if k not in cls.declarative_attrs:
+                raise TraitTypeError(
+                    'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(
+                        cls, repr(cls.declarative_attrs), k
+                    )
+                )
+            setattr(self, k, v)
 
         self.tags = {}
         """
