@@ -3,6 +3,7 @@ import collections
 import numpy
 import logging
 from ._core import Attr
+from .ex import TraitValueError, TraitTypeError
 
 if typing.TYPE_CHECKING:
     from ._core import HasTraits, MetaType
@@ -55,7 +56,7 @@ class List(Attr):
         for i, el in enumerate(self.default):
             if not isinstance(el, self.element_type):
                 msg = 'default[{}] must have type {} not {}'.format(i, self.element_type, type(el))
-                raise TypeError(self._err_msg(msg))
+                raise TraitTypeError(msg, attr=self)
 
         if self.element_choices is not None:
             # check that the default respects the declared choices
@@ -64,7 +65,7 @@ class List(Attr):
                     msg = 'default[{}]=={} must be one of the choices {}'.format(
                         i, self.default, self.element_choices
                     )
-                    raise TypeError(self._err_msg(msg))
+                    raise TraitTypeError(msg, attr=self)
 
 
     def _validate_set(self, instance, value):
@@ -75,13 +76,14 @@ class List(Attr):
 
         for i, el in enumerate(value):
             if not isinstance(el, self.element_type):
-                raise TypeError(self._err_msg("value[{}] can't be of type {}".format(i, type(el))))
+                raise TraitTypeError("value[{}] can't be of type {}".format(i, type(el)), attr=self)
 
         if self.element_choices is not None:
             for i, el in enumerate(value):
                 if el not in self.element_choices:
-                    raise ValueError(
-                        self._err_msg("value[{}]=={} must be one of {}".format(i, el, self.element_choices))
+                    raise TraitValueError(
+                        "value[{}]=={!r} must be one of {}".format(i, el, self.element_choices),
+                        attr=self
                     )
         return value
 
@@ -100,7 +102,7 @@ class List(Attr):
 
     def __str__(self):
         return '{}(of={}, default={!r}, required={})'.format(
-            type(self).__name__, self.element_type, self.default, self.required
+            self._defined_on_str_helper(), self.element_type, self.default, self.required
         )
 
 
@@ -110,18 +112,18 @@ class _Number(Attr):
             msg = 'can not safely cast default value {} to the declared type {}'.format(
                 self.default, self.field_type
             )
-            raise TypeError(self._err_msg(msg))
+            raise TraitTypeError(msg, attr=self)
 
         if self.choices is not None and self.default is not None:
             if self.default not in self.choices:
                 msg = 'the default {} must be one of the choices {}'.format(self.default, self.choices)
-                raise TypeError(self._err_msg(msg))
+                raise TraitTypeError(msg, attr=self)
 
 
     def _validate_set(self, instance, value):
         if value is None:
             if self.required:
-                raise ValueError(self._err_msg("is required. Can't set to None"))
+                raise TraitValueError("is required. Can't set to None", attr=self)
             else:
                 return value
 
@@ -129,13 +131,13 @@ class _Number(Attr):
             # we have to check that the value is numeric before the can_cast check
             # as can_cast works with dtype strings as well
             # can_cast('i8', 'i32')
-            raise TypeError(self._err_msg("can't be set to {!r}. Need a number.".format(value)))
+            raise TraitTypeError("can't be set to {!r}. Need a number.".format(value), attr=self)
 
         if not numpy.can_cast(value, self.field_type, 'safe'):
-            raise TypeError(self._err_msg("can't be set to {!r}. No safe cast.".format(value)))
+            raise TraitTypeError("can't be set to {!r}. No safe cast.".format(value), attr=self)
         if self.choices is not None:
             if value not in self.choices:
-                raise ValueError(self._err_msg("value {!r} must be one of {}".format(value, self.choices)))
+                raise TraitValueError("value {!r} must be one of {}".format(value, self.choices), attr=self)
         return self.field_type(value)
 
 
@@ -165,7 +167,7 @@ class Int(_Number):
     def _post_bind_validate(self):
         if not issubclass(self.field_type, (int, long, numpy.integer)):
             msg = 'field_type must be a python int or a numpy.integer not {!r}.'.format(self.field_type)
-            raise TypeError(self._err_msg(msg))
+            raise TraitTypeError(msg, attr=self)
         # super call after the field_type check above
         super(Int, self)._post_bind_validate()
 
@@ -177,7 +179,11 @@ class Float(_Number):
     This is different from Attr(field_type=float).
     The former enforces float subtypes.
     This allows any type that can be safely cast to the declared float type
-    according to numpy rules
+    according to numpy rules.
+
+    Reading and writing this attribute is slower than a plain python attribute.
+    In performance sensitive code you might want to use plain python attributes
+    or even better local variables.
     """
 
     def __init__(
@@ -196,7 +202,7 @@ class Float(_Number):
     def _post_bind_validate(self):
         if not issubclass(self.field_type, (float, numpy.floating)):
             msg = 'field_type must be a python float or a numpy.floating not {!r}.'.format(self.field_type)
-            raise TypeError(self._err_msg(msg))
+            raise TraitTypeError(msg, attr=self)
         # super call after the field_type check above
         super(Float, self)._post_bind_validate()
 
@@ -252,7 +258,7 @@ class NArray(Attr):
             # dimensions are named, infer ndim
             if ndim is not None:
                 if ndim != len(dim_names):
-                    raise ValueError('dim_names contradicts ndim')
+                    raise TraitValueError('dim_names contradicts ndim')
                 log.warn('if you declare dim_names ndim is not necessary')
             self.ndim = len(dim_names)
 
@@ -262,16 +268,16 @@ class NArray(Attr):
             return
         if not isinstance(self.default, numpy.ndarray):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
-            raise TypeError(self._err_msg(msg))
+            raise TraitTypeError(msg, attr=self)
         if not numpy.can_cast(self.default, self.dtype, 'safe'):
             msg = 'the default={} value can not be safely cast to the declared dtype={}'.format(
                 self.default, self.dtype
             )
-            raise ValueError(self._err_msg(msg))
+            raise TraitValueError(msg, attr=self)
         # if ndim is None we allow any ndim
         if self.ndim is not None and self.default.ndim != self.ndim:
             msg = 'default ndim={} is not the declared one={}'.format(self.default.ndim, self.ndim)
-            raise ValueError(self._err_msg(msg))
+            raise TraitValueError(msg, attr=self)
 
         # we make the default a read only array
         self.default.setflags(write=False)
@@ -282,7 +288,8 @@ class NArray(Attr):
             for e in self.default.flat:
                 if e not in self.domain:
                     msg = 'default contains values out of the declared domain. Ex {}'.format(e)
-                    log.warning(self._err_msg(msg))
+                    log.warning('{} \n   attribute  {}'.format(msg, self))
+
                     break
 
 
@@ -293,10 +300,10 @@ class NArray(Attr):
             return
 
         if self.ndim is not None and value.ndim != self.ndim:
-            raise TypeError(self._err_msg("can't be set to an array with ndim {}".format(value.ndim)))
+            raise TraitTypeError("can't be set to an array with ndim {}".format(value.ndim), attr=self)
 
         if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
-            raise TypeError(self._err_msg("can't be set to an array of dtype {}".format(value.dtype)))
+            raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
 
         return value.astype(self.dtype)
 
@@ -311,7 +318,7 @@ class NArray(Attr):
 
     def __str__(self):
         return '{}(label={!r}, dtype={}, default={!r}, dim_names={}, ndim={}, required={})'.format(
-            type(self).__name__,
+            self._defined_on_str_helper(),
             self.label,
             self.dtype,
             self.default,

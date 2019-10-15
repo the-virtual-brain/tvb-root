@@ -6,6 +6,7 @@ import abc
 import logging
 import uuid
 from .info import trait_object_str, auto_docstring, trait_object_repr_html, narray_summary_info
+from .ex import TraitAttributeError, TraitTypeError, TraitValueError
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -52,12 +53,6 @@ class Attr(object):
 
     # subclass api
 
-    def _err_msg(self, msg):
-        # type: (str) -> str
-        """
-        Adds to a error message information about the Attribute where it occured
-        """
-        return 'attribute {}.{} = {} : {}'.format(self.owner.__name__, self.field_name, self, msg)
 
     def _post_bind_validate(self):
         # type: () -> None
@@ -68,25 +63,27 @@ class Attr(object):
         Attr should be considered initialized only after this has run
         """
         if not isinstance(self.field_type, type):
-            msg = 'field_type must be a type not {!r}. Did you mean to use it as the default?'.format(
+            msg = 'Field_type must be a type not {!r}. Did you mean to declare a default?'.format(
                 self.field_type
             )
-            raise TypeError(self._err_msg(msg))
+            raise TraitTypeError(msg, attr=self)
 
         if self.default is not None and not isinstance(self.default, self.field_type):
-            msg = 'should have a default of type {} not {}'.format(self.field_type, type(self.default))
-            raise TypeError(self._err_msg(msg))
+            msg = 'Attribute should have a default of type {} not {}'.format(
+                self.field_type, type(self.default)
+            )
+            raise TraitTypeError(msg, attr=self)
 
         if self.choices is not None and self.default is not None:
             if self.default not in self.choices:
-                msg = 'the default {} must be one of the choices {}'.format(self.default, self.choices)
-                raise TypeError(self._err_msg(msg))
+                msg = 'The default {} must be one of the choices {}'.format(self.default, self.choices)
+                raise TraitTypeError(msg, attr=self)
 
         # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
         try:
             hash(self.default)
         except TypeError:
-            log.warning(self._err_msg('field seems mutable and has a default value'))
+            log.warning('Field seems mutable and has a default value. \n   attribute {}'.format(self))
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
@@ -102,15 +99,15 @@ class Attr(object):
         """
         if value is None:
             if self.required:
-                raise ValueError(self._err_msg("is required. Can't set to None"))
+                raise TraitValueError("Attribute is required. Can't set to None", attr=self)
             else:
                 return value
 
         if not isinstance(value, self.field_type):
-            raise TypeError(self._err_msg("can't be set to an instance of {}".format(type(value))))
+            raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
         if self.choices is not None:
             if value not in self.choices:
-                raise ValueError(self._err_msg("value {} must be one of {}".format(value, self.choices)))
+                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
         return value
 
 
@@ -141,20 +138,31 @@ class Attr(object):
         # type: ('HasTraits', typing.Any) -> None
         self._assert_have_field_name()
         if self.readonly:
-            raise AttributeError("can't set readonly attribute")
+            raise TraitAttributeError("can't set readonly attribute")
         value = self._validate_set(instance, value)
 
         instance.__dict__[self.field_name] = value
 
 
     def __delete__(self, instance):
-        msg_where = self._err_msg(type(instance).__name__)
-        raise AttributeError(msg_where + "can't be deleted")
+        raise TraitAttributeError("can't be deleted", attr=self)
+
+
+    def _defined_on_str_helper(self):
+        if self.owner is not None:
+            return '{}.{}.{} = {}'.format(
+                self.owner.__module__,
+                self.owner.__name__,
+                self.field_name,
+                type(self).__name__
+            )
+        else:
+            return '{}'.format(type(self).__name__)
 
 
     def __str__(self):
         return '{}(field_type={}, default={!r}, required={})'.format(
-            type(self).__name__, self.field_type, self.default, self.required
+            self._defined_on_str_helper(), self.field_type, self.default, self.required
         )
 
     # A modest attempt of making Attr immutable
@@ -162,7 +170,7 @@ class Attr(object):
     def __setattr__(self, key, value):
         """ After owner is set disallow any field assignment """
         if getattr(self, 'owner', None) is not None:
-            raise AttributeError(
+            raise TraitAttributeError(
                 "Can't change an Attr after it has been bound to a class."
                 "Reusing Attr instances for different fields is not supported."
             )
@@ -170,7 +178,7 @@ class Attr(object):
 
 
     def __delattr__(self, item):
-        raise AttributeError("Deleting an Attr field is not supported.")
+        raise TraitAttributeError("Deleting an Attr field is not supported.")
 
 
 class _Property(object):
@@ -214,10 +222,10 @@ class TraitProperty(_Property):
         return ret
 
     def __set__(self, instance, value):
-        raise AttributeError("can't set attribute. traitproperties are read only")
+        raise TraitAttributeError("can't set attribute. traitproperties are read only")
 
     def __delete__(self, instance):
-        raise AttributeError("can't delete attribute. traitproperties are read only")
+        raise TraitAttributeError("can't delete attribute. traitproperties are read only")
 
     def __str__(self):
         return 'TraitProperty(attr={}, fget={}'.format(self.attr, self.fget)
@@ -345,9 +353,9 @@ class MetaType(abc.ABCMeta):
 
         # record the names of the declarative attrs in the _own_declarative_attrs field
         if '_own_declarative_attrs' in namespace:
-            raise TypeError('class attribute _own_declarative_attrs is reserved in traited classes')
+            raise TraitTypeError('class attribute _own_declarative_attrs is reserved in traited classes')
         if '_own_declarative_props' in namespace:
-            raise TypeError('class attribute _own_declarative_props is reserved in traited classes')
+            raise TraitTypeError('class attribute _own_declarative_props is reserved in traited classes')
 
         namespace['_own_declarative_attrs'] = tuple(attrs)
         namespace['_own_declarative_props'] = tuple(props)
@@ -418,11 +426,11 @@ class HasTraits(object):
         The default init accepts kwargs for all declarative attrs
         and sets them to the given values
         """
-        # .__class__ just to emphasise that the metadata is on the class not on instances
+        # cls just to emphasise that the metadata is on the class not on instances
         cls = type(self)
         for k, v in kwargs.iteritems():
             if k not in cls.declarative_attrs:
-                raise TypeError(
+                raise TraitTypeError(
                     'Valid kwargs for type {!r} are: {}. You have given: {!r}'.format(
                         cls, repr(cls.declarative_attrs), k
                     )
@@ -483,9 +491,9 @@ class HasTraits(object):
             attr = getattr(cls, k)
             if attr.required and getattr(self, k) is None:
                 # log.warning(
-                raise ValueError(
-                    'attribute {}.{} = {} is required. '
-                    'You should set it or declare a default '.format(cls.__name__, k, attr)
+                raise TraitValueError(
+                    'Attribute is required. You should set it or declare a default',
+                    attr=attr
                 )
 
 
