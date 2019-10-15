@@ -93,8 +93,12 @@ class TvbProfile():
         ### most of the comments in the simulator are having pieces outside of ascii coverage
         if not cls.env.is_distribution() and sys.getdefaultencoding().lower() != 'utf-8':
             old_out = sys.stdout
-            importlib.reload(sys)
-            sys.setdefaultencoding('utf-8')
+            if sys.version_info[0] < 3:
+                reload(sys)
+                sys.setdefaultencoding("utf-8")
+            else:
+                importlib.reload(sys)
+                sys.setdefaultencoding('utf-8')
             sys.stdout = old_out
 
         if selected_profile is not None:

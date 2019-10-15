@@ -1,17 +1,19 @@
 """
 This private module implements concrete declarative attributes
 """
-import typing
 import types
 import collections
 import numpy
 import logging
 from ._declarative_base import _Attr
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError
+import sys
 
-if typing.TYPE_CHECKING:
-    from ._core import HasTraits
-    from tvb.basic.neotraits._declarative_base import MetaType
+if sys.version_info[0] == 3:
+    import typing
+    if typing.TYPE_CHECKING:
+        from ._core import HasTraits
+        from tvb.basic.neotraits._declarative_base import MetaType
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')

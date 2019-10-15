@@ -31,10 +31,14 @@ This module defines the common imports and abstract base class for model definit
 
 """
 import abc
-import typing
 import numpy
 from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import HasTraits
+
+import sys
+
+if sys.version_info[0] == 3:
+    import typing
 
 LOG = get_logger(__name__)
 

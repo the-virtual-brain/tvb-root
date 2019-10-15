@@ -4,6 +4,7 @@ import uuid
 import numpy
 import numpy as np
 import pytest
+import sys
 
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
@@ -594,7 +595,7 @@ def test_float_attribute():
     ainst = A()
     # int's are ok
     ainst.a = 1
-    ainst.a = 2**61
+    ainst.a = int(2**31-1)
     # larger floats as well if they actually fit
     ainst.c = np.float64(4)
     # they are converted to the declared types
@@ -750,15 +751,27 @@ def test_summary_info():
     ainst.ref = zinst
     summary = ainst.summary_info()
 
-    assert summary == {
-        'Type': 'A',
-        'title': 'the red rose',
-        'a': "'ana'",
-        'b dtype': 'int32',
-        'b shape': '(3,)',
-        'b [min, median, max]': '[0, 1, 2]',
-        'ref': 'Z zuzu',
-    }
+    if sys.version_info[0] < 3:
+        assert summary == {
+            'Type': 'A',
+            'title': 'the red rose',
+            'a': "'ana'",
+            'b dtype': 'int32',
+            'b shape': '(3L,)',
+            'b [min, median, max]': '[0, 1, 2]',
+            'ref': 'Z zuzu',
+        }
+    else:
+        assert summary == {
+            'Type': 'A',
+            'title': 'the red rose',
+            'a': "'ana'",
+            'b dtype': 'int32',
+            'b shape': '(3,)',
+            'b [min, median, max]': '[0, 1, 2]',
+            'ref': 'Z zuzu',
+        }
+
 
 
 def test_hastraits_str_does_not_crash():

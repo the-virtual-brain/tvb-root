@@ -5,7 +5,10 @@ Some of these functions are here so that they won't clutter the core trait imple
 """
 
 import numpy
-import typing
+import sys
+
+if sys.version_info[0] == 3:
+    import typing
 
 
 def auto_docstring(cls):

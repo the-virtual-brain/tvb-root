@@ -212,8 +212,8 @@ class Surface(HasTraits):
     def configure(self):
         "Compute additional attributes on surface data required for full functionality."
 
-        self.number_of_vertices = self.vertices.shape[0]
-        self.number_of_triangles = self.triangles.shape[0]
+        self.number_of_vertices = int(self.vertices.shape[0])
+        self.number_of_triangles = int(self.triangles.shape[0])
 
         if self.triangle_normals is None or self.triangle_normals.size == 0:
             LOG.debug("Triangle normals not available. Start to compute them.")
@@ -773,8 +773,8 @@ class Surface(HasTraits):
         """
         # super(SurfaceFramework, self).configure()
 
-        self.number_of_vertices = self.vertices.shape[0]
-        self.number_of_triangles = self.triangles.shape[0]
+        self.number_of_vertices = int(self.vertices.shape[0])
+        self.number_of_triangles = int(self.triangles.shape[0])
 
         ### Do not split again, if split-data is already computed:
         if 1 < self.number_of_split_slices == len(self.split_slices):

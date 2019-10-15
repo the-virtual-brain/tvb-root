@@ -4,11 +4,15 @@ The basic Attribute Property and their automatic discovery by the Metaclass.
 """
 import abc
 import inspect
-import typing
 import logging
 
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.neotraits.info import auto_docstring
+
+import sys
+
+if sys.version_info[0] == 3:
+    import typing
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')

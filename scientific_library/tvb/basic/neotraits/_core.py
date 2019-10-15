@@ -3,14 +3,16 @@ This module implements neotraits.
 It is private only to shield public usage of the imports and logger.
 """
 import numpy
-import typing
 import logging
-import uuid
-
+from six import add_metaclass
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
 from .ex import TraitAttributeError, TraitTypeError, TraitValueError, TraitError
+import sys
+
+if sys.version_info[0] == 3:
+    import typing
 
 # a logger for the whole traits system
 log = logging.getLogger('tvb.traits')
@@ -107,8 +109,8 @@ def cached_trait_property(attr):
     return deco
 
 
-
-class HasTraits(object, metaclass=MetaType):
+@add_metaclass(MetaType)
+class HasTraits(object):
     def __init__(self, **kwargs):
         """
         The default init accepts kwargs for all declarative attrs

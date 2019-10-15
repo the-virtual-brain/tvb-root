@@ -378,9 +378,9 @@ class Connectivity(HasTraits):
         set during initialization.
         """
 
-        self.number_of_regions = self.weights.shape[0]
+        self.number_of_regions = int(self.weights.shape[0])
         # NOTE: In numpy 1.8 there is a function called count_zeros
-        self.number_of_connections = self.weights.nonzero()[0].shape[0]
+        self.number_of_connections = int(self.weights.nonzero()[0].shape[0])
 
         # self.trait["weights"].log_debug(owner=self.__class__.__name__)
         # self.trait["tract_lengths"].log_debug(owner=self.__class__.__name__)

@@ -103,7 +103,7 @@ class Sensors(HasTraits):
         set during initialization.
         """
         super(Sensors, self).configure()
-        self.number_of_sensors = self.labels.shape[0]
+        self.number_of_sensors = int(self.labels.shape[0])
 
 
     def summary_info(self):

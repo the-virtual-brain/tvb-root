@@ -39,7 +39,6 @@ simulation and the method for running the simulation.
 
 """
 
-import typing
 import time
 import math
 import numpy
@@ -53,6 +52,11 @@ from .common import psutil, get_logger, numpy_add_at
 from .history import SparseHistory
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
+
+import sys
+
+if sys.version_info[0] == 3:
+    import typing
 
 LOG = get_logger(__name__)
 

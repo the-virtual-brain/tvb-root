@@ -70,7 +70,7 @@ class TestRange(BaseTestCase):
         assert TestRange.assert_with_epsilon_error(self, floats, list([0.0, 0.1, 0.2, 0.3, 0.4]))
 
     def test_generates_range_with_start_stop_and_periodic_repeating_step(self):
-        floats = list(Range.to_array(Range(lo=0.0, hi=1.1, step=1 / 3)))
+        floats = list(Range.to_array(Range(lo=0.0, hi=1.1, step=1. / 3)))
         assert TestRange.assert_with_epsilon_error(self, floats, list([0.0, 0.333333333333, 0.666666666666, 0.999999999999]))
 
     def test_generates_range_with_negative_end(self):
