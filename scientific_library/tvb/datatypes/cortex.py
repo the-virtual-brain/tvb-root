@@ -34,9 +34,9 @@ import numpy
 import scipy.sparse
 from tvb.basic.traits import util
 from tvb.basic.readers import try_get_absolute_path, FileReader
-from tvb.basic.traits import core, types_basic as basic
 from tvb.basic.logger.builder import get_logger
-from . import arrays, local_connectivity, region_mapping, surfaces
+from . import local_connectivity, region_mapping, surfaces
+from tvb.basic.traits.neotraits import Attr, NArray
 
 LOG = get_logger(__name__)
 
@@ -50,51 +50,63 @@ class Cortex(surfaces.CorticalSurface):
 
     _ui_name = "A cortex..."
 
-    local_connectivity = local_connectivity.LocalConnectivity(
+    local_connectivity = Attr(
+        local_connectivity.LocalConnectivity,
         label="Local Connectivity",
         required=False,
         doc="Define the interaction between neighboring network nodes. This is implicitly integrated in"
             " the definition of a given surface as an excitatory mean coupling of directly adjacent neighbors to"
             " the first state variable of each population model (since these typically represent the mean-neural"
-            " membrane voltage). This coupling is instantaneous (no time delays).")
+            " membrane voltage). This coupling is instantaneous (no time delays)."
+    )
 
-    region_mapping_data = region_mapping.RegionMapping(
-        label="region mapping",
-        doc="""An index vector of length equal to the number_of_vertices + the
-            number of non-cortical regions, with values that index into an
-            associated connectivity matrix.""")  # 'CS'
+    region_mapping_data = Attr(
+        region_mapping.RegionMapping,
+        label="Local Connectivity",
+        required=False,
+        doc="Define the interaction between neighboring network nodes. This is implicitly integrated in"
+            " the definition of a given surface as an excitatory mean coupling of directly adjacent neighbors to"
+            " the first state variable of each population model (since these typically represent the mean-neural"
+            " membrane voltage). This coupling is instantaneous (no time delays)."
+    )
 
     region_areas = None
     region_orientation = None
 
-    coupling_strength = arrays.FloatArray(
+    coupling_strength = NArray(
+        dtype=float,
         label="Local coupling strength",
-        range=basic.Range(lo=0.0, hi=20.0, step=1.0),
+        # range=basic.Range(lo=0.0, hi=20.0, step=1.0),
         default=numpy.array([1.0]),
-        file_storage=core.FILE_STORAGE_NONE,
-        doc="""A factor that rescales local connectivity strengths.""")
+        doc="""A factor that rescales local connectivity strengths."""
+    )
 
-    eeg_projection = arrays.FloatArray(
-        label="EEG projection", order=-1,
+    eeg_projection = NArray(
+        dtype=float,
+        label="EEG projection",
         # NOTE: This is redundant if the EEG monitor isn't used, but it makes life simpler.
         required=False,
         doc="""A 2-D array which projects the neural activity on the cortical
-            surface to a set of EEG sensors.""")
-    #  requires linked sensors.SensorsEEG
+                surface to a set of EEG sensors."""
+    )
 
-    meg_projection = arrays.FloatArray(
+    meg_projection = NArray(
+        dtype=float,
         label="MEG projection",
         # linked = ?sensors, skull, skin, etc?
         doc="""A 2-D array which projects the neural activity on the cortical
-            surface to a set of MEG sensors.""",
-        required=False, order=-1, )
+                surface to a set of MEG sensors.""",
+        required=False
+    )
     #  requires linked SensorsMEG
 
-    internal_projection = arrays.FloatArray(
+    internal_projection = NArray(
+        dtype=float,
         label="Internal projection",
-        required=False, order=-1,
+        required=False,
         doc="""A 2-D array which projects the neural activity on the
-            cortical surface to a set of embeded sensors.""")
+                cortical surface to a set of embeded sensors."""
+    )
     #  requires linked SensorsInternal
 
     def populate_cortex(self, cortex_surface, cortex_parameters=None):
