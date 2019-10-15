@@ -16,10 +16,15 @@ def auto_docstring(cls):
         header,
         len(header) * '^',
         '',
+    ]
+    if cls.__doc__ is not None:
+        doc.extend([cls.__doc__, ''])
+
+    doc.extend([
         'Attributes declared',
         '"""""""""""""""""""',
         ''
-    ]
+    ])
     # a rst definition list for all attributes
     for attr_name in cls.declarative_attrs:
         attr = getattr(cls, attr_name)
@@ -51,10 +56,7 @@ def auto_docstring(cls):
 
     doc = '\n'.join(doc)
 
-    if cls.__doc__ is not None:
-        return cls.__doc__ + doc
-    else:
-        return doc
+    return doc
 
 
 def narray_summary_info(ar, ar_name='', omit_shape=False):
