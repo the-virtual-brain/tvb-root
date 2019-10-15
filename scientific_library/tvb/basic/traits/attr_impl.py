@@ -28,6 +28,7 @@ class List(Attr):
     """
     def __init__(self, of=object, default=(), doc='', label='',
                  readonly=False, choices=None):
+        # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
         super(List, self).__init__(field_type=typing.Sequence, default=default,
                                    doc=doc, label=label,
                                    required=True, readonly=readonly, choices=None)
@@ -111,6 +112,9 @@ class NArray(Attr):
     def _post_bind_validate(self, defined_in_type_name):
         if self.default is None:
             return
+        if not isinstance(self.default, numpy.ndarray):
+            msg = 'default {} should be a numpy.ndarray'.format(self.default)
+            raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
         # we check strict dtype conformance. Compatible dtypes are not ok
         if self.default.dtype != self.dtype:
             msg = 'default dtype={} is not the declared one={}'.format(self.default.dtype, self.dtype)
@@ -119,6 +123,9 @@ class NArray(Attr):
         if self.ndim is not None and self.default.ndim != self.ndim:
             msg = 'default ndim={} is not the declared one={}'.format(self.default.ndim, self.ndim)
             raise ValueError(self._err_msg_where(defined_in_type_name) + msg)
+
+        # we make the default a read only array
+        self.default.setflags(write=False)
 
         # check that the default array values are in the declared domain
         # this may be expensive

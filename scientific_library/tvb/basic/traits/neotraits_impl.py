@@ -198,6 +198,13 @@ class MetaType(abc.ABCMeta):
                         ret.append(attr_name)
         return tuple(ret)
 
+    # here only to have a similar invocation like declarative_attrs
+    # namely type(traited_instance).own_declarative_attrs
+    # consider the traited_instance._own_declarative_attrs discouraged
+    @property
+    def own_declarative_attrs(cls):
+        return cls._own_declarative_attrs
+
 
     def __new__(mcs, type_name, bases, namespace):
         """
