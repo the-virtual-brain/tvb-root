@@ -67,11 +67,11 @@ class Sensors(MappedType):
 
     labels = arrays.StringArray(label="Sensor labels")
 
-    locations = arrays.PositionArray(label="Sensor locations")
+    locations = arrays.FloatArray(label="Sensor locations")
 
     has_orientation = types_basic.Bool(default=False)
 
-    orientations = arrays.OrientationArray(required=False)
+    orientations = arrays.FloatArray(required=False)
 
     number_of_sensors = types_basic.Integer(label="Number of sensors",
                                             doc="""The number of sensors described by these Sensors.""")
@@ -239,7 +239,7 @@ class SensorsMEG(Sensors):
 
     sensors_type = types_basic.String(default=MEG_POLYMORPHIC_IDENTITY)
 
-    orientations = arrays.OrientationArray(label="Sensor orientations",
+    orientations = arrays.FloatArray(label="Sensor orientations",
                                            doc="An array representing the orientation of the MEG SQUIDs")
 
     has_orientation = types_basic.Bool(default=True, order=-1)

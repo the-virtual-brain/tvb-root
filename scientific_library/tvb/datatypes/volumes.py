@@ -49,7 +49,7 @@ class Volume(types_mapped.MappedType):
     Data defined on a regular grid in three dimensions.
 
     """
-    origin = arrays.PositionArray(label = "Volume origin coordinates")
+    origin = arrays.FloatArray(label = "Volume origin coordinates")
     voxel_size = arrays.FloatArray(label = "Voxel size") # need a triplet, xyz
     voxel_unit = basic.String(label = "Voxel Measure Unit", default = "mm")
 

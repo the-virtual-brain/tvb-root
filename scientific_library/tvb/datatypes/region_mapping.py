@@ -58,7 +58,7 @@ class RegionMapping(arrays.MappedArray):
     to which the current vertex is mapped.
     """
 
-    array_data = arrays.IndexArray()
+    array_data = arrays.IntegerArray()
 
     connectivity = Connectivity
 
@@ -137,7 +137,7 @@ class RegionVolumeMapping(VolumetricDataMixin, arrays.MappedArray):
     Each value is representing the index in Connectivity regions to which the current voxel is mapped.
     """
 
-    array_data = arrays.IndexArray()
+    array_data = arrays.IntegerArray()
 
     connectivity = Connectivity
 

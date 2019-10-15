@@ -254,4 +254,4 @@ class SpatialPatternVolume(SpatialPattern):
 
     volume = volumes.Volume(label="Volume")
 
-    focal_points_volume = arrays.IndexArray(label="Focal points", target=volume)
+    focal_points_volume = arrays.IntegerArray(label="Focal points")

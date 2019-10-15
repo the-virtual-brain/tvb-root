@@ -45,9 +45,8 @@ class TestParametersFactory(BaseTestCase):
         # We imported array so we should have all these traited classes registered
         expected = [
             'IntegerArray',
-            'StringArray', 'PositionArray',
-            'IndexArray',
-            'BoolArray', 'OrientationArray',
+            'StringArray',
+            'BoolArray',
             'FloatArray',
             'ComplexArray', 'Array', 'SparseMatrix']
         subclasses = get_traited_subclasses(Array)

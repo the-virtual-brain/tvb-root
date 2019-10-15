@@ -143,23 +143,22 @@ class ValidationResult(object):
 class Surface(MappedType):
     """A base class for other surfaces."""
 
-    vertices = arrays.PositionArray(
+    vertices = arrays.FloatArray(
         label="Vertex positions",
         order=-1,
         doc="""An array specifying coordinates for the surface vertices.""")
 
-    triangles = arrays.IndexArray(
+    triangles = arrays.IntegerArray(
         label="Triangles",
         order=-1,
-        target=vertices,
         doc="""Array of indices into the vertices, specifying the triangles which define the surface.""")
 
-    vertex_normals = arrays.OrientationArray(
+    vertex_normals = arrays.FloatArray(
         label="Vertex normal vectors",
         order=-1,
         doc="""An array of unit normal vectors for the surfaces vertices.""")
 
-    triangle_normals = arrays.OrientationArray(
+    triangle_normals = arrays.FloatArray(
         label="Triangle normal vectors",
         order=-1,
         doc="""An array of unit normal vectors for the surfaces triangles.""")
@@ -197,7 +196,7 @@ class Surface(MappedType):
 
     zero_based_triangles = basic.Bool(order=-1)
 
-    split_triangles = arrays.IndexArray(order=-1, required=False)
+    split_triangles = arrays.IntegerArray(order=-1, required=False)
 
     number_of_split_slices = basic.Integer(order=-1)
 

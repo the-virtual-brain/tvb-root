@@ -82,37 +82,3 @@ class TestArrays(BaseTestCase):
         array_dt = arrays.StringArray()
         array_dt.data = data
         assert array_dt.shape == (10, 12)
-
-    def test_position_array(self):
-        """
-        Create a position array, check that shape is correct.
-        """
-        data = numpy.random.random((10, 10))
-        array_dt = arrays.PositionArray(coordinate_system="test_system",
-                                        coordinate_space="test_space")
-        array_dt.data = data
-        assert array_dt.shape == (10, 10)
-        assert array_dt.coordinate_space == "test_space"
-        assert array_dt.coordinate_system == "test_system"
-
-    def test_orientation_array(self):
-        """
-        Create an orientation array, check that shape is correct.
-        """
-        data = numpy.random.random((10, 10))
-        array_dt = arrays.OrientationArray(coordinate_system_or="test_system")
-        array_dt.data = data
-        assert array_dt.shape == (10, 10)
-        assert array_dt.coordinate_system_or == "test_system"
-
-    def test_index_array(self):
-        """
-        Create an index array, check that shape is correct.
-        """
-        target_data = numpy.random.random((10, 3))
-        target_array = arrays.FloatArray()
-        target_array.data = target_data
-        array_dt = arrays.IndexArray(target=target_array)
-        array_dt.data = numpy.arange(30).reshape((10, 3))
-        assert array_dt.shape == (10, 3)
-        assert array_dt.target.shape == (10, 3)

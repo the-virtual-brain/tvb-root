@@ -77,7 +77,7 @@ class Connectivity(MappedType):
         default=numpy.array([3.0]), file_storage=core.FILE_STORAGE_NONE,
         doc="""A single number or matrix of conduction speeds for the myelinated fibre tracts between regions.""")
 
-    centres = arrays.PositionArray(
+    centres = arrays.FloatArray(
         label="Region centres",
         doc="An array specifying the location of the centre of each region.")
 
@@ -91,7 +91,7 @@ class Connectivity(MappedType):
         required=False,
         doc="""A boolean vector specifying whether or not a region is part of the right hemisphere""")
 
-    orientations = arrays.OrientationArray(
+    orientations = arrays.FloatArray(
         label="Average region orientation",
         required=False,
         doc="""Unit vectors of the average orientation of the regions represented in the connectivity matrix.
@@ -103,7 +103,7 @@ class Connectivity(MappedType):
         doc="""Estimated area represented by the regions in the connectivity matrix.
         NOTE: Unknown data should be zeros.""")
 
-    idelays = arrays.IndexArray(
+    idelays = arrays.IntegerArray(
         label="Conduction delay indices",
         required=False, file_storage=core.FILE_STORAGE_NONE,
         doc="An array of time delays between regions in integration steps.")

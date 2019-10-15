@@ -49,7 +49,7 @@ class Tracts(MappedType):
 
     MAX_N_VERTICES = 2 ** 16
 
-    vertices = arrays.PositionArray(
+    vertices = arrays.FloatArray(
         label="Vertex positions",
         file_storage=core.FILE_STORAGE_EXPAND,
         order=-1,
