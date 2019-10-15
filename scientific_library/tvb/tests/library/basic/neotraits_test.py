@@ -562,20 +562,78 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
 
 
-def test_declarative_properties_are_readonly():
+def test_declarative_properties():
     class A(HasTraits):
+        def __init__(self):
+            self._foo = None
+
         @trait_property(Attr(int))
         def xprop(self):
             return 23
 
+        @trait_property(Attr(str))
+        def foo(self):
+            return self._foo
+
+        @foo.setter
+        def foo(self, val):
+            self._foo = val
+
+        @trait_property(Attr(int))
+        def lyin_prop(self):
+            return 'trickster'
+
+
     a = A()
+    # read
     assert a.xprop == 23
 
     with pytest.raises(AttributeError):
+        # nope read only
         a.xprop = 2
 
     with pytest.raises(AttributeError):
+        # not supported
         del a.xprop
+
+    # read-write
+
+    a.foo = 'ana'
+    assert a.foo == 'ana'
+
+    # properties enforce traited types
+    with pytest.raises(TypeError):
+        a.foo = 42
+
+    # on trying to read the lying prop we get an error
+    with pytest.raises(TypeError):
+        a.lyin_prop
+
+
+def test_declarative_props_enforcing_shapes():
+    class A(HasTraits):
+        n_node = Int()
+
+        def __init__(self, **kwargs):
+            super(A, self).__init__(**kwargs)
+            self._weights = None
+
+        @trait_property(NArray(ndim=2))
+        def weights(self):
+            return self._weights
+
+        @weights.setter
+        def weights(self, val):
+            if val.shape != (self.n_node, self.n_node):
+                raise TraitValueError
+            self._weights = val
+
+    a = A(n_node=4)
+    a.weights = numpy.eye(4)
+
+    with pytest.raises(TraitValueError):
+        a.weights = numpy.zeros((2, 3))
+
 
 
 def test_get_known_subclasses():
