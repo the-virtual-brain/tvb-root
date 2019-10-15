@@ -101,12 +101,11 @@ class BalloonModel(HasTraits):
         methods. It is used to compute the time courses of the balloon model state 
         variables.""")
 
-    bold_model = List(
-        of=str,
+    bold_model = Attr(
+        field_type=str,
         label="Select BOLD model equations",
         choices=("linear", "nonlinear"),
-        default=("nonlinear",),
-        # select_multiple=False,
+        default="nonlinear",
         doc="""Select the set of equations for the BOLD model.""")
 
     RBM = Attr(
@@ -117,12 +116,11 @@ class BalloonModel(HasTraits):
         doc="""Select classical vs revised BOLD model (CBM or RBM).
         Coefficients  k1, k2 and k3 will be derived accordingly.""")
 
-    neural_input_transformation = List(
-        of=str,
+    neural_input_transformation = Attr(
+        field_type=str,
         label="Neural input transformation",
         choices=("none", "abs_diff", "sum"),
-        default=("none",),
-        # select_multiple=False,
+        default="none",
         doc=""" This represents the operation to perform on the state-variable(s) of
         the model used to generate the input TimeSeries. ``none`` takes the
         first state-variable as neural input; `` abs_diff`` is the absolute
