@@ -5,11 +5,10 @@ import numpy
 import numpy as np
 import pytest
 
-from tvb.basic.neotraits._attr import LinspaceRange
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
-    HasTraits, Attr, NArray, Const, List, traitproperty,
-    Int, Float, Range
+    HasTraits, Attr, NArray, Const, List, trait_property,
+    Int, Float, Range, cached_trait_property, LinspaceRange
 )
 
 
@@ -299,24 +298,53 @@ def test_declarative_property():
             doc='the mighty x'
         )
 
+        def __init__(self, **kwargs):
+            super(A, self).__init__(**kwargs)
+            self.x3_calls = 0
+            self.expensive_once_calls = 0
+
         def tw(self):
             return self.x * 2
 
-        @traitproperty(NArray(label='3 * x', doc='use the docstring, it is nicer'))
+        x2 = TraitProperty(tw, NArray(label='x * 2'))
+
+        @trait_property(NArray(label='3 * x', doc='use the docstring, it is nicer'))
         def x3(self):
             """
             this will be added to the doc of the NArray
             Encouraged place for doc
             """
+            self.x3_calls += 1
             return self.x * 3
 
-        x2 = TraitProperty(tw, NArray(label='x * 2'))
+        @cached_trait_property(NArray(label='expensive'))
+        def expensive_once(self):
+            self.expensive_once_calls += 1
+            d = self.x[:, numpy.newaxis]
+            return d + d.T
+
 
     a = A()
     a.x = np.arange(12)
-    assert set(A.declarative_props) == {'x3', 'x2'}
+    assert set(A.declarative_props) == {'x3', 'x2', 'expensive_once'}
     assert (a.x2 == a.x * 2).all()
     assert (a.x3 == a.x * 3).all()
+
+    a.x3
+    assert a.x3_calls == 2
+    a.expensive_once
+    assert a.expensive_once_calls == 1
+    # this does not call expensive_once again
+    assert a.expensive_once.shape == (12, 12)
+    assert a.expensive_once_calls == 1
+    a.expensive_once = numpy.eye(4, dtype=float)
+    assert a.expensive_once.shape == (4, 4)
+    # invalidate cache by removing the instance state
+    del a.expensive_once
+    a.expensive_once
+    assert a.expensive_once_calls == 2
+    assert a.expensive_once.shape == (12, 12)
+
 
 
 def test_int_attribute():
@@ -424,7 +452,7 @@ def test_dynamic_attributes_behave_statically_and_warn():
 
 def test_declarative_properties_are_readonly():
     class A(HasTraits):
-        @traitproperty(Attr(int))
+        @trait_property(Attr(int))
         def xprop(self):
             return 23
 
@@ -489,7 +517,7 @@ def test_hastraits_str_does_not_crash():
         b = NArray(dtype=int)
         pom = 'prun'
 
-        @traitproperty(Attr(int))
+        @trait_property(Attr(int))
         def xprop(self):
             return 23
 
