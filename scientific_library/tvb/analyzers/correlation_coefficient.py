@@ -114,15 +114,14 @@ class CorrelationCoefficient(HasTraits):
                 current_slice = tuple([slice(t_lo, t_hi + 1), slice(var, var + 1),
                                        slice(input_shape[2]), slice(mode, mode + 1)])
                 # TODO: Double check whether this should read from H5 and move to framework
-                data = self.time_series[current_slice].squeeze()
+                data = self.time_series.data[current_slice].squeeze()
                 result[:, :, var, mode] = numpy.corrcoef(data.T)
 
 
         util.log_debug_array(LOG, result, "result")
 
         corr_coeff = graph.CorrelationCoefficients(source=self.time_series,
-                                                   array_data=result,
-                                                   use_storage=False)
+                                                   array_data=result)
         return corr_coeff
 
 
