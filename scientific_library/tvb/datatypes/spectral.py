@@ -36,10 +36,9 @@ methods that are associated with the Spectral datatypes.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import json
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int,Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float
 from tvb.datatypes import time_series
 
 LOG = get_logger(__name__)
@@ -50,8 +49,7 @@ class FourierSpectrum(HasTraits):
     Result of a Fourier  Analysis.
     """
     # Overwrite attribute from superclass
-    array_data = NArray(dtype=numpy.complex128)  # file_storage=core.FILE_STORAGE_EXPAND
-    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
+    array_data = NArray(dtype=numpy.complex128)
 
     source = Attr(
         field_type=time_series.TimeSeries,
@@ -71,21 +69,28 @@ class FourierSpectrum(HasTraits):
         doc="""The windowing function applied to each time segment prior to
             application of the FFT.""")
 
-    amplitude = NArray(label="Amplitude")  # file_storage=core.FILE_STORAGE_EXPAND
+    amplitude = NArray(label="Amplitude")
 
-    phase = NArray(label="Phase")  # file_storage=core.FILE_STORAGE_EXPAND
+    phase = NArray(label="Phase")
 
-    power = NArray(label="Power")  # file_storage=core.FILE_STORAGE_EXPAND
+    power = NArray(label="Power")
 
-    average_power = NArray(label="Average Power")  # file_storage=core.FILE_STORAGE_EXPAND
+    average_power = NArray(label="Average Power")
 
-    normalised_average_power = NArray(label="Normalised Power")  # file_storage=core.FILE_STORAGE_EXPAND
+    normalised_average_power = NArray(label="Normalised Power")
 
     _frequency = None
     _freq_step = None
     _max_freq = None
 
     __generate_table__ = True
+
+    def configure(self):
+        """ compute dependent fields like amplitude """
+        self.compute_amplitude()
+        self.compute_phase()
+        self.compute_average_power()
+        self.compute_normalised_average_power()
 
     def summary_info(self):
         """
@@ -125,34 +130,28 @@ class FourierSpectrum(HasTraits):
             self._frequency = numpy.arange(self.freq_step,
                                            self.max_freq + self.freq_step,
                                            self.freq_step)
-            util.log_debug_array(LOG, self._frequency, "frequency")
         return self._frequency
 
     def compute_amplitude(self):
         """ Amplitude of the complex Fourier spectrum."""
         self.amplitude = numpy.abs(self.array_data)
-        # self.trait["amplitude"].log_debug(owner=self.__class__.__name__)
 
     def compute_phase(self):
         """ Phase of the Fourier spectrum."""
         self.phase = numpy.angle(self.array_data)
-        # self.trait["phase"].log_debug(owner=self.__class__.__name__)
 
     def compute_power(self):
         """ Power of the complex Fourier spectrum."""
         self.power = numpy.abs(self.array_data) ** 2
-        # self.trait["power"].log_debug(owner=self.__class__.__name__)
 
     def compute_average_power(self):
         """ Average-power of the complex Fourier spectrum."""
         self.average_power = numpy.mean(numpy.abs(self.array_data) ** 2, axis=-1)
-        # self.trait["average_power"].log_debug(owner=self.__class__.__name__)
 
     def compute_normalised_average_power(self):
         """ Normalised-average-power of the complex Fourier spectrum."""
         self.normalised_average_power = (self.average_power /
                                          numpy.sum(self.average_power, axis=0))
-        # self.trait["normalised_average_power"].log_debug(owner=self.__class__.__name__)
 
 
 
@@ -164,7 +163,6 @@ class WaveletCoefficients(HasTraits):
     """
     # Overwrite attribute from superclass
     array_data = NArray(dtype=numpy.complex128)
-    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
     source = Attr(field_type=time_series.TimeSeries, label="Source time-series")
 
@@ -187,11 +185,11 @@ class WaveletCoefficients(HasTraits):
 
     q_ratio = Float(label="Q-ratio", default=5.0)
 
-    amplitude = NArray(label="Amplitude")  # file_storage=core.FILE_STORAGE_EXPAND
+    amplitude = NArray(label="Amplitude")
 
-    phase = NArray(label="Phase")  # file_storage=core.FILE_STORAGE_EXPAND
+    phase = NArray(label="Phase")
 
-    power = NArray(label="Power")  # file_storage=core.FILE_STORAGE_EXPAND
+    power = NArray(label="Power")
 
     _frequency = None
     _time = None
@@ -236,7 +234,6 @@ class WaveletCoefficients(HasTraits):
             self._frequency = numpy.arange(self.frequencies.lo,
                                            self.frequencies.hi,
                                            self.frequencies.step)
-            util.log_debug_array(LOG, self._frequency, "frequency")
         return self._frequency
 
     def compute_amplitude(self):
@@ -258,7 +255,7 @@ class CoherenceSpectrum(HasTraits):
     Result of a NodeCoherence Analysis.
     """
     # Overwrite attribute from superclass
-    array_data = NArray()  # file_storage=core.FILE_STORAGE_EXPAND
+    array_data = NArray()
 
     source = Attr(
         field_type=time_series.TimeSeries,
@@ -303,19 +300,15 @@ class ComplexCoherenceSpectrum(HasTraits):
     cross_spectrum = NArray(
         dtype=numpy.complex128,
         label="The cross spectrum",
-        # file_storage=core.FILE_STORAGE_EXPAND,
         doc=""" A complex ndarray that contains the nodes x nodes cross
                 spectrum for every frequency frequency and for every segment.""")
-    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
     array_data = NArray(
         dtype=numpy.complex128,
         label="Complex Coherence",
-        # file_storage=core.FILE_STORAGE_EXPAND,
         doc="""The complex coherence coefficients calculated from the cross
                 spectrum. The imaginary values of this complex ndarray represent the
                 imaginary coherence.""")
-    # stored_metadata = [key for key in MappedType.DEFAULT_STORED_ARRAY_METADATA if key != MappedType.METADATA_ARRAY_VAR]
 
     source = Attr(
         field_type=time_series.TimeSeries,
@@ -394,6 +387,5 @@ class ComplexCoherenceSpectrum(HasTraits):
             self._frequency = numpy.arange(self.freq_step,
                                            self.max_freq + self.freq_step,
                                            self.freq_step)
-        util.log_debug_array(LOG, self._frequency, "frequency")
         return self._frequency
 
