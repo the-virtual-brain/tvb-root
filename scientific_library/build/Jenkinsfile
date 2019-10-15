@@ -35,7 +35,6 @@ pipeline {
                       rm -Rf dist
                       python setup.py sdist
                       python  setup.py bdist_wheel
-                      ls dist
                 '''
                 archiveArtifacts artifacts: 'dist/tvb*.tar.gz, dist/tvb*.whl'
             }
@@ -65,9 +64,13 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
+                      mv dist dist-py2
                       python setup.py sdist
                       python  setup.py bdist_wheel
-                      ls dist
+                      mv dist dist-py3
+                      mv dist-py2 dist
+                      cp dist-py3/* dist/
+                      rm -Rf dist-py2 dist-py3
                 '''
                 archiveArtifacts artifacts: 'dist/tvb*.tar.gz, dist/tvb*.whl'
             }
