@@ -244,7 +244,7 @@ def trait_property(attr):
 
 
 def cached_trait_property(attr):
-    # type: (Attr) -> typing.Callable[[typing.Callable], TraitProperty]
+    # type: (Attr) -> typing.Callable[[typing.Callable], CachedTraitProperty]
     """
     A lazy evaluated attribute.
     Transforms the decorated method into a cached property.

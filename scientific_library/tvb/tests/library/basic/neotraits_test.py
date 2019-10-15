@@ -10,6 +10,8 @@ from tvb.basic.neotraits.api import (
     HasTraits, Attr, NArray, Const, List, trait_property,
     Int, Float, Range, cached_trait_property, LinspaceRange
 )
+from tvb.basic.neotraits.ex import TraitTypeError, TraitValueError, TraitAttributeError, TraitError
+
 
 
 def test_simple_declaration():
@@ -22,6 +24,9 @@ def test_simple_instantiation():
         fi = Attr(int)
 
     a2 = A(fi=12)
+
+    with pytest.raises(TraitError):
+        a3 = A(fi_typo=43)
 
 
 def test_types_enforced():
@@ -41,10 +46,36 @@ def test_defaults_and_required():
         vi = Attr(str, required=False)
 
     aok = A(ra='opaline')
+    aok.vi = None
+
     aincomplete = A()
 
     with pytest.raises(ValueError):
+        a = A(ra='opaline')
+        a.ra = None
+
+    with pytest.raises(ValueError):
         aincomplete.validate()
+
+    with pytest.raises(ValueError):
+        # the default configure calls validate
+        aincomplete.configure()
+
+
+def test_default_compatible_with_field_type_and_choices():
+    with pytest.raises(TraitError):
+        class A(HasTraits):
+            fi = Attr(int, choices=(3, 4), default=2345)
+
+    with pytest.raises(TraitError):
+        class A(HasTraits):
+            fi = Attr(int, default=23.45)
+
+    with pytest.raises(TraitError):
+        class A(HasTraits):
+            fi = Attr(int, choices=(1.2, 4.2))
+        a = A()
+        a.fi = 1.2  # the error is late, but better than never
 
 
 def test_postinitchecks():
@@ -180,8 +211,14 @@ def test_narr_enforcing():
             x = NArray(dtype=np.dtype(np.int), default=np.eye(2))
 
     with pytest.raises(ValueError):
+        # bad ndim default
         class Boo(HasTraits):
             x = NArray(ndim=3, default=np.linspace(1, 3, 10))
+
+    with pytest.raises(TypeError):
+        # default should be ndarray
+        class Boo(HasTraits):
+            x = NArray(default=[1, 2, 4])
 
     class Boo(HasTraits):
         x = NArray(ndim=2, default=np.eye(2))
@@ -195,6 +232,23 @@ def test_narr_enforcing():
     boo.y = np.arange(12)
 
 
+def test_narr_accepts_safely_convertible_values():
+    class Boo(HasTraits):
+        x = NArray(dtype=np.float64)
+        y = NArray(dtype=np.float32)
+
+    boo = Boo()
+    # float32 -> float64 is safe
+    boo.x = numpy.array([2.0, 4.3], dtype=np.float32)
+    # destination dtype is kept, assigned value is converted, maybe copied
+    assert boo.x.dtype == np.float64
+    # int -> float64 is safe
+    boo.x = numpy.arange(5)
+    # however int -> float32 is not
+    with pytest.raises(TraitError):
+        boo.y = numpy.arange(5)
+
+
 def test_choices():
     class A(HasTraits):
         x = Attr(str, default='ana', choices=('ana', 'are', 'mere'))
@@ -206,6 +260,15 @@ def test_choices():
         a.x = 'hell'
 
 
+def test_const_attr():
+    class A(HasTraits):
+        cx = Const('ana')
+
+    a = A()
+    with pytest.raises(TraitAttributeError):
+        a.cx = 'hell'
+
+
 def test_named_dimensions():
     class A(HasTraits):
         x = NArray(dim_names=('time', 'space'), required=False)
@@ -215,6 +278,19 @@ def test_named_dimensions():
     a.x = np.eye(4)
     assert a.x.shape == (4, 4)
     assert type(a).x.dim_names[0] == 'time'
+
+    with pytest.raises(TraitValueError):
+        # ndim dim_names contradiction
+        NArray(dim_names=('time', 'space'), ndim=4)
+
+
+def test_ndim_enforced():
+    class A(HasTraits):
+        x = NArray(ndim=2)
+
+    a = A()
+    with pytest.raises(TraitTypeError):
+        a.x = numpy.arange(4)
 
 
 def test_lists():
@@ -393,6 +469,30 @@ def test_int_attribute():
             a = Int(default=1.0)
 
 
+def test_numerics_respect_choices_and_null():
+    with pytest.raises(TraitTypeError):
+        # choices are respected by numeric attributes
+        class B(HasTraits):
+            a = Int(default=1, choices=(3, 4))
+
+    class B(HasTraits):
+        a = Int(default=1, choices=(1, 3, 4))
+        odd_nullable_int = Int(required=False)
+
+    with pytest.raises(TraitValueError):
+        # choices are respected by numeric attributes
+        binst = B()
+        binst.a = 43
+
+    binst = B()
+    binst.odd_nullable_int = None
+
+    with pytest.raises(TraitValueError):
+        binst = B()
+        binst.a = None
+
+
+
 def test_float_attribute():
     class A(HasTraits):
         a = Float()
@@ -511,6 +611,7 @@ def test_summary_info():
         'gid': "UUID('00000000-0000-0000-0000-000000000000')"
     }
 
+
 def test_hastraits_str_does_not_crash():
     class A(HasTraits):
         a = Attr(str, default='ana')
@@ -554,4 +655,36 @@ def test_linspacerange():
     )
     # test that repr will not crash
     repr(ls)
+
+
+def test_range():
+    ra = Range(0, 10, 5)
+    assert 1 in ra
+
+    numpy.testing.assert_allclose(
+        ra.to_array(),
+        [0, 5]
+    )
+    repr(ra)
+
+
+def test_neotraits_ex():
+    class A(HasTraits):
+        foo = Int(default=1)
+
+    try:
+        a = A()
+        a.foo = 'ana'
+    except TraitTypeError as ex:
+        assert ex.attr.field_name == 'foo'
+        msg = str(ex)
+
+
+def test_pedantic_edge_cases_for_coverage():
+    class A(HasTraits):
+        x = NArray()
+
+    a = A()
+    a.tag('subject', 'john doe')
+    str(Attr(object))
 

@@ -259,7 +259,7 @@ class NArray(Attr):
             if ndim is not None:
                 if ndim != len(dim_names):
                     raise TraitValueError('dim_names contradicts ndim')
-                log.warn('if you declare dim_names ndim is not necessary')
+                log.warning('If you declare dim_names ndim is not necessary. attr {}'.format(self))
             self.ndim = len(dim_names)
 
 
