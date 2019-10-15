@@ -93,7 +93,7 @@ class BalloonModel(HasTraits):
     integrator = Attr(
         field_type=integrators_module.Integrator,
         label="Integration scheme",
-        default=integrators_module.HeunDeterministic,
+        default=integrators_module.HeunDeterministic(),
         required=True,
         doc=""" A tvb.simulator.Integrator object which is
         an integration scheme with supporting attributes such as 
