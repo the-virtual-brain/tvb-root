@@ -145,8 +145,8 @@ class Simulator(object):
             default_cortex = None
 
         # Order of monitors determines order of returned values.
-        self.sim = simulator.Simulator(model=dynamics,
-                                       surface=default_cortex)
+        self.sim = simulator.Simulator( surface=default_cortex)
+        self.sim.model = dynamics
         self.sim.integrator = integrator
         self.sim.connectivity = white_matter
         self.sim.coupling = white_matter_coupling
@@ -184,13 +184,14 @@ class TestSimulator(BaseTestCase):
 
 
 from tvb.simulator.models.epileptor import Epileptor
+from tvb.simulator.models.oscillator import Generic2dOscillator
 
 
 class TestSimShort(BaseTestCase):
     def test_reg(self):
         test_simulator = Simulator()
 
-        test_simulator.configure(model=Epileptor,
+        test_simulator.configure(model=Generic2dOscillator,
                                  method='HeunStochastic',
                                  surface_sim=False)
         result = test_simulator.run_simulation()

@@ -146,16 +146,16 @@ class Simulator(core.Type):
         In the current version of TVB, stimuli are applied to the first state 
         variable of the ``Local dynamic model``.""")
 
-    model = models.Model(
-        label="Local dynamic model",
-        default=models.Generic2dOscillator,
-        required=True,
-        order=5,
-        doc="""A tvb.simulator.Model object which describe the local dynamic
-        equations, their parameters, and, to some extent, where connectivity
-        (local and long-range) enters and which state-variables the Monitors
-        monitor. By default the 'Generic2dOscillator' model is used. Read the 
-        Scientific documentation to learn more about this model.""")
+    model = None #models.Model(
+        # label="Local dynamic model",
+        # default=models.Generic2dOscillator,
+        # required=True,
+        # order=5,
+        # doc="""A tvb.simulator.Model object which describe the local dynamic
+        # equations, their parameters, and, to some extent, where connectivity
+        # (local and long-range) enters and which state-variables the Monitors
+        # monitor. By default the 'Generic2dOscillator' model is used. Read the
+        # Scientific documentation to learn more about this model.""")
 
     integrator = None #integrators.Integrator(
         # label="Integration scheme",
@@ -280,7 +280,7 @@ class Simulator(core.Type):
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         excluded_params = ("state_variable_range", "variables_of_interest", "noise", "psi_table", "nerf_table")
         spatial_reshape = self.model.spatial_param_reshape
-        for param in self.model.trait.keys():
+        for param in type(self.model).declarative_attrs:
             if param in excluded_params:
                 continue
             # If it's a surface sim and model parameters were provided at the region level
@@ -632,7 +632,7 @@ class Simulator(core.Type):
         for monitor in self.monitors:
             if not isinstance(monitor, monitors.Bold):
                 stock_shape = (monitor.period / self.integrator.dt, 
-                               self.model.variables_of_interest.shape[0], 
+                               len(self.model.variables_of_interest),
                                number_of_nodes,
                                self.model.number_of_modes)
                 memreq += numpy.prod(stock_shape) * bits_64

@@ -31,10 +31,10 @@ Oscillator models.
 
 """
 
-from .base import Model, ModelNumbaDfun, LOG, numpy, basic, arrays
+from .base import Model, ModelNumbaDfun, numpy
 import numexpr
 from numba import guvectorize, float64
-
+from tvb.basic.traits.neotraits import HasTraits, NArray, Attr, List
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -233,100 +233,101 @@ class Generic2dOscillator(ModelNumbaDfun):
     ui_configurable_parameters = ['tau', 'a', 'b', 'c', 'I', 'd', 'e', 'f', 'g', 'alpha', 'beta', 'gamma']
 
     #Define traited attributes for this model, these represent possible kwargs.
-    tau = arrays.FloatArray(
+    tau = NArray(
         label=r":math:`\tau`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=1.0, hi=5.0, step=0.01),
+        # range=basic.Range(lo=1.0, hi=5.0, step=0.01),
         doc="""A time-scale hierarchy can be introduced for the state
         variables :math:`V` and :math:`W`. Default parameter is 1, which means
-        no time-scale hierarchy.""",
-        order=1)
+        no time-scale hierarchy.""")
+        #order=1)
 
-    I = arrays.FloatArray(
+    I = NArray(
         label=":math:`I_{ext}`",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
-        doc="""Baseline shift of the cubic nullcline""",
-        order=2)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        doc="""Baseline shift of the cubic nullcline""")
+        # order=2)
 
-    a = arrays.FloatArray(
+    a = NArray(
         label=":math:`a`",
         default=numpy.array([-2.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
-        doc="""Vertical shift of the configurable nullcline""",
-        order=3)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.01),
+        doc="""Vertical shift of the configurable nullcline""")
+        # order=3)
 
-    b = arrays.FloatArray(
+    b = NArray(
         label=":math:`b`",
         default=numpy.array([-10.0]),
-        range=basic.Range(lo=-20.0, hi=15.0, step=0.01),
-        doc="""Linear slope of the configurable nullcline""",
-        order=4)
+        # range=basic.Range(lo=-20.0, hi=15.0, step=0.01),
+        doc="""Linear slope of the configurable nullcline""")
+        # order=4)
 
-    c = arrays.FloatArray(
+    c = NArray(
         label=":math:`c`",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-10.0, hi=10.0, step=0.01),
-        doc="""Parabolic term of the configurable nullcline""",
-        order=5)
+        # range=basic.Range(lo=-10.0, hi=10.0, step=0.01),
+        doc="""Parabolic term of the configurable nullcline""")
+        # order=5)
 
-    d = arrays.FloatArray(
+    d = NArray(
         label=":math:`d`",
         default=numpy.array([0.02]),
-        range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
+        # range=basic.Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="""Temporal scale factor. Warning: do not use it unless
-        you know what you are doing and know about time tides.""",
-        order=13)
+        you know what you are doing and know about time tides.""")
+        # order=13)
 
-    e = arrays.FloatArray(
+    e = NArray(
         label=":math:`e`",
         default=numpy.array([3.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="""Coefficient of the quadratic term of the cubic nullcline.""",
-        order=6)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Coefficient of the quadratic term of the cubic nullcline.""")
+        # order=6)
 
-    f = arrays.FloatArray(
+    f = NArray(
         label=":math:`f`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
-        doc="""Coefficient of the cubic term of the cubic nullcline.""",
-        order=7)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Coefficient of the cubic term of the cubic nullcline.""")
+        # order=7)
 
-    g = arrays.FloatArray(
+    g = NArray(
         label=":math:`g`",
         default=numpy.array([0.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.5),
-        doc="""Coefficient of the linear term of the cubic nullcline.""",
-        order=8)
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.5),
+        doc="""Coefficient of the linear term of the cubic nullcline.""")
+        # order=8)
 
-    alpha = arrays.FloatArray(
+    alpha = NArray(
         label=r":math:`\alpha`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
-            slow variable to the fast variable.""",
-        order=9)
+            slow variable to the fast variable.""")
+        # order=9)
 
-    beta = arrays.FloatArray(
+    beta = NArray(
         label=r":math:`\beta`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
+        # range=basic.Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the
-            slow variable to itself""",
-        order=10)
+            slow variable to itself""")
+        # order=10)
 
     # This parameter is basically a hack to avoid having a negative lower boundary in the global coupling strength.
-    gamma = arrays.FloatArray(
+    gamma = NArray(
         label=r":math:`\gamma`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
+        # range=basic.Range(lo=-1.0, hi=1.0, step=0.1),
         doc="""Constant parameter to reproduce FHN dynamics where
                excitatory input currents are negative.
-               It scales both I and the long range coupling term.""",
-        order=13)
+               It scales both I and the long range coupling term.""")
+        # order=13)
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
         default={"V": numpy.array([-2.0, 4.0]),
                  "W": numpy.array([-6.0, 6.0])},
@@ -334,8 +335,8 @@ class Generic2dOscillator(ModelNumbaDfun):
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""",
-        order=11)
+            history, it is also provides the default range of phase-plane plots.""")
+        # order=11)
 
     #    variables_of_interest = arrays.IntegerArray(
     #        label = "Variables watched by Monitors.",
@@ -347,13 +348,13 @@ class Generic2dOscillator(ModelNumbaDfun):
     #        and :math:`W = 1`""",
     #        order = 7)
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
+        of=str,
         label="Variables or quantities available to Monitors",
-        options=["V", "W", "V + W", "V - W"],
-        default=["V", ],
-        select_multiple=True,
-        doc="The quantities of interest for monitoring for the generic 2D oscillator.",
-        order=12)
+        choices=("V", "W", "V + W", "V - W"),
+        default=("V", ),
+        doc="The quantities of interest for monitoring for the generic 2D oscillator.")
+        # order=12)
 
     state_variables = ['V', 'W']
     _nvar = 2
@@ -461,36 +462,35 @@ class Kuramoto(Model):
     ui_configurable_parameters = ['omega']
 
     #Define traited attributes for this model, these represent possible kwargs.
-    omega = arrays.FloatArray(
+    omega = NArray(
         label=r":math:`\omega`",
         default=numpy.array([1.0]),
-        range=basic.Range(lo=0.01, hi=200.0, step=0.1),
+        # range=basic.Range(lo=0.01, hi=200.0, step=0.1),
         doc=""":math:`\omega` sets the base line frequency for the
-            Kuramoto oscillator in [rad/ms]""",
-        order=1)
+            Kuramoto oscillator in [rad/ms]""")
+        # order=1)
 
     #Informational attribute, used for phase-plane and initial()
-    state_variable_range = basic.Dict(
+    state_variable_range = Attr(
+        field_type=dict,
         label="State Variable ranges [lo, hi]",
-        default={"theta": numpy.array([0.0, numpy.pi * 2.0]),
-        },
+        default={"theta": numpy.array([0.0, numpy.pi * 2.0]), },
         doc="""The values for each state-variable should be set to encompass
             the expected dynamic range of that state-variable for the current
             parameters, it is used as a mechanism for bounding random initial
             conditions when the simulation isn't started from an explicit
-            history, it is also provides the default range of phase-plane plots.""",
-        order=6)
+            history, it is also provides the default range of phase-plane plots.""")
+        # order=6)
 
-    variables_of_interest = basic.Enumerate(
+    variables_of_interest = List(
         label="Variables watched by Monitors",
-        options=["theta"],
-        default=["theta"],
-        select_multiple=True,
+        choices=("theta",),
+        default=("theta",),
         doc="""This represents the default state-variables of this Model to be
                             monitored. It can be overridden for each Monitor if desired. The Kuramoto
                             model, however, only has one state variable with and index of 0, so it
-                            is not necessary to change the default here.""",
-        order=7)
+                            is not necessary to change the default here.""")
+        # order=7)
 
     state_variables = ['theta']
     _nvar = 1
