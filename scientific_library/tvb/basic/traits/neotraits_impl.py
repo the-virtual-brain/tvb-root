@@ -39,14 +39,17 @@ class Attr(object):
         self.choices = choices
 
 
-    def _err_msg_where(self, defined_in_type_name):
+    def _err_msg(self, msg):
         # type: (str) -> str
-        return 'attribute {}.{} = {} : '.format(
-            defined_in_type_name, self.field_name, self)
+        """
+        Adds to a error message information about the Attribute where it occured
+        """
+        return 'attribute {}.{} = {} : {}'.format(
+            self.owner.__name__, self.field_name, self, msg)
 
 
-    def _post_bind_validate(self, defined_in_type_name):
-        # type: (str) -> None
+    def _post_bind_validate(self):
+        # type: () -> None
         """
         Validates this instance of Attr.
         This is called just after field_name is set, by MetaType.
@@ -56,20 +59,19 @@ class Attr(object):
         if self.default is not None and not isinstance(self.default, self.field_type):
             msg = 'should have a default of type {} not {}'.format(
                 self.field_type, type(self.default))
-            raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+            raise TypeError(self._err_msg(msg))
 
         if self.choices is not None and self.default is not None:
             if self.default not in self.choices:
                 msg = 'the default {} must be one of the choices {}'.format(
                     self.default, self.choices)
-                raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+                raise TypeError(self._err_msg(msg))
 
         # heuristic check for mutability. might be costly. hasattr(__hash__) is fastest but less reliable
         try:
             hash(self.default)
         except TypeError:
-            log.warning(self._err_msg_where(defined_in_type_name)
-                        + 'field seems mutable and has a default value')
+            log.warning(self._err_msg('field seems mutable and has a default value'))
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
@@ -84,12 +86,10 @@ class Attr(object):
         if value is None and not self.required:
             return
         if not isinstance(value, self.field_type):
-            msg_where = self._err_msg_where(type(instance).__name__)
-            raise TypeError(msg_where + "can't be set to an instance of {}".format(type(value)))
+            raise TypeError(self._err_msg("can't be set to an instance of {}".format(type(value))))
         if self.choices is not None:
             if value not in self.choices:
-                msg_where = self._err_msg_where(type(instance).__name__)
-                raise ValueError(msg_where + "value {} must be one of {}".format(value, self.choices))
+                raise ValueError(self._err_msg("value {} must be one of {}".format(value, self.choices)))
 
 
     def _assert_have_field_name(self):
@@ -123,7 +123,7 @@ class Attr(object):
 
 
     def __delete__(self, instance):
-        msg_where = self._err_msg_where(type(instance).__name__)
+        msg_where = self._err_msg(type(instance).__name__)
         raise AttributeError(msg_where + "can't be deleted")
 
 
@@ -238,7 +238,7 @@ class MetaType(abc.ABCMeta):
             v = namespace[attr_name]
             v.field_name = attr_name
             v.owner = cls
-            v._post_bind_validate(type_name)
+            v._post_bind_validate()
 
         # update the HasTraits class registry
         mcs.__classes.append(cls)

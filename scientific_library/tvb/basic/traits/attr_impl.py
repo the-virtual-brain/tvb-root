@@ -37,14 +37,14 @@ class List(Attr):
         self.element_choices = choices
 
 
-    def _post_bind_validate(self, defined_in_type_name):
-        super(List, self)._post_bind_validate(defined_in_type_name)
+    def _post_bind_validate(self):
+        super(List, self)._post_bind_validate()
         # check that the default contains elements of the declared type
         for i, el in enumerate(self.default):
             if not isinstance(el, self.element_type):
                 msg = 'default[{}] must have type {} not {}'.format(
                     i, self.element_type, type(el))
-                raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+                raise TypeError(self._err_msg(msg))
 
         if self.element_choices is not None:
             # check that the default respects the declared choices
@@ -52,24 +52,24 @@ class List(Attr):
                 if el not in self.element_choices:
                     msg = 'default[{}]=={} must be one of the choices {}'.format(
                         i, self.default, self.element_choices)
-                    raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+                    raise TypeError(self._err_msg(msg))
 
 
     def _validate_set(self, instance, value):
         super(List, self)._validate_set(instance, value)
         for i, el in enumerate(value):
             if not isinstance(el, self.element_type):
-                msg_where = self._err_msg_where(type(instance).__name__)
-                raise TypeError(msg_where + "value[{}] can't be of type {}".format(i, type(el)))
+                raise TypeError(self._err_msg("value[{}] can't be of type {}".format(i, type(el))))
 
         if self.element_choices is not None:
             for i, el in enumerate(value):
                 if el not in self.element_choices:
-                    msg_where = self._err_msg_where(type(instance).__name__)
-                    raise ValueError(msg_where + "value[{}]=={} must be one of {}".format(i, el, self.element_choices))
+                    raise ValueError(self._err_msg("value[{}]=={} must be one of {}".format(i, el, self.element_choices)))
 
 
-    # here only for typing purposes, for better ide checking and autocomplete
+    # __get__ __set__ here only for typing purposes, for better ide checking and autocomplete
+
+
     def __get__(self, instance, owner):
         # type: (typing.Any, type) -> typing.Sequence
         return super(List, self).__get__(instance, owner)
@@ -82,6 +82,7 @@ class List(Attr):
     def __str__(self):
         return '{}(of={}, default={}, required={})'.format(
             type(self).__name__, self.element_type, self.default, self.required)
+
 
 
 class NArray(Attr):
@@ -121,21 +122,21 @@ class NArray(Attr):
             self.ndim = len(dim_names)
 
 
-    def _post_bind_validate(self, defined_in_type_name):
+    def _post_bind_validate(self):
         if self.default is None:
             return
         if not isinstance(self.default, numpy.ndarray):
             msg = 'default {} should be a numpy.ndarray'.format(self.default)
-            raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
+            raise TypeError(self._err_msg(msg))
         # we check strict dtype conformance. Compatible dtypes are not ok
         # todo: review this choice, maybe it is better to be less strict and just check numpy.can_cast('safe')
         if self.default.dtype != self.dtype:
             msg = 'default dtype={} is not the declared one={}'.format(self.default.dtype, self.dtype)
-            raise ValueError(self._err_msg_where(defined_in_type_name) + msg)
+            raise ValueError(self._err_msg(msg))
         # if ndim is None we allow any ndim
         if self.ndim is not None and self.default.ndim != self.ndim:
             msg = 'default ndim={} is not the declared one={}'.format(self.default.ndim, self.ndim)
-            raise ValueError(self._err_msg_where(defined_in_type_name) + msg)
+            raise ValueError(self._err_msg(msg))
 
         # we make the default a read only array
         self.default.setflags(write=False)
@@ -146,20 +147,15 @@ class NArray(Attr):
             for e in self.default.flat:
                 if e not in self.domain:
                     msg = 'default contains values out of the declared domain. Ex {}'.format(e)
-                    log.warning(self._err_msg_where(defined_in_type_name) + msg)
+                    log.warning(self._err_msg(msg))
                     break
 
 
     def _validate_set(self, instance, value):
         super(NArray, self)._validate_set(instance, value)
 
-        def _msg():
-            return 'attribute {}.{} = {}(dtype={}, ndim={}) : '.format(
-                type(instance).__name__, self.field_name, type(self).__name__,
-                self.dtype, self.ndim)
-
         if self.ndim is not None and value.ndim != self.ndim:
-            raise TypeError(_msg() + "can't be set to an array with ndim {}".format(value.ndim))
+            raise TypeError(self._err_msg("can't be set to an array with ndim {}".format(value.ndim)))
 
         # todo review this special case: string dtypes
         # tvb treats numpy string arrays like python lists
@@ -169,7 +165,7 @@ class NArray(Attr):
         # endtodo
 
         if value.dtype != self.dtype:
-            raise TypeError(_msg() + "can't be set to an array of dtype {}".format(value.dtype))
+            raise TypeError(self._err_msg("can't be set to an array of dtype {}".format(value.dtype)))
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):
@@ -179,6 +175,11 @@ class NArray(Attr):
     def __set__(self, instance, value):
         # type: (object, numpy.ndarray) -> None
         super(NArray, self).__set__(instance, value)
+
+    def __str__(self):
+        return '{}(dtype={}, default={}, required={})'.format(
+            type(self).__name__, self.dtype, self.default, self.required)
+
 
 
 class Range(object):
@@ -198,6 +199,9 @@ class Range(object):
     def to_array(self):
         return numpy.arange(self.lo, self.hi, self.step)
 
+    def __repr__(self):
+        return 'Range(lo={}, hi={}, step={})'.format(self.lo, self.hi, self.step)
+
 
 class LinspaceRange(object):
     """
@@ -215,4 +219,7 @@ class LinspaceRange(object):
 
     def to_array(self):
         return numpy.linspace(self.lo, self.hi, self.npoints)
+
+    def __repr__(self):
+        return 'LinspaceRange(lo={}, hi={}, step={})'.format(self.lo, self.hi, self.npoints)
 
