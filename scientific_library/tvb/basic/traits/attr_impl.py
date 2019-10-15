@@ -166,3 +166,40 @@ class NArray(Attr):
     def __set__(self, instance, value):
         # type: (object, numpy.ndarray) -> None
         super(NArray, self).__set__(instance, value)
+
+
+class Range(object):
+    """
+    Defines a domain like the one that numpy.arange generates
+    Points are precisely equidistant but the largest point is <= hi
+    """
+    def __init__(self, lo, hi, step=1.0):
+        self.lo = lo
+        self.hi = hi
+        self.step = step
+
+    def __contains__(self, item):
+        """ true if item between lo and high. ignores the step"""
+        return self.lo <= item < self.hi
+
+    def to_array(self):
+        return numpy.arange(self.lo, self.hi, self.step)
+
+
+class LinspaceRange(object):
+    """
+    Defines a domain with precise endpoints but the points are not precisely equidistant
+    Similar to numpy.linspace
+    """
+    def __init__(self, lo, hi, npoints=50):
+        self.lo = lo
+        self.hi = hi
+        self.npoints = npoints
+
+    def __contains__(self, item):
+        """ true if item between lo and high. ignores the step"""
+        return self.lo <= item < self.hi
+
+    def to_array(self):
+        return numpy.linspace(self.lo, self.hi, self.npoints)
+
