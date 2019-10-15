@@ -89,10 +89,10 @@ class FilterChain(object):
     algorithm_category = '$$ALGORITHM_CATEGORY_INPUT$$'
     operation = '$$OPERATION_INPUT$$'
 
-    datatype_replacement = "model.DataType"
-    algorithm_replacement = "model.Algorithm"
-    algorithm_category_replacement = "model.AlgorithmCategory"
-    operation_replacement = "model.Operation"
+    datatype_replacement = "DataType"
+    algorithm_replacement = "Algorithm"
+    algorithm_category_replacement = "AlgorithmCategory"
+    operation_replacement = "Operation"
 
 
     def __init__(self, display_name="", fields=None, values=None, operations=None, operator_between_fields='and'):
@@ -262,10 +262,9 @@ class FilterChain(object):
             passed_test = eval('passed_test ' + self.operator_between_fields + ' my_filter')
         return passed_test
 
-
-    def get_sql_filter_equivalent(self, datatype_to_check="model.DataType", operation_to_check="model.Operation",
-                                  algorithm_to_check="model.Algorithm",
-                                  algocategory_to_check="model.AlgorithmCategory"):
+    def get_sql_filter_equivalent(self, datatype_to_check="DataType", operation_to_check="Operation",
+                                  algorithm_to_check="Algorithm",
+                                  algocategory_to_check="AlgorithmCategory"):
         """
         Returns the computed SQL string from the given filter.
         The method may return None if the filter is None or the

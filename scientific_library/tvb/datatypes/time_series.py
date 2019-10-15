@@ -65,7 +65,7 @@ class TimeSeries(HasTraits):
     Base time-series dataType.
     """
 
-    title = Attr(str)
+    title = Attr(basestring)
 
     data = NArray(
         label="Time-series data",
@@ -162,20 +162,6 @@ class TimeSeries(HasTraits):
                  We have to decide if the default should be all selections or none
         """
         return ''
-
-    @staticmethod
-    def accepted_filters():
-        # filters = types_mapped.MappedType.accepted_filters()
-        filters = {}  # todo: resurrect this
-        filters.update({'datatype_class._nr_dimensions': {'type': 'int', 'display': 'No of Dimensions',
-                                                          'operations': ['==', '<', '>']},
-                        'datatype_class._sample_period': {'type': 'float', 'display': 'Sample Period',
-                                                          'operations': ['==', '<', '>']},
-                        'datatype_class._sample_rate': {'type': 'float', 'display': 'Sample Rate',
-                                                        'operations': ['==', '<', '>']},
-                        'datatype_class._title': {'type': 'string', 'display': 'Title',
-                                                  'operations': ['==', '!=', 'like']}})
-        return filters
 
     def summary_info(self):
         """

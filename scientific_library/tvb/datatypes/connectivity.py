@@ -266,14 +266,6 @@ class Connectivity(HasTraits):
         else:
             return ''
 
-    @staticmethod
-    def accepted_filters():
-        # filters = MappedType.accepted_filters()
-        filters = {}  # todo: resurrect this api on a higher level
-        filters.update({'datatype_class._number_of_regions': {'type': 'int', 'display': 'No of Regions',
-                                                              'operations': ['==', '<', '>']}})
-        return filters
-
     def is_right_hemisphere(self, idx):
         """
         :param idx:  Region IDX
