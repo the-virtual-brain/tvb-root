@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -31,24 +31,18 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
-from tvb.basic.traits.types_mapped import MappedType
-from tvb.basic.traits.types_basic import JSONType, String, Dict
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.datatypes.time_series import TimeSeries
 
 
-# Accepted Value Types to be stored.
-ACCEPTED_TYPES = ['float', 'int']
-
-
-class ValueWrapper(MappedType):
+class ValueWrapper(HasTraits):
     """
     Class to wrap a singular value storage in DB.
     """
     
-    data_value = JSONType()
-    data_type = String(default='unknown')  
-    data_name = String() 
+    data_value = Attr(field_type=str)
+    data_type = Attr(field_type=str, default='unknown')
+    data_name = Attr(field_type=str)
     
     @property
     def display_name(self):
@@ -56,15 +50,15 @@ class ValueWrapper(MappedType):
         return "Value Wrapper - " + self.data_name +" : "+ str(self.data_value) + " ("+ str(self.data_type)+ ")"
             
     
-class DatatypeMeasure(MappedType):
+class DatatypeMeasure(HasTraits):
     """
     Class to hold the metric for a previous stored DataType.
     E.g. Measure (single value) for any TimeSeries resulted in a group of Simulations
     """
     ### Actual measure (dictionary Algorithm: single Value)
-    metrics = Dict
+    metrics = Attr(field_type=dict)
     ### DataType for which the measure was computed.
-    analyzed_datatype = TimeSeries
+    analyzed_datatype = Attr(field_type=TimeSeries)
     
     
     @property
