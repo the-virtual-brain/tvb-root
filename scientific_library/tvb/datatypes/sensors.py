@@ -59,7 +59,7 @@ class Sensors(HasTraits):
 
     _ui_name = "Unknown sensors"
 
-    sensors_type = Attr(str)
+    sensors_type = Attr(str, required=False)
 
     __mapper_args__ = {'polymorphic_on': 'sensors_type'}
 

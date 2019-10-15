@@ -88,11 +88,12 @@ class Integrator(HasTraits):
 
     clamped_state_variable_indices = NArray(
         dtype=int,
-        label="indices of the state variables to be clamped by the integrators to the values in the clamped_values array")
-        # order=-1)
+        label="indices of the state variables to be clamped by the integrators to the values in the clamped_values array",
+        required=False)
 
     clamped_state_variable_values = NArray(
-        label="The values of the state variables which are clamped ")
+        label="The values of the state variables which are clamped ",
+        required=False)
         # order=-1)
 
 

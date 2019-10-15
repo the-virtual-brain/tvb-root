@@ -495,7 +495,7 @@ class Surface(HasTraits):
         triangle_areas = numpy.sqrt(numpy.sum(tri_norm ** 2, axis=1)) / 2.0
         triangle_areas = triangle_areas[:, numpy.newaxis]
         LOG.debug("triangle_areas")
-        LOG.debug(narray_describe(self.triangle_areas))
+        LOG.debug(narray_describe(triangle_areas))
 
         return triangle_areas
 

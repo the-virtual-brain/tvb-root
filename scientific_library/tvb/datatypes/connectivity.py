@@ -386,7 +386,6 @@ class Connectivity(HasTraits):
         Invoke the compute methods for computable attributes that haven't been
         set during initialization.
         """
-        super(Connectivity, self).configure()
 
         self.number_of_regions = self.weights.shape[0]
         # NOTE: In numpy 1.8 there is a function called count_zeros
@@ -429,6 +428,9 @@ class Connectivity(HasTraits):
 
         if (self.weights.transpose() == self.weights).all():
             self.undirected = True
+
+        self.validate()
+
 
     def summary_info(self):
         summary = {

@@ -76,7 +76,7 @@ class Equation(HasTraits):
     parameters = Attr(
         field_type=dict,
         label="Parameters in a dictionary.",
-        default={},
+        default=lambda: {},
         doc="""Should be a list of the parameters and their meaning, Traits
                 should be able to take defaults and sensible ranges from any
                 traited information that was provided.""")
@@ -241,8 +241,7 @@ class Linear(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Linear Parameters",
-        default={"a": 1.0,
-                 "b": 0.0})
+        default=lambda: {"a": 1.0, "b": 0.0})
 
 
 class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
@@ -263,7 +262,7 @@ class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
     parameters = Attr(
         field_type=dict,
         label="Gaussian Parameters",
-        default={"amp": 1.0, "sigma": 1.0, "midpoint": 0.0, "offset": 0.0})
+        default=lambda: {"amp": 1.0, "sigma": 1.0, "midpoint": 0.0, "offset": 0.0})
 
 
 class DoubleGaussian(FiniteSupportEquation):
@@ -285,8 +284,8 @@ class DoubleGaussian(FiniteSupportEquation):
     parameters = Attr(
         field_type=dict,
         label="Double Gaussian Parameters",
-        default={"amp_1": 0.5, "sigma_1": 20.0, "midpoint_1": 0.0,
-                 "amp_2": 1.0, "sigma_2": 10.0, "midpoint_2": 0.0})
+        default=lambda: {"amp_1": 0.5, "sigma_1": 20.0, "midpoint_1": 0.0,
+                         "amp_2": 1.0, "sigma_2": 10.0, "midpoint_2": 0.0})
 
 
 class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
@@ -305,7 +304,7 @@ class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
     parameters = Attr(
         field_type=dict,
         label="Sigmoid Parameters",
-        default={"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
 
 
 class GeneralizedSigmoid(TemporalApplicableEquation):
@@ -322,7 +321,7 @@ class GeneralizedSigmoid(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Sigmoid Parameters",
-        default={"low": 0.0, "high": 1.0, "midpoint": 1.0, "sigma": 0.3}) #,
+        default=lambda: {"low": 0.0, "high": 1.0, "midpoint": 1.0, "sigma": 0.3}) #,
     #"pi": numpy.pi})
 
 
@@ -339,7 +338,7 @@ class Sinusoid(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Sinusoid Parameters",
-        default={"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
 class Cosine(TemporalApplicableEquation):
@@ -355,7 +354,7 @@ class Cosine(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Cosine Parameters",
-        default={"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
 class Alpha(TemporalApplicableEquation):
@@ -372,7 +371,7 @@ class Alpha(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Alpha Parameters",
-        default={"onset": 0.5, "alpha": 13.0, "beta": 42.0})
+        default=lambda: {"onset": 0.5, "alpha": 13.0, "beta": 42.0})
 
 
 class PulseTrain(TemporalApplicableEquation):
@@ -403,7 +402,7 @@ class PulseTrain(TemporalApplicableEquation):
 
     parameters = Attr(
         field_type=dict,
-        default={"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
+        default=lambda: {"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
         label="Pulse Train Parameters")
 
     def evaluate(self, var):
@@ -472,7 +471,7 @@ class Gamma(HRFKernelEquation):
     parameters = Attr(
         field_type=dict,
         label="Gamma Parameters",
-        default={"tau": 1.08, "n": 3.0, "factorial": 2.0, "a": 0.1})
+        default=lambda: {"tau": 1.08, "n": 3.0, "factorial": 2.0, "a": 0.1})
 
     def evaluate(self, var):
         """
@@ -533,9 +532,9 @@ class DoubleExponential(HRFKernelEquation):
     parameters = Attr(
         field_type=dict,
         label="Double Exponential Parameters",
-        default={"tau_1": 7.22, "f_1": 0.03, "amp_1": 0.1,
-                 "tau_2": 7.4, "f_2": 0.12, "amp_2": 0.1,
-                 "a": 0.1, "pi": numpy.pi})
+        default=lambda: {"tau_1": 7.22, "f_1": 0.03, "amp_1": 0.1,
+                         "tau_2": 7.4, "f_2": 0.12, "amp_2": 0.1,
+                         "a": 0.1, "pi": numpy.pi})
 
     def evaluate(self, var):
         """
@@ -588,7 +587,7 @@ class FirstOrderVolterra(HRFKernelEquation):
     parameters = Attr(
         field_type=dict,
         label="Mixture of Gammas Parameters",
-        default={"tau_s": 0.8, "tau_f": 0.4, "k_1": 5.6, "V_0": 0.02})
+        default=lambda: {"tau_s": 0.8, "tau_f": 0.4, "k_1": 5.6, "V_0": 0.02})
 
 
 class MixtureOfGammas(HRFKernelEquation):
@@ -649,7 +648,7 @@ class MixtureOfGammas(HRFKernelEquation):
     parameters = Attr(
         field_type=dict,
         label="Double Exponential Parameters",
-        default={"a_1": 6.0, "a_2": 13.0, "l": 1.0, "c": 0.4, "gamma_a_1": 1.0, "gamma_a_2": 1.0})
+        default=lambda: {"a_1": 6.0, "a_2": 13.0, "l": 1.0, "c": 0.4, "gamma_a_1": 1.0, "gamma_a_2": 1.0})
 
     def evaluate(self, var):
         """

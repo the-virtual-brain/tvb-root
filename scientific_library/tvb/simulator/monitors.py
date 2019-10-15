@@ -94,7 +94,8 @@ class Monitor(HasTraits):
         label="Model variables to watch",  # order=11,
         doc=("Indices of model's variables of interest (VOI) that this monitor should record. "
              "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
-             "V+W, and W is selected, and this monitor should record W, then the correct index is 0."))
+             "V+W, and W is selected, and this monitor should record W, then the correct index is 0."),
+        required=False)
         #order = -1
 
     istep = None
@@ -183,7 +184,8 @@ class Raw(Monitor):
 
     variables_of_interest = NArray(
         dtype=int,
-        label="Raw Monitor sees all!!! Resistance is futile...")
+        label="Raw Monitor sees all!!! Resistance is futile...",
+        required=False)
     # order = -1
 
     def config_for_sim(self, simulator):
