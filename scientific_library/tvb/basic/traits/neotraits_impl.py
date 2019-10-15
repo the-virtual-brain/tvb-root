@@ -26,7 +26,7 @@ class Attr(object):
 
     def __init__(self, field_type=object, default=None, doc='', label='',
                  required=True, readonly=False, choices=None):
-        # type: (type, object, str, str, bool, bool, typing.Optional[tuple]) -> None
+        # type: (type, typing.Any, str, str, bool, bool, typing.Optional[tuple]) -> None
         self.field_name = None  # to be set by metaclass
         self.field_type = field_type
         self.default = default
@@ -97,7 +97,7 @@ class Attr(object):
 
 
     def __get__(self, instance, owner):
-        # type: (object, type) -> object
+        # type: (typing.Any, type) -> typing.Any
         self._assert_have_field_name()
         if instance is None:
             # called from class, not an instance
@@ -161,6 +161,7 @@ class MetaType(abc.ABCMeta):
 
     @property
     def declarative_attrs(cls):
+        # type: () -> typing.Tuple[str, ...]
         """
         Gathers all the declared attributes, including the ones declared in superclasses.
         This is a meta-property common to all classes with this metatype

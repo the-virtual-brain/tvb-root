@@ -67,6 +67,18 @@ class List(Attr):
                     raise ValueError(msg_where + "value[{}]=={} must be one of {}".format(i, el, self.choices))
 
 
+    # here only for typing purposes, for better ide checking and autocomplete
+    def __get__(self, instance, owner):
+        # type: (typing.Any, type) -> typing.Sequence
+        return super(List, self).__get__(instance, owner)
+
+
+    def __set__(self, instance, value):
+        # type: (object, typing.Sequence) -> None
+        super(List, self).__set__(instance, value)
+
+
+
 class NArray(Attr):
     """
     Declares a numpy array.
@@ -130,3 +142,12 @@ class NArray(Attr):
             raise TypeError(_msg() + "can't be set to an array of dtype {}".format(value.dtype))
         if self.ndim is not None and value.ndim != self.ndim:
             raise TypeError(_msg() + "can't be set to an array with ndim {}".format(value.ndim))
+
+    # here only for typing purposes, so ide's can get better suggestions
+    def __get__(self, instance, owner):
+        # type: (typing.Optional[object], type) -> typing.Union[numpy.ndarray, 'NArray']
+        return super(NArray, self).__get__(instance, owner)
+
+    def __set__(self, instance, value):
+        # type: (object, numpy.ndarray) -> None
+        super(NArray, self).__set__(instance, value)
