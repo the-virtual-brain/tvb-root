@@ -121,16 +121,15 @@ class TimeSeries(HasTraits):
         doc="""The sample rate of the timeseries"""
     )
 
-    has_surface_mapping = Attr(field_type=bool, default=True)
-    has_volume_mapping = Attr(field_type=bool, default=False)
+    # has_surface_mapping = Attr(field_type=bool, default=True)
+    # has_volume_mapping = Attr(field_type=bool, default=False)
 
     def configure(self):
         """
         After populating few fields, compute the rest of the fields
         """
         super(TimeSeries, self).configure()
-        data_shape = self.read_data_shape()
-        self.nr_dimensions = len(data_shape)
+        self.nr_dimensions = self.data.ndim
         self.sample_rate = 1.0 / self.sample_period
 
         # for i in range(min(self.nr_dimensions, 4)):
@@ -287,8 +286,8 @@ class TimeSeriesRegion(TimeSeries):
         After populating few fields, compute the rest of the fields
         """
         super(TimeSeriesRegion, self).configure()
-        self.has_surface_mapping = self.region_mapping is not None or self._region_mapping is not None
-        self.has_volume_mapping = self.region_mapping_volume is not None or self._region_mapping_volume is not None
+        # self.has_surface_mapping = self.region_mapping is not None or self._region_mapping is not None
+        # self.has_volume_mapping = self.region_mapping_volume is not None or self._region_mapping_volume is not None
 
     def _find_summary_info(self):
         """
@@ -337,6 +336,7 @@ class TimeSeriesRegion(TimeSeries):
         else:
             return super(TimeSeriesRegion, self).get_measure_points_selection_gid()
 
+    # TODO: move to higher level
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
         """
         Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
@@ -380,6 +380,7 @@ class TimeSeriesRegion(TimeSeries):
 
         return [result_x, result_y, result_z]
 
+    # TODO: move to higher level
     def get_voxel_time_series(self, x, y, z, var=0, mode=0):
         """
         Retrieve for a given voxel (x,y,z) the entire timeline.
