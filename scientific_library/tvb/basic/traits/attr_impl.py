@@ -94,10 +94,10 @@ class NArray(Attr):
         # type: (numpy.ndarray, bool, str, str, typing.Union[numpy.dtype, type], int, typing.Tuple[str, ...], typing.Container) -> None
         super(NArray, self).__init__(field_type=numpy.ndarray, default=default,
                                      required=required, doc=doc, label=label)
-        self.dtype = dtype
-        self.ndim = ndim
+        self.dtype = numpy.dtype(dtype)
+        self.ndim = int(ndim) if ndim is not None else None
         self.domain = domain  # anything that supports 3.1 in domain
-        self.dim_names = dim_names
+        self.dim_names = tuple(dim_names)
 
         if dim_names:
             # dimensions are named, infer ndim
@@ -138,10 +138,18 @@ class NArray(Attr):
                 type(instance).__name__, self.field_name, type(self).__name__,
                 self.dtype, self.ndim)
 
-        if value.dtype != self.dtype:
-            raise TypeError(_msg() + "can't be set to an array of dtype {}".format(value.dtype))
         if self.ndim is not None and value.ndim != self.ndim:
             raise TypeError(_msg() + "can't be set to an array with ndim {}".format(value.ndim))
+
+        # todo review this special case: string dtypes
+        # tvb treats numpy string arrays like python lists
+        # this goes bad with their fixed size type and the strict dtype checks that we do here
+        if self.dtype.kind == 'S' == value.dtype.kind:
+            return
+        # endtodo
+
+        if value.dtype != self.dtype:
+            raise TypeError(_msg() + "can't be set to an array of dtype {}".format(value.dtype))
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):
