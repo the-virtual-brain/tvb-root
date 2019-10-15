@@ -33,6 +33,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                       rm -Rf dist
+                      source activate tvb-run
                       python setup.py sdist
                       python  setup.py bdist_wheel
                 '''
@@ -65,6 +66,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                       mv dist dist-py2
+                      source activate tvb-run
                       python setup.py sdist
                       python  setup.py bdist_wheel
                       mv dist dist-py3
