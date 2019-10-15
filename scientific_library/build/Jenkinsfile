@@ -24,6 +24,21 @@ pipeline {
             }
         }
 
+        stage ('Build Pypi packages python 2') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${PY2_TAG}'
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                      python setup.py sdist
+                      python  setup.py bdist_wheel
+                '''
+                archiveArtifacts artifacts: 'tvb*.tar.gz;tvb*.whl'
+            }
+        }
+
         stage ('Run tests in python 3 environment') {
             agent {
                 docker {
@@ -39,11 +54,27 @@ pipeline {
                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUTPUT/coverage_library.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
             }
         }
+
+        stage ('Build Pypi packages python 3') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${PY3_TAG}'
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                      python setup.py sdist
+                      python  setup.py bdist_wheel
+                '''
+                archiveArtifacts artifacts: 'tvb*.tar.gz, tvb*.whl'
+            }
+        }
+
     }
 
     post {
         changed {
-            mail to: 'paula.popa@codemart.ro',
+            mail to: 'lia.domide@codemart.ro, paula.popa@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
