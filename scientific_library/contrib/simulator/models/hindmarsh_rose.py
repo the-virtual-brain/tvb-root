@@ -68,16 +68,10 @@ class HindmarshRose(models.Model):
             
             The (:math:`x`, :math:`y`) phase-plane for the Hindmarsh-Rose model.
     
-    
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: HindmarshRose.__init__
+
     .. automethod:: HindmarshRose.dfun
     
     """
-    _ui_name = "Hindmarsh-Rose"
-    ui_configurable_parameters = ['r', 'a', 'b', 'c', 'd', 's', 'x_1']
 
     # Define traited attributes for this model, these represent possible kwargs.
     r = NArray(

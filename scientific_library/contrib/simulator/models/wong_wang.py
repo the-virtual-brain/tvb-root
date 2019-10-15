@@ -85,10 +85,7 @@ class WongWang(models.Model):
 
     To reproduce C & D vary c parameter respectively.
 
-    .. automethod:: __init__
-
     """
-    _ui_name = "Wong-Wang (2D)"
 
     # Define traited attributes for this model, these represent possible kwargs.
     a = NArray(

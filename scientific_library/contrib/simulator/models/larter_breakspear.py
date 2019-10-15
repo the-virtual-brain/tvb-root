@@ -35,14 +35,13 @@ A contributed model: Larter model revisited by Breaskpear M.
 
 """
 
-# Third party python libraries
 import numpy
-
-# The Virtual Brain
 from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
+
 
 class LarterBreakspear(models.Model):
     """
@@ -149,16 +148,7 @@ class LarterBreakspear(models.Model):
             
             The (:math:`V`, :math:`W`) phase-plane for the Larter-Breakspear model.
     
-    .. automethod:: __init__
-    
     """
-
-    _ui_name = "Larter-Breakspear"
-    ui_configurable_parameters = ['gCa', 'gK', 'gL', 'phi', 'gNa', 'TK', 'TCa',
-                                  'TNa', 'VCa', 'VK', 'VL', 'VNa', 'd_K', 'tau_K',
-                                  'd_Na', 'd_Ca', 'aei', 'aie', 'b', 'C', 'ane',
-                                  'ani', 'aee', 'Iext', 'rNMDA', 'VT', 'd_V', 'ZT',
-                                  'd_Z', 'beta', 'QV_max', 'QZ_max']
 
     # Define traited attributes for this model, these represent possible kwargs.
     gCa = NArray(
@@ -359,7 +349,7 @@ class LarterBreakspear(models.Model):
         of=str,
         label="Variables watched by Monitors",
         choices=("V", "W", "Z"),
-        default=("V",),
+        default=("V", "W", "Z"),
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired.""")
 
@@ -377,24 +367,21 @@ class LarterBreakspear(models.Model):
             conditions when the simulation isn't started from an explicit
             history, it is also provides the default range of phase-plane plots.""")
 
+    state_variables = ["V", "W", "Z"]
+    _nvar = 3
 
     def __init__(self, **kwargs):
         """
         .. May need to put kwargs back if we can't get them from trait...
         
         """
+        super(LarterBreakspear, self).__init__(**kwargs)
 
         LOG.info('%s: initing...' % str(self))
 
-        super(LarterBreakspear, self).__init__(**kwargs)
-
-        self._state_variables = ["V", "W", "Z"]
-
-        self._nvar = 3
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug('%s: inited.' % repr(self))
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -422,19 +409,23 @@ class LarterBreakspear(models.Model):
         W = state_variables[1, :]
         Z = state_variables[2, :]
 
-        c_0   = coupling[0, :]
-        lc_0  = local_coupling
+        c_0 = coupling[0, :]
+        lc_0 = local_coupling
 
         # relationship between membrane voltage and channel conductance
         m_Ca = 0.5 * (1 + numpy.tanh((V - self.TCa) / self.d_Ca))
         m_Na = 0.5 * (1 + numpy.tanh((V - self.TNa) / self.d_Na))
-        m_K  = 0.5 * (1 + numpy.tanh((V - self.TK )  / self.d_K))
+        m_K = 0.5 * (1 + numpy.tanh((V - self.TK) / self.d_K))
 
         # voltage to firing rate
-        QV  = 0.5 * self.QV_max * (1 + numpy.tanh((V - self.VT) / self.d_V))
-        QZ  = 0.5 * self.QZ_max * (1 + numpy.tanh((Z - self.ZT) / self.d_Z))
+        QV = 0.5 * self.QV_max * (1 + numpy.tanh((V - self.VT) / self.d_V))
+        QZ = 0.5 * self.QZ_max * (1 + numpy.tanh((Z - self.ZT) / self.d_Z))
 
-        dV = (- (self.gCa + (1.0 - self.C) * self.rNMDA * self.aee * QV + self.C * self.rNMDA * self.aee * c_0) * m_Ca * (V - self.VCa) - self.gK * W * (V - self.VK) -  self.gL * (V - self.VL) - (self.gNa * m_Na + (1.0 - self.C) * self.aee * QV + self.C * self.aee * c_0) * (V - self.VNa) - self.aei * Z * QZ + self.ane * self.Iext)
+        dV = (- (self.gCa + (
+                    1.0 - self.C) * self.rNMDA * self.aee * QV + self.C * self.rNMDA * self.aee * c_0) * m_Ca * (
+                          V - self.VCa) - self.gK * W * (V - self.VK) - self.gL * (V - self.VL) - (
+                          self.gNa * m_Na + (1.0 - self.C) * self.aee * QV + self.C * self.aee * c_0) * (
+                          V - self.VNa) - self.aei * Z * QZ + self.ane * self.Iext)
 
         dW = (self.phi * (m_K - W) / self.tau_K)
 
@@ -451,6 +442,7 @@ if __name__ == "__main__":
 
     # Check that the docstring examples, if there are any, are accurate.
     import doctest
+
     doctest.testmod()
 
     # Reproduce Fig. 4 from [Breaksetal_2003_b]_
@@ -471,7 +463,3 @@ if __name__ == "__main__":
     ppi.TRAJ_STEPS = 2048
     ppi_fig = ppi.PhasePlaneInteractive(model=LB, integrator=INTEGRATOR)
     ppi_fig.show()
-
-
-
-

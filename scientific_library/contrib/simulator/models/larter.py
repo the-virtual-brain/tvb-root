@@ -78,19 +78,10 @@ class Larter(models.Model):
             :alt: Larter phase plane (V, W)
             
             The (:math:`V`, :math:`W`) phase-plane for the Larter model.
-    
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: Larter.__init__
+
     .. automethod:: Larter.dfun
     
     """
-
-    _ui_name = "Larter"
-    ui_configurable_parameters = ['gCa', 'gK', 'gL', 'phi', 'V1', 'V2', 'V3',
-                                  'V4', 'V5', 'V6', 'V7', 'VK', 'VL', 'tau_K',
-                                  'a_exc', 'a_inh', 'b', 'c', 'Iext']
 
     # Define traited attributes for this model, these represent possible kwargs.
     gCa = NArray(

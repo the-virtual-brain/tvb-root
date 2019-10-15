@@ -53,12 +53,8 @@ class HMJEpileptor(models.Model):
     This model, its motivation and derivation are currently in preparation
     for publication (Jirsa et al, 2013)
 
-    .. automethod:: HMJEpileptor.__init__
     .. automethod:: HMJEpileptor.dfun
     """
-
-    _ui_name = "Epileptor"
-    ui_configurable_parameters = ["Iext", "Iext2", "r", "x0"]
 
     a = NArray(
         label="a",

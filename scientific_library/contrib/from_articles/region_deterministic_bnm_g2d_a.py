@@ -20,55 +20,54 @@ Run:
 import numpy
 import argparse
 from tvb.simulator.lab import *
-
-
 import matplotlib.pylab as pylab
+from matplotlib.pylab import *
+
+LOG = get_logger(__name__)
+
 pylab.rcParams['figure.figsize'] = 10, 7  # that's default image size for this interactive session
 pylab.rcParams.update({'font.size': 22})
 pylab.rcParams.update({'axes.linewidth': 3})
 
-
 parser = argparse.ArgumentParser(description='Reproduce results of Figure 11 presented in Sanz-Leon et al 2014')
-parser.add_argument('-s','--sim', help='Run the simulations', default=False)
-parser.add_argument('-f','--fig', help='Plot the figures', default=False)
+parser.add_argument('-s', '--sim', help='Run the simulations', default=False)
+parser.add_argument('-f', '--fig', help='Plot the figures', default=False)
 args = vars(parser.parse_args())
-
 
 idx = ['a0', 'a1', 'a2']
 gcs = [0.0, 0.0042, 0.042]
 
-simulation_length  = 512
+simulation_length = 512
 speed = 4.0
-
 
 if args['sim']:
     for i in range(3):
-        
-        oscilator = models.Generic2dOscillator()
-        white_matter = connectivity.Connectivity(load_default=True)
+
+        oscilator = models.Generic2dOscillator(variables_of_interest=["V", "W"])
+        white_matter = connectivity.Connectivity.from_file()
         white_matter.speed = numpy.array([speed])
         # 0, 0.0042, 0.042
-        white_matter_coupling = coupling.Linear(a=gcs[i])
+        white_matter_coupling = coupling.Linear(a=numpy.array([gcs[i]]))
 
-        #Initialise an Integrator
-        heunint = integrators.HeunDeterministic(dt=2**-4)
+        # Initialise an Integrator
+        heunint = integrators.HeunDeterministic(dt=2 ** -4)
 
-        #Initialise some Monitors with period in physical time
+        # Initialise some Monitors with period in physical time
         momo = monitors.Raw()
-        mama = monitors.TemporalAverage(period=2**-2)
+        mama = monitors.TemporalAverage(period=2 ** -2)
 
-        #Bundle them
+        # Bundle them
         what_to_watch = (momo, mama)
 
-        #Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        sim = simulator.Simulator(model = oscilator, connectivity = white_matter,
-                                  coupling = white_matter_coupling, 
-                                  integrator = heunint, monitors = what_to_watch)
+        # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
+        sim = simulator.Simulator(model=oscilator, connectivity=white_matter,
+                                  coupling=white_matter_coupling,
+                                  integrator=heunint, monitors=what_to_watch)
 
         sim.configure()
 
         LOG.info("Starting simulation...")
-        #Perform the simulation
+        # Perform the simulation
         raw_data = []
         raw_time = []
         tavg_data = []
@@ -84,25 +83,25 @@ if args['sim']:
 
         LOG.info("Finished simulation.")
 
-        #Make the lists numpy.arrays for easier use.
+        # Make the lists numpy.arrays for easier use.
         RAW = numpy.asarray(raw_data)
         TAVG = numpy.asarray(tavg_data)
 
-        numpy.save('region_deterministic_bnm_g2d_raw_'  + idx[i] + '.npy', RAW)
+        numpy.save('region_deterministic_bnm_g2d_raw_' + idx[i] + '.npy', RAW)
         numpy.save('region_deterministic_bnm_g2d_tavg_' + idx[i] + '.npy', TAVG)
-        numpy.save('region_deterministic_bnm_g2d_rawtime_'  + idx[i] + '.npy', raw_time)
+        numpy.save('region_deterministic_bnm_g2d_rawtime_' + idx[i] + '.npy', raw_time)
         numpy.save('region_deterministic_bnm_g2d_tavgtime_' + idx[i] + '.npy', tavg_time)
 
 if args['fig']:
     for i in range(3):
-        RAW       = numpy.load('region_deterministic_bnm_g2d_raw_'  + idx[i] + '.npy')
-        raw_time  = numpy.load('region_deterministic_bnm_g2d_rawtime_'  + idx[i] + '.npy')
+        RAW = numpy.load('region_deterministic_bnm_g2d_raw_' + idx[i] + '.npy')
+        raw_time = numpy.load('region_deterministic_bnm_g2d_rawtime_' + idx[i] + '.npy')
 
-        fig=figure(1)
+        fig = figure(1)
         clf()
         ax1 = subplot(1, 2, 1)
-        plot(raw_time, RAW[:, 0, :, 0],'k', alpha=0.042,  linewidth=3)
-        plot(raw_time, RAW[:, 1, :, 0],'r', alpha=0.042,  linewidth=3)
+        plot(raw_time, RAW[:, 0, :, 0], 'k', alpha=0.042, linewidth=3)
+        plot(raw_time, RAW[:, 1, :, 0], 'r', alpha=0.042, linewidth=3)
         plot(raw_time, RAW[:, 0, :, 0].mean(axis=1), 'k', linewidth=3)
         plot(raw_time, RAW[:, 1, :, 0].mean(axis=1), 'r', linewidth=3)
         title('TS')
@@ -110,14 +109,14 @@ if args['fig']:
         ylabel('[au]')
         ylim([-35, 10])
         xlim([0, simulation_length])
-        xticks((0, simulation_length /2. , simulation_length), 
-            ('0', str(int(simulation_length //2)),  str(simulation_length)))
+        xticks((0, simulation_length / 2., simulation_length),
+               ('0', str(int(simulation_length // 2)), str(simulation_length)))
         yticks((-30, 0, 5), ('-30', '0', '5'))
-        for label in ax1.get_yticklabels(): 
+        for label in ax1.get_yticklabels():
             label.set_fontsize(24)
-        for label in ax1.get_xticklabels(): 
+        for label in ax1.get_xticklabels():
             label.set_fontsize(24)
-        
+
         ax = subplot(1, 2, 2)
         plot(RAW[:, 0, :, 0], RAW[:, 1, :, 0], 'b', alpha=0.042, linewidth=3)
         plot(RAW[:, 0, :, 0].mean(axis=1), RAW[:, 1, :, 0].mean(axis=1), 'b', alpha=1., linewidth=3)
@@ -127,14 +126,13 @@ if args['fig']:
         xlim([-3, 6])
         xticks((-3, 1.5, 6), ('-3', '1.5', '6'))
         yticks((-30, 0, 5), ('-30', '0', '5'))
-        for label in ax.get_yticklabels(): 
+        for label in ax.get_yticklabels():
             label.set_fontsize(24)
-        for label in ax.get_xticklabels(): 
+        for label in ax.get_xticklabels():
             label.set_fontsize(24)
         ax.yaxis.set_label_position("right")
         xlabel(r'$V$')
         ylabel(r'$W$')
-
 
         fig_name = 'G2D_default_speed_' + str(int(speed)) + '-config_gcs-' + idx[i] + '.pdf'
         savefig(fig_name)

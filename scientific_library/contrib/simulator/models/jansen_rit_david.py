@@ -52,8 +52,6 @@ class JansenRitDavid(models.Model):
 
     """
 
-    _ui_name = "Jansen-Rit (David et al., 2005)"
-
     # Define traited attributes for this model, these represent possible kwargs.
     He = NArray(
         label=":math:`He`",

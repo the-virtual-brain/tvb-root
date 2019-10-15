@@ -77,8 +77,6 @@ class Generic2dOscillator(models.Model):
     
     """
 
-    _ui_name = "Generic 2d Oscillator"
-    ui_configurable_parameters = ['tau', 'a', 'b', 'omega', 'upsilon', 'gamma', 'eta']
     # Define traited attributes for this model, these represent possible kwargs.
     tau = NArray(
         label=":math:`\\tau`",

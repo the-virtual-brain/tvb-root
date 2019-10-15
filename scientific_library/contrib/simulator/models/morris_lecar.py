@@ -64,19 +64,10 @@ class MorrisLecar(models.Model):
             :alt: Morris-Lecar phase plane (V, N)
             
             The (:math:`V`, :math:`N`) phase-plane for the Morris-Lecar model.
-    
-    .. #Currently there seems to be a clash betwen traits and autodoc, autodoc
-    .. #can't find the methods of the class, the class specific names below get
-    .. #us around this...
-    .. automethod:: MorrisLecar.__init__
-    .. automethod:: MorrisLecar.dfun
-    
-    
-    """
 
-    _ui_name = "Morris-Lecar"
-    ui_configurable_parameters = ['gCa', 'gK', 'gL', 'C', 'lambda_Nbar', 'V1',
-                                  'V2', 'V3', 'V4', 'VCa', 'VK', 'VL']
+    .. automethod:: MorrisLecar.dfun
+
+    """
 
     # Define traited attributes for this model, these represent possible kwargs.
     gCa = NArray(

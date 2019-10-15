@@ -68,16 +68,6 @@ class BrunelWang(models.Model):
 
     """
 
-    _ui_name = "Deco-Jirsa (Mean-Field Brunel-Wang)"
-    ui_configurable_parameters = ['tau', 'calpha', 'cbeta', 'cgamma', 'tauNMDArise',
-                                  'tauNMDAdecay', 'tauAMPA', 'tauGABA',
-                                  'VE', 'VI', 'VL', 'Vthr', 'Vreset', 'gNMDA_e',
-                                  'gNMDA_i', 'gGABA_e', 'gGABA_i', 'gAMPArec_e',
-                                  'gAMPArec_i', 'gAMPAext_e', 'gAMPAext_i',
-                                  'gm_e', 'gm_i', 'Cm_e', 'Cm_i', 'taum_e',
-                                  'taum_i', 'taurp_e', 'taurp_i', 'Cext', 'C',
-                                  'nuext', 'wplus', 'wminus', 'W']
-
     # Define traited attributes for this model, these represent possible kwargs.
     tau = NArray(
         label=":math:`\\tau`",

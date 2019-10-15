@@ -35,8 +35,11 @@ Template for running a demo using a 'contributed' model
 .. moduleauthor:: Paula Sanz Leon <pau.sleon@gmail.com>
 
 """
-
+import numpy
 from tvb.simulator.lab import *
+from matplotlib.pylab import *
+
+LOG = get_logger(__name__)
 
 # Add the contributed models directory to the PYTHONPATH
 sys.path += ["../models"]
@@ -49,23 +52,25 @@ from larter_breakspear import LarterBreakspear
 ##----------------------------------------------------------------------------##
 
 LOG.info("Configuring...")
-#Initialise a Model, Coupling, and Connectivity.
-lar = LarterBreakspear(QV_max=1.0, QZ_max=1.0, t_scale=0.01, VT=0.54, d_V=0.5, C=0.0)
+# Initialise a Model, Coupling, and Connectivity.
+lar = LarterBreakspear(QV_max=numpy.array([1.0]), QZ_max=numpy.array([1.0]), # t_scale=numpy.array([0.01]),
+                       VT=numpy.array([0.54]), d_V=numpy.array([0.5]), C=numpy.array([0.0]))
 
-white_matter = connectivity.Connectivity(load_default=True, speed=numpy.array([4.0]))
+white_matter = connectivity.Connectivity.from_file()
+white_matter.speed=numpy.array([4.0])
 white_matter_coupling = coupling.Linear(a=lar.C)
 
-#Initialise an Integrator
+# Initialise an Integrator
 heunint = integrators.HeunDeterministic(dt=0.2)
 
-#Initialise some Monitors with period in physical time
+# Initialise some Monitors with period in physical time
 mon_raw = monitors.Raw()
 mon_tavg = monitors.TemporalAverage(period=1.)
 
-#Bundle them
+# Bundle them
 what_to_watch = (mon_raw, mon_tavg)
 
-#Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
+# Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
 sim = simulator.Simulator(model=lar,
                           connectivity=white_matter,
                           coupling=white_matter_coupling,
@@ -74,7 +79,7 @@ sim = simulator.Simulator(model=lar,
 sim.configure()
 
 LOG.info("Starting simulation...")
-#Perform the simulation
+# Perform the simulation
 raw_data, raw_time = [], []
 tavg_data, tavg_time = [], []
 
@@ -82,7 +87,7 @@ for raw, tavg in sim(simulation_length=2 ** 14):
     if not raw is None:
         raw_time.append(raw[0])
         raw_data.append(raw[1])
-    
+
     if not tavg is None:
         tavg_time.append(tavg[0])
         tavg_data.append(tavg[1])
@@ -93,11 +98,11 @@ LOG.info("Finished simulation.")
 ##-               Plot pretty pictures of what we just did                   -##
 ##----------------------------------------------------------------------------##
 
-#Make the lists numpy.arrays for easier use.
+# Make the lists numpy.arrays for easier use.
 RAW = numpy.array(raw_data)
 TAVG = numpy.array(tavg_data)
 
-#Plot raw time series
+# Plot raw time series
 figure(1)
 plot(raw_time, RAW[:, 0, :, 0])
 title("Raw -- State variable 0")
@@ -110,7 +115,7 @@ figure(3)
 plot(raw_time, RAW[:, 2, :, 0])
 title("Raw -- State variable 2")
 
-#Plot 3D trajectories
+# Plot 3D trajectories
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -120,6 +125,6 @@ ax = fig.gca(projection='3d')
 ax.plot(RAW[:, 0, 0, 0], RAW[:, 1, 0, 0], RAW[:, 2, 0, 0])
 plt.show()
 
-#Show them
+# Show them
 show()
 ###EoF###

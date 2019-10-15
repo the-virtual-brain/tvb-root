@@ -109,10 +109,7 @@ class LileySteynRoss(models.Model):
 
     """
 
-    _ui_name = "Liley-SteynRoss model"
-    #ui_configurable_parameters = []
-
-    #Define traited attributes for this model, these represent possible kwargs.
+    # Define traited attributes for this model, these represent possible kwargs.
 
     tau_e = NArray(
         label=r":math:`\tau_e`",
