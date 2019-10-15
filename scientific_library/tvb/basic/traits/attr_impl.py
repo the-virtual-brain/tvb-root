@@ -1,4 +1,5 @@
 import typing
+import collections
 import numpy
 import logging
 from .neotraits_impl import Attr
@@ -29,7 +30,7 @@ class List(Attr):
     def __init__(self, of=object, default=(), doc='', label='',
                  readonly=False, choices=None):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
-        super(List, self).__init__(field_type=typing.Sequence, default=default,
+        super(List, self).__init__(field_type=collections.Sequence, default=default,
                                    doc=doc, label=label,
                                    required=True, readonly=readonly, choices=None)
         self.element_type = of
@@ -42,7 +43,7 @@ class List(Attr):
         for i, el in enumerate(self.default):
             if not isinstance(el, self.element_type):
                 msg = 'default[{}] must have type {} not {}'.format(
-                    i, self.element_type, type(self.default))
+                    i, self.element_type, type(el))
                 raise TypeError(self._err_msg_where(defined_in_type_name) + msg)
 
         if self.element_choices is not None:
@@ -65,7 +66,7 @@ class List(Attr):
             for i, el in enumerate(value):
                 if el not in self.element_choices:
                     msg_where = self._err_msg_where(type(instance).__name__)
-                    raise ValueError(msg_where + "value[{}]=={} must be one of {}".format(i, el, self.choices))
+                    raise ValueError(msg_where + "value[{}]=={} must be one of {}".format(i, el, self.element_choices))
 
 
     # here only for typing purposes, for better ide checking and autocomplete
