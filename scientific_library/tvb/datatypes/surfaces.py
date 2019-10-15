@@ -722,11 +722,7 @@ class SkullSkin(Surface):
         return super(SkullSkin, cls).from_file(source_file)
 
 
-class OpenSurface(Surface):
-    """Base class for open surfaces."""
-
-
-class EEGCap(OpenSurface):
+class EEGCap(Surface):
     """EEG cap surface."""
     _ui_name = "EEG Cap"
     surface_type = Final(EEG_CAP)
@@ -736,7 +732,7 @@ class EEGCap(OpenSurface):
         return super(EEGCap, cls).from_file(source_file)
 
 
-class FaceSurface(OpenSurface):
+class FaceSurface(Surface):
     """Face surface."""
     _ui_name = "Face surface"
     surface_type = Final(FACE)
