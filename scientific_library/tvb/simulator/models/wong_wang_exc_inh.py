@@ -72,7 +72,7 @@ def _numba_dfun(S, c, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji
     dx[1] = - (S_i / ti[0]) + h * gi[0]
 
 
-class ReducedWongWangExcIOInhI(ModelNumbaDfun):
+class ReducedWongWangExcInh(ModelNumbaDfun):
     r"""
     .. [WW_2006] Kong-Fatt Wong and Xiao-Jing Wang,  *A Recurrent Network
                 Mechanism of Time Integration in Perceptual Decisions*.
@@ -228,7 +228,7 @@ class ReducedWongWangExcIOInhI(ModelNumbaDfun):
 
     def configure(self):
         """  """
-        super(ReducedWongWangExcIOInhI, self).configure()
+        super(ReducedWongWangExcInh, self).configure()
         self.update_derived_parameters()
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):

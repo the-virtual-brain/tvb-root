@@ -40,7 +40,7 @@ Specific models inherit from the abstract class Model.
 
 from .base import Model
 from .epileptor import Epileptor, Epileptor2D
-from .epileptor_rs import Epileptor_resting_state
+from .epileptor_rs import EpileptorRestingState
 from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
 from .hopfield import Hopfield
 from .jansen_rit import JansenRit, ZetterbergJansen
@@ -50,5 +50,5 @@ from .oscillator import Generic2dOscillator, Kuramoto
 from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
 from .wilson_cowan import WilsonCowan
 from .wong_wang import ReducedWongWang
-from .wong_wang_exc_io_inh_i import ReducedWongWangExcIOInhI
-from .zerlaut import Zerlaut_adaptation_first_order, Zerlaut_adaptation_second_order
+from .wong_wang_exc_inh import ReducedWongWangExcInh
+from .zerlaut import ZerlautFirstOrder, ZerlautSecondOrder

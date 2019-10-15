@@ -176,5 +176,5 @@ class TestModels(BaseTestCase):
         model = models.ReducedWongWang()
         self._validate_initialization(model, 1)
 
-        model = models.ReducedWongWangExcIOInhI()
+        model = models.ReducedWongWangExcInh()
         self._validate_initialization(model, 2)

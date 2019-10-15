@@ -7,7 +7,7 @@ from tvb.basic.neotraits.api import NArray, Range, Final, List
 from tvb.simulator.models.base import Model
 
 
-class Zerlaut_adaptation_first_order(Model):
+class ZerlautFirstOrder(Model):
     r"""
     **References**:
     .. [ZD_2018]  Zerlaut, Y., Chemla, S., Chavane, F. et al. *Modeling mesoscopic cortical dynamics using a mean-field
@@ -388,7 +388,7 @@ class Zerlaut_adaptation_first_order(Model):
         return sp_spec.erfc((Vthre-muV) / (numpy.sqrt(2)*sigmaV)) / (2*Tv)
 
 
-class Zerlaut_adaptation_second_order(Zerlaut_adaptation_first_order):
+class ZerlautSecondOrder(ZerlautFirstOrder):
     r"""
     **References**:
     .. [ZD_2018]  Zerlaut, Y., Chemla, S., Chavane, F. et al. *Modeling mesoscopic cortical dynamics using a mean-field

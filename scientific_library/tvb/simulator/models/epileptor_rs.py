@@ -38,7 +38,7 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
-class Epileptor_resting_state(ModelNumbaDfun):
+class EpileptorRestingState(ModelNumbaDfun):
     r"""
         JC_Epileptor is a combination of Epileptor [Jirsaetal_2014], reproducing realistically 
         temporal seizure dynamics, and Generic 2-dimensional Oscillator (close to a Hopf Bifurcation)
