@@ -32,7 +32,6 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import CorticalSurface
@@ -84,6 +83,7 @@ class TractViewer(ABCDisplayer):
 
     # TODO: migrate to neotraits
     def launch(self, tracts, shell_surface=None):
+        from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 
         url_track_starts, url_track_vertices = tracts.get_urls_for_rendering()
 

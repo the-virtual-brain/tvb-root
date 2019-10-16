@@ -37,8 +37,34 @@ Plot the power of a WaveletCoefficients object
 """
 
 import json
+
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.spectral import WaveletCoefficients
+
+from tvb.core.entities.model.datatypes.spectral import WaveletCoefficientsIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.interfaces.neocom.config import registry
+
+
+class WaveletSpectrogramVisualizerForm(ABCAdapterForm):
+    #TODO: add all fields here
+    def __init__(self, prefix='', project_id=None):
+        super(WaveletSpectrogramVisualizerForm, self).__init__(prefix, project_id)
+        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
+                                              label='Wavelet transform Result', doc='Wavelet spectrogram to display',
+                                              conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return WaveletCoefficientsIndex
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return '_input_data'
 
 
 class WaveletSpectrogramVisualizer(ABCDisplayer):
@@ -47,22 +73,26 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     """
     _ui_name = "Spectrogram of Wavelet Power"
     _ui_subsection = "wavelet"
+    form = None
 
-    def get_input_tree(self):
-        """
-        Accept as input result from Continuous wavelet transform analysis.
-        """
+    def get_form(self):
+        if self.form is None:
+            return WaveletSpectrogramVisualizerForm
+        return self.form
 
-        return [{'name': 'input_data', 'label': 'Wavelet transform Result',
-                 'type': WaveletCoefficients, 'required': True,
-                 'description': 'Wavelet spectrogram to display'}]
+    def set_form(self, form):
+        self.form = form
+
+    def get_input_tree(self): return None
 
     def get_required_memory_size(self, **kwargs):
         """
          Return the required memory to run this algorithm.
          """
         input_data = kwargs['input_data']
-        shape = input_data.read_data_shape()
+        input_h5_class, input_h5_path = self._load_h5_of_gid(input_data.gid)
+        with input_h5_class(input_h5_path) as input_h5:
+            shape = input_h5.data.shape
         return shape[0] * shape[1] * 8
 
 
@@ -71,14 +101,24 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
 
 
     def launch(self, input_data, **kwarg):
-        shape = input_data.read_data_shape()
-        start_time = input_data.source.start_time
-        wavelet_sample_period = input_data.source.sample_period * \
-                                max((1, int(input_data.sample_period / input_data.source.sample_period)))
-        end_time = input_data.source.start_time + (wavelet_sample_period * shape[1])
-        if len(input_data.frequencies):
-            freq_lo = input_data.frequencies[0]
-            freq_hi = input_data.frequencies[-1]
+        input_h5_class, input_h5_path = self._load_h5_of_gid(input_data.gid)
+        input_h5 = input_h5_class(input_h5_path)
+        shape = input_h5.array_data.shape
+        source_gid = input_h5.source.load().hex
+        input_sample_period = input_h5.sample_period.load()
+
+        source_h5_class, source_h5_path = self._load_h5_of_gid(source_gid)
+        with source_h5_class(source_h5_path) as source_h5:
+            start_time = source_h5.start_time.load()
+            source_sample_period = source_h5.sample_period.load()
+            source_sample_period_unit = source_h5.sample_period_unit.load()
+
+        wavelet_sample_period = source_sample_period * max((1, int(input_sample_period / source_sample_period)))
+        end_time = start_time + (wavelet_sample_period * shape[1])
+        input_frequencies = input_h5.frequencies.load()
+        if len(input_frequencies):
+            freq_lo = input_frequencies[0]
+            freq_hi = input_frequencies[-1]
         else:
             freq_lo = 0
             freq_hi = 1
@@ -88,7 +128,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
                   slice(0, shape[3], None),
                   slice(0, 1, None))
 
-        data_matrix = input_data.get_data('power', slices)
+        data_matrix = input_h5.power[slices]
         data_matrix = data_matrix.sum(axis=3)
 
         scale_range_start = max(1, int(0.25 * shape[1]))
@@ -97,8 +137,9 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         scale_max = data_matrix[:, scale_range_start:scale_range_end, :].max()
         matrix_data = ABCDisplayer.dump_with_precision(data_matrix.flat)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
-        params = dict(canvasName="Wavelet Spectrogram for: " + input_data.source.type,
-                      xAxisName="Time (%s)" % str(input_data.source.sample_period_unit),
+        source_type = registry.get_datatype_for_h5file(source_h5_class)
+        params = dict(canvasName="Wavelet Spectrogram for: " + source_type.__name__,
+                      xAxisName="Time (%s)" % str(source_sample_period_unit),
                       yAxisName="Frequency (%s)" % str("kHz"),
                       title=self._ui_name,
                       matrix_data=matrix_data,
@@ -110,5 +151,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
                       vmin=scale_min,
                       vmax=scale_max)
 
+        input_h5.close()
         return self.build_display_result("wavelet/wavelet_view", params,
                                          pages={"controlPage": "wavelet/controls"})
