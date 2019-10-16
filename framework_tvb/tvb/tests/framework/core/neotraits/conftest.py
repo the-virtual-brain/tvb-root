@@ -1,9 +1,5 @@
-import os
 import numpy
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from tvb.core.neotraits.db import Base
 from tvb.tests.framework.core.neotraits.data import FooDatatype, BarDatatype, BazDataType
 
 
@@ -39,21 +35,3 @@ def barFactory():
     return build
 
 
-@pytest.fixture(scope='session')
-def engine(tmpdir_factory):
-    tmpdir = tmpdir_factory.mktemp('tmp')
-    path = os.path.join(str(tmpdir), 'tmp.sqlite')
-    sqlite_conn_string = r'sqlite:///' + path
-    # postgres_conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
-
-    return create_engine(sqlite_conn_string)
-
-
-@pytest.fixture
-def session(engine):
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    s = Session()
-    yield s
-    s.close()
