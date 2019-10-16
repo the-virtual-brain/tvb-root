@@ -1,9 +1,11 @@
+import json
 import uuid
 
 import typing
 import os.path
 import abc
 import numpy
+from tvb.core.entities.file.exceptions import MissingDataSetException
 
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
@@ -123,7 +125,30 @@ class Reference(Scalar):
 
 
 
+class Json(Scalar):
+    """
+    A python json like data structure accessor
+    This works with simple Attr(list) Attr(dict) List(of=...)
+    """
+    def store(self, val):
+        """
+        stores a json in the h5 metadata
+        """
+        val = json.dumps(val)
+        self.owner.storage_manager.set_metadata({self.trait_attribute.field_name: val})
+
+    def load(self):
+        val = self.owner.storage_manager.get_metadata()[self.trait_attribute.field_name]
+        return json.loads(val)
+
+
+
 class H5File(object):
+    """
+    A H5 based file format.
+    This class implements reading and writing to a *specific* h5 based file format.
+    A subclass of this defines a new file format.
+    """
 
     def __init__(self, path):
         # type: (str) -> None
@@ -153,6 +178,13 @@ class H5File(object):
                 if f_name is None:
                     # skipp attribute that does not seem to belong to a traited type
                     continue
+                if not hasattr(datatype, f_name):
+                    raise AttributeError(
+                        '{} has not attribute "{}". You tried to store a {!r}. '
+                        'Is that datatype compatible with the field declarations in {}?'.format(
+                            accessor.trait_attribute, f_name, datatype, self.__class__
+                        )
+                    )
                 accessor.store(getattr(datatype, f_name))
 
 
@@ -166,6 +198,16 @@ class H5File(object):
                 if f_name is None:
                     # skipp attribute that does not seem to belong to a traited type
                     continue
+
+                # handle optional data, that will be missing from the h5 files
+                try:
+                    value = accessor.load()
+                except MissingDataSetException:
+                    if accessor.trait_attribute.required:
+                        raise
+                    else:
+                        value = None
+
                 setattr(datatype,
                         accessor.trait_attribute.field_name,
-                        accessor.load())
+                        value)
