@@ -41,11 +41,21 @@ class TestDatatypeIndex(Base):
         TestDatatype.scalar_str
     ]
 
+    def from_datatype(self, datatype):
+        self.array_float = db.NArray(dtype=str(datatype.array_float.dtype),
+                                     ndim=datatype.array_float.ndim,
+                                     shape=str(datatype.array_float.shape))
+        self.array_int = db.NArray(dtype=str(datatype.array_int.dtype),
+                                   ndim=datatype.array_int.ndim,
+                                   shape=str(datatype.array_int.shape))
+        self.scalar_str = datatype.scalar_str
+        self.scalar_int = datatype.scalar_int
+
 
 @pytest.fixture(scope='session')
-def engine():
-    tmpdir = r'C:\Users\mihai\cod\tmp'
-    path = os.path.join(tmpdir, 'tmp.sqlite')
+def engine(tmpdir_factory):
+    tmpdir = tmpdir_factory.mktemp('tmp')
+    path = os.path.join(str(tmpdir), 'tmp.sqlite')
     return create_engine(r'sqlite:///' + path)
 
 
@@ -64,7 +74,11 @@ def test_schema(session):
 def test_store_load(session, datatypeinstance):
     datatype_index = TestDatatypeIndexManual()
     datatype_index.from_datatype(datatypeinstance)
-    session.add_all([datatype_index])
+
+    datatype_index2 = TestDatatypeIndex()
+    datatype_index2.from_datatype(datatypeinstance)
+
+    session.add_all([datatype_index, datatype_index2])
     session.commit()
 
     res = session.query(TestDatatypeIndexManual)

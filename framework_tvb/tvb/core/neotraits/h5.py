@@ -5,6 +5,8 @@ import abc
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
+from ._introspection import gather_declared_fields
+
 if typing.TYPE_CHECKING:
     import numpy
 
@@ -113,6 +115,11 @@ class H5File(object):
         storage_path, file_name = os.path.split(path)
         self.storage_manager = HDF5StorageManager(storage_path, file_name)
 
+        fields = gather_declared_fields(type(self))
+        if fields:
+            self._autogenerate_accessors(fields)
+
+
     # def open(self):
     #     would be nice to have for the chunked api instead of the close_file=False
 
@@ -140,6 +147,11 @@ class H5File(object):
                         meta[accessor.trait_attribute.field_name])
 
     def _autogenerate_accessors(self, declarative_attrs):
+        # type: (typing.Sequence[Attr]) -> None
+        """
+        Takes a list of trait attributes and generates accessors for them.
+        The accessors are set on self. The attribute names are the same as the traited attribute names
+        """
         for attr in declarative_attrs:
             if not isinstance(attr, Attr):
                 raise ValueError('expected a Attr, got a {}'.format(type(attr)))

@@ -16,14 +16,13 @@ class TestDatatypeFileManual(H5File):
 
 
 class TestDatatypeFile(H5File):
-    def __init__(self, path):
-        super(TestDatatypeFile, self).__init__(path)
-        self._autogenerate_accessors([
-            TestDatatype.array_float,
-            TestDatatype.array_int,
-            TestDatatype.scalar_int,
-            TestDatatype.scalar_str
-        ])
+    trait = TestDatatype
+    fields = [
+        TestDatatype.array_float,
+        TestDatatype.array_int,
+        TestDatatype.scalar_int,
+        TestDatatype.scalar_str
+    ]
 
 
 @pytest.fixture
