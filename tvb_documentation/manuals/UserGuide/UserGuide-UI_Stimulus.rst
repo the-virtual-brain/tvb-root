@@ -37,7 +37,7 @@ On the left column, we have configurable fields that allows us to:
 On the right column, the stimulus temporal profile is presented, with constant refresh,
 as the user changes the Temporal Equation parameters on the left.
 
-From the action bar in the most right side you can go to the next step in configuration **Set Region Scaling**.
+From the action bar in the most right side you can go to the next step in configuration: **Set Region Scaling**.
 
 **Set Region Scaling** page (step 2) where you can:
 

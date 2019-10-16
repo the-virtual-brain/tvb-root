@@ -142,7 +142,7 @@ icon next to each element.
 
 .. note::
 
-    **You can filter DataTypes (like Long Range Connectivity) from UI**
+    **You can filter DataTypes (like Time Series) from UI**
 
     .. image:: screenshots/simulator_filter_datatypes.jpg
        :width: 60%
@@ -151,7 +151,7 @@ icon next to each element.
     * Click on *Add Filter* button bellow a DataType
     * select the attribute to be filtered, the operator to apply and the value in this filter
     * click *Apply Filters* to have the results filtered in the selector component right above the filters
-    * this ca also be used in the context of Parameter Space Exploration of |TVB|
+    * this can also be used in the context of Parameter Space Exploration of |TVB|
 
 .. _phase_plane:
 

@@ -155,7 +155,7 @@ You have also functionality on this page:
 
 - `Manage other users` (available on the left column, only when logged with Administrator account), takes you to a page
   for validating or invalidating other user accounts (accounts created with the `register` function)
-- access `TVB Settings` (same settings as in the first setup iof TVB; although some of the fields become read-only after the first setup)
+- access `TVB Settings` (same settings as in the first setup of TVB; although some of the fields become read-only after the first setup)
 - change the password and the email address for current logged user (also links on the left column)
 - enable or disable `Online Help` for current user. By `Online Help` we mean a bunch of question marks spread all over
   the application which can display a tooltip when clicked).

@@ -138,14 +138,20 @@ Movie start/stop, speed control, color schema change, channel selection are some
    :width: 70%
    :align: center
 
-   Brain activity wit EEG recordings.
+   Brain activity with EEG recordings.
 
 
-.. figure:: screenshots/visualizer_dual_seeg_and_regions.jpg
+.. figure:: screenshots/visualizer_dual_seeg.jpg
    :width: 90%
    :align: center
 
-   Brain activity with sEEG recordings (on the left instance) and region level activity (on the right).
+   Brain activity with sEEG recordings.
+
+.. figure:: screenshots/visualizer_dual_regions.jpg
+   :width: 90%
+   :align: center
+
+   Brain activity with region level activity.
 
 .. _brain_volumetric:
 
@@ -182,7 +188,7 @@ The time series data is buffered from the server according to the currently sect
 
 A different color map can be selected by clicked the Brain call-out in the top-right side of the screen.
 You might want to use the trim middle values feature with this viewer. It renders values around the mean transparent in the view.
-Also to be found un the Brain call-out.
+Also to be found on the Brain call-out.
 
 **Time Series Line Fragments**
 
@@ -199,7 +205,7 @@ This is the right part of the TimeSeries Volume visualizer and is composed of ot
 
 All selected lines are shown here (top area), with the same scaling. Some transparency is applied to
 the lines and only one line is highlighted at a time. Highlighting can be done
-be passing the mouse over the line on the global graph or by clicking the
+by passing the mouse over the line on the global graph or by clicking the
 selected line in the sortable graphs bellow. Vertical scaling is done based only on the
 selected values and not on the complete data set. A red vertical line shows the
 current time point (correlated with the movie in TimeSeries Volume section).
@@ -256,7 +262,7 @@ The lines are colored following the selected feature
 in "Color Lines by" at the top of the screen. They are then sorted automatically
 by one of the selected methods or manually, by dragging and dropping each line
 in the desired position, as seen on the picture bellow. Lines can be removed by
-dragging them to the top "trash bin area" that appear every time a line is
+dragging them to the top "trash bin area" that appears every time a line is
 selected to be dragged.
 
 
@@ -279,7 +285,7 @@ Topographic Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~
 
 This visualizer can be used for displaying various Brain Connectivity Measures, related to a given Connectivity.
-Its input is same as for the previous visualizer (Connectivity Measure Visualizer), but the display is completely different.
+Its input is the same as for the previous visualizer (Connectivity Measure Visualizer), but the display is completely different.
 Instead of a discrete view, this time, we can have a continous display (with gradients).
 
 .. figure:: screenshots/visualizer_topographic.jpg
@@ -325,11 +331,17 @@ the closest sensor).
 
 Navigate the 3D scene like in the `Brain Activity Visualizer`_.
 
-.. figure:: screenshots/sensors_eeg_meg.jpg
+.. figure:: screenshots/sensors_eeg.jpg
    :width: 90%
    :align: center
 
-   EEG and MEG Sensors.
+   EEG Sensors.
+
+.. figure:: screenshots/sensors_meg.jpg
+   :width: 90%
+   :align: center
+
+   MEG Sensors.
 
 
 .. figure:: screenshots/sensors_internal.jpg
@@ -383,7 +395,7 @@ The two areas (left and right) are linked, both ways:
 
 
 Hints:
- - There is an checkbox on the top-right menu to draw region boundaries in the 3D canvas
+ - There is a checkbox on the top-right menu to draw region boundaries in the 3D canvas
  - When you click on an ontology node on the right, a message text will appear on the top area of the page,
    telling you how many TVB regions are linked to this ontology term
 
@@ -400,9 +412,9 @@ Group Display
 Discrete PSE Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Discrete Parameter Space Exploration (**PSE**) View, will show up information on multiple simulation results at once.
+Discrete Parameter Space Exploration (**PSE**) View will show up information on multiple simulation results at once.
 
-In TVB is possible to launch multiple simulations by varying up to 2 input parameters (displayed on the X and Y axis of
+In TVB it is possible to launch multiple simulations by varying up to 2 input parameters (displayed on the X and Y axis of
 the current viewer). Each simulation result has afterwards "metrics" computed on the total output. Each metric is a
 single number. Two metrics are emphasized in this viewer in the node shapes and node colors.
 
@@ -417,7 +429,7 @@ particular Simulation result.
    Preview for Discrete PSE Visualizer, when varying two input parameters of the simulator
 
 A newly incorporated feature is the option to **pan the canvas** in/out or left/right/up/down. To pan you may click and
-drag on top of one of the axes, and to zoom in double click or out shift + double click. This will allow for inspection
+drag on top of one of the axes, and to zoom in double click or out shift + double click. This will allow the inspection
 of very large batch simulations section by section. The same mouse over, and clicking rules apply from above.
 
 .. figure:: screenshots/visualizer_pse_discreet_panning.jpg
@@ -426,28 +438,19 @@ of very large batch simulations section by section. The same mouse over, and cli
 
    Panning the Graph
 
-
+The next new tool is the **filter button**. This allows users to specify threshold values for either the color or size
+metric and render results transparent if they are below that value. This tool has the option to invert the threshold
+rule which makes the results above that threshold transparent instead. Also, the user has the choice to make their
+filter more specific by adding further criteria rows that relate to the one which came before it through selected
+logical operators (AND OR). It is worth noting that in order to perform filtering that requires grouping of the logical
+operations ([foo and bar] or baz) as different from (foo and [bar or baz]) sequential filters must be applied:
+one filter execution then the other.
 
 .. figure:: screenshots/visualizer_pse_discreet_filter.jpg
    :width: 90%
    :align: center
 
    Filter support
-
-The next new tool is the **filter button**. This allows users to specify threshold values for either the color or size
-metric and render results transparent if they are below that value. This tool has the option to invert the threshold
-rule which makes the results above that threshold transparent instead. Also, the user has the choice to make their
-filter more specific by adding further criteria rows that relate to the one which came before it through selected
-logical operators (AND OR). It is worth noting that in order to perform filtering that require grouping of the logical
-operations ([foo and bar] or baz) as different from (foo and [bar or baz]) sequential filters must be applied:
-one filter execution then the other.
-
-
-.. figure:: screenshots/visualizer_pse_discreet_explore.jpg
-   :width: 90%
-   :align: center
-
-   Explore Tool, with Region Selected
 
    (The Explore button is currently disabled because this functionality is not fully implemented)
 
@@ -458,13 +461,17 @@ can be selected. Upon creation of this selection, grid lines are placed to demon
 added given the user's chosen step values. To adjust these values simply drag the sliders in the drop down menu for
 the explore tool, and the grid lines will adjust until they suit the user.
 
+.. figure:: screenshots/visualizer_pse_discreet_explore.jpg
+   :width: 90%
+   :align: center
+
+   Explore Tool, with Region Selected
 
 .. figure:: screenshots/visualizer_pse_sparse.jpg
    :width: 90%
    :align: center
 
    Sparse results
-
 
 Isocline PSE Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -483,7 +490,7 @@ for display in this visualizer).
    Preview for Continuous PSE Visualizer, when varying two numeric input parameters of the simulator
 
 Controls for scaling or zooming the graph are available in this viewer. When you click on the coloured area, an overlay
-window will open, containing possibility to view or further analyze the simulation result closest to the point where
+window will open, having the possibility to view or further analyze the simulation result closest to the point where
 you clicked.
 
 Analyzers + Visualizers
@@ -522,8 +529,8 @@ Complex Coherence Visualizer
 
 Displays the complex-cross-coherence matrix. Axes represent brain nodes.
 The matrix is a complex ndarray that contains the `number of nodes` x `number of nodes` cross
-spectrum for every frequency frequency and for every segment
-The thick line represents the Mean and the colored area the SD of CohSpec
+spectrum for every frequency and for every segment.
+The thick line represents the Mean and the colored area the SD of CohSpec.
 
 This visualizer is very similar with the previous one (Cross Coherence Visualizer).
 
@@ -544,7 +551,7 @@ Pearson Coefficients Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Displays the Pearson cross correlation coefficients matrix.
-As the correlation matrix is symmetric, only half is actually displayed.
+As the correlation matrix is symmetric, only half of it is actually displayed.
 
 
 .. figure:: screenshots/visualizer_pearson_correlation.jpg

@@ -213,7 +213,7 @@ Example: **HOW TO REMOVE INTER-HEMISPHERIC CONNECTIONS**
         :width: 90%
         :align: center
 
-        Set IN-OUT edges to 0
+        Set OUT-IN edges to 0
 
 
 7. Repeat for edges **IN-OUT** .
@@ -397,12 +397,12 @@ Space-Time
 
 This is a three-dimensional representation of the delayed-connectivity
 structure (space-time) when combined with spatial separation and a finite
-conduction speed.  The connectome, consists of the weights matrix giving the
-strength and topology of the network; and the tract lengths matrix giving the
+conduction speed.  The connectome consists of the weights matrix giving the
+strength and topology of the network and the tract lengths matrix gives the
 distance between pair of regions. When setting a specific conduction speed,
 the distances will be translated into time delays. The space-time visualizer
-disaggregate the *weights* matrix and each slice correspond to connections
-that fall into a particular distance (or delay) range. the first slice is the
+disaggregate the *weights* matrix and each slice corresponds to connections
+that fall into a particular distance (or delay) range. The first slice is the
 complete weights matrix. Click on any of the subsequent slices to see the
 corresponding 2D matrix plot.
 
@@ -435,7 +435,7 @@ corresponding 2D matrix plot.
    :width: 50%
    :align: center
    
-   Connections that are between 2.84 and 5.68 ms, for a conduction speed of 9 mm/ms
+   Connections that are between 5.68 and 8.53 ms, for a conduction speed of 9 mm/ms
 
 
 Local Connectivity
