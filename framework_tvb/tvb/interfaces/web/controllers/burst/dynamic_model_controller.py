@@ -34,15 +34,16 @@
 import json
 import numpy
 import threading
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
-from tvb.basic.traits import core, types_basic, traited_interface
+from tvb.basic.traits import traited_interface
 from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.traits.util import multiline_math_directives_to_matjax
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.storage import dao
-import tvb.core.entities.model
+import tvb.core.entities.model.model_burst as model_burst
 from tvb.datatypes import noise_framework
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -94,23 +95,19 @@ class SessionCache(object):
         self._cache[key] = value
 
 
-class _InputTreeFragment(core.Type):
-    dynamic_name = types_basic.String(
+class _InputTreeFragment(HasTraits):
+    dynamic_name = Attr(field_type=str,
         label = "Parameter configuration name",
-        required = True,
-        order=1,
         doc = """The name of this parameter configuration""")
 
 
-class _IntegratorTreeFragment(core.Type):
+class _IntegratorTreeFragment(HasTraits):
     """
     This trait-ed class is used to build the input tree for the integrator.
     """
-    integrator = integrators.Integrator(
+    integrator = Attr(field_type=integrators.Integrator,
         label = "integrator",
-        required = True,
-        order=2,
-        default = integrators.HeunDeterministic,
+        default = integrators.HeunDeterministic(),
         doc = """The integrator"""
         )
 
@@ -448,7 +445,7 @@ class DynamicModelController(BurstBaseController):
             value = getattr(model, name)[0]
             model_parameters.append((name, value))
 
-        entity = tvb.core.entities.model.Dynamic(
+        entity = model_burst.Dynamic(
             dynamic_name,
             common.get_logged_user().id,
             model.__class__.__name__,
