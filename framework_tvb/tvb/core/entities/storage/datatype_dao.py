@@ -42,13 +42,12 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
-from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Links, MeasurePointsSelection, \
     StoredPSEFilter
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
 from tvb.core.entities.storage.root_dao import RootDAO
-
+from tvb.core.neotraits.db import Base
 
 
 class DatatypeDAO(RootDAO):
