@@ -43,7 +43,7 @@ from tvb.core.neotraits.db import HasTraitsIndex, Base
 
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
-# from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.basic.logger.builder import get_logger
 
 
@@ -100,8 +100,8 @@ class DataType(HasTraitsIndex):
     # ID of a burst in which current dataType was generated
     # Native burst-results are referenced from a workflowSet as well
     # But we also have results generated afterwards from TreeBurst tab.
-    # fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="SET NULL"))
-    # _parent_burst = relationship(BurstConfiguration)
+    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="SET NULL"))
+    _parent_burst = relationship(BurstConfiguration)
 
     #it should be a reference to a DataTypeGroup, but we can not create that FK
     #because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
