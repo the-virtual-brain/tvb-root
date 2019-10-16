@@ -141,6 +141,18 @@ if TvbProfile.current.MATLAB_EXECUTABLE and len(TvbProfile.current.MATLAB_EXECUT
 
 
 class IntrospectionRegistry(object):
+    """
+    This registry gathers classes that have a role in generating DB tables and rows.
+    It is used at introspection time, for the following operations:
+        - fill-in all rows in the ALGORITHM_CATEGORIES table
+        - fill-in all rows in the ALGORITHMS table. Will add BCT algorithms only if Matlab/Octave path is set
+        - generate DB tables for all datatype indexes
+        - fill-in all rows in the PORTLETS table using data defined in XML files
+        - keep an evidence of the datatype index removers
+    All classes that subclass AlgorithmCategoryConfig, ABCAdapter, ABCRemover, HasTraitsIndex should be imported here
+    and added to the proper dictionary/list.
+    e.g. Each new class of type HasTraitsIndex should be imported here and added to the DATATYPES list.
+    """
     ADAPTERS = {
         AnalyzeAlgorithmCategoryConfig: [
             CrossCorrelateAdapter,
