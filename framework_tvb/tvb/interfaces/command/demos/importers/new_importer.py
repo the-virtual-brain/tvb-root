@@ -35,12 +35,12 @@ Adapter example.
 """
 
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeries
 
 
-
+# TODO translate to neoforms
 class FooDataImporter(ABCUploader):
     _ui_name = "Foo Data"
     _ui_subsection = "foo_data_importer"
