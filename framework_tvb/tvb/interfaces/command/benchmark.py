@@ -33,18 +33,21 @@ This module is used to measure simulation performance with the Command Profile.
 Some standardized simulations are run and a report is generated in the console output.
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
 import tvb_data
 from time import sleep
 from datetime import datetime
 from os import path
-from tvb.core.entities import model
+from tvb.simulator.coupling import HyperbolicTangent
+from tvb.simulator.integrators import HeunDeterministic
+from tvb.simulator.models import *
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
-from tvb.datatypes.connectivity import Connectivity
+from tvb.core.neocom import h5
 from tvb.interfaces.command import lab
+from tvb.basic.profile import TvbProfile
+
+TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 
 def _fire_simulation(project_id, **kwargs):
@@ -55,14 +58,13 @@ def _fire_simulation(project_id, **kwargs):
         sleep(5)
         launched_operation = dao.get_operation_by_id(launched_operation.id)
 
-    if launched_operation.status != model.STATUS_FINISHED:
+    if launched_operation.status != STATUS_FINISHED:
         raise Exception('simulation failed: ' + launched_operation.additional_info)
 
     return launched_operation
 
 
 def _create_bench_project():
-
     prj = lab.new_project("benchmark_project_ %s" % datetime.now())
     data_dir = path.abspath(path.dirname(tvb_data.__file__))
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_68.zip')
@@ -72,9 +74,12 @@ def _create_bench_project():
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_192.zip')
     lab.import_conn_zip(prj.id, zip_path)
 
-    conn68 = dao.get_generic_entity(Connectivity, 68, "_number_of_regions")[0]
-    conn96 = dao.get_generic_entity(Connectivity, 96, "_number_of_regions")[0]
-    conn190 = dao.get_generic_entity(Connectivity, 192, "_number_of_regions")[0]
+    conn68 = dao.get_generic_entity(ConnectivityIndex, 68, "number_of_regions")[0]
+    conn68 = h5.load_from_index(conn68)
+    conn96 = dao.get_generic_entity(ConnectivityIndex, 96, "number_of_regions")[0]
+    conn96 = h5.load_from_index(conn96)
+    conn190 = dao.get_generic_entity(ConnectivityIndex, 192, "number_of_regions")[0]
+    conn190 = h5.load_from_index(conn190)
     return prj, [conn68, conn96, conn190]
 
 
@@ -111,11 +116,10 @@ class Bench(object):
                         for conduction in self.conductions:
                             launch_args = model_kw.copy()
                             launch_args.update({
-                                "connectivity": conn.gid,
-                                "simulation_length": str(length),
-                                "integrator": "HeunDeterministic",
-                                "integrator_parameters_option_HeunDeterministic_dt": str(dt),
-                                "conduction_speed": str(conduction),
+                                "connectivity": conn,
+                                "simulation_length": length,
+                                "integrator": HeunDeterministic(dt=dt),
+                                "conduction_speed": conduction,
                             })
                             operation = _fire_simulation(project_id, **launch_args)
                             self.running_times.append(operation.completion_date - operation.start_date)
@@ -130,7 +134,8 @@ class Bench(object):
                     for dt in self.int_dts:
                         for conduction in self.conductions:
                             timestr = str(self.running_times[i])[2:-5]
-                            print(self.FS % (model_kw['model'], length, conn.number_of_regions, conduction, dt, timestr))
+                            print(self.FS % (model_kw['model'], length, conn.number_of_regions,
+                                             conduction, dt, timestr))
                             print(self.LINE)
                             i += 1
 
@@ -144,8 +149,8 @@ def main():
 
     g2d_epi = Bench(
         model_kws=[
-            {"model": "Generic2dOscillator"},
-            {"model": "Epileptor"},
+            {"model": Generic2dOscillator()},
+            {"model": Epileptor()},
         ],
         connectivities=connectivities,
         conductions=[30.0, 3.0],
@@ -155,7 +160,7 @@ def main():
 
     larter = Bench(
         model_kws=[
-            {"model": "LarterBreakspear", "coupling": "HyperbolicTangent"},
+            {"model": LarterBreakspear(), "coupling": HyperbolicTangent()},
         ],
         connectivities=connectivities,
         conductions=[10.0],
