@@ -1,0 +1,57 @@
+import json
+
+from sqlalchemy import Column, Integer, ForeignKey, String, Float
+from sqlalchemy.orm import relationship
+from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesSurface, TimeSeriesVolume
+
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.core.entities.model.datatypes.volume import VolumeIndex
+from tvb.core.neotraits.db import HasTraitsIndex
+
+
+class TimeSeriesIndex(HasTraitsIndex):
+    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+    title = Column(String)
+    sample_period_unit = Column(String, nullable=False)
+    sample_period = Column(Float, nullable=False)
+    # length = Column(Float)
+    labels_ordering = Column(String, nullable=False)
+
+    def fill_from_has_traits(self, datatype):
+        self.gid = datatype.gid.hex
+        self.title = datatype.title
+        self.sample_period_unit = datatype.sample_period_unit
+        self.sample_period = datatype.sample_period
+        self.labels_ordering = json.dumps(datatype.labels_ordering)
+
+
+class TimeSeriesRegionIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    connectivity_id = Column(Integer, ForeignKey(ConnectivityIndex.id),
+                             nullable=not TimeSeriesRegion.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id)
+
+    region_mapping_volume_id = Column(Integer, ForeignKey(RegionVolumeMappingIndex.id),
+                                      nullable=TimeSeriesRegion.region_mapping_volume.required)
+    region_mapping_volume = relationship(RegionVolumeMappingIndex, foreign_keys=region_mapping_volume_id)
+
+    region_mapping_id = Column(Integer, ForeignKey(RegionMappingIndex.id),
+                               nullable=not TimeSeriesRegion.region_mapping.required)
+    region_mapping = relationship(RegionMappingIndex, foreign_keys=region_mapping_id)
+
+
+class TimeSeriesSurfaceIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    surface_id = Column(Integer, ForeignKey(SurfaceIndex.id), nullable=not TimeSeriesSurface.surface.required)
+    surface = relationship(SurfaceIndex, foreign_keys=surface_id)
+
+
+class TimeSeriesVolumeIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    volume_id = Column(Integer, ForeignKey(VolumeIndex.id), nullable=not TimeSeriesVolume.volume.required)
+    volume = relationship(VolumeIndex, foreign_keys=volume_id)

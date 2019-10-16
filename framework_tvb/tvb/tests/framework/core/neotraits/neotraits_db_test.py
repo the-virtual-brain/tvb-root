@@ -1,7 +1,16 @@
+import numpy
+from tvb.datatypes.fcd import Fcd
+from tvb.datatypes.sensors import Sensors
+from tvb.datatypes.time_series import TimeSeries
+
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.fcd import FcdIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
+from tvb.core.entities.model.datatypes.sensors import SensorsIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.tests.framework.core.entities.file.datatypes.testdatatypes import connectivity, surface, region_mapping
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.tests.framework.core.entities.file.datatypes.testdatatypes import connectivity, surface, region_mapping, \
+    sensors
 
 
 def test_store_load_region_mapping(session):
@@ -18,6 +27,40 @@ def test_store_load_region_mapping(session):
     rm_idx.connectivity = conn_idx
     rm_idx.surface = surf_idx
     session.add(rm_idx)
+
+    sensors_seeg_idx = SensorsIndex()
+    sensors_seeg_idx.fill_from_has_traits(sensors)
+    session.add(sensors_seeg_idx)
+
+    sensors_eeg = Sensors(
+        sensors_type="EEG",
+        labels=numpy.array(["s1", "s2", "s3"]),
+        locations=numpy.zeros((3, 3)),
+        number_of_sensors=3,
+        has_orientation=True,
+        orientations=numpy.zeros((3, 3)),
+        usable=numpy.array([True, False, True])
+    )
+
+    sensors_eeg_idx = SensorsIndex()
+    sensors_eeg_idx.fill_from_has_traits(sensors_eeg)
+    session.add(sensors_eeg_idx)
+
+    time_series = TimeSeries(data=numpy.arange(5))
+
+    fcd = Fcd(
+        array_data=numpy.arange(5),
+        source=time_series,
+    )
+
+    ts_index = TimeSeriesIndex()
+    ts_index.fill_from_has_traits(time_series)
+    session.add(ts_index)
+
+    fcd_index = FcdIndex()
+    fcd_index.fill_from_has_traits(fcd)
+    fcd_index.source = ts_index
+    session.add(fcd_index)
 
     session.commit()
 
