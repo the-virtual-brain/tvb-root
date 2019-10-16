@@ -119,7 +119,7 @@ class IntField(TraitField):
 
 
 class FloatField(TraitField):
-    template = 'scalar_field.jinja2'
+    template = 'number_field.jinja2'
     input_type = "number"
     min = None
     max = None
