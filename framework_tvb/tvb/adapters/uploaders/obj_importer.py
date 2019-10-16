@@ -35,8 +35,12 @@
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.obj.surface import ObjSurface
 from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.storage import transactional, dao
-from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, FACE, Surface, make_surface, center_vertices
+from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.core.entities.storage import transactional
+from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, FACE, make_surface, center_vertices
+
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class ObjSurfaceImporter(ABCUploader):
@@ -65,7 +69,7 @@ class ObjSurfaceImporter(ABCUploader):
         
         
     def get_output(self):
-        return [Surface]
+        return [SurfaceIndex]
 
 
     @transactional
@@ -78,7 +82,6 @@ class ObjSurfaceImporter(ABCUploader):
             if surface is None:
                 raise ParseException("Could not determine surface type! %s" % surface_type)
 
-            surface.storage_path = self.storage_path
             surface.zero_based_triangles = True
 
             with open(data_file) as f:
@@ -98,12 +101,26 @@ class ObjSurfaceImporter(ABCUploader):
             else:
                 self.log.warning("OBJ came without normals. We will try to compute them...")
 
+            surface.number_of_vertices = surface.vertices.shape[0]
+            surface.number_of_triangles = surface.triangles.shape[0]
+            surface.compute_triangle_normals()
+            surface.compute_vertex_normals()
+
             validation_result = surface.validate()
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            return [surface]
+            surface_idx = SurfaceIndex()
+            surface_idx.fill_from_has_traits(surface)
+
+            loader = DirLoader(self.storage_path)
+            surface_h5_path = loader.path_for(SurfaceH5, surface_idx.gid)
+
+            with SurfaceH5(surface_h5_path) as surface_h5:
+                surface_h5.store(surface)
+
+            return [surface_idx]
 
         except ParseException as excep:
             self.log.exception(excep)
