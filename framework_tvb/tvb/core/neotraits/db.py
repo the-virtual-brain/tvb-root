@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, Text
 from sqlalchemy import String, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
@@ -16,6 +16,7 @@ class HasTraitsIndex(Base):
     id = Column(Integer, primary_key=True)
     gid = Column(String(32), unique=True)
     type_ = Column(String(50))
+    title = Column(Text)
 
     # Quick remainder about @declared_attr. It makes a class method.
     # Sqlalchemy will treat this class method like a statically declared class attribute
@@ -56,10 +57,15 @@ class NArrayIndex(Base):
     id = Column(Integer, primary_key=True)
     dtype = Column(String(64), nullable=False)
     ndim = Column(Integer, nullable=False)
-    shape = Column(String, nullable=False)
-    dim_names = Column(String)
+    shape = Column(Text, nullable=False)
+    dim_names = Column(Text)
     minvalue = Column(Float)
     maxvalue = Column(Float)
+    # unrolled shape for easy querying
+    length_1d = Column(Integer)
+    length_2d = Column(Integer)
+    length_3d = Column(Integer)
+    length_4d = Column(Integer)
 
     @classmethod
     def from_ndarray(cls, array):
@@ -69,11 +75,18 @@ class NArrayIndex(Base):
             # dtype is string or other non comparable type
             minvalue, maxvalue = None, None
 
-        return cls(
+        self = cls(
             dtype=str(array.dtype),
             ndim=array.ndim,
             shape=str(array.shape),
             minvalue=minvalue,
             maxvalue=maxvalue
         )
+
+        for i, l in enumerate(array.shape):
+            if i > 4:
+                break
+            setattr(self, 'length_{}d'.format(i + 1), l)
+
+        return self
 

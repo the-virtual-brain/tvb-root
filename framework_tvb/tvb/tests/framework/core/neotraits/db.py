@@ -2,7 +2,6 @@ import pytest
 import os
 
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from tvb.core.neotraits.db import Base, NArrayIndex, HasTraitsIndex
 from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
@@ -13,7 +12,10 @@ from tvb.tests.framework.core.neotraits.data import FooDatatype, BarDatatype, Ba
 def engine(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp('tmp')
     path = os.path.join(str(tmpdir), 'tmp.sqlite')
-    return create_engine(r'sqlite:///' + path)
+    sqlite_conn_string = r'sqlite:///' + path
+    # postgres_conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+
+    return create_engine(sqlite_conn_string)
 
 
 @pytest.fixture
@@ -21,7 +23,9 @@ def session(engine):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    return Session()
+    s = Session()
+    yield s
+    s.close()
 
 
 
@@ -84,7 +88,6 @@ class BarIndex(FooIndex):
     def fill_from_has_traits(self, datatype):
         super(BarIndex, self).fill_from_has_traits(datatype)
         self.array_str = NArrayIndex.from_ndarray(datatype.array_str)
-
 
 
 def test_schema(session):
