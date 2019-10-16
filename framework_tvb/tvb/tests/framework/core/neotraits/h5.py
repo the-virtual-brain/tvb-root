@@ -1,19 +1,6 @@
-import os
-
 import numpy
-import pytest
 from .data import FooDatatype, BarDatatype, BazDataType
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
-
-
-@pytest.fixture
-def tmph5factory(tmpdir):
-    def build(pth='tmp.h5'):
-        path = os.path.join(str(tmpdir), pth)
-        if os.path.exists(path):
-            os.remove(path)
-        return path
-    return build
 
 
 

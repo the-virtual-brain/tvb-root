@@ -5,7 +5,6 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5, CorticalSurfaceH5
-from tvb.tests.framework.core.neotraits.h5 import tmph5factory
 
 conn = Connectivity(region_labels=numpy.array(["a", "b"]),
                     weights=numpy.zeros((2, 2)),

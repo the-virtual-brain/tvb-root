@@ -1,32 +1,7 @@
-import pytest
-import os
-
-from sqlalchemy.orm import sessionmaker, relationship
-
-from tvb.core.neotraits.db import Base, NArrayIndex, HasTraitsIndex
-from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
-from tvb.tests.framework.core.neotraits.data import FooDatatype, BarDatatype, BazDataType
-
-
-@pytest.fixture(scope='session')
-def engine(tmpdir_factory):
-    tmpdir = tmpdir_factory.mktemp('tmp')
-    path = os.path.join(str(tmpdir), 'tmp.sqlite')
-    sqlite_conn_string = r'sqlite:///' + path
-    # postgres_conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
-
-    return create_engine(sqlite_conn_string)
-
-
-@pytest.fixture
-def session(engine):
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    s = Session()
-    yield s
-    s.close()
-
+from sqlalchemy import String, ForeignKey, Column, Integer
+from sqlalchemy.orm import relationship
+from tvb.core.neotraits.db import NArrayIndex, HasTraitsIndex
+from tvb.tests.framework.core.neotraits.data import FooDatatype
 
 
 class BazIndex(HasTraitsIndex):
@@ -151,7 +126,7 @@ def test_store_load_inheritance(session, barFactory, bazFactory):
     res = session.query(BarIndex)
     assert res.count() == 1
     # own field
-    assert res[0].array_str.dtype == '|S4'
+    assert res[0].array_str.dtype == '|S32'
     # inherited field
     assert res[0].array_float.dtype == 'float64'
     # relationsip in the parent class
