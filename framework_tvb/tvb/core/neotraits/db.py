@@ -64,7 +64,7 @@ class DeclarativeTraitMeta(DeclarativeMeta):
 Base = declarative_base(name='DeclarativeBase', metaclass=DeclarativeTraitMeta)
 
 
-class DataTypeIndex(Base):
+class HasTraitsIndex(Base):
     id = Column(Integer, primary_key=True)
     gid = Column(String(32), unique=True)
     type_ = Column(String(50))
@@ -79,24 +79,23 @@ class DataTypeIndex(Base):
     }
 
     def __init__(self):
-        super(DataTypeIndex, self).__init__()
+        super(HasTraitsIndex, self).__init__()
         self.type_ = type(self).__name__
-        # if type(self) != DataTypeIndex:
-        #     type(self).uid = Column(Integer, ForeignKey(DataTypeIndex.id), primary_key=False)
 
-    def from_datatype(self, datatype):
-        if not hasattr(type(self), 'trait'):
+    def fill_from_has_traits(self, datatype):
+        cls = type(self)
+        if not hasattr(cls, 'trait'):
             raise NotImplementedError(
                 'the default implementation works only if an associated '
                 'datatype has been declared by setting the trait field')
 
-        trait = getattr(type(self), 'trait')
+        trait = getattr(cls, 'trait')
         if not isinstance(datatype, trait):
             raise TypeError('datatype must be of the declared type {} not {}'.format(trait, type(datatype)))
 
         self.gid = datatype.gid.hex
 
-        for f in self.fields:
+        for f in cls.fields:
             if isinstance(f, NArray):
                 field_value = getattr(datatype, f.field_name)
                 arr = NArrayIndex(

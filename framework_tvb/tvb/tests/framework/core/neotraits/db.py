@@ -2,7 +2,7 @@ import pytest
 import os
 
 from sqlalchemy.orm import sessionmaker, relationship
-from tvb.core.neotraits.db import Base, NArrayIndex, DataTypeIndex
+from tvb.core.neotraits.db import Base, NArrayIndex, HasTraitsIndex
 from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
 from tvb.tests.framework.core.neotraits.data import FooDatatype
 
@@ -36,8 +36,8 @@ class FooIndexManual(Base):
         self.scalar_int = datatype.scalar_int
 
 
-class FooIndex(DataTypeIndex):
-    id = Column(Integer, ForeignKey(DataTypeIndex.id), primary_key=True)
+class FooIndex(HasTraitsIndex):
+    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
     trait = FooDatatype
     fields = [   # mapping is flat, list here all superclass attributes as well
         FooDatatype.array_float,
@@ -47,8 +47,8 @@ class FooIndex(DataTypeIndex):
     ]
 
 
-class BarIndex(DataTypeIndex):
-    id = Column(Integer, ForeignKey(DataTypeIndex.id), primary_key=True)
+class BarIndex(HasTraitsIndex):
+    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
     trait = FooDatatype
     fields = [
         FooDatatype.array_float,
@@ -88,11 +88,11 @@ def test_store_load(session, datatypeinstancefactory):
 
     datatypeinstance = datatypeinstancefactory()
     datatype_index2 = FooIndex()
-    datatype_index2.from_datatype(datatypeinstance)
+    datatype_index2.fill_from_has_traits(datatypeinstance)
 
     datatypeinstance = datatypeinstancefactory()
-    bar = BarIndex()
-    bar.from_datatype(datatypeinstance)
+    bar = LongerBarIndex()
+    bar.fill_from_has_traits(datatypeinstance)
     session.add_all([datatype_index, datatype_index2, bar])
     session.commit()
 
