@@ -37,13 +37,14 @@ from tvb.core.neotraits.db import Base
 
 
 def pytest_addoption(parser):
-    parser.addoption("--profile", action="store", default="TEST_POSTGRES_PROFILE",
+    parser.addoption("--profile", action="store", default="TEST_SQLITE_PROFILE",
                      help="my option: TEST_POSTGRES_PROFILE or TEST_SQLITE_PROFILE")
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def profile(request):
     return request.config.getoption("--profile")
+
 
 @pytest.fixture
 def tmph5factory(tmpdir):
@@ -56,20 +57,26 @@ def tmph5factory(tmpdir):
 
 
 @pytest.fixture(scope='session')
-def engine(tmpdir_factory):
-    tmpdir = tmpdir_factory.mktemp('tmp')
-    path = os.path.join(str(tmpdir), 'tmp.sqlite')
-    sqlite_conn_string = r'sqlite:///' + path
-    # postgres_conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+def db_engine(tmpdir_factory, profile):
+    if profile == 'TEST_SQLITE_PROFILE':
+        tmpdir = tmpdir_factory.mktemp('tmp')
+        path = os.path.join(str(tmpdir), 'tmp.sqlite')
+        conn_string = r'sqlite:///' + path
+    elif profile == 'TEST_POSTGRES_PROFILE':
+        conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+    else:
+        raise ValueError('bad test profile {}'.format(profile))
 
-    return create_engine(sqlite_conn_string)
+    return create_engine(conn_string)
 
 
 @pytest.fixture
-def session(engine):
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
+def session(db_engine):
+    Base.metadata.drop_all(db_engine)
+    Base.metadata.create_all(db_engine)
+    Session = sessionmaker(bind=db_engine)
     s = Session()
     yield s
     s.close()
+    Base.metadata.drop_all(db_engine)
+
