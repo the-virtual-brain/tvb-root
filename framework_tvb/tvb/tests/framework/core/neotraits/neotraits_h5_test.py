@@ -242,3 +242,10 @@ def test_store_load_simulation_state(tmph5factory):
     with SimulationStateH5(tmp_file) as f:
         f.load_into(simulation_state_stored)
     assert simulation_state_stored.history is not None
+
+
+def test_store_load_projection_matrix(tmph5factory):
+    tmp_file = tmph5factory("ProjectionMatrix_{}.h5".format(projection_matrix.gid))
+
+    with ProjectionMatrixH5(tmp_file) as f:
+        f.store(projection_matrix)

@@ -1,4 +1,4 @@
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference, Json
 
 from tvb.datatypes.projections import ProjectionMatrix
 
@@ -11,7 +11,7 @@ class ProjectionMatrixH5(H5File):
         self.brain_skull = Reference(ProjectionMatrix.brain_skull, self)
         self.skull_skin = Reference(ProjectionMatrix.skull_skin, self)
         self.skin_air = Reference(ProjectionMatrix.skin_air, self)
-        # self.conductances = Scalar(ProjectionMatrix.conductances, self) # Take care of dict
+        self.conductances = Json(ProjectionMatrix.conductances, self)
         self.sources = Reference(ProjectionMatrix.sources, self)
         self.sensors = Reference(ProjectionMatrix.sensors, self)
         self.projection_data = DataSet(ProjectionMatrix.projection_data, self)
