@@ -18,43 +18,28 @@ def tmph5factory(tmpdir):
 
 
 class BazFile(H5File):
-    # trait is declared. This is an automated mapping
-    trait = BazDataType
-    # automatic mapping creates metadata entries for scalar trait attributes
-    # datasets for traited ndarrays
-    # and reference fields for aggregated HasTraits
-
-
-class FooFileManual(H5File):
-    """
-    You can manually map datatype attributes to h5file fields
-    """
     def __init__(self, path):
-        super(FooFileManual, self).__init__(path)
+        super(BazFile, self).__init__(path)
+        self.miu = DataSet(BazDataType.miu, self)
+        self.scalar_str = Scalar(BazDataType.scalar_str, self)
+
+
+
+class FooFile(H5File):
+    def __init__(self, path):
+        super(FooFile, self).__init__(path)
         self.array_float = DataSet(FooDatatype.array_float, self)
         self.array_int = DataSet(FooDatatype.array_int, self)
         self.scalar_int = Scalar(FooDatatype.scalar_int, self)
         self.abaz = Reference(FooDatatype.abaz, self)
 
 
-class FooFile(H5File):
-    # you can map fewer fields by explicitly listing the mapped fields
-    trait = FooDatatype
-    fields = [
-        FooDatatype.array_float,
-        FooDatatype.array_int,
-        FooDatatype.scalar_int,
-        # FooDatatype.some_transient omitted
-        FooDatatype.abaz
-    ]
-
 
 class BarFile(FooFile):
     # inheritance is flattened in the same file
-    trait = BarDatatype
-    fields = [
-        BarDatatype.array_str
-    ]
+    def __init__(self, path):
+        super(BarFile, self).__init__(path)
+        self.array_str = DataSet(BarDatatype.array_str, self)
 
 
 

@@ -1,4 +1,3 @@
-import datetime
 import uuid
 
 import typing
@@ -8,8 +7,6 @@ import numpy
 
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
-from ._introspection import DeclarativeFieldsTypeMixin
 
 
 def is_scalar_type(t):
@@ -123,28 +120,14 @@ class Reference(Scalar):
         return uuid.UUID(urngid)
 
 
-class DeclarativeH5Type(DeclarativeFieldsTypeMixin, type):
-    """
-    This metaclass just autogenerates the fields declaration if trait is declared and fields is missing
-    """
-    def __new__(mcs, type_name, bases, namespace):
-        cls = super(DeclarativeH5Type, mcs).__new__(mcs, type_name, bases, namespace)
-        fields = cls.gather_declared_fields()
-        cls.fields = fields
-        return cls
-
 
 class H5File(object):
-    __metaclass__ = DeclarativeH5Type
 
     def __init__(self, path):
         # type: (str) -> None
         storage_path, file_name = os.path.split(path)
         self.storage_manager = HDF5StorageManager(storage_path, file_name)
-
-        self._autogenerate_accessors(type(self).all_declared_fields)
-
-    #     would be nice to have an opened state for the chunked api instead of the close_file=False
+        # would be nice to have an opened state for the chunked api instead of the close_file=False
 
     def __enter__(self):
         return self
@@ -164,7 +147,11 @@ class H5File(object):
         # type: (HasTraits) -> None
         for name, accessor in self.__dict__.iteritems():
             if isinstance(accessor, Accessor):
-                accessor.store(getattr(datatype, accessor.trait_attribute.field_name))
+                f_name = accessor.trait_attribute.field_name
+                if f_name is None:
+                    # skipp attribute that does not seem to belong to a traited type
+                    continue
+                accessor.store(getattr(datatype, f_name))
 
 
     def load_into(self, datatype):
@@ -173,32 +160,33 @@ class H5File(object):
             if isinstance(accessor, Reference):
                 pass
             elif isinstance(accessor, Accessor):
-                # todo allready pressoposes bound attr instances
-                # go all the way and instantiate the trait?
+                f_name = accessor.trait_attribute.field_name
+                if f_name is None:
+                    # skipp attribute that does not seem to belong to a traited type
+                    continue
                 setattr(datatype,
                         accessor.trait_attribute.field_name,
                         accessor.load())
 
 
-    def _autogenerate_accessors(self, declarative_attrs):
-        # type: (typing.Sequence[Attr]) -> None
+    def _auto_generate_accessor(self, attr):
+        # type: (Attr) -> None
         """
-        Takes a list of trait attributes and generates accessors for them.
+        Takes a trait attribute and generates an accessor for it.
         The accessors are set on self. The attribute names are the same as the traited attribute names
         """
-        for attr in declarative_attrs:
-            if not isinstance(attr, Attr):
-                raise ValueError('expected a Attr, got a {}'.format(type(attr)))
+        if not isinstance(attr, Attr):
+            raise ValueError('expected a Attr, got a {}'.format(type(attr)))
 
-            if isinstance(attr, NArray):
-                dataset = DataSet(attr, self)
-                setattr(self, attr.field_name, dataset)
-            elif issubclass(attr.field_type, HasTraits):
-                ref = Reference(attr, self)
-                setattr(self, attr.field_name, ref)
+        if isinstance(attr, NArray):
+            dataset = DataSet(attr, self)
+            setattr(self, attr.field_name, dataset)
+        elif issubclass(attr.field_type, HasTraits):
+            ref = Reference(attr, self)
+            setattr(self, attr.field_name, ref)
+        else:
+            if is_scalar_type(attr.field_type):
+                scalar = Scalar(attr, self)
+                setattr(self, attr.field_name, scalar)
             else:
-                if is_scalar_type(attr.field_type):
-                    scalar = Scalar(attr, self)
-                    setattr(self, attr.field_name, scalar)
-                else:
-                    raise NotImplementedError("don't know how to map attribute to h5 {}".format(attr))
+                raise NotImplementedError("don't know how to map attribute to h5 {}".format(attr))
