@@ -44,7 +44,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model.model_burst as model_burst
-from tvb.datatypes import noise_framework
+#from tvb.datatypes import noise_framework
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template

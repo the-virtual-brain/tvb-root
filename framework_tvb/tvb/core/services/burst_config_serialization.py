@@ -42,7 +42,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN, \
     PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
 from tvb.core.services.flow_service import FlowService
-from tvb.datatypes import noise_framework
+#from tvb.datatypes import noise_framework
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models import Model
 
