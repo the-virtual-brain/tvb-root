@@ -10,19 +10,28 @@ from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
-from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
+
 
 
 class TimeSeriesIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
-    title = Column(String)
+
+    data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
+    data = relationship(NArrayIndex, foreign_keys=data_id)
+
+    time_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
+    time = relationship(NArrayIndex, foreign_keys=time_id)
+
     sample_period_unit = Column(String, nullable=False)
     sample_period = Column(Float, nullable=False)
+    sample_rate = Column(Float)
     # length = Column(Float)
     labels_ordering = Column(String, nullable=False)
 
-    nr_dimensions = Column(Integer)
-    length_1d = Column(Integer)
+    # these are redundant
+    nr_dimensions = Column(Integer)   # data.ndim
+    length_1d = Column(Integer)   # data.length_1d
     length_2d = Column(Integer)
     length_3d = Column(Integer)
     length_4d = Column(Integer)
@@ -30,9 +39,18 @@ class TimeSeriesIndex(HasTraitsIndex):
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
         self.title = datatype.title
+
         self.sample_period_unit = datatype.sample_period_unit
         self.sample_period = datatype.sample_period
+        self.sample_rate = datatype.sample_rate
         self.labels_ordering = json.dumps(datatype.labels_ordering)
+
+        # REVIEW THIS.
+        # In general constructing graphs here is a bad ideea
+        # But these NArrayIndex-es can be treated as part of this entity
+        # never to be referenced by any other row or table.
+        self.data = NArrayIndex.from_ndarray(datatype.data)
+        self.time = NArrayIndex.from_ndarray(datatype.time)
 
 
 class TimeSeriesEEGIndex(TimeSeriesIndex):

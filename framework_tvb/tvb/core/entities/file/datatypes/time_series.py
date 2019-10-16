@@ -42,6 +42,9 @@ class TimeSeriesH5(H5File):
     #       partially loaded datatypes are filled
 
 
+    def read_data_shape(self):
+        return self.data.shape
+
     def read_data_slice(self, data_slice):
         """
         Expose chunked-data access.
