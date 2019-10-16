@@ -161,6 +161,7 @@ class NIFTIImporter(ABCUploader):
 
         ts_idx = TimeSeriesVolumeIndex()
         ts_idx.volume = volume
+        ts_idx.has_volume_mapping = True
 
         ts_h5_path = self.loader.path_for(TimeSeriesVolumeH5, ts_idx.gid)
         nifti_data = self.parser.parse()
