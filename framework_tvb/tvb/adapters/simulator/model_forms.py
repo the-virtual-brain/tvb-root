@@ -1,9 +1,34 @@
-from tvb.simulator.models import Generic2dOscillator, Kuramoto, Hopfield, Epileptor, Epileptor2D, \
-    EpileptorCodim3, EpileptorCodim3SlowMod, JC_Epileptor, JansenRit, ZetterbergJansen, ReducedWongWang, \
-    ReducedWongWangExcIOInhI, ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, Zerlaut_adaptation_first_order, \
-    Zerlaut_adaptation_second_order, Linear, WilsonCowan, LarterBreakspear
-from tvb.simulator.models.oscillator import supHopf
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 
+from tvb.simulator.models import *
 from tvb.core.neotraits._forms import Form, ArrayField, MultiSelectField
 
 
@@ -11,21 +36,21 @@ def get_model_to_form_dict():
     model_class_to_form = {
         Generic2dOscillator: Generic2dOscillatorModelForm,
         Kuramoto: KuramotoModelForm,
-        supHopf: SupHopfModelForm,
+        SupHopf: SupHopfModelForm,
         Hopfield: HopfieldModelForm,
         Epileptor: EpileptorModelForm,
         Epileptor2D: Epileptor2DModelForm,
         EpileptorCodim3: EpileptorCodim3ModelForm,
         EpileptorCodim3SlowMod: EpileptorCodim3SlowModModelForm,
-        JC_Epileptor: JC_EpileptorModelForm,
+        EpileptorRestingState: EpileptorRestingStateModelForm,
         JansenRit: JansenRitModelForm,
         ZetterbergJansen: ZetterbergJansenModelForm,
         ReducedWongWang: ReducedWongWangModelForm,
-        ReducedWongWangExcIOInhI: ReducedWongWangExcIOInhIModelForm,
+        ReducedWongWangExcInh: ReducedWongWangExcInhModelForm,
         ReducedSetFitzHughNagumo: ReducedSetFitzHughNagumoModelForm,
         ReducedSetHindmarshRose: ReducedSetHindmarshRoseModelForm,
-        Zerlaut_adaptation_first_order: Zerlaut_adaptation_first_orderModelForm,
-        Zerlaut_adaptation_second_order: Zerlaut_adaptation_second_orderModelForm,
+        ZerlautFirstOrder: ZerlautFirstOrderModelForm,
+        ZerlautSecondOrder: ZerlautSecondOrderModelForm,
         Linear: LinearModelForm,
         WilsonCowan: WilsonCowanModelForm,
         LarterBreakspear: LarterBreakspearModelForm
@@ -36,26 +61,26 @@ def get_model_to_form_dict():
 
 def get_ui_name_to_model():
     ui_name_to_model = {
-        'Generic 2d Oscillator' : Generic2dOscillator,
-        'Kuramoto Oscillator' : Kuramoto,
-        'supHopf' : supHopf,
-        'Hopfield' : Hopfield,
-        'Epileptor' : Epileptor,
-        'Epileptor2D' : Epileptor2D,
-        'Epileptor codim 3' : EpileptorCodim3,
-        'Epileptor codim 3 ultra-slow modulations' : EpileptorCodim3SlowMod,
-        'JC_Epileptor' : JC_Epileptor,
-        'Jansen-Rit' : JansenRit,
-        'Zetterberg-Jansen' : ZetterbergJansen,
-        'Reduced Wong-Wang' : ReducedWongWang,
-        'Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations' : ReducedWongWangExcIOInhI,
-        'Stefanescu-Jirsa 2D' : ReducedSetFitzHughNagumo,
-        'Stefanescu-Jirsa 3D' : ReducedSetHindmarshRose,
-        'Zerlaut adaptation first order' : Zerlaut_adaptation_first_order,
-        'Zerlaut adaptation second order': Zerlaut_adaptation_second_order,
-        'Linear model' : Linear,
-        'Wilson-Cowan' : WilsonCowan,
-        'Larter-Breakspear' : LarterBreakspear
+        'Generic 2d Oscillator': Generic2dOscillator,
+        'Kuramoto Oscillator': Kuramoto,
+        'supHopf': SupHopf,
+        'Hopfield': Hopfield,
+        'Epileptor': Epileptor,
+        'Epileptor2D': Epileptor2D,
+        'Epileptor codim 3': EpileptorCodim3,
+        'Epileptor codim 3 ultra-slow modulations': EpileptorCodim3SlowMod,
+        'EpileptorRestingState': EpileptorRestingState,
+        'Jansen-Rit': JansenRit,
+        'Zetterberg-Jansen': ZetterbergJansen,
+        'Reduced Wong-Wang': ReducedWongWang,
+        'Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations': ReducedWongWangExcInh,
+        'Stefanescu-Jirsa 2D': ReducedSetFitzHughNagumo,
+        'Stefanescu-Jirsa 3D': ReducedSetHindmarshRose,
+        'Zerlaut adaptation first order': ZerlautFirstOrder,
+        'Zerlaut adaptation second order': ZerlautSecondOrder,
+        'Linear model': Linear,
+        'Wilson-Cowan': WilsonCowan,
+        'Larter-Breakspear': LarterBreakspear
     }
     return ui_name_to_model
 
@@ -101,9 +126,9 @@ class SupHopfModelForm(Form):
 
     def __init__(self, prefix=''):
         super(SupHopfModelForm, self).__init__(prefix)
-        self.a = ArrayField(supHopf.a, self)
-        self.omega = ArrayField(supHopf.omega, self)
-        self.variables_of_interest = MultiSelectField(supHopf.variables_of_interest, self)
+        self.a = ArrayField(SupHopf.a, self)
+        self.omega = ArrayField(SupHopf.omega, self)
+        self.variables_of_interest = MultiSelectField(SupHopf.variables_of_interest, self)
 
 
 class HopfieldModelForm(Form):
@@ -208,39 +233,39 @@ class EpileptorCodim3SlowModModelForm(Form):
         self.variables_of_interest = ArrayField(EpileptorCodim3SlowMod.variables_of_interest, self)
 
 
-class JC_EpileptorModelForm(Form):
+class EpileptorRestingStateModelForm(Form):
 
     def __init__(self, prefix=''):
-        super(JC_EpileptorModelForm, self).__init__(prefix)
-        self.a = ArrayField(JC_Epileptor.a, self)
-        self.b = ArrayField(JC_Epileptor.b, self)
-        self.c = ArrayField(JC_Epileptor.c, self)
-        self.d = ArrayField(JC_Epileptor.d, self)
-        self.r = ArrayField(JC_Epileptor.r, self)
-        self.s = ArrayField(JC_Epileptor.s, self)
-        self.x0 = ArrayField(JC_Epileptor.x0, self)
-        self.Iext = ArrayField(JC_Epileptor.Iext, self)
-        self.slope = ArrayField(JC_Epileptor.slope, self)
-        self.Iext2 = ArrayField(JC_Epileptor.Iext2, self)
-        self.tau = ArrayField(JC_Epileptor.tau, self)
-        self.aa = ArrayField(JC_Epileptor.aa, self)
-        self.bb = ArrayField(JC_Epileptor.bb, self)
-        self.Kvf = ArrayField(JC_Epileptor.Kvf, self)
-        self.Kf = ArrayField(JC_Epileptor.Kf, self)
-        self.Ks = ArrayField(JC_Epileptor.Ks, self)
-        self.tt = ArrayField(JC_Epileptor.tt, self)
-        self.tau_rs = ArrayField(JC_Epileptor.tau_rs, self)
-        self.I_rs = ArrayField(JC_Epileptor.I_rs, self)
-        self.a_rs = ArrayField(JC_Epileptor.a_rs, self)
-        self.b_rs = ArrayField(JC_Epileptor.b_rs, self)
-        self.d_rs = ArrayField(JC_Epileptor.d_rs, self)
-        self.e_rs = ArrayField(JC_Epileptor.e_rs, self)
-        self.f_rs = ArrayField(JC_Epileptor.f_rs, self)
-        self.alpha_rs = ArrayField(JC_Epileptor.alpha_rs, self)
-        self.beta_rs = ArrayField(JC_Epileptor.beta_rs, self)
-        self.K_rs = ArrayField(JC_Epileptor.K_rs, self)
-        self.p = ArrayField(JC_Epileptor.p, self)
-        self.variables_of_interest = MultiSelectField(JC_Epileptor.variables_of_interest, self)
+        super(EpileptorRestingStateModelForm, self).__init__(prefix)
+        self.a = ArrayField(EpileptorRestingState.a, self)
+        self.b = ArrayField(EpileptorRestingState.b, self)
+        self.c = ArrayField(EpileptorRestingState.c, self)
+        self.d = ArrayField(EpileptorRestingState.d, self)
+        self.r = ArrayField(EpileptorRestingState.r, self)
+        self.s = ArrayField(EpileptorRestingState.s, self)
+        self.x0 = ArrayField(EpileptorRestingState.x0, self)
+        self.Iext = ArrayField(EpileptorRestingState.Iext, self)
+        self.slope = ArrayField(EpileptorRestingState.slope, self)
+        self.Iext2 = ArrayField(EpileptorRestingState.Iext2, self)
+        self.tau = ArrayField(EpileptorRestingState.tau, self)
+        self.aa = ArrayField(EpileptorRestingState.aa, self)
+        self.bb = ArrayField(EpileptorRestingState.bb, self)
+        self.Kvf = ArrayField(EpileptorRestingState.Kvf, self)
+        self.Kf = ArrayField(EpileptorRestingState.Kf, self)
+        self.Ks = ArrayField(EpileptorRestingState.Ks, self)
+        self.tt = ArrayField(EpileptorRestingState.tt, self)
+        self.tau_rs = ArrayField(EpileptorRestingState.tau_rs, self)
+        self.I_rs = ArrayField(EpileptorRestingState.I_rs, self)
+        self.a_rs = ArrayField(EpileptorRestingState.a_rs, self)
+        self.b_rs = ArrayField(EpileptorRestingState.b_rs, self)
+        self.d_rs = ArrayField(EpileptorRestingState.d_rs, self)
+        self.e_rs = ArrayField(EpileptorRestingState.e_rs, self)
+        self.f_rs = ArrayField(EpileptorRestingState.f_rs, self)
+        self.alpha_rs = ArrayField(EpileptorRestingState.alpha_rs, self)
+        self.beta_rs = ArrayField(EpileptorRestingState.beta_rs, self)
+        self.K_rs = ArrayField(EpileptorRestingState.K_rs, self)
+        self.p = ArrayField(EpileptorRestingState.p, self)
+        self.variables_of_interest = MultiSelectField(EpileptorRestingState.variables_of_interest, self)
 
 
 class JansenRitModelForm(Form):
@@ -306,29 +331,29 @@ class ReducedWongWangModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedWongWang.variables_of_interest, self)
 
 
-class ReducedWongWangExcIOInhIModelForm(Form):
+class ReducedWongWangExcInhModelForm(Form):
 
     def __init__(self, prefix=''):
-        super(ReducedWongWangExcIOInhIModelForm, self).__init__(prefix)
-        self.a_e = ArrayField(ReducedWongWangExcIOInhI.a_e, self)
-        self.b_e = ArrayField(ReducedWongWangExcIOInhI.b_e, self)
-        self.d_e = ArrayField(ReducedWongWangExcIOInhI.d_e, self)
-        self.gamma_e = ArrayField(ReducedWongWangExcIOInhI.gamma_e, self)
-        self.tau_e = ArrayField(ReducedWongWangExcIOInhI.tau_e, self)
-        self.w_p = ArrayField(ReducedWongWangExcIOInhI.w_p, self)
-        self.J_N = ArrayField(ReducedWongWangExcIOInhI.J_N, self)
-        self.W_e = ArrayField(ReducedWongWangExcIOInhI.W_e, self)
-        self.a_i = ArrayField(ReducedWongWangExcIOInhI.a_i, self)
-        self.b_i = ArrayField(ReducedWongWangExcIOInhI.b_i, self)
-        self.d_i = ArrayField(ReducedWongWangExcIOInhI.d_i, self)
-        self.gamma_i = ArrayField(ReducedWongWangExcIOInhI.gamma_i, self)
-        self.tau_i = ArrayField(ReducedWongWangExcIOInhI.tau_i, self)
-        self.J_i = ArrayField(ReducedWongWangExcIOInhI.J_i, self)
-        self.W_i = ArrayField(ReducedWongWangExcIOInhI.W_i, self)
-        self.I_o = ArrayField(ReducedWongWangExcIOInhI.I_o, self)
-        self.G = ArrayField(ReducedWongWangExcIOInhI.G, self)
-        self.lamda = ArrayField(ReducedWongWangExcIOInhI.lamda, self)
-        self.variables_of_interest = MultiSelectField(ReducedWongWangExcIOInhI.variables_of_interest, self)
+        super(ReducedWongWangExcInhModelForm, self).__init__(prefix)
+        self.a_e = ArrayField(ReducedWongWangExcInh.a_e, self)
+        self.b_e = ArrayField(ReducedWongWangExcInh.b_e, self)
+        self.d_e = ArrayField(ReducedWongWangExcInh.d_e, self)
+        self.gamma_e = ArrayField(ReducedWongWangExcInh.gamma_e, self)
+        self.tau_e = ArrayField(ReducedWongWangExcInh.tau_e, self)
+        self.w_p = ArrayField(ReducedWongWangExcInh.w_p, self)
+        self.J_N = ArrayField(ReducedWongWangExcInh.J_N, self)
+        self.W_e = ArrayField(ReducedWongWangExcInh.W_e, self)
+        self.a_i = ArrayField(ReducedWongWangExcInh.a_i, self)
+        self.b_i = ArrayField(ReducedWongWangExcInh.b_i, self)
+        self.d_i = ArrayField(ReducedWongWangExcInh.d_i, self)
+        self.gamma_i = ArrayField(ReducedWongWangExcInh.gamma_i, self)
+        self.tau_i = ArrayField(ReducedWongWangExcInh.tau_i, self)
+        self.J_i = ArrayField(ReducedWongWangExcInh.J_i, self)
+        self.W_i = ArrayField(ReducedWongWangExcInh.W_i, self)
+        self.I_o = ArrayField(ReducedWongWangExcInh.I_o, self)
+        self.G = ArrayField(ReducedWongWangExcInh.G, self)
+        self.lamda = ArrayField(ReducedWongWangExcInh.lamda, self)
+        self.variables_of_interest = MultiSelectField(ReducedWongWangExcInh.variables_of_interest, self)
 
 
 class ReducedSetFitzHughNagumoModelForm(Form):
@@ -365,37 +390,37 @@ class ReducedSetHindmarshRoseModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedSetHindmarshRose.variables_of_interest, self)
 
 
-class Zerlaut_adaptation_first_orderModelForm(Form):
+class ZerlautFirstOrderModelForm(Form):
 
     def __init__(self, prefix=''):
-        super(Zerlaut_adaptation_first_orderModelForm, self).__init__(prefix)
-        self.g_L = ArrayField(Zerlaut_adaptation_first_order.g_L, self)
-        self.E_L_e = ArrayField(Zerlaut_adaptation_first_order.E_L_e, self)
-        self.E_L_i = ArrayField(Zerlaut_adaptation_first_order.E_L_i, self)
-        self.C_m = ArrayField(Zerlaut_adaptation_first_order.C_m, self)
-        self.b = ArrayField(Zerlaut_adaptation_first_order.b, self)
-        self.tau_w = ArrayField(Zerlaut_adaptation_first_order.tau_w, self)
-        self.E_e = ArrayField(Zerlaut_adaptation_first_order.E_e, self)
-        self.E_i = ArrayField(Zerlaut_adaptation_first_order.E_i, self)
-        self.Q_e = ArrayField(Zerlaut_adaptation_first_order.Q_e, self)
-        self.Q_i = ArrayField(Zerlaut_adaptation_first_order.Q_i, self)
-        self.tau_e = ArrayField(Zerlaut_adaptation_first_order.tau_e, self)
-        self.tau_i = ArrayField(Zerlaut_adaptation_first_order.tau_i, self)
-        self.N_tot = ArrayField(Zerlaut_adaptation_first_order.N_tot, self)
-        self.p_connect = ArrayField(Zerlaut_adaptation_first_order.p_connect, self)
-        self.g = ArrayField(Zerlaut_adaptation_first_order.g, self)
-        self.T = ArrayField(Zerlaut_adaptation_first_order.T, self)
-        self.P_e = ArrayField(Zerlaut_adaptation_first_order.P_e, self)
-        self.P_i = ArrayField(Zerlaut_adaptation_first_order.P_i, self)
-        self.external_input = ArrayField(Zerlaut_adaptation_first_order.external_input, self)
-        self.variables_of_interest = MultiSelectField(Zerlaut_adaptation_first_order.variables_of_interest, self)
+        super(ZerlautFirstOrderModelForm, self).__init__(prefix)
+        self.g_L = ArrayField(ZerlautFirstOrder.g_L, self)
+        self.E_L_e = ArrayField(ZerlautFirstOrder.E_L_e, self)
+        self.E_L_i = ArrayField(ZerlautFirstOrder.E_L_i, self)
+        self.C_m = ArrayField(ZerlautFirstOrder.C_m, self)
+        self.b = ArrayField(ZerlautFirstOrder.b, self)
+        self.tau_w = ArrayField(ZerlautFirstOrder.tau_w, self)
+        self.E_e = ArrayField(ZerlautFirstOrder.E_e, self)
+        self.E_i = ArrayField(ZerlautFirstOrder.E_i, self)
+        self.Q_e = ArrayField(ZerlautFirstOrder.Q_e, self)
+        self.Q_i = ArrayField(ZerlautFirstOrder.Q_i, self)
+        self.tau_e = ArrayField(ZerlautFirstOrder.tau_e, self)
+        self.tau_i = ArrayField(ZerlautFirstOrder.tau_i, self)
+        self.N_tot = ArrayField(ZerlautFirstOrder.N_tot, self)
+        self.p_connect = ArrayField(ZerlautFirstOrder.p_connect, self)
+        self.g = ArrayField(ZerlautFirstOrder.g, self)
+        self.T = ArrayField(ZerlautFirstOrder.T, self)
+        self.P_e = ArrayField(ZerlautFirstOrder.P_e, self)
+        self.P_i = ArrayField(ZerlautFirstOrder.P_i, self)
+        self.external_input = ArrayField(ZerlautFirstOrder.external_input, self)
+        self.variables_of_interest = MultiSelectField(ZerlautFirstOrder.variables_of_interest, self)
 
 
-class Zerlaut_adaptation_second_orderModelForm(Zerlaut_adaptation_first_orderModelForm):
+class ZerlautSecondOrderModelForm(ZerlautFirstOrderModelForm):
 
     def __init__(self, prefix=''):
-        super(Zerlaut_adaptation_second_orderModelForm, self).__init__(prefix)
-        self.variables_of_interest = MultiSelectField(Zerlaut_adaptation_second_order.variables_of_interest, self)
+        super(ZerlautSecondOrderModelForm, self).__init__(prefix)
+        self.variables_of_interest = MultiSelectField(ZerlautSecondOrder.variables_of_interest, self)
 
 
 class LinearModelForm(Form):
