@@ -2,14 +2,14 @@ import json
 from collections import namedtuple
 
 import numpy
+from tvb.core.entities.storage import dao
 from tvb.basic.neotraits.ex import TraitError
-
-from tvb.basic.neotraits._attr import List
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import List, Attr
 
 # This setting is injected.
 # The pattern might be confusing, but it is an interesting alternative to
 # universal tvbprofile imports
+
 jinja_env = None
 
 
@@ -82,6 +82,55 @@ class TraitField(Field):
             trait_attribute.doc
         )
 
+class DataTypeSelectField(TraitField):
+    template = 'datatype_select_field.jinja2'
+    missing_value = 'explicit-None-value'
+
+    def fill_from_post(self, post_data):
+        post_data = post_data.get(self.name)
+        # TODO: correct this
+        field_data = dao.get_datatype_by_id(int(post_data[1]))
+        self.unvalidated_data = field_data
+        self.data = self.unvalidated_data
+
+    def _get_values_from_db(self):
+        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
+                                                               self.owner.get_index_for_required_dt(
+                                                                   self.trait_attribute.field_type),
+                                                               self.owner.get_filters())
+        return filtered_datatypes
+
+    def options(self):
+        if not self.owner.project_id:
+            raise ValueError('A project_id is required in order to query the DB')
+
+        filtered_datatypes = self._get_values_from_db()
+
+        if not self.trait_attribute.required:
+            choice = None
+            yield Option(
+                id='{}_{}'.format(self.name, None),
+                value=self.missing_value,
+                label=str(choice).title(),
+                checked=self.data is None
+            )
+
+        for i, datatype in enumerate(filtered_datatypes):
+            yield Option(
+                id='{}_{}'.format(self.name, i),
+                value=datatype,
+                # TODO: generate proper label instead of GID
+                label=datatype[2],
+                checked=self.data == datatype
+            )
+
+class TimeSeriesSelectField(DataTypeSelectField):
+    def _get_values_from_db(self):
+        filtered_ts, count = dao.get_values_of_time_series(self.owner.project_id,
+                                                    self.owner.get_index_for_required_dt(
+                                                        self.trait_attribute.field_type),
+                                                    self.owner.get_filters())
+        return filtered_ts
 
 class StrField(TraitField):
     template = 'str_field.jinja2'
@@ -302,6 +351,8 @@ class Form(object):
     def trait_fields(self):
         for field in self.__dict__.itervalues():
             if isinstance(field, TraitField):
+                if isinstance(field, DataTypeSelectField):
+                    continue
                 yield field
 
     def validate(self):
