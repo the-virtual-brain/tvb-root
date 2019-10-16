@@ -4,7 +4,7 @@ from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5, CorticalSurfaceH5
+from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
 
 conn = Connectivity(
     region_labels=numpy.array(["a", "b"]),
@@ -166,12 +166,6 @@ def test_store_load_surface(tmph5factory):
     # with pytest.raises(TypeError):
     surf_h5.load_into(surf_stored)
     assert surf_stored.vertices.shape[0] == 5
-
-
-def test_store_cortical_surface(tmph5factory):
-    cort_h5 = CorticalSurfaceH5(tmph5factory())
-    cort_h5.store(cort)
-    cort_h5.close()
 
 
 def test_store_load_region_mapping(tmph5factory):
