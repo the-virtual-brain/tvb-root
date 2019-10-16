@@ -71,6 +71,9 @@ def do_operation_launch(operation_id):
                      " for Operation:" + str(curent_operation.id))
         PARAMS = parse_json_parameters(curent_operation.parameters)
         adapter_instance = ABCAdapter.build_adapter(stored_adapter)
+        adapter_form = adapter_instance.get_form()(project_id=curent_operation.fk_launched_in)
+        adapter_form.fill_from_post(PARAMS)
+        adapter_instance.set_form(adapter_form)
 
         ## Un-comment bellow for profiling an operation:
         ## import cherrypy.lib.profiler as profiler

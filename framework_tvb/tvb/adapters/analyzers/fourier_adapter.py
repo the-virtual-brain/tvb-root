@@ -87,8 +87,7 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
     def get_dict(self):
         attrs_dict = {}
         for field in self.fields:
-            field_name = self._get_original_field_name(field)
-            attrs_dict.update({field_name: field.data})
+            attrs_dict.update({field.name: field.data})
         return attrs_dict
 
     def get_form_values(self):
