@@ -38,8 +38,10 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.storage import dao
-from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, Surface, make_surface, center_vertices
+from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, make_surface, center_vertices
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class ZIPSurfaceImporter(ABCUploader):
@@ -65,7 +67,7 @@ class ZIPSurfaceImporter(ABCUploader):
 
 
     def get_output(self):
-        return [Surface]
+        return [SurfaceIndex]
 
 
     @staticmethod
@@ -107,7 +109,6 @@ class ZIPSurfaceImporter(ABCUploader):
         # Detect and instantiate correct surface type
         self.logger.debug("Create surface instance")
         surface = self._make_surface(surface_type)
-        surface.storage_path = self.storage_path
         surface.zero_based_triangles = zero_based_triangles
         if should_center:
             vertices = center_vertices(zip_surface.vertices)
@@ -125,7 +126,7 @@ class ZIPSurfaceImporter(ABCUploader):
             self.logger.info("Hemispheres detected")
 
         surface.hemisphere_mask = zip_surface.hemisphere_mask
-        surface.triangle_normals = None
+        surface.compute_triangle_normals()
 
         # Now check if the triangles of the surface are valid
         triangles_min_vertex = numpy.amin(surface.triangles)
@@ -150,4 +151,17 @@ class ZIPSurfaceImporter(ABCUploader):
             self.add_operation_additional_info(validation_result.summary())
 
         self.logger.debug("Surface ready to be stored")
-        return surface
+
+        surface.configure()
+
+        surf_idx = SurfaceIndex()
+        surf_idx.gid = surface.gid.hex  # TODO: GID should be on HasTraitsIndex
+        surf_idx.fill_from_has_traits(surface)
+
+        loader = DirLoader(self.storage_path)
+        surf_path = loader.path_for(SurfaceH5, surf_idx.gid)
+
+        with SurfaceH5(surf_path) as surf_h5:
+            surf_h5.store(surface)
+
+        return surf_idx
