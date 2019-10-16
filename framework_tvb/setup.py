@@ -41,12 +41,12 @@ import shutil
 import setuptools
 
 
-VERSION = "1.5.10"
+VERSION = "2.0a0"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cfflib", "cherrypy", "formencode", "genshi",
-                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "pytest", "scipy",
+                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-library"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
@@ -57,7 +57,8 @@ setuptools.setup(name="tvb-framework",
                  packages=setuptools.find_packages(),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
-                 extras_require={'postgres': ["psycopg2"]},
+                 extras_require={'postgres': ["psycopg2"],
+                                 'test': ["pytest", "pytest-benchmark"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
                  license="GPL v3",
