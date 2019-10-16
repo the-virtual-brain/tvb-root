@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
@@ -6,14 +6,15 @@ from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
-from tvb.core.neotraits.db import NArrayIndex
+from tvb.core.neotraits.db import from_ndarray
 
 
 class RegionMappingIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
 
     surface_id = Column(Integer, ForeignKey("SurfaceIndex.id"), nullable=not RegionMapping.surface.required)
     surface = relationship(SurfaceIndex, foreign_keys=surface_id, primaryjoin=SurfaceIndex.id == surface_id, cascade='none')
@@ -24,14 +25,15 @@ class RegionMappingIndex(DataType):
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
-        self.array_data = NArrayIndex.from_ndarray(datatype.array_data)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
 
 
 class RegionVolumeMappingIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
 
     connectivity_id = Column(Integer, ForeignKey("ConnectivityIndex.id"),
                              nullable=not RegionVolumeMapping.connectivity.required)
@@ -42,4 +44,4 @@ class RegionVolumeMappingIndex(DataType):
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
-        self.array_data = NArrayIndex.from_ndarray(datatype.array_data)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)

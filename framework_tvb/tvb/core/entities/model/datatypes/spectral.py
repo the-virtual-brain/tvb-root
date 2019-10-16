@@ -4,7 +4,7 @@ from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, Coheren
 
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neotraits.db import NArrayIndex
+from tvb.core.neotraits.db import from_ndarray
 
 
 class FourierSpectrumIndex(DataType):
@@ -38,8 +38,8 @@ class WaveletCoefficientsIndex(DataType):
     sample_period = Column(Float, nullable=False)
     number_of_scales = Column(Integer, nullable=False)
 
-    frequencies_id = Column(Integer, ForeignKey("narrays.id"), nullable=not WaveletCoefficients.frequencies.required)
-    frequencies = relationship(NArrayIndex, foreign_keys=frequencies_id)
+    frequencies_min = Column(Float)
+    frequencies_max = Column(Float)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
@@ -48,7 +48,7 @@ class WaveletCoefficientsIndex(DataType):
         self.q_ratio = datatype.q_ratio
         self.sample_period = datatype.sample_period
         self.number_of_scales = datatype.frequencies.shape[0]
-        self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
 
 
 class CoherenceSpectrumIndex(DataType):
@@ -58,13 +58,13 @@ class CoherenceSpectrumIndex(DataType):
     source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     nfft = Column(Integer, nullable=False)
-    frequencies_id = Column(Integer, ForeignKey("narrays.id"), nullable=not CoherenceSpectrum.frequency.required)
-    frequencies = relationship(NArrayIndex, foreign_keys=frequencies_id)
+    frequencies_min = Column(Float)
+    frequencies_max = Column(Float)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
         self.nfft = datatype.nfft
-        self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
 
 
 class ComplexCoherenceSpectrumIndex(DataType):

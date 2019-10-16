@@ -11,5 +11,5 @@ class VolumeIndex(DataType):
     # origin
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
+        # self.gid = datatype.gid.hex
         self.voxel_unit = datatype.voxel_unit

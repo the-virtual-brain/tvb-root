@@ -62,6 +62,23 @@ class HasTraitsIndex(Base):
         )
 
 
+def from_ndarray(array):
+    if array is None:
+        return None
+
+    if array.dtype.kind in 'iufc' and array.size != 0:
+        # we compute these simple statistics for integer unsigned float or complex
+        # arrays that are not empty
+        has_nan = numpy.isnan(array).any()
+        minvalue, maxvalue = array.min(), array.max()
+        median = numpy.median(array)
+    else:
+        has_nan = False
+        minvalue, maxvalue, median = None, None, None
+
+    return minvalue, maxvalue, median
+
+
 class NArrayIndex(Base):
     __tablename__ = 'narrays'
 
@@ -83,7 +100,6 @@ class NArrayIndex(Base):
     length_2d = Column(Integer)
     length_3d = Column(Integer)
     length_4d = Column(Integer)
-
 
     @property
     def shape(self):
