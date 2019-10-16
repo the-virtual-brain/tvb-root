@@ -44,6 +44,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
+from tvb.core.neocom.api import TVBLoader
 from tvb.core.services.flow_service import FlowService
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
@@ -579,7 +580,8 @@ class ProjectService:
             else:
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
-                self.structure_helper.remove_datatype(datatype)
+                h5_path = TVBLoader().path_for_stored_index(datatype)
+                self.structure_helper.remove_datatype_file(h5_path)
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")
@@ -600,6 +602,7 @@ class ProjectService:
             for dt in reversed(datatypes_for_op):
                 self.remove_datatype(operation.project.id, dt.gid, False)
             dao.remove_entity(Operation, operation.id)
+            self.structure_helper.remove_operation_data(operation.project.name, operation_id)
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)

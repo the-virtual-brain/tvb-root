@@ -48,4 +48,4 @@ class ABCRemover(object):
         """
         Perform basic operation, should overwrite in specific implementations.
         """
-        dao.remove_datatype(self.handled_datatype.gid)
+        dao.remove_entity(self.handled_datatype.__class__, self.handled_datatype.id)

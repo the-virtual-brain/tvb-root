@@ -246,18 +246,18 @@ class FilesHelper():
     
     ####################### DATA-TYPES METHODS Start Here #####################
      
-    def remove_datatype(self, datatype):  
+    def remove_datatype_file(self, h5_file):
         """
         Remove H5 storage fully.
         """
         try:
-            if os.path.exists(datatype.get_storage_file_path()):
-                os.remove(datatype.get_storage_file_path())
+            if os.path.exists(h5_file):
+                os.remove(h5_file)
             else:
-                self.logger.warning("Data file already removed:" + str(datatype.get_storage_file_path()))
+                self.logger.warning("Data file already removed:" + str(h5_file))
         except Exception:
             self.logger.exception("Could not remove file")
-            raise FileStructureException("Could not remove " + str(datatype))
+            raise FileStructureException("Could not remove " + str(h5_file))
             
             
     def move_datatype(self, datatype, new_project_name, new_op_id):
