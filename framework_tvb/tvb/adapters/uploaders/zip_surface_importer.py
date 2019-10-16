@@ -33,6 +33,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import uuid
 import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
@@ -154,11 +155,13 @@ class ZIPSurfaceImporter(ABCUploader):
 
         surf_idx = SurfaceIndex()
         surf_idx.fill_from_has_traits(surface)
+        surface.configure()
 
         loader = DirLoader(self.storage_path)
         surf_path = loader.path_for(SurfaceH5, surf_idx.gid)
 
         with SurfaceH5(surf_path) as surf_h5:
             surf_h5.store(surface)
+            surf_h5.gid.store(uuid.UUID(surf_idx.gid))
 
         return surf_idx
