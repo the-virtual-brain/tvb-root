@@ -33,8 +33,6 @@
 """
 
 import numpy
-import scipy.io
-import collections
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
@@ -142,80 +140,3 @@ class Sensors_Importer(ABCUploader):
         sensors_h5.usable.store(sensors_inst.usable)
 
         return sensors_idx
-    
-    
-class BrainstormSensorUploader(ABCUploader):
-    "Upload sensors from Brainstorm database files"
-
-    _ui_name = "Sensors Brainstorm"
-    _ui_subsection = "sensors_importer"
-    _ui_description = "Upload a description of s/M/EEG sensors from a Brainstorm database file."
-
-    _bst_type_to_class = {
-        'SEEG': SensorsInternal,
-        'EEG': SensorsEEG,
-        'MEG': SensorsMEG,
-    }
-
-    def get_upload_input_tree(self):
-        return [{'name': 'filename', 'type': 'upload', 'required_type': '.mat',
-                 'label': 'Sensors file', 'required': True,
-                 'description': 'Brainstorm file described s/M/EEG sensors.'}]
-
-    def get_output(self):
-        return [SensorsIndex]
-
-    def launch(self, filename):
-        # get & verify data
-        if filename is None:
-            raise LaunchException("Please provide a valid filename.")
-        mat = scipy.io.loadmat(filename)
-        please_verify = ('Please verify that the provided file is a valid sensors file '
-                         'from a Brainstorm database.')
-        if 'Channel' not in mat:
-            raise LaunchException(please_verify)
-        chans = mat['Channel']
-        chan_fields = chans.dtype.fields.keys()
-        req_fields = 'Name Type Loc Orient'.split()
-        if any(key not in chan_fields for key in req_fields):
-            raise LaunchException(please_verify)
-        # guess majority channel type (i.e. ignore EOG, TRIGGER, etc.)
-        chtypes = [ch[0] for ch in chans['Type'][0]]
-        type_ctr = collections.Counter(chtypes)
-        (chtype, _), = type_ctr.most_common(1)
-        sens_cls = self._bst_type_to_class[chtype]
-        sens = sens_cls()
-        ":type : Sensors"
-        # workaround: locations & orientations must be homogeneous arrays
-        # but in real data, channel types aren't homogeneous so neither are
-        # locations nor orientations. Find first chan with guessed type, create
-        # dummy locations with correct shape, and set sensors locations as
-        # the real locations or dummy if doesn't match
-        sens.usable = numpy.array([_ == chtype for _ in chtypes])
-        i_type, = numpy.where(sens.usable)
-        _ = numpy.zeros(chans['Loc'][0][i_type[0]].shape)
-        loc = numpy.array([ch if ch.shape==_.shape else _ for ch in chans['Loc'][0]])
-        sens.locations = loc[..., 0] * 1e3
-        sens.labels = numpy.array([str(ch[0]) for ch in chans['Name'][0]])
-        if isinstance(sens, SensorsMEG):
-            _ = numpy.zeros(chans['Orient'][0][i_type[0]].shape)
-            sens.orientations = numpy.array(
-                [ch if ch.shape==_.shape else _ for ch in chans['Orient'][0]])
-            sens.has_orientation = True
-
-        sensors_idx = SensorsIndex()
-        sensors_idx.fill_from_has_traits(sens)
-
-        loader = DirLoader(self.storage_path)
-        sensors_path = loader.path_for(SensorsH5, sensors_idx.gid)
-        sensors_h5 = SensorsH5(sensors_path)
-
-        sensors_h5.sensors_type.store(sens.sensors_type)
-        sensors_h5.labels.store(sens.labels)
-        sensors_h5.locations.store(sens.locations)
-        sensors_h5.has_orientation.store(sens.has_orientation)
-        sensors_h5.orientations.store(sens.orientations)
-        sensors_h5.number_of_sensors.store(sens.labels.size)
-        sensors_h5.usable.store(sens.usable)
-
-        return [sensors_idx]
