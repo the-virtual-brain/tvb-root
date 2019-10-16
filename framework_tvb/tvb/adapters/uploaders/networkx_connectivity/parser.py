@@ -142,6 +142,7 @@ class NetworkxParser(object):
             result.cortical = numpy.array(cortical)
             result.weights = weights_matrix
             result.tract_lengths = tract_matrix
+            result.configure()
             return result
 
         except KeyError as err:

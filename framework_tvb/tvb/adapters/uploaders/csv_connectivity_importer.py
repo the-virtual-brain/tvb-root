@@ -33,16 +33,16 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import csv
-import uuid
 import numpy
 import os
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.neotraits._forms import UploadField, DataTypeSelectField, SimpleSelectField
 from tvb.interfaces.neocom._h5loader import DirLoader
 
 
@@ -109,6 +109,23 @@ class CSVConnectivityParser(object):
             self.result_conn[self.permutation[row_idx]] = new_row
 
 
+DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 'colon': ':'}
+
+class CSVConnectivityImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(CSVConnectivityImporterForm, self).__init__(prefix, project_id)
+
+        self.weights = UploadField('.csv', self, name='weights', label='Weights file (csv)', required=True)
+        self.weights_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='weights_delimiter', required=True,
+                                                   label='Field delimiter : ', default=DELIMITER_OPTIONS.keys()[0])
+        self.tracts = UploadField('.csv', self, name='tracts', label='Tracts file (csv)', required=True)
+        self.tracts_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='tracts_delimiter', required=True,
+                                                  label='Field delimiter : ', default=DELIMITER_OPTIONS.keys()[0])
+        self.input_data = DataTypeSelectField(ConnectivityIndex, self, name='input_data', required=True,
+                                              label='Reference Connectivity Matrix (for node labels, 3d positions etc.)')
+
+
 class CSVConnectivityImporter(ABCUploader):
     """
     Handler for uploading a Connectivity csv from the dti pipeline
@@ -118,35 +135,24 @@ class CSVConnectivityImporter(ABCUploader):
     _ui_description = "Import a Connectivity from two CSV files as result from the DTI pipeline"
     WEIGHTS_FILE = "weights.txt"
     TRACT_FILE = "tract_lengths.txt"
-    DELIMITER_OPTIONS = [
-        {'name': 'comma', 'value': ','},
-        {'name': 'semicolon', 'value': ';'},
-        {'name': 'tab', 'value': '\t'},
-        {'name': 'space', 'value': ' '},
-        {'name': 'colon', 'value': ':'}
-    ]
+
+    form = None
+
+    def get_form(self):
+        if self.form is None:
+            return CSVConnectivityImporterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def __init__(self):
         ABCUploader.__init__(self)
         self.logger = get_logger(self.__class__.__module__)
 
+    def get_upload_input_tree(self): return None
 
-    def get_upload_input_tree(self):
-        return [{'name': 'weights', 'type': 'upload', 'required_type': '.csv',
-                 'label': 'Weights file (csv)', 'required': True},
-
-                {'name': 'weights_delimiter', 'type': 'select', 'label': 'Field delimiter : ',
-                         'required': True, 'options': self.DELIMITER_OPTIONS, 'default': ','},
-
-                {'name': 'tracts', 'type': 'upload', 'required_type': '.csv',
-                 'label': 'Tracts file (csv)', 'required': True},
-
-                {'name': 'tracts_delimiter', 'type': 'select', 'label': 'Field delimiter : ',
-                         'required': True, 'options': self.DELIMITER_OPTIONS, 'default': ','},
-
-                {'name': 'input_data', 'label': 'Reference Connectivity Matrix (for node labels, 3d positions etc.)',
-                 'type': ConnectivityIndex, 'required': True}]
-
+    def get_input_tree(self): return None
 
     def get_output(self):
         return [ConnectivityIndex]
@@ -185,7 +191,6 @@ class CSVConnectivityImporter(ABCUploader):
         result = Connectivity()
 
         conn_idx = ConnectivityIndex()
-        conn_idx.gid = uuid.uuid4()  # TODO: GID should be kept on HasTraitsIndex
 
         loader = DirLoader(self.storage_path)
         conn_path = loader.path_for(ConnectivityH5, conn_idx.gid)
@@ -203,6 +208,7 @@ class CSVConnectivityImporter(ABCUploader):
         result.areas = input_data_h5.areas.load()
         result.cortical = input_data_h5.cortical.load()
         result.hemispheres = input_data_h5.hemispheres.load()
+        result.configure()
 
         with ConnectivityH5(conn_path) as conn_h5:
             conn_h5.store(result)

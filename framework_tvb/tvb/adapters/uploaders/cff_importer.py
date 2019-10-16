@@ -37,6 +37,7 @@ import os
 import sys
 import shutil
 import cStringIO
+import uuid
 from cfflib import load
 from tempfile import gettempdir
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -44,12 +45,27 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
+from tvb.adapters.uploaders.networkx_importer import NetworkxCFFCommonImporterForm
 from tvb.core.adapters.exceptions import LaunchException, ParseException
+from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.storage import dao, transactional
 from tvb.datatypes.connectivity import Connectivity
 import tvb.datatypes.surfaces as surfaces
+from tvb.core.neotraits._forms import UploadField, SimpleBoolField
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
+class CFFImporterForm(NetworkxCFFCommonImporterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(CFFImporterForm, self).__init__(prefix, project_id, label_prefix='CNetwork: ')
+        self.cff = UploadField('.cff', self, name='cff', required=True, label='CFF archive',
+                               doc='Connectome File Format archive expected')
+        self.should_center = SimpleBoolField(self, name='should_center', label='CSurface: Center surfaces',
+                                             doc='Center surfaces using vertices positions mean along axes')
 
 
 class CFF_Importer(ABCUploader):
@@ -62,21 +78,19 @@ class CFF_Importer(ABCUploader):
     _ui_description = "Import from CFF archive one or multiple datatypes."
     logger = get_logger(__name__)
 
+    form = None
 
-    def get_upload_input_tree(self):
-        """
-        Define as input parameter, a CFF archive.
-        """
-        tree = [{'name': 'cff', 'type': 'upload', 'required_type': '.cff',
-                 'label': 'CFF archive', 'required': True,
-                 'description': 'Connectome File Format archive expected'}]
+    def get_input_tree(self): return None
 
-        tree.extend(NetworkxParser.prepare_input_params_tree(prefix="CNetwork: "))
+    def get_upload_input_tree(self): return None
 
-        tree.append({'name': 'should_center', 'type': 'bool', 'default': False, 'label': 'CSurface: Center surfaces',
-                     'description': 'Center surfaces using vertices positions mean along axes'})
-        return tree
+    def get_form(self):
+        if self.form is None:
+            return CFFImporterForm
+        return self.form
 
+    def set_form(self, form):
+        self.form = form
 
     def get_output(self):
         return [Connectivity, surfaces.Surface]
@@ -104,13 +118,33 @@ class CFF_Importer(ABCUploader):
             surfaces = conn_obj.get_connectome_surface()
             warning_message = ""
             results = []
+            loader = DirLoader(self.storage_path)
 
             if network:
                 partial = self._parse_connectome_network(network, warning_message, **kwargs)
-                results.extend(partial)
+                for conn in partial:
+                    conn_idx = ConnectivityIndex()
+                    conn_idx.fill_from_has_traits(conn)
+
+                    conn_h5_path = loader.path_for(ConnectivityH5, conn_idx.gid)
+                    with ConnectivityH5(conn_h5_path) as conn_h5:
+                        conn_h5.store(conn)
+                        conn_h5.gid.store(uuid.UUID(conn_idx.gid))
+                    results.append(conn_idx)
+
             if surfaces:
                 partial = self._parse_connectome_surfaces(surfaces, warning_message, should_center)
-                results.extend(partial)
+
+                for surf in partial:
+                    surf_idx = SurfaceIndex()
+                    surf_idx.fill_from_has_traits(surf)
+
+                    surf_h5_path = loader.path_for(SurfaceH5, surf_idx.gid)
+                    with SurfaceH5(surf_h5_path) as surf_h5:
+                        surf_h5.store(surf)
+                        surf_h5.gid.store(uuid.UUID(surf_idx.gid))
+                    results.append(surf_idx)
+
 
             self._cleanup_after_cfflib(conn_obj)
 
@@ -137,7 +171,7 @@ class CFF_Importer(ABCUploader):
         Parse data from a NetworkX object and save it in Connectivity DataTypes.
         """
         connectivities = []
-        parser = NetworkxParser(self.storage_path, **kwargs)
+        parser = NetworkxParser(**kwargs)
 
         for net in connectome_network:
             try:
