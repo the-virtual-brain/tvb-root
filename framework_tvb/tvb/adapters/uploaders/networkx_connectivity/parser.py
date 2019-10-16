@@ -60,11 +60,10 @@ class NetworkxParser(object):
 
     OPERATORS = "[*-+:]"
 
-    def __init__(self, storage_path, key_edge_weight=None, key_edge_tract=None, key_node_coordinates=None,
+    def __init__(self, key_edge_weight=None, key_edge_tract=None, key_node_coordinates=None,
                  key_node_label=None, key_node_region=None, key_node_hemisphere=None):
 
         self.logger = get_logger(__name__)
-        self.storage_path = storage_path
 
         NetworkxParser._append_key(key_edge_weight, self.KEY_EDGE_WEIGHT)
         NetworkxParser._append_key(key_edge_tract, self.KEY_EDGE_TRACT)
@@ -121,9 +120,9 @@ class NetworkxParser(object):
                 labels_vector.append(str(label))
 
                 if self.REGION_CORTICAL == self._find_value(node_data, self.KEY_NODE_REGION):
-                    cortical.append(1)
+                    cortical.append(True)
                 else:
-                    cortical.append(0)
+                    cortical.append(False)
 
                 if self.HEMISPHERE_RIGHT == self._find_value(node_data, self.KEY_NODE_HEMISPHERE):
                     hemisphere.append(True)
@@ -136,12 +135,11 @@ class NetworkxParser(object):
                 tract_matrix[start - 1][end - 1] = self._find_value(network.adj[start][end], self.KEY_EDGE_TRACT)
 
             result = Connectivity()
-            result.storage_path = self.storage_path
-            result.region_labels = labels_vector
-            result.centres = positions
-            result.set_metadata({'description': 'Array Columns: labels, X, Y, Z'}, 'centres')
-            result.hemispheres = hemisphere
-            result.cortical = cortical
+            result.region_labels = numpy.array(labels_vector)
+            result.centres = numpy.array(positions)
+            # result.set_metadata({'description': 'Array Columns: labels, X, Y, Z'}, 'centres')
+            result.hemispheres = numpy.array(hemisphere)
+            result.cortical = numpy.array(cortical)
             result.weights = weights_matrix
             result.tract_lengths = tract_matrix
             return result
