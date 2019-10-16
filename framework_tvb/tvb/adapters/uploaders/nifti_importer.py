@@ -32,16 +32,16 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
+
+import json
 import os
 import uuid
-
 import numpy
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.time_series import TimeSeriesVolume
 from tvb.datatypes.volumes import Volume
-
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.nifti.parser import NIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
@@ -55,7 +55,26 @@ from tvb.core.entities.model.datatypes.structural import StructuralMRIIndex
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesVolumeIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
 from tvb.core.entities.storage import transactional
+from tvb.core.neotraits._forms import UploadField, SimpleBoolField, DataTypeSelectField
+from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.interfaces.neocom._h5loader import DirLoader
+
+
+class NIFTIImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(NIFTIImporterForm, self).__init__(prefix, project_id)
+
+        self.data_file = UploadField('.nii, .gz, .zip', self, name='data_file', required=True,
+                                     label='Please select file to import (gz or nii)')
+        self.apply_corrections = SimpleBoolField(self, name='apply_corrections', label='Apply auto Corrections',
+                                                 doc='Check this when the NII mapping has values outside [-1..N-1]. '
+                                                     'All outside range will be set -1 (background).')
+        self.mappings_file = UploadField('.txt', self, name='mappings_file', label='Mapping File',
+                                         doc='Fill this for Region Mappings, when the indices in the NII do not match '
+                                             'the Connectivity [0..N-1] indices')
+        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
+                                                doc='Optional Connectivity in case the NII file is a volume2regions mapping.')
 
 
 class NIFTIImporter(ABCUploader):
@@ -67,25 +86,19 @@ class NIFTIImporter(ABCUploader):
     _ui_subsection = "nifti_importer"
     _ui_description = "Import TimeSeries Volume from NIFTI"
 
+    form = None
 
-    def get_upload_input_tree(self):
-        """
-        Take as input a GZ archive or NII file.
-        """
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.nii, .gz, .zip',
-                 'label': 'Please select file to import (gz or nii)', 'required': True},
+    def get_input_tree(self): return None
 
-                {'name': 'apply_corrections', 'label': 'Apply auto Corrections', 'type': 'bool', 'default': False,
-                 'description': 'Check this when the NII mapping has values outside [-1..N-1]. '
-                                'All outside range will be set -1 (background).'},
+    def get_upload_input_tree(self): return None
 
-                {'name': 'mappings_file', 'label': 'Mapping File', 'type': 'upload', 'required_type': '.txt',
-                 'description': 'Fill this for Region Mappings, when the indices in the NII do not match the '
-                                'Connectivity [0..N-1] indices'},
+    def get_form(self):
+        if self.form is None:
+            return NIFTIImporterForm
+        return self.form
 
-                {'name': 'connectivity', 'label': 'Connectivity',
-                 'type': ConnectivityIndex, 'required': False, 'datatype': True,
-                 'description': 'Optional Connectivity in case the NII file is a volume2regions mapping.'}]
+    def set_form(self, form):
+        self.form = form
 
     def get_output(self):
         return [VolumeIndex, StructuralMRIIndex, TimeSeriesVolumeIndex, RegionVolumeMappingIndex]
@@ -103,6 +116,7 @@ class NIFTIImporter(ABCUploader):
         volume_h5_path = self.loader.path_for(VolumeH5, volume_idx.gid)
         with VolumeH5(volume_h5_path) as volume_h5:
             volume_h5.store(volume)
+            volume_h5.gid.store(uuid.UUID(volume_idx.gid))
 
         return volume_idx
 
@@ -121,9 +135,10 @@ class NIFTIImporter(ABCUploader):
         with StructuralMRIH5(mri_h5_path) as mri_h5:
             mri_h5.weighting.store(mri.weighting)
             mri_h5.write_data_slice(nifti_data)
-            mri_h5.volume.store(uuid.UUID(mri_idx.gid))
+            mri_h5.volume.store(uuid.UUID(volume.gid))
+            mri_h5.gid.store(uuid.UUID(mri_idx.gid))
+            mri.array_data = mri_h5.array_data.load()
 
-        mri.array_data = mri_h5.array_data.load()  # TODO?
         mri_idx.fill_from_has_traits(mri)
         return mri_idx
 
@@ -139,6 +154,7 @@ class NIFTIImporter(ABCUploader):
         else:
             # If no time dim, set sampling to 1 sec
             time_series.sample_period = 1
+        time_series.sample_rate = 1 / time_series.sample_period
 
         if self.parser.units is not None and len(self.parser.units) > 1:
             time_series.sample_period_unit = self.parser.units[1]
@@ -149,14 +165,25 @@ class NIFTIImporter(ABCUploader):
         ts_h5_path = self.loader.path_for(TimeSeriesVolumeH5, ts_idx.gid)
         nifti_data = self.parser.parse()
 
-        with TimeSeriesVolumeH5(ts_h5_path) as ts_h5:
-            ts_h5.volume.store(uuid.UUID(ts_idx.gid))
-            ts_h5.store(time_series, scalars_only=True, store_references=False)
-            for i in range(self.parser.time_dim_size):
-                ts_h5.write_data_slice([nifti_data[:, :, :, i, ...]])
+        ts_h5 = TimeSeriesVolumeH5(ts_h5_path)
+        ts_h5.volume.store(uuid.UUID(volume.gid))
+        ts_h5.gid.store(uuid.UUID(ts_idx.gid))
+        ts_h5.store(time_series, scalars_only=True, store_references=False)
+        for i in range(self.parser.time_dim_size):
+            ts_h5.write_data_slice([nifti_data[:, :, :, i, ...]])
 
-        time_series.data = ts_h5.data.load()  # TODO?
-        ts_idx.fill_from_has_traits(time_series)
+        data_shape = ts_h5.read_data_shape()
+        ts_h5.close()
+
+        ts_idx.title = time_series.title
+        ts_idx.sample_period_unit = time_series.sample_period_unit
+        ts_idx.sample_period = time_series.sample_period
+        ts_idx.sample_rate = time_series.sample_rate
+        ts_idx.labels_ordering = json.dumps(time_series.labels_ordering)
+        ts_idx.data_ndim = len(data_shape)
+        ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(
+            data_shape)
+
         return ts_idx
 
     def _create_region_map(self, volume, connectivity, apply_corrections, mappings_file):
@@ -175,8 +202,9 @@ class NIFTIImporter(ABCUploader):
             rm_h5.write_data_slice(nifti_data, apply_corrections, mappings_file, connectivity.number_of_regions)
             rm_h5.connectivity.store(uuid.UUID(connectivity.gid))
             rm_h5.volume.store(uuid.UUID(volume.gid))
+            rm_h5.gid.store(uuid.UUID(rm_idx.gid))
+            region2volume_mapping.array_data = rm_h5.array_data.load()
 
-        region2volume_mapping.array_data = rm_h5.array_data.load()  # TODO?
         rm_idx.fill_from_has_traits(region2volume_mapping)
         return rm_idx
 
