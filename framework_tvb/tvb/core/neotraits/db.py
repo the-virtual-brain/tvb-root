@@ -1,6 +1,7 @@
 import json
+from datetime import datetime
 import numpy
-from sqlalchemy import Column, Integer, Text
+from sqlalchemy import Column, Integer, Text, DateTime
 from sqlalchemy import String, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
@@ -19,6 +20,7 @@ class HasTraitsIndex(Base):
     gid = Column(String(32), unique=True)
     type_ = Column(String(50))
     title = Column(Text)
+    create_date = Column(DateTime, default=datetime.now)
 
     # Quick remainder about @declared_attr. It makes a class method.
     # Sqlalchemy will treat this class method like a statically declared class attribute
