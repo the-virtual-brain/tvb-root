@@ -120,14 +120,19 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, url_triangles, url_region_map = SurfaceURLGenerator.get_urls_for_rendering(True, self.region_map)
+        url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
+            SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_h5)
+
         params = self.retrieve_measure_points_prams(time_series)
 
-        base_activity_url, time_urls = self._prepare_data_slices(time_series)
-        min_val, max_val = time_series.get_min_max_values()
+        time_series_h5 = self._get_h5_from_index(time_series)
+        base_activity_url, time_urls = self._prepare_data_slices(time_series_h5)
+        min_val, max_val = time_series_h5.get_min_max_values()
+        time_series_h5.close()
 
-        if self.surface and self.region_map:
-            boundary_url = self.surface.get_url_for_region_boundaries(self.region_map)
+        if self.surface_h5 and self.region_map_h5:
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_h5,
+                                                                             self.stored_adapter.id)
         else:
             boundary_url = ''
 
@@ -142,6 +147,13 @@ class BrainViewer(ABCDisplayer):
             normalization_factor = figure_size[1] / 600
         params['width'] = figure_size[0] * normalization_factor
         params['height'] = figure_size[1] * normalization_factor
+
+        if self.surface_h5:
+            self.surface_h5.close()
+        if self.region_map_h5:
+            self.region_map_h5.close()
+        if self.connectivity_h5:
+            self.connectivity_h5.close()
 
         return self.build_display_result("brain/portlet_preview", params)
 
