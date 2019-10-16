@@ -31,6 +31,12 @@ class TimeSeriesIndex(DataType):
     labels_ordering = Column(String, nullable=False)
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
 
+    nr_dimensions = Column(Integer)
+    length_1d = Column(Integer)
+    length_2d = Column(Integer)
+    length_3d = Column(Integer)
+    length_4d = Column(Integer)
+
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
         self.title = datatype.title
@@ -46,6 +52,27 @@ class TimeSeriesIndex(DataType):
         # never to be referenced by any other row or table.
         self.data = NArrayIndex.from_ndarray(datatype.data)
         self.time = NArrayIndex.from_ndarray(datatype.time)
+
+
+class TimeSeriesEEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesEEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
+
+
+class TimeSeriesMEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesMEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
+
+
+class TimeSeriesSEEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesSEEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
 
 
 class TimeSeriesEEGIndex(TimeSeriesIndex):
