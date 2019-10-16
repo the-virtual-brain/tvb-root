@@ -1,10 +1,13 @@
 import numpy
+import scipy.sparse
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.volumes import Volume
+from tvb.datatypes.local_connectivity import LocalConnectivity
+
 
 connectivity = Connectivity(
     region_labels=numpy.array(["a", "b"]),
@@ -85,4 +88,10 @@ projection_matrix = ProjectionMatrix(
     sources=cortical_surface,
     sensors=sensors,
     projection_data=numpy.zeros((5, 3))
+)
+
+local_connectivity = LocalConnectivity(
+    surface=cortical_surface,
+    matrix=scipy.sparse.csc_matrix(numpy.eye(8) + numpy.eye(8)[:, ::-1]),
+    cutoff=12,
 )

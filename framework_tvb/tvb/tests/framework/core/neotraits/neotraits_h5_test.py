@@ -1,4 +1,6 @@
 import numpy
+import tvb
+from tvb.core.entities.file.datatypes.local_connectivity_h5 import LocalConnectivityH5
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.simulation_state import SimulationState
 from tvb.datatypes.structural import StructuralMRI
@@ -7,7 +9,7 @@ from tvb.core.entities.file.datatypes.projections_h5 import ProjectionMatrixH5
 from tvb.core.entities.file.datatypes.simulation_state_h5 import SimulationStateH5
 from tvb.core.entities.file.datatypes.structural_h5 import StructuralMRIH5
 from tvb.core.entities.file.datatypes.volumes_h5 import VolumeH5
-from .datatypes import connectivity, surface, region_mapping, sensors, volume, projection_matrix
+from .datatypes import connectivity, surface, region_mapping, sensors, volume, projection_matrix, local_connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
@@ -16,6 +18,7 @@ from tvb.datatypes.surfaces import Surface
 from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.datatypes.sensors_h5 import SensorsH5
 from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
 def test_store_load_configured_surf(tmph5factory):
@@ -249,3 +252,15 @@ def test_store_load_projection_matrix(tmph5factory):
 
     with ProjectionMatrixH5(tmp_file) as f:
         f.store(projection_matrix)
+
+
+def test_store_load_local_connectivity(tmph5factory):
+    tmp_file = tmph5factory()
+
+    with LocalConnectivityH5(tmp_file) as f:
+        f.store(local_connectivity)
+        lc = LocalConnectivity()
+        f.load_into(lc)
+        assert type(lc.equation) == tvb.datatypes.equations.Gaussian
+
+
