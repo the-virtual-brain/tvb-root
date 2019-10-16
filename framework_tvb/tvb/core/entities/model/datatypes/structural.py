@@ -21,4 +21,4 @@ class StructuralMRIIndex(DataType):
 
     def fill_from_has_traits(self, datatype):
         self.weighting = datatype.weighting
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
