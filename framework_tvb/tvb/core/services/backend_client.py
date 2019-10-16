@@ -43,7 +43,7 @@ from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import parse_json_parameters
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.services.workflow_service import WorkflowService
 
@@ -91,7 +91,7 @@ class OperationExecutor(threading.Thread):
 
             LOGGER.debug("Storing pid=%s for operation id=%s launched on local machine." % (operation_id,
                                                                                             launched_process.pid))
-            op_ident = model.OperationProcessIdentifier(operation_id, pid=launched_process.pid)
+            op_ident = OperationProcessIdentifier(operation_id, pid=launched_process.pid)
             dao.store_entity(op_ident)
 
             if self.stopped():
@@ -110,7 +110,7 @@ class OperationExecutor(threading.Thread):
                 LOGGER.error("Operation suffered fatal failure! Exit code: %s Exit message: %s" % (returned,
                                                                                                    subprocess_result))
 
-                workflow_service.persist_operation_state(operation, model.STATUS_ERROR,
+                workflow_service.persist_operation_state(operation, STATUS_ERROR,
                                                          "Operation failed unexpectedly! Please check the log files.")
 
                 burst_entity = dao.get_burst_for_operation_id(self.operation_id)
@@ -204,7 +204,7 @@ class StandAloneClient(object):
                 LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
 
         # Mark operation as canceled in DB and on disk
-        WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
+        WorkflowService().persist_operation_state(operation, STATUS_CANCELED)
 
         return stopped
 
@@ -246,7 +246,7 @@ class ClusterSchedulerClient(object):
         process_ = Popen([call_arg], stdout=PIPE, shell=True)
         job_id = process_.stdout.read().replace('\n', '').split(TvbProfile.current.cluster.JOB_ID_STRING)[-1]
         LOGGER.info("Got jobIdentifier = %s for CLUSTER operationID = %s" % (job_id, operation_identifier))
-        operation_identifier = model.OperationProcessIdentifier(operation_identifier, job_id=job_id)
+        operation_identifier = OperationProcessIdentifier(operation_identifier, job_id=job_id)
         dao.store_entity(operation_identifier)
 
 
@@ -281,7 +281,7 @@ class ClusterSchedulerClient(object):
                 LOGGER.error("Stopping cluster operation was unsuccessful. Try following status with '" +
                              TvbProfile.current.cluster.STATUS_COMMAND + "'" % operation_process.job_id)
 
-        WorkflowService().persist_operation_state(operation, model.STATUS_CANCELED)
+        WorkflowService().persist_operation_state(operation, STATUS_CANCELED)
 
         return result == 0
 

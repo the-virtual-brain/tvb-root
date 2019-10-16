@@ -44,7 +44,7 @@ from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
-from tvb.core.entities import model
+import tvb.core.entities.model.model_operation as model
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.transient.filtering import StaticFiltersFactory
 from tvb.core.adapters.abcadapter import ABCAdapter

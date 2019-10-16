@@ -33,7 +33,7 @@
 
 import json
 import six
-from tvb.core.entities import model
+import tvb.core.entities.model.model_operation as model
 from tvb.basic.filters.chain import FilterChain
 
 
