@@ -4,6 +4,9 @@ common introspection code
 import typing
 from tvb.basic.neotraits.api import HasTraits, Attr
 
+if typing.TYPE_CHECKING:
+    from tvb.basic.neotraits._core import MetaType
+
 
 def gather_declared_fields(cls):
     # type: (type) -> typing.Sequence[Attr]
@@ -15,7 +18,7 @@ def gather_declared_fields(cls):
     if not hasattr(cls, 'trait'):
         return []
 
-    trait = getattr(cls, 'trait')
+    trait = getattr(cls, 'trait')  # type: MetaType
     if not isinstance(trait, type) or not issubclass(trait, HasTraits):
         raise AttributeError('trait attribute is required to be a HasTraits')
 
@@ -34,4 +37,3 @@ def gather_declared_fields(cls):
             raise ValueError('fields should contain either the names of '
                              'the traited fields or the fields themselves')
     return fields
-

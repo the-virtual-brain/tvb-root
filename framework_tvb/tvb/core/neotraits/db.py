@@ -20,7 +20,7 @@ class DeclarativeTraitMeta(DeclarativeMeta):
         # It seems that sqlalchemy tolerates setting columns after the type has been created.
         # We take advantage of this to reuse the gather_declared_fields
 
-        cls = super(DeclarativeTraitMeta, mcs).__new__(mcs, type_name, bases, namespace)
+        cls = super(DeclarativeTraitMeta, mcs).__new__(mcs, type_name, bases, namespace)  # type: DeclarativeTraitMeta
         if 'trait' not in namespace:
             # huh! cause sqlalchemy uses this meta to make some other objects
             return cls
@@ -36,21 +36,23 @@ class DeclarativeTraitMeta(DeclarativeMeta):
     def _generate_columns_for_traited_attribute(cls, f):
         # type: (Attr) -> None
         if isinstance(f, NArray):
-            narray_fk_column = Column(Integer, ForeignKey('narrays.id'), nullable=False)
+            narray_fk_column = Column(Integer, ForeignKey('narrays.id'), nullable=not f.required)
             setattr(cls, f.field_name + '_id', narray_fk_column)
             setattr(cls, f.field_name, relationship(NArrayIndex, foreign_keys=narray_fk_column))
         elif isinstance(f, Attr):
             # todo this in a sane way
             if f.field_type == bool:
-                setattr(cls, f.field_name, Column(Boolean, nullable=False))
+                setattr(cls, f.field_name, Column(Boolean, nullable=not f.required))
             elif f.field_type == int:
-                setattr(cls, f.field_name, Column(Integer, nullable=False))
+                setattr(cls, f.field_name, Column(Integer, nullable=not f.required))
             elif f.field_type == str:
-                setattr(cls, f.field_name, Column(String, nullable=False))
+                setattr(cls, f.field_name, Column(String, nullable=not f.required))
             else:
                 raise NotImplementedError()
         else:
-            raise AttributeError("fields must contain declarative attributes from a traited class not a {}".format(type(f)))
+            raise AttributeError(
+                "fields must contain declarative "
+                "attributes from a traited class not a {}".format(type(f)))
 
 # well sqlalchemy is not so happy with 2 declarative bases
 # so if we dance with metaclasses then it is one
@@ -59,21 +61,28 @@ class DeclarativeTraitMeta(DeclarativeMeta):
 # the damn class. So that approach is almost the same
 
 
-class _Base(object):
-    """
-    A base class for all db entities.
-    This is a sqlalchemy thing.
-    You can't simply inherit the class returned by declarative_base
-    It will try to map your abstract base to the db.
-    It is after all a sqlalchemy model if it inherits the declarative base.
-    So we make this simple base and tell declarative_base to insert this in the mro of it's returned base.
-    __abstract__ seems to work too. So which one is the preferred way?
-    """
+Base = declarative_base(name='DeclarativeBase', metaclass=DeclarativeTraitMeta)
+
+
+class DataTypeIndex(Base):
     id = Column(Integer, primary_key=True)
+    gid = Column(String(32), unique=True)
+    type_ = Column(String(50))
 
     @declared_attr
     def __tablename__(cls):
-        return cls.__name__.lower()
+        return cls.__name__
+
+    __mapper_args__ = {
+        'polymorphic_on': type_,
+        'polymorphic_identity': __tablename__
+    }
+
+    def __init__(self):
+        super(DataTypeIndex, self).__init__()
+        self.type_ = type(self).__name__
+        # if type(self) != DataTypeIndex:
+        #     type(self).uid = Column(Integer, ForeignKey(DataTypeIndex.id), primary_key=False)
 
     def from_datatype(self, datatype):
         if not hasattr(type(self), 'trait'):
@@ -84,6 +93,8 @@ class _Base(object):
         trait = getattr(type(self), 'trait')
         if not isinstance(datatype, trait):
             raise TypeError('datatype must be of the declared type {} not {}'.format(trait, type(datatype)))
+
+        self.gid = datatype.gid.hex
 
         for f in self.fields:
             if isinstance(f, NArray):
@@ -102,8 +113,6 @@ class _Base(object):
                 setattr(self, f.field_name, scalar)
 
 
-Base = declarative_base(name='DeclarativeBase', cls=_Base, metaclass=DeclarativeTraitMeta)
-
 
 class NArrayIndex(Base):
     __tablename__ = 'narrays'
@@ -115,5 +124,3 @@ class NArrayIndex(Base):
     dim_names = Column(String)
     minvalue = Column(Float)
     maxvalue = Column(Float)
-
-
