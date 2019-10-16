@@ -33,8 +33,8 @@
 		</nav>
 	
 	    <div py:if="operation_row['results'] is not None">
-	        <img py:for="result in operation_row['results']" src="/static/style/nodes/node${result.type}.png" class="result_icon"
-	             title="$result.display_name" py:if="not result.invalid and not result.is_nan"
+	        <img py:for="result in operation_row['results']" src="/static/style/nodes/node${result.display_type}.png"
+	             title="$result.display_name" py:if="not result.invalid and not result.is_nan" class="result_icon"
 	             onclick="displayNodeDetails('$result.gid', '$result.type', 'operations');" />
             <img py:for="result in operation_row['results']" src="/static/style/nodes/nodeInvalid.png" class="result_icon"
 	             title="$result.display_name" py:if="result.invalid or result.is_nan"/>
