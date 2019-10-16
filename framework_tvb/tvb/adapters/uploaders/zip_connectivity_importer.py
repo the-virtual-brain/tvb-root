@@ -79,7 +79,7 @@ class ZIPConnectivityImporter(ABCUploader):
 
 
     def get_output(self):
-        return [Connectivity]
+        return [ConnectivityIndex]
 
 
     def launch(self, uploaded, normalization=None):
@@ -190,7 +190,7 @@ class ZIPConnectivityImporter(ABCUploader):
         result.number_of_regions = result.weights.shape[0]
 
         conn_idx = ConnectivityIndex()
-        conn_idx.gid = result.gid  #TODO: GID will be inside HasTraitsIndex
+        conn_idx.gid = result.gid.hex  #TODO: GID will be inside HasTraitsIndex
         conn_idx.fill_from_has_traits(result)
 
         loader = DirLoader(self.storage_path)
