@@ -33,10 +33,34 @@ A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.surfaces import Surface
-from tvb.datatypes.tracts import Tracts
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.core.entities.model.datatypes.tracts import TractsIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+
+
+class TractViewerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(TractViewerForm, self).__init__(prefix, project_id)
+        self.tracts = DataTypeSelectField(self.get_required_datatype(), self, name='tracts', required=True,
+                                          label='White matter tracts')
+        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
+                                                 doc='Surface to be displayed semi-transparently, for visual purposes only.')
+
+    @staticmethod
+    def get_required_datatype():
+        return TractsIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_tracts'
+
+    @staticmethod
+    def get_filters():
+        return None
 
 
 class TractViewer(ABCDisplayer):
@@ -45,17 +69,20 @@ class TractViewer(ABCDisplayer):
     """
     _ui_name = "Tract Visualizer"
     _ui_subsection = "surface"
+    form = None
+
+    def get_form(self):
+        if not self.form:
+            return TractViewerForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_input_tree(self):
+        return None
 
-        return [{'name': 'tracts', 'label': 'White matter tracts',
-                 'type': Tracts, 'required': True,
-                 'description': ''},
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
-                 'description': "Surface to be displayed semi-transparently, for visual purposes only."}]
-
-
-
+    # TODO: migrate to neotraits
     def launch(self, tracts, shell_surface=None):
 
         url_track_starts, url_track_vertices = tracts.get_urls_for_rendering()
@@ -66,7 +93,8 @@ class TractViewer(ABCDisplayer):
         connectivity = tracts.region_volume_map.connectivity
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=prepare_shell_surface_urls(self.current_project_id, shell_surface, preferred_type=CorticalSurface),
+                      shelfObject=prepare_shell_surface_urls(self.current_project_id, shell_surface,
+                                                             preferred_type=CorticalSurface),
 
                       urlTrackStarts=url_track_starts,
                       urlTrackVertices=url_track_vertices)
@@ -75,7 +103,6 @@ class TractViewer(ABCDisplayer):
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})
-
 
     def get_required_memory_size(self):
         return -1

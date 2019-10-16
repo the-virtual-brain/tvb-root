@@ -38,6 +38,29 @@ import json
 import numpy
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.datatypes.graph import CorrelationCoefficients
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.model.datatypes.graph import CorrelationCoefficientsIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+
+
+class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(PearsonCorrelationCoefficientVisualizerForm, self).__init__(prefix, project_id)
+        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
+                                            label='Correlation Coefficients', conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return CorrelationCoefficientsIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype'
+
+    @staticmethod
+    def get_filters():
+        return None
 
 
 class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
@@ -47,13 +70,16 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
     """
     _ui_name = "Pearson Correlation Coefficients"
     _ui_subsection = "correlation_pearson"
+    form =None
 
-    def get_input_tree(self):
-        """ Inform caller of the data we need as input """
+    def get_form(self):
+        if not self.form:
+            return PearsonCorrelationCoefficientVisualizerForm
+        return self.form
 
-        return [{"name": "datatype", "type": CorrelationCoefficients,
-                 "label": "Correlation Coefficients", "required": True}]
+    def get_input_tree(self): return None
 
+    #TODO: migrate to neotraits
     def get_required_memory_size(self, datatype):
         """Return required memory."""
 

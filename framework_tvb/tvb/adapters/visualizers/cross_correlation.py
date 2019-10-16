@@ -36,22 +36,46 @@ A displayer for cross correlation.
 
 """
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.temporal_correlations import CrossCorrelation
+from tvb.core.entities.model.datatypes.temporal_correlations import CrossCorrelationIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+
+
+class CrossCorrelationVisualizerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(CrossCorrelationVisualizerForm, self).__init__(prefix, project_id)
+        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
+                                            label='Cross correlation')
+
+    @staticmethod
+    def get_required_datatype():
+        return CrossCorrelationIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype'
+
+    @staticmethod
+    def get_filters():
+        return None
 
 
 class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
     _ui_name = "Cross Correlation Visualizer"
     _ui_subsection = "correlation"
+    form = None
+
+    def get_form(self):
+        if not self.form:
+            return CrossCorrelationVisualizerForm
+        return self.form
+
+    def get_input_tree(self): return None
 
 
-    def get_input_tree(self):
-        """Inform caller of the data we need as input """
-
-        return [{"name": "datatype", "type": CrossCorrelation,
-                 "label": "Cross correlation", "required": True}]
-
-
+    #TODO: migrate to neotraits
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
         labels = self._get_associated_connectivity_labeling(datatype)

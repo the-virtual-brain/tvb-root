@@ -35,6 +35,7 @@
 
 import numpy
 import json
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -43,6 +44,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.basic.filters.chain import FilterChain
+from tvb.core.neotraits._forms import DataTypeSelectField
 
 
 class PseIsoModel(object):
@@ -145,6 +147,26 @@ class PseIsoModel(object):
         return result
 
 
+class IsoclinePSEAdapterForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(IsoclinePSEAdapterForm, self).__init__(prefix, project_id)
+        self.datatype_group = DataTypeSelectField(self.get_required_datatype(), self, name='datatype_group',
+                                                  required=True, label='Datatype Group', conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return DataTypeGroup
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype_group'
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"], operations=["=="], values=[2])
+
+
 class IsoclinePSEAdapter(ABCDisplayer):
     """
     Visualization adapter for Parameter Space Exploration.
@@ -154,22 +176,22 @@ class IsoclinePSEAdapter(ABCDisplayer):
 
     _ui_name = "Isocline Parameter Space Exploration"
     _ui_subsection = "pse_iso"
+    form = None
+
+    def get_form(self):
+        if not self.form:
+            return IsoclinePSEAdapterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def __init__(self):
         ABCDisplayer.__init__(self)
         self.interp_models = {}
         self.nan_indices = {}
 
-    def get_input_tree(self):
-        """
-        Take as Input a Connectivity Object.
-        """
-        return [{'name': 'datatype_group',
-                 'label': 'Datatype Group',
-                 'type': DataTypeGroup,
-                 'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges"],
-                                           operations=["=="], values=[2])}]
+    def get_input_tree(self): return None
 
 
     def get_required_memory_size(self, **kwargs):
@@ -180,6 +202,7 @@ class IsoclinePSEAdapter(ABCDisplayer):
         return -1
 
 
+    #TODO: migrate to neotraits
     def burst_preview(self, datatype_group_gid):
         """
         Generate the preview for the burst page.

@@ -31,8 +31,31 @@
 
 import json
 import numpy
+
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.graph import CorrelationCoefficients
+from tvb.core.entities.model.datatypes.graph import CorrelationCoefficientsIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+
+
+class PearsonEdgeBundleForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(PearsonEdgeBundleForm, self).__init__(prefix, project_id)
+        self.datatype = DataTypeSelectField()
+
+    @staticmethod
+    def get_required_datatype():
+        return CorrelationCoefficientsIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype'
+
+    @staticmethod
+    def get_filters():
+        return None
 
 
 class PearsonEdgeBundle(ABCDisplayer):
@@ -42,17 +65,19 @@ class PearsonEdgeBundle(ABCDisplayer):
     """
     _ui_name = "Pearson Edge Bundle"
     _ui_subsection = "correlation_pearson_edge"
+    form = None
 
+    def get_form(self):
+        if not self.form:
+            return PearsonEdgeBundleForm
+        return self.form
 
-    def get_input_tree(self):
-        """ Inform caller of the data we need as input """
+    def set_form(self, form):
+        self.form = form
 
-        return [{"name": "datatype",
-                 "type": CorrelationCoefficients,
-                 "label": "Pearson Correlation to be displayed in a hierarchical edge bundle",
-                 "required": True}]
+    def get_input_tree(self): return None
 
-
+    #TODO: migrate to neotraits
     def get_required_memory_size(self, datatype):
         """Return required memory."""
 

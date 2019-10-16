@@ -33,17 +33,40 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities import model
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.pse import ContextDiscretePSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.basic.filters.chain import FilterChain
-
+from tvb.core.neotraits._forms import DataTypeSelectField
 
 MAX_NUMBER_OF_POINT_TO_SUPPORT = 512
 
+
+class DiscretePSEAdapterForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(DiscretePSEAdapterForm, self).__init__(prefix, project_id)
+        self.datatype_group = DataTypeSelectField(self.get_required_datatype(), self, name='datatype_group',
+                                                  required=True, label='Datatype Group', conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return DataTypeGroup
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype_group'
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + ".no_of_ranges", FilterChain.datatype + ".no_of_ranges",
+                                   FilterChain.datatype + ".count_results"],
+                           operations=["<=", ">=", "<="],
+                           values=[2, 1, MAX_NUMBER_OF_POINT_TO_SUPPORT])
 
 
 class DiscretePSEAdapter(ABCDisplayer):
@@ -54,22 +77,17 @@ class DiscretePSEAdapter(ABCDisplayer):
     """
     _ui_name = "Discrete Parameter Space Exploration"
     _ui_subsection = "pse"
+    form = None
 
+    def get_form(self):
+        if not self.form:
+            return DiscretePSEAdapterForm
+        return self.form
 
-    def get_input_tree(self):
-        """
-        Take as Input a Connectivity Object.
-        """
-        return [{'name': 'datatype_group',
-                 'label': 'Datatype Group',
-                 'type': model.DataTypeGroup,
-                 'required': True,
-                 'conditions': FilterChain(fields=[FilterChain.datatype + ".no_of_ranges",
-                                                   FilterChain.datatype + ".no_of_ranges",
-                                                   FilterChain.datatype + ".count_results"],
-                                           operations=["<=", ">=", "<="],
-                                           values=[2, 1, MAX_NUMBER_OF_POINT_TO_SUPPORT])}]
+    def set_form(self, form):
+        self.form = form
 
+    def get_input_tree(self): return None
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -79,6 +97,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         return -1
 
 
+    #TODO: migrate to neotraits
     def launch(self, datatype_group):
         """
         Launch the visualizer.
