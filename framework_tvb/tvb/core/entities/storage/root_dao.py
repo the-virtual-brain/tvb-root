@@ -147,3 +147,8 @@ class RootDAO(object):
         result = self.session.query(DataType).filter_by(id=data_id).one()
         result.parent_operation.project
         return result
+
+    def get_time_series_by_gid(self, data_gid):
+        result = self.session.query(DataType).filter_by(gid=data_gid).one()
+        result.data
+        return result
