@@ -55,7 +55,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ source activate $envname
    $ conda config --add channels conda-forge
    $ conda install tvb-framework  # This will bring tvb and all its dependencies
-   $ python -m tvb.interfaces.web.run WEB_PROFILE tvb.config  # Launch TVB web server locally
+   $ python -m tvb.interfaces.web.run WEB_PROFILE  # Launch TVB web server locally
 
 Similarly as using conda-forge repo above, you could install from Pypi **tvb-framework** and/or **tvb-library**.
 
