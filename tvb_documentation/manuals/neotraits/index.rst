@@ -11,7 +11,7 @@ The h5 and database indexing systems rely on the traited metadata on the datatyp
 
 .. toctree::
 
-   neo
+   neotraits
    h5
    db
    neocom

@@ -1,9 +1,171 @@
 TVB standard h5 formats
 =======================
 
+TVB has standardized classes that hold data. We call them DataTypes and they form
+a simple ontology that models data in TVB.
 
-todo: describe the api that one uses to define h5 tvb formats
-with examples like conn etc
+In code DataTypes are traited classes meant for storing data that is not temporary.
+
+We can store DataTypes on disk in TVB specific file formats.
+These formats contain h5 datasets and attributes that closely map to a DataType class.
+
+The neotraits h5 API's give you the tools to construct this mapping from DataType to h5 file.
+
+Quick example
+-------------
+
+Volume is a traited class that holds permanent data, a DataType.
+
+.. code-block:: python
+
+    class Volume(HasTraits):
+        origin = NArray(dtype=float, label="Volume origin coordinates")
+        voxel_size = NArray(label="Voxel size")
+        voxel_unit = Attr(str, label="Voxel Measure Unit", default="mm")
+
+We define how to store a Volume in h5 by creating a H5File class.
+Such classes are Serializers, they define a specific h5 file format.
+They are responsible with storing and reading from their format.
+
+.. code-block:: python
+
+    class VolumeH5(H5File):
+
+        def __init__(self, path):
+            super(VolumeH5, self).__init__(path)
+            self.origin = DataSet(Volume.origin, self)
+            self.voxel_size = DataSet(Volume.voxel_size, self)
+            self.voxel_unit = Scalar(Volume.voxel_unit, self)
+
+Accessors
+---------
+
+On initialization the VolumeH5 class creates data Accessors.
+``self.origin`` is a `DataSet` Accessor.
+It will know how to read and write a numpy float array to a h5 dataset named `origin`.
+The string voxel unit is serialized by a ``Scalar`` Accessor.
+
+.. code-block:: python
+
+    >>> vol_h5 = VolumeH5('vol.h5')
+    <VolumeH5("vol.h5")>
+    >>> vol_h5.origin.store(numpy.array([0.1, 0.2, 0.3])
+    >>> vol_h5.voxel_unit.store('mm')
+    >>> vol_h5.origin.load()
+    array([0.1, 0.2, 0.3])
+
+An Accessor knows how to serialize a traited attribute to h5.
+Typically the traited attribute argument for an Accessor comes from a
+DataType as in the examples above.
+
+You can store all Accessors at once from a DataType.
+Each defined Accessor will store it's corresponding DataType attribute.
+
+.. code-block:: python
+
+    >>> vol = Volume(origin=numpy.array([0.1, 0.2, 0.3]), voxel_unit='mm')
+    >>> vol_h5 = VolumeH5('vol.h5')
+    >>> rm_h5.store(vol)
+
+You can create a new Attr when creating the Accessor.
+This allows you to define h5 formats that do not map one to one with a DataType,
+or even create formats that have no corresponding DataType.
+
+.. code-block:: python
+
+    class IndependentH5(H5File):
+        def __init__(self, path):
+            super(IndependentH5, self).__init__(path)
+            # name is required if Attr does not come from a HasTraits class
+            self.scalar_int = Scalar(Attr(int), self, name='scalar_int')
+            self.array_float = DataSet(NArray(), self, name='floating_leaves')
+
+
+DataSet
+-------
+
+This Accessor writes to h5 datatypes. Like all Accessors it has load and store
+methods that read and write whole numpy arrays.
+
+Along those methods it supports partial reads and stores.
+This is intended for large on disk data sets.
+
+To read only a subset of a dataset use slicing:
+
+.. code-block:: python
+
+    >>> file = IndependentH5('test.h5')
+    >>> file.array_float[0, 20: 40]
+
+You might want to append to a dataset, increasing it's size.
+To do that you must tell which dimension is the flexible one.
+You can grow a dataset only along one dimension, the rest of the shape is fixed.
+
+.. code-block:: python
+
+    class StreamyH5(H5File):
+        def __init__(self, path):
+            super(StreamyH5, self).__init__(path)
+            self.array_int = DataSet(
+                NArray(dtype=int),
+                self,
+                expand_dimension=1
+            )
+
+Then to append new data :
+
+.. code-block:: python
+
+    >>> file = StreamyH5('large.h5')
+    >>> file.array_int.append(numpy.eye(42, dtype=int))
+
+
+References
+----------
+
+Many times a DataType will contain references to other DataTypes.
+TVB h5 files will not recursively store these.
+
+Instead we just record a unique identifier for those referenced DataTypes, and
+we store them to their own h5 files.
+
+The abaz ``Reference`` Accessor in FooFile records a UUID that points to
+the h5 file that contains the serialized BazDataType:
+
+.. code-block:: python
+
+    class BazDataType(HasTraits):
+        scalar_str = Attr(str)
+
+
+    class FooDatatype(HasTraits):
+        abaz = Attr(field_type=BazDataType)
+
+
+    class BazFile(H5File):
+        def __init__(self, path):
+            super(BazFile, self).__init__(path)
+            self.scalar_str = Scalar(BazDataType.scalar_str, self)
+
+
+    class FooFile(H5File):
+        def __init__(self, path):
+            super(FooFile, self).__init__(path)
+            self.abaz = Reference(FooDatatype.abaz, self)
+
+.. note::
+
+    Serializing object graphs is not the job of this API's.
+    Instead they focus on defining a clear h5 file format and to read and store
+    to that format only, not on formats of the dependent DataTypes.
+
+
+Inheritance
+-----------
+
+A H5File can inherit another one. Just make sure you call super.__init__ to
+retain the superclass Accessors. In the resulting h5 file the inheritance hierarchy
+if flattened.
 
 
 Reference
@@ -11,18 +173,29 @@ Reference
 
 .. autoclass:: tvb.core.neotraits.h5.H5File
     :members:
+    :undoc-members:
 
 .. autoclass:: tvb.core.neotraits.h5.DataSet
-    :members:
+    :members: append, store, load
+    :undoc-members:
+    :inherited-members:
 
 .. autoclass:: tvb.core.neotraits.h5.Scalar
     :members:
+    :undoc-members:
+    :inherited-members:
 
 .. autoclass:: tvb.core.neotraits.h5.Reference
     :members:
+    :undoc-members:
+    :inherited-members:
 
 .. autoclass:: tvb.core.neotraits.h5.Json
     :members:
+    :undoc-members:
+    :inherited-members:
 
 .. autoclass:: tvb.core.neotraits.h5.SparseMatrix
     :members:
+    :undoc-members:
+    :inherited-members:

@@ -260,10 +260,11 @@ Reference
 
 .. autoclass:: tvb.basic.neotraits.api.HasTraits
     :members:
+    :undoc-members:
 
-.. autodecorator:: tvb.basic.neotraits.api.trait_property
+.. autofunction:: tvb.basic.neotraits.api.trait_property
 
-.. autodecorator:: tvb.basic.neotraits.api.cached_trait_property
+.. autofunction:: tvb.basic.neotraits.api.cached_trait_property
 
 .. autoclass:: tvb.basic.neotraits.api.Range
     :members:

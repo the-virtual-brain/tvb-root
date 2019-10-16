@@ -1,6 +1,10 @@
 Simple command interface
 ========================
 
+
+Serialize object graphs
+-----------------------
+
 todo
 
 Reference
@@ -13,3 +17,6 @@ Reference
 .. autofunction:: tvb.interfaces.neocom.h5.load_from_dir
 
 .. autofunction:: tvb.interfaces.neocom.h5.store_to_dir
+
+
+
