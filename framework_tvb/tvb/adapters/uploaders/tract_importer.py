@@ -33,12 +33,14 @@
 """
 import numpy
 from nibabel import trackvis
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
+from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
+from tvb.core.entities.model.datatypes.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
+from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -55,6 +57,16 @@ def chunk_iter(iterable, n):
         yield chunk
 
 
+class TrackImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(TrackImporterForm, self).__init__(prefix, project_id)
+
+        self.data_file = UploadField('.trk', self, name='data_file', required=True,
+                                     label='Please select file to import')
+        self.region_volume = DataTypeSelectField(RegionVolumeMappingIndex, self, name='region_volume',
+                                                 label='Reference Volume Map')
+
 
 class _TrackImporterBase(ABCUploader):
     _ui_name = "Tracts TRK"
@@ -63,15 +75,22 @@ class _TrackImporterBase(ABCUploader):
 
     READ_CHUNK = 4*1024
 
-    def get_upload_input_tree(self):
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.trk',
-                 'label': 'Please select file to import', 'required': True},
-                {'name': 'region_volume', 'type': RegionVolumeMapping,
-                 'label': 'Reference Volume Map', 'required': False}]
+    form = None
 
+    def get_input_tree(self): return None
+
+    def get_upload_input_tree(self): return None
+
+    def get_form(self):
+        if self.form is None:
+            return TrackImporterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_output(self):
-        return [Tracts]
+        return [TractsIndex]
 
 
     def _get_tract_region(self, start_vertex):

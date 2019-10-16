@@ -37,23 +37,68 @@ ContinuousWaveletTransform Analyzer.
 
 """
 
+import os
 import uuid
 import numpy
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
 from tvb.basic.neotraits.api import Range
 from tvb.datatypes.time_series import TimeSeries
-from tvb.datatypes.spectral import WaveletCoefficients
-from tvb.core.adapters.abcadapter import ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 
 from tvb.core.entities.file.datatypes.spectral_h5 import WaveletCoefficientsH5
-from tvb.core.entities.file.datatypes.time_series import TimeSeriesH5
 from tvb.core.entities.model.datatypes.spectral import WaveletCoefficientsIndex
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.core.neotraits._forms import DataTypeSelectField, ScalarField, FormField, Form, SimpleFloatField
 from tvb.core.neotraits.db import from_ndarray
 from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.interfaces.neocom.config import registry
 
 LOG = get_logger(__name__)
+
+
+class RangeForm(Form):
+    def __init__(self, prefix=''):
+        super(RangeForm, self).__init__(prefix)
+        self.lo = SimpleFloatField(self, name='lo', required=True, label='Lo', doc='start of range')
+                                   #default=ContinuousWaveletTransform.frequencies.lo)
+        self.step = SimpleFloatField(self, name='step', required=True, label='Step', doc='step of range')
+                                     #default=ContinuousWaveletTransform.frequencies.step)
+        self.hi = SimpleFloatField(self, name='hi', required=True, label='Hi', doc='end of range')
+                                   #default=ContinuousWaveletTransform.frequencies.hi)
+
+#TODO: add all fields
+class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ContinuousWaveletTransformAdapterForm, self).__init__(prefix, project_id)
+        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
+                                               required=True, label=ContinuousWaveletTransform.time_series.label,
+                                               doc=ContinuousWaveletTransform.time_series.doc,
+                                               conditions=self.get_filters(), has_all_option=True)
+        self.mother = ScalarField(ContinuousWaveletTransform.mother, self)
+        self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self)
+        self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self)
+        self.q_ratio = ScalarField(ContinuousWaveletTransform.q_ratio, self)
+        self.frequencies = FormField(RangeForm, self, name='frequencies',
+                                     label=ContinuousWaveletTransform.frequencies.label,
+                                     doc=ContinuousWaveletTransform.frequencies.doc)
+
+    @staticmethod
+    def get_required_datatype():
+        return TimeSeriesIndex
+
+    @staticmethod
+    def get_input_name():
+        return 'time_series'
+
+    def get_traited_datatype(self):
+        return ContinuousWaveletTransform()
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
 class ContinuousWaveletTransformAdapter(ABCAsynchronous):
@@ -64,26 +109,20 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
     _ui_name = "Continuous Wavelet Transform"
     _ui_description = "Compute Wavelet Tranformation for a TimeSeries input DataType."
     _ui_subsection = "wavelet"
+    form = None
 
+    def get_form(self):
+        if not self.form:
+            return ContinuousWaveletTransformAdapterForm
+        return self.form
 
-    def get_input_tree(self):
-        """
-        Return a list of lists describing the interface to the analyzer. This
-        is used by the GUI to generate the menus and fields necessary for
-        defining current analysis.
-        """
-        algorithm = ContinuousWaveletTransform()
-        algorithm.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        tree = algorithm.interface[self.INTERFACE_ATTRIBUTES]
-        for node in tree:
-            if node['name'] == 'time_series':
-                node['conditions'] = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                 operations=["=="], values=[4])
-        return tree
+    def set_form(self, form):
+        self.form = form
 
+    def get_input_tree(self): return None
 
     def get_output(self):
-        return [WaveletCoefficients]
+        return [WaveletCoefficientsIndex]
 
 
     def configure(self, time_series, mother=None, sample_period=None, normalisation=None, q_ratio=None,
@@ -92,10 +131,16 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
         self.input_time_series_index = time_series
-        self.input_shape = (self.input_time_series_index.data.length_1d,
-                            self.input_time_series_index.data.length_2d,
-                            self.input_time_series_index.data.length_3d,
-                            self.input_time_series_index.data.length_4d)
+
+        input_shape = []
+        for length in [self.input_time_series_index.data_length_1d,
+                       self.input_time_series_index.data_length_2d,
+                       self.input_time_series_index.data_length_3d,
+                       self.input_time_series_index.data_length_4d]:
+            if length is not None:
+                input_shape.append(length)
+
+        self.input_shape = tuple(input_shape)
         LOG.debug("Time series shape is %s" % str(self.input_shape))
         ##-------------------- Fill Algorithm for Analysis -------------------##
         algorithm = ContinuousWaveletTransform()
@@ -149,18 +194,18 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         if self.algorithm.frequencies is not None:
             frequencies_array = self.algorithm.frequencies.to_array()
 
-        wavelet_index = WaveletCoefficientsIndex()
-        gid = uuid.uuid4()  # wavelet_index.gid
-        wavelet_index.gid = gid
+        loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(time_series.fk_from_operation)))
+        ts_gid = self.input_time_series_index.gid
+        time_series_h5_class = registry.get_h5file_for_index(type(time_series))
+        source_path = loader.path_for(time_series_h5_class, ts_gid)
+        time_series_h5 = time_series_h5_class(path=source_path)
 
         loader = DirLoader(self.storage_path)
-        ts_gid = self.input_time_series_index.gid
-        source_path = loader.path_for(TimeSeriesH5, ts_gid)
-        time_series_h5 = TimeSeriesH5(path=source_path)
-
-        dest_path = loader.path_for(WaveletCoefficientsH5, gid)
+        wavelet_index = WaveletCoefficientsIndex()
+        dest_path = loader.path_for(WaveletCoefficientsH5, wavelet_index.gid)
 
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
+        wavelet_h5.gid.store(uuid.UUID(wavelet_index.gid))
         wavelet_h5.source.store(time_series_h5.gid.load())
         wavelet_h5.mother.store(self.algorithm.mother)
         wavelet_h5.q_ratio.store(self.algorithm.q_ratio)
@@ -173,8 +218,8 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
 
         ##---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
-        small_ts.sample_rate = time_series_h5.sample_rate.load()
-        small_ts.sample_period = time_series_h5.sample_period.load()
+        small_ts.sample_rate = 1  # time_series_h5.sample_rate.load() #TODO: without indexing
+        small_ts.sample_period = time_series_h5.sample_period.load()[0]
         for node in range(self.input_shape[2]):
             node_slice[2] = slice(node, node + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))

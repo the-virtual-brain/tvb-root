@@ -40,7 +40,7 @@ data using their SDK.
 import os.path
 import numpy as np
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
@@ -52,11 +52,29 @@ from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 LOGGER = get_logger(__name__)
 
 
+class AllenConnectomeBuilderForm(ABCAdapterForm):
+
+    @staticmethod
+    def get_required_datatype():
+        return None
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return None
+
+
 class AllenConnectomeBuilder(ABCAsynchronous):
     """Handler for uploading a mouse connectivity from Allen dataset using AllenSDK."""
 
     _ui_name = "Allen connectivity builder"
     _ui_description = "Import mouse connectivity from Allen database (tracer experiments)"
+
+    def get_form(self):
+        return AllenConnectomeBuilderForm
 
     # TRANSGENIC_OPTIONS = [
     #    {'name': 'No', 'value': 'False'},

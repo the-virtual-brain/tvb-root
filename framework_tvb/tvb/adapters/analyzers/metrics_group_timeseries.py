@@ -41,17 +41,37 @@ Analyzer used to calculate a single measure for TimeSeries.
 
 import numpy
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
-from tvb.basic.traits.util import log_debug_array
-from tvb.basic.traits.parameters_factory import get_traited_subclasses
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapter
-from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.mapped_values import DatatypeMeasure
 
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapter, ABCAdapterForm
+from tvb.datatypes.time_series import TimeSeries
+# from tvb.datatypes.mapped_values import DatatypeMeasure
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
 
 LOG = get_logger(__name__)
 
+
+class TimeseriesMetricsAdapterForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
+        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
+                                               required=True, label='')
+
+    @staticmethod
+    def get_required_datatype():
+        return TimeSeriesIndex
+
+    @staticmethod
+    def get_input_name():
+        return 'time_series'
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
 class TimeseriesMetricsAdapter(ABCAsynchronous):
@@ -62,8 +82,10 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
     _ui_name = "TimeSeries Metrics"
     _ui_description = "Compute a single number for a TimeSeries input DataType."
     _ui_subsection = "timeseries"
-    available_algorithms = get_traited_subclasses(BaseTimeseriesMetricAlgorithm)
+    available_algorithms = BaseTimeseriesMetricAlgorithm.get_known_subclasses()
 
+    def get_form(self):
+        return TimeseriesMetricsAdapterForm
 
     def get_input_tree(self):
         """
@@ -111,7 +133,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         """
         return 0
 
-
+    #TODO: store DatatypeMeasure
     def launch(self, time_series, algorithms=None, start_point=None, segment=None):
         """ 
         Launch algorithm and build results.
@@ -126,7 +148,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
             algorithms = self.available_algorithms.keys()
 
         shape = time_series.read_data_shape()
-        log_debug_array(LOG, time_series, "time_series")
+        LOG.debug("time_series shape is %s" % str(self.input_shape))
 
         metrics_results = {}
         for algorithm_name in algorithms:
@@ -161,8 +183,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
             else:
                 metrics_results[algorithm_name] = unstored_result
 
-        result = DatatypeMeasure(analyzed_datatype=time_series, storage_path=self.storage_path,
-                                 data_name=self._ui_name, metrics=metrics_results)
+        result = DatatypeMeasure(analyzed_datatype=time_series, metrics=metrics_results)
         return result
 
 
