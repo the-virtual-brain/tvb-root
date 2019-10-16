@@ -40,7 +40,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities import model
+from tvb.core.entities.model.model_datatype import DataType, Links
+from tvb.core.entities.model.model_operation import Operation
+from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, Project, User_to_Project
 from tvb.core.entities.storage.root_dao import RootDAO
 
 
@@ -59,7 +61,7 @@ class CaseDAO(RootDAO):
         """Retrieve USER entity by ID."""
         user = None
         try:
-            user = self.session.query(model.User).filter_by(id=user_id).one()
+            user = self.session.query(User).filter_by(id=user_id).one()
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve user for id " + str(user_id))
         return user
@@ -69,7 +71,7 @@ class CaseDAO(RootDAO):
         """Retrieve USER entity by name."""
         user = None
         try:
-            user = self.session.query(model.User).filter_by(username=name).one()
+            user = self.session.query(User).filter_by(username=name).one()
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve user for name " + str(name))
         return user
@@ -80,7 +82,7 @@ class CaseDAO(RootDAO):
         user = None
         sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
         try:
-            user = self.session.query(model.User).filter_by(username=sys_name).one()
+            user = self.session.query(User).filter_by(username=sys_name).one()
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve system user " + str(sys_name))
         return user
@@ -88,13 +90,13 @@ class CaseDAO(RootDAO):
 
     def count_users_for_name(self, name):
         """Retrieve the number of users in DB for a given name."""
-        result = self.session.query(model.User).filter_by(username=name).count()
+        result = self.session.query(User).filter_by(username=name).count()
         return result
 
 
     def get_administrators(self):
         """Retrieve all users with Admin role"""
-        admins = self.session.query(model.User).filter_by(role=model.ROLE_ADMINISTRATOR).all()
+        admins = self.session.query(User).filter_by(role=ROLE_ADMINISTRATOR).all()
         return admins
 
 
@@ -102,13 +104,13 @@ class CaseDAO(RootDAO):
         """Retrieve all USERS in DB, except current user and system user."""
         try:
             sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
-            query = self.session.query(model.User
-                                       ).filter(model.User.username != different_name
-                                                ).filter(model.User.username != sys_name)
+            query = self.session.query(User
+                                       ).filter(User.username != different_name
+                                                ).filter(User.username != sys_name)
             if is_count:
                 result = query.count()
             else:
-                result = query.order_by(model.User.username).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
+                result = query.order_by(User.username).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
             return result
         except NoResultFound:
             self.logger.warning("No users found. Maybe database is empty.")
@@ -129,15 +131,15 @@ class CaseDAO(RootDAO):
         if name_hint:
             try:
                 ### In case of multiple users: first try to find exact match for the given username
-                user = self.session.query(model.User).filter_by(email=email).filter_by(username=name_hint).one()
+                user = self.session.query(User).filter_by(email=email).filter_by(username=name_hint).one()
             except SQLAlchemyError:
                 ### Ignore
                 pass
 
         if user is None:
             try:
-                user = self.session.query(model.User).filter_by(email=email
-                                ).filter(model.User.username.ilike('%' + name_hint + '%')).one()
+                user = self.session.query(User).filter_by(email=email
+                                ).filter(User.username.ilike('%' + name_hint + '%')).one()
             except SQLAlchemyError:
                 self.logger.exception("Could not get a single user by email " + email + " and name " + name_hint)
 
@@ -147,7 +149,7 @@ class CaseDAO(RootDAO):
     def get_user_for_datatype(self, dt_id):
         """Get the user who created a DT"""
         try:
-            datatype = self.session.query(model.DataType).filter_by(id=dt_id).one()
+            datatype = self.session.query(DataType).filter_by(id=dt_id).one()
             return datatype.parent_operation.user
         except SQLAlchemyError as ex:
             self.logger.exception(ex)
@@ -160,8 +162,8 @@ class CaseDAO(RootDAO):
         :returns 0 when no DT are found, or SUM from DB.
         """
         try:
-            total_size = self.session.query(func.sum(model.DataType.disk_size)).join(model.Operation
-                                        ).filter(model.Operation.fk_launched_by == user_id).scalar()
+            total_size = self.session.query(func.sum(DataType.disk_size)).join(Operation
+                                        ).filter(Operation.fk_launched_by == user_id).scalar()
             return total_size or 0
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -174,7 +176,7 @@ class CaseDAO(RootDAO):
     def get_project_by_id(self, project_id):
         """Retrieve PROJECT entity for a given identifier.
            THROW SqlException when not found."""
-        prj = self.session.query(model.Project).filter_by(id=project_id).one()
+        prj = self.session.query(Project).filter_by(id=project_id).one()
         prj.administrator
         return prj
 
@@ -182,16 +184,16 @@ class CaseDAO(RootDAO):
     def get_project_by_gid(self, project_gid):
         """Retrieve PROJECT entity for a given identifier.
            THROW SqlException when not found."""
-        prj = self.session.query(model.Project).filter_by(gid=project_gid).one()
+        prj = self.session.query(Project).filter_by(gid=project_gid).one()
         prj.administrator
         return prj
 
 
     def delete_project(self, project_id):
         """Remove PROJECT entity by ID."""
-        project = self.session.query(model.Project).filter_by(id=project_id).one()
+        project = self.session.query(Project).filter_by(id=project_id).one()
         self.session.delete(project)
-        linked_users = self.session.query(model.User
+        linked_users = self.session.query(User
                                           ).filter_by(selected_project=project_id).all()
         for user in linked_users:
             user.selected_project = None
@@ -204,8 +206,8 @@ class CaseDAO(RootDAO):
         :returns 0 when no DT are found, or SUM from DB.
         """
         try:
-            total_size = self.session.query(func.sum(model.DataType.disk_size)).join(model.Operation
-                                        ).filter(model.Operation.fk_launched_in == project_id).scalar()
+            total_size = self.session.query(func.sum(DataType.disk_size)).join(Operation
+                                        ).filter(Operation.fk_launched_in == project_id).scalar()
             return total_size or 0
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -215,10 +217,10 @@ class CaseDAO(RootDAO):
     def count_projects_for_name(self, name, different_id):
         """Retrieve the number of projects with a given name currently in DB."""
         if different_id is not None:
-            number = self.session.query(model.Project
-                                        ).filter_by(name=name).filter(model.Project.id != different_id).count()
+            number = self.session.query(Project
+                                        ).filter_by(name=name).filter(Project.id != different_id).count()
         else:
-            number = self.session.query(model.Project).filter_by(name=name).count()
+            number = self.session.query(Project).filter_by(name=name).count()
         return number
 
 
@@ -227,7 +229,7 @@ class CaseDAO(RootDAO):
         Retrieve all Project entities currently in the system.
         WARNING: use this wisely, as it might easily overflow the system.
         """
-        query = self.session.query(model.Project)
+        query = self.session.query(Project)
         if is_count:
             result = query.count()
         else:
@@ -240,12 +242,12 @@ class CaseDAO(RootDAO):
         Return all projects a given user can access (administrator or not).
         """
         # First load projects that current user is administrator for.
-        query = self.session.query(model.Project).join((model.User, model.Project.fk_admin == model.User.id)
-                                ).outerjoin((model.User_to_Project,
-                                             and_(model.Project.id == model.User_to_Project.fk_project,
-                                                  model.User_to_Project.fk_user == user_id))
-                                ).filter(or_(model.User.id == user_id, model.User_to_Project.fk_user == user_id)
-                                ).order_by(desc(model.Project.id))
+        query = self.session.query(Project).join((User, Project.fk_admin == User.id)
+                                ).outerjoin((User_to_Project,
+                                             and_(Project.id == User_to_Project.fk_project,
+                                                  User_to_Project.fk_user == user_id))
+                                ).filter(or_(User.id == user_id, User_to_Project.fk_user == user_id)
+                                ).order_by(desc(Project.id))
         if is_count:
             result = query.count()
         else:
@@ -259,9 +261,9 @@ class CaseDAO(RootDAO):
         Find parent project for current operation.
         THROW SqlException when not found.
         """
-        result = self.session.query(model.Project
-                                    ).filter(model.Operation.fk_launched_in == model.Project.id
-                                             ).filter(model.Operation.id == operation_id).one()
+        result = self.session.query(Project
+                                    ).filter(Operation.fk_launched_in == Project.id
+                                             ).filter(Operation.id == operation_id).one()
         return result
 
 
@@ -269,7 +271,7 @@ class CaseDAO(RootDAO):
         """
         :return all links referring to a given project_id
         """
-        result = self.session.query(model.Links).filter(model.Links.fk_to_project == project_id).all()
+        result = self.session.query(Links).filter(Links.fk_to_project == project_id).all()
         return result
 
 
@@ -278,8 +280,8 @@ class CaseDAO(RootDAO):
         :return link between a given DT and a given project id
         """
         try:
-            result = self.session.query(model.Links).filter(model.Links.fk_from_datatype == dt_id
-                                                        ).filter(model.Links.fk_to_project == project_id).one()
+            result = self.session.query(Links).filter(Links.fk_from_datatype == dt_id
+                                                        ).filter(Links.fk_to_project == project_id).one()
             return result
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -293,16 +295,16 @@ class CaseDAO(RootDAO):
         """
         try:
             # First load projects that current user is administrator for.
-            result = self.session.query(model.Project).join(model.User
-                                        ).filter(model.User.id == user_id).order_by(model.Project.id).all()
-            result.extend(self.session.query(model.Project).join(model.User_to_Project
-                                             ).filter(model.User_to_Project.fk_user == user_id).all())
-            linked_project_ids = self.session.query(model.Links.fk_to_project
-                                                    ).filter(model.Links.fk_from_datatype == data_id).all()
+            result = self.session.query(Project).join(User
+                                        ).filter(User.id == user_id).order_by(Project.id).all()
+            result.extend(self.session.query(Project).join(User_to_Project
+                                             ).filter(User_to_Project.fk_user == user_id).all())
+            linked_project_ids = self.session.query(Links.fk_to_project
+                                                    ).filter(Links.fk_from_datatype == data_id).all()
             linked_project_ids = [i[0] for i in linked_project_ids]
             datatype = self.get_datatype_by_id(data_id)
-            current_prj = self.session.query(model.Operation.fk_launched_in
-                                             ).filter(model.Operation.id == datatype.fk_from_operation).one()
+            current_prj = self.session.query(Operation.fk_launched_in
+                                             ).filter(Operation.id == datatype.fk_from_operation).one()
             if linked_project_ids:
                 linked_project_ids.append(current_prj[0])
             else:
@@ -319,21 +321,21 @@ class CaseDAO(RootDAO):
 
     def delete_members_for_project(self, project_id, members):
         """Remove all linked user to current project."""
-        members = self.session.query(model.User_to_Project
-                                     ).filter(model.User_to_Project.fk_project == project_id
-                                              ).filter(model.User_to_Project.fk_user.in_(members)).all()
+        members = self.session.query(User_to_Project
+                                     ).filter(User_to_Project.fk_project == project_id
+                                              ).filter(User_to_Project.fk_user.in_(members)).all()
         [self.session.delete(m) for m in members]
         self.session.commit()
 
 
     def get_members_of_project(self, proj_id):
         """Retrieve USER entities with rights on current project."""
-        users_members = self.session.query(model.User).join(model.User_to_Project
-                                           ).filter(model.User_to_Project.fk_project == proj_id).all()
+        users_members = self.session.query(User).join(User_to_Project
+                                           ).filter(User_to_Project.fk_project == proj_id).all()
         return users_members
 
 
     def add_members_to_project(self, proj_id, selected_user_ids):
         """Add link between Users and Project."""
         for u_id in selected_user_ids:
-            self.store_entity(model.User_to_Project(u_id, proj_id))
+            self.store_entity(User_to_Project(u_id, proj_id))

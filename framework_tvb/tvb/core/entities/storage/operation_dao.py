@@ -40,7 +40,12 @@ from sqlalchemy import func as func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import case as case_, desc
-from tvb.core.entities import model
+
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_operation import Operation, ResultFigure, Algorithm, AlgorithmCategory, \
+    OperationGroup, STATUS_FINISHED, STATUS_STARTED, STATUS_ERROR, STATUS_CANCELED, STATUS_PENDING, \
+    OperationProcessIdentifier
+from tvb.core.entities.model.model_workflow import WorkflowStep, Workflow
 from tvb.core.entities.storage.root_dao import RootDAO
 
 
@@ -53,7 +58,7 @@ class OperationDAO(RootDAO):
     def get_operation_by_id(self, operation_id):
         """Retrieve OPERATION entity for a given Identifier."""
 
-        operation = self.session.query(model.Operation).filter_by(id=operation_id).one()
+        operation = self.session.query(Operation).filter_by(id=operation_id).one()
         # Load lazy fields:
         operation.user
         operation.project
@@ -80,7 +85,7 @@ class OperationDAO(RootDAO):
     def get_operation_by_gid(self, operation_gid):
         """Retrieve OPERATION entity for a given gid."""
         try:
-            operation = self.session.query(model.Operation).filter_by(gid=operation_gid).one()
+            operation = self.session.query(Operation).filter_by(gid=operation_gid).one()
             operation.user
             operation.project
             operation.operation_group
@@ -96,10 +101,10 @@ class OperationDAO(RootDAO):
         Returns all finished upload operations.
         """
         try:
-            result = self.session.query(model.Operation).join(model.Algorithm).join(model.AlgorithmCategory).filter(
-                                        model.AlgorithmCategory.rawinput == True).filter(
-                                        model.Operation.fk_launched_in == project_id).filter(
-                                        model.Operation.status == model.STATUS_FINISHED).all()
+            result = self.session.query(Operation).join(Algorithm).join(AlgorithmCategory).filter(
+                                        AlgorithmCategory.rawinput == True).filter(
+                                        Operation.fk_launched_in == project_id).filter(
+                                        Operation.status == STATUS_FINISHED).all()
             return result
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -111,9 +116,9 @@ class OperationDAO(RootDAO):
         Returns True only if the operation with the given gid is an upload operation.
         """
         try:
-            result = self.session.query(model.Operation).join(model.Algorithm).join(model.AlgorithmCategory
-                                        ).filter(model.AlgorithmCategory.rawinput == True
-                                                 ).filter(model.Operation.gid == operation_gid).count()
+            result = self.session.query(Operation).join(Algorithm).join(AlgorithmCategory
+                                        ).filter(AlgorithmCategory.rawinput == True
+                                                 ).filter(Operation.gid == operation_gid).count()
             return result > 0
         except SQLAlchemyError:
             return False
@@ -124,7 +129,7 @@ class OperationDAO(RootDAO):
         Returns the number of resulted datatypes from the specified operation.
         """
         try:
-            result = self.session.query(model.DataType).filter_by(fk_from_operation=operation_id).count()
+            result = self.session.query(DataType).filter_by(fk_from_operation=operation_id).count()
             return result
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -136,8 +141,8 @@ class OperationDAO(RootDAO):
         Get the OperationProcessIdentifier for this operation id.
         """
         try:
-            result = self.session.query(model.OperationProcessIdentifier
-                                        ).filter(model.OperationProcessIdentifier.fk_from_operation == operation_id
+            result = self.session.query(OperationProcessIdentifier
+                                        ).filter(OperationProcessIdentifier.fk_from_operation == operation_id
                                                  ).one()
         except NoResultFound:
             self.logger.debug("No operation process found for operation id=%s." % (str(operation_id),))
@@ -155,9 +160,9 @@ class OperationDAO(RootDAO):
         """
         result = None
         try:
-            query = self.session.query(model.Operation)
+            query = self.session.query(Operation)
             if only_gids:
-                query = self.session.query(model.Operation.gid)
+                query = self.session.query(Operation.gid)
             query = query.filter_by(fk_operation_group=operation_group_id)
             if is_count:
                 result = query.count()
@@ -173,9 +178,9 @@ class OperationDAO(RootDAO):
     def compute_disk_size_for_started_ops(self, user_id):
         """ Get all the disk space that should be reserved for the started operations of this user. """
         try:
-            expected_hdd_size = self.session.query(func.sum(model.Operation.estimated_disk_size)
-                                                   ).filter(model.Operation.fk_launched_by == user_id
-                                                   ).filter(model.Operation.status == model.STATUS_STARTED).scalar()
+            expected_hdd_size = self.session.query(func.sum(Operation.estimated_disk_size)
+                                                   ).filter(Operation.fk_launched_by == user_id
+                                                   ).filter(Operation.status == STATUS_STARTED).scalar()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             expected_hdd_size = 0
@@ -191,36 +196,36 @@ class OperationDAO(RootDAO):
         :return a list of filtered operation in current project, page by page, or the total count for them.
         """
         try:
-            select_clause = self.session.query(func.min(model.Operation.id))
+            select_clause = self.session.query(func.min(Operation.id))
             if not is_count:
                 # Do not add select columns in case of COUNT, as they will be ignored anyway
-                select_clause = self.session.query(func.min(model.Operation.id), func.max(model.Operation.id),
-                                                   func.count(model.Operation.id),
-                                                   func.max(model.Operation.fk_operation_group),
-                                                   func.min(model.Operation.fk_from_algo),
-                                                   func.max(model.Operation.fk_launched_by),
-                                                   func.min(model.Operation.create_date),
-                                                   func.min(model.Operation.start_date),
-                                                   func.max(model.Operation.completion_date),
-                                                   func.min(model.Operation.status),
-                                                   func.max(model.Operation.additional_info),
-                                                   func.min(case_([(model.Operation.visible, 1)], else_=0)),
-                                                   func.min(model.Operation.user_group),
-                                                   func.min(model.Operation.gid))
+                select_clause = self.session.query(func.min(Operation.id), func.max(Operation.id),
+                                                   func.count(Operation.id),
+                                                   func.max(Operation.fk_operation_group),
+                                                   func.min(Operation.fk_from_algo),
+                                                   func.max(Operation.fk_launched_by),
+                                                   func.min(Operation.create_date),
+                                                   func.min(Operation.start_date),
+                                                   func.max(Operation.completion_date),
+                                                   func.min(Operation.status),
+                                                   func.max(Operation.additional_info),
+                                                   func.min(case_([(Operation.visible, 1)], else_=0)),
+                                                   func.min(Operation.user_group),
+                                                   func.min(Operation.gid))
 
-            query = select_clause.join(model.Algorithm).join(
-                model.AlgorithmCategory).filter(model.Operation.fk_launched_in == project_id)
+            query = select_clause.join(Algorithm).join(
+                AlgorithmCategory).filter(Operation.fk_launched_in == project_id)
 
             if filter_chain is not None:
                 filter_string = filter_chain.get_sql_filter_equivalent()
                 query = query.filter(eval(filter_string))
-            query = query.group_by(case_([(model.Operation.fk_operation_group > 0,
-                                           - model.Operation.fk_operation_group)], else_=model.Operation.id))
+            query = query.group_by(case_([(Operation.fk_operation_group > 0,
+                                           - Operation.fk_operation_group)], else_=Operation.id))
 
             if is_count:
                 return query.count()
 
-            return query.order_by(desc(func.max(model.Operation.id))).offset(page_start).limit(page_size).all()
+            return query.order_by(desc(func.max(Operation.id))).offset(page_start).limit(page_size).all()
 
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
@@ -232,15 +237,15 @@ class OperationDAO(RootDAO):
         Retrieve DataTypes entities, resulted after executing an operation.
         """
         try:
-            query = self.session.query(model.DataType
+            query = self.session.query(DataType
                                        ).filter_by(fk_from_operation=operation_id
-                                       ).filter(and_(model.DataType.type != self.EXCEPTION_DATATYPE_GROUP,
-                                                     model.DataType.type != self.EXCEPTION_DATATYPE_SIMULATION))
+                                       ).filter(and_(DataType.type != self.EXCEPTION_DATATYPE_GROUP,
+                                                     DataType.type != self.EXCEPTION_DATATYPE_SIMULATION))
             if filters:
                 filter_str = filters.get_sql_filter_equivalent()
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
-            query = query.order_by(model.DataType.id)
+            query = query.order_by(DataType.id)
             result = query.all()
 
             return result
@@ -259,10 +264,10 @@ class OperationDAO(RootDAO):
         from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
         """
         try:
-            query = self.session.query(model.Operation).filter(
-                                model.Operation.parameters.like('%' + datatype_gid + '%')).join(
-                                model.Algorithm).join(model.AlgorithmCategory).filter(
-                                model.AlgorithmCategory.display == False)
+            query = self.session.query(Operation).filter(
+                                Operation.parameters.like('%' + datatype_gid + '%')).join(
+                                Algorithm).join(AlgorithmCategory).filter(
+                                AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result
@@ -281,11 +286,11 @@ class OperationDAO(RootDAO):
         are NOT part of an operation group.
         """
         try:
-            query = self.session.query(model.Operation).filter(
-                model.DataType.fk_datatype_group == datatype_group_id).filter(
-                model.Operation.parameters.like('%' + model.DataType.gid + '%')).join(
-                model.Algorithm).join(model.AlgorithmCategory).filter(
-                model.AlgorithmCategory.display == False)
+            query = self.session.query(Operation).filter(
+                DataType.fk_datatype_group == datatype_group_id).filter(
+                Operation.parameters.like('%' + DataType.gid + '%')).join(
+                Algorithm).join(AlgorithmCategory).filter(
+                AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
             result = query.all()
             return result
@@ -301,10 +306,10 @@ class OperationDAO(RootDAO):
         :param: is_count When True, a counter of the filtered operations is returned.
         """
         try:
-            result = self.session.query(model.Operation
-                                    ).join(model.WorkflowStep, model.WorkflowStep.fk_operation == model.Operation.id
-                                    ).join(model.Workflow, model.Workflow.id == model.WorkflowStep.fk_workflow
-                                    ).filter(model.Workflow.fk_burst == burst_id)
+            result = self.session.query(Operation
+                                    ).join(WorkflowStep, WorkflowStep.fk_operation == Operation.id
+                                    ).join(Workflow, Workflow.id == WorkflowStep.fk_workflow
+                                    ).filter(Workflow.fk_burst == burst_id)
             if is_count:
                 result = result.count()
             else:
@@ -323,11 +328,11 @@ class OperationDAO(RootDAO):
         Used for applying filters on the given query.
         """
         if only_relevant:
-            query = query.filter(model.Operation.visible == True)
+            query = query.filter(Operation.visible == True)
         if only_in_groups:
-            query = query.filter(model.Operation.fk_operation_group != None)
+            query = query.filter(Operation.fk_operation_group != None)
         else:
-            query = query.filter(model.Operation.fk_operation_group == None)
+            query = query.filter(Operation.fk_operation_group == None)
         return query
 
 
@@ -339,12 +344,12 @@ class OperationDAO(RootDAO):
         the operation from the OperationGroup with the GID field equal to 'entity_gid'.
         """
         try:
-            query = self.session.query(model.Operation)
+            query = self.session.query(Operation)
             if is_operation_group:
                 group = self.get_operationgroup_by_gid(entity_gid)
-                query = query.filter(model.Operation.fk_operation_group == group.id)
+                query = query.filter(Operation.fk_operation_group == group.id)
             else:
-                query = query.filter(model.Operation.gid == entity_gid)
+                query = query.filter(Operation.gid == entity_gid)
             query.update({"visible": is_visible})
             self.session.commit()
         except SQLAlchemyError as excep:
@@ -354,7 +359,7 @@ class OperationDAO(RootDAO):
     def get_operationgroup_by_gid(self, gid):
         """Retrieve by GID"""
         try:
-            result = self.session.query(model.OperationGroup).filter_by(gid=gid).one()
+            result = self.session.query(OperationGroup).filter_by(gid=gid).one()
             return result
         except SQLAlchemyError:
             return None
@@ -363,7 +368,7 @@ class OperationDAO(RootDAO):
     def get_operationgroup_by_id(self, op_group_id):
         """Retrieve by ID"""
         try:
-            result = self.session.query(model.OperationGroup).filter_by(id=op_group_id).one()
+            result = self.session.query(OperationGroup).filter_by(id=op_group_id).one()
             return result
         except SQLAlchemyError:
             return None
@@ -373,15 +378,15 @@ class OperationDAO(RootDAO):
         """
         Count total number of operations started for current project.
         """
-        stats = self.session.query(model.Operation.status, func.count(model.Operation.id)
+        stats = self.session.query(Operation.status, func.count(Operation.id)
                                     ).filter_by(fk_launched_in=proj_id
-                                    ).group_by(model.Operation.status).all()
+                                    ).group_by(Operation.status).all()
         stats = dict(stats)
-        finished = stats.get(model.STATUS_FINISHED, 0)
-        started = stats.get(model.STATUS_STARTED, 0)
-        failed = stats.get(model.STATUS_ERROR, 0)
-        canceled = stats.get(model.STATUS_CANCELED, 0)
-        pending = stats.get(model.STATUS_PENDING, 0)
+        finished = stats.get(STATUS_FINISHED, 0)
+        started = stats.get(STATUS_STARTED, 0)
+        failed = stats.get(STATUS_ERROR, 0)
+        canceled = stats.get(STATUS_CANCELED, 0)
+        pending = stats.get(STATUS_PENDING, 0)
 
         return finished, started, failed, canceled, pending
 
@@ -393,8 +398,8 @@ class OperationDAO(RootDAO):
     def get_algorithm_categories(self):
         """Retrieve all existent categories of Algorithms."""
         try:
-            categories = self.session.query(model.AlgorithmCategory).distinct().order_by(
-                model.AlgorithmCategory.displayname).all()
+            categories = self.session.query(AlgorithmCategory).distinct().order_by(
+                AlgorithmCategory.displayname).all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             categories = []
@@ -404,7 +409,7 @@ class OperationDAO(RootDAO):
     def get_uploader_categories(self):
         """Retrieve categories with raw_input = true"""
         try:
-            result = self.session.query(model.AlgorithmCategory).filter_by(rawinput=True).all()
+            result = self.session.query(AlgorithmCategory).filter_by(rawinput=True).all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             result = []
@@ -414,7 +419,7 @@ class OperationDAO(RootDAO):
     def get_raw_categories(self):
         """Retrieve categories with raw_input = true"""
         try:
-            result = self.session.query(model.AlgorithmCategory).filter_by(defaultdatastate='RAW_DATA').all()
+            result = self.session.query(AlgorithmCategory).filter_by(defaultdatastate='RAW_DATA').all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             result = []
@@ -424,7 +429,7 @@ class OperationDAO(RootDAO):
     def get_visualisers_categories(self):
         """Retrieve categories with display = true"""
         try:
-            result = self.session.query(model.AlgorithmCategory).filter_by(display=True).all()
+            result = self.session.query(AlgorithmCategory).filter_by(display=True).all()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             result = []
@@ -434,7 +439,7 @@ class OperationDAO(RootDAO):
     def get_launchable_categories(self, elimin_viewers=False):
         """Retrieve algorithm categories which can be launched on right-click (optionally filter visualizers)"""
         try:
-            result = self.session.query(model.AlgorithmCategory).filter_by(launchable=True)
+            result = self.session.query(AlgorithmCategory).filter_by(launchable=True)
             if elimin_viewers:
                 result = result.filter_by(display=False)
             result = result.all()
@@ -447,7 +452,7 @@ class OperationDAO(RootDAO):
     def get_category_by_id(self, categ_id):
         """Retrieve category with given id"""
         try:
-            result = self.session.query(model.AlgorithmCategory).filter_by(id=categ_id).one()
+            result = self.session.query(AlgorithmCategory).filter_by(id=categ_id).one()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             result = None
@@ -457,7 +462,7 @@ class OperationDAO(RootDAO):
     def filter_category(self, displayname, rawinput, display, launchable, order_nr):
         """Retrieve category with given id"""
         try:
-            result = self.session.query(model.AlgorithmCategory
+            result = self.session.query(AlgorithmCategory
                                         ).filter_by(displayname=displayname
                                         ).filter_by(rawinput=rawinput).filter_by(display=display
                                         ).filter_by(launchable=launchable).filter_by(order_nr=order_nr).one()
@@ -472,7 +477,7 @@ class OperationDAO(RootDAO):
 
     def get_algorithm_by_id(self, algorithm_id):
         try:
-            result = self.session.query(model.Algorithm).filter_by(id=algorithm_id).one()
+            result = self.session.query(Algorithm).filter_by(id=algorithm_id).one()
             result.algorithm_category
             return result
         except SQLAlchemyError as ex:
@@ -482,7 +487,7 @@ class OperationDAO(RootDAO):
 
     def get_algorithm_by_module(self, module_name, class_name):
         try:
-            result = self.session.query(model.Algorithm).filter_by(module=module_name, classname=class_name).one()
+            result = self.session.query(Algorithm).filter_by(module=module_name, classname=class_name).one()
             result.algorithm_category
             return result
         except SQLAlchemyError:
@@ -494,12 +499,12 @@ class OperationDAO(RootDAO):
         Retrieve a list of algorithms in a given list of categories with a given dataType classes as required input.
         """
         try:
-            return self.session.query(model.Algorithm
+            return self.session.query(Algorithm
                                       ).filter_by(removed=False
-                                      ).filter(model.Algorithm.fk_category.in_(launch_categ)
-                                      ).filter(model.Algorithm.required_datatype.in_(compatible_class_names)
-                                      ).order_by(model.Algorithm.fk_category
-                                      ).order_by(model.Algorithm.group_name).all()
+                                      ).filter(Algorithm.fk_category.in_(launch_categ)
+                                      ).filter(Algorithm.required_datatype.in_(compatible_class_names)
+                                      ).order_by(Algorithm.fk_category
+                                      ).order_by(Algorithm.group_name).all()
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve applicable Adapters ...")
             return []
@@ -510,11 +515,11 @@ class OperationDAO(RootDAO):
         Retrieve a list of stored adapters in the given categories.
         """
         try:
-            return self.session.query(model.Algorithm
+            return self.session.query(Algorithm
                                       ).filter_by(removed=False
-                                      ).filter(model.Algorithm.fk_category.in_(categories)
-                                      ).order_by(model.Algorithm.group_name
-                                      ).order_by(model.Algorithm.displayname).all()
+                                      ).filter(Algorithm.fk_category.in_(categories)
+                                      ).order_by(Algorithm.group_name
+                                      ).order_by(Algorithm.displayname).all()
         except SQLAlchemyError:
             self.logger.exception("Could not retrieve Adapters ...")
             return []
@@ -528,7 +533,7 @@ class OperationDAO(RootDAO):
         """ Load a figure with all it's lazy load fields to have all required 
         info available. """
         try:
-            figure = self.session.query(model.ResultFigure).filter_by(id=figure_id).one()
+            figure = self.session.query(ResultFigure).filter_by(id=figure_id).one()
             figure.project
             figure.operation
             return figure
@@ -559,13 +564,13 @@ class OperationDAO(RootDAO):
 
             result = {}
             for session_name in session_names:
-                figures_list = self.session.query(model.ResultFigure
+                figures_list = self.session.query(ResultFigure
                                                   ).filter_by(fk_in_project=project_id
                                                               ).filter_by(session_name=session_name)
                 if user_id is not None:
                     figures_list = figures_list.filter_by(fk_for_user=user_id)
 
-                figures_list = figures_list.order_by(desc(model.ResultFigure.id)).all()
+                figures_list = figures_list.order_by(desc(ResultFigure.id)).all()
 
                 # Force loading of project and operation - needed to compute image path
                 for figure in figures_list:
@@ -584,14 +589,14 @@ class OperationDAO(RootDAO):
         """
         try:
             result = {}
-            session_items = self.session.query(model.ResultFigure.session_name,
-                                               func.count(model.ResultFigure.session_name)
+            session_items = self.session.query(ResultFigure.session_name,
+                                               func.count(ResultFigure.session_name)
                                                ).filter_by(fk_in_project=project_id)
             if user_id is not None:
                 session_items = session_items.filter_by(fk_for_user=user_id)
 
-            session_items = session_items.group_by(model.ResultFigure.session_name
-                                                   ).order_by(model.ResultFigure.session_name).all()
+            session_items = session_items.group_by(ResultFigure.session_name
+                                                   ).order_by(ResultFigure.session_name).all()
 
             for item in session_items:
                 result[item[0]] = item[1]
@@ -607,7 +612,7 @@ class OperationDAO(RootDAO):
         Used to generate sequential image names.
         """
         try:
-            session_items = self.session.query(model.ResultFigure).filter_by(fk_in_project=project_id)
+            session_items = self.session.query(ResultFigure).filter_by(fk_in_project=project_id)
             if user_id is not None:
                 session_items = session_items.filter_by(fk_for_user=user_id)
 
@@ -620,7 +625,7 @@ class OperationDAO(RootDAO):
     def get_figures_for_operation(self, operation_id):
         """Retrieve Figure entities, resulted after executing an operation."""
         try:
-            result = self.session.query(model.ResultFigure).filter_by(fk_from_operation=operation_id).all()
+            result = self.session.query(ResultFigure).filter_by(fk_from_operation=operation_id).all()
             for figure in result:
                 figure.project
                 figure.operation
