@@ -94,7 +94,6 @@ class GIFTIParser(object):
     def _parse_surface(self, data_arrays, data_arrays_part2, surface_type, should_center):
         meta_dict = self._get_meta_dict(data_arrays[0])
         anatomical_structure_primary = meta_dict.get(self.ASP_ATTR)
-        gid = meta_dict.get(self.UNIQUE_ID_ATTR)
         subject = meta_dict.get(self.SUBJECT_ATTR)
         title = meta_dict.get(self.NAME_ATTR)
 
@@ -110,9 +109,6 @@ class GIFTIParser(object):
             raise ParseException("Could not determine surface type! %s" % surface_type)
 
         # Now fill TVB data type with metadata
-        if gid is not None:
-            gid = gid.replace("{", "").replace("}", "")
-            surface.gid = gid
         if subject is not None:
             surface.subject = subject
         if title is not None:
@@ -150,30 +146,20 @@ class GIFTIParser(object):
     def _parse_timeseries(self, data_arrays):
         # Create TVB time series to be filled
         time_series = TimeSeriesSurface()
-        time_series.storage_path = self.storage_path
         time_series.start_time = 0.0
         time_series.sample_period = 1.0
 
         # First process first data_array and extract important data from it's metadata
         meta_dict = self._get_meta_dict(data_arrays[0])
-        gid = meta_dict.get(self.UNIQUE_ID_ATTR)
         sample_period = meta_dict.get(self.TIME_STEP_ATTR)
         time_series.subject = meta_dict.get(self.SUBJECT_ATTR)
         time_series.title = meta_dict.get(self.NAME_ATTR)
 
-        if gid:
-            time_series.gid = gid.replace("{", "").replace("}", "")
         if sample_period:
             time_series.sample_period = float(sample_period)
-        # todo : make sure that write_time_slice is not required here
-        # Now read time series data
-        for data_array in data_arrays:
-            time_series.write_data_slice([data_array.data])
+            time_series.sample_rate = 1 / time_series.sample_period
 
-        # Close file after writing data
-        time_series.close_file()
-
-        return time_series
+        return time_series, data_arrays
 
 
     def parse(self, data_file, data_file_part2=None, surface_type=OPTION_READ_METADATA, should_center=False):

@@ -74,3 +74,20 @@ def from_ndarray(array):
         minvalue, maxvalue, median = None, None, None
 
     return minvalue, maxvalue, median
+
+
+def prepare_array_shape_meta(shape_array):
+    length_1d = None
+    length_2d = None
+    length_3d = None
+    length_4d = None
+
+    try:
+        length_1d = shape_array[0]
+        length_2d = shape_array[1]
+        length_3d = shape_array[2]
+        length_4d = shape_array[3]
+    except IndexError:
+        pass
+
+    return length_1d, length_2d, length_3d, length_4d
