@@ -19,7 +19,6 @@ class FourierSpectrumIndex(DataType):
     source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.segment_length = datatype.segment_length
         self.windowing_function = datatype.windowing_function
         self.frequency_step = datatype.frequency_step
@@ -42,7 +41,6 @@ class WaveletCoefficientsIndex(DataType):
     frequencies_max = Column(Float)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.mother = datatype.mother
         self.normalisation = datatype.normalisation
         self.q_ratio = datatype.q_ratio
@@ -62,7 +60,6 @@ class CoherenceSpectrumIndex(DataType):
     frequencies_max = Column(Float)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
 
@@ -80,7 +77,6 @@ class ComplexCoherenceSpectrumIndex(DataType):
     max_frequency = Column(Float, nullable=False)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.epoch_length = datatype.epoch_length
         self.segment_length = datatype.segment_length
         self.windowing_function = datatype.windowing_function

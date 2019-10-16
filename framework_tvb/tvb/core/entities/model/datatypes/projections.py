@@ -24,6 +24,3 @@ class ProjectionMatrixIndex(DataType):
 
     sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not ProjectionMatrix.sensors.required)
     sensors = relationship(SensorsIndex, foreign_keys=sensors_id, primaryjoin=SensorsIndex.id == sensors_id, cascade='none')
-
-    def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex

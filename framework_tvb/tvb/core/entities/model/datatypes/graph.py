@@ -21,7 +21,6 @@ class CovarianceIndex(DataType):
     type = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.type = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
 
@@ -41,7 +40,6 @@ class CorrelationCoefficientsIndex(DataType):
     labels_ordering = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.type = datatype.__class__.__name__
         self.labels_ordering = datatype.labels_ordering
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
@@ -63,6 +61,5 @@ class ConnectivityMeasureIndex(DataType):
     array_data_mean = Column(Float)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.type = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)

@@ -15,7 +15,6 @@ class PrincipalComponentsIndex(DataType):
     type = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.type = datatype.__class__.__name__
 
 
@@ -28,5 +27,4 @@ class IndependentComponentsIndex(DataType):
     type = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.type = datatype.__class__.__name__

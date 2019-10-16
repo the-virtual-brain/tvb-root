@@ -9,6 +9,5 @@ class SensorsIndex(DataType):
     sensors_type = Column(String, nullable=False)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.number_of_sensors = datatype.number_of_sensors
         self.sensors_type = datatype.sensors_type

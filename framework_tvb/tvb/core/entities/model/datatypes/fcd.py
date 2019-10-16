@@ -5,11 +5,12 @@ from sqlalchemy.orm import relationship
 from tvb.datatypes.fcd import Fcd
 
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
-from tvb.core.neotraits.db import HasTraitsIndex, from_ndarray
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.neotraits.db import from_ndarray
 
 
-class FcdIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class FcdIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     array_data_min = Column(Float)
     array_data_max = Column(Float)
@@ -20,6 +21,5 @@ class FcdIndex(HasTraitsIndex):
     labels_ordering = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
         self.labels_ordering = json.dumps(datatype.labels_ordering)

@@ -16,7 +16,6 @@ class SurfaceIndex(DataType):
     edge_length_max = Column(Float, nullable=False)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.surface_type = datatype.surface_type
         self.valid_for_simulations = datatype.valid_for_simulations
         self.number_of_vertices = datatype.number_of_vertices
