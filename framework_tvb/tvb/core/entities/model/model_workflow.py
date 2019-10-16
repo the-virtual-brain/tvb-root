@@ -40,12 +40,11 @@ import datetime
 from sqlalchemy import Integer, String, Column, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declared_attr
-from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.exportable import Exportable
-
+from tvb.core.neotraits.db import Base
 
 
 class Portlet(Base):

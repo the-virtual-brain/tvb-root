@@ -38,9 +38,9 @@ import six
 from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
+from tvb.core.neotraits.db import Base
 from tvb.core.utils import string2date
 from tvb.core.entities.exportable import Exportable
-from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.basic.traits.types_basic import MapAsJson
 from tvb.core.utils import parse_json_parameters, format_timedelta
