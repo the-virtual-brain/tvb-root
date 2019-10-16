@@ -10,12 +10,13 @@ from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
-from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.neotraits.db import NArrayIndex
 
 
 
-class TimeSeriesIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class TimeSeriesIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     data = relationship(NArrayIndex, foreign_keys=data_id, primaryjoin=NArrayIndex.id == data_id)
@@ -28,13 +29,6 @@ class TimeSeriesIndex(HasTraitsIndex):
     sample_rate = Column(Float)
     # length = Column(Float)
     labels_ordering = Column(String, nullable=False)
-
-    # these are redundant
-    nr_dimensions = Column(Integer)   # data.ndim
-    length_1d = Column(Integer)   # data.length_1d
-    length_2d = Column(Integer)
-    length_3d = Column(Integer)
-    length_4d = Column(Integer)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex

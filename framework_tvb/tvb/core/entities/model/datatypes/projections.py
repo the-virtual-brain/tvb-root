@@ -4,11 +4,11 @@ from tvb.datatypes.projections import ProjectionMatrix
 
 from tvb.core.entities.model.datatypes.sensors import SensorsIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.entities.model.model_datatype import DataType
 
 
-class ProjectionMatrixIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class ProjectionMatrixIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     brain_skull_id = Column(Integer, ForeignKey(SurfaceIndex.id), nullable=not ProjectionMatrix.brain_skull.required)
     brain_skull = relationship(SurfaceIndex, foreign_keys=brain_skull_id, primaryjoin=SurfaceIndex.id == brain_skull_id)
