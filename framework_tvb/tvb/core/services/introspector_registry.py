@@ -119,12 +119,6 @@ from tvb.core.entities.model.datatypes.time_series import TimeSeriesEEGIndex, Ti
 from tvb.core.entities.model.datatypes.tracts import TractsIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
 
-from tvb.datatype_removers.remover_connectivity import ConnectivityRemover
-from tvb.datatype_removers.remover_region_mapping import RegionMappingRemover, RegionVolumeMappingRemover
-from tvb.datatype_removers.remover_sensor import SensorRemover
-from tvb.datatype_removers.remover_surface import SurfaceRemover
-from tvb.datatype_removers.remover_timeseries import TimeseriesRemover
-from tvb.datatype_removers.remover_volume import VolumeRemover
 
 if TvbProfile.current.MATLAB_EXECUTABLE and len(TvbProfile.current.MATLAB_EXECUTABLE) > 0:
     from tvb.adapters.analyzers.bct_adapters import DistanceDBIN, DistanceDWEI, DistanceNETW, DistanceRDA, DistanceRDM, \
@@ -276,19 +270,7 @@ class IntrospectionRegistry(object):
         ADAPTERS[AnalyzeAlgorithmCategoryConfig].extend(BCT_ADAPTERS)
 
     DATATYPE_REMOVERS = {
-        ConnectivityIndex: ConnectivityRemover,
-        RegionMappingIndex: RegionMappingRemover,
-        RegionVolumeMappingIndex: RegionVolumeMappingRemover,
-        SurfaceIndex: SurfaceRemover,
-        SensorsIndex: SensorRemover,
-        TimeSeriesIndex: TimeseriesRemover,
-        TimeSeriesEEGIndex: TimeseriesRemover,
-        TimeSeriesMEGIndex: TimeseriesRemover,
-        TimeSeriesSEEGIndex: TimeseriesRemover,
-        TimeSeriesRegionIndex: TimeseriesRemover,
-        TimeSeriesSurfaceIndex: TimeseriesRemover,
-        TimeSeriesVolumeIndex: TimeseriesRemover,
-        VolumeIndex: VolumeRemover
+        # TODO
     }
 
     DATATYPES = [ConnectivityIndex, FcdIndex, ConnectivityMeasureIndex, CorrelationCoefficientsIndex, CovarianceIndex,
