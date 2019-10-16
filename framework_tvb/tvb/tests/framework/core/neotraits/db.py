@@ -5,10 +5,10 @@ from sqlalchemy.orm import sessionmaker, relationship
 from tvb.core.neotraits import db
 from tvb.core.neotraits.db import Base
 from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
-from tvb.tests.framework.core.neotraits.data import TestDatatype
+from tvb.tests.framework.core.neotraits.data import FooDatatype
 
 
-class TestDatatypeIndexManual(Base):
+class FooIndexManual(Base):
     __tablename__ = 'testdatatype_manual'
     id = Column(Integer, primary_key=True)
 
@@ -32,13 +32,13 @@ class TestDatatypeIndexManual(Base):
         self.scalar_int = datatype.scalar_int
 
 
-class TestDatatypeIndex(Base):
-    trait = TestDatatype
+class FooIndex(Base):
+    trait = FooDatatype
     fields = [
-        TestDatatype.array_float,
-        TestDatatype.array_int,
-        TestDatatype.scalar_int,
-        TestDatatype.scalar_str
+        FooDatatype.array_float,
+        FooDatatype.array_int,
+        FooDatatype.scalar_int,
+        FooDatatype.scalar_str
     ]
 
     def from_datatype(self, datatype):
@@ -68,19 +68,19 @@ def session(engine):
 
 
 def test_schema(session):
-    session.query(TestDatatypeIndexManual)
+    session.query(FooIndexManual)
 
 
 def test_store_load(session, datatypeinstance):
-    datatype_index = TestDatatypeIndexManual()
+    datatype_index = FooIndexManual()
     datatype_index.from_datatype(datatypeinstance)
 
-    datatype_index2 = TestDatatypeIndex()
+    datatype_index2 = FooIndex()
     datatype_index2.from_datatype(datatypeinstance)
 
     session.add_all([datatype_index, datatype_index2])
     session.commit()
 
-    res = session.query(TestDatatypeIndexManual)
+    res = session.query(FooIndexManual)
     assert res.count() == 1
     assert res[0].array_float.dtype == 'float64'

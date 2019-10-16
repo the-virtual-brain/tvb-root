@@ -1,7 +1,7 @@
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
 
-class TestDatatype(HasTraits):
+class FooDatatype(HasTraits):
     array_float = NArray()
     array_int = NArray(dtype=int, ndim=2)
     scalar_str = Attr(str)

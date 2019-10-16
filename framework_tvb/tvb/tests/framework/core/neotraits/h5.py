@@ -2,26 +2,26 @@ import os
 
 import numpy
 import pytest
-from .data import TestDatatype
+from .data import FooDatatype
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar
 
 
-class TestDatatypeFileManual(H5File):
+class FooFileManual(H5File):
     def __init__(self, path):
-        super(TestDatatypeFileManual, self).__init__(path)
-        self.array_float = DataSet(TestDatatype.array_float, self)
-        self.array_int = DataSet(TestDatatype.array_int, self)
-        self.scalar_int = Scalar(TestDatatype.scalar_int, self)
-        self.scalar_str = Scalar(TestDatatype.scalar_str, self)
+        super(FooFileManual, self).__init__(path)
+        self.array_float = DataSet(FooDatatype.array_float, self)
+        self.array_int = DataSet(FooDatatype.array_int, self)
+        self.scalar_int = Scalar(FooDatatype.scalar_int, self)
+        self.scalar_str = Scalar(FooDatatype.scalar_str, self)
 
 
-class TestDatatypeFile(H5File):
-    trait = TestDatatype
+class FooFile(H5File):
+    trait = FooDatatype
     fields = [
-        TestDatatype.array_float,
-        TestDatatype.array_int,
-        TestDatatype.scalar_int,
-        TestDatatype.scalar_str
+        FooDatatype.array_float,
+        FooDatatype.array_int,
+        FooDatatype.scalar_int,
+        FooDatatype.scalar_str
     ]
 
 
@@ -34,27 +34,27 @@ def tmph5(tmpdir):
 
 
 def test_autogenerate_accessors(tmph5):
-    f = TestDatatypeFile(tmph5)
+    f = FooFile(tmph5)
     # all declarative attrs generate accessors except the nonmapped one
-    assert set(TestDatatype.declarative_attrs) - {'non_mapped_attr'} <= set(f.__dict__)
+    assert set(FooDatatype.declarative_attrs) - {'non_mapped_attr'} <= set(f.__dict__)
 
 
 def test_store_autogen(tmph5, datatypeinstance):
-    f = TestDatatypeFile(tmph5)
+    f = FooFile(tmph5)
     f.store(datatypeinstance)
 
 
 def test_store_manual(tmph5, datatypeinstance):
-    f = TestDatatypeFileManual(tmph5)
+    f = FooFileManual(tmph5)
     f.store(datatypeinstance)
 
 
 def test_store_load(tmph5, datatypeinstance):
-    f = TestDatatypeFile(tmph5)
+    f = FooFile(tmph5)
     datatypeinstance.non_mapped_attr = numpy.array([5.3])
     f.store(datatypeinstance)
 
-    ret = TestDatatype()
+    ret = FooDatatype()
     f._load_into(ret)
     # all mapped attributes have been loaded
     assert ret.scalar_int == 42
