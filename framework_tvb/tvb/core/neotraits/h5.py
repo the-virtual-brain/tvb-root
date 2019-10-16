@@ -1,14 +1,23 @@
+import datetime
+import uuid
+
 import typing
 import os.path
 import abc
+import numpy
 
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
-from ._introspection import gather_declared_fields
+from ._introspection import DeclarativeFieldsTypeMixin
 
-if typing.TYPE_CHECKING:
-    import numpy
+
+def is_scalar_type(t):
+    return (
+        t in [bool, ] or
+        issubclass(t, basestring) or
+        numpy.issubdtype(t, numpy.number)
+    )
 
 
 class Accessor(object):
@@ -102,30 +111,54 @@ class Reference(Scalar):
         :param val: a datatype
         todo: This is not consistent with load. Load will just return the gid.
         """
+        if not isinstance(val, HasTraits):
+            raise TypeError("expected HasTraits, got {}".format(type(val)))
         # urn is a standard encoding, that is obvious an uuid
         # str(gid) is more ambiguous
         val = val.gid.urn
-        super(Reference, self).store(val)
+        self.owner.storage_manager.set_metadata({self.trait_attribute.field_name: val})
 
+    def load(self):
+        urngid = super(Reference, self).load()
+        return uuid.UUID(urngid)
+
+
+class DeclarativeH5Type(DeclarativeFieldsTypeMixin, type):
+    """
+    This metaclass just autogenerates the fields declaration if trait is declared and fields is missing
+    """
+    def __new__(mcs, type_name, bases, namespace):
+        cls = super(DeclarativeH5Type, mcs).__new__(mcs, type_name, bases, namespace)
+        fields = cls.gather_declared_fields()
+        cls.fields = fields
+        return cls
 
 
 class H5File(object):
+    __metaclass__ = DeclarativeH5Type
+
     def __init__(self, path):
         # type: (str) -> None
         storage_path, file_name = os.path.split(path)
         self.storage_manager = HDF5StorageManager(storage_path, file_name)
 
-        fields = gather_declared_fields(type(self))
-        if fields:
-            self._autogenerate_accessors(fields)
+        self._autogenerate_accessors(type(self).all_declared_fields)
 
+    #     would be nice to have an opened state for the chunked api instead of the close_file=False
 
-    # def open(self):
-    #     would be nice to have for the chunked api instead of the close_file=False
+    def __enter__(self):
+        return self
 
-    # def close(self):
-    #     write_metadata  creation time, serializer class name, etc
-    #     self.storage_manager.close_file()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        # write_metadata  creation time, serializer class name, etc
+        self.storage_manager.set_metadata({
+            'written_by': self.__class__.__module__ + '.' + self.__class__.__name__,
+        })
+        self.storage_manager.close_file()
+
 
     def store(self, datatype):
         # type: (HasTraits) -> None
@@ -133,18 +166,19 @@ class H5File(object):
             if isinstance(accessor, Accessor):
                 accessor.store(getattr(datatype, accessor.trait_attribute.field_name))
 
-    def _load_into(self, datatype):
+
+    def load_into(self, datatype):
         # type: (HasTraits) -> None
-        meta = self.storage_manager.get_metadata()
         for name, accessor in self.__dict__.iteritems():
-            if isinstance(accessor, DataSet):
+            if isinstance(accessor, Reference):
+                pass
+            elif isinstance(accessor, Accessor):
+                # todo allready pressoposes bound attr instances
+                # go all the way and instantiate the trait?
                 setattr(datatype,
                         accessor.trait_attribute.field_name,
-                        self.storage_manager.get_data(accessor.trait_attribute.field_name))
-            elif isinstance(accessor, Scalar):
-                setattr(datatype,
-                        accessor.trait_attribute.field_name,
-                        meta[accessor.trait_attribute.field_name])
+                        accessor.load())
+
 
     def _autogenerate_accessors(self, declarative_attrs):
         # type: (typing.Sequence[Attr]) -> None
@@ -159,10 +193,12 @@ class H5File(object):
             if isinstance(attr, NArray):
                 dataset = DataSet(attr, self)
                 setattr(self, attr.field_name, dataset)
-            elif isinstance(attr.field_type, HasTraits):
+            elif issubclass(attr.field_type, HasTraits):
                 ref = Reference(attr, self)
                 setattr(self, attr.field_name, ref)
             else:
-                # todo: handle the case where this is a LIST and the case where the field_type is not a scalar
-                scalar = Scalar(attr, self)
-                setattr(self, attr.field_name, scalar)
+                if is_scalar_type(attr.field_type):
+                    scalar = Scalar(attr, self)
+                    setattr(self, attr.field_name, scalar)
+                else:
+                    raise NotImplementedError("don't know how to map attribute to h5 {}".format(attr))

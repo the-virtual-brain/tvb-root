@@ -2,8 +2,8 @@ from sqlalchemy import Column, Integer
 from sqlalchemy import String, Float, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, declared_attr
 from sqlalchemy.orm import relationship
-from tvb.basic.neotraits.api import Attr, NArray
-from ._introspection import gather_declared_fields
+from tvb.basic.neotraits.api import Attr, NArray, HasTraits
+from ._introspection import DeclarativeFieldsTypeMixin
 
 SCALAR_MAPPING = {
     bool: Boolean,
@@ -12,7 +12,7 @@ SCALAR_MAPPING = {
 }
 
 
-class DeclarativeTraitMeta(DeclarativeMeta):
+class DeclarativeTraitMeta(DeclarativeFieldsTypeMixin, DeclarativeMeta):
     """
     Extends the sqlalchemy declarative metaclass by recognizing the trait/fields declarations
     and autogenerating Columns for them.
@@ -20,9 +20,6 @@ class DeclarativeTraitMeta(DeclarativeMeta):
     Sqlalchemy idiomatically does the introspection for models early, at class creation time.
     """
     def __new__(mcs, type_name, bases, namespace):
-        if 'trait' not in namespace:
-            return super(DeclarativeTraitMeta, mcs).__new__(mcs, type_name, bases, namespace)
-
         # It seems that sqlalchemy tolerates setting columns after the type has been created.
         # We take advantage of this to reuse the gather_declared_fields
 
@@ -31,13 +28,14 @@ class DeclarativeTraitMeta(DeclarativeMeta):
             # huh! cause sqlalchemy uses this meta to make some other objects
             return cls
 
-        fields = gather_declared_fields(cls)
+        fields = cls.gather_declared_fields()
         cls.fields = fields
 
         for f in fields:
             cls._generate_columns_for_traited_attribute(f)
 
         return cls
+
 
     def _generate_columns_for_traited_attribute(cls, f):
         # type: (Attr) -> None
@@ -46,14 +44,22 @@ class DeclarativeTraitMeta(DeclarativeMeta):
             setattr(cls, f.field_name + '_id', narray_fk_column)
             setattr(cls, f.field_name, relationship(NArrayIndex, foreign_keys=narray_fk_column))
         elif isinstance(f, Attr):
-            sqlalchemy_type = SCALAR_MAPPING.get(f.field_type)
-            if not sqlalchemy_type:
-                raise NotImplementedError()
-            setattr(cls, f.field_name, Column(sqlalchemy_type, nullable=not f.required))
+            if issubclass(f.field_type, HasTraits):
+                # setattr(cls, f.field_name, Column(Integer, ForeignKey(HasTraitsIndex.id), nullable=not f.required))
+                # a fk on the supertype HasTraitsIndex is not correct
+                # an automatic mapping of these is problematic. First we don't force a canonic global mapping,
+                # we don't autogen all mapping classes, so there is no way to know that this attr's index type is
+                pass
+            else:
+                sqlalchemy_type = SCALAR_MAPPING.get(f.field_type)
+                if not sqlalchemy_type:
+                    raise NotImplementedError()
+                setattr(cls, f.field_name, Column(sqlalchemy_type, nullable=not f.required))
         else:
             raise AttributeError(
                 "fields must contain declarative "
                 "attributes from a traited class not a {}".format(type(f)))
+
 
 # well sqlalchemy is not so happy with 2 declarative bases
 # so if we dance with metaclasses then it is one
@@ -70,14 +76,32 @@ class HasTraitsIndex(Base):
     gid = Column(String(32), unique=True)
     type_ = Column(String(50))
 
+    # Quick remainder about @declared_attr. It makes a class method.
+    # Sqlalchemy will treat this class method like a statically declared class attribute
+    # Another quick remainder, class methods are polymorphic
+
     @declared_attr
     def __tablename__(cls):
+        # subclasses no longer need to define the __tablename__ as we do it here polymorphically for them.
         return cls.__name__
 
-    __mapper_args__ = {
-        'polymorphic_on': type_,
-        'polymorphic_identity': __tablename__
-    }
+    @declared_attr
+    def __mapper_args__(cls):
+        """
+        A polymorphic __maper_args__. Because of it the subclasses no longer need to declare the polymorphic_identity
+        """
+        # this gets called by sqlalchemy before the HasTraitsIndex class declaration is finished (in it's metatype)
+        # so we have to refer to the type by name
+        if cls.__name__ == 'HasTraitsIndex' and cls.__module__ == __name__:
+            # for the base class we have to define the discriminator column
+            return {
+                'polymorphic_on': cls.type_,
+                'polymorphic_identity': cls.__name__
+            }
+        else:
+            return {
+                'polymorphic_identity': cls.__name__
+            }
 
     def __init__(self):
         super(HasTraitsIndex, self).__init__()
@@ -96,9 +120,11 @@ class HasTraitsIndex(Base):
 
         self.gid = datatype.gid.hex
 
-        for f in cls.fields:
-            if isinstance(f, NArray):
-                field_value = getattr(datatype, f.field_name)
+        for f in cls.all_declared_fields:
+            field_value = getattr(datatype, f.field_name)
+            if field_value is None:
+                setattr(self, f.field_name, None)
+            elif isinstance(f, NArray):
                 try:
                     minvalue, maxvalue = field_value.min(), field_value.max()
                 except TypeError:
@@ -114,10 +140,14 @@ class HasTraitsIndex(Base):
                     maxvalue=maxvalue
                 )
                 setattr(self, f.field_name, arr)
-            else:
-                # todo: handle non-array nonscalar Attr's
-                scalar = getattr(datatype, f.field_name)
-                setattr(self, f.field_name, scalar)
+            elif isinstance(f, Attr):
+                if f.field_type in SCALAR_MAPPING:
+                    setattr(self, f.field_name, field_value)
+                elif issubclass(f.field_type, HasTraits):
+                    # the user has to deal with trait db composition manually
+                    pass
+                else:
+                    raise NotImplementedError("don't know how to map {}".format(f))
 
 
 

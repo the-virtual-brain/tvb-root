@@ -2,86 +2,95 @@ import os
 
 import numpy
 import pytest
-from .data import FooDatatype, BooDatatype
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar
+from .data import FooDatatype, BarDatatype, BazDataType
+from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+
+
+@pytest.fixture
+def tmph5factory(tmpdir):
+    def build(pth='tmp.h5'):
+        path = os.path.join(str(tmpdir), pth)
+        if os.path.exists(path):
+            os.remove(path)
+        return path
+    return build
+
+
+
+class BazFile(H5File):
+    # trait is declared. This is an automated mapping
+    trait = BazDataType
+    # automatic mapping creates metadata entries for scalar trait attributes
+    # datasets for traited ndarrays
+    # and reference fields for aggregated HasTraits
 
 
 class FooFileManual(H5File):
+    """
+    You can manually map datatype attributes to h5file fields
+    """
     def __init__(self, path):
         super(FooFileManual, self).__init__(path)
         self.array_float = DataSet(FooDatatype.array_float, self)
         self.array_int = DataSet(FooDatatype.array_int, self)
         self.scalar_int = Scalar(FooDatatype.scalar_int, self)
-        self.scalar_str = Scalar(FooDatatype.scalar_str, self)
+        self.abaz = Reference(FooDatatype.abaz, self)
 
 
 class FooFile(H5File):
+    # you can map fewer fields by explicitly listing the mapped fields
     trait = FooDatatype
     fields = [
         FooDatatype.array_float,
         FooDatatype.array_int,
         FooDatatype.scalar_int,
-        FooDatatype.scalar_str
+        # FooDatatype.some_transient omitted
+        FooDatatype.abaz
     ]
 
 
-class BooFile(FooFile):
-    trait = BooDatatype
+class BarFile(FooFile):
+    # inheritance is flattened in the same file
+    trait = BarDatatype
     fields = [
-        BooDatatype.array_str
+        BarDatatype.array_str
     ]
 
 
 
-@pytest.fixture
-def tmph5(tmpdir):
-    path = os.path.join(str(tmpdir), 'tmp.h5')
-    if os.path.exists(path):
-        os.remove(path)
-    return path
+def test_accessors_created_for_all_declarative_attributes(tmph5factory):
+    f = BazFile(tmph5factory())
+    assert set(BazDataType.declarative_attrs) <= set(f.__dict__)
 
 
-def test_autogenerate_accessors(tmph5):
-    f = FooFile(tmph5)
-    # all declarative attrs generate accessors except the nonmapped one
-    assert set(FooDatatype.declarative_attrs) - {'non_mapped_attr'} <= set(f.__dict__)
+def test_simple_store_load(tmph5factory, bazFactory):
+    baz = BazDataType(miu=numpy.array([0.0, 1.0, 2.0]), scalar_str='topol')
+    f = BazFile(tmph5factory())
+    f.store(baz)
+    f.close()
+
+    ret = BazDataType()
+    assert ret.scalar_str is None
+    f.load_into(ret)
+    assert ret.scalar_str == 'topol'
+    assert numpy.all(ret.miu == [0.0, 1.0, 2.0])
 
 
-def test_store_autogen(tmph5, fooFactory):
-    f = FooFile(tmph5)
-    f.store(fooFactory())
+def test_aggregate_store(tmph5factory, fooFactory):
+    foo = fooFactory()
+    foofile = FooFile(tmph5factory('foo-{}.h5'.format(foo.gid)))
+    foofile.store(foo)
+    foofile.close()
+    bazfile = BazFile(tmph5factory('baz-{}.h5'.format(foo.abaz.gid)))
+    bazfile.store(foo.abaz)
+    bazfile.close()
 
 
-def test_store_manual(tmph5, fooFactory):
-    f = FooFileManual(tmph5)
-    f.store(fooFactory())
-
-
-def test_store_load(tmph5, fooFactory):
-    f = FooFile(tmph5)
-    datatypeinstance = fooFactory()
-    datatypeinstance.non_mapped_attr = numpy.array([5.3])
-    f.store(datatypeinstance)
-
-    ret = FooDatatype()
-    f._load_into(ret)
-    # all mapped attributes have been loaded
-    assert ret.scalar_int == 42
-    assert ret.scalar_str == 'ana'
-    assert ret.array_int.shape == (8, 8)
-    assert ret.array_float.shape == (100,)
-    # this one is not mapped
-    assert ret.non_mapped_attr is None
-
-
-def test_load_store_inheritance(tmph5, booFactory):
-    boo = booFactory()
-    f = BooFile(tmph5)
-    f.store(boo)
-
-    ret = BooDatatype()
-    f._load_into(ret)
-    assert ret.array_str.tolist() == ['ana', 'are', 'mere']
-    assert ret.scalar_str == 'ana'
-
+def test_store_load_inheritance(tmph5factory, barFactory):
+    bar = barFactory()
+    with BarFile(tmph5factory()) as barfile:
+        barfile.store(bar)
+        ret = BarDatatype()
+        barfile.load_into(ret)
+        assert ret.scalar_int == bar.scalar_int
 
