@@ -1,0 +1,28 @@
+TVB standard h5 formats
+=======================
+
+
+todo: describe the api that one uses to define h5 tvb formats
+with examples like conn etc
+
+
+Reference
+---------
+
+.. autoclass:: tvb.core.neotraits.h5.H5File
+    :members:
+
+.. autoclass:: tvb.core.neotraits.h5.DataSet
+    :members:
+
+.. autoclass:: tvb.core.neotraits.h5.Scalar
+    :members:
+
+.. autoclass:: tvb.core.neotraits.h5.Reference
+    :members:
+
+.. autoclass:: tvb.core.neotraits.h5.Json
+    :members:
+
+.. autoclass:: tvb.core.neotraits.h5.SparseMatrix
+    :members:
