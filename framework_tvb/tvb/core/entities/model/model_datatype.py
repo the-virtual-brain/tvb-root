@@ -37,13 +37,10 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 """
 
 from copy import copy
-# from datetime import datetime
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey, DateTime
+from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey
 from tvb.core.neotraits.db import HasTraitsIndex, Base
 
-# from tvb.core.utils import generate_guid
-# from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 # from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -85,7 +82,6 @@ class DataType(HasTraitsIndex):
 
     """
 
-    __tablename__ = 'DATA_TYPES'
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
     type = Column(String)    # Name of class inheriting from current type
     module = Column(String)
@@ -110,7 +106,7 @@ class DataType(HasTraitsIndex):
     #it should be a reference to a DataTypeGroup, but we can not create that FK
     #because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
     #other mutually and SQL-Alchemy complains about that.
-    fk_datatype_group = Column(Integer, ForeignKey('DATA_TYPES.id'))
+    fk_datatype_group = Column(Integer, ForeignKey('DataType.id'))
 
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
@@ -189,7 +185,7 @@ class DataTypeGroup(DataType):
     """
     __tablename__ = 'DATA_TYPES_GROUPS'
 
-    id = Column('id', Integer, ForeignKey('DATA_TYPES.id', ondelete="CASCADE"), primary_key=True)
+    id = Column('id', Integer, ForeignKey('DataType.id', ondelete="CASCADE"), primary_key=True)
     count_results = Column(Integer)
     no_of_ranges = Column(Integer, default=0)               # Number of ranged parameters
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"))
@@ -222,7 +218,7 @@ class Links(Base):
 
     id = Column(Integer, primary_key=True)
     fk_to_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
-    fk_from_datatype = Column(Integer, ForeignKey('DATA_TYPES.id', ondelete="CASCADE"))
+    fk_from_datatype = Column(Integer, ForeignKey('DataType.id', ondelete="CASCADE"))
 
     referenced_project = relationship(Project, backref=backref('LINKS', order_by=id, cascade="delete, all"))
     referenced_datatype = relationship(DataType, backref=backref('LINKS', order_by=id, cascade="delete, all"))
