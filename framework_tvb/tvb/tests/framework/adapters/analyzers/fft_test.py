@@ -67,7 +67,7 @@ def test_fourier_adapter(tmpdir, session):
     # Here we consider this last option.
 
     adapter = FourierAdapter()
-    adapter.storage_path = tmpdir
+    adapter.storage_path = str(tmpdir)
 
     # todo: this is a very awkward api.
     # Where will the DirLoader expect to find a time series with this gid

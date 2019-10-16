@@ -84,7 +84,6 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         super(FourierAdapter, self).__init__()
         self.algorithm = fft.FFT()
         self.memory_factor = 1
-        self.loader = DirLoader(self.storage_path)
 
     
     def configure(self, time_series, segment_length=None, window_function=None, detrend=None):
@@ -98,6 +97,8 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         :type  window_function: None; ‘hamming’; ‘bartlett’; ‘blackman’; ‘hanning’
         :param detrend: None; specify if detrend is performed on the time series
         """
+        self.loader = DirLoader(self.storage_path)
+
         shape = time_series.data.shape
         LOG.debug("time_series shape is %s" % str(shape))
         LOG.debug("Provided segment_length is %s" % segment_length)
