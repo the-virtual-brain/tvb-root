@@ -71,7 +71,7 @@ class NArrayIndex(Base):
     def from_ndarray(cls, array):
         try:
             minvalue, maxvalue = array.min(), array.max()
-        except TypeError:
+        except (TypeError, ValueError):
             # dtype is string or other non comparable type
             minvalue, maxvalue = None, None
 
