@@ -12,3 +12,9 @@ class SensorsH5(H5File):
         self.orientations = DataSet(Sensors.orientations, self)
         self.number_of_sensors = Scalar(Sensors.number_of_sensors, self)
         self.usable = DataSet(Sensors.usable, self)
+
+    def get_locations(self):
+        return self.locations.load()
+
+    def get_labels(self):
+        return self.labels.load()

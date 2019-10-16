@@ -34,23 +34,27 @@
 """
 
 import json
-from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.basic.logger.builder import get_logger
+from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.storage import dao
-from tvb.datatypes.sensors import Sensors, SensorsInternal, SensorsEEG, SensorsMEG
-from tvb.datatypes.surfaces import Surface
-from tvb.datatypes.surfaces import EEGCap, CorticalSurface
+from tvb.core.entities.model.datatypes.sensors import SensorsIndex
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
+from tvb.datatypes.surfaces import Surface, CORTICAL, EEG_CAP
 
+LOG = get_logger(__name__)
 
 
 def prepare_sensors_as_measure_points_params(sensors):
     """
     Returns urls from where to fetch the measure points and their labels
     """
-    sensor_locations = ABCDisplayer.paths2url(sensors, 'locations')
+    sensor_locations = URLGenerator.build_h5_url(sensors.gid, 'get_locations')
     sensor_no = sensors.number_of_sensors
-    sensor_labels = ABCDisplayer.paths2url(sensors, 'labels')
+    sensor_labels = URLGenerator.build_h5_url(sensors.gid, 'get_labels')
 
     return {'urlMeasurePoints': sensor_locations,
             'urlMeasurePointsLabels': sensor_labels,
@@ -61,7 +65,7 @@ def prepare_sensors_as_measure_points_params(sensors):
 
 
 
-def prepare_mapped_sensors_as_measure_points_params(project_id, sensors, eeg_cap=None):
+def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapter_id=None):
     """
     Compute sensors positions by mapping them to the ``eeg_cap`` surface
     If ``eeg_cap`` is not specified the mapping will use a default EEGCal DataType in current project.
@@ -71,14 +75,11 @@ def prepare_mapped_sensors_as_measure_points_params(project_id, sensors, eeg_cap
     :rtype: dict
     """
 
-    if eeg_cap is None:
-        eeg_cap = dao.try_load_last_entity_of_type(project_id, EEGCap)
-
     if eeg_cap:
-        datatype_kwargs = json.dumps({'surface_to_map': eeg_cap.gid})
-        sensor_locations = ABCDisplayer.paths2url(sensors, 'sensors_to_surface') + '/' + datatype_kwargs
+        sensor_locations = URLGenerator.build_url(sensors.gid, 'sensors_to_surface', adapter_id=adapter_id,
+                                                  parameter='surface_to_map_gid=' + eeg_cap.gid)
         sensor_no = sensors.number_of_sensors
-        sensor_labels = ABCDisplayer.paths2url(sensors, 'labels')
+        sensor_labels = URLGenerator.build_h5_url(sensors.gid, 'get_labels')
 
         return {'urlMeasurePoints': sensor_locations,
                 'urlMeasurePointsLabels': sensor_labels,
@@ -90,6 +91,34 @@ def prepare_mapped_sensors_as_measure_points_params(project_id, sensors, eeg_cap
     return prepare_sensors_as_measure_points_params(sensors)
 
 
+class SensorsViewerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(SensorsViewerForm, self).__init__(prefix, project_id)
+        self.sensors = DataTypeSelectField(self.get_required_datatype(), self, name='sensors', required=True,
+                                           label='Sensors', doc='Internals sensors to view',
+                                           conditions=self.get_filters())
+        self.projection_surface = DataTypeSelectField(SurfaceIndex, self, name='projection_surface',
+                                                      label='Projection Surface',
+                                                      doc='A surface on which to project the results. When missing, '
+                                                          'the first EEGCap is taken. This parameter is ignored when '
+                                                          'InternalSensors are inspected')
+        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
+                                                 doc='Wrapping surface over the internal sensors, to be displayed '
+                                                     'semi-transparently, for visual purposes only.')
+
+    @staticmethod
+    def get_required_datatype():
+        return SensorsIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_sensors'
+
+    @staticmethod
+    def get_filters():
+        return None
+
 
 class SensorsViewer(ABCDisplayer):
     """
@@ -98,21 +127,18 @@ class SensorsViewer(ABCDisplayer):
 
     _ui_name = "Sensor Visualizer"
     _ui_subsection = "sensors"
+    form = None
 
+    def get_form(self):
+        if not self.form:
+            return SensorsViewerForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_input_tree(self):
-
-        return [{'name': 'sensors', 'label': 'Sensors', 'type': Sensors, 'required': True,
-                 'description': 'Internals sensors to view'},
-
-                {'name': 'projection_surface', 'label': 'Projection Surface', 'type': Surface, 'required': False,
-                 'description': 'A surface on which to project the results. When missing, the first EEGCap is taken'
-                                'This parameter is ignored when InternalSensors are inspected'},
-
-                {'name': 'shell_surface', 'label': 'Shell Surface', 'type': Surface, 'required': False,
-                 'description': "Wrapping surface over the internal sensors, to be displayed "
-                                "semi-transparently, for visual purposes only."}]
-
+        return None
 
     def launch(self, sensors, projection_surface=None, shell_surface=None):
         """
@@ -121,25 +147,36 @@ class SensorsViewer(ABCDisplayer):
         We support viewing all sensor types through a single viewer, so that a user doesn't need to
         go back to the data-page, for loading a different type of sensor.
         """
-        if isinstance(sensors, SensorsInternal):
+        if sensors.sensors_type == SensorsInternal.sensors_type.default:
             return self._params_internal_sensors(sensors, shell_surface)
 
-        if isinstance(sensors, SensorsEEG):
+        if sensors.sensors_type == SensorsEEG.sensors_type.default:
             return self._params_eeg_sensors(sensors, projection_surface, shell_surface)
 
-        if isinstance(sensors, SensorsMEG):
+        if sensors.sensors_type == SensorsMEG.sensors_type.default:
             return self._params_meg_sensors(sensors, projection_surface, shell_surface)
 
         raise LaunchException("Unknown sensors type!")
+
+
+    def _prepare_shell_surface_params(self, shell_surface):
+        if shell_surface:
+            shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
+            with shell_h5_class(shell_h5_path) as shell_h5:
+                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
+                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+
+            return shelfObject
+        return None
 
 
     def _params_internal_sensors(self, internal_sensors, shell_surface=None):
 
         params = prepare_sensors_as_measure_points_params(internal_sensors)
 
-        if shell_surface is None:
-            shell_surface = dao.try_load_last_entity_of_type(self.current_project_id, CorticalSurface)
-        params['shelfObject'] = prepare_shell_surface_urls(self.current_project_id, shell_surface)
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface, CORTICAL)
+
+        params['shelfObject'] = self._prepare_shell_surface_params(shell_surface)
 
         return self.build_display_result('sensors/sensors_internal', params,
                                          pages={'controlPage': 'sensors/sensors_controls'})
@@ -147,15 +184,22 @@ class SensorsViewer(ABCDisplayer):
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
-        params = prepare_mapped_sensors_as_measure_points_params(self.current_project_id, eeg_sensors, eeg_cap)
+        if eeg_cap is None:
+            eeg_cap = ensure_shell_surface(self.current_project_id, eeg_cap, EEG_CAP)
+
+        params = prepare_mapped_sensors_as_measure_points_params(eeg_sensors, eeg_cap, self.stored_adapter.id)
+
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
 
         params.update({
-            'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
+            'shelfObject': self._prepare_shell_surface_params(shell_surface),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': ''
         })
 
         if eeg_cap is not None:
-            params.update(self._compute_surface_params(eeg_cap))
+            eeg_cap_h5_class, eeg_cap_h5_path = self._load_h5_of_gid(eeg_cap.gid)
+            with eeg_cap_h5_class(eeg_cap_h5_path) as eeg_cap_h5:
+                params.update(self._compute_surface_params(eeg_cap_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})
@@ -165,23 +209,26 @@ class SensorsViewer(ABCDisplayer):
 
         params = prepare_sensors_as_measure_points_params(meg_sensors)
 
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
+
         params.update({
-            'shelfObject': prepare_shell_surface_urls(self.current_project_id, shell_surface),
+            'shelfObject':self._prepare_shell_surface_params(shell_surface),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
             'boundaryURL': '', 'urlRegionMap': ''})
 
         if projection_surface is not None:
-            params.update(self._compute_surface_params(projection_surface))
+            projection_surface_h5_class, projection_surface_h5_path = self._load_h5_of_gid(projection_surface.gid)
+            with projection_surface_h5_class(projection_surface_h5_path) as projection_surface_h5:
+                params.update(self._compute_surface_params(projection_surface_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})
 
 
     @staticmethod
-    def _compute_surface_params(surface):
-
-        rendering_urls = [json.dumps(url) for url in surface.get_urls_for_rendering()]
-        url_vertices, url_normals, url_lines, url_triangles = rendering_urls
+    def _compute_surface_params(surface_h5):
+        rendering_urls = [json.dumps(url) for url in SurfaceURLGenerator.get_urls_for_rendering(surface_h5)]
+        url_vertices, url_normals, url_lines, url_triangles, _ = rendering_urls
 
         return {'urlVertices': url_vertices,
                 'urlTriangles': url_triangles,
@@ -191,3 +238,29 @@ class SensorsViewer(ABCDisplayer):
 
     def get_required_memory_size(self):
         return -1
+
+
+    def sensors_to_surface(self, sensors_gid, surface_to_map_gid):
+        """
+        Map EEG sensors onto the head surface (skin-air).
+
+        EEG sensor locations are typically only given on a unit sphere, that is,
+        they are effectively only identified by their orientation with respect
+        to a coordinate system. This method is used to map these unit vector
+        sensor "locations" to a specific location on the surface of the skin.
+
+        Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
+
+        """
+        # Normalize sensor and vertex locations to unit vectors
+        sensors_h5_class, sensors_h5_path = self._load_h5_of_gid(sensors_gid)
+        sensors_dt = Sensors()
+        with sensors_h5_class(sensors_h5_path) as sensors_h5:
+            sensors_h5.load_into(sensors_dt)
+
+        surface_h5_class, surface_h5_path = self._load_h5_of_gid(surface_to_map_gid)
+        surface_dt = Surface()
+        with surface_h5_class(surface_h5_path) as surface_h5:
+            surface_h5.load_into(surface_dt)
+
+        return sensors_dt.sensors_to_surface(surface_dt).tolist()
