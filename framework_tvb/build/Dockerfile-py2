@@ -1,0 +1,25 @@
+FROM continuumio/miniconda
+
+RUN apt-get -y update && apt-get -y install build-essential gcc
+RUN apt-get -y install postgresql
+
+USER postgres
+RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+USER root
+RUN conda update -n base -c defaults conda
+
+RUN conda create -y --name tvb-run python=2.7 nomkl numba scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
+RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark
+RUN conda install -c anaconda -y --name tvb-run ipython ipython-notebook
+RUN conda install -y --name tvb-run psycopg2 pytables numba scikit-image==0.14.2 simplejson cherrypy docutils
+RUN conda install -y --name tvb-run -c conda-forge subprocess32
+RUN conda install -y --name tvb-run -c conda-forge tvb-data
+
+RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0
+RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist
+
+# -v [local- tvb-framework - clone]:/root/tvb-framework
+CMD ["bash","-c","cd /root/tvb-framework && source activate tvb-run && pip install tvb-library==2.0a1 && pytest tvb/tests"]
