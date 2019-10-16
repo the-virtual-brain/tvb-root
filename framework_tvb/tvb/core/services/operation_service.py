@@ -235,8 +235,8 @@ class OperationService:
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
             operation = Operation(user_id, project_id, algorithm.id,
-                                        json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder), meta_str,
-                                        op_group_id=group_id, user_group=user_group, range_values=range_values)
+                                  json.dumps(one_set_of_args), meta_str,
+                                  op_group_id=group_id, user_group=user_group, range_values=range_values)
             operation.visible = visible_operation
             operations.append(operation)
         operations = dao.store_entities(operations)
@@ -320,7 +320,11 @@ class OperationService:
             unique_id = None
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
-            filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+            # filtered_kwargs = kwargs
+            # Replace this with a method to retrieve TSI by GID/Keep only GID on kwargs dict
+            # filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+            # We might not need kwargs anymore
+            filtered_kwargs = adapter_instance.get_form().get_form_values()
             self.logger.debug("Launching operation " + str(operation.id) + " with " + str(filtered_kwargs))
             operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
 

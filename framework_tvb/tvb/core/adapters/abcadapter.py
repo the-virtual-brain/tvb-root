@@ -55,7 +55,8 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-
+from tvb.core.neotraits._forms import Form
+from tvb.tests.framework.interfaces.neoforms_test import jinja_env
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
@@ -116,6 +117,37 @@ def nan_allowed():
         return new_function
 
     return wrap
+
+
+class ABCAdapterForm(Form):
+    @staticmethod
+    def get_required_datatype():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_filters():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_input_name():
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_traited_datatype(self):
+        """"""
+
+    @abstractmethod
+    def get_form_values(self):
+        """"""
+
+    # TODO: Used to support original flow (pass form values as kwargs)
+    @abstractmethod
+    def get_dict(self):
+        """"""
+
+    def __str__(self):
+        # TODO: Keep using Jinja2?
+        return jinja_env.get_template("form_field.jinja2").render(form=self)
 
 
 

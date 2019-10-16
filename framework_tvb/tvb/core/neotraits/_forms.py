@@ -2,6 +2,8 @@ import json
 from collections import namedtuple
 
 import numpy
+from tvb.core import utils
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
@@ -86,17 +88,13 @@ class DataTypeSelectField(TraitField):
     template = 'datatype_select_field.jinja2'
     missing_value = 'explicit-None-value'
 
-    def fill_from_post(self, post_data):
-        post_data = post_data.get(self.name)
-        # TODO: correct this
-        field_data = dao.get_datatype_by_id(int(post_data[1]))
-        self.unvalidated_data = field_data
-        self.data = self.unvalidated_data
+    def __init__(self, trait_attribute, datatype_index, form, name=None, disabled=False):
+        super(DataTypeSelectField, self).__init__(trait_attribute, form, name, disabled)
+        self.datatype_index = datatype_index
 
     def _get_values_from_db(self):
         filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
-                                                               self.owner.get_index_for_required_dt(
-                                                                   self.trait_attribute.field_type),
+                                                               self.datatype_index,
                                                                self.owner.get_filters())
         return filtered_datatypes
 
@@ -115,21 +113,50 @@ class DataTypeSelectField(TraitField):
                 checked=self.data is None
             )
 
+        # TODO: Add "All" option
         for i, datatype in enumerate(filtered_datatypes):
             yield Option(
                 id='{}_{}'.format(self.name, i),
-                value=datatype,
-                # TODO: generate proper label instead of GID
-                label=datatype[2],
+                value=datatype[2],
+                label=self._prepare_display_name(datatype),
                 checked=self.data == datatype
             )
+
+    def get_dt_from_db(self):
+        return dao.get_time_series_by_gid(self.data)
+
+    def _prepare_display_name(self, value):
+        """
+        Populate meta-data fields for data_list (list of DataTypes).
+
+        Private method, to be called recursively.
+        It will receive a list of Attributes, and it will populate 'options'
+        entry with data references from DB.
+        """
+        # Here we only populate with DB data, actual
+        # XML check will be done after select and submit.
+        entity_gid = value[2]
+        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
+        display_name = ''
+        if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
+            display_name = actual_entity[0].__class__.__name__
+        display_name += ' - ' + (value[3] or "None ")
+        if value[5]:
+            display_name += ' - From: ' + str(value[5])
+        else:
+            display_name += utils.date2string(value[4])
+        if value[6]:
+            display_name += ' - ' + str(value[6])
+        display_name += ' - ID:' + str(value[0])
+
+        return display_name
+
 
 class TimeSeriesSelectField(DataTypeSelectField):
     def _get_values_from_db(self):
         filtered_ts, count = dao.get_values_of_time_series(self.owner.project_id,
-                                                    self.owner.get_index_for_required_dt(
-                                                        self.trait_attribute.field_type),
-                                                    self.owner.get_filters())
+                                                           self.datatype_index,
+                                                           self.owner.get_filters())
         return filtered_ts
 
 class StrField(TraitField):
