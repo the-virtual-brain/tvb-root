@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Test </title>
+    <link rel="stylesheet" type="text/css" href="/static/style/base.css" />
+    <link rel="stylesheet" type="text/css" href="/static/style/overlay.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css"/>
+
+    <style>html{overflow: auto}</style>
+    <script type="text/javascript" src="/static/jquery/jquery.js"></script>
+    <script type="text/javascript" src="/static/js/genericTVB.js"></script>
+</head>
+
+{% macro generate_help_tooltip(field) %}
+    <nav class="inline-menu helper">
+        <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <mark>{{ field.label }}</mark>
+                <div class="dropdown-pane-overlay">{{ field.doc.replace('\n', '<br/>' )}}</div>
+            </div>
+        </div>
+    </nav>
+{% endmacro %}
+
+<body class="is-helping">
+
+<form method="post" action="/" enctype="multipart/form-data">
+    <fieldset>
+    {% for error in form.errors %}
+        <span> {{ error }} </span>
+    {% endfor %}
+    <dl>
+    {% for field in form.fields %}
+        <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+            <label for="{{ field.name }}">{{ field.label }}</label>
+{#            {{ generate_help_tooltip(field) }}#}
+        </dt>
+        <dd>
+            {{ field | safe }}
+            <p class="errorMessage">
+                {% for error in field.errors %}
+                    <span> {{ error }} </span>
+                {% endfor %}
+            </p>
+        </dd>
+    {% endfor %}
+    </dl>
+    </fieldset>
+ <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<pre style="background-color: #FAF7E4; padding:2em">
+{{ output | safe }}
+</pre>
+
+</body>
+</html>
