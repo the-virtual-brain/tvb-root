@@ -36,17 +36,14 @@ Exceptions for File Storage layer.
 from tvb.basic.exceptions import TVBException
 
 
-
 class FileStructureException(TVBException):
     """
     Exception to be thrown in case of a problem 
     related to File Structure Storage.
     """
 
-
     def __init__(self, message):
         TVBException.__init__(self, message)
-
 
 
 class FileStorageException(TVBException):
@@ -54,10 +51,8 @@ class FileStorageException(TVBException):
     Generic exception when storing in data in files.
     """
 
-
     def __init__(self, message):
         TVBException.__init__(self, message)
-
 
 
 class MissingDataSetException(FileStorageException):
@@ -66,10 +61,8 @@ class MissingDataSetException(FileStorageException):
     we will consider the attribute None.
     """
 
-
     def __init__(self, message):
         FileStorageException.__init__(self, message)
-
 
 
 class MissingDataFileException(FileStorageException):
@@ -77,10 +70,8 @@ class MissingDataFileException(FileStorageException):
     Exception when the file associated to some manager does not exist on disk for some reason.
     """
 
-
     def __init__(self, message):
         FileStorageException.__init__(self, message)
-
 
 
 class FileVersioningException(TVBException):
@@ -88,10 +79,8 @@ class FileVersioningException(TVBException):
     A base exception class for all TVB file storage version conversion custom exceptions.
     """
 
-
     def __init__(self, message):
         TVBException.__init__(self, message)
-
 
 
 class IncompatibleFileManagerException(FileVersioningException):
@@ -100,7 +89,5 @@ class IncompatibleFileManagerException(FileVersioningException):
     is incompatible with that version of TVB file storage.
     """
 
-
     def __init__(self, message):
         FileVersioningException.__init__(self, message)
-        
