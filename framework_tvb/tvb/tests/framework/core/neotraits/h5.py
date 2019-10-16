@@ -2,7 +2,7 @@ import os
 
 import numpy
 import pytest
-from .data import FooDatatype
+from .data import FooDatatype, BooDatatype
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar
 
 
@@ -25,6 +25,14 @@ class FooFile(H5File):
     ]
 
 
+class BooFile(FooFile):
+    trait = BooDatatype
+    fields = [
+        BooDatatype.array_str
+    ]
+
+
+
 @pytest.fixture
 def tmph5(tmpdir):
     path = os.path.join(str(tmpdir), 'tmp.h5')
@@ -39,18 +47,19 @@ def test_autogenerate_accessors(tmph5):
     assert set(FooDatatype.declarative_attrs) - {'non_mapped_attr'} <= set(f.__dict__)
 
 
-def test_store_autogen(tmph5, datatypeinstance):
+def test_store_autogen(tmph5, fooFactory):
     f = FooFile(tmph5)
-    f.store(datatypeinstance)
+    f.store(fooFactory())
 
 
-def test_store_manual(tmph5, datatypeinstance):
+def test_store_manual(tmph5, fooFactory):
     f = FooFileManual(tmph5)
-    f.store(datatypeinstance)
+    f.store(fooFactory())
 
 
-def test_store_load(tmph5, datatypeinstance):
+def test_store_load(tmph5, fooFactory):
     f = FooFile(tmph5)
+    datatypeinstance = fooFactory()
     datatypeinstance.non_mapped_attr = numpy.array([5.3])
     f.store(datatypeinstance)
 
@@ -63,4 +72,16 @@ def test_store_load(tmph5, datatypeinstance):
     assert ret.array_float.shape == (100,)
     # this one is not mapped
     assert ret.non_mapped_attr is None
+
+
+def test_load_store_inheritance(tmph5, booFactory):
+    boo = booFactory()
+    f = BooFile(tmph5)
+    f.store(boo)
+
+    ret = BooDatatype()
+    f._load_into(ret)
+    assert ret.array_str.tolist() == ['ana', 'are', 'mere']
+    assert ret.scalar_str == 'ana'
+
 

@@ -4,7 +4,7 @@ import os
 from sqlalchemy.orm import sessionmaker, relationship
 from tvb.core.neotraits.db import Base, NArrayIndex, HasTraitsIndex
 from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
-from tvb.tests.framework.core.neotraits.data import FooDatatype
+from tvb.tests.framework.core.neotraits.data import FooDatatype, BooDatatype
 
 
 class FooIndexManual(Base):
@@ -47,7 +47,7 @@ class FooIndex(HasTraitsIndex):
     ]
 
 
-class BarIndex(HasTraitsIndex):
+class PartialFooIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
     trait = FooDatatype
     fields = [
@@ -56,10 +56,11 @@ class BarIndex(HasTraitsIndex):
     ]
 
 
-class LongerBarIndex(BarIndex):
-    id = Column(Integer, ForeignKey(BarIndex.id), primary_key=True)
-    trait = FooDatatype
-    fields = [FooDatatype.scalar_int]
+class BarIndex(FooIndex):
+    __mapper_args__ = {'polymorphic_identity': 'BarIndex'}
+    id = Column(Integer, ForeignKey(FooIndex.id), primary_key=True)
+    trait = BooDatatype
+    fields = [BooDatatype.array_str]
 
 
 @pytest.fixture(scope='session')
@@ -81,21 +82,32 @@ def test_schema(session):
     session.query(FooIndexManual)
 
 
-def test_store_load(session, datatypeinstancefactory):
-    datatypeinstance = datatypeinstancefactory()
-    datatype_index = FooIndexManual()
-    datatype_index.from_datatype(datatypeinstance)
+def test_store_load(session, fooFactory):
+    foo_manual = FooIndexManual()
+    foo_manual.from_datatype(fooFactory())
 
-    datatypeinstance = datatypeinstancefactory()
-    datatype_index2 = FooIndex()
-    datatype_index2.fill_from_has_traits(datatypeinstance)
+    foo = FooIndex()
+    foo.fill_from_has_traits(fooFactory())
 
-    datatypeinstance = datatypeinstancefactory()
-    bar = LongerBarIndex()
-    bar.fill_from_has_traits(datatypeinstance)
-    session.add_all([datatype_index, datatype_index2, bar])
+    session.add_all([foo_manual, foo])
     session.commit()
 
     res = session.query(FooIndexManual)
     assert res.count() == 1
     assert res[0].array_float.dtype == 'float64'
+
+
+def test_store_load_inheritance(session, fooFactory, booFactory):
+    foo = FooIndex()
+    foo.fill_from_has_traits(fooFactory())
+
+    bar = BarIndex()
+    bar.fill_from_has_traits(booFactory())
+    session.add_all([foo, bar])
+    session.commit()
+
+    res = session.query(BarIndex)
+    assert res.count() == 1
+    assert res[0].array_float.dtype == 'float64'
+    assert res[0].array_str.dtype == '|S4'
+

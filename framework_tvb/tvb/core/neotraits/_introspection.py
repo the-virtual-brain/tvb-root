@@ -22,18 +22,20 @@ def gather_declared_fields(cls):
     if not isinstance(trait, type) or not issubclass(trait, HasTraits):
         raise AttributeError('trait attribute is required to be a HasTraits')
 
-    all_fields = [getattr(trait, fn) for fn in trait.own_declarative_attrs]
-
-    if not hasattr(cls, 'fields'):
-        return all_fields
+    all_fields = [getattr(trait, fn) for fn in trait.declarative_attrs]
 
     fields = []
-    for f in getattr(cls, 'fields'):
-        if isinstance(f, str) and f in trait.own_declarative_attrs:
-            fields.append(getattr(trait, f))
-        elif f in all_fields:
-            fields.append(f)
-        else:
-            raise ValueError('fields should contain either the names of '
-                             'the traited fields or the fields themselves')
-    return fields
+
+    for base in cls.mro():
+        for f in getattr(base, 'fields', []):
+            if isinstance(f, str) and f in trait.declarative_attrs:
+                fields.append(getattr(trait, f))
+            elif f in all_fields:
+                fields.append(f)
+            else:
+                raise ValueError('fields should contain either the names of '
+                                 'the traited fields or the fields themselves')
+    if fields:
+        return fields
+    else:
+        return all_fields

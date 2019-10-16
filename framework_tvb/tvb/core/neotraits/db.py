@@ -5,6 +5,12 @@ from sqlalchemy.orm import relationship
 from tvb.basic.neotraits.api import Attr, NArray
 from ._introspection import gather_declared_fields
 
+SCALAR_MAPPING = {
+    bool: Boolean,
+    int: Integer,
+    str: String
+}
+
 
 class DeclarativeTraitMeta(DeclarativeMeta):
     """
@@ -40,15 +46,10 @@ class DeclarativeTraitMeta(DeclarativeMeta):
             setattr(cls, f.field_name + '_id', narray_fk_column)
             setattr(cls, f.field_name, relationship(NArrayIndex, foreign_keys=narray_fk_column))
         elif isinstance(f, Attr):
-            # todo this in a sane way
-            if f.field_type == bool:
-                setattr(cls, f.field_name, Column(Boolean, nullable=not f.required))
-            elif f.field_type == int:
-                setattr(cls, f.field_name, Column(Integer, nullable=not f.required))
-            elif f.field_type == str:
-                setattr(cls, f.field_name, Column(String, nullable=not f.required))
-            else:
+            sqlalchemy_type = SCALAR_MAPPING.get(f.field_type)
+            if not sqlalchemy_type:
                 raise NotImplementedError()
+            setattr(cls, f.field_name, Column(sqlalchemy_type, nullable=not f.required))
         else:
             raise AttributeError(
                 "fields must contain declarative "
@@ -98,13 +99,20 @@ class HasTraitsIndex(Base):
         for f in cls.fields:
             if isinstance(f, NArray):
                 field_value = getattr(datatype, f.field_name)
+                try:
+                    minvalue, maxvalue = field_value.min(), field_value.max()
+                except TypeError:
+                    # dtype is string or other non comparable type
+                    minvalue, maxvalue = None, None
+
                 arr = NArrayIndex(
                     dtype=str(field_value.dtype),
                     ndim=field_value.ndim,
                     shape=str(field_value.shape),
                     dim_names=str(f.dim_names),
-                    minvalue=field_value.min(),
-                    maxvalue=field_value.max())
+                    minvalue=minvalue,
+                    maxvalue=maxvalue
+                )
                 setattr(self, f.field_name, arr)
             else:
                 # todo: handle non-array nonscalar Attr's
