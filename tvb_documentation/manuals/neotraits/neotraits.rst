@@ -230,6 +230,72 @@ The second reference to a cached property will return the cached value.
             return numpy.eye(1001)
 
 
+Validation
+----------
+
+The Attr declarations already do checks that apply to all instances of a class.
+For example the type of an Attr is enforced.
+
+But you might need to do per instance specific validation.
+
+Let's say that for the class below, we want to enforce that the shape of the
+weights is (n_nodes, n_nodes), once n_nodes has been set.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        n_nodes = Int()
+        weights = NArray(ndim=2)
+
+We can override the `validate` method and do the checks in it.
+Validate is not automatically called, but users of the DataType are encouraged to
+call it once they are done with populating the instance.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        n_nodes = Int()
+        weights = NArray(ndim=2)
+
+        def validate(self):
+            super(A, self).validate(self)
+            if self.weights.shape != (self.n_nodes, self.n_nodes):
+                raise TraitValueError
+
+    >>> a = A(n_nodes=4)
+    >>> a.weights = numpy.eye(13)
+    >>> a.validate()
+    TraitValueError
+
+
+This late optional validation might not be a good fit.
+If you want an error as soon as you assign a badly shaped array then you
+can promote weights from a declarative attribute to a declarative property.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        n_node = Int()
+
+        def __init__(self, **kwargs):
+            super(A, self).__init__(**kwargs)
+            self._weights = None
+
+        @trait_property(NArray(ndim=2))
+        def weights(self):
+            return self._weights
+
+        @weights.setter
+        def weights(self, val):
+            if val.shape != (self.n_node, self.n_node):
+                raise TraitValueError
+            self._weights = val
+
+    >>> a = A(n_node=4)
+    >>> a.weights = numpy.eye(4)
+    >>> a.weights = numpy.eye(13)
+    TraitValueError
+
 
 .. _neotrait_attr_ref:
 
