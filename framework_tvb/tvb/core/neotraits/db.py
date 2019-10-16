@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime
 import numpy
 from sqlalchemy import Column, Integer, Text, DateTime
@@ -52,6 +53,7 @@ class HasTraitsIndex(Base):
     def __init__(self):
         super(HasTraitsIndex, self).__init__()
         self.type_ = type(self).__name__
+        self.gid = uuid.uuid4().hex
 
     def __repr__(self):
         cls = type(self)

@@ -152,10 +152,7 @@ class ZIPSurfaceImporter(ABCUploader):
 
         self.logger.debug("Surface ready to be stored")
 
-        surface.configure()
-
         surf_idx = SurfaceIndex()
-        surf_idx.gid = surface.gid.hex  # TODO: GID should be on HasTraitsIndex
         surf_idx.fill_from_has_traits(surface)
 
         loader = DirLoader(self.storage_path)
