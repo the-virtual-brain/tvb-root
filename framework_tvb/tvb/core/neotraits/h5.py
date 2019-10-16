@@ -45,11 +45,12 @@ class Scalar(Accessor):
 
     def store(self, val):
         # type: (typing.Union[str, int, float]) -> None
-        self.trait_attribute._validate_set(None, val)
+        val = self.trait_attribute._validate_set(None, val)
         self.owner.storage_manager.set_metadata({self.trait_attribute.field_name: val})
 
     def load(self):
         # type: () -> typing.Union[str, int, float]
+        # assuming here that the h5 will return the type we stored. if paranoid do self.trait_attribute.field_type(value)
         return self.owner.storage_manager.get_metadata()[self.trait_attribute.field_name]
 
 
@@ -79,8 +80,9 @@ class DataSet(Accessor):
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
-        self.trait_attribute._validate_set(None, data)
-        self.owner.storage_manager.store_data(self.trait_attribute.field_name, data)
+        data = self.trait_attribute._validate_set(None, data)
+        if data is not None:
+            self.owner.storage_manager.store_data(self.trait_attribute.field_name, data)
 
     def load(self):
         # type: () -> numpy.ndarray
