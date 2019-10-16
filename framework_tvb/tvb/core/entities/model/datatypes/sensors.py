@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, ForeignKey, String
 
-from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.entities.model.model_datatype import DataType
 
 
-class SensorsIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class SensorsIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
     number_of_sensors = Column(Integer, nullable=False)
     sensors_type = Column(String, nullable=False)
 
