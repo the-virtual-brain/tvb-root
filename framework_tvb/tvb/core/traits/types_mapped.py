@@ -42,21 +42,17 @@ import numpy
 from scipy import sparse
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-import tvb.basic.traits.types_mapped_light as mapped
-from tvb.basic.traits.util import get
-from tvb.basic.traits.core import FILE_STORAGE_NONE, KWARG_STORAGE_PATH, FILE_STORAGE_DEFAULT
-from tvb.basic.traits.exceptions import ValidationException, MissingEntityException, StorageException
+from tvb.basic.exceptions import ValidationException, MissingEntityException, StorageException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.traits.core import compute_table_name
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.exceptions import MissingDataSetException
 
 
-class MappedType(DataType, mapped.MappedTypeLight):
+class MappedType(DataType):
     """
     Mix-in class combining core Traited mechanics with the db'ed DataType class enabling SQLAlchemy.
     """
@@ -548,7 +544,7 @@ class MappedType(DataType, mapped.MappedTypeLight):
 
 
 
-class Array(mapped.Array):
+class Array():
 
     def __set__(self, inst, value):
         """
@@ -560,7 +556,7 @@ class Array(mapped.Array):
         super(Array, self).__set__(inst, value)
         value = getattr(inst, '__' + self.trait.name)
         if (TvbProfile.current.TRAITS_CONFIGURATION.use_storage and inst.trait.use_storage and value is not None
-            and (inst is not None and isinstance(inst, mapped.MappedTypeLight)
+            and (inst is not None and isinstance(inst, MappedTypeLight)
                  and self.trait.file_storage != FILE_STORAGE_NONE) and value.size > 0):
 
             if not isinstance(value, self.trait.wraps):
