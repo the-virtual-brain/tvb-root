@@ -5,7 +5,15 @@
 
     <py:with vars="drawHiddenRanges = draw_hidden_ranges if defined('draw_hidden_ranges') else False;
                    tree_session_key = treeSessionKey if defined('treeSessionKey') else 'defaultTree'">
-        ${generateDisplay(inputList, False, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges)}
+
+        <py:if test="defined('form')">
+            ${Markup(form)}
+        </py:if>
+        <!--TODO: to be removed when all forms are migrated-->
+        <py:if test="defined('inputList')">
+            ${generateDisplay(inputList, False, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges)}
+
+        </py:if>
     </py:with>
 
     <script type="text/javascript">

@@ -58,7 +58,6 @@ from tvb.interfaces.web.controllers.decorators import expose_page, settings, con
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
-
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
 FILTER_TYPE = "type"
@@ -506,23 +505,32 @@ class FlowController(BaseController):
             # Cache some values in session, for performance
             previous_tree = self.context.get_current_input_tree()
             previous_sub_step = self.context.get_current_substep()
-            if not session_reset and previous_tree is not None and previous_sub_step == stored_adapter.id:
-                adapter_interface = previous_tree
-            else:
-                adapter_interface = self.flow_service.prepare_adapter(project_id, stored_adapter)
-                self.context.add_adapter_to_session(stored_adapter, adapter_interface)
 
             category = self.flow_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
             if group:
                 title = title + " - " + group.displayname
 
-            current_defaults = self.context.get_current_default()
-            if current_defaults is not None:
-                # Change default values in tree, according to selected input
-                adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
+            adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
-            template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
+            if adapter_instance.get_input_tree() is None:
+                adapter_form = self.flow_service.prepare_adapter_form(adapter_instance)
+                template_specification = dict(submitLink=submit_url, form=adapter_form, title=title)
+
+            # TODO: to be removed when all forms are migrated
+            else:
+                if not session_reset and previous_tree is not None and previous_sub_step == stored_adapter.id:
+                    adapter_interface = previous_tree
+                else:
+                    adapter_interface = self.flow_service.prepare_adapter_tree_interface(adapter_instance, project_id, stored_adapter.fk_category)
+                    self.context.add_adapter_to_session(stored_adapter, adapter_interface)
+
+                current_defaults = self.context.get_current_default()
+                if current_defaults is not None:
+                    # Change default values in tree, according to selected input
+                    adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
+
+                template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
         except OperationException as oexc:
