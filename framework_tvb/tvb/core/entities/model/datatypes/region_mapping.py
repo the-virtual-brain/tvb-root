@@ -1,15 +1,16 @@
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.volume import VolumeIndex
-from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
+from tvb.core.neotraits.db import NArrayIndex
 
 
-class RegionMappingIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class RegionMappingIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
@@ -26,8 +27,8 @@ class RegionMappingIndex(HasTraitsIndex):
         self.array_data = NArrayIndex.from_ndarray(datatype.array_data)
 
 
-class RegionVolumeMappingIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class RegionVolumeMappingIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)

@@ -1,11 +1,15 @@
+from __future__ import absolute_import
+
 from sqlalchemy import Column, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
-from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
+from tvb.core.neotraits.db import NArrayIndex
+
+from .. model_datatype import DataType
 
 
-class ConnectivityIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class ConnectivityIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     number_of_regions = Column(Integer, nullable=False)
     number_of_connections = Column(Integer, nullable=False)

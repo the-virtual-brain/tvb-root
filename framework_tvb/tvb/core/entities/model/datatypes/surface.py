@@ -1,10 +1,9 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
+from tvb.core.entities.model.model_datatype import DataType
 
-from tvb.core.neotraits.db import HasTraitsIndex
 
-
-class SurfaceIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class SurfaceIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     surface_type = Column(String, nullable=False)
     valid_for_simulations = Column(Boolean, nullable=False)
