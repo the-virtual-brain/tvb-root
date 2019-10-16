@@ -81,7 +81,7 @@ class SettingsService(object):
             self.KEY_STORAGE: {'label': 'Root folder for all projects', 'value': storage,
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
-                                          'value': TvbProfile.current.MAX_DISK_SPACE / 2 ** 10, 'type': 'text'},
+                                          'value': int(TvbProfile.current.MAX_DISK_SPACE / 2 ** 10), 'type': 'text'},
             self.KEY_MATLAB_EXECUTABLE: {'label': 'Optional Matlab or Octave path', 'type': 'text',
                                          'value': TvbProfile.current.MATLAB_EXECUTABLE or get_matlab_executable() or '',
                                          'description': 'Some analyzers will not be available when '
@@ -155,7 +155,7 @@ class SettingsService(object):
         else:
             mem_stat = os.statvfs(storage_path)
             bytes_value = mem_stat.f_frsize * mem_stat.f_bavail
-            ## Occupied memory would be:
+            # Occupied memory would be:
             # bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
         return bytes_value / 2 ** 10
 
@@ -205,7 +205,7 @@ class SettingsService(object):
             data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.SVN_VERSION
             file_data = data
             if self.KEY_ADMIN_PWD in data:
-                data[self.KEY_ADMIN_PWD] = hashlib.md5(data[self.KEY_ADMIN_PWD]).hexdigest()
+                data[self.KEY_ADMIN_PWD] = hashlib.md5(data[self.KEY_ADMIN_PWD].encode('utf-8')).hexdigest()
             anything_changed = True
         else:
             file_data = TvbProfile.current.manager.stored_settings
