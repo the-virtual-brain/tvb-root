@@ -1,9 +1,22 @@
-*.pyc
-.idea
-.pytest_cache/
+# byte compiled
+*.py[cod]
+__pycache__
+
+# packaging
 *.egg-info/
-TEST_OUTPUT/
-.idea
+
+# ide's
+.idea/
+.ipynb_checkpoints/
+
+# testing
 .pytest_cache/
-*.egg-info/
+.tox/
 TEST_OUTPUT/
+
+# coverage
+.coverage
+.htmlcov
+
+# other tools
+.mypy_cache/
