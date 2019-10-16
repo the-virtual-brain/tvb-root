@@ -64,6 +64,7 @@ class Registry(object):
         # type: (typing.Type[HasTraits]) -> typing.Type[DataType]
         if datatype_class in self._index_for_datatype:
             return self._index_for_datatype[datatype_class]
+
         for base in datatype_class.__bases__:
             if base in self._index_for_datatype:
                 return self._index_for_datatype[base]

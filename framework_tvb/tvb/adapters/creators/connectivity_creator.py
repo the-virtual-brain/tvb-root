@@ -34,9 +34,9 @@
 
 import numpy
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleBoolField, SimpleArrayField
 from tvb.core.neocom import h5

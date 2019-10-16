@@ -31,48 +31,61 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import pytest
+import os
+import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.ica import ICA
-from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 class TestICA(TransactionalTestCase):
     """
     Unit-tests for ICA Viewer.
     """
+    @pytest.fixture(scope='module')
+    def transactional_setup_fixture(self, request, datatype_factory):
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
+        def setup():
+            """
+            Sets up the environment for running the tests;
+            creates a test user, a test project, a connectivity and a surface;
+            imports a CFF data-set
+            """
 
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        assert self.connectivity is not None
+            self.test_project = datatype_factory['project']
+            self.test_user = datatype_factory['user']
+
+            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+            TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
+            self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex())
+            assert self.connectivity is not None
+
+        def teardown():
+            """
+            Clean-up tests data
+            """
+            FilesHelper().remove_project_structure(self.test_project.name)
+
+        request.addfinalizer(teardown)
+
+        setup()
+
+    # def transactional_teardown_method(self):
+    #     """
+    #     Clean-up tests data
+    #     """
+    #     FilesHelper().remove_project_structure(self.test_project.name)
 
 
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
-
-    def test_launch(self):
+    def test_launch(self, transactional_setup_fixture, time_series_factory, ica_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        conn_measure = self.datatypeFactory.create_ica(time_series)
+        time_series = time_series_factory(self.connectivity)
+        conn_measure = ica_factory(time_series)
         viewer = ICA()
         result = viewer.launch(conn_measure)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']

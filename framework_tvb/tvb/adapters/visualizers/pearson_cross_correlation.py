@@ -40,7 +40,7 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.entities.model.datatypes.graph import CorrelationCoefficientsIndex
+from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 
 

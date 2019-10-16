@@ -30,7 +30,7 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.neotraits.db import from_ndarray
 

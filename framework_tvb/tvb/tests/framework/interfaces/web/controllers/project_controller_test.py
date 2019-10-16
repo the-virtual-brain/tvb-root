@@ -40,9 +40,6 @@ import tvb.interfaces.web.controllers.common as common
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-
-
 
 class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
@@ -161,11 +158,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert len(result['usersList']) == users_count
 
 
-    def test_set_visibility_datatype(self):
+    def test_set_visibility_datatype(self, datatype_with_storage_factory):
         """
         Set datatype visibility to true and false and check results are updated.
         """
-        datatype = DatatypesFactory().create_datatype_with_storage()
+        datatype = datatype_with_storage_factory
         assert datatype.visible
         self.project_c.set_visibility('datatype', datatype.gid, 'False')
         datatype = dao.get_datatype_by_gid(datatype.gid)
@@ -175,13 +172,12 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert datatype.visible
 
 
-    def test_set_visibility_operation(self):
+    def test_set_visibility_operation(self, datatype_factory):
         """
         Same flow of operations as per test_set_visibilty_datatype just for
         operation entity.
         """
-        dt_factory = DatatypesFactory()
-        operation = dt_factory.operation
+        operation = datatype_factory['operation']
         assert operation.visible
         self.project_c.set_visibility('operation', operation.gid, 'False')
         operation = dao.get_operation_by_gid(operation.gid)
@@ -205,11 +201,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert 'total_op_count' in result_dict
 
 
-    def test_get_datatype_details(self):
+    def test_get_datatype_details(self, datatype_with_storage_factory):
         """
         Check for various field in the datatype details dictionary.
         """
-        datatype = DatatypesFactory().create_datatype_with_storage()
+        datatype = datatype_with_storage_factory
         dt_details = self.project_c.get_datatype_details(datatype.gid)
         assert dt_details['datatype_id'] == datatype.id
         assert dt_details['entity_gid'] == datatype.gid
@@ -218,11 +214,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert len(dt_details['overlay_indexes']) == len(dt_details['overlay_tabs_horizontal'])
 
 
-    def test_get_linkable_projects(self):
+    def test_get_linkable_projects(self, datatype_with_storage_factory):
         """
         Test get linkable project, no projects linked so should just return none.
         """
-        datatype = DatatypesFactory().create_datatype_with_storage()
+        datatype = datatype_with_storage_factory
         result_dict = self.project_c.get_linkable_projects(datatype.id, False, False)
         assert result_dict['projectslinked'] is None
         assert result_dict['datatype_id'] == datatype.id

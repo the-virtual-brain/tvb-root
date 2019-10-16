@@ -30,8 +30,8 @@
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.projections import ProjectionMatrix
-from tvb.core.entities.model.datatypes.sensors import SensorsIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_datatype import DataType
 
 

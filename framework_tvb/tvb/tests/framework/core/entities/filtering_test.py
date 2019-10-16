@@ -34,20 +34,19 @@
 # Used in sql filter eval
 from sqlalchemy import and_
 import pytest
-from tvb.core.entities.model.datatypes.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.filters.exceptions import InvalidFilterChainInput, InvalidFilterEntity
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 class TestFiltering(TransactionalTestCase):
     """
     Test that defining and evaluating a filter on entities is correctly processed.
     """
-    datatypes_factory = DatatypesFactory()
+    # datatypes_factory = DatatypesFactory()
 
     class DummyFilterClass:
         """

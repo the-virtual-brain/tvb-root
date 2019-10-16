@@ -37,7 +37,7 @@ A displayer for the principal components analysis.
 import json
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.model.datatypes.mode_decompositions import PrincipalComponentsIndex
+from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 
 

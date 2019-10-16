@@ -33,13 +33,13 @@ from importlib import import_module
 import tvb.adapters.uploaders
 import tvb.adapters.portlets
 import tvb.adapters.visualizers
-import tvb.core.entities.model.datatypes
+import tvb.adapters.datatypes.db
 from tvb.adapters.analyzers import ALL_ANALYZERS
 from tvb.adapters.creators import ALL_CREATORS
 from tvb.adapters.simulator import ALL_SIMULATORS
 from tvb.adapters.uploaders import ALL_UPLOADERS
 from tvb.adapters.visualizers import ALL_VISUALIZERS
-from tvb.core.entities.model.datatypes import ALL_DATATYPES
+from tvb.adapters.datatypes.db import ALL_DATATYPES
 from tvb.config.algorithm_categories import *
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -120,7 +120,7 @@ class IntrospectionRegistry(object):
         CreateAlgorithmCategoryConfig: import_adapters(tvb.adapters.creators, ALL_CREATORS),
     }
 
-    DATATYPES = import_dt_index(tvb.core.entities.model.datatypes, ALL_DATATYPES)
+    DATATYPES = import_dt_index(tvb.adapters.datatypes.db, ALL_DATATYPES)
 
     PORTLETS_MODULE = tvb.adapters.portlets
 

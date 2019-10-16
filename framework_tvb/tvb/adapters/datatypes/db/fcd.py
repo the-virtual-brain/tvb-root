@@ -27,27 +27,29 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY
-from tvb.adapters.uploaders.mat_timeseries_importer import MatTimeSeriesImporterForm, TS_EEG, MatTimeSeriesImporter
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
-
-
-class EEGMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
-
-    def __init__(self, prefix='', project_id=None):
-        super(EEGMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
-                                     values=[EEG_POLYMORPHIC_IDENTITY])
-        self.eeg = DataTypeSelectField(SensorsIndex, self, name='tstype_parameters', required=True,
-                                       conditions=eeg_conditions, label='EEG Sensors')
+import json
+from sqlalchemy import Column, Integer, ForeignKey, String, Float
+from sqlalchemy.orm import relationship
+from tvb.datatypes.fcd import Fcd
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.core.entities.model.model_datatype import DataTypeMatrix
+from tvb.core.neotraits.db import from_ndarray
 
 
-class EEGMatTimeSeriesImporter(MatTimeSeriesImporter):
-    _ui_name = "Timeseries EEG MAT"
-    tstype = TS_EEG
+class FcdIndex(DataTypeMatrix):
+    id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    def get_form_class(self):
-        return EEGMatTimeSeriesImporterForm
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
+    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not Fcd.source.required)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
+
+    labels_ordering = Column(String)
+
+    def fill_from_has_traits(self, datatype):
+        # type: (Fcd)  -> None
+        super(FcdIndex, self).fill_from_has_traits(datatype)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+        self.labels_ordering = json.dumps(datatype.labels_ordering)
+        self.source_gid = datatype.source.gid.hex

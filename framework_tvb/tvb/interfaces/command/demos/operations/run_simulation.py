@@ -39,12 +39,12 @@ from time import sleep
 from tvb.basic.profile import TvbProfile
 from tvb.simulator.coupling import Scaling
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesRegionIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.simulator_service import SimulatorService

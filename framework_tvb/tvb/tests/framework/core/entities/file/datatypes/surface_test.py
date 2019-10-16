@@ -1,11 +1,11 @@
 import numpy
 import pytest
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.datatypes.surfaces import Surface
 
 
-def test_store_load_configured_surf(tmph5factory, surfaceFactory):
-    surface = surfaceFactory(5)
+def test_store_load_configured_surf(tmph5factory, surface_factory):
+    surface = surface_factory(5)
     surface.configure()
     assert surface.number_of_vertices == 5
 
@@ -21,8 +21,8 @@ def test_store_load_configured_surf(tmph5factory, surfaceFactory):
         assert surf_stored.split_slices['0']['triangles']['start_idx'] == 0
 
 
-def test_stored_conn_load_vertices_slice(tmph5factory, surfaceFactory):
-    surface = surfaceFactory(5)
+def test_stored_conn_load_vertices_slice(tmph5factory, surface_factory):
+    surface = surface_factory(5)
     surface.configure()
     tmp_path = tmph5factory()
 
@@ -32,15 +32,15 @@ def test_stored_conn_load_vertices_slice(tmph5factory, surfaceFactory):
         numpy.testing.assert_array_equal(a, numpy.zeros((5, 3)))
 
 
-def test_store_surface(tmph5factory, surfaceFactory):
-    surface = surfaceFactory(5)
+def test_store_surface(tmph5factory, surface_factory):
+    surface = surface_factory(5)
     surf_h5 = SurfaceH5(tmph5factory())
     surf_h5.store(surface)
     surf_h5.close()
 
 
-def test_store_load_surface(tmph5factory, surfaceFactory):
-    surface = surfaceFactory(5)
+def test_store_load_surface(tmph5factory, surface_factory):
+    surface = surface_factory(5)
     surf_h5 = SurfaceH5(tmph5factory())
     surf_h5.store(surface)
     surf_h5.close()

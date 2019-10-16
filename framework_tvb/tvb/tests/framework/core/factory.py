@@ -42,6 +42,18 @@ import os
 import random
 import tvb_data
 from hashlib import md5
+from cherrypy._cpreqbody import Part
+from cherrypy.lib.httputil import HeaderMap
+from tvb.datatypes.surfaces import CorticalSurface
+
+from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
+from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
+from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterForm
+from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterForm
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_workflow import *
 from tvb.core.entities.storage import dao
@@ -67,8 +79,9 @@ class TestFactory(object):
 
         :param expected_data: specifies the class whose entity is returned
         """
+
         data_types = FlowService().get_available_datatypes(project.id,
-                                                           expected_data.module + "." + expected_data.type, filters)[0]
+                                                           expected_data.__module__ + "." + expected_data.__name__, filters)[0]
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
         return entity
 
@@ -222,62 +235,134 @@ class TestFactory(object):
         return import_service.created_projects[0]
 
     @staticmethod
-    def import_cff(cff_path=None, test_user=None, test_project=None):
+    def import_surface_gifti(user, project, path):
         """
-        This method is used for importing a CFF data-set (load CFF_Importer, launch it).
-        :param cff_path: absolute path where CFF file exists. When None, a default CFF will be used.
-        :param test_user: optional persisted User instance, to use as Operation->launcher
-        :param test_project: optional persisted Project instance, to use for launching Operation in it. 
+        This method is used for importing data in GIFIT format
+        :param import_file_path: absolute path of the file to be imported
         """
-        # TODO import multiple different connectivities some other way
-        # Prepare Data
-        # if cff_path is None:
-        #     cff_path = os.path.join(os.path.dirname(cff_dataset.__file__), 'connectivities.cff')
-        # if test_user is None:
-        #     test_user = TestFactory.create_user()
-        # if test_project is None:
-        #     test_project = TestFactory.create_project(test_user)
-        #
-        # # Retrieve Adapter instance
-        # importer = TestFactory.create_adapter('tvb.adapters.uploaders.cff_importer', 'CFF_Importer')
-        # args = {'cff': cff_path, DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
-        #
-        # # Launch Operation
-        # FlowService().fire_operation(importer, test_user, test_project.id, **args)
+
+        ### Retrieve Adapter instance
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
+
+        form = GIFTISurfaceImporterForm()
+        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
+                             '_data_file': Part(path, HeaderMap({}), ''),
+                             '_data_file_part2': Part('', HeaderMap({}), ''),
+                             '_should_center': 'False',
+                             '_Data_Subject': 'John Doe',
+                            })
+        form.data_file.data = path
+        importer.submit_form(form)
+
+        ### Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+
+        surface = CorticalSurface
+        data_types = FlowService().get_available_datatypes(project.id,
+                                                           surface.__module__ + "." + surface.__name__)[0]
+        assert 1, len(data_types) == "Project should contain only one data type."
+
+        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert surface is not None == "TimeSeries should not be none"
+
+        return surface
 
     @staticmethod
-    def import_surface_zip(user, project, zip_path, surface_type, zero_based):
-        # Retrieve Adapter instance 
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based='True'):
+        ### Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
-        args = {'uploaded': zip_path, 'surface_type': surface_type,
-                'zero_based_triangles': zero_based}
 
-        # Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **args)
+        form = ZIPSurfaceImporterForm()
+        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_zero_based_triangles': zero_based,
+                             '_should_center': 'True',
+                             '_surface_type': surface_type,
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.uploaded.data = zip_path
+        importer.submit_form(form)
+
+        ### Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+
+        data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
+        assert 1, len(data_types) == "Project should contain only one data type."
+
+        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        surface.user_tag_3 = ''
+        assert surface is not None, "Surface should not be None"
+        return surface
 
     @staticmethod
     def import_surface_obj(user, project, obj_path, surface_type):
-        # Retrieve Adapter instance
+        ### Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
-        args = {'data_file': obj_path,
-                'surface_type': surface_type}
 
-        # Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **args)
+        form = ObjSurfaceImporterForm()
+        form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
+                             '_surface_type': "Face Surface",
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.data_file.data = obj_path
+        importer.submit_form(form)
+
+        ### Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+
+        data_types = FlowService().get_available_datatypes(project.id,  SurfaceIndex)[0]
+        assert 1, len(data_types) == "Project should contain only one data type."
+
+        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert surface is not None, "Surface should not be None"
+        return surface
 
     @staticmethod
     def import_sensors(user, project, zip_path, sensors_type):
-        # Retrieve Adapter instance 
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'Sensors_Importer')
-        args = {'sensors_file': zip_path, 'sensors_type': sensors_type}
-        # Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **args)
+        """
+                This method is used for importing sensors
+                :param import_file_path: absolute path of the file to be imported
+                """
+
+        ### Retrieve Adapter instance
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
+
+        form = SensorsImporterForm()
+        form.fill_from_post({'_sensors_file': Part(zip_path, HeaderMap({}), ''),
+                             '_sensors_type': sensors_type,
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.sensors_file.data = zip_path
+        form.sensors_type.data = sensors_type
+        importer.submit_form(form)
+
+        ### Launch import Operation
+
+        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+
+        data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
+        assert 1 == len(data_types), "Project should contain only one data type = Sensors."
+
+        time_series = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert time_series is not None, "Sensors instance should not be none"
+
+        return time_series
 
     @staticmethod
-    def import_zip_connectivity(user, project, subject, zip_path):
+    def import_zip_connectivity(user, project, zip_path, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
                                               'ZIPConnectivityImporter')
-        FlowService().fire_operation(importer, user, project.id, uploaded=zip_path, Data_Subject=subject)
+
+        form = ZIPConnectivityImporterForm()
+        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_project_id': {1},
+                             '_Data_Subject': subject
+                             })
+        form.uploaded.data = zip_path
+        importer.submit_form(form)
+
+        ### Launch Operation
+        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
 
 
 class ExtremeTestFactory(object):

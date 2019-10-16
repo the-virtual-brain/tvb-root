@@ -35,7 +35,7 @@
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.datatypes.equations import Equation
-from tvb.core.entities.model.datatypes.patterns import StimuliRegionIndex, StimuliSurfaceIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 
 
 class SurfaceStimulusCreator(ABCSynchronous):

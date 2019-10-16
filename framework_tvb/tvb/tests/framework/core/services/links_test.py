@@ -33,6 +33,10 @@ Testing linking datatypes between projects.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+import pytest
+
+from tvb.tests.framework.core.factory import TestFactory
+
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.entities.file.files_helper import TvbZip
@@ -41,7 +45,6 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 
@@ -51,33 +54,36 @@ class _BaseLinksTest(TransactionalTestCase):
     GEORGE1st = "george the grey"
     GEORGE2nd = "george"
 
-
-    def _initialize_two_projects(self):
+    @pytest.fixture(scope='module')
+    def initialize_two_projects(self, simple_datatype_factory, datatype_with_storage_factory):
         """
         Creates a user, an algorithm and 2 projects
         Project src_project will have an operation and 2 datatypes
         Project dest_project will be empty.
         Initializes a flow and a project service
         """
-        self.datatype_factory_src = DatatypesFactory()
-        self.src_project = self.datatype_factory_src.project
-        self.src_usr_id = self.datatype_factory_src.user.id
+        self.clean_database(delete_folders=True)
 
-        self.red_datatype = self.datatype_factory_src.create_simple_datatype(subject=self.GEORGE1st)
-        self.blue_datatype = self.datatype_factory_src.create_datatype_with_storage(subject=self.GEORGE2nd)
+
+        src_user = TestFactory.create_user('Source_User')
+        self.src_usr_id = src_user.id
+        self.src_project = TestFactory.create_project(src_user, "Source_Project")
+
+        self.red_datatype = simple_datatype_factory(subject=self.GEORGE1st)
+        self.blue_datatype = datatype_with_storage_factory(subject=self.GEORGE2nd)
 
         # create the destination project
-        self.datatype_factory_dest = DatatypesFactory()
-        self.dest_project = self.datatype_factory_dest.project
-        self.dest_usr_id = self.datatype_factory_dest.user.id
+        dst_user = TestFactory.create_user('Destination_User')
+        self.dst_usr_id = dst_user.id
+        self.dest_project = TestFactory.create_project(dst_user, "Destination_Project")
 
         self.flow_service = FlowService()
         self.project_service = ProjectService()
 
 
-    def transactional_setup_method(self):
-        self.clean_database(delete_folders=True)
-        self._initialize_two_projects()
+    # def transactional_setup_method(self):
+    #     self.clean_database(delete_folders=True)
+    #     self._initialize_two_projects()
 
 
     def transactional_teardown_method(self):
@@ -102,14 +108,14 @@ class TestLinks(_BaseLinksTest):
         assert count == self.red_datatypes_in(self.dest_project.id)
 
 
-    def test_create_link(self):
+    def test_create_link(self, initialize_two_projects):
         dest_id = self.dest_project.id
         assert 0 == self.red_datatypes_in(dest_id)
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
         assert 0 == self.blue_datatypes_in(dest_id)
 
-    def test_remove_link(self):
+    def test_remove_link(self, initialize_two_projects):
         dest_id = self.dest_project.id
         assert 0 == self.red_datatypes_in(dest_id)
         self.flow_service.create_link([self.red_datatype.id], dest_id)
@@ -117,8 +123,7 @@ class TestLinks(_BaseLinksTest):
         self.flow_service.remove_link(self.red_datatype.id, dest_id)
         assert 0 == self.red_datatypes_in(dest_id)
 
-
-    def test_link_appears_in_project_structure(self):
+    def test_link_appears_in_project_structure(self, initialize_two_projects):
         dest_id = self.dest_project.id
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         # Test getting information about linked datatypes, from low level methods to the one used by the UI
@@ -129,8 +134,7 @@ class TestLinks(_BaseLinksTest):
                                                           DataTypeMetaData.KEY_SUBJECT, None)
         assert self.red_datatype.gid in json
 
-
-    def test_remove_entity_with_links_moves_links(self):
+    def test_remove_entity_with_links_moves_links(self, initialize_two_projects):
         dest_id = self.dest_project.id
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
@@ -145,7 +149,7 @@ class TestLinks(_BaseLinksTest):
 
 class ImportExportProjectWithLinksTest(_BaseLinksTest):
 
-    def transactional_setup_method(self):
+    def transactional_setup_method(self, _initialize_two_projects):
         """
         Adds to the _BaseLinksTest setup the following
         2 links from src to dest project

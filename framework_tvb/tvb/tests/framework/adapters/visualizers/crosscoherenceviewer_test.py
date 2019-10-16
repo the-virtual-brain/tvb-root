@@ -31,14 +31,13 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import os
+import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_coherence import CrossCoherenceVisualizer
-from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-
 
 class TestCrossCoherenceViewer(TransactionalTestCase):
     """
@@ -51,12 +50,12 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
+        self.test_user = TestFactory.create_user('CrossCoherence_User')
+        self.test_project = TestFactory.create_project(self.test_user, "CrossCoherence_Project")
 
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex())
         assert self.connectivity is not None
 
 

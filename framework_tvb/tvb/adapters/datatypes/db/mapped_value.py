@@ -36,7 +36,7 @@ import json
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, Integer, ForeignKey
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 
 
 class ValueWrapperIndex(DataType):

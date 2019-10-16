@@ -77,7 +77,7 @@ class Field(object):
         try:
             self._from_post()
         except ValueError as ex:
-            self.errors.append(ex.message)
+            self.errors.append(ex)
 
     def validate(self):
         """ validation besides the deserialization from post"""

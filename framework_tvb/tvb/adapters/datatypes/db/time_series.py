@@ -31,11 +31,11 @@ import json
 from tvb.datatypes.time_series import *
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
 from sqlalchemy.orm import relationship
-from tvb.core.entities.model.datatypes.sensors import SensorsIndex
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.entities.model.datatypes.volume import VolumeIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.entities.model.model_datatype import DataType
 
 

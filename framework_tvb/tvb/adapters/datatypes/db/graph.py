@@ -30,8 +30,8 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.neotraits.db import from_ndarray
 
@@ -52,7 +52,7 @@ class CovarianceIndex(DataTypeMatrix):
         # type: (Covariance)  -> None
         super(CovarianceIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.source_gid = datatype.source.gid.hex
 
 

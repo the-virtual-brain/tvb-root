@@ -38,7 +38,7 @@ from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
-from tvb.core.entities.model.datatypes.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 
 

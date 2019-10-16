@@ -42,11 +42,11 @@ Few supplementary steps are done here:
 import numpy
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.core.entities.file.datatypes.simulation_state_h5 import SimulationStateH5
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.simulation_state import SimulationStateIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.simulation_state_h5 import SimulationStateH5
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.simulation_state import SimulationStateIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException

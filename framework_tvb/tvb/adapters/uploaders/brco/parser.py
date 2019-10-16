@@ -36,7 +36,7 @@ import xml.dom.minidom
 from xml.dom.minidom import Node
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
-from tvb.core.entities.model.datatypes.annotation import AnnotationTerm
+from tvb.adapters.datatypes.db.annotation import AnnotationTerm
 
 
 class XMLParser(object):

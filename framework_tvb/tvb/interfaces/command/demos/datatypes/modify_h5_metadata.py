@@ -38,7 +38,7 @@ import os
 from uuid import UUID
 from datetime import datetime
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.datatypes.local_connectivity_h5 import LocalConnectivityH5
+from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.core.utils import date2string
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)

@@ -42,7 +42,6 @@ from tvb.interfaces.web.controllers.burst.region_model_parameters_controller imp
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import Generic2dOscillator, Kuramoto
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import tvb.interfaces.web.controllers.common as common
 
@@ -50,8 +49,8 @@ import tvb.interfaces.web.controllers.common as common
 class TestRegionsModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
 
-
-    def transactional_setup_method(self):
+    @pytest.fixture(scope='module')
+    def transactional_setup_fixture(self, connectivity_factory):
         """
         Sets up the environment for testing;
         creates a `RegionsModelParametersController` and a connectivity
@@ -60,7 +59,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.region_m_p_c = RegionsModelParametersController()
         BurstController().index()
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-        _, self.connectivity = DatatypesFactory().create_connectivity()
+        _, self.connectivity = connectivity_factory
         new_params = {}
         for key, val in SIMULATOR_PARAMETERS.items():
             new_params[key] = {'value': val}
@@ -84,9 +83,8 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
 
         self.dynamic_g = dao.store_entity(dynamic_g)
         self.dynamic_k = dao.store_entity(dynamic_k)
-    
-    
-    def test_index(self):
+
+    def test_index(self, transactional_setup_fixture):
         """
         Verifies that result dictionary has the expected keys / values after call to
         `edit_model_parameters()`
@@ -102,8 +100,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
 
         json.loads(result_dict['dynamics_json'])
 
-        
-    def test_submit_model_parameters_happy(self):
+    def test_submit_model_parameters_happy(self, transactional_setup_fixture):
         """
         Verifies call to `submit_model_parameters(...)` correctly redirects to '/burst/'
         """
@@ -114,7 +111,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self._expect_redirect('/burst/', self.region_m_p_c.submit_model_parameters, dynamic_ids)
         
 
-    def test_submit_model_parameters_inconsistent_models(self):
+    def test_submit_model_parameters_inconsistent_models(self, transactional_setup_fixture):
         self.region_m_p_c.index()
 
         dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)]

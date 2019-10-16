@@ -1,19 +1,19 @@
 import numpy
 import pytest
 from tvb.basic.neotraits.ex import TraitAttributeError
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.datatypes.connectivity import Connectivity
 
 
-def test_store_connectivity(tmph5factory, connectivityFactory):
-    connectivity = connectivityFactory(2)
+def test_store_connectivity(tmph5factory, connectivity_factory):
+    connectivity = connectivity_factory(2)
     conn_h5 = ConnectivityH5(tmph5factory())
     conn_h5.store(connectivity)
     conn_h5.close()
 
 
-def test_store_load_connectivity(tmph5factory, connectivityFactory):
-    connectivity = connectivityFactory(2)
+def test_store_load_connectivity(tmph5factory, connectivity_factory):
+    connectivity = connectivity_factory(2)
     conn_h5 = ConnectivityH5(tmph5factory())
     conn_h5.store(connectivity)
     conn_h5.close()

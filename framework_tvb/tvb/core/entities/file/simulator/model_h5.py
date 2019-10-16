@@ -3,8 +3,7 @@ import json
 import numpy
 from tvb.simulator.models import *
 from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
-from tvb.core.neotraits._h5accessors import Json, JsonFinal
-from tvb.core.neotraits._h5core import DataSet
+from tvb.core.neotraits.h5 import DataSet, Json, JsonFinal
 
 
 class StateVariablesEncoder(json.JSONEncoder):

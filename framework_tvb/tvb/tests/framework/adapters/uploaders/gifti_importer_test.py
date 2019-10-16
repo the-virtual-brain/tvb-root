@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -36,16 +36,9 @@ import os
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.core.services.exceptions import OperationException
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
-
 import tvb_data.gifti as demo_data
-
 
 
 class TestGIFTISurfaceImporter(TransactionalTestCase):
@@ -57,12 +50,9 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
     GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.time_series.gii')
     WRONG_GII_FILE = os.path.abspath(__file__)
 
-
     def transactional_setup_method(self):
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
-
+        self.test_user = TestFactory.create_user('Gifti_User')
+        self.test_project = TestFactory.create_project(self.test_user, "Gifti_Project")
 
     def transactional_teardown_method(self):
         """
@@ -70,40 +60,14 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def _importSurface(self, import_file_path=None):
-        """
-        This method is used for importing data in GIFIT format
-        :param import_file_path: absolute path of the file to be imported
-        """
-
-        ### Retrieve Adapter instance 
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
-
-        args = {'data_file': import_file_path, DataTypeMetaData.KEY_SUBJECT: ""}
-
-        ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-
-        surface = CorticalSurface()
-        data_types = FlowService().get_available_datatypes(self.test_project.id,
-                                                           surface.module + "." + surface.type)[0]
-        assert 1, len(data_types) == "Project should contain only one data type."
-
-        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert surface is not None == "TimeSeries should not be none"
-
-        return surface
-
-
-    def test_import_surface_gifti_data(self):
+    def test_import_surface_gifti_data(self, operation_factory):
         """
             This method tests import of a surface from GIFTI file.
             !!! Important: We changed this test to execute only GIFTI parse
                 because storing surface it takes too long (~ 9min) since
                 normals needs to be calculated.
         """
-        operation_id = self.datatypeFactory.get_operation().id
+        operation_id = operation_factory().id
         storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
 
         parser = GIFTIParser(storage_path, operation_id)
@@ -112,32 +76,30 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
         assert 131342 == len(surface.vertices)
         assert 262680 == len(surface.triangles)
 
-
-    def test_import_timeseries_gifti_data(self):
+    def test_import_timeseries_gifti_data(self, operation_factory):
         """
         This method tests import of a time series from GIFTI file.
         !!! Important: We changed this test to execute only GIFTI parse
             because storing surface it takes too long (~ 9min) since
             normals needs to be calculated.
         """
-        operation_id = self.datatypeFactory.get_operation().id
+        operation_id = operation_factory().id
         storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
 
         parser = GIFTIParser(storage_path, operation_id)
         time_series = parser.parse(self.GIFTI_TIME_SERIES_FILE)
 
-        data_shape = time_series.read_data_shape()
+        data_shape = time_series[1]
 
-        assert 135 == data_shape[0]
-        assert 143479 == data_shape[1]
-
+        assert 135 == len(data_shape)
+        assert 143479 == data_shape[0].dims[0]
 
     def test_import_wrong_gii_file(self):
-        """ 
+        """
         This method tests import of a file in a wrong format
         """
         try:
-            self._importSurface(self.WRONG_GII_FILE)
+            TestFactory.import_surface_gifti(self.test_user, self.test_project, self.WRONG_GII_FILE)
             raise AssertionError("Import should fail in case of a wrong GIFTI format.")
         except OperationException:
             # Expected exception

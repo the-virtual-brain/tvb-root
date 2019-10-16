@@ -50,7 +50,6 @@ from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.core.services.flow_service_test"

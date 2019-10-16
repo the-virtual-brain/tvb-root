@@ -33,6 +33,7 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 import os
+import tvb_data
 import shutil
 import pytest
 import numpy
@@ -47,7 +48,6 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.services.exceptions import ProjectImportException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.adapters.exporters.export_manager import ExportManager
-#from tvb.datatypes.mapped_values import ValueWrapper
 from tvb.datatypes.time_series import TimeSeries
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
@@ -71,7 +71,8 @@ class TestImportService(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, name="GeneratedProject", description="test_desc")
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         self.adapter_instance = TestFactory.create_adapter()
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
         self.zip_path = None 
         
 

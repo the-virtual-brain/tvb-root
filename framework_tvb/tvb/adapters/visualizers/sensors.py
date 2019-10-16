@@ -39,8 +39,8 @@ from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceU
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.datatypes.sensors import SensorsIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.surfaces import Surface, CORTICAL, EEG_CAP

@@ -44,9 +44,9 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleFloatField
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService

@@ -38,7 +38,6 @@ from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, 
 from tvb.simulator.integrators import HeunStochastic
 from tvb.simulator.models import Hopfield, Generic2dOscillator
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 class TestSerializationManager(TransactionalTestCase):

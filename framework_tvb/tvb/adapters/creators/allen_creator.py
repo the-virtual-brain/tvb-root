@@ -41,10 +41,10 @@ import os.path
 import numpy as np
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
-from tvb.core.entities.model.datatypes.structural import StructuralMRIIndex
-from tvb.core.entities.model.datatypes.volume import VolumeIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
+from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping

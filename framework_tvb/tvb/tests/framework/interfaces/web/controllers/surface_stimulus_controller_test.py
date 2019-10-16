@@ -33,7 +33,6 @@
 """
 
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.interfaces.web.controllers.common import get_from_session
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_CONTEXT
@@ -63,10 +62,9 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['mainContent'] == 'spatial/stimulus_surface_step1_main'
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_1_submit'
-        
-     
-    def test_step_2(self):
-        _, surface = DatatypesFactory().create_surface()
+
+    def test_step_2(self, surface_factory):
+        _, surface = surface_factory
         self.surface_s_c.step_1_submit(1, 1)
         context = get_from_session(KEY_SURFACE_CONTEXT)
         context.equation_kwargs[SURFACE_PARAMETER] = surface.gid

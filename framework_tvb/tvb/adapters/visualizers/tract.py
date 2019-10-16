@@ -34,8 +34,8 @@ A tracts visualizer
 """
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.entities.model.datatypes.tracts import TractsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.datatypes.surfaces import CorticalSurface
 

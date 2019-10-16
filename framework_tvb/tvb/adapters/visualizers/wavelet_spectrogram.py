@@ -39,8 +39,8 @@ Plot the power of a WaveletCoefficients object
 import json
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.entities.model.datatypes.spectral import WaveletCoefficientsIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.core.neocom import h5
 

@@ -54,7 +54,7 @@ from tvb.core import utils
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
@@ -326,19 +326,8 @@ class OperationService:
             #TODO: this currently keeps both ways to display forms
             if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
                 if adapter_instance.get_input_tree() is None:
-                    # form = adapter_instance.get_form()('', project_id=operation.fk_launched_in)
-                    # form.fill_from_post(kwargs)
-                    # dt_dict = None
-                    # if form.validate():
-                    #     dt_dict = form.get_dict()
-                    # if dt_dict is None:
-                    #     raise ValueError("Could not build a dict out of this form!")
-                    # adapter_instance.set_form(form)
                     filtered_kwargs = adapter_instance.get_form().get_form_values()
                 else:
-                    # Replace this with a method to retrieve TSI by GID/Keep only GID on kwargs dict
-                    # We might not need kwargs anymore
-                    filtered_kwargs = kwargs
                     filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
 
                 params = dict()

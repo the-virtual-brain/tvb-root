@@ -35,16 +35,17 @@ import copy
 import json
 import cherrypy
 from time import sleep
+
+import pytest
+
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
-from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.entities import model
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.core.entities.storage import dao
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
@@ -66,6 +67,24 @@ class TestFlowContoller(BaseControllersTest):
         """ Cleans up the testing environment """
         self.cleanup()
         self.clean_database()
+
+    @pytest.fixture()
+    def long_burst_launch(self, connectivity_factory):
+
+        def build(is_range=False):
+            self.burst_c.index()
+            connectivity = connectivity_factory[1]
+            launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+            launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+            launch_params['simulation_length'] = '10000'
+            if is_range:
+                launch_params['conduction_speed'] = '[10,15,20]'
+                launch_params[RANGE_PARAMETER_1] = 'conduction_speed'
+            launch_params = {"simulator_parameters": json.dumps(launch_params)}
+            burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
+            return dao.get_burst_by_id(burst_id)
+
+        return build
             
             
     def test_context_selected(self):
@@ -131,21 +150,21 @@ class TestFlowContoller(BaseControllersTest):
         self._expect_redirect('/tvb?error=True', self.flow_c.default, 'invalid', 'invalid')
         
         
-    def test_read_datatype_attribute(self):
+    def test_read_datatype_attribute(self, datatype_with_storage_factory):
         """
         Read an attribute from a datatype.
         """
-        dt = DatatypesFactory().create_datatype_with_storage("test_subject", "RAW_STATE",
+        dt = datatype_with_storage_factory("test_subject", "RAW_STATE",
                                                              'this is the stored data'.split())
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, "string_data")
         assert returned_data == '["this", "is", "the", "stored", "data"]'
         
         
-    def test_read_datatype_attribute_method_call(self):
+    def test_read_datatype_attribute_method_call(self, datatype_with_storage_factory):
         """
         Call method on given datatype.
         """
-        dt = DatatypesFactory().create_datatype_with_storage("test_subject", "RAW_STATE",
+        dt =datatype_with_storage_factory("test_subject", "RAW_STATE",
                                                              'this is the stored data'.split())
         args = {'length': 101}
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
@@ -157,21 +176,6 @@ class TestFlowContoller(BaseControllersTest):
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = TestAdapter1().get_input_tree()
         assert result['inputList'] == expected_interface
-
-
-    def _long_burst_launch(self, is_range=False):
-        self.burst_c.index()
-        connectivity = DatatypesFactory().create_connectivity()[1]
-        launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-        launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-        launch_params['simulation_length'] = '10000'
-        if is_range:
-            launch_params['conduction_speed'] = '[10,15,20]'
-            launch_params[model.RANGE_PARAMETER_1] = 'conduction_speed'
-        launch_params = {"simulator_parameters": json.dumps(launch_params)}
-        burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
-        return dao.get_burst_by_id(burst_id)
-
 
     def _wait_for_burst_ops(self, burst_config):
         """ sleeps until some operation of the burst is created"""
@@ -186,17 +190,17 @@ class TestFlowContoller(BaseControllersTest):
         return operations
 
 
-    def test_stop_burst_operation(self):
-        burst_config = self._long_burst_launch()
+    def test_stop_burst_operation(self, long_burst_launch):
+        burst_config = long_burst_launch
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
-        assert operation.status == model.STATUS_CANCELED
+        assert operation.status == STATUS_CANCELED
         
         
-    def test_stop_burst_operation_group(self):
-        burst_config = self._long_burst_launch(True)
+    def test_stop_burst_operation_group(self, long_burst_launch):
+        burst_config = long_burst_launch(True)
         operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
@@ -205,11 +209,11 @@ class TestFlowContoller(BaseControllersTest):
         self.flow_c.stop_burst_operation(operations_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
-            assert operation.status == model.STATUS_CANCELED
+            assert operation.status == STATUS_CANCELED
         
         
-    def test_remove_burst_operation(self):
-        burst_config = self._long_burst_launch()
+    def test_remove_burst_operation(self, long_burst_launch):
+        burst_config = long_burst_launch
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, True)
@@ -217,8 +221,8 @@ class TestFlowContoller(BaseControllersTest):
         assert operation is None
         
         
-    def test_remove_burst_operation_group(self):
-        burst_config = self._long_burst_launch(True)
+    def test_remove_burst_operation_group(self, long_burst_launch):
+        burst_config = long_burst_launch(True)
         operations = self._wait_for_burst_ops(burst_config)
         operations_group_id = 0
         for operation in operations:
@@ -247,11 +251,11 @@ class TestFlowContoller(BaseControllersTest):
         assert not operation.has_finished
         self.flow_c.stop_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
-        assert operation.status == model.STATUS_CANCELED
+        assert operation.status == STATUS_CANCELED
         
         
     def test_stop_operations_group(self):
-        data = {model.RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
+        data = {RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
         operations = self._launch_test_algo_on_cluster(**data)
         operation_group_id = 0
         for operation in operations:
@@ -261,4 +265,4 @@ class TestFlowContoller(BaseControllersTest):
         self.flow_c.stop_operation(operation_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
-            assert operation.status == model.STATUS_CANCELED
+            assert operation.status == STATUS_CANCELED

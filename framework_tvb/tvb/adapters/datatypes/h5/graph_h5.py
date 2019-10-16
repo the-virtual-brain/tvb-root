@@ -29,7 +29,7 @@
 #
 from tvb.basic.neotraits.api import Attr
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
-from tvb.core.entities.file.datatypes.spectral_h5 import DataTypeMatrixH5
+from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.core.neotraits.h5 import DataSet, Reference, Json, Scalar
 
 

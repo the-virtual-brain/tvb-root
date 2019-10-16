@@ -36,7 +36,6 @@
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 class TestPSE(TransactionalTestCase):

@@ -42,7 +42,7 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.forms import DataTypeSelectField
 

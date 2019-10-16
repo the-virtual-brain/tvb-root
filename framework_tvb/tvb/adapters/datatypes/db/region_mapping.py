@@ -31,9 +31,9 @@ from sqlalchemy import Column, Integer, ForeignKey, Float, String
 from sqlalchemy.orm import relationship
 from tvb.core.entities.model.model_datatype import DataType, DataTypeMatrix
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.entities.model.datatypes.volume import VolumeIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.neotraits.db import from_ndarray
 
 

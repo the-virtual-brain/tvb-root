@@ -39,14 +39,13 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes.connectivity import Connectivity
-#from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.adapters.datatypes.simulation_state import SimulationState
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.model.model_workflow import *
-from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 #from tvb.core.entities.model import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper

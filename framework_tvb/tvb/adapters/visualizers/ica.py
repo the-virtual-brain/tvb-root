@@ -40,7 +40,7 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.datatypes.mode_decompositions import IndependentComponentsIndex
+from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleIntField
 
 LOG = get_logger(__name__)

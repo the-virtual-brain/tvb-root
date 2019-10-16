@@ -45,10 +45,10 @@ from collections import OrderedDict
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.file.datatypes.mapped_value_h5 import DatatypeMeasureH5
+from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, MultipleSelectField
 # Import metrics here, so that Traits will find them and return them as known subclasses

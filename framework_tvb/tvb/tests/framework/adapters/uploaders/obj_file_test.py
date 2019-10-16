@@ -36,7 +36,6 @@ from io import StringIO
 from tvb.adapters.uploaders.obj.parser import ObjWriter, ObjParser
 
 
-
 class TestObjFiles():
 
     def test_write_simple(self):
@@ -46,7 +45,6 @@ class TestObjFiles():
                 [[0, 1, 2], [0, 1, 3]])
         assert len(f.getvalue()) > 15
 
-
     def test_write_with_normals(self):
         f = StringIO()
         w = ObjWriter(f)
@@ -55,7 +53,6 @@ class TestObjFiles():
                 [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]],
                 comment="exported from test")
         assert len(f.getvalue()) > 15
-
 
     def test_write_parse_cycle(self):
         f = StringIO()

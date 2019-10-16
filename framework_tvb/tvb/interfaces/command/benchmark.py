@@ -40,7 +40,7 @@ from os import path
 from tvb.simulator.coupling import HyperbolicTangent
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import *
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -134,8 +134,8 @@ class Bench(object):
                     for dt in self.int_dts:
                         for conduction in self.conductions:
                             timestr = str(self.running_times[i])[2:-5]
-                            print(self.FS % (model_kw['model'], length, conn.number_of_regions,
-                                             conduction, dt, timestr))
+                            print(self.FS % (model_kw['model'].__class__.__name__, length,
+                                             conn.number_of_regions, conduction, dt, timestr))
                             print(self.LINE)
                             i += 1
 

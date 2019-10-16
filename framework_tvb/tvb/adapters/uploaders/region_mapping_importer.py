@@ -43,9 +43,9 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.region_mapping import RegionMapping

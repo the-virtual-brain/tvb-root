@@ -29,17 +29,20 @@
 #
 
 """
+.. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
 import os
+from cherrypy._cpreqbody import Part
+from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
+from tvb.adapters.uploaders.networkx_importer import NetworkxConnectivityImporterForm
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
-from tvb.datatypes.connectivity import Connectivity
 
 
 class TestNetworkxImporter(TransactionalTestCase):
@@ -49,35 +52,42 @@ class TestNetworkxImporter(TransactionalTestCase):
 
     upload_file = os.path.join(os.path.dirname(__file__), "test_data", 'connectome_83.gpickle')
 
-
     def transactional_setup_method(self):
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
-
+        self.test_user = TestFactory.create_user('Networkx_User')
+        self.test_project = TestFactory.create_project(self.test_user, "Networkx_Project")
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
     def test_import(self):
 
-        count_before = self.count_all_entities(Connectivity)
+        count_before = self.count_all_entities(ConnectivityIndex)
         assert 0  == count_before
 
         ### Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.networkx_importer',
                                               'NetworkxConnectivityImporter')
-        args = {'data_file': self.upload_file,
-                DataTypeMetaData.KEY_SUBJECT: "John"}
+
+        form = NetworkxConnectivityImporterForm()
+        form.fill_from_post({'_data_file': Part(self.upload_file, HeaderMap({}), ''),
+                             '_key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT[0],
+                             '_key_edge_tract': NetworkxParser.KEY_EDGE_TRACT[0],
+                             '_key_node_coordinates': NetworkxParser.KEY_NODE_COORDINATES[0],
+                             '_key_node_label': NetworkxParser.KEY_NODE_LABEL[0],
+                             '_key_node_region': NetworkxParser.KEY_NODE_REGION[0],
+                             '_key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE[0],
+                             '_Data_Subject': 'John Doe'
+                            })
+        form.data_file.data = self.upload_file
+        importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_form_values())
 
-        count_after = self.count_all_entities(Connectivity)
+        count_after = self.count_all_entities(ConnectivityIndex)
         assert 1 == count_after
 
-        conn = self.get_all_entities(Connectivity)[0]
+        conn = self.get_all_entities(ConnectivityIndex)[0]
         assert 83 == conn.number_of_regions
 
 

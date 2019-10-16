@@ -39,6 +39,7 @@ import sys
 import shutil
 from functools import wraps
 from types import FunctionType
+import decorator
 from tvb.basic.profile import TvbProfile
 
 def init_test_env():
@@ -222,7 +223,6 @@ class BaseTestCase(object):
             if value is not None:
                 assert value == found_dict[key]
 
-
 def transactional_test(func, callback=None):
     """
     A decorator to be used in tests which makes sure all database changes are reverted at the end of the test.
@@ -230,7 +230,7 @@ def transactional_test(func, callback=None):
     if func.__name__.startswith('test_'):
 
         @wraps(func)
-        def dec(*args, **kwargs):
+        def dec(func, *args, **kwargs):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
             session_maker.start_transaction()
@@ -256,7 +256,7 @@ def transactional_test(func, callback=None):
                 callback(*args, **kwargs)
             return result
 
-        return dec
+        return decorator.decorator(dec, func)
     else:
         return func
 

@@ -45,12 +45,12 @@ from tvb.basic.neotraits.info import narray_describe
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.graph_h5 import CorrelationCoefficientsH5
+from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.file.datatypes.temporal_correlations_h5 import CrossCorrelationH5
-from tvb.core.entities.model.datatypes.graph import CorrelationCoefficientsIndex
-from tvb.core.entities.model.datatypes.temporal_correlations import CrossCorrelationIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
+from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
+from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
+from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
 from tvb.core.neocom import h5

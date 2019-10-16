@@ -30,10 +30,11 @@
 import numpy
 from tvb.analyzers.fft import FFT
 from tvb.datatypes.time_series import TimeSeries
-from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesH5
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 def make_ts():
@@ -51,10 +52,10 @@ def make_ts():
     return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
 
 
-def make_ts_from_op(session, operationFactory):
+def make_ts_from_op(session, operation_factory):
     # make file stored and indexed time series
     two_node_simple_sin_ts = make_ts()
-    op = operationFactory()
+    op = operation_factory()
 
     ts_db = TimeSeriesIndex()
     ts_db.fk_from_operation = op.id
@@ -70,46 +71,47 @@ def make_ts_from_op(session, operationFactory):
     return ts_db
 
 
-def test_fourier_analyser():
-    two_node_simple_sin_ts = make_ts()
+class TestFFT(TransactionalTestCase):
+    def test_fourier_analyser(self):
+        two_node_simple_sin_ts = make_ts()
 
-    fft = FFT(time_series=two_node_simple_sin_ts, segment_length=4000.0)
-    spectra = fft.evaluate()
+        fft = FFT(time_series=two_node_simple_sin_ts, segment_length=4000.0)
+        spectra = fft.evaluate()
 
-    # a poor man's peak detection, a box low-pass filter
-    peak = 40
-    around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
-    assert numpy.abs(around_peak).sum() > 0.5 * 20
+        # a poor man's peak detection, a box low-pass filter
+        peak = 40
+        around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
+        assert numpy.abs(around_peak).sum() > 0.5 * 20
 
-    peak = 80  # not an expected peak
-    around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
-    assert numpy.abs(around_peak).sum() < 0.5 * 20
+        peak = 80  # not an expected peak
+        around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
+        assert numpy.abs(around_peak).sum() < 0.5 * 20
 
 
-def test_fourier_adapter(tmpdir, session, operationFactory):
-    # make file stored and indexed time series
-    ts_db = make_ts_from_op(session, operationFactory)
+    def test_fourier_adapter(self, tmpdir, session, operation_factory):
+        # make file stored and indexed time series
+        ts_db = make_ts_from_op(session, operation_factory)
 
-    # we have the required data to start the adapter
-    # REVIEW THIS
-    # The adapter methods require the shape of the full time series
-    # As we do not want to load the whole time series we can not send the
-    # datatype. What the adapter actually wants is metadata about the datatype
-    # on disk. So the database entity is a good input.
-    # But this contradicts the convention that adapters inputs are datatypes
-    # Note that the previous functionality relied on the fact that datatypes
-    # knew directly how to interact with storage via get_data_shape
-    # Another interpretation is that the adapter really wants a data type
-    # weather it is a in memory HasTraits or a H5File to access it.
-    # Here we consider this last option.
+        # we have the required data to start the adapter
+        # REVIEW THIS
+        # The adapter methods require the shape of the full time series
+        # As we do not want to load the whole time series we can not send the
+        # datatype. What the adapter actually wants is metadata about the datatype
+        # on disk. So the database entity is a good input.
+        # But this contradicts the convention that adapters inputs are datatypes
+        # Note that the previous functionality relied on the fact that datatypes
+        # knew directly how to interact with storage via get_data_shape
+        # Another interpretation is that the adapter really wants a data type
+        # weather it is a in memory HasTraits or a H5File to access it.
+        # Here we consider this last option.
 
-    adapter = FourierAdapter()
-    adapter.storage_path = str(tmpdir)
-    adapter.configure(ts_db, segment_length=400)
-    diskq = adapter.get_required_disk_size(ts_db, segment_length=400)
-    memq = adapter.get_required_memory_size(ts_db, segment_length=400)
-    spectra_idx = adapter.launch(ts_db, segment_length=400)
+        adapter = FourierAdapter()
+        adapter.storage_path = str(tmpdir)
+        adapter.configure(ts_db, segment_length=400)
+        diskq = adapter.get_required_disk_size(ts_db, segment_length=400)
+        memq = adapter.get_required_memory_size(ts_db, segment_length=400)
+        spectra_idx = adapter.launch(ts_db, segment_length=400)
 
-    assert spectra_idx.source_gid == ts_db.gid
-    assert spectra_idx.gid is not None
-    assert spectra_idx.segment_length == 1.0  # only 1 sec of signal
+        assert spectra_idx.source_gid == ts_db.gid
+        assert spectra_idx.gid is not None
+        assert spectra_idx.segment_length == 1.0  # only 1 sec of signal

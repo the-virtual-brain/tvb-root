@@ -29,7 +29,7 @@
 #
 
 import numpy
-from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.datatypes.time_series import TimeSeries
 
 

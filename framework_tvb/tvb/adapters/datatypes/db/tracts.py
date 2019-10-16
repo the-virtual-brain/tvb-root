@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -27,17 +27,22 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.datatypes.fcd import Fcd
-from tvb.core.entities.file.datatypes.spectral_h5 import DataTypeMatrixH5
-from tvb.core.neotraits.h5 import DataSet, Reference, Scalar, Json
+from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy.orm import relationship
+from tvb.datatypes.tracts import Tracts
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
+from tvb.core.entities.model.model_datatype import DataType
 
 
-class FcdH5(DataTypeMatrixH5):
+class TractsIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    def __init__(self, path):
-        super(FcdH5, self).__init__(path)
-        self.array_data = DataSet(Fcd.array_data, self)
-        self.source = Reference(Fcd.source, self)
-        self.sw = Scalar(Fcd.sw, self)
-        self.sp = Scalar(Fcd.sp, self)
-        self.labels_ordering = Json(Fcd.labels_ordering, self)
+    region_volume_map_gid = Column(String(32), ForeignKey(RegionVolumeMappingIndex.gid),
+                                   nullable=not Tracts.region_volume_map.required)
+    region_volume_map = relationship(RegionVolumeMappingIndex, foreign_keys=region_volume_map_gid,
+                                     primaryjoin=RegionVolumeMappingIndex.gid == region_volume_map_gid)
+
+    def fill_from_has_traits(self, datatype):
+        # type: (Tracts)  -> None
+        super(TractsIndex, self).fill_from_has_traits(datatype)
+        self.region_volume_map_gid = datatype.region_volume_map.gid.hex

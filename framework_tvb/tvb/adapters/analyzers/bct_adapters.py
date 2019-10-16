@@ -34,9 +34,9 @@ from tvb.adapters.analyzers.matlab_worker import MatlabWorker
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
-from tvb.core.entities.model.datatypes.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.core.utils import extract_matlab_doc_string

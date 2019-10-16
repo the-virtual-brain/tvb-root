@@ -34,7 +34,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.simulator import Simulator
-from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
+from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5

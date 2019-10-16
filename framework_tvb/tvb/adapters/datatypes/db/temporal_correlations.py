@@ -27,38 +27,32 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from sqlalchemy import Column, Integer, ForeignKey, String
+import json
+from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
-from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.datatypes.temporal_correlations import CrossCorrelation
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.neotraits.db import from_ndarray
 
 
-class PrincipalComponentsIndex(DataType):
+class CrossCorrelationIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
+
+    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not CrossCorrelation.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
 
+    labels_ordering = Column(String, nullable=False)
     subtype = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        # type: (PrincipalComponents)  -> None
-        super(PrincipalComponentsIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
-        self.source_gid = datatype.source.gid
-
-
-class IndependentComponentsIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
-
-    subtype = Column(String)
-
-    def fill_from_has_traits(self, datatype):
-        # type: (IndependentComponents)  -> None
-        super(IndependentComponentsIndex, self).fill_from_has_traits(datatype)
+        # type: (CrossCorrelation)  -> None
+        super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
+        self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.subtype = datatype.__class__.__name__
         self.source_gid = datatype.source.gid.hex

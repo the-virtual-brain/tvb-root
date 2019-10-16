@@ -36,9 +36,9 @@ import uuid
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.file.datatypes.graph_h5 import ConnectivityMeasureH5
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
+from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
 from tvb.core.neotraits.db import from_ndarray
@@ -91,7 +91,7 @@ class ConnectivityMeasureImporter(ABCUploader):
             for i in range(measurement_count):
                 cm_idx = ConnectivityMeasureIndex()
                 cm_idx.type = ConnectivityMeasureIndex.__name__
-                cm_idx.connectivity_gid = connectivity.gid.hex
+                cm_idx.connectivity_gid = connectivity.gid
 
                 cm_data = data[i, :]
                 cm_idx.array_data_ndim = cm_data.ndim

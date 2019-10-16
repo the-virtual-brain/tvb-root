@@ -37,9 +37,9 @@ from tvb.basic.profile import TvbProfile
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model.datatypes.annotation import *
+from tvb.adapters.datatypes.db.annotation import *
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.core.neotraits.forms import DataTypeSelectField
 

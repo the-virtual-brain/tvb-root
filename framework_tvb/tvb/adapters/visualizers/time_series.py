@@ -38,11 +38,11 @@ A Javascript displayer for time series, using SVG.
 import json
 from abc import ABCMeta
 from six import add_metaclass
-from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesRegionH5, TimeSeriesSensorsH5, TimeSeriesH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesSensorsH5, TimeSeriesH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity

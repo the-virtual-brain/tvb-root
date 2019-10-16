@@ -34,8 +34,8 @@
 """
 
 import os
-import numpy as np
-from nibabel.gifti import giftiio
+import nibabel
+import numpy
 from nibabel.nifti1 import intent_codes, data_type_codes
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
@@ -124,8 +124,8 @@ class GIFTIParser(object):
         if data_arrays_part2 is not None:
             # offset the indices
             offset = len(vertices)
-            vertices = np.vstack([vertices, data_arrays_part2[0].data])
-            triangles = np.vstack([triangles, offset + data_arrays_part2[1].data])
+            vertices = numpy.vstack([vertices, data_arrays_part2[0].data])
+            triangles = numpy.vstack([triangles, offset + data_arrays_part2[1].data])
 
         if should_center:
             vertices = center_vertices(vertices)
@@ -133,7 +133,7 @@ class GIFTIParser(object):
         # set hemisphere mask if cortex
         if isinstance(surface, CorticalSurface):
             # if there was a 2nd file then len(vertices) != vertices_in_lh
-            surface.hemisphere_mask = np.zeros(len(vertices), dtype=np.bool)
+            surface.hemisphere_mask = numpy.zeros(len(vertices), dtype=numpy.bool)
             surface.hemisphere_mask[vertices_in_lh:] = 1
 
         surface.vertices = vertices
@@ -177,12 +177,12 @@ class GIFTIParser(object):
             raise ParseException("Provided file part %s does not exists" % data_file_part2)
 
         try:
-            gifti_image = giftiio.read(data_file)
+            gifti_image = nibabel.load(data_file)
             data_arrays = gifti_image.darrays
 
             self.logger.debug("File parsed successfully")
             if data_file_part2 is not None:
-                data_arrays_part2 = giftiio.read(data_file_part2).darrays
+                data_arrays_part2 = nibabel.load(data_file_part2).darrays
             else:
                 data_arrays_part2 = None
         except Exception as excep:

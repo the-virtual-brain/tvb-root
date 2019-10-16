@@ -45,8 +45,6 @@ from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.time_series import TimeSeriesRegion
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
-
 
 # Default values for simulator's input. These values can be replace with adapter.get_flatten_interface...
 SIMULATOR_PARAMETERS = {
@@ -97,25 +95,25 @@ class TestSimulatorAdapter(TransactionalTestCase):
         Reset the database before each test.
         """
         initialize_storage()
-        self.datatypes_factory = DatatypesFactory()
-        self.test_user = self.datatypes_factory.get_user()
-        self.test_project = self.datatypes_factory.get_project()
-        self.connectivity = self.datatypes_factory.create_connectivity(self.CONNECTIVITY_NODES)[1]
 
         algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
                                                 IntrospectionRegistry.SIMULATOR_CLASS)
         self.simulator_adapter = ABCAdapter.build_adapter(algorithm)
-        self.operation = TestFactory.create_operation(algorithm, self.test_user, self.test_project,
-                                                      STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
 
-        SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
-
-
-    def test_happy_flow_launch(self):
+    def test_happy_flow_launch(self, datatype_factory, connectivity_factory):
         """
         Test that launching a simulation from UI works.
         """
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **SIMULATOR_PARAMETERS)
+
+        self.test_user = datatype_factory['user']
+        self.test_project = datatype_factory['project']
+        self.connectivity = connectivity_factory(self.CONNECTIVITY_NODES)[1]
+
+        self.operation = TestFactory.create_operation(datatype_factory['algorithm'], self.test_user, self.test_project,
+                                                      STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
+        SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
+
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **SIMULATOR_PARAMETERS)
         sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
         assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
@@ -127,7 +125,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         return self.simulator_adapter.get_required_disk_size(**filtered_params)
 
 
-    def test_estimate_hdd(self):
+    def test_estimate_hdd(self, connectivity_factory):
         """
         Test that occupied HDD estimation for simulation results considers simulation length.
         """
@@ -145,7 +143,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         assert estimate1 == estimate2 / factor / factor
 
         ## Change number of nodes in connectivity. Expect HDD estimation increase.
-        large_conn_gid = self.datatypes_factory.create_connectivity(self.CONNECTIVITY_NODES * factor)[1].gid
+        large_conn_gid = connectivity_factory(self.CONNECTIVITY_NODES * factor)[1].gid
         simulation_parameters['connectivity'] = large_conn_gid
         estimate3 = self._estimate_hdd(simulation_parameters)
         assert estimate2 == estimate3 / factor
@@ -245,16 +243,16 @@ class TestSimulatorAdapter(TransactionalTestCase):
         else:
             raise AssertionError("Simulator adapter was not initialized properly")
 
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **params)
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **params)
 
 
-    def test_simulation_with_stimulus(self):
+    def test_simulation_with_stimulus(self, stimulus_factory):
         """
         Test a simulation with noise.
         """
         params = copy(SIMULATOR_PARAMETERS)
-        params["stimulus"] = self.datatypes_factory.create_stimulus(self.connectivity).gid
+        params["stimulus"] = stimulus_factory.gid
 
         filtered_params = self.simulator_adapter.prepare_ui_inputs(params)
         self.simulator_adapter.configure(**filtered_params)
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, {}, **params)
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter,  **params)

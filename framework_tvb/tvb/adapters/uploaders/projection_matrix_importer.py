@@ -37,9 +37,9 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.projections import ProjectionMatrixIndex
-from tvb.core.entities.model.datatypes.sensors import SensorsIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG

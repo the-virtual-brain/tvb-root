@@ -32,12 +32,13 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
+import tvb_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
-from tvb.datatypes.connectivity import Connectivity
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 
 
 class TestCovarianceViewer(TransactionalTestCase):
@@ -52,12 +53,13 @@ class TestCovarianceViewer(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
 
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
+        self.test_user = TestFactory.create_user("UserCVV")
+        self.test_project = TestFactory.create_project(self.test_user)
+
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
 
 
@@ -68,12 +70,11 @@ class TestCovarianceViewer(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
 
-    def test_launch(self):
+    def test_launch(self, time_series_factory, covariance_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        covariance = self.datatypeFactory.create_covariance(time_series)
+        covariance = covariance_factory()
         viewer = CovarianceVisualizer()
         result = viewer.launch(covariance)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']

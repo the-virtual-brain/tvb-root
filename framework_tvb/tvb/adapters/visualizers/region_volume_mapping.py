@@ -41,11 +41,11 @@ from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesRegionH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
-from tvb.core.entities.model.datatypes.structural import StructuralMRIIndex
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleStrField

@@ -396,6 +396,7 @@ class HDF5StorageManager(object):
             LOG.exception(msg)
             raise FileStructureException(msg)
         except Exception:
+
             msg = "Failed to read metadata from H5 file! %s" % self.__storage_full_name
             LOG.exception(msg)
             raise FileStructureException(msg)

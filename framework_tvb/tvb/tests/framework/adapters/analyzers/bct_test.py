@@ -34,6 +34,8 @@
 
 import numpy
 import pytest
+import os
+import tvb_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_operation import *
@@ -65,7 +67,8 @@ class TestBCT(TransactionalTestCase):
         self.test_user = TestFactory.create_user("BCT_User")
         self.test_project = TestFactory.create_project(self.test_user, "BCT-Project")
         # Make sure Connectivity is in DB
-        TestFactory.import_cff(test_user=self.test_user, test_project=self.test_project)
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
         self.connectivity = dao.get_generic_entity(Connectivity, 'John Doe', 'subject')[0]
 
         # make weights matrix symmetric, or else some BCT algorithms will run infinitely:

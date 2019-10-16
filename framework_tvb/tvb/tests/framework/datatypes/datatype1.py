@@ -45,7 +45,7 @@ class Datatype1(DataType):
     row2 = Column(String)
 
     def __init__(self, row1="test", row2="test"):
-        super(Datatype1).__init__()
+        super(Datatype1, self).__init__() #You don't need to put self in Python3, but in 2 yes
         self.row1 = row1
         self.row2 = row2
 

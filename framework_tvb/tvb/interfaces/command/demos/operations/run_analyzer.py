@@ -41,8 +41,8 @@ from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model.datatypes.spectral import FourierSpectrumIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesRegionIndex
+from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData

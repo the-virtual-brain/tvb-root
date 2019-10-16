@@ -42,7 +42,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Links, MeasurePointsSelection, \
     StoredPSEFilter

@@ -38,9 +38,9 @@ from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
 from tvb.core.entities.storage import transactional
 from tvb.core.adapters.arguments_serialisation import parse_slice
 from tvb.core.neotraits.forms import UploadField, SimpleStrField, SimpleBoolField, SimpleIntField, DataTypeSelectField
@@ -137,7 +137,6 @@ class MatTimeSeriesImporter(ABCUploader):
             ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, tstype_parameters)
 
             ts.start_time = start_time
-            ts.sample_period = 1.0 / sampling_rate
             ts.sample_period_unit = 's'
 
             ts_h5.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)
@@ -150,7 +149,7 @@ class MatTimeSeriesImporter(ABCUploader):
             ts_h5.gid.store(uuid.UUID(ts_idx.gid))
             ts_h5.sample_period.store(ts.sample_period)
             ts_h5.sample_period_unit.store(ts.sample_period_unit)
-            ts_h5.sample_rate.store(sampling_rate)
+            ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.start_time.store(ts.start_time)
             ts_h5.labels_ordering.store(ts.labels_ordering)
             ts_h5.labels_dimensions.store(ts.labels_dimensions)
@@ -162,6 +161,7 @@ class MatTimeSeriesImporter(ABCUploader):
             ts_idx.sample_period_unit = ts.sample_period_unit
             ts_idx.sample_period = ts.sample_period
             ts_idx.sample_rate = ts.sample_rate
+            ts_idx.labels_dimensions = json.dumps(ts.labels_dimensions)
             ts_idx.labels_ordering = json.dumps(ts.labels_ordering)
             ts_idx.data_ndim = len(data_shape)
             ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(

@@ -40,10 +40,10 @@ from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.model.datatypes.local_connectivity import LocalConnectivityIndex
-from tvb.core.entities.model.datatypes.patterns import StimuliSurfaceIndex, StimuliRegionIndex
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, ScalarField, ArrayField, SimpleFloatField, \
     SimpleHiddenField
 from tvb.core.neocom import h5

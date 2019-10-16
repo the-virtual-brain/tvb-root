@@ -34,10 +34,18 @@ import os.path
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from tvb.datatypes.graph import Covariance
+from tvb.datatypes.time_series import TimeSeries
+
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.adapters.datatypes.db.graph import CovarianceIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.project_service import ProjectService
 from tvb.core.neotraits.db import Base
 from tvb.datatypes.connectivity import Connectivity
@@ -46,7 +54,6 @@ from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import TvbProfile
-
 
 def pytest_addoption(parser):
     parser.addoption("--profile", action="store", default="TEST_SQLITE_PROFILE",
@@ -95,9 +102,8 @@ def session(db_engine):
     s.close()
     Base.metadata.drop_all(db_engine)
 
-
 @pytest.fixture
-def userFactory():
+def user_factory():
     def build(username='test_user', password='test_pass',
               mail='test_mail@tvb.org', validated=True, role='test'):
         """
@@ -115,7 +121,7 @@ def userFactory():
 
 
 @pytest.fixture
-def projectFactory():
+def project_factory():
     def build(admin, name="TestProject", description='description', users=None):
         """
         Create persisted Project entity, with no linked DataTypes.
@@ -134,7 +140,7 @@ def projectFactory():
 
 
 @pytest.fixture()
-def operationFactory(userFactory, projectFactory):
+def operation_factory(user_factory, project_factory):
     def build(algorithm=None, test_user=None, test_project=None,
               operation_status=STATUS_FINISHED, parameters="test params"):
         """
@@ -145,9 +151,9 @@ def operationFactory(userFactory, projectFactory):
         if algorithm is None:
             algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
         if test_user is None:
-            test_user = userFactory()
+            test_user = user_factory()
         if test_project is None:
-            test_project = projectFactory(test_user)
+            test_project = project_factory(test_user)
 
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW_DATA"}
@@ -161,7 +167,7 @@ def operationFactory(userFactory, projectFactory):
 
 
 @pytest.fixture()
-def connectivityFactory():
+def connectivity_factory():
     def build(nr_regions=4):
         return Connectivity(
             region_labels=numpy.array(["a"] * nr_regions),
@@ -175,14 +181,14 @@ def connectivityFactory():
             areas=numpy.zeros((nr_regions * nr_regions,)),
             number_of_regions=nr_regions,
             number_of_connections=nr_regions * nr_regions,
-            saved_selection=["a", "b", "C"]
+            saved_selection=[1, 2, 3]
         )
 
     return build
 
 
 @pytest.fixture()
-def surfaceFactory():
+def surface_factory():
     def build(nr_vertices=10, valid_for_simulation=True, cortical=False):
         if cortical:
             return CorticalSurface(
@@ -226,12 +232,12 @@ def surfaceFactory():
 
 
 @pytest.fixture()
-def regionMappingFactory(surfaceFactory, connectivityFactory):
+def region_mapping_factory(surface_factory, connectivity_factory):
     def build(surface=None, connectivity=None):
         if not surface:
-            surface = surfaceFactory(5)
+            surface = surface_factory(5)
         if not connectivity:
-            connectivity = connectivityFactory(2)
+            connectivity = connectivity_factory(2)
         return RegionMapping(
             array_data=numpy.arange(surface.number_of_vertices),
             connectivity=connectivity,
@@ -242,7 +248,7 @@ def regionMappingFactory(surfaceFactory, connectivityFactory):
 
 
 @pytest.fixture()
-def sensorsFactory():
+def sensors_factory():
     def build(type="EEG", nr_sensors=3):
         return Sensors(
             sensors_type=type,
@@ -258,12 +264,78 @@ def sensorsFactory():
 
 
 @pytest.fixture()
-def regionSimulationFactory(connectivityFactory):
+def region_simulation_factory(connectivity_factory):
     def build(connectivity=None, simulation_length=100):
         if not connectivity:
-            connectivity = connectivityFactory(2)
+            connectivity = connectivity_factory(2)
         return Simulator(connectivity=connectivity,
                          surface=None,
                          simulation_length=simulation_length)
+
+    return build
+
+@pytest.fixture()
+def time_series_factory(operation_factory, session):
+    def build():
+        time = numpy.linspace(0, 1000, 4000)
+        data = numpy.zeros((time.size, 1, 3, 1))
+        data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
+        data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
+        data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
+                           numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
+
+        ts = TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
+
+        op = operation_factory()
+
+        ts_db = TimeSeriesIndex()
+        ts_db.fk_from_operation = op.id
+        ts_db.fill_from_has_traits(ts)
+
+        ts_h5_path = h5.path_for_stored_index(ts_db)
+        with TimeSeriesH5(ts_h5_path) as f:
+            f.store(ts)
+
+        session.add(ts_db)
+        session.commit()
+        return ts_db
+    return build
+
+@pytest.fixture()
+def covariance_factory(time_series_factory, operation_factory, session):
+    def build():
+        ts_index = time_series_factory()
+
+        ts_h5 = h5_file_for_index(ts_index)
+        ts = TimeSeries()
+        ts_h5.load_into(ts)
+        ts_h5.close()
+
+        data_shape = ts.data.shape
+
+        result_shape = (data_shape[2], data_shape[2], data_shape[1], data_shape[3])
+        result = numpy.zeros(result_shape)
+
+        for mode in range(data_shape[3]):
+            for var in range(data_shape[1]):
+                data = ts_h5.data[:, var, :, mode]
+                data = data - data.mean(axis=0)[numpy.newaxis, 0]
+                result[:, :, var, mode] = numpy.cov(data.T)
+
+        covariance = Covariance(source=ts, array_data=result)
+
+        op = operation_factory()
+
+        covariance_db = CovarianceIndex()
+        covariance_db.fk_from_operation = op.id
+        covariance_db.fill_from_has_traits(covariance)
+
+        covariance_h5_path = h5.path_for_stored_index(covariance_db)
+        with TimeSeriesH5(covariance_h5_path) as f:
+            f.store(ts)
+
+        session.add(covariance_db)
+        session.commit()
+        return covariance_db
 
     return build

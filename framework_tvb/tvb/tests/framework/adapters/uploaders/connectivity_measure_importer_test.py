@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -36,13 +36,15 @@ module docstring
 import pytest
 import os.path
 import tvb_data
+from cherrypy._cpreqbody import Part
+from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterForm
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.uploaders import test_data
 
@@ -56,13 +58,11 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         self.test_user = TestFactory.create_user('Test_User')
         self.test_project = TestFactory.create_project(self.test_user, "Test_Project")
-        TestFactory.import_zip_connectivity(self.test_user,self.test_project, "John", zip_path)
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project.name)
-
 
     def _import(self, import_file_name):
         ### Retrieve Adapter instance
@@ -70,20 +70,24 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
                                               'ConnectivityMeasureImporter')
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)
 
-        args = {'data_file': path,
-                'connectivity': self.connectivity.gid,
-                DataTypeMetaData.KEY_SUBJECT: "John"}
+        form = ConnectivityMeasureImporterForm()
+        form.fill_from_post({'_data_file': Part(path, HeaderMap({}), ''),
+                             '_dataset_name': 'M',
+                             '_connectivity': self.connectivity.gid,
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.data_file.data = path
+        importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **args)
-
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
 
     def test_happy_flow(self):
-        assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasure())
+        assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex())
         self._import('mantini_networks.mat')
-        assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasure())
+        assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex())
 
     def test_connectivity_mismatch(self):
         with pytest.raises(OperationException):
-            self._import( 'mantini_networks_33.mat')
+            self._import('mantini_networks_33.mat')
 

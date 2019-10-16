@@ -27,28 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import scipy.sparse
-from sqlalchemy import Column, Integer, ForeignKey, Float, String
-from sqlalchemy.orm import relationship
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neotraits.db import from_ndarray
+from tvb.datatypes.fcd import Fcd
+from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
+from tvb.core.neotraits.h5 import DataSet, Reference, Scalar, Json
 
 
-class LocalConnectivityIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+class FcdH5(DataTypeMatrixH5):
 
-    surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not LocalConnectivity.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_gid, primaryjoin=SurfaceIndex.gid == surface_gid)
-
-    matrix_non_zero_min = Column(Float)
-    matrix_non_zero_max = Column(Float)
-    matrix_non_zero_mean = Column(Float)
-
-    def fill_from_has_traits(self, datatype):
-        # type: (LocalConnectivity)  -> None
-        super(LocalConnectivityIndex, self).fill_from_has_traits(datatype)
-        I, J, V = scipy.sparse.find(datatype.matrix)
-        self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
-        self.surface_gid = datatype.surface.gid.hex
+    def __init__(self, path):
+        super(FcdH5, self).__init__(path)
+        self.array_data = DataSet(Fcd.array_data, self)
+        self.source = Reference(Fcd.source, self)
+        self.sw = Scalar(Fcd.sw, self)
+        self.sp = Scalar(Fcd.sp, self)
+        self.labels_ordering = Json(Fcd.labels_ordering, self)

@@ -37,8 +37,8 @@ from nibabel import trackvis
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
-from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
-from tvb.core.entities.model.datatypes.tracts import TractsIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.tracts import Tracts
 from tvb.core.neotraits.forms import UploadField, DataTypeSelectField

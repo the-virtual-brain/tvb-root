@@ -38,7 +38,7 @@ from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import UploadField, SimpleSelectField, SimpleBoolField
 from tvb.datatypes.surfaces import make_surface, center_vertices

@@ -37,7 +37,7 @@ from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADAT
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neotraits.forms import UploadField, SimpleBoolField, SimpleSelectField
 from tvb.core.neocom import h5
 

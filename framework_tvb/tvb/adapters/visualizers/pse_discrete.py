@@ -39,7 +39,7 @@ from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, STATUS
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.pse import ContextDiscretePSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.forms import DataTypeSelectField
 

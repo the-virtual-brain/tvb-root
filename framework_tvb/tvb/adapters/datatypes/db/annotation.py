@@ -34,8 +34,8 @@
 
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, ForeignKey, String
-from tvb.core.entities.file.datatypes.annotation_h5 import ConnectivityAnnotations
-from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotations
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.model.model_datatype import DataType
 
 ICON_TVB = "/static/style/nodes/nodeRoot.png"

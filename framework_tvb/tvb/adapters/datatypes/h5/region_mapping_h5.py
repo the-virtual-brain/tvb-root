@@ -29,8 +29,8 @@
 #
 
 from tvb.core.adapters.arguments_serialisation import preprocess_space_parameters
-from tvb.core.entities.file.datatypes.spectral_h5 import DataTypeMatrixH5
-from tvb.core.entities.file.datatypes.structural_h5 import VolumetricDataMixin
+from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
+from tvb.adapters.datatypes.h5.structural_h5 import VolumetricDataMixin
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping

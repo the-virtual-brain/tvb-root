@@ -33,15 +33,15 @@ import scipy
 import tvb
 from tvb.adapters.datatypes.simulation_state import SimulationState
 from tvb.basic.neotraits.ex import TraitAttributeError
-from tvb.core.entities.file.datatypes.local_connectivity_h5 import LocalConnectivityH5
-from tvb.core.entities.file.datatypes.projections_h5 import ProjectionMatrixH5
-from tvb.core.entities.file.datatypes.simulation_state_h5 import SimulationStateH5
-from tvb.core.entities.file.datatypes.structural_h5 import StructuralMRIH5
-from tvb.core.entities.file.datatypes.volumes_h5 import VolumeH5
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
-from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
-from tvb.core.entities.file.datatypes.sensors_h5 import SensorsH5
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
+from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
+from tvb.adapters.datatypes.h5.simulation_state_h5 import SimulationStateH5
+from tvb.adapters.datatypes.h5.structural_h5 import StructuralMRIH5
+from tvb.adapters.datatypes.h5.volumes_h5 import VolumeH5
+from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
+from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
+from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.connectivity import Connectivity
@@ -52,8 +52,8 @@ from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.volumes import Volume
 
 
-def test_store_load_region_mapping(tmph5factory, regionMappingFactory):
-    region_mapping = regionMappingFactory()
+def test_store_load_region_mapping(tmph5factory, region_mapping_factory):
+    region_mapping = region_mapping_factory()
     rm_h5 = RegionMappingH5(tmph5factory())
     rm_h5.store(region_mapping)
     rm_h5.close()
@@ -65,10 +65,10 @@ def test_store_load_region_mapping(tmph5factory, regionMappingFactory):
     assert rm_stored.array_data.shape == (5,)
 
 
-def test_store_load_complete_region_mapping(tmph5factory, connectivityFactory, surfaceFactory, regionMappingFactory):
-    connectivity = connectivityFactory(2)
-    surface = surfaceFactory(5)
-    region_mapping = regionMappingFactory(surface, connectivity)
+def test_store_load_complete_region_mapping(tmph5factory, connectivity_factory, surface_factory, region_mapping_factory):
+    connectivity = connectivity_factory(2)
+    surface = surface_factory(5)
+    region_mapping = region_mapping_factory(surface, connectivity)
 
     with ConnectivityH5(tmph5factory('Connectivity_{}.h5'.format(connectivity.gid))) as conn_h5:
         conn_h5.store(connectivity)
@@ -97,8 +97,8 @@ def test_store_load_complete_region_mapping(tmph5factory, connectivityFactory, s
     assert rm_stored.surface is not None
 
 
-def test_store_load_sensors(tmph5factory, sensorsFactory):
-    sensors = sensorsFactory("SEEG", 3)
+def test_store_load_sensors(tmph5factory, sensors_factory):
+    sensors = sensors_factory("SEEG", 3)
     tmp_file = tmph5factory("Sensors_{}.h5".format(sensors.gid))
     with SensorsH5(tmp_file) as f:
         f.store(sensors)
@@ -202,9 +202,9 @@ def test_store_load_simulation_state(tmph5factory):
     assert simulation_state_stored.history is not None
 
 
-def test_store_load_projection_matrix(tmph5factory, sensorsFactory, surfaceFactory):
-    sensors = sensorsFactory("SEEG", 3)
-    cortical_surface = surfaceFactory(5, cortical=True)
+def test_store_load_projection_matrix(tmph5factory, sensors_factory, surface_factory):
+    sensors = sensors_factory("SEEG", 3)
+    cortical_surface = surface_factory(5, cortical=True)
 
     projection_matrix = ProjectionMatrix(
         projection_type="projSEEG",
@@ -219,9 +219,9 @@ def test_store_load_projection_matrix(tmph5factory, sensorsFactory, surfaceFacto
         f.store(projection_matrix)
 
 
-def test_store_load_local_connectivity(tmph5factory, surfaceFactory):
+def test_store_load_local_connectivity(tmph5factory, surface_factory):
     tmp_file = tmph5factory()
-    cortical_surface = surfaceFactory(5, cortical=True)
+    cortical_surface = surface_factory(5, cortical=True)
 
     local_connectivity = LocalConnectivity(
         surface=cortical_surface,
