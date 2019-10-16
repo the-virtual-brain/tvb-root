@@ -32,15 +32,28 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+import uuid
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.obj.surface import ObjSurface
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, FACE, make_surface, center_vertices
-
+from tvb.datatypes.surfaces import make_surface, center_vertices, ALL_SURFACES_SELECTION
+from tvb.core.neotraits._forms import SimpleSelectField, UploadField, SimpleBoolField
 from tvb.interfaces.neocom._h5loader import DirLoader
+
+
+class ObjSurfaceImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
+
+        self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
+                                              label='Specify file type :')
+        self.data_file = UploadField('.obj', self, name='data_file', required=True, label='Please select file to import')
+        self.should_center = SimpleBoolField(self, name='should_center', default=False,
+                                             label='Center surface using vertex means along axes')
 
 
 class ObjSurfaceImporter(ABCUploader):
@@ -51,23 +64,20 @@ class ObjSurfaceImporter(ABCUploader):
     _ui_subsection = "obj_importer"
     _ui_description = "Import geometry data stored in wavefront obj format"
 
+    form = None
 
-    def get_upload_input_tree(self):
-        """
-        Take as input an obj file
-        """
-        return [{'name': 'surface_type', 'type': 'select',
-                 'label': 'Specify file type : ', 'required': True,
-                 'options': ALL_SURFACES_SELECTION,
-                 'default': FACE},
+    def get_input_tree(self): return None
 
-                {'name': 'data_file', 'type': 'upload', 'required_type': '.obj',
-                 'label': 'Please select file to import', 'required': True},
+    def get_upload_input_tree(self): return None
 
-                {'name': 'should_center', 'type': 'bool', 'default': False,
-                 'label': 'Center surface using vertex means along axes'}]
-        
-        
+    def get_form(self):
+        if self.form is None:
+            return ObjSurfaceImporterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
+
     def get_output(self):
         return [SurfaceIndex]
 
@@ -119,6 +129,7 @@ class ObjSurfaceImporter(ABCUploader):
 
             with SurfaceH5(surface_h5_path) as surface_h5:
                 surface_h5.store(surface)
+                surface_h5.gid.store(uuid.UUID(surface_idx.gid))
 
             return [surface_idx]
 

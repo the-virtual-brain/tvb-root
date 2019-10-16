@@ -35,14 +35,28 @@
 
 import uuid
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION, make_surface, center_vertices
+from tvb.datatypes.surfaces import make_surface, center_vertices, ALL_SURFACES_SELECTION
+from tvb.core.neotraits._forms import UploadField, SimpleSelectField, SimpleBoolField
 from tvb.interfaces.neocom._h5loader import DirLoader
+
+
+class ZIPSurfaceImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ZIPSurfaceImporterForm, self).__init__(prefix, project_id)
+        self.uploaded = UploadField('application/zip', self, name='uploaded', required=True, label='Surface file (zip)')
+        self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
+                                              label='Surface type')
+        self.zero_based_triangles = SimpleBoolField(self, name='zero_based_triangles', default=True,
+                                                    label='Zero based triangles')
+        self.should_center = SimpleBoolField(self, name='should_center',
+                                             label='Center surface using vertex means along axes')
 
 
 class ZIPSurfaceImporter(ABCUploader):
@@ -56,16 +70,19 @@ class ZIPSurfaceImporter(ABCUploader):
     _ui_description = "Import a Surface from ZIP"
     logger = get_logger(__name__)
 
-    def get_upload_input_tree(self):
-        """ Take as input a ZIP archive. """
-        return [{'name': 'uploaded', 'type': 'upload', 'required_type': 'application/zip',
-                 'label': 'Surface file (zip)', 'required': True},
-                {'name': 'surface_type', 'type': 'select', 'label': 'Surface type', 'required': True,
-                 'options': ALL_SURFACES_SELECTION},
-                {'name': 'zero_based_triangles', 'label': 'Zero based triangles', 'type': 'bool', 'default': True},
-                {'name': 'should_center', 'type': 'bool', 'default': False,
-                 'label': 'Center surface using vertex means along axes'}]
+    form = None
 
+    def get_input_tree(self): return None
+
+    def get_upload_input_tree(self): return None
+
+    def get_form(self):
+        if self.form is None:
+            return ZIPSurfaceImporterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_output(self):
         return [SurfaceIndex]
