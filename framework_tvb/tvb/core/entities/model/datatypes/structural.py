@@ -10,12 +10,12 @@ class StructuralMRIIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_data = relationship(NArrayIndex, foreign_key=array_data_id)
+    array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
 
     weighting = Column(String, nullable=False)
 
     volume_id = Column(Integer, ForeignKey(VolumeIndex.id), nullable=not StructuralMRI.volume.required)
-    volume = relationship(VolumeIndex, foreign_key=volume_id)
+    volume = relationship(VolumeIndex, foreign_keys=volume_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
