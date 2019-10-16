@@ -7,14 +7,14 @@ from tvb.core.neotraits.h5 import H5File, Reference, DataSet, Scalar
 class PrincipalComponentsH5(H5File):
     def __init__(self, path):
         super(PrincipalComponentsH5, self).__init__(path)
-        self.source = Reference(PrincipalComponents.source)
-        self.weights = DataSet(PrincipalComponents.weights, expand_dimension=2)
-        self.fractions = DataSet(PrincipalComponents.fractions, expand_dimension=1)
-        self.norm_source = DataSet(PrincipalComponents.norm_source, expand_dimension=1)
-        self.component_time_series = DataSet(PrincipalComponents.component_time_series, expand_dimension=1)
+        self.source = Reference(PrincipalComponents.source, self)
+        self.weights = DataSet(PrincipalComponents.weights, self, expand_dimension=2)
+        self.fractions = DataSet(PrincipalComponents.fractions, self, expand_dimension=1)
+        self.norm_source = DataSet(PrincipalComponents.norm_source, self, expand_dimension=1)
+        self.component_time_series = DataSet(PrincipalComponents.component_time_series,
+                                             self, expand_dimension=1)
         self.normalised_component_time_series = DataSet(PrincipalComponents.normalised_component_time_series,
-                                                        expand_dimension=1)
-        self._end_accessor_declarations()
+                                                        self, expand_dimension=1)
 
     def write_data_slice(self, partial_result):
         """
@@ -65,16 +65,16 @@ class IndependentComponentsH5(H5File):
 
     def __init__(self, path):
         super(IndependentComponentsH5, self).__init__(path)
-        self.source = Reference(IndependentComponents.source)
-        self.mixing_matrix = DataSet(IndependentComponents.mixing_matrix, expand_dimension=2)
-        self.unmixing_matrix = DataSet(IndependentComponents.unmixing_matrix, expand_dimension=2)
-        self.prewhitening_matrix = DataSet(IndependentComponents.prewhitening_matrix, expand_dimension=2)
-        self.n_components = Scalar(IndependentComponents.n_components)
-        self.norm_source = DataSet(IndependentComponents.norm_source, expand_dimension=1)
-        self.component_time_series = DataSet(IndependentComponents.component_time_series, expand_dimension=1)
+        self.source = Reference(IndependentComponents.source, self)
+        self.mixing_matrix = DataSet(IndependentComponents.mixing_matrix, self, expand_dimension=2)
+        self.unmixing_matrix = DataSet(IndependentComponents.unmixing_matrix, self, expand_dimension=2)
+        self.prewhitening_matrix = DataSet(IndependentComponents.prewhitening_matrix, self, expand_dimension=2)
+        self.n_components = Scalar(IndependentComponents.n_components, self)
+        self.norm_source = DataSet(IndependentComponents.norm_source, self, expand_dimension=1)
+        self.component_time_series = DataSet(IndependentComponents.component_time_series,
+                                             self, expand_dimension=1)
         self.normalised_component_time_series = DataSet(IndependentComponents.normalised_component_time_series,
-                                                        expand_dimension=1)
-        self._end_accessor_declarations()
+                                                        self, expand_dimension=1)
 
     def write_data_slice(self, partial_result):
         """

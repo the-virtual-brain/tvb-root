@@ -41,7 +41,7 @@ import cherrypy
 import formencode
 import numpy
 import six
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
@@ -52,6 +52,7 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.burst_service import BurstService
+from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
@@ -133,7 +134,7 @@ class FlowController(BaseController):
         Based on a simple indicator, compute URL for anchor BACK.
         """
         if back_indicator is None:
-            ## This applies to Connectivity and other visualizers when RELAUNCH button is used from Operation page.
+            # This applies to Connectivity and other visualizers when RELAUNCH button is used from Operation page.
             back_page_link = None
         elif back_indicator == 'burst':
             back_page_link = "/burst"
@@ -156,7 +157,7 @@ class FlowController(BaseController):
             algorithm_id = int(i)
             algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
-            algorithm.input_tree = self.flow_service.prepare_adapter(project.id, algorithm)
+            algorithm.input_tree = self.flow_service.prepare_adapter(algorithm)
             algorithms.append(algorithm)
 
         template_specification = dict(mainContent="flow/algorithms_list", algorithms=algorithms,
@@ -318,7 +319,7 @@ class FlowController(BaseController):
                         labels_set.append("Undefined")
                 if (hasattr(actual_entity, 'aggregation_functions') and actual_entity.aggregation_functions is not None
                         and len(actual_entity.aggregation_functions) == len(array_shape)):
-                    #will be a list of lists of aggregation functions
+                    # will be a list of lists of aggregation functions
                     defined_functions = actual_entity.aggregation_functions
                     for function in defined_functions:
                         if not len(function):
@@ -461,14 +462,15 @@ class FlowController(BaseController):
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
-            form = adapter_instance.get_form()()
+            form = adapter_instance.get_form()(project_id=project_id)
             form.fill_from_post(data)
             dt_dict = None
             if form.validate():
                 dt_dict = form.get_dict()
             if dt_dict is None:
-                raise ValueError("Could not build a dict out of this form!")
-            adapter_instance.set_form(form)
+                raise formencode.Invalid("Could not build a dict out of this form!", {}, None,
+                                         error_dict=form.get_errors_dict())
+            adapter_instance.submit_form(form)
             result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, **dt_dict)
 
             # Store input data in session, for informing user of it.
@@ -488,6 +490,8 @@ class FlowController(BaseController):
                 common.set_important_message(str(result))
         except formencode.Invalid as excep:
             errors = excep.unpack_errors()
+            common.set_error_message("Invalid form inputs")
+            self.logger.warning("Invalid form inputs %s" % errors)
         except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
@@ -564,21 +568,58 @@ class FlowController(BaseController):
 
 
     def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
+
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
         entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        entity_dt = h5.load_from_index(entity)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
                 kwargs[key] = ABCAdapter.load_entity_by_gid(value)
 
-        result = getattr(entity, dataset_name)
+        result = getattr(entity_dt, dataset_name)
         if callable(result):
             if kwargs:
                 result = result(**kwargs)
             else:
                 result = result()
         return result
+
+
+    @expose_json
+    def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
+        algorithm = self.flow_service.get_algorithm_by_identifier(algo_id)
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
+                                                            str(entity.fk_from_operation))
+        adapter_instance.storage_path = storage_path
+        method = getattr(adapter_instance, method_name)
+        if kwargs:
+            return method(entity_gid, **kwargs)
+        return method(entity_gid)
+
+
+    @expose_json
+    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+        self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
+        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        entity_h5 = h5.h5_file_for_index(entity)
+
+        datatype_kwargs = json.loads(datatype_kwargs)
+        if datatype_kwargs:
+            for key, value in six.iteritems(datatype_kwargs):
+                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
+
+        result = getattr(entity_h5, method_name)
+        if kwargs:
+            result = result(**kwargs)
+        else:
+            result = result()
+
+        entity_h5.close()
+        return self._prepare_result(result, flatten)
 
 
     @expose_json
@@ -597,7 +638,11 @@ class FlowController(BaseController):
 
         """
         result = self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
+        return self._prepare_result(result, flatten)
 
+
+
+    def _prepare_result(self, result, flatten):
         if isinstance(result, numpy.ndarray):
             # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able
             if flatten is True or flatten == "True":
@@ -786,7 +831,7 @@ class FlowController(BaseController):
     @expose_fragment('visualizers/commons/channel_selector_opts')
     def get_available_selections(self, **data):
         sel_names, sel_values = self._get_available_selections(data['datatype_gid'])
-        return dict(namedSelections=zip(sel_names, sel_values))
+        return dict(namedSelections=list(zip(sel_names, sel_values)))
 
 
     @expose_json

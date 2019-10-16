@@ -1,7 +1,7 @@
 from tvb.datatypes.equations import Equation, Linear, Gaussian, DoubleGaussian, Sigmoid, GeneralizedSigmoid, Sinusoid, \
     Cosine, Alpha, PulseTrain, Gamma, DoubleExponential, FirstOrderVolterra, MixtureOfGammas
 
-from tvb.core.neotraits._forms import Form, ScalarField, SimpleFloatField
+from tvb.core.neotraits.forms import Form, ScalarField, SimpleFloatField
 
 
 def get_ui_name_to_equation_dict():

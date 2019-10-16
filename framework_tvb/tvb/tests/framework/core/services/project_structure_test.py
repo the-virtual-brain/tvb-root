@@ -33,20 +33,19 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import json
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.transient.filtering import StaticFiltersFactory
+from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.project_service_test import TestProjectService
 from tvb.tests.framework.core.services.flow_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
-
 
 
 class TestProjectStructure(TransactionalTestCase):
@@ -65,29 +64,27 @@ class TestProjectStructure(TransactionalTestCase):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user, "ProjectStructure")
 
-        self.relevant_filter = StaticFiltersFactory.build_datatype_filters(single_filter=StaticFiltersFactory.RELEVANT_VIEW)
+        self.relevant_filter = StaticFiltersFactory.build_datatype_filters(
+            single_filter=StaticFiltersFactory.RELEVANT_VIEW)
         self.full_filter = StaticFiltersFactory.build_datatype_filters(single_filter=StaticFiltersFactory.FULL_VIEW)
 
-    
     def transactional_teardown_method(self):
         """
         Clear project folders after testing
         """
         self.delete_project_folders()
 
-
     def test_set_operation_visibility(self):
         """
         Check if the visibility for an operation is set correct.
         """
         self.__init_algorithmn()
-        op1 = model.Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
+        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
         op1 = dao.store_entity(op1)
         assert op1.visible, "The operation should be visible."
         self.project_service.set_operation_and_group_visibility(op1.gid, False)
         updated_op = dao.get_operation_by_id(op1.id)
         assert not updated_op.visible, "The operation should not be visible."
-
 
     def test_set_op_and_group_visibility(self):
         """
@@ -103,7 +100,6 @@ class TestProjectStructure(TransactionalTestCase):
         for operation in operations:
             assert not operation.visible, "The operation should not be visible."
 
-
     def test_set_op_group_visibility(self):
         """
         Tests if the visibility for an operation group is set correct.
@@ -118,21 +114,19 @@ class TestProjectStructure(TransactionalTestCase):
         for operation in operations:
             assert not operation.visible, "The operation should not be visible."
 
-
     def test_is_upload_operation(self):
         """
         Tests that upload and non-upload algorithms are created and run accordingly
         """
         self.__init_algorithmn()
         upload_algo = self._create_algo_for_upload()
-        op1 = model.Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
-        op2 = model.Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
+        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
+        op2 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
         operations = dao.store_entities([op1, op2])
         is_upload_operation = self.project_service.is_upload_operation(operations[0].gid)
         assert not is_upload_operation, "The operation is not an upload operation."
         is_upload_operation = self.project_service.is_upload_operation(operations[1].gid)
         assert is_upload_operation, "The operation is an upload operation."
-
 
     def test_get_upload_operations(self):
         """
@@ -141,38 +135,36 @@ class TestProjectStructure(TransactionalTestCase):
         self.__init_algorithmn()
         upload_algo = self._create_algo_for_upload()
 
-        project = model.Project("test_proj_2", self.test_user.id, "desc")
+        project = Project("test_proj_2", self.test_user.id, "desc")
         project = dao.store_entity(project)
 
-        op1 = model.Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
-        op2 = model.Operation(self.test_user.id, project.id, upload_algo.id, "", status=model.STATUS_FINISHED)
-        op3 = model.Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
-        op4 = model.Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=model.STATUS_FINISHED)
-        op5 = model.Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=model.STATUS_FINISHED)
+        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
+        op2 = Operation(self.test_user.id, project.id, upload_algo.id, "", status=STATUS_FINISHED)
+        op3 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
+        op4 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=STATUS_FINISHED)
+        op5 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=STATUS_FINISHED)
         operations = dao.store_entities([op1, op2, op3, op4, op5])
 
         upload_operations = self.project_service.get_all_operations_for_uploaders(self.test_project.id)
         assert 2 == len(upload_operations), "Wrong number of upload operations."
         upload_ids = [operation.id for operation in upload_operations]
         for i in [3, 4]:
-            assert operations[i].id in upload_ids,\
-                            "The operation should be an upload operation."
-        for i in [0, 1, 2]:                    
-            assert not operations[i].id in upload_ids,\
-                             "The operation should not be an upload operation."
-
+            assert operations[i].id in upload_ids, \
+                "The operation should be an upload operation."
+        for i in [0, 1, 2]:
+            assert not operations[i].id in upload_ids, \
+                "The operation should not be an upload operation."
 
     def test_is_datatype_group(self):
         """
         Tests if a datatype is group.
         """
         _, dt_group_id, first_dt, _ = self._create_datatype_group()
-        dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
+        dt_group = dao.get_generic_entity(DataTypeGroup, dt_group_id)[0]
         is_dt_group = self.project_service.is_datatype_group(dt_group.gid)
         assert is_dt_group, "The datatype should be a datatype group."
         is_dt_group = self.project_service.is_datatype_group(first_dt.gid)
         assert not is_dt_group, "The datatype should not be a datatype group."
-
 
     def test_count_datatypes_in_group(self):
         """ Test that counting dataTypes is correct. Happy flow."""
@@ -182,12 +174,11 @@ class TestProjectStructure(TransactionalTestCase):
         count = dao.count_datatypes_in_group(first_dt.id)
         assert count == 0, "There should be no dataType."
 
-
     def test_set_datatype_visibility(self):
         """
         Check if the visibility for a datatype is set correct.
         """
-        #it's a list of 3 elem.
+        # it's a list of 3 elem.
         mapped_arrays = self._create_mapped_arrays(self.test_project.id)
         for mapped_array in mapped_arrays:
             is_visible = dao.get_datatype_by_id(mapped_array[0]).visible
@@ -200,7 +191,6 @@ class TestProjectStructure(TransactionalTestCase):
                 assert not is_visible, "The data type should not be visible."
             else:
                 assert is_visible, "The data type should be visible."
-
 
     def test_set_visibility_for_dt_in_group(self):
         """
@@ -219,13 +209,12 @@ class TestProjectStructure(TransactionalTestCase):
         assert not db_first_dt.visible, "The data type should not be visible."
         assert not db_second_dt.visible, "The data type should be visible."
 
-
     def test_set_visibility_for_group(self):
         """
         Check if the visibility for a datatype group is set correct.
         """
         _, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        dt_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
+        dt_group = dao.get_generic_entity(DataTypeGroup, dt_group_id)[0]
 
         assert dt_group.visible, "The data type group should be visible."
         assert first_dt.visible, "The data type should be visible."
@@ -240,7 +229,6 @@ class TestProjectStructure(TransactionalTestCase):
         assert not updated_first_dt.visible, "The data type should be visible."
         assert not updated_second_dt.visible, "The data type should be visible."
 
-
     def test_getdatatypes_from_dtgroup(self):
         """
         Validate that we can retrieve all DTs from a DT_Group
@@ -251,7 +239,7 @@ class TestProjectStructure(TransactionalTestCase):
         expected_dict = {first_dt.id: first_dt, second_dt.id: second_dt}
         actual_dict = {datatypes[0].id: datatypes[0], datatypes[1].id: datatypes[1]}
 
-        for key in expected_dict.keys():
+        for key in expected_dict:
             expected = expected_dict[key]
             actual = actual_dict[key]
             assert expected.id == actual.id, "Not the same id."
@@ -264,7 +252,6 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.user_tag_1 == actual.user_tag_1, "Not the same user_tag_1."
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
-
 
     def test_get_operations_for_dt(self):
         """
@@ -291,7 +278,6 @@ class TestProjectStructure(TransactionalTestCase):
         assert len(operations) == 2
         assert created_ops[4].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
-
 
     def test_get_operations_for_dt_group(self):
         """
@@ -320,7 +306,6 @@ class TestProjectStructure(TransactionalTestCase):
         assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
-
     def test_get_inputs_for_operation(self):
         """
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
@@ -339,7 +324,7 @@ class TestProjectStructure(TransactionalTestCase):
 
         parameters = json.dumps({"param_5": "1", "param_1": array_wrappers[0][2],
                                  "param_2": array_wrappers[1][2], "param_3": array_wrappers[2][2], "param_6": "0"})
-        operation = model.Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
+        operation = Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
         operation = dao.store_entity(operation)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
@@ -360,7 +345,7 @@ class TestProjectStructure(TransactionalTestCase):
         first_dt.visible = False
         dao.store_entity(first_dt)
         parameters = json.dumps({"other_param": "_", "param_1": first_dt.gid})
-        operation = model.Operation(self.test_user.id, project.id, algo.id, parameters)
+        operation = Operation(self.test_user.id, project.id, algo.id, parameters)
         operation = dao.store_entity(operation)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
@@ -371,7 +356,6 @@ class TestProjectStructure(TransactionalTestCase):
         assert len(inputs) == 1, "Incorrect number of dataTypes."
         assert inputs[0].id == dt_group_id, "Wrong dataType."
         assert inputs[0].id != first_dt.id, "Wrong dataType."
-
 
     def test_get_inputs_for_op_group(self):
         """
@@ -384,15 +368,15 @@ class TestProjectStructure(TransactionalTestCase):
         second_dt.visible = False
         dao.store_entity(second_dt)
 
-        op_group = model.OperationGroup(project.id, "group", "range1[1..2]")
+        op_group = OperationGroup(project.id, "group", "range1[1..2]")
         op_group = dao.store_entity(op_group)
         params_1 = json.dumps({"param_5": "1", "param_1": first_dt.gid, "param_6": "2"})
         params_2 = json.dumps({"param_5": "1", "param_4": second_dt.gid, "param_6": "5"})
 
         algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
-        op1 = model.Operation(self.test_user.id, project.id, algo.id, params_1, op_group_id=op_group.id)
-        op2 = model.Operation(self.test_user.id, project.id, algo.id, params_2, op_group_id=op_group.id)
+        op1 = Operation(self.test_user.id, project.id, algo.id, params_1, op_group_id=op_group.id)
+        op2 = Operation(self.test_user.id, project.id, algo.id, params_2, op_group_id=op_group.id)
         dao.store_entities([op1, op2])
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
@@ -419,13 +403,12 @@ class TestProjectStructure(TransactionalTestCase):
         assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
         assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
 
-
     def test_get_inputs_for_op_group_simple_inputs(self):
         """
         Tests method get_datatypes_inputs_for_operation_group.
         The dataType inputs will not be part of a dataType group.
         """
-        #it's a list of 3 elem.
+        # it's a list of 3 elem.
         array_wrappers = self._create_mapped_arrays(self.test_project.id)
         array_wrapper_ids = []
         for datatype in array_wrappers:
@@ -435,7 +418,7 @@ class TestProjectStructure(TransactionalTestCase):
         datatype.visible = False
         dao.store_entity(datatype)
 
-        op_group = model.OperationGroup(self.test_project.id, "group", "range1[1..2]")
+        op_group = OperationGroup(self.test_project.id, "group", "range1[1..2]")
         op_group = dao.store_entity(op_group)
         params_1 = json.dumps({"param_5": "2", "param_1": array_wrappers[0][2],
                                "param_2": array_wrappers[1][2], "param_6": "7"})
@@ -444,8 +427,8 @@ class TestProjectStructure(TransactionalTestCase):
 
         algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
-        op1 = model.Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
-        op2 = model.Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
+        op1 = Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
+        op2 = Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
         dao.store_entities([op1, op2])
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
@@ -460,12 +443,11 @@ class TestProjectStructure(TransactionalTestCase):
         assert array_wrapper_ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id]
         assert array_wrapper_ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id]
 
-
     def test_remove_datatype(self):
         """
         Tests the deletion of a datatype.
         """
-        #it's a list of 3 elem.
+        # it's a list of 3 elem.
         array_wrappers = self._create_mapped_arrays(self.test_project.id)
         dt_list = []
         for array_wrapper in array_wrappers:
@@ -474,13 +456,12 @@ class TestProjectStructure(TransactionalTestCase):
         self.project_service.remove_datatype(self.test_project.id, dt_list[0].gid)
         self._check_if_datatype_was_removed(dt_list[0])
 
-
     def test_remove_datatype_from_group(self):
         """
         Tests the deletion of a datatype group.
         """
         project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        datatype_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
+        datatype_group = dao.get_generic_entity(DataTypeGroup, dt_group_id)[0]
 
         self.project_service.remove_datatype(project.id, first_dt.gid)
         self._check_if_datatype_was_removed(first_dt)
@@ -488,20 +469,18 @@ class TestProjectStructure(TransactionalTestCase):
         self._check_if_datatype_was_removed(datatype_group)
         self._check_datatype_group_removed(dt_group_id, datatype_group.fk_operation_group)
 
-
     def test_remove_datatype_group(self):
         """
         Tests the deletion of a datatype group.
         """
         project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        datatype_group = dao.get_generic_entity(model.DataTypeGroup, dt_group_id)[0]
+        datatype_group = dao.get_generic_entity(DataTypeGroup, dt_group_id)[0]
 
         self.project_service.remove_datatype(project.id, datatype_group.gid)
         self._check_if_datatype_was_removed(first_dt)
         self._check_if_datatype_was_removed(second_dt)
         self._check_if_datatype_was_removed(datatype_group)
         self._check_datatype_group_removed(dt_group_id, datatype_group.fk_operation_group)
-
 
     def _create_mapped_arrays(self, project_id):
         """
@@ -510,26 +489,26 @@ class TestProjectStructure(TransactionalTestCase):
         """
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         assert count == 0
-        
-        group = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter', 'NDimensionArrayAdapter')
+
+        group = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
+                                            'NDimensionArrayAdapter')
         adapter_instance = ABCAdapter.build_adapter(group)
         data = {'param_1': 'some value'}
-        #create 3 data types
+        # create 3 data types
         self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         assert count == 1
-        
+
         self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         assert count == 2
-        
+
         self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
         array_wrappers, count = self.flow_service.get_available_datatypes(project_id,
                                                                           "tvb.datatypes.arrays.MappedArray")
         assert count == 3
 
         return array_wrappers
-
 
     def _create_operation(self, project_id, algorithm_id):
         """
@@ -541,10 +520,9 @@ class TestProjectStructure(TransactionalTestCase):
         algorithm = dao.get_algorithm_by_id(algorithm_id)
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                 DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = model.Operation(self.test_user.id, project_id, algorithm.id, 'test params',
-                                    meta=json.dumps(meta), status=model.STATUS_FINISHED)
+        operation = Operation(self.test_user.id, project_id, algorithm.id, 'test params',
+                              meta=json.dumps(meta), status=STATUS_FINISHED)
         return dao.store_entity(operation)
-
 
     def _create_datatype_group(self):
         """
@@ -554,13 +532,11 @@ class TestProjectStructure(TransactionalTestCase):
 
         all_operations = dao.get_filtered_operations(test_project.id, None, is_count=True)
         assert 0 == all_operations, "There should be no operation."
-        
+
         datatypes, op_group_id = TestFactory.create_group(self.test_user, test_project)
         dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)
 
         return test_project, dt_group.id, datatypes[0], datatypes[1]
-
-
 
     def _create_operations_with_inputs(self, is_group_parent=False):
         """
@@ -584,8 +560,8 @@ class TestProjectStructure(TransactionalTestCase):
                 ops[i].visible = False
             ops[i].parameters = parameters
             ops[i] = dao.store_entity(ops[i])
-            
-        #groups
+
+        # groups
         _, ops_group = TestFactory.create_group(self.test_user, self.test_project)
         ops_group = dao.get_operations_in_group(ops_group)
         assert 2 == len(ops_group)
@@ -600,7 +576,6 @@ class TestProjectStructure(TransactionalTestCase):
             dt_group = dao.get_datatypegroup_by_op_group_id(root_op_group_id)
             return ops, dt_group.id
         return ops, datatype_gid
-
 
     def _check_if_datatype_was_removed(self, datatype):
         """
@@ -617,13 +592,12 @@ class TestProjectStructure(TransactionalTestCase):
         except Exception:
             pass
 
-
     def _check_datatype_group_removed(self, datatype_group_id, operation_groupp_id):
         """
         Checks if the DataTypeGroup and OperationGroup was removed.
         """
         try:
-            dao.get_generic_entity(model.DataTypeGroup, datatype_group_id)
+            dao.get_generic_entity(DataTypeGroup, datatype_group_id)
             raise AssertionError("The DataTypeGroup entity was not removed.")
         except Exception:
             pass
@@ -634,18 +608,17 @@ class TestProjectStructure(TransactionalTestCase):
         except Exception:
             pass
 
-
     def __init_algorithmn(self):
         """
         Insert some starting data in the database.
         """
-        categ1 = model.AlgorithmCategory('one', True)
+        categ1 = AlgorithmCategory('one', True)
         self.categ1 = dao.store_entity(categ1)
-        ad = model.Algorithm(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ1.id)
+        ad = Algorithm(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS, categ1.id)
         self.algo_inst = dao.store_entity(ad)
 
     @staticmethod
     def _create_algo_for_upload():
         """ Creates a fake algorithm for an upload category. """
-        category = dao.store_entity(model.AlgorithmCategory("upload_category", rawinput=True))
-        return dao.store_entity(model.Algorithm("module", "classname", category.id))
+        category = dao.store_entity(AlgorithmCategory("upload_category", rawinput=True))
+        return dao.store_entity(Algorithm("module", "classname", category.id))

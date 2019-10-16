@@ -32,7 +32,7 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-from StringIO import StringIO
+from io import StringIO
 from tvb.adapters.uploaders.obj.parser import ObjWriter, ObjParser
 
 

@@ -33,10 +33,10 @@
 """
 
 import os
+from tvb.config.init.initializer import Introspector
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.introspector import Introspector
 
 
 class TestIntrospector(BaseTestCase):
@@ -52,8 +52,8 @@ class TestIntrospector(BaseTestCase):
         core_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         TvbProfile.current.web.CURRENT_DIR = os.path.dirname(core_path)
 
-        self.introspector = Introspector("tvb.tests.framework")
-        self.introspector.introspect(True)
+        self.introspector = Introspector()
+        self.introspector.introspect()
 
     def teardown_method(self):
         """

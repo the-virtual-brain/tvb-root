@@ -1,7 +1,13 @@
 <p class="field-data">
-<select name="{{ field.name }}">
+<select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" onchange="updateDivContent('data_time_series', this, ''); updateDatatypeDiv(this)" title="Fully Loaded!">
 {% for option in field.options() %}
     <option value="{{ option.value }}" {{ 'selected' if option.checked }} class="form-control">{{ option.label }}</option>
 {% endfor %}
 </select>
+{% if field.draw_dynamic_conditions_buttons %}
+    <p class="field-adapters" id="{{ field.owner.name }}{{ field.name }}data_select">
+        <input type="button" tabindex='1' value="Add Filter" onclick="addFilter('{{ field.owner.name }}' + '{{ field.name }}' + 'data_select', {{ field.get_dynamic_filters }})"/>
+        <input type="button" tabindex='1' value="Apply Filters" onclick="refreshData('{{ field.owner.name }}', '{{ field.name }}' + 'data_select', '{{ field.name }}', 'defaultTree')"/>
+    </p>
+{% endif %}
 </p>

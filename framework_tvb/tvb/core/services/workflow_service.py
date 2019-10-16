@@ -41,7 +41,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities import model
 from tvb.core.services.exceptions import WorkflowInterStepsException
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration
-from types import IntType
 
 
 DYNAMIC_PARAMS_KEY = "dynamic_params"
@@ -67,7 +66,7 @@ class WorkflowService:
         :param message: message in case of error
         :return: operation instance changed
         """
-        operation.mark_complete(operation_status, unicode(message))
+        operation.mark_complete(operation_status, message)
         dao.store_entity(operation)
         operation = dao.get_operation_by_id(operation.id)
         self.file_helper.write_operation_metadata(operation)
@@ -134,7 +133,7 @@ class WorkflowService:
                         former_step = dao.get_workflow_step_by_step_index(next_workflow_step.fk_workflow,
                                                                           dynamic_param[
                                                                               WorkflowStepConfiguration.STEP_INDEX_KEY])
-                        if type(dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]) is IntType:
+                        if type(dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]) is int:
                             datatypes = dao.get_results_for_operation(former_step.fk_operation)
                             op_params[param_name] = datatypes[
                                 dynamic_param[WorkflowStepConfiguration.DATATYPE_INDEX_KEY]].gid

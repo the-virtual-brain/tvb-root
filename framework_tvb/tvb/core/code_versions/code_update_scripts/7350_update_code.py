@@ -101,14 +101,14 @@ def _adapt_epileptor_simulations():
                     burst.simulator_configuration[param_model] = {'value': epileptor_new}
                     burst._simulator_configuration = json.dumps(burst.simulator_configuration,
                                                                 cls=MapAsJson.MapAsJsonEncoder)
-                    if not all_bursts.has_key(burst.id):
+                    if burst.id not in all_bursts:
                         all_bursts[burst.id] = burst
 
             except Exception:
                 LOGGER.exception("Could not process " + str(ep_op))
 
         session.add_all(all_ep_ops)
-        session.add_all(all_bursts.values())
+        session.add_all(list(all_bursts.values()))
         session.commit()
 
     except Exception:
@@ -182,14 +182,14 @@ def _adapt_simulation_monitor_params():
                     burst.simulator_configuration[param_eeg_rm] = {'value': str(rm.gid)}
                     burst._simulator_configuration = json.dumps(burst.simulator_configuration,
                                                                 cls=MapAsJson.MapAsJsonEncoder)
-                    if not all_bursts.has_key(burst.id):
+                    if burst.id not in all_bursts:
                         all_bursts[burst.id] = burst
 
             except Exception:
                 LOGGER.exception("Could not process " + str(eeg_op))
 
         session.add_all(all_eeg_ops)
-        session.add_all(all_bursts.values())
+        session.add_all(list(all_bursts.values()))
         session.commit()
 
     except Exception:

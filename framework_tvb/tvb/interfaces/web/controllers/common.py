@@ -80,6 +80,8 @@ KEY_CURRENT_TAB = "currentTab"
 
 KEY_BURST_CONFIG = 'burst_configuration'
 KEY_SIMULATOR_CONFIG = 'simulator_configuration'
+KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
+KEY_IS_SIMULATOR_LOAD = 'is_simulator_load'
 KEY_CACHED_SIMULATOR_TREE = 'simulator_input_tree'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"

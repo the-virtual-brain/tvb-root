@@ -31,12 +31,33 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+
+import uuid
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
+from tvb.core.entities.file.datatypes.graph_h5 import ConnectivityMeasureH5
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
+from tvb.core.neotraits.db import from_ndarray
+from tvb.core.neocom import h5
+
+
+class ConnectivityMeasureImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ConnectivityMeasureImporterForm, self).__init__(prefix, project_id)
+
+        self.data_file = UploadField('.mat', self, name='data_file', required=True,
+                                     label='Connectivity measure file (.mat format)')
+        self.dataset_name = SimpleStrField(self, name='dataset_name', required=True, default='M',
+                                           label='Matlab dataset name',
+                                           doc='Name of the MATLAB dataset where data is stored')
+        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', required=True,
+                                                label='Large Scale Connectivity',
+                                                doc='The Connectivity for which these measurements were made')
 
 
 class ConnectivityMeasureImporter(ABCUploader):
@@ -47,27 +68,11 @@ class ConnectivityMeasureImporter(ABCUploader):
     _ui_subsection = "connectivity_measure"
     _ui_description = "Import a searies of connectivity measures from a .mat file"
 
+    def get_form_class(self):
+        return ConnectivityMeasureImporterForm
 
-    def get_upload_input_tree(self):
-        """
-        Take as input a mat file
-        """
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.mat',
-                 'label': 'Connectivity measure file (.mat format)', 'required': True},
-
-                {'name': 'dataset_name', 'type': 'str', 'required': True,
-                 'label': 'Matlab dataset name', 'default': 'M',
-                 'description': 'Name of the MATLAB dataset where data is stored'},
-
-                {'name': 'connectivity', 'label': 'Large Scale Connectivity',
-                 'type': Connectivity, 'required': True, 'datatype': True,
-                 'description': 'The Connectivity for which these measurements were made'},
-                ]
-        
-        
     def get_output(self):
-        return [ConnectivityMeasure]
-
+        return [ConnectivityMeasureIndex]
 
     @transactional
     def launch(self, data_file, dataset_name, connectivity):
@@ -84,11 +89,24 @@ class ConnectivityMeasureImporter(ABCUploader):
 
             measures = []
             for i in range(measurement_count):
-                measure = ConnectivityMeasure(storage_path=self.storage_path,
-                                              connectivity=connectivity, array_data=data[i, :])
-                measure.user_tag_2 = "nr.-%d" % (i + 1)
-                measure.user_tag_3 = "conn_%d" % node_count
-                measures.append(measure)
+                cm_idx = ConnectivityMeasureIndex()
+                cm_idx.type = ConnectivityMeasureIndex.__name__
+                cm_idx.connectivity_gid = connectivity.gid.hex
+
+                cm_data = data[i, :]
+                cm_idx.array_data_ndim = cm_data.ndim
+                cm_idx.ndim = cm_data.ndim
+                cm_idx.array_data_min, cm_idx.array_data_max, cm_idx.array_data_mean = from_ndarray(cm_data)
+
+                cm_h5_path = h5.path_for(self.storage_path, ConnectivityMeasureH5, cm_idx.gid)
+                with ConnectivityMeasureH5(cm_h5_path) as cm_h5:
+                    cm_h5.array_data.store(data[i, :])
+                    cm_h5.connectivity.store(uuid.UUID(connectivity.gid))
+                    cm_h5.gid.store(uuid.UUID(cm_idx.gid))
+
+                cm_idx.user_tag_2 = "nr.-%d" % (i + 1)
+                cm_idx.user_tag_3 = "conn_%d" % node_count
+                measures.append(cm_idx)
             return measures
         except ParseException as excep:
             logger = get_logger(__name__)

@@ -8,7 +8,7 @@
         <py:for each="burst in burst_list">
             <li class="burst ${'burst-group' if burst.is_group else ''} ${'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished'}"
                 id='burst_id_${burst.id}'>
-                <a href="#" onclick="changeBurstHistory(${burst.id});" title="Load this simulation">${burst.name}</a>
+                <a href="#" onclick="changeBurstHistory(${burst.id}, true);" title="Load this simulation">${burst.name}</a>
                 <nav class="inline-menu inline-hover-menu">
                     <button class="action action-edit action-menu">Edit</button>
                     <div class="extension">
@@ -27,9 +27,9 @@
                                         title="Export simulation JSON, for later import or use in command line">
                                 Export JSON</button></p>
 
-                            <!--<p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst.process_time}</span></p>-->
-                            <!--<p class="burst-prop-dataweight" py:if="burst.datatypes_number"><mark>Datatypes : </mark> ${burst.datatypes_number}</p>-->
-                            <!--<p class="burst-prop-datasize" py:if="burst.disk_size"><mark>Size : </mark> ${burst.disk_size}</p>-->
+                            <p class="burst-prop-processtime"><mark>Processing time : </mark><span>${burst.process_time}</span></p>
+                            <p class="burst-prop-dataweight" py:if="burst.datatypes_number"><mark>Datatypes : </mark> ${burst.datatypes_number}</p>
+                            <p class="burst-prop-datasize" py:if="burst.disk_size"><mark>Size : </mark> ${burst.disk_size}</p>
 
                             <p class="burst-prop-age"><mark>Created : </mark> ${burst.start_time.strftime('%Y/%m/%d %H:%M')}</p>
                             <p class="burst-prop-error" py:if="burst.error_message"><mark>Error message : </mark> ${burst.error_message}</p>

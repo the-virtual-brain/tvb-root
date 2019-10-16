@@ -36,9 +36,6 @@
 import cherrypy
 import json
 from copy import deepcopy
-
-import tvb.basic.traits.traited_interface as interface
-from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.model.model_burst import PARAMS_MODEL_PATTERN
@@ -120,6 +117,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
     @expose_fragment('spatial/model_param_surface_left')
     def apply_equation(self, **kwargs):
+        from tvb.basic.traits.parameters_factory import collapse_params
+
         """
         Applies an equations for computing a model parameter.
         """
@@ -224,13 +223,15 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
 
     def get_surface_model_parameters_data(self, default_selected_model_param=None):
+        import tvb.basic.traits.traited_interface as interface
+
         """
         Returns a dictionary which contains all the data needed for drawing the
         model parameters.
         """
         context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
         if default_selected_model_param is None:
-            default_selected_model_param = context_model_parameters.prepared_model_parameter_names.values()[0]
+            default_selected_model_param = list(context_model_parameters.prepared_model_parameter_names.values())[0]
 
         equation_displayer = EquationDisplayer()
         equation_displayer.trait.bound = interface.INTERFACE_ATTRIBUTES_ONLY
@@ -279,6 +280,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
     @staticmethod
     def _compute_equation(parameters):
+        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
+
         """
         This method will return an equation and the model parameter on
         which should be applied the equation.
@@ -311,6 +314,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
     @expose_fragment('spatial/equation_displayer')
     def get_equation_chart(self, **form_data):
+        from tvb.basic.traits.parameters_factory import collapse_params
+
         """
         Returns the html which contains the plot with the equation selected by the user for a certain model param.
         """

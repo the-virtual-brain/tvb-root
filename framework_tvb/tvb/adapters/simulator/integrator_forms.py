@@ -3,7 +3,7 @@ from tvb.simulator.integrators import Integrator, HeunDeterministic, HeunStochas
     RungeKutta4thOrderDeterministic
 
 from tvb.adapters.simulator.noise_forms import get_ui_name_to_noise_dict
-from tvb.core.neotraits._forms import Form, ScalarField, ArrayField, SimpleSelectField
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, SimpleSelectField
 
 
 def get_integrator_to_form_dict():
@@ -52,8 +52,6 @@ class IntegratorForm(Form):
     def __init__(self, prefix=''):
         super(IntegratorForm, self).__init__(prefix)
         self.dt = ScalarField(Integrator.dt, self)
-        self.clamped_state_variable_indices = ArrayField(Integrator.clamped_state_variable_indices, self)
-        self.clamped_state_variable_values = ArrayField(Integrator.clamped_state_variable_values, self)
 
 
 class IntegratorStochasticForm(IntegratorForm):
@@ -69,6 +67,10 @@ class IntegratorStochasticForm(IntegratorForm):
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)
         datatype.noise = self.noise.data()
+
+    def fill_from_trait(self, trait):
+        # type: (Integrator) -> None
+        self.noise.data = trait.noise.__class__
 
 class HeunDeterministicIntegratorForm(IntegratorForm):
 

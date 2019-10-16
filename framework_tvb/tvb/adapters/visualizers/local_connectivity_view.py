@@ -39,7 +39,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
 from tvb.core.entities.model.datatypes.local_connectivity import LocalConnectivityIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
 class LocalConnectivityViewerForm(ABCAdapterForm):
@@ -67,17 +67,9 @@ class LocalConnectivityViewer(ABCDisplayer):
     """
     _ui_name = "Local Connectivity Visualizer"
     _ui_subsection = "connectivity_local"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return LocalConnectivityViewerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return LocalConnectivityViewerForm
 
     def _compute_surface_params(self, surface_h5):
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
@@ -115,4 +107,3 @@ class LocalConnectivityViewer(ABCDisplayer):
 
     def get_required_memory_size(self):
         return -1
-

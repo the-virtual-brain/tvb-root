@@ -33,14 +33,13 @@
 """
 
 import networkx
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits._forms import UploadField, SimpleStrField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neotraits.forms import UploadField, SimpleStrField
+from tvb.core.neocom import h5
 
 
 class NetworkxCFFCommonImporterForm(ABCUploaderForm):
@@ -67,7 +66,8 @@ class NetworkxConnectivityImporterForm(NetworkxCFFCommonImporterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
-        self.data_file = UploadField('.gpickle', self, name='data_file', required=True, label='Please select file to import')
+        self.data_file = UploadField('.gpickle', self, name='data_file', required=True,
+                                     label='Please select file to import')
 
 
 class NetworkxConnectivityImporter(ABCUploader):
@@ -78,23 +78,11 @@ class NetworkxConnectivityImporter(ABCUploader):
     _ui_subsection = "networkx_importer"
     _ui_description = "Import connectivity data stored in the networkx gpickle format"
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return NetworkxConnectivityImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return NetworkxConnectivityImporterForm
 
     def get_output(self):
         return [ConnectivityIndex]
-
 
     @transactional
     def launch(self, data_file, **kwargs):
@@ -102,18 +90,7 @@ class NetworkxConnectivityImporter(ABCUploader):
             parser = NetworkxParser(**kwargs)
             net = networkx.read_gpickle(data_file)
             connectivity = parser.parse(net)
-
-            conn_idx = ConnectivityIndex()
-            conn_idx.fill_from_has_traits(connectivity)
-
-            loader = DirLoader(self.storage_path)
-            conn_h5_path = loader.path_for(ConnectivityH5, conn_idx.gid)
-
-            with ConnectivityH5(conn_h5_path) as conn_h5:
-                conn_h5.store(connectivity)
-
-            return [conn_idx]
+            return h5.store_complete(connectivity, self.storage_path)
         except ParseException as excep:
             self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)
-

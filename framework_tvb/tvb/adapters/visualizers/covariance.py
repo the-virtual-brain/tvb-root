@@ -38,7 +38,7 @@ A displayer for covariance.
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.model.datatypes.graph import CovarianceIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
 class CovarianceVisualizerForm(ABCAdapterForm):
@@ -63,21 +63,13 @@ class CovarianceVisualizerForm(ABCAdapterForm):
 
 class CovarianceVisualizer(MappedArrayVisualizer):
     _ui_name = "Covariance Visualizer"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return CovarianceVisualizerForm
-        return self.form
+    def get_form_class(self):
+        return CovarianceVisualizerForm
 
-    def get_input_tree(self): return None
-
-
-    #TODO: migrate to neotraits
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
         # get data from corr datatype
-        labels = self._get_associated_connectivity_labeling(datatype)
-        matrix = datatype.get_data('array_data')
+        labels, matrix = self._extract_labels_and_data_matrix(datatype)
         pars = self.compute_params(matrix, 'Covariance matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

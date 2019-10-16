@@ -401,7 +401,7 @@ class TestProjectService(TransactionalTestCase):
     def __check_meta_data(self, expected_meta_data, new_datatype):
         """Validate Meta-Data"""
         mapp_keys = {DataTypeMetaData.KEY_SUBJECT: "subject", DataTypeMetaData.KEY_STATE: "state"}
-        for key, value in expected_meta_data.iteritems():
+        for key, value in expected_meta_data.items():
             if key in mapp_keys:
                 assert value == getattr(new_datatype, mapp_keys[key])
             elif key == DataTypeMetaData.KEY_OPERATION_TAG:

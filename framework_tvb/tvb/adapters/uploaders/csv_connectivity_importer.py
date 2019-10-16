@@ -34,16 +34,14 @@
 """
 import csv
 import numpy
-import os
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.neotraits._forms import UploadField, DataTypeSelectField, SimpleSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neotraits.forms import UploadField, DataTypeSelectField, SimpleSelectField
+from tvb.core.neocom import h5
 
 
 class CSVConnectivityParser(object):
@@ -55,11 +53,12 @@ class CSVConnectivityParser(object):
     If a header is present the matrices columns and rows are permuted
     so that the header ordinals would be in ascending order
     """
+
     def __init__(self, csv_file, delimiter=','):
         self.rows = list(csv.reader(csv_file, delimiter=str(delimiter)))
         self.connectivity_size = len(self.rows[0])
         self.line = 0
-        self.permutation = range(self.connectivity_size)
+        self.permutation = list(range(self.connectivity_size))
         """ A permutation represented as a list index -> new_index. Defaults to the identity permutation"""
         self.result_conn = [[] for _ in range(self.connectivity_size)]
 
@@ -85,7 +84,7 @@ class CSVConnectivityParser(object):
             raise LaunchException("Invalid ordinal in header %s" % self.rows[0])
 
         header_i = list(enumerate(ordinals))
-        header_i.sort(key=lambda (i_, ordinal): ordinal)  # sort by the column ordinal
+        header_i.sort(key=lambda i__ordinal: i__ordinal[1])  # sort by the column ordinal
         inverse_permutation = [i for i, ordinal_ in header_i]
 
         for i in range(len(self.permutation)):
@@ -98,7 +97,8 @@ class CSVConnectivityParser(object):
         for row_idx, row in enumerate(self.rows):
             self.line += 1
             if len(row) != self.connectivity_size:
-                msg = "Invalid Connectivity Row size! %d != %d at row %d" % (len(row), self.connectivity_size, self.line)
+                msg = "Invalid Connectivity Row size! %d != %d at row %d" % (
+                    len(row), self.connectivity_size, self.line)
                 raise LaunchException(msg)
 
             new_row = [0] * self.connectivity_size
@@ -111,6 +111,7 @@ class CSVConnectivityParser(object):
 
 DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 'colon': ':'}
 
+
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
@@ -118,10 +119,10 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
 
         self.weights = UploadField('.csv', self, name='weights', label='Weights file (csv)', required=True)
         self.weights_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='weights_delimiter', required=True,
-                                                   label='Field delimiter : ', default=DELIMITER_OPTIONS.keys()[0])
+                                                   label='Field delimiter : ', default=list(DELIMITER_OPTIONS)[0])
         self.tracts = UploadField('.csv', self, name='tracts', label='Tracts file (csv)', required=True)
         self.tracts_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='tracts_delimiter', required=True,
-                                                  label='Field delimiter : ', default=DELIMITER_OPTIONS.keys()[0])
+                                                  label='Field delimiter : ', default=list(DELIMITER_OPTIONS)[0])
         self.input_data = DataTypeSelectField(ConnectivityIndex, self, name='input_data', required=True,
                                               label='Reference Connectivity Matrix (for node labels, 3d positions etc.)')
 
@@ -136,23 +137,12 @@ class CSVConnectivityImporter(ABCUploader):
     WEIGHTS_FILE = "weights.txt"
     TRACT_FILE = "tract_lengths.txt"
 
-    form = None
-
-    def get_form(self):
-        if self.form is None:
-            return CSVConnectivityImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
     def __init__(self):
         ABCUploader.__init__(self)
         self.logger = get_logger(self.__class__.__module__)
 
-    def get_upload_input_tree(self): return None
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return CSVConnectivityImporterForm
 
     def get_output(self):
         return [ConnectivityIndex]
@@ -182,37 +172,22 @@ class CSVConnectivityImporter(ABCUploader):
         """
         weights_matrix = self._read_csv_file(weights, weights_delimiter)
         tract_matrix = self._read_csv_file(tracts, tracts_delimiter)
-
         FilesHelper.remove_files([weights, tracts])
-
         if weights_matrix.shape[0] != input_data.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))
+
+        input_connectivity = h5.load_from_index(input_data)
+
         result = Connectivity()
-
-        conn_idx = ConnectivityIndex()
-
-        loader = DirLoader(self.storage_path)
-        conn_path = loader.path_for(ConnectivityH5, conn_idx.gid)
-
-        input_data_loader_path = os.path.join(os.path.dirname(self.storage_path), str(input_data.fk_from_operation))
-        input_data_loader = DirLoader(input_data_loader_path)
-        input_data_h5_path = input_data_loader.path_for(ConnectivityH5, input_data.gid)
-        input_data_h5 = ConnectivityH5(input_data_h5_path)
-
-        result.centres = input_data_h5.centres.load()
-        result.region_labels = input_data_h5.region_labels.load()
+        result.centres = input_connectivity.centres
+        result.region_labels = input_connectivity.region_labels
         result.weights = weights_matrix
         result.tract_lengths = tract_matrix
-        result.orientations = input_data_h5.orientations.load()
-        result.areas = input_data_h5.areas.load()
-        result.cortical = input_data_h5.cortical.load()
-        result.hemispheres = input_data_h5.hemispheres.load()
+        result.orientations = input_connectivity.orientations
+        result.areas = input_connectivity.areas
+        result.cortical = input_connectivity.cortical
+        result.hemispheres = input_connectivity.hemispheres
         result.configure()
 
-        with ConnectivityH5(conn_path) as conn_h5:
-            conn_h5.store(result)
-
-        conn_idx.fill_from_has_traits(result)
-
-        return conn_idx
+        return h5.store_complete(result, self.storage_path)

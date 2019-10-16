@@ -33,25 +33,23 @@
 """
 
 import os
-import uuid
 import numpy
 import shutil
 import zipfile
 import tempfile
-from tvb.datatypes.surfaces import CORTICAL
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
-from tvb.core.neotraits.db import from_ndarray
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neocom import h5
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CORTICAL
 
 
 class RegionMappingImporterForm(ABCUploaderForm):
@@ -71,7 +69,7 @@ class RegionMappingImporterForm(ABCUploaderForm):
                                                 required=True, doc='The Connectivity used by uploaded region mapping.')
 
 
-class RegionMapping_Importer(ABCUploader):
+class RegionMappingImporter(ABCUploader):
     """
     Upload RegionMapping from a TXT, ZIP or BZ2 file.
     """
@@ -81,23 +79,11 @@ class RegionMapping_Importer(ABCUploader):
 
     logger = get_logger(__name__)
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return RegionMappingImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return RegionMappingImporterForm
 
     def get_output(self):
         return [RegionMappingIndex]
-
 
     def launch(self, mapping_file, surface, connectivity):
         """
@@ -156,20 +142,7 @@ class RegionMapping_Importer(ABCUploader):
 
         self.logger.debug("Creating RegionMapping instance")
 
-        region_mapping_idx = RegionMappingIndex()
-        region_mapping_idx.array_data_min, region_mapping_idx.array_data_max, region_mapping_idx.array_data_mean = from_ndarray(array_data)
-        region_mapping_idx.surface = surface
-        region_mapping_idx.surface_id = surface.id
-        region_mapping_idx.connectivity = connectivity
-        region_mapping_idx.connectivity_id = connectivity.id
-
-        loader = DirLoader(self.storage_path)
-        region_mapping_path = loader.path_for(RegionMappingH5, region_mapping_idx.gid)
-
-        with RegionMappingH5(region_mapping_path) as region_mapping_h5:
-            region_mapping_h5.array_data.store(array_data)
-            region_mapping_h5.connectivity.store(uuid.UUID(connectivity.gid))
-            region_mapping_h5.surface.store(uuid.UUID(surface.gid))
-            region_mapping_h5.gid.store(uuid.UUID(region_mapping_idx.gid))
-
-        return region_mapping_idx
+        connectivity_ht = h5.load_from_index(connectivity)
+        surface_ht = h5.load_from_index(surface)
+        region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
+        return h5.store_complete(region_mapping, self.storage_path)

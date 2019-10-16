@@ -149,7 +149,7 @@ class TestFlowContoller(BaseControllersTest):
                                                              'this is the stored data'.split())
         args = {'length': 101}
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
-        assert returned_data == str(range(101))
+        assert returned_data == str(list(range(101)))
         
         
     def test_get_simple_adapter_interface(self):

@@ -19,12 +19,12 @@
                 <td colspan="${len(data)}"><span style="color: red;" id="${select_name}_span_expected_dim">${required_dim_msg}</span></td>
             </tr>
             <tr>
-                <py:for each="idx in xrange(len(data))">
+                <py:for each="idx in range(len(data))">
                     <td>
                         <select id="dimId_${select_name}_${parameters_prefix}_$idx"
                                 name='${select_name}_${parameters_prefix}_$idx' multiple='multiple'
                                 onchange="updateShapeLabel('${select_name}', '${parameters_prefix}', $idx)">
-                            <py:for each="idx2 in xrange(len(data[idx][0]))">
+                            <py:for each="idx2 in range(len(data[idx][0]))">
                                 <option value='${data[idx][1][idx2]}' selected="selected" py:if="(idx in selected_items) and (idx2 in selected_items[idx])">${data[idx][0][idx2]}</option>
                                 <option value='${data[idx][1][idx2]}' py:if="(idx not in selected_items) or (idx2 not in selected_items[idx])">${data[idx][0][idx2]}</option>
                             </py:for>
@@ -33,12 +33,12 @@
                 </py:for>
             </tr>
             <tr>
-                <py:for each="idx in xrange(len(data))">
+                <py:for each="idx in range(len(data))">
                     <td>
                         <select id="funcId_${select_name}_${parameters_prefix}_$idx" name='${select_name}_${parameters_prefix}_$idx'
                                 onchange="updateShapeLabel('${select_name}', '${parameters_prefix}',$idx)">
                             <option value='func_none'>None</option>
-                            <py:for each="key, value in data[idx][2].iteritems()">
+                            <py:for each="key, value in data[idx][2].items()">
                                 <option value='func_${key}' selected="selected" py:if="(idx in selected_functions) and (key == selected_functions[idx])">${value}</option>
                                 <option value='func_${key}' py:if="(idx not in selected_functions) or (key != selected_functions[idx])">${value}</option>
                             </py:for>

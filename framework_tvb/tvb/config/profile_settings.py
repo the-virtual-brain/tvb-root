@@ -39,6 +39,10 @@ import sys
 from tvb.basic.config import stored
 from tvb.basic.config.settings import DBSettings
 from tvb.basic.config.profile_settings import BaseSettingsProfile
+from tvb.basic.logger import builder
+from tvb.basic.logger.builder import LoggerBuilder
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
+
 
 
 class WebSettingsProfile(BaseSettingsProfile):
@@ -46,7 +50,6 @@ class WebSettingsProfile(BaseSettingsProfile):
     Setting for working with storage and web interface
     """
     LOGGER_CONFIG_FILE_NAME = "logger_config.conf"
-
 
     def initialize_profile(self, change_logger_in_dev=True):
         """
@@ -57,10 +60,8 @@ class WebSettingsProfile(BaseSettingsProfile):
         if change_logger_in_dev and not self.env.is_distribution():
             self.LOGGER_CONFIG_FILE_NAME = "dev_logger_config.conf"
 
-        ## Make sure DB events are linked.
-        from tvb.core.traits import db_events
-        db_events.attach_db_events()
-
+        populate_datatypes_registry()
+        builder.GLOBAL_LOGGER_BUILDER = LoggerBuilder('tvb.config.logger')
 
     def initialize_for_deployment(self):
         """
@@ -105,7 +106,7 @@ class TestSQLiteProfile(WebSettingsProfile):
         self.web.RENDER_HTML = False
         self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 2, int)
 
-        self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.DEFAULT_STORAGE, unicode)
+        self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.DEFAULT_STORAGE, str)
         # For tests we will place logs in workspace (current folder), to have them visible from Hudson.
         self.TVB_LOG_FOLDER = "TEST_OUTPUT"
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")

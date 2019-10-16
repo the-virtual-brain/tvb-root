@@ -32,19 +32,16 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import os
-import uuid
 import numpy
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm, ABCSynchronous
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
-from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.storage import dao
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleBoolField, SimpleArrayField
+from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
-
-from tvb.core.neotraits._forms import DataTypeSelectField, SimpleBoolField, SimpleArrayField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.datatypes.region_mapping import RegionMapping
 
 
 class ConnectivityCreatorForm(ABCAdapterForm):
@@ -60,7 +57,7 @@ class ConnectivityCreatorForm(ABCAdapterForm):
                                            label='Tracts json array')
         self.interest_area_indexes = SimpleArrayField(self, name='interest_area_indexes', dtype=numpy.int,
                                                       required=True, label='Indices of selected nodes as json array')
-        self.is_branch = SimpleBoolField(self, required=True, name='is_branch', label='Is it a branch')
+        self.is_branch = SimpleBoolField(self, required=False, name='is_branch', label='Is it a branch')
 
     @staticmethod
     def get_required_datatype():
@@ -75,28 +72,20 @@ class ConnectivityCreatorForm(ABCAdapterForm):
         return '_original_connectivity'
 
 
-#TODO: make this work asynchronously (form fill issue)
-class ConnectivityCreator(ABCSynchronous):
+class ConnectivityCreator(ABCAsynchronous):
     """
     This adapter creates a Connectivity.
     """
-    form = None
 
-    def get_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return ConnectivityCreatorForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return ConnectivityCreatorForm
 
     def get_output(self):
         return [ConnectivityIndex, RegionMappingIndex]
 
-    def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **kwargs):
-        n = len(new_weights) if kwargs.get('is_branch') else len(interest_area_indexes)
+    def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes,
+                               is_branch=False, **kwargs):
+        n = len(new_weights) if is_branch else len(interest_area_indexes)
         matrices_nr_elems = 2 * n * n
         arrays_nr_elems = (1 + 3 + 1 + 3) * n  # areas, centres, hemispheres, orientations
         matrices_estimate = (matrices_nr_elems + arrays_nr_elems) * numpy.array(0).itemsize
@@ -106,76 +95,134 @@ class ConnectivityCreator(ABCSynchronous):
     def get_required_memory_size(self, **_):
         return -1  # does not consume significant additional memory beyond the parameters
 
-    def _store_connectivity_datatype(self, new_connectivity, parent_connectivity=None):
-        new_connectivity_idx = ConnectivityIndex()
-        new_connectivity_idx.fill_from_has_traits(new_connectivity)
-
-        loader = DirLoader(self.storage_path)
-        new_conn_path = loader.path_for(ConnectivityH5, new_connectivity_idx.gid)
-        with ConnectivityH5(new_conn_path) as new_conn_h5:
-            new_conn_h5.store(new_connectivity)
-            new_conn_h5.gid.store(uuid.UUID(new_connectivity_idx.gid))
-            new_conn_h5.parent_connectivity.store(parent_connectivity)
-
-        return new_connectivity_idx
-
-    def _store_related_region_mappings(self, original_connectivity_id, new_connectivity_index):
+    def _store_related_region_mappings(self, original_conn_gid, new_connectivity_ht):
         result = []
 
-        linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_connectivity_id, 'connectivity_id')
+        linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'connectivity_gid')
         for mapping in linked_region_mappings:
-            dir_loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(mapping.fk_from_operation)))
-            rm_h5_path = dir_loader.path_for(RegionMappingH5, mapping.gid)
+            original_rm = h5.load_from_index(mapping)
+            surface_idx = dao.get_generic_entity(SurfaceIndex, mapping.surface_gid, 'gid')[0]
+            surface = h5.load_from_index(surface_idx)
 
-            result_rm_index = RegionMappingIndex()
-            dir_loader = DirLoader(os.path.join(self.storage_path))
-            result_rm_h5_path = dir_loader.path_for(RegionMappingH5, result_rm_index.gid)
+            new_rm = RegionMapping()
+            new_rm.connectivity = new_connectivity_ht
+            new_rm.surface = surface
+            new_rm.array_data = original_rm.array_data
 
-            with RegionMappingH5(rm_h5_path) as rm_h5, RegionMappingH5(result_rm_h5_path) as result_rm_h5:
-                result_rm_h5.connectivity.store(uuid.UUID(new_connectivity_index.gid))
-                result_rm_h5.gid.store(uuid.UUID(result_rm_index.gid))
-                result_rm_h5.surface.store(rm_h5.surface.load())
-                result_rm_h5.array_data.store(rm_h5.array_data.load())
-
-            result_rm_index.array_data_min = mapping.array_data_min
-            result_rm_index.array_data_max = mapping.array_data_max
-            result_rm_index.array_data_mean = mapping.array_data_mean
-            result_rm_index.surface_id = mapping.surface_id
-            #TODO: add connectivity_id fk for new RMs
-            result_rm_index.connectivity = new_connectivity_index
-
+            result_rm_index = h5.store_complete(new_rm, self.storage_path)
             result.append(result_rm_index)
 
         return result
 
-    def launch(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, **kwargs):
+    def launch(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch=False, **kwargs):
         """
         Method to be called when user submits changes on the
         Connectivity matrix in the Visualizer.
         """
         # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
+        original_conn_ht = h5.load_from_index(original_connectivity)
+        assert isinstance(original_conn_ht, Connectivity)
 
-        loader = DirLoader(
-            os.path.join(os.path.dirname(self.storage_path), str(original_connectivity.fk_from_operation)))
-        original_conn_path = loader.path_for(ConnectivityH5, original_connectivity.gid)
-        original_conn_dt = Connectivity()
-        with ConnectivityH5(original_conn_path) as original_conn_h5:
-            original_conn_h5.load_into(original_conn_dt)
-
-        if not kwargs.get('is_branch'):
-            result_connectivity_dt = original_conn_dt.cut_new_connectivity_from_ordered_arrays(
-                numpy.array(new_weights), numpy.array(interest_area_indexes), numpy.array(new_tracts))
-
-            return [self._store_connectivity_datatype(result_connectivity_dt)]
+        if not is_branch:
+            new_conn_ht = self._cut_connectivity(original_conn_ht, numpy.array(new_weights),
+                                                 numpy.array(interest_area_indexes), numpy.array(new_tracts))
+            return [h5.store_complete(new_conn_ht, self.storage_path)]
 
         else:
             result = []
-            result_connectivity_dt = original_conn_dt.branch_connectivity_from_ordered_arrays(numpy.array(new_weights),
-                                                                                              numpy.array(interest_area_indexes),
-                                                                                              numpy.array(new_tracts))
-            new_conn_index = self._store_connectivity_datatype(result_connectivity_dt,
-                                                               original_connectivity.gid)
+            new_conn_ht = self._branch_connectivity(original_conn_ht, numpy.array(new_weights),
+                                                    numpy.array(interest_area_indexes), numpy.array(new_tracts))
+            new_conn_index = h5.store_complete(new_conn_ht, self.storage_path)
             result.append(new_conn_index)
-            result.extend(self._store_related_region_mappings(original_connectivity.id, new_conn_index))
-
+            result.extend(self._store_related_region_mappings(original_connectivity.gid, new_conn_ht))
             return result
+
+    @staticmethod
+    def _reorder_arrays(original_conn, new_weights, interest_areas, new_tracts=None):
+        """
+        Returns ordered versions of the parameters according to the hemisphere permutation.
+        """
+        permutation = original_conn.hemisphere_order_indices
+        inverse_permutation = numpy.argsort(permutation)  # trick to invert a permutation represented as an array
+        interest_areas = inverse_permutation[interest_areas]
+        # see :meth"`ordered_weights` for why [p:][:p]
+        new_weights = new_weights[inverse_permutation, :][:, inverse_permutation]
+
+        if new_tracts is not None:
+            new_tracts = new_tracts[inverse_permutation, :][:, inverse_permutation]
+
+        return new_weights, interest_areas, new_tracts
+
+    def _branch_connectivity(self, original_conn, new_weights, interest_areas,
+                             new_tracts=None):
+        # type: (Connectivity, numpy.array, numpy.array, numpy.array) -> Connectivity
+        """
+        Generate new Connectivity based on a previous one, by changing weights (e.g. simulate lesion).
+        The returned connectivity has the same number of nodes. The edges of unselected nodes will have weight 0.
+        :param original_conn: Original Connectivity, to copy from
+        :param new_weights: weights matrix for the new connectivity
+        :param interest_areas: ndarray of the selected node id's
+        :param new_tracts: tracts matrix for the new connectivity
+        """
+
+        new_weights, interest_areas, new_tracts = self._reorder_arrays(original_conn, new_weights,
+                                                                       interest_areas, new_tracts)
+        if new_tracts is None:
+            new_tracts = original_conn.tract_lengths
+
+        for i in range(len(original_conn.weights)):
+            for j in range(len(original_conn.weights)):
+                if i not in interest_areas or j not in interest_areas:
+                    new_weights[i][j] = 0
+
+        final_conn = Connectivity()
+        final_conn.parent_connectivity = original_conn.gid.hex
+        final_conn.saved_selection = interest_areas.tolist()
+        final_conn.weights = new_weights
+        final_conn.centres = original_conn.centres
+        final_conn.region_labels = original_conn.region_labels
+        final_conn.orientations = original_conn.orientations
+        final_conn.cortical = original_conn.cortical
+        final_conn.hemispheres = original_conn.hemispheres
+        final_conn.areas = original_conn.areas
+        final_conn.tract_lengths = new_tracts
+        final_conn.configure()
+        return final_conn
+
+    def _cut_connectivity(self, original_conn, new_weights, interest_areas, new_tracts=None):
+        # type: (Connectivity, numpy.array, numpy.array, numpy.array) -> Connectivity
+        """
+        Generate new Connectivity object based on current one, by removing nodes (e.g. simulate lesion).
+        Only the selected nodes will get used in the result. The order of the indices in interest_areas matters.
+        If indices are not sorted then the nodes will be permuted accordingly.
+
+        :param original_conn: Original Connectivity(HasTraits), to cut nodes from
+        :param new_weights: weights matrix for the new connectivity
+        :param interest_areas: ndarray with the selected node id's.
+        :param new_tracts: tracts matrix for the new connectivity
+        """
+        new_weights, interest_areas, new_tracts = self._reorder_arrays(original_conn, new_weights,
+                                                                       interest_areas, new_tracts)
+        if new_tracts is None:
+            new_tracts = original_conn.tract_lengths[interest_areas, :][:, interest_areas]
+        else:
+            new_tracts = new_tracts[interest_areas, :][:, interest_areas]
+        new_weights = new_weights[interest_areas, :][:, interest_areas]
+
+        final_conn = Connectivity()
+        final_conn.parent_connectivity = None
+        final_conn.weights = new_weights
+        final_conn.centres = original_conn.centres[interest_areas, :]
+        final_conn.region_labels = original_conn.region_labels[interest_areas]
+        if original_conn.orientations is not None and len(original_conn.orientations):
+            final_conn.orientations = original_conn.orientations[interest_areas, :]
+        if original_conn.cortical is not None and len(original_conn.cortical):
+            final_conn.cortical = original_conn.cortical[interest_areas]
+        if original_conn.hemispheres is not None and len(original_conn.hemispheres):
+            final_conn.hemispheres = original_conn.hemispheres[interest_areas]
+        if original_conn.areas is not None and len(original_conn.areas):
+            final_conn.areas = original_conn.areas[interest_areas]
+        final_conn.tract_lengths = new_tracts
+        final_conn.saved_selection = []
+        final_conn.configure()
+        return final_conn

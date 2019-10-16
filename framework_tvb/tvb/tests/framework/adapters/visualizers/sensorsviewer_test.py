@@ -36,7 +36,7 @@ import os
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.obj
 import tvb_data.sensors
-from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
+from tvb.adapters.uploaders.sensors_importer import SensorsImporter
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
@@ -86,7 +86,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
         ## Import Sensors
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporter.EEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
 
         ## Import EEGCap
@@ -116,7 +116,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.MEG_SENSORS)
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporter.MEG_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsMEG())
 
         viewer = SensorsViewer()
@@ -130,7 +130,7 @@ class TestSensorViewers(TransactionalTestCase):
         Check that all required keys are present in output from InternalSensorViewer launch.
         """
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.INTERNAL_SENSORS)
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporter.INTERNAL_SENSORS)
         sensors = TestFactory.get_entity(self.test_project, SensorsInternal())
 
         viewer = SensorsViewer()

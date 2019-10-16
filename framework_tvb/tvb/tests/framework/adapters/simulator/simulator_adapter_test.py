@@ -36,9 +36,10 @@ import json
 import pytest
 from copy import copy
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities import model
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.core.entities.model.model_operation import STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.operation_service import OperationService
@@ -73,8 +74,8 @@ SIMULATOR_PARAMETERS = {
     "surface": "",
     "stimulus": "",
     "currentAlgoId": "10",
-    model.RANGE_PARAMETER_1: "0",
-    model.RANGE_PARAMETER_2: "0",
+    RANGE_PARAMETER_1: "0",
+    RANGE_PARAMETER_2: "0",
     "integrator": "HeunDeterministic",
     "integrator_parameters_option_HeunDeterministic_dt": "0.01220703125",
     "monitors": "TemporalAverage",
@@ -101,10 +102,11 @@ class TestSimulatorAdapter(TransactionalTestCase):
         self.test_project = self.datatypes_factory.get_project()
         self.connectivity = self.datatypes_factory.create_connectivity(self.CONNECTIVITY_NODES)[1]
 
-        algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                IntrospectionRegistry.SIMULATOR_CLASS)
         self.simulator_adapter = ABCAdapter.build_adapter(algorithm)
         self.operation = TestFactory.create_operation(algorithm, self.test_user, self.test_project,
-                                                      model.STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
+                                                      STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
 
         SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
 
@@ -192,14 +194,14 @@ class TestSimulatorAdapter(TransactionalTestCase):
         Test a simulation with noise. Pass a wrong shape and expect exception to be raised.
         """
         params = copy(SIMULATOR_PARAMETERS)
-        params['integrator'] = u'HeunStochastic'
+        params['integrator'] = 'HeunStochastic'
         noise_4d_config = [[1 for _ in range(self.CONNECTIVITY_NODES)] for _ in range(4)]
-        params['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
-        params['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
+        params['integrator_parameters_option_HeunStochastic_dt'] = '0.01220703125'
+        params['integrator_parameters_option_HeunStochastic_noise'] = 'Additive'
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_4d_config)
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = u'0.0'
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = u'RandomStream'
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = u'42'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = '0.0'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = 'RandomStream'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = '42'
         filtered_params = self.simulator_adapter.prepare_ui_inputs(params)
         self.simulator_adapter.configure(**filtered_params)
         if hasattr(self.simulator_adapter, 'algorithm'):
@@ -215,14 +217,14 @@ class TestSimulatorAdapter(TransactionalTestCase):
         Test a simulation with noise.
         """
         params = copy(SIMULATOR_PARAMETERS)
-        params['integrator'] = u'HeunStochastic'
+        params['integrator'] = 'HeunStochastic'
         noise_2d_config = [[1 for _ in range(self.CONNECTIVITY_NODES)] for _ in range(2)]
-        params['integrator_parameters_option_HeunStochastic_dt'] = u'0.01220703125'
-        params['integrator_parameters_option_HeunStochastic_noise'] = u'Additive'
+        params['integrator_parameters_option_HeunStochastic_dt'] = '0.01220703125'
+        params['integrator_parameters_option_HeunStochastic_noise'] = 'Additive'
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = str(noise_2d_config)
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = u'0.0'
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = u'RandomStream'
-        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = u'42'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau'] = '0.0'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream'] = 'RandomStream'
+        params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed'] = '42'
 
         self._launch_and_check_noise(params, (2, 74))
 

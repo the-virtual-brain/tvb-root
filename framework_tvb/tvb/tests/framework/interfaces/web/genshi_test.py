@@ -38,7 +38,6 @@ import re
 import numpy
 import cherrypy
 from tvb.tests.framework.core.base_testcase import BaseTestCase
-import tvb.basic.traits as trait
 import tvb.interfaces.web.templates.genshi.flow as root_html
 from bs4 import BeautifulSoup
 from genshi.template.loader import TemplateLoader
@@ -49,12 +48,12 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
-from tvb.datatypes.arrays import MappedArray
+from tvb.basic.neotraits.api import HasTraits, NArray, Final
+# from tvb.datatypes.arrays import MappedArray
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
 from tvb.tests.framework.core.factory import TestFactory
-
 
 
 def _template2string(template_specification):
@@ -69,15 +68,13 @@ def _template2string(template_specification):
     return stream.render('xhtml').replace('\n', '\t').replace('\'', '"')
 
 
-
-class TestTrait(trait.core.Type):
+class TestTrait(HasTraits):
     """ Test class with traited attributes"""
 
-    test_array = trait.types_mapped_light.Array(label="State Variables range [[lo],[hi]]",
-                                                default=numpy.array([[-3.0, -6.0], [3.0, 6.0]]), dtype="float")
+    test_array = NArray(label="State Variables range [[lo],[hi]]",
+                        default=numpy.array([[-3.0, -6.0], [3.0, 6.0]]), dtype="float")
 
-    test_dict = trait.types_basic.Dict(label="State Variable ranges [lo, hi].", default={"V": -3.0, "W": -6.0})
-
+    test_dict = Final(label="State Variable ranges [lo, hi].", default={"V": -3.0, "W": -6.0})
 
 
 class TraitAdapter(ABCAdapter):
@@ -108,7 +105,6 @@ class TraitAdapter(ABCAdapter):
         return 0
 
 
-
 class GenshiTest(BaseTestCase):
     """
     This class contains the base initialization for tests for the GENSHI TemplateLoader.
@@ -128,10 +124,8 @@ class GenshiTest(BaseTestCase):
                                        common.KEY_CURRENT_JS_VERSION: 1}
         TvbProfile.current.web.RENDER_HTML = True
 
-
     def teardown_method(self):
         TvbProfile.current.web.RENDER_HTML = False
-
 
 
 class TestGenthiTrait(GenshiTest):
@@ -148,7 +142,7 @@ class TestGenthiTrait(GenshiTest):
         self.template_specification['inputList'] = input_tree
         resulted_html = _template2string(self.template_specification)
         soup = BeautifulSoup(resulted_html)
-        #Find dictionary div which should be dict_+${dict_var_name}
+        # Find dictionary div which should be dict_+${dict_var_name}
         dict_div = soup.find_all('div', attrs=dict(id="dict_test_dict"))
         assert len(dict_div) == 1, 'Dictionary div not found'
         dict_entries = soup.find_all('input', attrs=dict(name=re.compile('^test_dict_parameters*')))
@@ -163,7 +157,6 @@ class TestGenthiTrait(GenshiTest):
         assert array_entry[0]['value'] == "[[-3.0, -6.0], [3.0, 6.0]]", "Wrong value stored"
 
 
-
 class TestGenshiSimulator(GenshiTest):
     """
     For the simulator interface, test that various fields are generated correctly.
@@ -171,8 +164,7 @@ class TestGenshiSimulator(GenshiTest):
     algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
     adapter_instance = ABCAdapter.build_adapter(algorithm)
     input_tree = adapter_instance.get_input_tree()
-    input_tree = InputTreeManager.prepare_param_names(input_tree)
-
+    # input_tree = InputTreeManager.prepare_param_names(input_tree)
 
     def setup_method(self):
         """
@@ -185,10 +177,9 @@ class TestGenshiSimulator(GenshiTest):
         self.template_specification[common.KEY_PARAMETERS_CONFIG] = False
         resulted_html = _template2string(self.template_specification)
         self.soup = BeautifulSoup(resulted_html)
-        #file = open("output.html", 'w')
-        #file.write(self.soup.prettify())
-        #file.close()
-
+        # file = open("output.html", 'w')
+        # file.write(self.soup.prettify())
+        # file.close()
 
     def test_sub_algo_inputs(self):
         """
@@ -205,7 +196,6 @@ class TestGenshiSimulator(GenshiTest):
         assert len(all_inputs) > 100, "Not enough input fields generated"
         assert count_disabled > 100, "Not enough input fields disabled"
 
-
     def test_hidden_ranger_fields(self):
         """ 
         Check that the default ranger hidden fields are generated correctly 
@@ -214,7 +204,6 @@ class TestGenshiSimulator(GenshiTest):
         ranger2 = self.soup.find_all('input', attrs=dict(type="hidden", id=RANGE_PARAMETER_2))
         assert 1 == len(ranger1), "First ranger generated wrong"
         assert 1 == len(ranger2), "Second ranger generated wrong"
-
 
     def test_sub_algorithms(self):
         """
@@ -228,7 +217,6 @@ class TestGenshiSimulator(GenshiTest):
         assert 1 == len(enabled_algo)
         assert 18 == len(all_algo_disabled)
         assert not enabled_algo[0] in all_algo_disabled, fail_message
-
 
     def test_normal_ranger(self):
         """
@@ -245,7 +233,6 @@ class TestGenshiSimulator(GenshiTest):
         range_expand = self.soup.find_all('input', attrs=dict(
             id="data_modelGeneric2dOscillatormodel_parameters_option_Generic2dOscillator_tau_RANGER_buttonExpand"))
         assert 1 == len(range_expand)
-
 
     def test_multiple_select(self):
         """
@@ -264,13 +251,11 @@ class TestGenshiSimulator(GenshiTest):
         assert len(disabled_params) > 50, fail_message
 
 
-
 class TestGenshiNDimensionArray(GenshiTest):
     """
     This class tests the generation of the component which allows
     a user to reduce the dimension of an array.
     """
-
 
     def setup_method(self):
         """
@@ -282,14 +267,12 @@ class TestGenshiNDimensionArray(GenshiTest):
         self.test_project = TestFactory.create_project(self.test_user)
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
 
-
     def teardown_method(self):
         """
         Reset the database when test is done.
         """
         super(TestGenshiNDimensionArray, self).teardown_method()
         self.clean_database()
-
 
     def test_reduce_dimension_component(self):
         """
@@ -321,7 +304,7 @@ class TestGenshiNDimensionArray(GenshiTest):
         component_content = FlowController().gettemplatefordimensionselect(gid, "input_data")
         self.soup = BeautifulSoup(component_content)
 
-        #check dimensions
+        # check dimensions
         found_selects_0 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_0"))
         found_selects_1 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_1"))
         found_selects_2 = self.soup.find_all('select', attrs=dict(id="dimId_input_data_dimensions_2"))
@@ -329,7 +312,7 @@ class TestGenshiNDimensionArray(GenshiTest):
         assert len(found_selects_1) == 1, "select not found"
         assert len(found_selects_2) == 1, "select not found"
 
-        #check the aggregation functions selects
+        # check the aggregation functions selects
         agg_selects_0 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_0"))
         agg_selects_1 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_1"))
         agg_selects_2 = self.soup.find_all('select', attrs=dict(id="funcId_input_data_dimensions_2"))
@@ -355,7 +338,7 @@ class TestGenshiNDimensionArray(GenshiTest):
             assert options[0].text == "Line " + str(i), "The label of the option is not correct"
             assert options[0].parent["name"] == "input_data_dimensions_2"
 
-        #check the expected hidden fields
+        # check the expected hidden fields
         expected_shape = self.soup.find_all('input', attrs=dict(id="input_data_expected_shape"))
         assert len(expected_shape) == 1, "The generated option is not correct"
         assert expected_shape[0]["value"] == "expected_shape_", "The generated option is not correct"
@@ -369,6 +352,6 @@ class TestGenshiNDimensionArray(GenshiTest):
         assert len(input_hidden_shape) == 1, "The generated option is not correct"
         assert input_hidden_shape[0]["value"] == "[5, 1, 3]", "The generated option is not correct"
 
-        #check only the first option from the aggregations functions selects
+        # check only the first option from the aggregations functions selects
         options = self.soup.find_all('option', attrs=dict(value="func_none"))
         assert len(options) == 3, "The generated option is not correct"

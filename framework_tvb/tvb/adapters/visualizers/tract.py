@@ -32,12 +32,12 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.tracts import TractsIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.datatypes.surfaces import CorticalSurface
 
 
 class TractViewerForm(ABCAdapterForm):
@@ -62,24 +62,15 @@ class TractViewerForm(ABCAdapterForm):
         return None
 
 
-class TractViewer(ABCDisplayer):
+class TractViewer(ABCSpaceDisplayer):
     """
     Tract visualizer
     """
     _ui_name = "Tract Visualizer"
     _ui_subsection = "surface"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return TractViewerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self):
-        return None
+    def get_form_class(self):
+        return TractViewerForm
 
     # TODO: migrate to neotraits
     def launch(self, tracts, shell_surface=None):
@@ -99,7 +90,7 @@ class TractViewer(ABCDisplayer):
                       urlTrackStarts=url_track_starts,
                       urlTrackVertices=url_track_vertices)
 
-        params.update(self.build_template_params_for_subselectable_datatype(connectivity))
+        params.update(self.build_params_for_selectable_connectivity(connectivity))
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})

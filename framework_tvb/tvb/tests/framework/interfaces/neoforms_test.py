@@ -5,13 +5,13 @@ from jinja2 import PackageLoader, Environment
 
 import tvb.interfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Dim, List
-import tvb.core.neotraits._forms
-from tvb.core.neotraits._forms import ScalarField, Form, FormField, ArrayField
+import tvb.core.neotraits.forms
+from tvb.core.neotraits.forms import ScalarField, Form, FormField, ArrayField
 
 # inject jinja config
 # to ensure sanity do this once at a top level in the app
 
-tvb.core.neotraits._forms.jinja_env = jinja_env = Environment(
+tvb.core.neotraits.forms.jinja_env = jinja_env = Environment(
     loader=PackageLoader('tvb.interfaces.web.templates', 'jinja'),
     autoescape=True,
     trim_blocks=True,

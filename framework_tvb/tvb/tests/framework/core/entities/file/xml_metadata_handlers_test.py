@@ -34,7 +34,7 @@
 
 import os
 import json
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 
@@ -45,7 +45,7 @@ class TestMetaDataReadXML():
     """   
     TO_BE_READ_FILE = "test_read.xml"
     #Values expected to be read from file
-    EXPECTED_DICTIONARY = {'status': model.STATUS_FINISHED,
+    EXPECTED_DICTIONARY = {'status': STATUS_FINISHED,
                            'gid': '497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa',
                            'user_group': 'cff_74',
                            'fk_from_algo': json.dumps({'classname': 'CFF_Importer', 'identifier': None,
@@ -67,7 +67,7 @@ class TestMetaDataReadXML():
         """
         meta_data = self.meta_reader.read_metadata()
         assert isinstance(meta_data, GenericMetaData)
-        for key, value in self.EXPECTED_DICTIONARY.iteritems():
+        for key, value in self.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value
         
@@ -109,6 +109,6 @@ class TestMetaDataWriteXML():
         assert os.path.exists(self.result_path)
         reader = XMLReader(self.result_path)
         meta_data = reader.read_metadata()
-        for key, value in TestMetaDataReadXML.EXPECTED_DICTIONARY.iteritems():
+        for key, value in TestMetaDataReadXML.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value

@@ -97,7 +97,6 @@ def using_jinja_template(template_name):
                 return template_dict
 
             template = env.get_template(template_path)
-            print template_dict
             return template.render(**template_dict)
 
         return deco

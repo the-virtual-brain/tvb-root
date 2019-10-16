@@ -53,7 +53,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
         _, self.connectivity = datatypes_factory.create_connectivity()
         _, self.surface = datatypes_factory.create_surface()
         new_params = {}
-        for key, val in SIMULATOR_PARAMETERS.iteritems():
+        for key, val in SIMULATOR_PARAMETERS.items():
             new_params[key] = {'value': val}
         new_params['connectivity'] = {'value': self.connectivity.gid}
         new_params['surface'] = {'value': self.surface.gid}

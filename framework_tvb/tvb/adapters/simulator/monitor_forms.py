@@ -5,7 +5,7 @@ from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equatio
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
 from tvb.core.entities.model.datatypes.sensors import SensorsIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.neotraits._forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField
 
 
 def get_monitor_to_form_dict():

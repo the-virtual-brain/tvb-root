@@ -257,7 +257,7 @@ class PhasePlaneD3(PhasePlane):
 
         # signals for last trajectory
         signal_x = numpy.arange(n_steps + 1) * self.integrator.dt
-        signals = [zip(signal_x, traj[-1, :, i, self.mode].tolist()) for i in [self.svx_ind, self.svy_ind]]
+        signals = [list(zip(signal_x, traj[-1, :, i, self.mode].tolist())) for i in [self.svx_ind, self.svy_ind]]
 
         return trajectory.tolist(), signals
 

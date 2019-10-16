@@ -33,8 +33,7 @@
 """
 
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.basic.traits.types_mapped import MappedType
-
+from tvb.core.entities.model.model_datatype import DataType
 
 
 class StoreAdapter(ABCAdapter):
@@ -77,7 +76,7 @@ class StoreAdapter(ABCAdapter):
         """
         Describes the outputs of the launch method.
         """
-        return [MappedType]
+        return [DataType]
 
 
     def launch(self):

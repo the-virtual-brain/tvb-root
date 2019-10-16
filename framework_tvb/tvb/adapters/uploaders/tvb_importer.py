@@ -35,9 +35,9 @@
 import os
 import shutil
 import zipfile
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits._forms import UploadField
+from tvb.core.neotraits.forms import UploadField
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -63,19 +63,8 @@ class TVBImporter(ABCUploader):
     _ui_subsection = "tvb_datatype_importer"
     _ui_description = "Upload H5 file with TVB generic entity"
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return TVBImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return TVBImporterForm
 
     def get_output(self):
         return []
@@ -124,7 +113,8 @@ class TVBImporter(ABCUploader):
                     datatype = None
                     try:
                         service = ImportService()
-                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id)
+                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id,
+                                                                   final_storage=self.storage_path)
                         service.store_datatype(datatype)
                         self.nr_of_datatypes += 1
                     except Exception as excep:

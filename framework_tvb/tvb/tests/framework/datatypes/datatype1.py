@@ -31,24 +31,24 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+from tvb.core.entities.model.model_datatype import DataType
+from sqlalchemy import String, Column, Integer, ForeignKey
 
-from tvb.basic.traits.types_basic import String
-from tvb.basic.traits.types_mapped import MappedType
 
-
-class Datatype1(MappedType):
+# TODO review all usages and replace with conftest fixture
+class Datatype1(DataType):
     """
-        This class is used for testing purposes only.
-    """  
-    row1 = String(label = "spatial_parameters")
-    row2 = String(label = "temporal_parameters")
-    
-    
+    This class is used for testing purposes only.
+    """
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+    row1 = Column(String)
+    row2 = Column(String)
+
     def __init__(self, row1="test", row2="test"):
-        MappedType.__init__(self)
+        super(Datatype1).__init__()
         self.row1 = row1
         self.row2 = row2
-        
+
     def __repr__(self):
         formal = "Datatype1(row1=%s, row2=%s)"
         return formal % (self.row1, self.row2)

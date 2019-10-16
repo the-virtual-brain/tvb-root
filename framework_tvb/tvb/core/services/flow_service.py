@@ -37,7 +37,7 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from inspect import getmro
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.input_tree import InputTreeManager
@@ -105,8 +105,12 @@ class FlowService:
 
     def prepare_adapter_form(self, adapter_instance, project_id):
         form = adapter_instance.get_form()(project_id=project_id)
-        dt = form.get_traited_datatype()
-        form.fill_from_trait(dt)
+        try:
+            dt = form.get_traited_datatype()
+            if dt is not None:
+                form.fill_from_trait(dt)
+        except NotImplementedError:
+            self.logger.info('This form does not take defaults from a HasTraits entity')
 
         return form
 
@@ -181,10 +185,8 @@ class FlowService:
         try:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
-            tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
-            
-            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, 
-                                                           tmp_folder, visible, **data)
+
+            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, visible, **data)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 

@@ -36,7 +36,7 @@ import xml.dom.minidom
 from xml.dom.minidom import Node
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
-from tvb.datatypes.annotations import AnnotationTerm
+from tvb.core.entities.model.datatypes.annotation import AnnotationTerm
 
 
 class XMLParser(object):
@@ -57,17 +57,14 @@ class XMLParser(object):
     ATTR_ONTOLOGY_SYN = "synonym"
     ATTR_ONTOLOGY_DEFINITION = "definition"
 
-
-    def __init__(self, xml_file, connectivity):
+    def __init__(self, xml_file, region_labels):
         self.doc_xml = xml.dom.minidom.parse(xml_file)
-        self.connectivity_labels = [rl.lower() for rl in connectivity.region_labels]
+        self.connectivity_labels = [rl.lower() for rl in region_labels]
         self.last_id = 0
 
-
     def _generate_new_id(self):
-        self.last_id +=1
+        self.last_id += 1
         return self.last_id
-
 
     def _find_region_idxs(self, region_label):
         """
@@ -87,7 +84,6 @@ class XMLParser(object):
             return left_idx[0], right_idx[0]
 
         raise ParseException("Could not match regionID '%s' from XML with the chosen connectivity" % region_label)
-
 
     def _parse_ontology_children(self, parent_node, parent_term_id, region_left, region_right):
         """
@@ -122,7 +118,6 @@ class XMLParser(object):
             result.append(ont_term)
             result.extend(child_terms)
         return result
-
 
     def read_annotation_terms(self):
         """

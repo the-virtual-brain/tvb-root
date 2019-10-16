@@ -31,87 +31,101 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
+import json
+import uuid
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
 from tvb.core.adapters.exceptions import ParseException, LaunchException
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
 from tvb.core.entities.storage import transactional
-from tvb.basic.arguments_serialisation import parse_slice
-from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
+from tvb.core.adapters.arguments_serialisation import parse_slice
+from tvb.core.neotraits.forms import UploadField, SimpleStrField, SimpleBoolField, SimpleIntField, DataTypeSelectField
+from tvb.core.neotraits.db import prepare_array_shape_meta
+from tvb.core.neocom import h5
+
+TS_REGION = "Region"
+TS_EEG = "EEG"
+
+
+class MatTimeSeriesImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(MatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+        self.data_file = UploadField('.mat', self, name='data_file', required=True,
+                                     label='Please select file to import')
+        self.dataset_name = SimpleStrField(self, name='dataset_name', required=True, label='Matlab dataset name',
+                                           doc='Name of the MATLAB dataset where data is stored')
+        self.structure_path = SimpleStrField(self, name='structure_path', default='',
+                                             label='For nested structures enter the field path (separated by .)')
+        self.transpose = SimpleBoolField(self, name='transpose', default=False,
+                                         label='Transpose the array. Expected shape is (time, channel)')
+        self.slice = SimpleStrField(self, name='slice', default='',
+                                    label='Slice of the array in numpy syntax. Expected shape is (time, channel)')
+        self.sampling_rate = SimpleIntField(self, name='sampling_rate', default=100, label='sampling rate (Hz)')
+        self.start_time = SimpleIntField(self, name='start_time', default=0, label='starting time (ms)', required=True)
+
+
+class RegionMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(RegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+        self.region = DataTypeSelectField(ConnectivityIndex, self, name='tstype_parameters', required=True,
+                                          label='Connectivity')
 
 
 class MatTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
-    _ui_name = "Timeseries MAT"
+    _ui_name = "Timeseries Region MAT"
     _ui_subsection = "mat_ts_importer"
     _ui_description = "Import time series from a .mat file."
+    tstype = TS_REGION
 
-    TS_REGION = 'region'
-    TS_EEG = 'EEG'
-
-    def get_upload_input_tree(self):
-        return [
-            {'name': 'data_file', 'type': 'upload', 'required_type': '.mat',
-             'label': 'Please select file to import', 'required': True},
-
-            {'name': 'dataset_name', 'type': 'str', 'required': True,
-             'label': 'Matlab dataset name', 'description': 'Name of the MATLAB dataset where data is stored'},
-
-            {'name': 'structure_path', 'type': 'str', 'default': '',
-             'label': 'For nested structures enter the field path (separated by .)'},
-
-            {'name': 'transpose', 'type': 'bool', 'default': False,
-             'label': 'Transpose the array. Expected shape is (time, channel)'},
-
-            {'name': 'slice', 'type': 'str', 'default': '',
-             'label': 'Slice of the array in numpy syntax. Expected shape is (time, channel)'},
-
-            {'name': 'tstype', 'type': 'select', 'required': True,
-             'label': 'time series type',
-             'options': [{'name': self.TS_REGION, 'value': self.TS_REGION,
-                          'attributes': [{'name': 'connectivity', 'required': True, 'label': 'Connectivity',
-                                          'type': 'tvb.datatypes.connectivity.Connectivity'}]},
-                         {'name': self.TS_EEG, 'value': self.TS_EEG,
-                          'attributes': [{'name': 'sensors', 'required': True, 'label': 'EEG Sensors',
-                                          'type': 'tvb.datatypes.sensors.SensorsEEG'}]}
-                         ]},
-
-            {'name': 'sampling_rate', 'type': 'int', 'default': 1000,
-             'label': 'sampling rate (Hz)'},
-
-            {'name': 'start_time', 'type': 'int', 'default': 0,
-             'label': 'starting time (ms)'},
-        ]
-
+    def get_form_class(self):
+        return RegionMatTimeSeriesImporterForm
 
     def get_output(self):
-        return [TimeSeriesRegion, TimeSeriesEEG]
+        return [TimeSeriesRegionIndex, TimeSeriesEEGIndex]
 
-
-    def create_region_ts(self, data, connectivity):
-        if connectivity.number_of_regions != data.shape[1]:
+    def create_region_ts(self, data_shape, connectivity):
+        if connectivity.number_of_regions != data_shape[1]:
             raise LaunchException("Data has %d channels but the connectivity has %d nodes"
-                                  % (data.shape[1], connectivity.number_of_regions))
-        return TimeSeriesRegion(storage_path=self.storage_path, connectivity=connectivity)
+                                  % (data_shape[1], connectivity.number_of_regions))
+        ts_idx = TimeSeriesRegionIndex()
+        ts_idx.connectivity_gid = connectivity.gid
+        ts_idx.has_surface_mapping = True
 
+        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
+        ts_h5 = TimeSeriesRegionH5(ts_h5_path)
+        ts_h5.connectivity.store(uuid.UUID(connectivity.gid))
 
-    def create_eeg_ts(self, data, sensors):
-        if sensors.number_of_sensors != data.shape[1]:
+        return TimeSeriesRegion(), ts_idx, ts_h5
+
+    def create_eeg_ts(self, data_shape, sensors):
+        if sensors.number_of_sensors != data_shape[1]:
             raise LaunchException("Data has %d channels but the sensors have %d"
-                                  % (data.shape[1], sensors.number_of_sensors))
-        return TimeSeriesEEG(storage_path=self.storage_path, sensors=sensors)
+                                  % (data_shape[1], sensors.number_of_sensors))
 
+        ts_idx = TimeSeriesEEGIndex()
+        ts_idx.sensors_gid = sensors.gid
+
+        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesEEGH5, ts_idx.gid)
+        ts_h5 = TimeSeriesEEGH5(ts_h5_path)
+        ts_h5.sensors.store(uuid.UUID(sensors.gid))
+
+        return TimeSeriesEEG(), ts_idx, ts_h5
 
     ts_builder = {TS_REGION: create_region_ts, TS_EEG: create_eeg_ts}
-
 
     @transactional
     def launch(self, data_file, dataset_name, structure_path='',
                transpose=False, slice=None, sampling_rate=1000,
-               start_time=0, tstype=None, tstype_parameters=None):
+               start_time=0, tstype_parameters=None):
         try:
             data = read_nested_mat_file(data_file, dataset_name, structure_path)
 
@@ -120,19 +134,40 @@ class MatTimeSeriesImporter(ABCUploader):
             if slice:
                 data = data[parse_slice(slice)]
 
-            ts = self.ts_builder[tstype](self, data, **tstype_parameters)
+            ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, tstype_parameters)
 
             ts.start_time = start_time
             ts.sample_period = 1.0 / sampling_rate
             ts.sample_period_unit = 's'
-            ts.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)
+
+            ts_h5.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)
             # we expect empirical data shape to be time, channel.
             # But tvb expects time, state, channel, mode. Introduce those dimensions
-            ts.write_data_slice(data[:, numpy.newaxis, :, numpy.newaxis])
-            ts.close_file()
+            ts_h5.write_data_slice(data[:, numpy.newaxis, :, numpy.newaxis])
 
-            return ts
+            data_shape = ts_h5.read_data_shape()
+            ts_h5.nr_dimensions.store(len(data_shape))
+            ts_h5.gid.store(uuid.UUID(ts_idx.gid))
+            ts_h5.sample_period.store(ts.sample_period)
+            ts_h5.sample_period_unit.store(ts.sample_period_unit)
+            ts_h5.sample_rate.store(sampling_rate)
+            ts_h5.start_time.store(ts.start_time)
+            ts_h5.labels_ordering.store(ts.labels_ordering)
+            ts_h5.labels_dimensions.store(ts.labels_dimensions)
+            ts_h5.title.store(ts.title)
+            ts_h5.close()
+
+            ts_idx.title = ts.title
+            ts_idx.time_series_type = type(ts).__name__
+            ts_idx.sample_period_unit = ts.sample_period_unit
+            ts_idx.sample_period = ts.sample_period
+            ts_idx.sample_rate = ts.sample_rate
+            ts_idx.labels_ordering = json.dumps(ts.labels_ordering)
+            ts_idx.data_ndim = len(data_shape)
+            ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(
+                data_shape)
+
+            return ts_idx
         except ParseException as ex:
             self.log.exception(ex)
             raise LaunchException(ex)
-

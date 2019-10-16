@@ -36,7 +36,6 @@ import os
 import pytest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
-from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
@@ -149,7 +148,7 @@ class TestFilesHelper(TransactionalTestCase):
         loaded_operation.from_dict(operation_meta, dao, user_id=self.test_user.id)
         expected_dict = operation.to_dict()[1]
         found_dict = loaded_operation.to_dict()[1]
-        for key, value in expected_dict.iteritems():
+        for key, value in expected_dict.items():
             assert str(value) == str(found_dict[key])
         # Now validate that operation metaData can be also updated
         assert "new_group_name" != found_dict['user_group']
@@ -255,7 +254,7 @@ class TestFilesHelper(TransactionalTestCase):
         """Checks whether actual is a superset of expected."""
         missing = []
         mismatched = []
-        for key, value in expected.iteritems():
+        for key, value in expected.items():
             if key not in actual:
                 return False
             elif value != actual[key]:

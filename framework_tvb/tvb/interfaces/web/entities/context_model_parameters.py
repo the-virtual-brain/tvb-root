@@ -187,7 +187,7 @@ class SurfaceContextModelParameters(object):
         result = {}
         for param in self.applied_equations:
             equation = self.applied_equations[param][KEY_EQUATION]
-            keys = sorted(equation.parameters.keys(), key=lambda x: len(x))
+            keys = sorted(list(equation.parameters), key=lambda x: len(x))
             keys.reverse()
             base_equation = equation.trait['equation'].interface['description']
             for eq_param in keys:

@@ -213,7 +213,7 @@ class UserService:
         Service layer to check if given UserName and Password are according to DB.
         """
         user = dao.get_user_by_name(username)
-        if user is not None and user.password == md5(password).hexdigest() and user.validated:
+        if user is not None and user.password == md5(password.encode('utf-8')).hexdigest() and user.validated:
             return user
         else:
             return None

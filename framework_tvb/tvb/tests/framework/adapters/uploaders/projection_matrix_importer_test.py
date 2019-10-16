@@ -38,7 +38,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.sensors
 import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
-from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
+from tvb.adapters.uploaders.sensors_importer import SensorsImporter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
@@ -62,7 +62,7 @@ class TestProjectionMatrix(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, Sensors_Importer.EEG_SENSORS)
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporter.EEG_SENSORS)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)

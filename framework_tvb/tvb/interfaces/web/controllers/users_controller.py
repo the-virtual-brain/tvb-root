@@ -43,7 +43,7 @@ import ssl
 import cherrypy
 import formencode
 from hashlib import md5
-from urllib2 import urlopen
+from urllib.request import urlopen
 from formencode import validators
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT

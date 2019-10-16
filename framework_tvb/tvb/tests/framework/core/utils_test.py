@@ -140,13 +140,13 @@ class TestUtils(TransactionalTestCase):
         Check the date2string method for various inputs.
         """
         assert string2bool("True"), "Expect True boolean for input 'True'"
-        assert string2bool(u"True"), "Expect True boolean for input u'True'"
+        assert string2bool("True"), "Expect True boolean for input u'True'"
         assert string2bool("true"), "Expect True boolean for input 'true'"
-        assert string2bool(u"true"), "Expect True boolean for input u'true'"
+        assert string2bool("true"), "Expect True boolean for input u'true'"
         assert not string2bool("False"), "Expect True boolean for input 'False'"
-        assert not string2bool(u"False"), "Expect True boolean for input u'False'"
+        assert not string2bool("False"), "Expect True boolean for input u'False'"
         assert not string2bool("somethingelse"), "Expect True boolean for input 'somethingelse'"
-        assert not string2bool(u"somethingelse"), "Expect True boolean for input u'somethingelse'"
+        assert not string2bool("somethingelse"), "Expect True boolean for input u'somethingelse'"
 
     def test_string2array(self):
         """

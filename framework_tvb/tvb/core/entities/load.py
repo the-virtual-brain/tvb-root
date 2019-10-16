@@ -57,16 +57,17 @@ def load_entity_by_gid(data_gid):
     Load a generic DataType, specified by GID.
     """
     datatype = dao.get_datatype_by_gid(data_gid)
-    from tvb.core.traits.types_mapped import MappedType
+    # TODO
+    # from tvb.core.traits.types_mapped import MappedType
 
-    if isinstance(datatype, MappedType):
-        datatype_path = datatype.get_storage_file_path()
-        files_update_manager = FilesUpdateManager()
-        if not files_update_manager.is_file_up_to_date(datatype_path):
-            datatype.invalid = True
-            dao.store_entity(datatype)
-            raise FileVersioningException("Encountered DataType with an incompatible storage or data version. "
-                                          "The DataType was marked as invalid.")
+    # if isinstance(datatype, MappedType):
+    #     datatype_path = datatype.get_storage_file_path()
+    #     files_update_manager = FilesUpdateManager()
+    #     if not files_update_manager.is_file_up_to_date(datatype_path):
+    #         datatype.invalid = True
+    #         dao.store_entity(datatype)
+    #         raise FileVersioningException("Encountered DataType with an incompatible storage or data version. "
+    #                                       "The DataType was marked as invalid.")
     return datatype
 
 
@@ -75,7 +76,7 @@ def get_filtered_datatypes(project_id, data_type_cls, filters=None, page_size=50
     Return all dataTypes that match a given name and some filters.
     :param data_type_cls: either a fully qualified class name or a class object
     """
-    if isinstance(data_type_cls, basestring):
+    if isinstance(data_type_cls, str):
         data_type_cls = get_class_by_name(data_type_cls)
     LOGGER.debug('Filtering:' + str(data_type_cls))
     return dao.get_values_of_datatype(project_id, data_type_cls, filters, page_size)

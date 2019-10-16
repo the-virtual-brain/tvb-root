@@ -103,4 +103,4 @@ class ObjSurface(object):
         else:
             self.normals = None
 
-        self.triangles = np.array(self.triangles).reshape((len(self.triangles) / 3, 3))
+        self.triangles = np.array(self.triangles).reshape((len(self.triangles) // 3, 3))

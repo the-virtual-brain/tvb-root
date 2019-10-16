@@ -29,7 +29,8 @@
 #
 
 from tvb.simulator.models import *
-from tvb.core.neotraits._forms import Form, ArrayField, MultiSelectField
+from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
 
 
 def get_model_to_form_dict():
@@ -95,7 +96,7 @@ class StateVariableRangesForm(Form):
         super(StateVariableRangesForm, self).__init__(prefix)
 
 
-class Generic2dOscillatorModelForm(Form):
+class Generic2dOscillatorModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(Generic2dOscillatorModelForm, self).__init__(prefix)
@@ -114,7 +115,7 @@ class Generic2dOscillatorModelForm(Form):
         self.variables_of_interest = MultiSelectField(Generic2dOscillator.variables_of_interest, self)
 
 
-class KuramotoModelForm(Form):
+class KuramotoModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(KuramotoModelForm, self).__init__(prefix)
@@ -122,7 +123,7 @@ class KuramotoModelForm(Form):
         self.variables_of_interest = MultiSelectField(Kuramoto.variables_of_interest, self)
 
 
-class SupHopfModelForm(Form):
+class SupHopfModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(SupHopfModelForm, self).__init__(prefix)
@@ -131,7 +132,7 @@ class SupHopfModelForm(Form):
         self.variables_of_interest = MultiSelectField(SupHopf.variables_of_interest, self)
 
 
-class HopfieldModelForm(Form):
+class HopfieldModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(HopfieldModelForm, self).__init__(prefix)
@@ -141,7 +142,7 @@ class HopfieldModelForm(Form):
         self.variables_of_interest = MultiSelectField(Hopfield.variables_of_interest, self)
 
 
-class EpileptorModelForm(Form):
+class EpileptorModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorModelForm, self).__init__(prefix)
@@ -166,7 +167,7 @@ class EpileptorModelForm(Form):
         self.variables_of_interest = MultiSelectField(Epileptor.variables_of_interest, self)
 
 
-class Epileptor2DModelForm(Form):
+class Epileptor2DModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(Epileptor2DModelForm, self).__init__(prefix)
@@ -185,7 +186,7 @@ class Epileptor2DModelForm(Form):
         self.variables_of_interest = MultiSelectField(Epileptor2D.variables_of_interest, self)
 
 
-class EpileptorCodim3ModelForm(Form):
+class EpileptorCodim3ModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorCodim3ModelForm, self).__init__(prefix)
@@ -205,7 +206,7 @@ class EpileptorCodim3ModelForm(Form):
         self.variables_of_interest = MultiSelectField(EpileptorCodim3.variables_of_interest, self)
 
 
-class EpileptorCodim3SlowModModelForm(Form):
+class EpileptorCodim3SlowModModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorCodim3SlowModModelForm, self).__init__(prefix)
@@ -233,7 +234,7 @@ class EpileptorCodim3SlowModModelForm(Form):
         self.variables_of_interest = ArrayField(EpileptorCodim3SlowMod.variables_of_interest, self)
 
 
-class EpileptorRestingStateModelForm(Form):
+class EpileptorRestingStateModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorRestingStateModelForm, self).__init__(prefix)
@@ -268,7 +269,7 @@ class EpileptorRestingStateModelForm(Form):
         self.variables_of_interest = MultiSelectField(EpileptorRestingState.variables_of_interest, self)
 
 
-class JansenRitModelForm(Form):
+class JansenRitModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(JansenRitModelForm, self).__init__(prefix)
@@ -290,7 +291,7 @@ class JansenRitModelForm(Form):
         self.variables_of_interest = ArrayField(JansenRit.variables_of_interest, self)
 
 
-class ZetterbergJansenModelForm(Form):
+class ZetterbergJansenModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ZetterbergJansenModelForm, self).__init__(prefix)
@@ -315,7 +316,7 @@ class ZetterbergJansenModelForm(Form):
         self.variables_of_interest = MultiSelectField(ZetterbergJansen.variables_of_interest, self)
 
 
-class ReducedWongWangModelForm(Form):
+class ReducedWongWangModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedWongWangModelForm, self).__init__(prefix)
@@ -331,7 +332,7 @@ class ReducedWongWangModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedWongWang.variables_of_interest, self)
 
 
-class ReducedWongWangExcInhModelForm(Form):
+class ReducedWongWangExcInhModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedWongWangExcInhModelForm, self).__init__(prefix)
@@ -356,7 +357,7 @@ class ReducedWongWangExcInhModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedWongWangExcInh.variables_of_interest, self)
 
 
-class ReducedSetFitzHughNagumoModelForm(Form):
+class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedSetFitzHughNagumoModelForm, self).__init__(prefix)
@@ -371,7 +372,7 @@ class ReducedSetFitzHughNagumoModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedSetFitzHughNagumo.variables_of_interest, self)
 
 
-class ReducedSetHindmarshRoseModelForm(Form):
+class ReducedSetHindmarshRoseModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedSetHindmarshRoseModelForm, self).__init__(prefix)
@@ -390,7 +391,7 @@ class ReducedSetHindmarshRoseModelForm(Form):
         self.variables_of_interest = MultiSelectField(ReducedSetHindmarshRose.variables_of_interest, self)
 
 
-class ZerlautFirstOrderModelForm(Form):
+class ZerlautFirstOrderModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ZerlautFirstOrderModelForm, self).__init__(prefix)
@@ -423,7 +424,7 @@ class ZerlautSecondOrderModelForm(ZerlautFirstOrderModelForm):
         self.variables_of_interest = MultiSelectField(ZerlautSecondOrder.variables_of_interest, self)
 
 
-class LinearModelForm(Form):
+class LinearModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(LinearModelForm, self).__init__(prefix)
@@ -431,7 +432,7 @@ class LinearModelForm(Form):
         self.variables_of_interest = MultiSelectField(Linear.variables_of_interest, self)
 
 
-class WilsonCowanModelForm(Form):
+class WilsonCowanModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(WilsonCowanModelForm, self).__init__(prefix)
@@ -460,7 +461,7 @@ class WilsonCowanModelForm(Form):
         self.variables_of_interest = MultiSelectField(WilsonCowan.variables_of_interest, self)
 
 
-class LarterBreakspearModelForm(Form):
+class LarterBreakspearModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(LarterBreakspearModelForm, self).__init__(prefix)

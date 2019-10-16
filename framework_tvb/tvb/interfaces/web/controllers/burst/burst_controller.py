@@ -45,7 +45,7 @@ from formencode import validators
 from cgi import FieldStorage
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.static import serve_fileobj
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import generate_guid, string2bool
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -79,8 +79,8 @@ class BurstController(BurstBaseController):
         self.context = SelectedAdapterContext()
 
         ## Cache simulator Tree and Algorithm for performance issues.
-        self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE,
-                                                                                              SIMULATOR_CLASS)
+        self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                              IntrospectionRegistry.SIMULATOR_CLASS)
 
 
     @property
@@ -133,11 +133,12 @@ class BurstController(BurstBaseController):
         ### Prepare PSE available metrics
         ### We put here all available algorithms, because the metrics select area is a generic one, 
         ### and not loaded with every Burst Group change in history.
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.MEASURE_METRICS_MODULE,
+                                                                        IntrospectionRegistry.MEASURE_METRICS_CLASS)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         if adapter_instance is not None and hasattr(adapter_instance, 'available_algorithms'):
             template_specification['available_metrics'] = [metric_name for metric_name
-                                                           in adapter_instance.available_algorithms.keys()]
+                                                           in adapter_instance.available_algorithms]
         else:
             template_specification['available_metrics'] = []
 
@@ -340,9 +341,9 @@ class BurstController(BurstBaseController):
         simulation_length = data['simulation_length']
         try:
             simulation_length = total_ms(simulation_length)
-        except ValueError, e:
+        except ValueError as e:
             return {'error': e.message}
-        data['simulation_length']=unicode(simulation_length)
+        data['simulation_length']=str(simulation_length)
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         ## Validate new burst-name
@@ -692,18 +693,7 @@ class BurstController(BurstBaseController):
 
 
     def _is_burst_name_ok(self, burst_name):
-        """
-        Validate a new burst name, to have only plain text.
-        :returns: True, when validation succeeds, and an error message otherwise.
-        """
-        try:
-            form = BurstNameForm()
-            form.to_python({'burst_name': burst_name})
-            return True
-        except formencode.Invalid:
-            validation_error = "Invalid simulation name %s. Please use only letters, numbers, or _ " % str(burst_name)
-            self.logger.exception(validation_error)
-            return validation_error
+        pass
 
 
     @cherrypy.expose
@@ -753,12 +743,3 @@ class BurstController(BurstBaseController):
             common.set_error_message(excep.message)
 
         raise cherrypy.HTTPRedirect('/burst/')
-
-
-
-class BurstNameForm(formencode.Schema):
-    """
-    Validate Burst name string
-    """
-    burst_name = formencode.All(validators.UnicodeString(not_empty=True),
-                                validators.Regex(regex=r"^[a-zA-Z\. _\-0-9]*$"))

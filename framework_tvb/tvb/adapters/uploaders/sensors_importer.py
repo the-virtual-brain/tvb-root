@@ -32,16 +32,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import uuid
-import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
-from tvb.core.entities.file.datatypes.sensors_h5 import SensorsH5
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.model.datatypes.sensors import SensorsIndex
-from tvb.core.neotraits._forms import UploadField, SimpleSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neotraits.h5 import MEMORY_STRING
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
 class SensorsImporterForm(ABCUploaderForm):
@@ -53,39 +51,27 @@ class SensorsImporterForm(ABCUploaderForm):
         super(SensorsImporterForm, self).__init__(prefix, project_id)
 
         self.sensors_file = UploadField('text/plain, .bz2', self, name='sensors_file', required=True,
-                                  label='Please upload sensors file (txt or bz2 format)',
-                                  doc='Expected a text/bz2 file containing sensor measurements.')
+                                        label='Please upload sensors file (txt or bz2 format)',
+                                        doc='Expected a text/bz2 file containing sensor measurements.')
         self.sensors_type = SimpleSelectField(self.options, self, name='sensors_type', required=True,
-                                              label='Sensors type: ')
+                                              label='Sensors type: ', default=list(self.options)[0])
 
 
-class Sensors_Importer(ABCUploader):
+class SensorsImporter(ABCUploader):
     """
     Upload Sensors from a TXT file.
-    """ 
+    """
     _ui_name = "Sensors"
     _ui_subsection = "sensors_importer"
     _ui_description = "Import Sensor locations from TXT or BZ2"
 
     logger = get_logger(__name__)
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return SensorsImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return SensorsImporterForm
 
     def get_output(self):
         return [SensorsIndex]
-
 
     def launch(self, sensors_file, sensors_type):
         """
@@ -114,7 +100,7 @@ class Sensors_Importer(ABCUploader):
         else:
             exception_str = "Could not determine sensors type (selected option %s)" % sensors_type
             raise LaunchException(exception_str)
-            
+
         locations = self.read_list_data(sensors_file, usecols=[1, 2, 3])
 
         # NOTE: TVB has the nose pointing -y and left ear pointing +x
@@ -122,7 +108,7 @@ class Sensors_Importer(ABCUploader):
         # to rotate the sensors by -90 along z uncomment below
         # locations = numpy.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]).dot(locations.T).T
         sensors_inst.locations = locations
-        sensors_inst.labels = self.read_list_data(sensors_file, dtype=numpy.str, usecols=[0])
+        sensors_inst.labels = self.read_list_data(sensors_file, dtype=MEMORY_STRING, usecols=[0])
         sensors_inst.number_of_sensors = sensors_inst.labels.size
 
         if isinstance(sensors_inst, SensorsMEG):
@@ -135,21 +121,6 @@ class Sensors_Importer(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        sensors_idx = SensorsIndex()
-        sensors_idx.number_of_sensors = sensors_inst.number_of_sensors
-        sensors_idx.sensors_type = sensors_inst.sensors_type
-
-        loader = DirLoader(self.storage_path)
-        sensors_path = loader.path_for(SensorsH5, sensors_idx.gid)
-        sensors_h5 = SensorsH5(sensors_path)
-
-        sensors_h5.gid.store(uuid.UUID(sensors_idx.gid))
-        sensors_h5.sensors_type.store(sensors_inst.sensors_type)
-        sensors_h5.labels.store(sensors_inst.labels)
-        sensors_h5.locations.store(sensors_inst.locations)
-        sensors_h5.has_orientation.store(sensors_inst.has_orientation)
-        sensors_h5.orientations.store(sensors_inst.orientations)
-        sensors_h5.number_of_sensors.store(sensors_inst.number_of_sensors)
-        sensors_h5.usable.store(sensors_inst.usable)
-
+        sensors_idx = h5.store_complete(sensors_inst, self.storage_path)
+        self.generic_attributes.user_tag_1 = sensors_inst.sensors_type
         return sensors_idx

@@ -34,51 +34,19 @@ TVB generic configurations are here.
 E.g. Scientific libraries modules are plugged, to avoid close dependencies.
 E.g. A list with all the modules where adapters are implemented.
 """
-
-ADAPTERS = {"Analyze": {'modules': ["tvb.adapters.analyzers"],
-                        'launchable': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr': '1'},
-            "Simulate": {'modules': ["tvb.adapters.simulator"],
-                         'defaultdatastate': 'INTERMEDIATE', 'order_nr': '0'},
-            "Upload": {'modules': ["tvb.adapters.uploaders"],
-                       'rawinput': True, 'defaultdatastate': 'RAW_DATA'},
-            "View": {'modules': ["tvb.adapters.visualizers"],
-                     'launchable': True, 'display': True, 'defaultdatastate': 'INTERMEDIATE', 'order_nr': '3'},
-            "Create": {'modules': ["tvb.adapters.creators"],
-                       'defaultdatastate': 'RAW_DATA', 'order_nr': '0'}
-            }
-
-DATATYPES_PATH = ["tvb.core.entities.model.datatypes"]
-REMOVERS_PATH = ["tvb.datatype_removers"]
-PORTLETS_PATH = ["tvb.adapters.portlets"]
-
-SIMULATOR_MODULE = "tvb.adapters.simulator.simulator_adapter"
-SIMULATOR_CLASS = "SimulatorAdapter"
-
-SIMULATION_DATATYPE_MODULE = 'tvb.datatypes.simulation_state'
+# There are kept here for being used inside tvb.core
+# We can not move all these in IntrospectovRegistry, due to circular dependencies
 SIMULATION_DATATYPE_CLASS = "SimulationState"
-
-CONNECTIVITY_MODULE = 'tvb.adapters.visualizers.connectivity'
-CONNECTIVITY_CLASS = 'ConnectivityViewer'
-
-ALLEN_CREATOR_MODULE = 'tvb.adapters.creators.allen_creator'
-ALLEN_CREATOR_CLASS = 'AllenConnectomeBuilder'
-
-MEASURE_METRICS_MODULE = "tvb.adapters.analyzers.metrics_group_timeseries"
-MEASURE_METRICS_CLASS = "TimeseriesMetricsAdapter"
-
-DISCRETE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_discrete"
-DISCRETE_PSE_ADAPTER_CLASS = "DiscretePSEAdapter"
-
-ISOCLINE_PSE_ADAPTER_MODULE = "tvb.adapters.visualizers.pse_isocline"
-ISOCLINE_PSE_ADAPTER_CLASS = "IsoclinePSEAdapter"
 
 TVB_IMPORTER_MODULE = "tvb.adapters.uploaders.tvb_importer"
 TVB_IMPORTER_CLASS = "TVBImporter"
 
+SIMULATOR_MODULE = "tvb.adapters.simulator.simulator_adapter"
+SIMULATOR_CLASS = "SimulatorAdapter"
+
 CONNECTIVITY_CREATOR_MODULE = 'tvb.adapters.creators.connectivity_creator'
 CONNECTIVITY_CREATOR_CLASS = 'ConnectivityCreator'
 
-#DEFAULT_PORTLETS = {$tab_index: {$select_index_in_tab: '$portlet_identifier'}}
-DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
-
 DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'
+
+DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}

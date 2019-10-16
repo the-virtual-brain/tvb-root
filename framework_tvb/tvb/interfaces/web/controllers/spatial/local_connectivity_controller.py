@@ -283,7 +283,7 @@ class LocalConnectivityController(SpatioTemporalController):
             result.append(picked_data)
         else:
             for slice_number in range(surface.number_of_split_slices):
-                start_idx, end_idx = surface._get_slice_vertex_boundaries(slice_number)
+                start_idx, end_idx = surface.get_slice_vertex_boundaries(slice_number)
                 result.append(picked_data[start_idx:end_idx])
 
         result = {'data': json.dumps(result)}

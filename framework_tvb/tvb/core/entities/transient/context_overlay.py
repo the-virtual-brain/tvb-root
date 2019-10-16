@@ -100,7 +100,7 @@ class CommonDetails(EnhancedDictionary):
         """
         A list with all attributes for a DataType which are expected to be submitted from UI.
         """
-        result = self.keys()
+        result = list(self)
         result.remove('metadata')
         result.remove('scientific_details')
         return result

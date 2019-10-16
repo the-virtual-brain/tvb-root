@@ -41,6 +41,10 @@ import os.path
 import numpy as np
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
+from tvb.core.entities.model.datatypes.structural import StructuralMRIIndex
+from tvb.core.entities.model.datatypes.volume import VolumeIndex
 from tvb.core.entities.storage import dao
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
@@ -73,7 +77,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
     _ui_name = "Allen connectivity builder"
     _ui_description = "Import mouse connectivity from Allen database (tracer experiments)"
 
-    def get_form(self):
+    def get_form_class(self):
         return AllenConnectomeBuilderForm
 
     # TRANSGENIC_OPTIONS = [
@@ -119,7 +123,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
              'required': True, 'default': '1000000000'}]
 
     def get_output(self):
-        return [Connectivity, Volume, RegionVolumeMapping, StructuralMRI]
+        return [ConnectivityIndex, VolumeIndex, RegionVolumeMappingIndex, StructuralMRIIndex]
 
 
     def launch(self, resolution, weighting, inj_f_thresh, vol_thresh):
@@ -235,7 +239,7 @@ def download_an_construct_matrix(tvb_mcc, weighting, ist2e, transgenic_line):
         for isti, elist in ist2e.items():
             projmaps[isti] = tvb_mcc.get_projection_matrix(
                 experiment_ids=elist,
-                projection_structure_ids=ist2e.keys(),  # summary_structure_ids,
+                projection_structure_ids=list(ist2e),  # summary_structure_ids,
                 parameter='projection_energy')
             LOGGER.info('injection site id', isti, ' has ', len(elist), ' experiments with pm shape ',
                         projmaps[isti]['matrix'].shape)
@@ -243,7 +247,7 @@ def download_an_construct_matrix(tvb_mcc, weighting, ist2e, transgenic_line):
         for isti, elist in ist2e.items():
             projmaps[isti] = tvb_mcc.get_projection_matrix(
                 experiment_ids=elist,
-                projection_structure_ids=ist2e.keys(),  # summary_structure_ids,
+                projection_structure_ids=list(ist2e),  # summary_structure_ids,
                 parameter='projection_density')
             LOGGER.info('injection site id', isti, ' has ', len(elist), ' experiments with pm shape ',
                         projmaps[isti]['matrix'].shape)
@@ -257,10 +261,10 @@ def download_an_construct_matrix(tvb_mcc, weighting, ist2e, transgenic_line):
                 injdensity[exp_id] = (np.sum(inj_d[0]) / np.count_nonzero(inj_d[0]))
                 LOGGER.info('Experiment id', exp_id, ', the total injection density is ', injdensity[exp_id])
             # in this case projmaps will contain PD/ID
-            for inj_id in range(len(projmaps.values())):
+            for inj_id in range(len(list(projmaps.values()))):
                 index = 0
-                for exp_id in projmaps.values()[inj_id]['rows']:
-                    projmaps.values()[inj_id]['matrix'][index] = projmaps.values()[inj_id]['matrix'][index] / \
+                for exp_id in list(projmaps.values())[inj_id]['rows']:
+                    list(projmaps.values())[inj_id]['matrix'][index] = list(projmaps.values())[inj_id]['matrix'][index] / \
                                                                  injdensity[exp_id]
                     index += 1
     return projmaps
@@ -273,24 +277,24 @@ def pms_cleaner(projmaps):
 
     sis0 = get_structure_id_set(projmaps[502])
     # 1) All the target sites are the same for all the injection sites? If not remove those injection sites
-    for inj_id in projmaps.keys():
+    for inj_id in projmaps:
         sis_i = get_structure_id_set(projmaps[inj_id])
         if len(sis0.difference(sis_i)) != 0:
             projmaps.pop(inj_id, None)
     # 2) All the injection sites are also target sites? If not remove those injection sites
-    for inj_id in projmaps.keys():
+    for inj_id in projmaps:
         if inj_id not in sis0:
             del projmaps[inj_id]
     # 3) All the target sites are also injection sites? if not remove those targets from the columns and from the matrix
-    if len(sis0) != len(projmaps.keys()):
-        for inj_id in range(len(projmaps.values())):
+    if len(sis0) != len(list(projmaps)):
+        for inj_id in range(len(list(projmaps.values()))):
             targ_id = -1
-            while len(projmaps.values()[inj_id]['columns']) != (3 * len(projmaps.keys())):
+            while len(list(projmaps.values())[inj_id]['columns']) != (3 * len(list(projmaps))):
                 # there is -3 since for each id-target I have 3 regions since I have 3 hemisphere to consider
                 targ_id += 1
-                if projmaps.values()[inj_id]['columns'][targ_id]['structure_id'] not in projmaps.keys():
-                    del projmaps.values()[inj_id]['columns'][targ_id]
-                    projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
+                if list(projmaps.values())[inj_id]['columns'][targ_id]['structure_id'] not in list(projmaps):
+                    del list(projmaps.values())[inj_id]['columns'][targ_id]
+                    list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
                     targ_id = -1
     # 4) Exclude the areas that have NaN values (in all the experiments)
     nan_id = {}
@@ -298,47 +302,47 @@ def pms_cleaner(projmaps):
         mat = projmaps[inj_id]['matrix']
         for targ_id in range(mat.shape[1]):
             if all([np.isnan(mat[exp, targ_id]) for exp in range(mat.shape[0])]):
-                if inj_id not in nan_id.keys():
+                if inj_id not in list(nan_id):
                     nan_id[inj_id] = []
                 nan_id[inj_id].append(projmaps[inj_id]['columns'][targ_id]['structure_id'])
     while bool(nan_id):
         remove = []
         nan_inj_max = 0
-        while nan_id.keys()[0] != nan_inj_max:
+        while list(nan_id)[0] != nan_inj_max:
             len_max = 0
-            for inj_id in nan_id.keys():
+            for inj_id in nan_id:
                 if len(nan_id[inj_id]) > len_max:
                     nan_inj_max = inj_id
                     len_max = len(nan_id[inj_id])
-            if nan_id.keys()[0] != nan_inj_max:
+            if list(nan_id)[0] != nan_inj_max:
                 nan_id.pop(nan_inj_max)
                 remove.append(nan_inj_max)
         if len(remove) == 0:
-            for inj_id in nan_id.keys():
+            for inj_id in nan_id:
                 for target_id in nan_id[inj_id]:
                     if target_id not in remove:
                         remove.append(target_id)
         for rem in remove:
-            if rem in projmaps.keys():
+            if rem in list(projmaps):
                 projmaps.pop(rem)
             # Remove Nan areas from targe list (columns+matrix)
-            for inj_id in range(len(projmaps.keys())):
+            for inj_id in range(len(list(projmaps))):
                 targ_id = -1
-                previous_size = len(projmaps.values()[inj_id]['columns'])
-                while len(projmaps.values()[inj_id]['columns']) != (previous_size - 3):  # 3 hemispheres
+                previous_size = len(list(projmaps.values())[inj_id]['columns'])
+                while len(list(projmaps.values())[inj_id]['columns']) != (previous_size - 3):  # 3 hemispheres
                     targ_id += 1
-                    column = projmaps.values()[inj_id]['columns'][targ_id]
+                    column = list(projmaps.values())[inj_id]['columns'][targ_id]
                     if column['structure_id'] == rem:
-                        del projmaps.values()[inj_id]['columns'][targ_id]
-                        projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
+                        del list(projmaps.values())[inj_id]['columns'][targ_id]
+                        list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
                         targ_id = -1
                         # evaluate if there are still Nan values in the matrices
         nan_id = {}
-        for inj_id in projmaps.keys():
+        for inj_id in projmaps:
             mat = projmaps[inj_id]['matrix']
             for targ_id in range(mat.shape[1]):
                 if all([np.isnan(mat[exp, targ_id]) for exp in range(mat.shape[0])]):
-                    if inj_id not in nan_id.keys():
+                    if inj_id not in list(nan_id):
                         nan_id[inj_id] = []
                     nan_id[inj_id].append(projmaps[inj_id]['columns'][targ_id]['structure_id'])
 
@@ -351,23 +355,23 @@ def areas_volume_threshold(tvb_mcc, projmaps, vol_thresh, resolution):
     """
     threshold = vol_thresh / (resolution ** 3)
     id_ok = []
-    for ID in projmaps.keys():
+    for ID in projmaps:
         mask, _ = tvb_mcc.get_structure_mask(ID)
         tot_voxels = (np.count_nonzero(mask)) / 2  # mask contains both left and right hemisphere
         if tot_voxels > threshold:
             id_ok.append(ID)
             # Remove areas that are not in id_ok from the injection list
-    for checkid in projmaps.keys():
+    for checkid in projmaps:
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
     # Remove areas that are not in id_ok from target list (columns+matrix)
-    for inj_id in range(len(projmaps.values())):
+    for inj_id in range(len(list(projmaps.values()))):
         targ_id = -1
-        while len(projmaps.values()[inj_id]['columns']) != (len(id_ok) * 3):  # I have 3 hemispheres
+        while len(list(projmaps.values())[inj_id]['columns']) != (len(id_ok) * 3):  # I have 3 hemispheres
             targ_id += 1
-            if projmaps.values()[inj_id]['columns'][targ_id]['structure_id'] not in id_ok:
-                del projmaps.values()[inj_id]['columns'][targ_id]
-                projmaps.values()[inj_id]['matrix'] = np.delete(projmaps.values()[inj_id]['matrix'], targ_id, 1)
+            if list(projmaps.values())[inj_id]['columns'][targ_id]['structure_id'] not in id_ok:
+                del list(projmaps.values())[inj_id]['columns'][targ_id]
+                list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
                 targ_id = -1
     return projmaps
 
@@ -377,7 +381,7 @@ def areas_volume_threshold(tvb_mcc, projmaps, vol_thresh, resolution):
 # is greater than inj_f_threshold
 def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
     id_ok=[]
-    for ID in projmaps.keys():
+    for ID in projmaps:
         exp_not_accepted=[]
         for exp in projmaps[ID]['rows']:
             inj_info=tvb_mcc.get_structure_unionizes([exp], is_injection=True, structure_ids=[ID],include_descendants=True, hemisphere_ids=[2])
@@ -390,17 +394,17 @@ def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
         if len(exp_not_accepted)<len(projmaps[ID]['rows']):
             id_ok.append(ID)
             projmaps[ID]['rows']= list(set(projmaps[ID]['rows']).difference(set(exp_not_accepted)))
-    for checkid in projmaps.keys():
+    for checkid in projmaps:
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
     # Remove areas that are not in id_ok from target list (columns+matrix)
-    for indexinj in range(len(projmaps.values())):
+    for indexinj in range(len(list(projmaps.values()))):
         indextarg = -1
-        while len(projmaps.values()[indexinj]['columns']) != (len(id_ok) * 3):  # I have 3 hemispheres
+        while len(list(projmaps.values())[indexinj]['columns']) != (len(id_ok) * 3):  # I have 3 hemispheres
             indextarg += 1
-            if projmaps.values()[indexinj]['columns'][indextarg]['structure_id'] not in id_ok:
-                del projmaps.values()[indexinj]['columns'][indextarg]
-                projmaps.values()[indexinj]['matrix'] = np.delete(projmaps.values()[indexinj]['matrix'], indextarg, 1)
+            if list(projmaps.values())[indexinj]['columns'][indextarg]['structure_id'] not in id_ok:
+                del list(projmaps.values())[indexinj]['columns'][indextarg]
+                list(projmaps.values())[indexinj]['matrix'] = np.delete(list(projmaps.values())[indexinj]['matrix'], indextarg, 1)
                 indextarg = -1   
     return projmaps
 
@@ -412,18 +416,18 @@ def create_file_order(projmaps, structure_tree):
     """
     order = {}
     for index in range(len(projmaps)):
-        target_id = projmaps.values()[0]['columns'][index]['structure_id']
+        target_id = list(projmaps.values())[0]['columns'][index]['structure_id']
         order[structure_tree.get_structures_by_id([target_id])[0]['graph_order']] = [target_id]
         order[structure_tree.get_structures_by_id([target_id])[0]['graph_order']].append(
             structure_tree.get_structures_by_id([target_id])[0]['name'])
-    key_ord = order.keys()
+    key_ord = list(order)
     key_ord.sort()
     return order, key_ord
 
 
 # the method builds the Structural Connectivity (SC) matrix
 def construct_structural_conn(projmaps, order, key_ord):
-    len_right = len(projmaps.keys())
+    len_right = len(list(projmaps))
     structural_conn = np.zeros((len_right, 2 * len_right), dtype=float)
     row = -1
     for graph_ord_inj in key_ord:
@@ -555,7 +559,7 @@ def parents_and_grandparents_finder(tvb_mcc, order, key_ord, structure_tree):
     # of the region in parcellation which has that parent id
     for p in reversed(parents):
         k -= 1
-        if p not in unique_parents.keys():
+        if p not in list(unique_parents):
             unique_parents[p] = vec_index[k]
     k = len(grandparents)
     unique_gradparents = {}  # Unique parents will be a dictionary with keys the parent id and as value the index vec
@@ -563,7 +567,7 @@ def parents_and_grandparents_finder(tvb_mcc, order, key_ord, structure_tree):
     for p in reversed(grandparents):
         k -= 1
         if np.isnan(p) == 0:
-            if p not in unique_gradparents.keys():
+            if p not in list(unique_gradparents):
                 unique_gradparents[p] = vec_index[k]
     return unique_parents, unique_gradparents
 
@@ -595,7 +599,7 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
         for ii in range(len(structure_tree.children([node_id])[0])):
             child.append(structure_tree.children([node_id])[0][ii]['id'])
         while len(child) != 0:
-            if (child[0] in vol_r) and (child[0] not in projmaps.keys()):
+            if (child[0] in vol_r) and (child[0] not in list(projmaps)):
                 vol_r[vol_r == child[0]] = indexed_vec[index_vec]
                 vol_l[vol_l == child[0]] = indexed_vec[index_vec + left]
             child.remove(child[0])
@@ -620,7 +624,7 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
             ancestor = []
         while len(ancestor) > 0:
             pp = ancestor[-1]
-            if pp in unique_parents.keys():
+            if pp in list(unique_parents):
                 vol_r[vol_r == node_id] = indexed_vec[unique_parents[pp]]
                 vol_l[vol_l == node_id] = indexed_vec[unique_parents[pp] + left]
                 ancestor = []
@@ -643,7 +647,7 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
             ancestor = []
         while len(ancestor) > 0:
             pp = ancestor[-1]
-            if pp in unique_grandparents.keys():
+            if pp in list(unique_grandparents):
                 vol_r[vol_r == node_id] = indexed_vec[unique_grandparents[pp]]
                 vol_l[vol_l == node_id] = indexed_vec[unique_grandparents[pp] + left]
                 ancestor = []

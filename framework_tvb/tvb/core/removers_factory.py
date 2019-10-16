@@ -32,31 +32,29 @@ Created on Nov 1, 2011
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import typing
+
+from tvb.core.adapters.abcremover import ABCRemover
+from tvb.core.neotraits.db import HasTraitsIndex
 
 ####### Default factory is empty
 FACTORY_DICTIONARY = {}
 
 
-def get_remover(datatype_name):
+def get_remover(datatype_index_class):
+    # type: (HasTraitsIndex) -> typing.Type[ABCRemover]
     """
-    :param datatype_name: class-name; to search for a remover class for this. 
+    :param datatype_index_class: class of datatype index; to search for a remover class for this.
     """
-    if isinstance(datatype_name, str) or isinstance(datatype_name, unicode):
-        datatype_name = datatype_name.split('.')[-1]
+    if datatype_index_class in FACTORY_DICTIONARY:
+        return FACTORY_DICTIONARY[datatype_index_class]
     else:
-        datatype_name = datatype_name.__name__
-    
-    if datatype_name in FACTORY_DICTIONARY:
-        return FACTORY_DICTIONARY[datatype_name]
-    else:
-        return FACTORY_DICTIONARY['default']
-    
-    
+        return ABCRemover
+
+
 def update_dictionary(new_dict):
+    # type: (dict) -> None
     """
     Update removers dictionary.
     """
     FACTORY_DICTIONARY.update(new_dict)
-    
-    
-    

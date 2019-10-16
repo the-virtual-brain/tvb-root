@@ -38,18 +38,13 @@ import numpy
 import json
 from scipy.optimize import leastsq
 from scipy.interpolate import griddata
-
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.basic.filters.chain import FilterChain
-
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
-from tvb.core.entities.file.datatypes.graph_h5 import ConnectivityMeasureH5
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neocom import h5
 
 
 class TopographyCalculations(object):
@@ -176,8 +171,8 @@ class TopographicViewerForm(ABCAdapterForm):
         super(TopographicViewerForm, self).__init__(prefix, project_id)
         self.data_0 = DataTypeSelectField(self.get_required_datatype(), self, name='data_0', required=True,
                                           label='Connectivity Measures 1', conditions=self.get_filters(),
-                                          doc='Punctual values for each node in the connectivity matrix. This will give '
-                                              'the colors of the resulting topographic image.')
+                                          doc='Punctual values for each node in the connectivity matrix. This will '
+                                              'give the colors of the resulting topographic image.')
         self.data_1 = DataTypeSelectField(self.get_required_datatype(), self, name='data_1',
                                           label='Connectivity Measures 2', doc='Comparative values',
                                           conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
@@ -197,7 +192,8 @@ class TopographicViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None #FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        return None  # FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+
 
 class TopographicViewer(ABCDisplayer):
     """
@@ -206,17 +202,9 @@ class TopographicViewer(ABCDisplayer):
 
     _ui_name = "Topographic Visualizer"
     _ui_subsection = "topography"
-    form = None
 
-    def get_form(self):
-        if self.form is None:
-            return TopographicViewerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return TopographicViewerForm
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -224,30 +212,22 @@ class TopographicViewer(ABCDisplayer):
         """
         return -1
 
-
     def generate_preview(self, data_0, data_1=None, data_2=None, figure_size=None):
         return self.launch(data_0, data_1, data_2)
 
-
     def launch(self, data_0, data_1=None, data_2=None):
-        import os
-        #TODO: load by ID
-        connectivities_h5 = []
-        measures_h5 = []
 
+        connectivities_idx = []
+        measures_ht = []
         for measure in [data_0, data_1, data_2]:
             if measure is not None:
-                loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(measure.fk_from_operation)))
-                measure_path = loader.path_for(ConnectivityMeasureH5, measure.gid)
-                measure_h5 = ConnectivityMeasureH5(measure_path)
-                measures_h5.append(measure_h5)
-                conn_index = self.load_entity_by_gid(measure.connectivity)
-                loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(conn_index.fk_from_operation)))
-                conn_path = loader.path_for(ConnectivityH5, conn_index.gid)
-                conn_h5 = ConnectivityH5(conn_path)
-                connectivities_h5.append(conn_h5)
+                measures_ht.append(h5.load_from_index(measure))
+                conn_index = self.load_entity_by_gid(measure.connectivity_gid)
+                connectivities_idx.append(conn_index)
 
-        sensor_locations = TopographyCalculations.normalize_sensors(connectivities_h5[0].centres.load())
+        with h5.h5_file_for_index(connectivities_idx[0]) as conn_h5:
+            centres = conn_h5.centres.load()
+        sensor_locations = TopographyCalculations.normalize_sensors(centres)
         sensor_number = len(sensor_locations)
 
         arrays = []
@@ -256,11 +236,11 @@ class TopographicViewer(ABCDisplayer):
         max_vals = []
         data_array = []
         data_arrays = []
-        for i, measure in enumerate(measures_h5):
-            if len(connectivities_h5[i].centres) != sensor_number:
+        for i, measure in enumerate(measures_ht):
+            if connectivities_idx[i].number_of_regions != sensor_number:
                 raise Exception("Use the same connectivity!!!")
-            arrays.append(measure.array_data.load().tolist())
-            titles.append(measure.title.load())
+            arrays.append(measure.array_data.tolist())
+            titles.append(measure.title)
             min_vals.append(measure.array_data.min())
             max_vals.append(measure.array_data.max())
 

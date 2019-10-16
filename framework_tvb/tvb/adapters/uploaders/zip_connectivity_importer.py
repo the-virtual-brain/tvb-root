@@ -32,19 +32,17 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import uuid
-
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.connectivity import Connectivity
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
-from tvb.core.neotraits._forms import UploadField, SimpleSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neocom import h5
 
-NORMALIZATION_OPTIONS = {'Region (node)':'region', 'Absolute (max weight)':'tract'}
+NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
+
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
@@ -54,8 +52,6 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
         self.uploaded = UploadField("application/zip", self, name='uploaded', label='Connectivity file (zip)')
         self.normalization = SimpleSelectField(NORMALIZATION_OPTIONS, self, name='normalization',
                                                label='Weights Normalization', doc='Normalization mode for weights')
-
-        self.project_id = project_id
 
 
 class ZIPConnectivityImporter(ABCUploader):
@@ -76,25 +72,11 @@ class ZIPConnectivityImporter(ABCUploader):
     CORTICAL_INFO = "cortical"
     HEMISPHERE_INFO = "hemisphere"
 
-    form = None
-
-    def get_input_tree(self):
-        return None
-
-    def get_upload_input_tree(self):
-        return None
-
-    def get_form(self):
-        if self.form is None:
-            return ZIPConnectivityImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return ZIPConnectivityImporterForm
 
     def get_output(self):
         return [ConnectivityIndex]
-
 
     def launch(self, uploaded, normalization=None):
         """
@@ -142,12 +124,12 @@ class ZIPConnectivityImporter(ABCUploader):
             elif self.HEMISPHERE_INFO in file_name_low:
                 hemisphere_vector = self.read_list_data(file_name, dtype=numpy.bool)
 
-        ### Clean remaining text-files.
+        # Clean remaining text-files.
         FilesHelper.remove_files(files, True)
 
         result = Connectivity()
 
-        ### Fill positions
+        # Fill positions
         if centres is None:
             raise Exception("Region centres are required for Connectivity Regions! "
                             "We expect a file that contains *centres* inside the uploaded ZIP.")
@@ -158,7 +140,7 @@ class ZIPConnectivityImporter(ABCUploader):
         if labels_vector is not None:
             result.region_labels = labels_vector
 
-        ### Fill and check weights
+        # Fill and check weights
         if weights_matrix is not None:
             if weights_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
                 raise Exception("Unexpected shape for weights matrix! "
@@ -167,7 +149,7 @@ class ZIPConnectivityImporter(ABCUploader):
             if normalization:
                 result.weights = result.scaled_weights(normalization)
 
-        ### Fill and check tracts
+        # Fill and check tracts
         if tract_matrix is not None:
             if numpy.any([x < 0 for x in tract_matrix.flatten()]):
                 raise Exception("Negative values are not accepted in tracts matrix! "
@@ -202,15 +184,4 @@ class ZIPConnectivityImporter(ABCUploader):
             result.hemispheres = hemisphere_vector
 
         result.configure()
-
-        conn_idx = ConnectivityIndex()
-        conn_idx.fill_from_has_traits(result)
-
-        loader = DirLoader(self.storage_path)
-        conn_path = loader.path_for(ConnectivityH5, conn_idx.gid)
-
-        with ConnectivityH5(conn_path) as conn_h5:
-            conn_h5.store(result)
-            conn_h5.gid.store(uuid.UUID(conn_idx.gid))
-
-        return conn_idx
+        return h5.store_complete(result, self.storage_path)

@@ -48,7 +48,6 @@ from tvb.core.entities.file.exceptions import FileStructureException, MissingDat
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 
-
 # Create logger for this module
 LOG = get_logger(__name__)
 
@@ -70,7 +69,6 @@ class HDF5StorageManager(object):
     DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
     LOCKS = {}
 
-
     def __init__(self, storage_folder, file_name, buffer_size=600000):
         """
         Creates a new storage manager instance.
@@ -85,17 +83,15 @@ class HDF5StorageManager(object):
         self.__buffer_array = None
         self.data_buffers = {}
 
-
     def is_valid_hdf5_file(self):
         """
         This method checks if specified file exists and if it has correct HDF5 format
         :returns: True is file exists and has HDF5 format. False otherwise.
         """
         try:
-            return os.path.exists(self.__storage_full_name) and hdf5.h5f.is_hdf5(self.__storage_full_name)
+            return os.path.exists(self.__storage_full_name) and hdf5.is_hdf5(self.__storage_full_name)
         except RuntimeError:
             return False
-
 
     def store_data(self, dataset_name, data_list, where=ROOT_NODE_PATH):
         """
@@ -115,14 +111,14 @@ class HDF5StorageManager(object):
         try:
             LOG.debug("Saving data into data set: %s" % dataset_name)
             # Open file in append mode ('a') to allow adding multiple data sets in the same file
-            hdf5File = self._open_h5_file()
+            hdf5_file = self._open_h5_file()
 
             full_dataset_name = where + dataset_name
-            if full_dataset_name not in hdf5File:
-                hdf5File.create_dataset(full_dataset_name, data=data_to_store)
+            if full_dataset_name not in hdf5_file:
+                hdf5_file.create_dataset(full_dataset_name, data=data_to_store)
 
-            elif hdf5File[full_dataset_name].shape == data_to_store.shape:
-                hdf5File[full_dataset_name][...] = data_to_store[...]
+            elif hdf5_file[full_dataset_name].shape == data_to_store.shape:
+                hdf5_file[full_dataset_name][...] = data_to_store[...]
 
             else:
                 raise IncompatibleFileManagerException("Cannot update existing H5 DataSet %s with a different shape. "
@@ -131,7 +127,6 @@ class HDF5StorageManager(object):
         finally:
             # Now close file
             self.close_file()
-
 
     def append_data(self, dataset_name, data_list, grow_dimension=-1, close_file=True, where=ROOT_NODE_PATH):
         """
@@ -153,10 +148,10 @@ class HDF5StorageManager(object):
         data_buffer = self.data_buffers.get(where + dataset_name, None)
 
         if data_buffer is None:
-            hdf5File = self._open_h5_file()
+            hdf5_file = self._open_h5_file()
             datapath = where + dataset_name
-            if datapath in hdf5File:
-                dataset = hdf5File[datapath]
+            if datapath in hdf5_file:
+                dataset = hdf5_file[datapath]
                 self.data_buffers[datapath] = HDF5StorageManager.H5pyStorageBuffer(dataset,
                                                                                    buffer_size=self.__buffer_size,
                                                                                    buffered_data=data_to_store,
@@ -165,8 +160,8 @@ class HDF5StorageManager(object):
                 data_shape_list = list(data_to_store.shape)
                 data_shape_list[grow_dimension] = None
                 data_shape = tuple(data_shape_list)
-                dataset = hdf5File.create_dataset(where + dataset_name, data=data_to_store, shape=data_to_store.shape,
-                                                  dtype=data_to_store.dtype, maxshape=data_shape)
+                dataset = hdf5_file.create_dataset(where + dataset_name, data=data_to_store, shape=data_to_store.shape,
+                                                   dtype=data_to_store.dtype, maxshape=data_shape)
                 self.data_buffers[datapath] = HDF5StorageManager.H5pyStorageBuffer(dataset,
                                                                                    buffer_size=self.__buffer_size,
                                                                                    buffered_data=None,
@@ -176,7 +171,6 @@ class HDF5StorageManager(object):
                 data_buffer.flush_buffered_data()
         if close_file:
             self.close_file()
-
 
     def remove_data(self, dataset_name, where=ROOT_NODE_PATH):
         """
@@ -193,8 +187,8 @@ class HDF5StorageManager(object):
             where = self.ROOT_NODE_PATH
         try:
             # Open file in append mode ('a') to allow data remove
-            hdf5File = self._open_h5_file()
-            del hdf5File[where + dataset_name]
+            hdf5_file = self._open_h5_file()
+            del hdf5_file[where + dataset_name]
 
         except KeyError:
             LOG.warn("Trying to delete data set: %s but current file does not contain it." % dataset_name)
@@ -202,11 +196,12 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-
     def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False, close_file=True):
         """
         This method reads data from the given data set based on the slice specification
         
+        :param close_file: Automatically close after reading the current field
+        :param ignore_errors: return None in case of error, or throw exception
         :param dataset_name: Name of the data set from where to read data
         :param data_slice: Specify how to retrieve data from array {e.g (slice(1,10,1),slice(1,6,2)) }
         :param where: represents the path where dataset is stored (e.g. /data/info)  
@@ -219,12 +214,12 @@ class HDF5StorageManager(object):
         if where is None:
             where = self.ROOT_NODE_PATH
 
-        datapath = where + dataset_name
+        data_path = where + dataset_name
         try:
             # Open file to read data
-            hdf5File = self._open_h5_file('r')
-            if datapath in hdf5File:
-                data_array = hdf5File[datapath]
+            hdf5_file = self._open_h5_file('r')
+            if data_path in hdf5_file:
+                data_array = hdf5_file[data_path]
                 # Now read data
                 if data_slice is None:
                     result = data_array[()]
@@ -238,13 +233,12 @@ class HDF5StorageManager(object):
                     LOG.error("Trying to read data from a missing data set: %s" % dataset_name)
                     raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
                 else:
-                    return numpy.ndarray(0)
+                    return None
         finally:
             if close_file:
                 self.close_file()
 
-
-    def get_data_shape(self, dataset_name, where=ROOT_NODE_PATH, ignore_errors=False):
+    def get_data_shape(self, dataset_name, where=ROOT_NODE_PATH):
         """
         This method reads data-size from the given data set 
         
@@ -261,18 +255,15 @@ class HDF5StorageManager(object):
 
         try:
             # Open file to read data
-            hdf5File = self._open_h5_file('r')
-            data_array = hdf5File[where + dataset_name]
+            hdf5_file = self._open_h5_file('r')
+            data_array = hdf5_file[where + dataset_name]
             return data_array.shape
         except KeyError:
-            if not ignore_errors:
-                LOG.debug("Trying to read data from a missing data set: %s" % dataset_name)
-                raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
-            else:
-                return 0
+            LOG.debug("Trying to read data from a missing data set: %s" % dataset_name)
+            raise MissingDataSetException("Could not locate dataset: %s" % dataset_name)
+
         finally:
             self.close_file()
-
 
     def set_metadata(self, meta_dictionary, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         """
@@ -291,12 +282,12 @@ class HDF5StorageManager(object):
             where = self.ROOT_NODE_PATH
 
         # Open file to read data
-        hdf5File = self._open_h5_file()
+        hdf5_file = self._open_h5_file()
         try:
-            node = hdf5File[where + dataset_name]
+            node = hdf5_file[where + dataset_name]
         except KeyError:
             LOG.debug("Trying to set metadata on a missing data set: %s" % dataset_name)
-            node = hdf5File.create_dataset(where + dataset_name, (1,))
+            node = hdf5_file.create_dataset(where + dataset_name, (1,))
 
         try:
             # Now set meta-data
@@ -310,7 +301,6 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-
     def _serialize_value(self, value):
         """
         This method takes a value which will be stored as metadata and 
@@ -322,18 +312,14 @@ class HDF5StorageManager(object):
         """
         if value is None:
             return ''
-        # Force unicode strings to simple strings.
-        if isinstance(value, unicode):
-            return str(value)
         # Transform boolean to string and prefix it
-        elif isinstance(value, bool):
+        if isinstance(value, bool):
             return self.BOOL_VALUE_PREFIX + str(value)
         # Transform date to string and append prefix
         elif isinstance(value, datetime):
             return self.DATETIME_VALUE_PREFIX + utils.date2string(value, date_format=self.DATE_TIME_FORMAT)
         else:
             return value
-
 
     def remove_metadata(self, meta_key, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         """
@@ -353,8 +339,8 @@ class HDF5StorageManager(object):
             where = self.ROOT_NODE_PATH
         try:
             # Open file to read data
-            hdf5File = self._open_h5_file()
-            node = hdf5File[where + dataset_name]
+            hdf5_file = self._open_h5_file()
+            node = hdf5_file[where + dataset_name]
 
             # Now delete metadata
             key_to_remove = meta_key
@@ -370,11 +356,10 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-
-    def get_metadata(self, dataset_name='', where=ROOT_NODE_PATH, ignore_errors=False):
+    def get_metadata(self, dataset_name='', where=ROOT_NODE_PATH):
         """
         Retrieve ALL meta-data information for root node or for a given data set.
-        
+
         :param dataset_name: name of the dataset for which to read metadata. If None, read metadata from ROOT node.
         :param where: represents the path where dataset is stored (e.g. /data/info)  
         :returns: a dictionary containing all metadata associated with the node
@@ -389,8 +374,8 @@ class HDF5StorageManager(object):
         meta_key = ""
         try:
             # Open file to read data
-            hdf5File = self._open_h5_file('r')
-            node = hdf5File[where + dataset_name]
+            hdf5_file = self._open_h5_file('r')
+            node = hdf5_file[where + dataset_name]
             # Now retrieve metadata values
             all_meta_data = {}
 
@@ -403,12 +388,9 @@ class HDF5StorageManager(object):
             return all_meta_data
 
         except KeyError:
-            if not ignore_errors:
-                msg = "Trying to read data from a missing data set: %s" % (where + dataset_name)
-                LOG.warning(msg)
-                raise MissingDataSetException(msg)
-            else:
-                return numpy.ndarray(0)
+            msg = "Trying to read data from a missing data set: %s" % (where + dataset_name)
+            LOG.warning(msg)
+            raise MissingDataSetException(msg)
         except AttributeError:
             msg = "Trying to get value for missing metadata %s" % meta_key
             LOG.exception(msg)
@@ -419,7 +401,6 @@ class HDF5StorageManager(object):
             raise FileStructureException(msg)
         finally:
             self.close_file()
-
 
     def get_file_data_version(self):
         """
@@ -439,7 +420,6 @@ class HDF5StorageManager(object):
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
                                                "manager for this file?" % (self.__storage_full_name,))
 
-
     def get_gid_attribute(self):
         """
         Used for obtaining the gid of the DataType of
@@ -454,7 +434,6 @@ class HDF5StorageManager(object):
                                                        "input file %s." % self.__storage_full_name)
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
                                                "manager for this file?" % (self.__storage_full_name,))
-
 
     def _deserialize_value(self, value):
         """
@@ -477,7 +456,6 @@ class HDF5StorageManager(object):
 
         return value
 
-
     def __aquire_lock(self):
         """
         Aquire a unique lock for each different file path on the system.
@@ -488,7 +466,6 @@ class HDF5StorageManager(object):
             self.LOCKS[self.__storage_full_name] = lock
         lock.acquire()
 
-
     def __release_lock(self):
         """
         Aquire a unique lock for each different file path on the system.
@@ -497,7 +474,6 @@ class HDF5StorageManager(object):
         if lock is None:
             raise Exception("Some lock was deleted without being released beforehand.")
         lock.release()
-
 
     def close_file(self):
         """
@@ -511,7 +487,6 @@ class HDF5StorageManager(object):
             self.__close_file()
         finally:
             self.__release_lock()
-
 
     def _open_h5_file(self, mode='a'):
         """
@@ -527,7 +502,6 @@ class HDF5StorageManager(object):
             self.__release_lock()
         return file_obj
 
-
     def __close_file(self):
         """
         Close file used to store data.
@@ -535,7 +509,7 @@ class HDF5StorageManager(object):
         hdf5_file = self.__hfd5_file
 
         # Try to close file only if it was opened before
-        if hdf5_file is not None and hdf5_file.fid.valid:
+        if hdf5_file is not None and hdf5_file.id.valid:
             LOG.debug("Closing file: %s" % self.__storage_full_name)
             try:
                 for h5py_buffer in self.data_buffers.values():
@@ -543,13 +517,12 @@ class HDF5StorageManager(object):
                 self.data_buffers = {}
                 hdf5_file.close()
             except Exception as excep:
-                ### Do nothing is this situation.
-                ### The file is correctly closed, but the list of open files on HDF5 is not updated in a synch manner.
-                ### del _open_files[filename] might throw KeyError
+                # Do nothing is this situation.
+                # The file is correctly closed, but the list of open files on HDF5 is not updated in a synch manner.
+                # del _open_files[filename] might throw KeyError
                 LOG.exception(excep)
-            if not hdf5_file.fid.valid:
+            if not hdf5_file.id.valid:
                 self.__hfd5_file = None
-
 
     # -------------- Private methods  --------------
     def __open_h5_file(self, mode='a'):
@@ -565,7 +538,7 @@ class HDF5StorageManager(object):
             raise FileStructureException("Invalid storage file. Please provide a valid path.")
         try:
             # Check if file is still open from previous writes.
-            if self.__hfd5_file is None or not self.__hfd5_file.fid.valid:
+            if self.__hfd5_file is None or not self.__hfd5_file.id.valid:
                 file_exists = os.path.exists(self.__storage_full_name)
 
                 # bug in some versions of hdf5 on windows prevent creating file with mode='a'
@@ -578,16 +551,16 @@ class HDF5StorageManager(object):
                 # If this is the first time we access file, write data version
                 if not file_exists:
                     os.chmod(self.__storage_full_name, TvbProfile.current.ACCESS_MODE_TVB_FILES)
-                    self.__hfd5_file['/'].attrs[self.TVB_ATTRIBUTE_PREFIX +
-                                                TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
+                    attr_name = self.TVB_ATTRIBUTE_PREFIX + TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
+                    self.__hfd5_file['/'].attrs[attr_name] = TvbProfile.current.version.DATA_VERSION
         except (IOError, OSError) as err:
             LOG.exception("Could not open storage file.")
             raise FileStructureException("Could not open storage file. %s" % err)
 
         return self.__hfd5_file
 
-
-    def _check_data(self, data_list):
+    @staticmethod
+    def _check_data(data_list):
         """
         Check if the data to be stores is in a good format. If not adapt it.
         """
@@ -604,8 +577,7 @@ class HDF5StorageManager(object):
             data_to_store = hdf5.Empty("f")
         return data_to_store
 
-
-    class H5pyStorageBuffer():
+    class H5pyStorageBuffer(object):
         """
         Helper class in order to buffer data for append operations, to limit the number of actual
         HDD I/O operations.
@@ -635,7 +607,6 @@ class HDF5StorageManager(object):
             else:
                 return True
 
-
         def __custom_numpy_append(self, array1, array2):
             array_1_shape = numpy.array(array1.shape)
             array_2_shape = numpy.array(array2.shape)
@@ -651,7 +622,6 @@ class HDF5StorageManager(object):
             result_array[tuple(full_index)] = array2
             return result_array
 
-
         def flush_buffered_data(self):
             """
             Append the data buffered so far to the input dataset using :param grow_dimension: as the dimension that
@@ -661,14 +631,14 @@ class HDF5StorageManager(object):
                 current_shape = self.h5py_dataset.shape
                 new_shape = list(current_shape)
                 new_shape[self.grow_dimension] += self.buffered_data.shape[self.grow_dimension]
-                ## Create the required slice to which the new data will be added.
-                ## For example if the 3nd dimension of a 4D datashape (74, 1, 100, 1)
-                ## we want to get the slice (:, :, 100:200, :) in order to add 100 new entries
+                # Create the required slice to which the new data will be added.
+                # For example if the 3nd dimension of a 4D datashape (74, 1, 100, 1)
+                # we want to get the slice (:, :, 100:200, :) in order to add 100 new entries
                 full_slice = slice(None, None, None)
                 slice_to_add = slice(current_shape[self.grow_dimension], new_shape[self.grow_dimension], None)
-                appendTo_address = [full_slice for _ in new_shape]
-                appendTo_address[self.grow_dimension] = slice_to_add
-                ## Do the data reshape and copy the new data
+                append2address = [full_slice for _ in new_shape]
+                append2address[self.grow_dimension] = slice_to_add
+                # Do the data reshape and copy the new data
                 self.h5py_dataset.resize(tuple(new_shape))
-                self.h5py_dataset[tuple(appendTo_address)] = self.buffered_data
+                self.h5py_dataset[tuple(append2address)] = self.buffered_data
                 self.buffered_data = None

@@ -48,7 +48,7 @@ from threading import Lock
 LOCK_CREATE_FOLDER = Lock()
 
 
-class FilesHelper():
+class FilesHelper(object):
     """
     This class manages all Structure related operations, using File storage.
     It will handle creating meaning-full entities and retrieving existent ones. 

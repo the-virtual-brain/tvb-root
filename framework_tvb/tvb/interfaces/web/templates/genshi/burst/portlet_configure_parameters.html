@@ -3,7 +3,7 @@
 	<xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
 	
 	<table py:if="adapters_list">
-		<tr py:for="i in xrange(len(adapters_list))">
+		<tr py:for="i in range(len(adapters_list))">
 			<py:with vars="is_not_last = (i &lt; len(adapters_list) -1); adapter_config = adapters_list[i];">
 			<td>
 				Configuration for <b>${adapter_config.ui_name}</b>:

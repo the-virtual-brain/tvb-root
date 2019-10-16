@@ -33,7 +33,7 @@
 """
 import json
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.model import BurstConfiguration
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, MODEL_PARAMETERS, SerializationManager
 from tvb.simulator.integrators import HeunStochastic
 from tvb.simulator.models import Hopfield, Generic2dOscillator

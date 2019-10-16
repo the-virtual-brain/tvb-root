@@ -1,21 +1,54 @@
-from sqlalchemy import String, ForeignKey, Column, Integer
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
+
+from sqlalchemy import String, ForeignKey, Column, Integer, Float
 from sqlalchemy.orm import relationship
-from tvb.core.neotraits.db import NArrayIndex, HasTraitsIndex
+from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.tests.framework.core.neotraits.data import FooDatatype
 
 
 class BazIndex(HasTraitsIndex):
     # you have to define your primary key, not inherit the one from HasTraitsIndex
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
-    # __tablename__ and __polymorphic_identity__ are automatically set to the name of the class
-    miu_id = Column(Integer, ForeignKey(NArrayIndex.id), nullable=False)
-    miu = relationship(NArrayIndex, foreign_keys=miu_id)
+
+    miu_min = Column(Float)
+    miu_max = Column(Float)
+    miu_mean = Column(Float)
+
     scalar_str = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.miu = NArrayIndex.from_ndarray(datatype.miu)
+        self.miu_min = datatype.miu.min()
+        self.miu_max = datatype.miu.max()
+        self.miu_mean = datatype.miu.mean()
         self.scalar_str = datatype.scalar_str
-
 
 
 def test_hastraitsindex_sets_tablename_and_polymorphic_identity():
@@ -23,15 +56,15 @@ def test_hastraitsindex_sets_tablename_and_polymorphic_identity():
     assert BazIndex.__mapper_args__['polymorphic_identity'] == 'BazIndex'
 
 
-
 class FooIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
-    array_float_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_float = relationship(NArrayIndex, foreign_keys=array_float_id)
+    array_float_min = Column(Float)
+    array_float_max = Column(Float)
 
-    array_int_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_int = relationship(NArrayIndex, foreign_keys=array_int_id)
+    array_int_max = Column(Integer)
+    array_int_min = Column(Integer)
+    array_int_mean = Column(Integer)
     # simple scalars
     scalar_int = Column(Integer, nullable=False)
 
@@ -46,10 +79,12 @@ class FooIndex(HasTraitsIndex):
     # then you might want to implement a method like this if you map a trait
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
-        self.array_float = NArrayIndex.from_ndarray(datatype.array_float)
-        self.array_int = NArrayIndex.from_ndarray(datatype.array_int)
+        self.array_float_min = datatype.array_float.min()
+        self.array_float_max = datatype.array_float.max()
+        self.array_int_max = datatype.array_int.max()
+        self.array_int_min = datatype.array_int.min()
+        self.array_int_mean = datatype.array_int.mean()
         self.scalar_int = datatype.scalar_int
-
 
 
 class BarIndex(FooIndex):
@@ -57,12 +92,11 @@ class BarIndex(FooIndex):
     # The polymorphic_on discriminator is set up by the HasTraitsIndex superclass
     id = Column(Integer, ForeignKey(FooIndex.id), primary_key=True)
 
-    array_str_id = Column(Integer, ForeignKey(NArrayIndex.id), nullable=False)
-    array_str = relationship(NArrayIndex, foreign_keys=array_str_id)
+    array_str_length = Column(Integer)
 
     def fill_from_has_traits(self, datatype):
         super(BarIndex, self).fill_from_has_traits(datatype)
-        self.array_str = NArrayIndex.from_ndarray(datatype.array_str)
+        self.array_str_length = datatype.array_str.size
 
 
 def test_schema(session):
@@ -79,9 +113,10 @@ def test_simple_store_load(session, bazFactory):
 
     res = session.query(BazIndex)
     assert res.count() == 1
-    assert res[0].miu.dtype_kind == 'f'
+    assert res[0].miu_min == 0.0
+    assert res[0].miu_max == 2.0
+    assert res[0].miu_mean == 1.0
     assert res[0].scalar_str == 'tick'
-    assert res[0].miu.dtype_str == '<f8'
 
 
 def test_aggregate_store_load(session, fooFactory):
@@ -127,9 +162,8 @@ def test_store_load_inheritance(session, barFactory, bazFactory):
     res = session.query(BarIndex)
     assert res.count() == 1
     # own field
-    assert res[0].array_str.dtype_str == '|S32'
+    assert res[0].array_str_length == 3
     # inherited field
-    assert res[0].array_float.dtype_str == '<f8'
-    # relationsip in the parent class
+    assert res[0].array_float_max == 42
+    # relationship in the parent class
     assert res[0].abaz.scalar_str == 'tick'
-

@@ -17,7 +17,7 @@
             <button id="${btn_id}">Reset</button>
             <h3>$title</h3>
             <table class="paramSlidersTable" py:with="step=(1 + len(parameters))/2">
-                <tr py:for="i in xrange(step)">
+                <tr py:for="i in range(step)">
                     ${drawSlider(parameters[i])}
                     <py:if test="i + step &lt; len(parameters)">
                         ${drawSlider(parameters[i + step])}

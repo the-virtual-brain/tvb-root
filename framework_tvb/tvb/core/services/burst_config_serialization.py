@@ -34,13 +34,10 @@ Service for serianlizing a Burst (Simulator) configuration.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import six
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN, \
-    PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
+from tvb.core.entities.model.model_burst import *
 from tvb.core.services.flow_service import FlowService
 #from tvb.datatypes import noise_framework
 from tvb.simulator.integrators import Integrator
@@ -86,6 +83,8 @@ class SerializationManager(object):
 
 
     def __make_instance_from_burst_config(self, params_dict, parent_class, class_name_key, params_key):
+        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
+
         """ This is used internally to create a model or an integrator based on the burst config """
         class_name = self.conf.get_simulation_parameter_value(class_name_key)
         parameters = params_dict[params_key]
@@ -99,6 +98,8 @@ class SerializationManager(object):
 
 
     def __make_shallow_model(self):
+        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
+
         """ Creates a model of the type present in the config without setting any parameters on it """
         class_name = self.conf.get_simulation_parameter_value(PARAM_MODEL)
         return get_traited_instance_for_name(class_name, Model, {})

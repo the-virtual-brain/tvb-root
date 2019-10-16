@@ -40,7 +40,7 @@ import os
 from PIL import Image
 import base64
 import xml.dom.minidom
-from StringIO import StringIO
+from io import StringIO
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.entities import model

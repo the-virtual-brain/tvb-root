@@ -70,17 +70,19 @@ function clone(object_) {
 function resetToNewBurst() {
     doAjaxCall({
         type: "POST",
-        url: '/burst/reset_burst/',
-        success: function () {
-            loadSimulatorInterface();
-            returnToSessionPortletConfiguration();
-            setNewBurstActive();
-            fill_burst_name('', false, false);
+        url: '/burst/reset_simulator_configuration/',
+        success: function (response) {
+            // loadSimulatorInterface();
+            // returnToSessionPortletConfiguration();
+            // setNewBurstActive();
+            // fill_burst_name('', false, false);
+            let simParamElem = $("#div-simulator-parameters");
+            simParamElem.html(response);
             displayMessage("Completely new configuration loaded!");
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
-            sessionStoredBurst = clone(EMPTY_BURST);
+            // sessionStoredBurst = clone(EMPTY_BURST);
         }
     });
 }
@@ -91,17 +93,39 @@ function resetToNewBurst() {
 function copyBurst(burstID) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/copy_burst/' + burstID,
-        success: function (r) {
-            loadSimulatorInterface();
-            setNewBurstActive();
-            fill_burst_name(r, false, true);
+        url: '/burst/copy_simulator_configuration/' + burstID,
+        showBlockerOverlay: true,
+        success: function (response) {
+            // loadSimulatorInterface();
+            // setNewBurstActive();
+            // fill_burst_name(r, false, true);
+            let simParamElem = $("#div-simulator-parameters");
+            simParamElem.html(response);
+
+            _renderAllSimulatorForms('/burst/set_connectivity');
             displayMessage("A copy of previous simulation was prepared for you!");
         },
         error: function () {
             displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
-            sessionStoredBurst = clone(EMPTY_BURST);
+            // sessionStoredBurst = clone(EMPTY_BURST);
         }
+    });
+}
+
+function _renderAllSimulatorForms(url){
+    doAjaxCall({
+       type: "GET",
+       url: url,
+       success: function (response) {
+           var t = document.createRange().createContextualFragment(response);
+            document.getElementById('div-simulator-parameters').appendChild(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+
+           next_url = $(response).attr("action");
+           if (next_url && next_url.length > 0) {
+               _renderAllSimulatorForms(next_url);
+           }
+       }
     });
 }
 
@@ -264,7 +288,7 @@ function renameBurstEntry(burst_id, new_name_id) {
 /*
  * Load a given burst entry from history. 
  */
-function changeBurstHistory(burst_id) {
+function changeBurstHistory(burst_id, load_burst) {
     const clickedBurst = document.getElementById("burst_id_" + burst_id);
     // todo : do not store app state in css classes
     if (clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0 &&
@@ -276,8 +300,10 @@ function changeBurstHistory(burst_id) {
         $(this).removeClass(ACTIVE_BURST_CLASS);
         $(this).removeClass(GROUP_BURST_CLASS);
     });
-    // Load the selected burst.
-    loadBurst(burst_id);
+    if (load_burst) {
+        // Load the selected burst.
+        loadBurstReadOnly(burst_id);
+    }
 }
 
 /*************************************************************************************************************************
@@ -899,17 +925,18 @@ function changeBurstTile(selectedHref) {
  */
 function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     _clearAllTimeouts();
-    returnToSessionPortletConfiguration();
+    // returnToSessionPortletConfiguration();
 
     updatePortletsToolbar(0);
     $("#section-portlets-ul, #section-portlets-ul").find("li").removeClass('active');
     $(selectedHref).parent().addClass('active');
     // Also update selected tab on cherryPy session.
-    doAjaxCall({
-        type: "POST",
-        async: false,
-        url: '/burst/change_selected_tab/-1'
-    });
+    // TODO: we don't show portlets for now
+    // doAjaxCall({
+    //     type: "POST",
+    //     async: false,
+    //     url: '/burst/change_selected_tab/-1'
+    // });
     let filterValue = {'type': 'from_burst', 'value': sessionStoredBurst.id};
     if (filterValue.value === '') {
         filterValue = {'type': 'from_burst', 'value': "0"};
@@ -962,6 +989,26 @@ function initBurstConfiguration(sessionPortlets, selectedTab) {
     }
     selectedPortlets = sessionPortlets;
     setPortletsStaticPreviews();
+}
+
+/*
+ * Given a burst id, load the simulator configuration in read-only mode
+ */
+function loadBurstReadOnly(burst_id) {
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/load_burst_read_only/' + burst_id,
+        showBlockerOverlay: true,
+        success: function (response) {
+            let simParamElem = $("#div-simulator-parameters");
+            simParamElem.html(response);
+            _renderAllSimulatorForms('/burst/set_connectivity');
+            displayMessage("The simulation configuration was loaded for you!");
+        },
+        error: function () {
+            displayMessage("We encountered an error while loading a the simulation configuration. Please try reload and then check the logs!", "errorMessage");
+        }
+    })
 }
 
 /*
@@ -1112,28 +1159,47 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     user_edited_title = false;
 }
 
-/*
- * Get the data from the simulator and launch a new burst. On success add a new entry in the burst-history.
- * @param launchMode: 'new' 'branch' or 'continue'
- */
-function launchNewBurst(launchMode) {
-    let newBurstName = document.getElementById('input-burst-name-id').value;
-    if (newBurstName.length === 0) {
-        newBurstName = "none_undefined";
-    }
-    displayMessage("You've submitted parameters for simulation launch! Please wait for preprocessing steps...", 'warningMessage');
-    // const submitableData = getSubmitableData('div-simulator-parameters', false);
+function setupPSE() {
     doAjaxCall({
         type: "POST",
-        url: '/burst/launch_simulation/' + launchMode + '/' + newBurstName,
-        // data: {'simulator_parameters': JSON.stringify(submitableData)},
+        url: '/burst/setup_pse/',
         traditional: true,
         success: function (r) {
+            // TODO: update history
             // loadBurstHistory();
             // const result = $.parseJSON(r);
             // if ('id' in result) {
             //     changeBurstHistory(result.id);
             // }
+            // if ('error' in result) {
+            //     displayMessage(result.error, "errorMessage");
+            // }
+        },
+        error: function () {
+            displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
+        }
+    });
+}
+
+/*
+ * Get the data from the simulator and launch a new burst. On success add a new entry in the burst-history.
+ * @param launchMode: 'new' 'branch' or 'continue'
+ */
+function launchNewBurst(currentForm, launchMode) {
+    var form_data = $(currentForm).serialize(); //Encode form elements for submission
+
+    displayMessage("You've submitted parameters for simulation launch! Please wait for preprocessing steps...", 'warningMessage');
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/launch_simulation/' + launchMode,
+        data: form_data,
+        traditional: true,
+        success: function (response) {
+            loadBurstHistory();
+            const result = $.parseJSON(response);
+            if ('id' in result) {
+                changeBurstHistory(result.id, false);
+            }
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
             }
@@ -1151,11 +1217,21 @@ function previousWizzardStep(currentForm, previous_action) {
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
     var previous_button = previous_form.elements.namedItem('previous');
+    var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
+    var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
     var fieldset = previous_form.elements[0];
 
-    next_button.style.visibility = 'visible';
+    if (next_button != null) {
+        next_button.style.visibility = 'visible';
+    }
     if (previous_button != null) {
         previous_button.style.visibility = 'visible';
+    }
+    if (config_region_param_button != null) {
+        config_region_param_button.style.visibility = 'visible';
+    }
+    if (config_surface_param_button != null) {
+        config_surface_param_button.style.visibility = 'visible';
     }
     fieldset.disabled = false;
 }
@@ -1167,16 +1243,26 @@ function wizzard_submit(currentForm) {
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
+    var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
+    var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
         url: post_url,
         type: request_method,
         data: form_data,
-        success: function (response) { //
-            next_button.style.visibility = 'hidden';
+        success: function (response) {
+            if (next_button != null) {
+                next_button.style.visibility = 'hidden';
+            }
             if (previous_button != null) {
                 previous_button.style.visibility = 'hidden';
+            }
+            if (config_region_param_button != null) {
+                config_region_param_button.style.visibility = 'hidden';
+            }
+            if (config_surface_param_button != null) {
+                config_surface_param_button.style.visibility = 'hidden';
             }
             fieldset.disabled = true;
             var t = document.createRange().createContextualFragment(response);

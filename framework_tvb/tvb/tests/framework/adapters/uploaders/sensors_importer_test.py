@@ -39,7 +39,7 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
-from tvb.adapters.uploaders.sensors_importer import Sensors_Importer
+from tvb.adapters.uploaders.sensors_importer import SensorsImporter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatypes_factory import DatatypesFactory
 import tvb_data.sensors as demo_data
@@ -60,7 +60,7 @@ class TestSensorsImporter(TransactionalTestCase):
         self.datatypeFactory = DatatypesFactory()
         self.test_project = self.datatypeFactory.get_project()
         self.test_user = self.datatypeFactory.get_user()
-        self.importer = Sensors_Importer()
+        self.importer = SensorsImporter()
 
     def transactional_teardown_method(self):
         """

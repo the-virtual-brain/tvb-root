@@ -37,7 +37,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.regionMapping as demo_data
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService

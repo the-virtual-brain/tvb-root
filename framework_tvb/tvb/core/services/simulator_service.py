@@ -1,264 +1,254 @@
-import importlib
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
+import copy
+import json
 import uuid
-import os
-
 from tvb.basic.logger.builder import get_logger
-from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold
-from tvb.simulator.noise import Multiplicative
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.simulator import Simulator
-
+from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.file.simulator.configurations_h5 import CouplingH5, ModelH5, EquationH5, NoiseH5, IntegratorH5, \
-    MonitorH5, SimulatorH5
+from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
-from tvb.core.entities.storage import dao
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.core.entities.storage import dao, transactional
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.services.operation_service import OperationService
-from tvb.interfaces.neocom._h5loader import DirLoader
-from tvb.interfaces.web.controllers import common
-
-
-def get_configuration_path_and_type(dir_loader, configuration_gid):
-    configuration_filename = dir_loader._locate(configuration_gid)
-    configuration_path = os.path.join(dir_loader.base_dir, configuration_filename)
-    storage_manager = HDF5StorageManager(dir_loader.base_dir, configuration_filename)
-    configuration_type = storage_manager.get_metadata().get('type')
-    package, cls_name = configuration_type.rsplit('.', 1)
-    module = importlib.import_module(package)
-    cls = getattr(module, cls_name)
-
-    return configuration_path, cls
+from tvb.core.neocom import h5
 
 
 class SimulatorService(object):
-    dir_loader = None
+    MAX_BURSTS_DISPLAYED = 50
+    LAUNCH_NEW = 'new'
+    LAUNCH_BRANCH = 'branch'
 
     def __init__(self):
+        self.logger = get_logger(self.__class__.__module__)
         self.operation_service = OperationService()
-        self.logger = get_logger(self.__class__.__name__)
-        self.file_helper = FilesHelper()
+        self.files_helper = FilesHelper()
 
-    def serialize_simulator(self, simulator, simulator_id):
-        # TODO: handle operation - simulator H5 relation
-        project = common.get_current_project()
-        user = common.get_logged_user()
-
-        partial_operation = self._prepare_operation(project.id, user.id, simulator_id)
-        storage_path = self.file_helper.get_project_folder(project, partial_operation)
-
-        self.dir_loader = DirLoader(storage_path)
-
-        coupling_gid = self._serialize_coupling(simulator.coupling)
-        model_gid = self._serialize_model(simulator.model)
-        integrator_gid = self._serialize_integrator(simulator.integrator)
-        monitor_gid = self._serialize_monitor(simulator.monitors[0])
-
-        simulator_gid = uuid.uuid4()
-        simulator_path = self.dir_loader.path_for_has_traits(type(simulator), simulator_gid)
+    @staticmethod
+    def serialize_simulator(simulator, simulator_gid, simulation_state_gid, storage_path):
+        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
 
         with SimulatorH5(simulator_path) as simulator_h5:
-            simulator_h5.gid.store(simulator_gid)
-            simulator_h5.connectivity.store(uuid.uuid4())
-            simulator_h5.conduction_speed.store(simulator.conduction_speed)
-            simulator_h5.surface.store(uuid.uuid4())
-            simulator_h5.stimulus.store(uuid.uuid4())
-            simulator_h5.initial_conditions.store(simulator.initial_conditions)
-            simulator_h5.simulation_length.store(simulator.simulation_length)
-
-            simulator_h5.coupling.store(coupling_gid)
-            simulator_h5.model.store(model_gid)
-            simulator_h5.integrator.store(integrator_gid)
-            simulator_h5.monitors.store([monitor_gid.hex])
-
-        # partial_operation.parameters = json.dumps({'simulator_h5': simulator_path})
-        # dao.store_entity(partial_operation)
+            simulator_h5.gid.store(uuid.UUID(simulator_gid))
+            simulator_h5.store(simulator)
+            simulator_h5.connectivity.store(simulator.connectivity.gid)
+            if simulator.stimulus:
+                simulator_h5.stimulus.store(uuid.UUID(simulator.stimulus.gid))
+            if simulation_state_gid:
+                simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
 
         return simulator_gid
 
-    def deserialize_simulator(self, simulator_gid, simulator_id):
-        project = common.get_current_project()
-        user = common.get_logged_user()
-
-        partial_operation = self._prepare_operation(project.id, user.id, simulator_id)
-        storage_path = self.file_helper.get_project_folder(project, partial_operation)
-
-        self.dir_loader = DirLoader(storage_path)
-
-        simulator_in_path = self.dir_loader.path_for_has_traits(Simulator, simulator_gid)
+    @staticmethod
+    def deserialize_simulator(simulator_gid, storage_path):
+        simulator_in_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
         simulator_in = Simulator()
 
         with SimulatorH5(simulator_in_path) as simulator_in_h5:
-            simulator_in.conduction_speed = simulator_in_h5.conduction_speed.load()
-            simulator_in.simulation_length = simulator_in_h5.simulation_length.load()
-            simulator_in.initial_conditions = simulator_in_h5.initial_conditions.load()
+            simulator_in_h5.load_into(simulator_in)
+            connectivity_gid = simulator_in_h5.connectivity.load()
+            stimulus_gid = simulator_in_h5.stimulus.load()
+            simulation_state_gid = simulator_in_h5.simulation_state.load()
 
-            # ---------- Load GIDs of all references ---------
-            coupling_in_gid = simulator_in_h5.coupling.load()
-            model_in_gid = simulator_in_h5.model.load()
-            monitors_gid_list = simulator_in_h5.monitors.load()
-            monitor_in_gid = uuid.UUID(monitors_gid_list[0])
-            integrator_in_gid = simulator_in_h5.integrator.load()
+        conn_index = dao.get_datatype_by_gid(connectivity_gid.hex)
+        conn = h5.load_from_index(conn_index)
 
-        coupling_in = self._deserialize_coupling(coupling_in_gid)
-        model_in = self._deserialize_model(model_in_gid)
-        integrator_in = self._deserialize_integrator(integrator_in_gid)
-        monitor_in = self._deserialize_monitor(monitor_in_gid)
+        simulator_in.connectivity = conn
 
-        simulator_in.coupling = coupling_in
-        simulator_in.model = model_in
-        simulator_in.integrator = integrator_in
-        simulator_in.monitors = [monitor_in]
+        if simulator_in.surface:
+            cortex_path = h5.path_for(storage_path, CortexH5, simulator_in.surface.gid)
+            with CortexH5(cortex_path) as cortex_h5:
+                local_conn_gid = cortex_h5.local_connectivity.load()
+                region_mapping_gid = cortex_h5.region_mapping_data.load()
 
-        return simulator_in
+            region_mapping_index = dao.get_datatype_by_gid(region_mapping_gid.hex)
+            region_mapping_path = h5.path_for_stored_index(region_mapping_index)
+            region_mapping = RegionMapping()
+            with RegionMappingH5(region_mapping_path) as region_mapping_h5:
+                region_mapping_h5.load_into(region_mapping)
+                region_mapping.gid = region_mapping_h5.gid.load()
+                surf_gid = region_mapping_h5.surface.load()
 
-    def _prepare_operation(self, project_id, user_id, simulator_id):
-        # sim_algo = FlowService().get_algorithm_by_identifier(simulator_id)
+            surf_index = dao.get_datatype_by_gid(surf_gid.hex)
+            surf_h5 = h5.h5_file_for_index(surf_index)
+            surf = CorticalSurface()
+            surf_h5.load_into(surf)
+            surf_h5.close()
+            region_mapping.surface = surf
+            simulator_in.surface.region_mapping_data = region_mapping
 
-        operation = Operation(user_id, project_id, simulator_id, '')
+            if local_conn_gid:
+                local_conn_index = dao.get_datatype_by_gid(local_conn_gid.hex)
+                local_conn = h5.load_from_index(local_conn_index)
+                simulator_in.surface.local_connectivity = local_conn
+
+        if stimulus_gid:
+            stimulus_index = dao.get_datatype_by_gid(stimulus_gid.hex)
+            stimulus = h5.load_from_index(stimulus_index)
+            simulator_in.stimulus = stimulus
+
+        return simulator_in, connectivity_gid, simulation_state_gid
+
+    @transactional
+    def _prepare_operation(self, project_id, user_id, simulator_id, simulator_index, algo_category, op_group, metadata,
+                           ranges=None):
+        operation_parameters = json.dumps({'simulator_gid': simulator_index.gid})
+        metadata, user_group = self.operation_service._prepare_metadata(metadata, algo_category, op_group, {})
+        meta_str = json.dumps(metadata)
+
+        op_group_id = None
+        if op_group:
+            op_group_id = op_group.id
+
+        operation = Operation(user_id, project_id, simulator_id, operation_parameters, op_group_id=op_group_id,
+                              meta=meta_str, range_values=ranges)
+
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
+                          str(metadata) + ",algorithmId=" + str(simulator_id) + ", ops_group= " + str(
+            op_group_id) + ")")
+
+        # visible_operation = visible and category.display is False
         operation = dao.store_entity(operation)
+        # operation.visible = visible_operation
+
+        # TODO: prepare portlets/handle operation groups/no workflows
 
         return operation
 
-    def _serialize_coupling(self, coupling):
-        coupling_gid = uuid.uuid4()
-        coupling_path = self.dir_loader.path_for_has_traits(type(coupling), coupling_gid)
+    @staticmethod
+    def _set_simulator_range_parameter(simulator, range_parameter_name, range_parameter_value):
+        range_param_name_list = range_parameter_name.split('.')
+        current_attr = simulator
+        for param_name in range_param_name_list[:len(range_param_name_list) - 1]:
+            current_attr = getattr(current_attr, param_name)
+        setattr(current_attr, range_param_name_list[-1], range_parameter_value)
 
-        with CouplingH5(coupling_path, coupling) as coupling_h5:
-            coupling_h5.store(coupling)
+    def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo,
+                                            session_stored_simulator, simulation_state_gid):
+        try:
+            simulator_index = SimulatorIndex()
+            metadata = {}
+            if burst_config:
+                simulator_index.fk_parent_burst = burst_config.id
+                metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
+            dao.store_entity(simulator_index)
+            simulator_id = simulator_algo.id
+            algo_category = simulator_algo.algorithm_category
+            operation = self._prepare_operation(project.id, user.id, simulator_id, simulator_index, algo_category, None,
+                                                metadata)
 
-        return coupling_gid
+            simulator_index.fk_from_operation = operation.id
+            dao.store_entity(simulator_index)
 
-    def _serialize_model(self, model):
-        model_gid = uuid.uuid4()
-        model_path = self.dir_loader.path_for_has_traits(type(model), model_gid)
+            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+            self.serialize_simulator(session_stored_simulator, simulator_index.gid, simulation_state_gid, storage_path)
 
-        with ModelH5(model_path, model) as model_h5:
-            model_h5.store(model)
+            wf_errs = 0
+            try:
+                OperationService().launch_operation(operation.id, True)
+                return operation
+            except Exception as excep:
+                self.logger.error(excep)
+                wf_errs += 1
+                if burst_config:
+                    BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
 
-        return model_gid
+            self.logger.debug("Finished launching workflow. The operation was launched successfully, " +
+                              str(wf_errs) + " had error on pre-launch steps")
 
-    def _serialize_equation(self, equation):
-        equation_gid = uuid.uuid4()
-        equation_path = self.dir_loader.path_for_has_traits(type(equation), equation_gid)
+        except Exception as excep:
+            self.logger.error(excep)
+            if burst_config:
+                BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
 
-        with EquationH5(equation_path, equation) as equation_h5:
-            equation_h5.equation.store(equation.equation)
-            equation_h5.parameters.store(equation.parameters)
+    def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
+                                     session_stored_simulator):
+        try:
+            simulator_id = simulator_algo.id
+            algo_category = simulator_algo.algorithm_category
+            operation_group = burst_config.operation_group
+            metric_operation_group = burst_config.metric_operation_group
+            operations = []
+            range_param2_values = []
+            if range_param2:
+                range_param2_values = range_param2.get_range_values()
+            for param1_value in range_param1.get_range_values():
+                for param2_value in range_param2_values:
+                    simulator = copy.deepcopy(session_stored_simulator)
+                    self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
+                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
 
-        return equation_gid
+                    simulator_index = SimulatorIndex()
+                    simulator_index.fk_parent_burst = burst_config.id
+                    simulator_index = dao.store_entity(simulator_index)
+                    ranges = json.dumps({range_param1.name: param1_value[0], range_param2.name: param2_value[0]})
 
-    def _serialize_noise(self, noise, equation_gid=None):
-        noise_gid = uuid.uuid4()
-        noise_path = self.dir_loader.path_for_has_traits(type(noise), noise_gid)
+                    operation = self._prepare_operation(project.id, user.id, simulator_id, simulator_index,
+                                                        algo_category, operation_group,
+                                                        {DataTypeMetaData.KEY_BURST: burst_config.id}, ranges)
 
-        with NoiseH5(noise_path, noise) as noise_h5:
-            noise_h5.gid.store(noise_gid)
-            noise_h5.ntau.store(noise.ntau)
-            noise_h5.noise_seed.store(noise.noise_seed)
-            noise_h5.nsig.store(noise.nsig)
+                    simulator_index.fk_from_operation = operation.id
+                    dao.store_entity(simulator_index)
 
-            if isinstance(noise, Multiplicative):
-                noise_h5.b.store(equation_gid)
+                    storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+                    self.serialize_simulator(simulator, simulator_index.gid, None, storage_path)
+                    operations.append(operation)
 
-        return noise_gid
+            first_operation = operations[0]
+            datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
+                                           fk_parent_burst=burst_config.id,
+                                           state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])
+            dao.store_entity(datatype_group)
 
-    def _serialize_integrator(self, integrator, noise_gid=None):
-        integrator_gid = uuid.uuid4()
-        integrator_path = self.dir_loader.path_for_has_traits(type(integrator), integrator_gid)
+            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.id)
+            dao.store_entity(metrics_datatype_group)
 
-        with IntegratorH5(integrator_path, integrator) as integrator_h5:
-            integrator_h5.gid.store(integrator_gid)
-            integrator_h5.dt.store(integrator.dt)
+            wf_errs = 0
+            for operation in operations:
+                try:
+                    OperationService().launch_operation(operation.id, True)
+                except Exception as excep:
+                    self.logger.error(excep)
+                    wf_errs += 1
+                    BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
 
-            if issubclass(integrator, IntegratorStochastic):
-                integrator_h5.noise.store(noise_gid)
+            self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
+                              " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
 
-        return integrator_gid
-
-    def _serialize_monitor(self, monitor):
-        monitor_gid = uuid.uuid4()
-        monitor_path = self.dir_loader.path_for_has_traits(type(monitor), monitor_gid)
-
-        monitor_h5 = MonitorH5(monitor_path, monitor)
-        monitor_h5.store(monitor, store_references=False)
-        monitor_h5.gid.store(monitor_gid)
-
-        if isinstance(monitor, Bold) or issubclass(type(monitor), Bold):
-            hrf_kernel = monitor.hrf_kernel
-            hrf_kernel_gid = self._serialize_equation(hrf_kernel)
-            monitor_h5.hrf_kernel.store(hrf_kernel_gid)
-            monitor_h5.hrf_length.store(monitor.hrf_length)
-
-        monitor_h5.close()
-
-        return monitor_gid
-
-    def _deserialize_coupling(self, coupling_in_gid):
-        coupling_in_path, coupling_class = get_configuration_path_and_type(self.dir_loader, coupling_in_gid)
-        coupling_in = coupling_class()
-
-        with CouplingH5(coupling_in_path, coupling_in) as coupling_in_h5:
-            coupling_in_h5.load_into(coupling_in)
-
-        return coupling_in
-
-    def _deserialize_model(self, model_in_gid):
-        model_in_path, model_class = get_configuration_path_and_type(self.dir_loader, model_in_gid)
-        model_in = model_class()
-
-        with ModelH5(model_in_path, model_in) as model_in_h5:
-            model_in_h5.load_into(model_in)
-
-        return model_in
-
-    def _deserialize_equation(self, equation_in_gid):
-        equation_in_path, equation_class = get_configuration_path_and_type(self.dir_loader, equation_in_gid)
-        equation_in = equation_class()
-
-        with EquationH5(equation_in_path, equation_in) as equation_in_h5:
-            equation_in.parameters = equation_in_h5.parameters.load()
-
-        return equation_in
-
-    def _deserialize_noise(self, noise_in_gid):
-        noise_in_path, noise_class = get_configuration_path_and_type(self.dir_loader, noise_in_gid)
-        noise_in = noise_class()
-
-        with NoiseH5(noise_in_path, noise_in) as noise_in_h5:
-            noise_in_h5.load_into(noise_in)
-
-            if isinstance(noise_in, Multiplicative):
-                equation_in_gid = noise_in_h5.b.load()
-                equation_in = self._deserialize_equation(equation_in_gid)
-                noise_in.b = equation_in
-
-        return noise_in
-
-    def _deserialize_integrator(self, integrator_in_gid):
-        integrator_in_path, integrator_class = get_configuration_path_and_type(self.dir_loader, integrator_in_gid)
-        integrator_in = integrator_class()
-
-        with IntegratorH5(integrator_in_path, integrator_in) as integrator_in_h5:
-            integrator_in_h5.load_into(integrator_in)
-            if issubclass(integrator_in, IntegratorStochastic):
-                noise_in_gid = integrator_in_h5.noise.load()
-                noise_in = self._deserialize_noise(noise_in_gid)
-                integrator_in.noise = noise_in
-
-        return integrator_in
-
-    def _deserialize_monitor(self, monitor_in_gid):
-        monitor_in_path, monitor_class = get_configuration_path_and_type(self.dir_loader, monitor_in_gid)
-        monitor_in = monitor_class()
-
-        with MonitorH5(monitor_in_path, monitor_in) as monitor_in_h5:
-            monitor_in_h5.load_into(monitor_in)
-
-        if isinstance(monitor_in, Bold) or issubclass(type(monitor_in), Bold):
-            hrf_kernel_in_gid = monitor_in_h5.hrf_kernel.load()
-            hrf_kernel_in = self._deserialize_equation(hrf_kernel_in_gid)
-            monitor_in.hrf_kernel = hrf_kernel_in
-            # monitor_in.hrf_length = monitor_in_h5.hrf_length.load()
-
-        return monitor_in
+        except Exception as excep:
+            self.logger.error(excep)
+            BurstService2().mark_burst_finished(burst_config, error_message=str(excep))

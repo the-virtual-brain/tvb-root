@@ -34,30 +34,263 @@
 
 import json
 import numpy
-from tvb.basic.filters.chain import UIFilter, FilterChain
-from tvb.basic.traits.core import KWARG_FILTERS_UI
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from abc import ABCMeta
+from six import add_metaclass
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
+from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.storage import dao
-from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.datatypes.surfaces import FaceSurface
-from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface
+from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.entities.file.datatypes.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
+from tvb.core.neocom import h5
+
+LOG = get_logger(__name__)
 
 
-def prepare_shell_surface_urls(project_id, shell_surface=None, preferred_type=FaceSurface):
-
+def ensure_shell_surface(project_id, shell_surface=None, preferred_type='Face Surface'):
     if shell_surface is None:
-        shell_surface = dao.try_load_last_entity_of_type(project_id, preferred_type)
+        shell_surface = dao.try_load_last_surface_of_type(project_id, preferred_type)
 
         if not shell_surface:
-            raise Exception('No Face object found in current project.')
+            LOG.warning('No object of type %s found in current project.' % preferred_type)
 
-    face_vertices, face_normals, _, face_triangles = shell_surface.get_urls_for_rendering()
-    return json.dumps([face_vertices, face_normals, face_triangles])
-
+    return shell_surface
 
 
-class SurfaceViewer(ABCDisplayer):
+class SurfaceURLGenerator(URLGenerator):
+
+    @staticmethod
+    def get_urls_for_rendering(surface_h5, region_mapping_gid=None):
+        """
+        Compose URLs for the JS code to retrieve a surface from the UI for rendering.
+        """
+        url_vertices = []
+        url_triangles = []
+        url_normals = []
+        url_lines = []
+        url_region_map = []
+        gid = surface_h5.gid.load().hex
+        for i in range(surface_h5.get_number_of_split_slices()):
+            param = "slice_number=" + str(i)
+            url_vertices.append(URLGenerator.build_h5_url(gid, 'get_vertices_slice', parameter=param, flatten=True))
+            url_triangles.append(URLGenerator.build_h5_url(gid, 'get_triangles_slice', parameter=param, flatten=True))
+            url_lines.append(URLGenerator.build_h5_url(gid, 'get_lines_slice', parameter=param, flatten=True))
+            url_normals.append(URLGenerator.build_h5_url(gid, 'get_vertex_normals_slice',
+                                                         parameter=param, flatten=True))
+            if region_mapping_gid is None:
+                continue
+
+            start_idx, end_idx = surface_h5.get_slice_vertex_boundaries(i)
+            url_region_map.append(URLGenerator.build_h5_url(region_mapping_gid, "get_region_mapping_slice",
+                                                            flatten=True, parameter="start_idx=" + str(start_idx) +
+                                                                                    ";end_idx=" + str(end_idx)))
+        if region_mapping_gid:
+            return url_vertices, url_normals, url_lines, url_triangles, url_region_map
+        return url_vertices, url_normals, url_lines, url_triangles, None
+
+    @staticmethod
+    def get_urls_for_pick_rendering(surface_h5):
+        """
+        Compose URLS for the JS code to retrieve a surface for picking.
+        """
+        vertices = []
+        triangles = []
+        normals = []
+        number_of_triangles = surface_h5.number_of_triangles.load()
+        number_of_split = number_of_triangles // SPLIT_PICK_MAX_TRIANGLE
+        if number_of_triangles % SPLIT_PICK_MAX_TRIANGLE > 0:
+            number_of_split += 1
+
+        gid = surface_h5.gid.load().hex
+        for i in range(number_of_split):
+            param = "slice_number=" + str(i)
+            vertices.append(URLGenerator.build_h5_url(gid, 'get_pick_vertices_slice', parameter=param, flatten=True))
+            triangles.append(URLGenerator.build_h5_url(gid, 'get_pick_triangles_slice', parameter=param, flatten=True))
+            normals.append(
+                URLGenerator.build_h5_url(gid, 'get_pick_vertex_normals_slice', parameter=param, flatten=True))
+
+        return vertices, normals, triangles
+
+    @staticmethod
+    def get_url_for_region_boundaries(surface_h5, region_mapping_gid, adapter_id):
+        surface_gid = surface_h5.gid.load().hex
+        return URLGenerator.build_url(surface_gid, 'generate_region_boundaries', adapter_id=adapter_id,
+                                      parameter='region_mapping_gid=' + region_mapping_gid)
+
+
+@add_metaclass(ABCMeta)
+class BaseSurfaceViewerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
+        self.region_map = DataTypeSelectField(RegionMappingIndex, self, name='region_map', label='Region mapping',
+                                              doc='A region map')
+        self.connectivity_measure = DataTypeSelectField(ConnectivityMeasureIndex, self, name='connectivity_measure',
+                                                        label='Connectivity measure', doc='A connectivity measure')
+        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
+                                                 doc='Face surface to be displayed semi-transparently, '
+                                                     'for orientation only.')
+
+    @staticmethod
+    def get_filters():
+        return None
+
+
+class SurfaceViewerForm(BaseSurfaceViewerForm):
+    def __init__(self, prefix='', project_id=None):
+        # filters_ui = [UIFilter(linked_elem_name="region_map",
+        #                        linked_elem_field=FilterChain.datatype + "._surface"),
+        #               UIFilter(linked_elem_name="connectivity_measure",
+        #                        linked_elem_field=FilterChain.datatype + "._surface")]
+        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
+
+        super(SurfaceViewerForm, self).__init__(prefix, project_id)
+        self.surface = DataTypeSelectField(self.get_required_datatype(), self, name='surface',
+                                           required=True, label='Brain surface')
+
+    @staticmethod
+    def get_required_datatype():
+        return SurfaceIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_surface'
+
+
+@add_metaclass(ABCMeta)
+class ABCSurfaceDisplayer(ABCSpaceDisplayer):
+
+    def generate_region_boundaries(self, surface_gid, region_mapping_gid):
+        """
+        Return the full region boundaries, including: vertices, normals and lines indices.
+        """
+        boundary_vertices = []
+        boundary_lines = []
+        boundary_normals = []
+
+        surface_index = self.load_entity_by_gid(surface_gid)
+        rm_index = self.load_entity_by_gid(region_mapping_gid)
+
+        with h5.h5_file_for_index(rm_index) as rm_h5:
+            array_data = rm_h5.array_data[:]
+
+        with h5.h5_file_for_index(surface_index) as surface_h5:
+            for slice_idx in range(surface_h5.get_number_of_split_slices()):
+                # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
+                slice_triangles = surface_h5.get_triangles_slice(slice_idx)
+                slice_vertices = surface_h5.get_vertices_slice(slice_idx)
+                slice_normals = surface_h5.get_vertex_normals_slice(slice_idx)
+                first_index_in_slice = surface_h5.split_slices.load()[str(slice_idx)][KEY_VERTICES][KEY_START]
+                # These will keep track of the vertices / triangles / normals for this slice that have
+                # been processed and were found as a part of the boundary
+                processed_vertices = []
+                processed_triangles = []
+                processed_normals = []
+                for triangle in slice_triangles:
+                    triangle += first_index_in_slice
+                    # Check if there are two points from a triangles that are in separate regions
+                    # then send this to further processing that will generate the corresponding
+                    # region separation lines depending on the 3rd point from the triangle
+                    rt0, rt1, rt2 = array_data[triangle]
+                    if rt0 - rt1:
+                        reg_idx1, reg_idx2, dangling_idx = 0, 1, 2
+                    elif rt1 - rt2:
+                        reg_idx1, reg_idx2, dangling_idx = 1, 2, 0
+                    elif rt2 - rt0:
+                        reg_idx1, reg_idx2, dangling_idx = 2, 0, 1
+                    else:
+                        continue
+
+                    lines_vert, lines_ind, lines_norm = self._process_triangle(triangle, reg_idx1, reg_idx2,
+                                                                               dangling_idx, first_index_in_slice,
+                                                                               array_data, slice_vertices,
+                                                                               slice_normals)
+                    ind_offset = len(processed_vertices) / 3
+                    processed_vertices.extend(lines_vert)
+                    processed_normals.extend(lines_norm)
+                    processed_triangles.extend([ind + ind_offset for ind in lines_ind])
+                boundary_vertices.append(processed_vertices)
+                boundary_lines.append(processed_triangles)
+                boundary_normals.append(processed_normals)
+            return numpy.array([boundary_vertices, boundary_lines, boundary_normals]).tolist()
+
+    @staticmethod
+    def _process_triangle(triangle, reg_idx1, reg_idx2, dangling_idx, indices_offset,
+                          region_mapping_array, vertices, normals):
+        """
+        Process a triangle and generate the required data for a region separation.
+        :param triangle: the actual triangle as a 3 element vector
+        :param reg_idx1: the first vertex that is in a 'conflicting' region
+        :param reg_idx2: the second vertex that is in a 'conflicting' region
+        :param dangling_idx: the third vector for which we know nothing yet.
+                    Depending on this we might generate a line, or a 3 star centered in the triangle
+        :param indices_offset: to take into account the slicing
+        :param region_mapping_array: the region mapping raw array for which the regions are computed
+        :param vertices: the current vertex slice
+        :param normals: the current normals slice
+        """
+
+        def _star_triangle(point0, point1, point2, result_array):
+            """
+            Helper function that for a given triangle generates a 3-way star centered in the triangle center
+            """
+            center_vertex = [(point0[i] + point1[i] + point2[i]) / 3 for i in range(3)]
+            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
+            mid_line2 = [(point1[i] + point2[i]) / 2 for i in range(3)]
+            mid_line3 = [(point2[i] + point0[i]) / 2 for i in range(3)]
+            result_array.extend(center_vertex)
+            result_array.extend(mid_line1)
+            result_array.extend(mid_line2)
+            result_array.extend(mid_line3)
+
+        def _slice_triangle(point0, point1, point2, result_array):
+            """
+            Helper function that for a given triangle generates a line cutting thtough the middle of two edges.
+            """
+            mid_line1 = [(point0[i] + point1[i]) / 2 for i in range(3)]
+            mid_line2 = [(point0[i] + point2[i]) / 2 for i in range(3)]
+            result_array.extend(mid_line1)
+            result_array.extend(mid_line2)
+
+        # performance opportunity: we are computing some values available in caller
+
+        p0 = vertices[triangle[reg_idx1] - indices_offset]
+        p1 = vertices[triangle[reg_idx2] - indices_offset]
+        p2 = vertices[triangle[dangling_idx] - indices_offset]
+        n0 = normals[triangle[reg_idx1] - indices_offset]
+        n1 = normals[triangle[reg_idx2] - indices_offset]
+        n2 = normals[triangle[dangling_idx] - indices_offset]
+        result_vertices = []
+        result_normals = []
+
+        dangling_reg = region_mapping_array[triangle[dangling_idx]]
+        reg_1 = region_mapping_array[triangle[reg_idx1]]
+        reg_2 = region_mapping_array[triangle[reg_idx2]]
+
+        if dangling_reg != reg_1 and dangling_reg != reg_2:
+            # Triangle is actually spanning 3 regions. Create a vertex in the center of the triangle, which connects to
+            # the middle of each edge
+            _star_triangle(p0, p1, p2, result_vertices)
+            _star_triangle(n0, n1, n2, result_normals)
+            result_lines = [0, 1, 0, 2, 0, 3]
+        elif dangling_reg == reg_1:
+            # Triangle spanning only 2 regions, draw a line through the middle of the triangle
+            _slice_triangle(p1, p0, p2, result_vertices)
+            _slice_triangle(n1, n0, n2, result_normals)
+            result_lines = [0, 1]
+        else:
+            # Triangle spanning only 2 regions, draw a line through the middle of the triangle
+            _slice_triangle(p0, p1, p2, result_vertices)
+            _slice_triangle(n0, n1, n2, result_normals)
+            result_lines = [0, 1]
+        return result_vertices, result_lines, result_normals
+
+
+class SurfaceViewer(ABCSurfaceDisplayer):
     """
     Static SurfaceData visualizer - for visual inspecting imported surfaces in TVB.
     Optionally it can display associated RegionMapping entities.
@@ -65,67 +298,51 @@ class SurfaceViewer(ABCDisplayer):
     _ui_name = "Surface Visualizer"
     _ui_subsection = "surface"
 
-    def get_input_tree(self):
-        # todo: filter connectivity measures: same length as regions and 1-dimensional
-
-        filters_ui = [UIFilter(linked_elem_name="region_map",
-                               linked_elem_field=FilterChain.datatype + "._surface"),
-                      # UIFilter(linked_elem_name="connectivity_measure",
-                      #          linked_elem_field=FilterChain.datatype + "._surface")
-                      ]
-
-        json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-
-        return [{'name': 'surface', 'label': 'Brain surface',
-                 'type': Surface, 'required': True,
-                 'description': '', KWARG_FILTERS_UI: json_ui_filter},
-                {'name': 'region_map', 'label': 'Region mapping',
-                 'type': RegionMapping, 'required': False,
-                 'description': 'A region map'},
-                {'name': 'connectivity_measure', 'label': 'Connectivity measure',
-                 'type': ConnectivityMeasure, 'required': False,
-                 'description': 'A connectivity measure',
-                 'conditions': FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                           operations=["=="], values=[1])},
-                {'name': 'shell_surface', 'label': 'Shell Surface',
-                 'type': Surface, 'required': False,
-                 'description': "Face surface to be displayed semi-transparently, for orientation only."}]
-
+    def get_form_class(self):
+        return SurfaceViewerForm
 
     @staticmethod
-    def _compute_surface_params(surface, region_map):
+    def _compute_surface_params(surface_h5, region_map_gid=None):
         rendering_urls = []
         # we want the URLs in json
         # But these string are going to be verbatim strings in js source code
         # This means that js will interpret escapes like \" so the json parser gets "
         # Double escape is needed \\"
-        for url in surface.get_urls_for_rendering(True, region_map):
+        for url in SurfaceURLGenerator.get_urls_for_rendering(surface_h5, region_map_gid):
             escaped_url = json.dumps(url).replace('\\', '\\\\')
             rendering_urls.append(escaped_url)
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = rendering_urls
 
-        hemisphere_chunk_mask = surface.get_slices_to_hemisphere_mask()
         return dict(urlVertices=url_vertices, urlTriangles=url_triangles, urlLines=url_lines,
-                    urlNormals=url_normals, urlRegionMap=url_region_map,
-                    biHemispheric=surface.bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
+                    urlNormals=url_normals, urlRegionMap=url_region_map)
 
+    @staticmethod
+    def _compute_hemispheric_param(surface_h5):
+        bi_hemispheric = surface_h5.bi_hemispheric.load()
+        hemisphere_chunk_mask = surface_h5.get_slices_to_hemisphere_mask()
+        return dict(biHemispheric=bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
-    def _compute_measure_points_param(self, surface, region_map):
-        if region_map is None:
+    def _compute_measure_points_param(self, surface_h5, region_map_gid=None, connectivity_gid=None):
+        if region_map_gid is None:
             measure_points_no = 0
             url_measure_points = ''
             url_measure_points_labels = ''
             boundary_url = ''
         else:
-            measure_points_no = region_map.connectivity.number_of_regions
-            url_measure_points = self.paths2url(region_map.connectivity, 'centres')
-            url_measure_points_labels = self.paths2url(region_map.connectivity, 'region_labels')
-            boundary_url = surface.get_url_for_region_boundaries(region_map)
+            connectivity_index = self.load_entity_by_gid(connectivity_gid)
+            measure_points_no = connectivity_index.number_of_regions
+
+            url_measure_points = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_centres')
+            url_measure_points_labels = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_region_labels')
+
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_h5, region_map_gid,
+                                                                             self.stored_adapter.id)
+
         return dict(noOfMeasurePoints=measure_points_no, urlMeasurePoints=url_measure_points,
                     urlMeasurePointsLabels=url_measure_points_labels, boundaryURL=boundary_url)
 
-
-    def _compute_measure_param(self, connectivity_measure, measure_points_no):
+    @staticmethod
+    def _compute_measure_param(connectivity_measure, measure_points_no):
         if connectivity_measure is None:
             # If there is no measure to show then we what to show the region mapping
             # The client will generate a range signal for this use case.
@@ -133,41 +350,71 @@ class SurfaceViewer(ABCDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            if connectivity_measure.nr_dimensions != 1:
+            connectivity_measure_shape = connectivity_measure.array_data.shape
+            if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
-            if connectivity_measure.length_1d != measure_points_no:
+            if connectivity_measure_shape[0] != measure_points_no:
                 raise ValueError("connectivity measure has %d values but the connectivity has %d "
-                                 "regions" % (connectivity_measure.length_1d, measure_points_no))
-            min_measure = numpy.min(connectivity_measure.array_data)
-            max_measure = numpy.max(connectivity_measure.array_data)
+                                 "regions" % (connectivity_measure_shape[0], measure_points_no))
+            min_measure = numpy.min(connectivity_measure.array_data[:])
+            max_measure = numpy.max(connectivity_measure.array_data[:])
             # We assume here that the index 0 in the measure corresponds to
             # the region 0 of the region map.
-            client_measure_url = self.paths2url(connectivity_measure, "array_data")
-
+            client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid.load().hex,
+                                                                  "get_array_data")
 
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
 
+    def launch(self, surface, region_map=None, connectivity_measure=None, shell_surface=None,
+               title="Surface Visualizer"):
 
-    def launch(self, surface, region_map=None, connectivity_measure=None,
-               shell_surface=None, title="Surface Visualizer"):
-        params = dict(title=title, extended_view=False, isOneToOneMapping=False,
-                      hasRegionMap=region_map is not None)
-        params.update(self._compute_surface_params(surface, region_map))
-        params.update(self._compute_measure_points_param(surface, region_map))
-        params.update(self._compute_measure_param(connectivity_measure, params['noOfMeasurePoints']))
+        surface_h5 = h5.h5_file_for_index(surface)
+        cm_h5 = h5.h5_file_for_index(connectivity_measure) if connectivity_measure is not None else None
+        region_map_gid = region_map.gid if region_map is not None else None
+        connectivity_gid = region_map.connectivity_gid if region_map is not None else None
+        assert isinstance(surface_h5, SurfaceH5)
 
-        try:
-            params['shelfObject'] = prepare_shell_surface_urls(self.current_project_id, shell_surface)
-        except Exception:
-            params['shelfObject'] = None
+        params = dict(title=title, extended_view=False,
+                      isOneToOneMapping=False, hasRegionMap=region_map is not None)
+        params.update(self._compute_surface_params(surface_h5, region_map_gid))
+        params.update(self._compute_hemispheric_param(surface_h5))
+        params.update(self._compute_measure_points_param(surface_h5, region_map_gid, connectivity_gid))
+        params.update(self._compute_measure_param(cm_h5, params['noOfMeasurePoints']))
+
+        surface_h5.close()
+        if cm_h5:
+            cm_h5.close()
+
+        params['shelfObject'] = None
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
+
+        if shell_surface:
+            shell_h5 = h5.h5_file_for_index(shell_surface)
+            assert isinstance(shell_h5, SurfaceH5)
+            shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
+            params['shelfObject'] = json.dumps([shell_vertices, shell_normals, shell_triangles])
+            shell_h5.close()
 
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 
-
     def get_required_memory_size(self):
         return -1
 
+
+class RegionMappingViewerForm(BaseSurfaceViewerForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(RegionMappingViewerForm, self).__init__(prefix, project_id)
+        self.region_map.required = True
+
+    @staticmethod
+    def get_required_datatype():
+        return RegionMappingIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_region_map'
 
 
 class RegionMappingViewer(SurfaceViewer):
@@ -178,16 +425,30 @@ class RegionMappingViewer(SurfaceViewer):
     _ui_name = "Region Mapping Visualizer"
     _ui_subsection = "surface"
 
-    def get_input_tree(self):
-        base_tree = SurfaceViewer.get_input_tree(self)
-        base_tree[1]['required'] = True
-        base_tree.pop(0)
-        return base_tree
+    def get_form_class(self):
+        return RegionMappingViewerForm
 
     def launch(self, region_map, connectivity_measure=None, shell_surface=None):
+        surface_gid = region_map.surface_gid
+        surface_index = dao.get_datatype_by_gid(surface_gid)
 
-        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface,
+        return SurfaceViewer.launch(self, surface_index, region_map, connectivity_measure, shell_surface,
                                     title=RegionMappingViewer._ui_name)
+
+
+class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ConnectivityMeasureOnSurfaceViewerForm, self).__init__(prefix, project_id)
+        self.connectivity_measure.required = True
+
+    @staticmethod
+    def get_required_datatype():
+        return ConnectivityMeasureIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_connectivity_measure'
 
 
 class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
@@ -198,20 +459,30 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
     _ui_name = "Connectivity Measure Surface Visualizer"
     _ui_subsection = "surface"
 
-    def get_input_tree(self):
-        base_tree = SurfaceViewer.get_input_tree(self)
-        base_tree[2]['required'] = True
-        tree = [base_tree[2], base_tree[1], base_tree[3]]
-        return tree
+    def get_form_class(self):
+        return ConnectivityMeasureOnSurfaceViewerForm
 
     def launch(self, connectivity_measure, region_map=None, shell_surface=None):
-        if (region_map is None or region_map.connectivity.number_of_regions !=
-                connectivity_measure.connectivity.number_of_regions):
-            # We have no regionmap or the onw we have is not compatible with the measure.
-            # first try to find the associated region map
-            region_maps = dao.get_generic_entity(RegionMapping, connectivity_measure.connectivity.gid, '_connectivity')
+        cm_connectivity_gid = connectivity_measure.connectivity_gid
+        cm_connectivity_index = dao.get_datatype_by_gid(cm_connectivity_gid)
+
+        surface_index = None
+
+        if not region_map:
+            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
             if region_maps:
                 region_map = region_maps[0]
-                # else: todo fallback on any region map with the right number of nodes
-        return SurfaceViewer.launch(self, region_map.surface, region_map, connectivity_measure, shell_surface,
-                                    title=connectivity_measure.display_name)
+
+        if region_map:
+            rm_connectivity_gid = region_map.connectivity_gid
+            rm_connectivity_index = dao.get_datatype_by_gid(rm_connectivity_gid)
+            surface_gid = region_map.surface_gid
+            surface_index = dao.get_datatype_by_gid(surface_gid)
+
+            if rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
+                region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
+                if region_maps:
+                    region_map = region_maps[0]
+
+        return SurfaceViewer.launch(self, surface_index, region_map, connectivity_measure, shell_surface,
+                                    title=self._ui_name)

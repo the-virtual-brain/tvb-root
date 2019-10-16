@@ -76,7 +76,7 @@ class TestFigureService(TransactionalTestCase):
         figures_by_session, _ = self.figure_service.retrieve_result_figures(self.project, self.user)
         # flatten image session grouping
         figures = []
-        for fg in figures_by_session.itervalues():
+        for fg in figures_by_session.values():
             figures.extend(fg)
         return figures
 
@@ -119,8 +119,8 @@ class TestFigureService(TransactionalTestCase):
         figures = self.retrieve_images()
         self.figure_service.edit_result_figure(figures[0].id, session_name=session_name, name=name)
         figures_by_session, _ = self.figure_service.retrieve_result_figures(self.project, self.user)
-        assert [session_name] == figures_by_session.keys()
-        assert name == figures_by_session.values()[0][0].name
+        assert [session_name] == list(figures_by_session)
+        assert name == list(figures_by_session.values())[0][0].name
 
 
     def test_remove_figure(self):

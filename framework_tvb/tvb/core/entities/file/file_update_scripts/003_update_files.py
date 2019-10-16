@@ -40,18 +40,20 @@ from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
-from tvb.core.traits.types_mapped import SparseMatrix
 
 
-
-def _update_localconnectivity_metadata(folder, file_name):
-
+def update_localconnectivity_metadata(folder, file_name):
     service = ImportService()
     operation_id = int(os.path.split(folder)[1])
 
     dt = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
-    info_dict = SparseMatrix.extract_sparse_matrix_metadata(dt.matrix)
-    dt.set_metadata(info_dict, '', True, SparseMatrix.ROOT_PATH + 'matrix')
+    info_dict = {"dtype": dt.matrix.dtype.str,
+                 "format": dt.matrix.format,
+                 "Shape": str(dt.matrix.shape),
+                 "Maximum": dt.matrix.data.max(),
+                 "Minimum": dt.matrix.data.min(),
+                 "Mean": dt.matrix.mean()}
+    dt.set_metadata(info_dict, '', True, '/matrix')
 
 
 def update(input_file):
@@ -75,7 +77,7 @@ def update(input_file):
     if class_name == "LocalConnectivity":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.local_connectivity"
         storage_manager.set_metadata(root_metadata)
-        _update_localconnectivity_metadata(folder, file_name)
+        update_localconnectivity_metadata(folder, file_name)
 
     elif class_name == "RegionMapping":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.region_mapping"

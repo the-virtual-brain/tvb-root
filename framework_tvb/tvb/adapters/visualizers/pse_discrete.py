@@ -34,14 +34,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities import model
 from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, STATUS_FINISHED, RANGE_MISSING_VALUE
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.pse import ContextDiscretePSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.mapped_values import DatatypeMeasure
-from tvb.basic.filters.chain import FilterChain
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 MAX_NUMBER_OF_POINT_TO_SUPPORT = 512
 
@@ -77,17 +77,10 @@ class DiscretePSEAdapter(ABCDisplayer):
     """
     _ui_name = "Discrete Parameter Space Exploration"
     _ui_subsection = "pse"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return DiscretePSEAdapterForm
-        return self.form
 
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return DiscretePSEAdapterForm
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -96,8 +89,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         # Don't know how much memory is needed.
         return -1
 
-
-    #TODO: migrate to neotraits
+    # TODO: migrate to neotraits
     def launch(self, datatype_group):
         """
         Launch the visualizer.
@@ -107,7 +99,6 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         return self.build_display_result('pse_discrete/view', pse_context,
                                          pages=dict(controlPage="pse_discrete/controls"))
-
 
     @staticmethod
     def prepare_range_labels(operation_group, range_json):
@@ -122,7 +113,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         contains_numbers, range_name, range_values = operation_group.load_range_numbers(range_json)
 
         if contains_numbers is None:
-            return None, range_values, [model.RANGE_MISSING_STRING], False
+            return None, range_values, [RANGE_MISSING_STRING], False
 
         if contains_numbers:
             range_labels = range_values
@@ -134,15 +125,13 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         return range_name, range_values, range_labels, contains_numbers
 
-
     @staticmethod
     def get_value_on_axe(op_range, only_numbers, range_param_name, fake_numbers):
         if range_param_name is None:
-            return model.RANGE_MISSING_VALUE
+            return RANGE_MISSING_VALUE
         if only_numbers:
             return op_range[range_param_name]
         return fake_numbers[op_range[range_param_name]]
-
 
     @staticmethod
     def prepare_parameters(datatype_group_gid, back_page, color_metric=None, size_metric=None):
@@ -175,8 +164,8 @@ class DiscretePSEAdapter(ABCDisplayer):
         final_dict = {}
         operations = dao.get_operations_in_group(operation_group.id)
 
-        fake_numbers1 = dict(zip(values1, range(len(list(values1)))))
-        fake_numbers2 = dict(zip(values2, range(len(list(values2)))))
+        fake_numbers1 = dict(list(zip(values1, list(range(len(list(values1)))))))
+        fake_numbers2 = dict(list(zip(values2, list(range(len(list(values2)))))))
 
         for operation_ in operations:
             if not operation_.has_finished:
@@ -186,15 +175,17 @@ class DiscretePSEAdapter(ABCDisplayer):
             key_2 = DiscretePSEAdapter.get_value_on_axe(range_values, only_numbers2, name2, fake_numbers2)
 
             datatype = None
-            if operation_.status == model.STATUS_FINISHED:
-                datatypes = dao.get_results_for_operation(operation_.id)
+            if operation_.status == STATUS_FINISHED:
+                pse_filter = FilterChain(fields=[FilterChain.datatype + '.type'], operations=['!='],
+                                         values=['SimulatorIndex'])
+                datatypes = dao.get_results_for_operation(operation_.id, pse_filter)
                 if len(datatypes) > 0:
                     datatype = datatypes[0]
-                    if datatype.type == "DatatypeMeasure":
-                        ## Load proper entity class from DB.
-                        measures = dao.get_generic_entity(DatatypeMeasure, datatype.id)
+                    if datatype.type == "DatatypeMeasureIndex":
+                        # Load proper entity class from DB.
+                        measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid)
                     else:
-                        measures = dao.get_generic_entity(DatatypeMeasure, datatype.gid, '_analyzed_datatype')
+                        measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
                     pse_context.prepare_metrics_datatype(measures, datatype)
 
             if key_1 not in final_dict:
@@ -203,11 +194,11 @@ class DiscretePSEAdapter(ABCDisplayer):
             final_dict[key_1][key_2] = pse_context.build_node_info(operation_, datatype)
 
         pse_context.fill_object(final_dict)
-        ## datatypes_dict is not actually used in the drawing of the PSE and actually
-        ## causes problems in case of NaN values, so just remove it before creating the json
+        # datatypes_dict is not actually used in the drawing of the PSE and actually
+        # causes problems in case of NaN values, so just remove it before creating the json
         pse_context.datatypes_dict = {}
         if not only_numbers1:
-            pse_context.values_x = range(len(list(values1)))
+            pse_context.values_x = list(range(len(list(values1))))
         if not only_numbers2:
-            pse_context.values_y = range(len(list(values2)))
+            pse_context.values_y = list(range(len(list(values2))))
         return pse_context

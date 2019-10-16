@@ -37,27 +37,47 @@ A displayer for the cross coherence of a time series.
 
 import json
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.spectral import CoherenceSpectrum
+from tvb.core.entities.model.datatypes.spectral import CoherenceSpectrumIndex
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
-class CrossCoherenceVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
+class CrossCoherenceVisualizerForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(CrossCoherenceVisualizerForm, self).__init__(prefix, project_id)
+        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype',
+                                            required=True, label='Coherence spectrum:', conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return CoherenceSpectrumIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype'
+
+    @staticmethod
+    def get_filters():
+        return None
+
+
+class CrossCoherenceVisualizer(MappedArraySVGVisualizerMixin):
     _ui_name = "Cross Coherence Visualizer"
     _ui_subsection = "coherence"
 
-
-    def get_input_tree(self):
-        """Inform caller of the data we need"""
-
-        return [{"name": "datatype", "type": CoherenceSpectrum,
-                 "label": "Coherence spectrum:", "required": True}]
+    def get_form_class(self):
+        return CrossCoherenceVisualizerForm
 
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
 
-        # get data from coher datatype, convert to json
-        frequency = ABCDisplayer.dump_with_precision(datatype.get_data('frequency').flat)
-        array_data = datatype.get_data('array_data')
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(datatype.gid)
+        with datatype_h5_class(datatype_h5_path) as datatype_h5:
+            # get data from coher datatype h5, convert to json
+            frequency = ABCDisplayer.dump_with_precision(datatype_h5.frequency.load().flat)
+            array_data = datatype_h5.array_data[:]
 
         params = self.compute_raw_matrix_params(array_data)
         params.update(frequency=frequency)

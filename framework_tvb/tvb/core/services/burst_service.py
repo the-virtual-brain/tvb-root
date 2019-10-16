@@ -36,9 +36,8 @@
 import json
 import threading
 from datetime import datetime
-from types import IntType
-from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, DEFAULT_PORTLETS
-from tvb.config import SIMULATION_DATATYPE_MODULE, SIMULATION_DATATYPE_CLASS
+from tvb.config import DEFAULT_PORTLETS
+# from tvb.datatypes.simulation_state import SimulationState
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.input_tree import KEY_TYPE, TYPE_SELECT, KEY_NAME, InputTreeManager
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -323,8 +322,7 @@ class BurstService(object):
         else:
             ## Branch or Continue simulation
             burst_config = burst_configuration
-            simulation_state = dao.get_generic_entity(SIMULATION_DATATYPE_MODULE + "." + SIMULATION_DATATYPE_CLASS,
-                                                      burst_config.id, "fk_parent_burst")
+            simulation_state = dao.get_generic_entity(SimulationState, burst_config.id, "fk_parent_burst")
             if simulation_state is None or len(simulation_state) < 1:
                 exc = BurstServiceException("Simulation State not found for %s, "
                                             "thus we are unable to branch from it!" % burst_config.name)
@@ -401,7 +399,8 @@ class BurstService(object):
         if group_launched:
             ###  For a group of operations, make sure the metric for PSE view 
             ### is also computed, immediately after the simulation.
-            metric_algo = FlowService().get_algorithm_by_module_and_class(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+            metric_algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.MEASURE_METRICS_MODULE,
+                                                                          IntrospectionRegistry.MEASURE_METRICS_CLASS)
             metric_interface = FlowService().prepare_adapter(project_id, metric_algo)
             dynamics = {}
             for entry in metric_interface:
@@ -465,7 +464,7 @@ class BurstService(object):
             referred_operation_id = referred_workflow_step.fk_operation
             referred_operation = dao.get_operation_by_id(referred_operation_id)
             current_project_id = referred_operation.fk_launched_in
-            if type(datatype_index) is IntType:
+            if type(datatype_index) is int:
                 # Entry is the output of a previous step ##
                 datatypes = dao.get_results_for_operation(referred_operation_id)
                 parameters_dict[param] = datatypes[datatype_index].gid
@@ -597,7 +596,7 @@ class BurstService(object):
             visualizer = portlet_cfg.visualizer
             wait_on_outputs = False
             for entry in visualizer.dynamic_param:
-                if type(visualizer.dynamic_param[entry][WorkflowStepConfiguration.DATATYPE_INDEX_KEY]) == IntType:
+                if type(visualizer.dynamic_param[entry][WorkflowStepConfiguration.DATATYPE_INDEX_KEY]) == int:
                     wait_on_outputs = True
                     break
             if wait_on_outputs:

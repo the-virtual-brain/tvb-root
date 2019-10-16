@@ -557,7 +557,7 @@ class OperationDAO(RootDAO):
         try:
             previews_info = self._get_previews_info(project_id, user_id)
             if selected_session_name == 'all_sessions':
-                session_names = previews_info.keys()
+                session_names = list(previews_info)
                 session_names.sort()
             else:
                 session_names = [selected_session_name]

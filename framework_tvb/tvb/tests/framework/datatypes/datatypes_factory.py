@@ -34,11 +34,12 @@ This module contains methods for creating persisted data-types for tests.
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import json
 import numpy
 import time
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
-from tvb.core.entities import model
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -55,10 +56,6 @@ from tvb.datatypes.graph import Covariance, ConnectivityMeasure
 from tvb.datatypes.spectral import CoherenceSpectrum
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.mode_decompositions import IndependentComponents
-from tvb.datatypes.mapped_values import DatatypeMeasure
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 
 class DatatypesFactory(object):
@@ -86,8 +83,8 @@ class DatatypesFactory(object):
         self.files_helper = FilesHelper()
 
         # First create user 
-        user = model.User("datatype_factory_user" + micro_postfix, "test_pass",
-                          "test_mail@tvb.org" + micro_postfix, True, "user")
+        user = User("datatype_factory_user" + micro_postfix, "test_pass",
+                    "test_mail@tvb.org" + micro_postfix, True, "user")
         self.user = dao.store_entity(user)
 
         # Now create a project
@@ -96,18 +93,20 @@ class DatatypesFactory(object):
         self.project = project_service.store_project(self.user, True, None, **data)
 
         # Create algorithm
-        alg_category = model.AlgorithmCategory('one', True)
+        alg_category = AlgorithmCategory('one', True)
         dao.store_entity(alg_category)
-        ad = model.Algorithm(SIMULATOR_MODULE, SIMULATOR_CLASS, alg_category.id)
-        self.algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        ad = Algorithm(IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS,
+                       alg_category.id)
+        self.algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                     IntrospectionRegistry.SIMULATOR_CLASS)
         if self.algorithm is None:
             self.algorithm = dao.store_entity(ad)
 
         # Create an operation
         self.meta = {DataTypeMetaData.KEY_SUBJECT: self.USER_FULL_NAME,
                      DataTypeMetaData.KEY_STATE: self.DATATYPE_STATE}
-        operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                    meta=json.dumps(self.meta), status=model.STATUS_FINISHED)
+        operation = Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
+                              meta=json.dumps(self.meta), status=STATUS_FINISHED)
         self.operation = dao.store_entity(operation)
 
     def get_project(self):
@@ -128,62 +127,28 @@ class DatatypesFactory(object):
         """
         return self.user
 
-    def _store_datatype(self, data_type, operation_id=None):
-        """
-        Launch adapter to store a create a persistent DataType.
-        """
-        operation_id = operation_id or self.operation.id
-        data_type.type = data_type.__class__.__name__
-        data_type.module = data_type.__class__.__module__
-        data_type.subject = self.USER_FULL_NAME
-        data_type.state = self.DATATYPE_STATE
-        data_type.set_operation_id(operation_id)
-
-        adapter_instance = StoreAdapter([data_type])
-        operation = dao.get_operation_by_id(operation_id)
-        OperationService().initiate_prelaunch(operation, adapter_instance, {})
-
-        return data_type
-
-    def create_simple_datatype(self, subject=USER_FULL_NAME, state=DATATYPE_STATE):
+    def store_datatype(self, inst=None, subject=USER_FULL_NAME, state=DATATYPE_STATE, operation_id=None):
         """
         This method creates a simple data type
         """
-        datatype_inst = Datatype1()
-        self._fill_datatype(datatype_inst, subject, state)
-
-        # Store data type
-        return self._store_datatype(datatype_inst)
-
-    def create_datatype_with_storage(self, subject=USER_FULL_NAME, state=DATATYPE_STATE,
-                                     data=DATATYPE_DATA, operation_id=None):
-        """
-        This method creates and stores a data type which imply storage on the file system.
-        """
-        datatype_inst = Datatype2()
-        self._fill_datatype(datatype_inst, subject, state, operation_id)
-
-        datatype_inst.string_data = data
-        return self._store_datatype(datatype_inst, operation_id)
-
-    def _fill_datatype(self, datatype, subject, state, operation_id=None):
-        """
-        This method sets some common attributes on dataType 
-        """
-        operation_id = operation_id or self.operation.id
-        datatype.subject = subject
-        datatype.state = state
-        # Set_operation_id also sets storage_path attribute
-        datatype.set_operation_id(operation_id)
+        inst = inst or ValueWrapperIndex()
+        inst.subject = subject or self.USER_FULL_NAME
+        inst.state = state or self.DATATYPE_STATE
+        inst.fk_from_operation = operation_id or self.operation.id
+        inst.type = inst.__class__.__name__
+        inst.module = inst.__class__.__module__
+        dao.store_entity(inst)
+        return inst
 
     def __create_operation(self):
         """
         Create a operation entity. Return the operation, algo_id and the storage path.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        algorithm = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        operation = model.Operation(self.user.id, self.project.id, algorithm.id, json.dumps(''), meta=json.dumps(meta),
-                                    status=model.STATUS_STARTED)
+        algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                    IntrospectionRegistry.SIMULATOR_CLASS)
+        operation = Operation(self.user.id, self.project.id, algorithm.id, json.dumps(''), meta=json.dumps(meta),
+                              status=STATUS_STARTED)
         operation = dao.store_entity(operation)
         storage_path = FilesHelper().get_project_folder(self.project, str(operation.id))
         return operation, algorithm.id, storage_path
@@ -270,7 +235,7 @@ class DatatypesFactory(object):
         """
         operation, _, storage_path = self.__create_operation()
         partial_corr = CrossCorrelation(array_data=numpy.random.random((10, 10, 10, 10, 10)), use_storage=False)
-        crossc = CrossCorrelation(source=time_series, storage_path=storage_path, time=range(10))
+        crossc = CrossCorrelation(source=time_series, storage_path=storage_path, time=list(range(10)))
         crossc.write_data_slice(partial_corr)
         crossc.close_file()
         adapter_instance = StoreAdapter([crossc])
@@ -319,8 +284,9 @@ class DatatypesFactory(object):
         """
         if operation is None:
             operation, _, storage_path = self.__create_operation()
-        measure = DatatypeMeasure(storage_path=storage_path, metrics=self.DATATYPE_MEASURE_METRIC)
-        measure.analyzed_datatype = analyzed_entity
+        measure = DatatypeMeasureIndex()
+        measure.metrics = self.DATATYPE_MEASURE_METRIC
+        measure.source = analyzed_entity
         adapter_instance = StoreAdapter([measure])
         OperationService().initiate_prelaunch(operation, adapter_instance, {})
         return measure
@@ -347,17 +313,17 @@ class DatatypesFactory(object):
         """ 
         This method creates, stores and returns a DataTypeGroup entity.
         """
-        group = model.OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
+        group = OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
         group = dao.store_entity(group)
-        group_ms = model.OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
+        group_ms = OperationGroup(self.project.id, ranges=[json.dumps(self.RANGE_1), json.dumps(self.RANGE_2)])
         group_ms = dao.store_entity(group_ms)
 
-        datatype_group = model.DataTypeGroup(group, subject=subject, state=state, operation_id=self.operation.id)
+        datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=self.operation.id)
         # Set storage path, before setting data
         datatype_group.storage_path = self.files_helper.get_project_folder(self.project, str(self.operation.id))
         datatype_group = dao.store_entity(datatype_group)
 
-        dt_group_ms = model.DataTypeGroup(group_ms, subject=subject, state=state, operation_id=self.operation.id)
+        dt_group_ms = DataTypeGroup(group_ms, subject=subject, state=state, operation_id=self.operation.id)
         # Set storage path, before setting data
         dt_group_ms.storage_path = self.files_helper.get_project_folder(self.project, str(self.operation.id))
         dao.store_entity(dt_group_ms)
@@ -365,10 +331,10 @@ class DatatypesFactory(object):
         # Now create some data types and add them to group
         for range_val1 in self.RANGE_1[1]:
             for range_val2 in self.RANGE_2[1]:
-                operation = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                            meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
-                                            range_values=json.dumps({self.RANGE_1[0]: range_val1,
-                                                                     self.RANGE_2[0]: range_val2}))
+                operation = Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
+                                      meta=json.dumps(self.meta), status=STATUS_FINISHED,
+                                      range_values=json.dumps({self.RANGE_1[0]: range_val1,
+                                                               self.RANGE_2[0]: range_val2}))
                 operation.fk_operation_group = group.id
                 operation = dao.store_entity(operation)
                 datatype = self.create_datatype_with_storage(operation_id=operation.id)
@@ -378,10 +344,10 @@ class DatatypesFactory(object):
                 datatype.set_operation_id(operation.id)
                 dao.store_entity(datatype)
 
-                op_ms = model.Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
-                                        meta=json.dumps(self.meta), status=model.STATUS_FINISHED,
-                                        range_values=json.dumps({self.RANGE_1[0]: range_val1,
-                                                                 self.RANGE_2[0]: range_val2}))
+                op_ms = Operation(self.user.id, self.project.id, self.algorithm.id, 'test parameters',
+                                  meta=json.dumps(self.meta), status=STATUS_FINISHED,
+                                  range_values=json.dumps({self.RANGE_1[0]: range_val1,
+                                                           self.RANGE_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
                 self.create_datatype_measure(datatype, op_ms,

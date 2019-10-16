@@ -128,7 +128,7 @@ class XMLReader(object):
             if node.nodeType == Node.ELEMENT_NODE:
                 result[node.nodeName] = self.get_node_text(node)
                 result_meta = self._parse_xml_node_to_dict(node)
-                if result_meta.keys() is not None and len(result_meta.keys()) > 0:
+                if list(result_meta) is not None and len(list(result_meta)) > 0:
                     result[node.nodeName] = result_meta
         return result
     
@@ -172,6 +172,6 @@ class XMLWriter(object):
         doc.appendChild(root_node)
 
         # Now dump the XML content into a file.
-        with open(final_path, 'wb') as file_obj:
+        with open(final_path, 'wt') as file_obj:
             doc.writexml(file_obj, addindent="\t", newl="\n")
 

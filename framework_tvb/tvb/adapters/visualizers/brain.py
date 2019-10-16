@@ -34,27 +34,19 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import json
 import numpy
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
+from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
 from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
-from tvb.basic.filters.chain import FilterChain
-
+from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesH5
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex, TimeSeriesSurfaceIndex, TimeSeriesSEEGIndex, \
-    TimeSeriesRegionIndex, TimeSeriesEEGIndex
+from tvb.core.entities.model.datatypes.time_series import *
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.datatypes.surfaces import CORTICAL, EEG_CAP
-
-from tvb.core.neotraits._forms import DataTypeSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
-from tvb.interfaces.neocom.config import registry
+from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neocom import h5
 
 MAX_MEASURE_POINTS_LENGTH = 600
 
@@ -66,7 +58,8 @@ class BrainViewerForm(ABCAdapterForm):
         self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
                                                label='Time Series (Region or Surface)', conditions=self.get_filters())
         self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Surface to be displayed semi-transparently, for visual purposes only.')
+                                                 doc='Surface to be displayed semi-transparently as overlay, '
+                                                     'for visual navigation purposes only.')
 
     @staticmethod
     def get_required_datatype():
@@ -78,11 +71,12 @@ class BrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.time_series_type', FilterChain.datatype + '.has_surface_mapping'],
-                           operations=["in", "=="], values=[['TimeSeriesRegion', 'TimeSeriesSurface'], True])
+        return FilterChain(
+            fields=[FilterChain.datatype + '.time_series_type', FilterChain.datatype + '.has_surface_mapping'],
+            operations=["in", "=="], values=[['TimeSeriesRegion', 'TimeSeriesSurface'], True])
 
 
-class BrainViewer(ABCDisplayer):
+class BrainViewer(ABCSurfaceDisplayer):
     """
     Interface between the 3D view of the Brain Cortical Surface and TVB framework.
     This viewer will build the required parameter dictionary that will be sent to the HTML / JS for further processing,
@@ -90,29 +84,18 @@ class BrainViewer(ABCDisplayer):
     """
     _ui_name = "Brain Activity Visualizer"
     PAGE_SIZE = 500
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return BrainViewerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
-
+    def get_form_class(self):
+        return BrainViewerForm
 
     def get_required_memory_size(self, time_series, shell_surface=None):
         """
         Assume one page doesn't get 'dumped' in time and it is highly probably that
         two consecutive pages will be in the same time in memory.
         """
-        ts_h5 = self._load_h5_of_gid(time_series.gid)
-        overall_shape = ts_h5.data.shape
+        overall_shape = time_series.get_data_shape()
         used_shape = (overall_shape[0] / (self.PAGE_SIZE * 2.0), overall_shape[1], overall_shape[2], overall_shape[3])
         return numpy.prod(used_shape) * 8.0
-
 
     def generate_preview(self, time_series, shell_surface=None, figure_size=None):
         """
@@ -121,17 +104,18 @@ class BrainViewer(ABCDisplayer):
         self.populate_surface_fields(time_series)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
-            SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_h5)
+            SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_gid)
 
         params = self.retrieve_measure_points_prams(time_series)
 
-        time_series_h5 = self._get_h5_from_index(time_series)
+        time_series_h5 = h5.h5_file_for_index(time_series)
+        assert isinstance(time_series_h5, TimeSeriesH5)
         base_activity_url, time_urls = self._prepare_data_slices(time_series_h5)
         min_val, max_val = time_series_h5.get_min_max_values()
         time_series_h5.close()
 
-        if self.surface_h5 and self.region_map_h5:
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_h5,
+        if self.surface_h5 and self.region_map_gid:
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_gid,
                                                                              self.stored_adapter.id)
         else:
             boundary_url = ''
@@ -150,13 +134,8 @@ class BrainViewer(ABCDisplayer):
 
         if self.surface_h5:
             self.surface_h5.close()
-        if self.region_map_h5:
-            self.region_map_h5.close()
-        if self.connectivity_h5:
-            self.connectivity_h5.close()
 
         return self.build_display_result("brain/portlet_preview", params)
-
 
     def launch(self, time_series, shell_surface=None):
         """
@@ -164,16 +143,6 @@ class BrainViewer(ABCDisplayer):
         """
         params = self.compute_parameters(time_series, shell_surface)
         return self.build_display_result("brain/view", params, pages=dict(controlPage="brain/controls"))
-
-
-    def _get_h5_from_index(self, entity_index):
-        if entity_index is None:
-            return None
-        loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(entity_index.fk_from_operation)))
-        entity_h5_class = registry.get_h5file_for_index(type(entity_index))
-        entity_h5_path = loader.path_for(entity_h5_class, entity_index.gid)
-        return entity_h5_class(entity_h5_path)
-
 
     def populate_surface_fields(self, time_series_index):
         """
@@ -184,51 +153,49 @@ class BrainViewer(ABCDisplayer):
 
         if self.one_to_one_map:
             self.PAGE_SIZE /= 10
-            surface_id = time_series_index.surface_id
-            surface_index = dao.get_datatype_by_id(surface_id)
-            region_map_indexes = dao.get_generic_entity(RegionMappingIndex, surface_id, 'surface_id')
+            surface_gid = time_series_index.surface_gid
+            surface_index = dao.get_datatype_by_gid(surface_gid)
+            region_map_indexes = dao.get_generic_entity(RegionMappingIndex, surface_gid, 'surface_gid')
             if len(region_map_indexes) < 1:
                 region_map_index = None
                 connectivity_index = None
             else:
                 region_map_index = region_map_indexes[0]
-                connectivity_index = dao.get_datatype_by_id(region_map_index.connectivity_id)
+                connectivity_index = dao.get_datatype_by_gid(region_map_index.connectivity_gid)
         else:
-            connectivity_index = dao.get_datatype_by_id(time_series_index.connectivity_id)
+            connectivity_index = dao.get_datatype_by_gid(time_series_index.connectivity_gid)
 
-            if time_series_index.region_mapping_id:
-                region_map_index = dao.get_datatype_by_id(time_series_index.region_mapping_id)
+            if time_series_index.region_mapping_gid:
+                region_map_index = dao.get_datatype_by_gid(time_series_index.region_mapping_gid)
             else:
-                #TODO: fix for no RM in DB
-                region_map_indexes = dao.get_generic_entity(RegionMappingIndex, connectivity_index.id, 'connectivity_id')
+                region_map_indexes = dao.get_generic_entity(RegionMappingIndex, connectivity_index.gid,
+                                                            'connectivity_gid')
                 region_map_index = region_map_indexes[0]
 
-            surface_index = dao.get_datatype_by_id(region_map_index.surface_id)
+            surface_index = dao.get_datatype_by_gid(region_map_index.surface_gid)
 
-        self.connectivity_h5 = None if connectivity_index is None else self._get_h5_from_index(connectivity_index)
-        self.region_map_h5 = None if region_map_index is None else self._get_h5_from_index(region_map_index)
-        self.surface_h5 = None if surface_index is None else self._get_h5_from_index(surface_index)
-
+        self.connectivity_index = connectivity_index
+        self.region_map_gid = None if region_map_index is None else region_map_index.gid
+        self.surface_h5 = None if surface_index is None else h5.h5_file_for_index(surface_index)
 
     def retrieve_measure_points_prams(self, time_series):
         """
         To be overwritten method, for retrieving the measurement points (region centers, EEG sensors).
         """
-        if self.connectivity_h5 is None:
+        if self.connectivity_index is None:
             self.measure_points_no = 0
             return {'urlMeasurePoints': [],
                     'urlMeasurePointsLabels': [],
                     'noOfMeasurePoints': 0}
 
-        connectivity_gid = self.connectivity_h5.gid.load().hex
+        connectivity_gid = self.connectivity_index.gid
         measure_points = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_centres')
         measure_points_labels = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_region_labels')
-        self.measure_points_no = self.connectivity_h5.number_of_regions.load()
+        self.measure_points_no = self.connectivity_index.number_of_regions
 
         return {'urlMeasurePoints': measure_points,
                 'urlMeasurePointsLabels': measure_points_labels,
                 'noOfMeasurePoints': self.measure_points_no}
-
 
     def compute_parameters(self, time_series, shell_surface=None):
         """
@@ -242,7 +209,8 @@ class BrainViewer(ABCDisplayer):
         """
         self.populate_surface_fields(time_series)
 
-        url_vertices, url_normals, url_lines, url_triangles, url_region_map = SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_h5)
+        url_vertices, url_normals, url_lines, url_triangles, url_region_map = SurfaceURLGenerator.get_urls_for_rendering(
+            self.surface_h5, self.region_map_gid)
         hemisphere_chunk_mask = self.surface_h5.get_slices_to_hemisphere_mask()
 
         params = self.retrieve_measure_points_prams(time_series)
@@ -250,8 +218,8 @@ class BrainViewer(ABCDisplayer):
         if not self.one_to_one_map and self.measure_points_no > MAX_MEASURE_POINTS_LENGTH:
             raise Exception("Max number of measure points " + str(MAX_MEASURE_POINTS_LENGTH) + " exceeded.")
 
-        time_series_h5 = self._get_h5_from_index(time_series)
-
+        time_series_h5 = h5.h5_file_for_index(time_series)
+        assert isinstance(time_series_h5, TimeSeriesH5)
         base_activity_url, time_urls = self._prepare_data_slices(time_series_h5)
         min_val, max_val = time_series_h5.get_min_max_values()
         legend_labels = self._compute_legend_labels(min_val, max_val)
@@ -259,8 +227,8 @@ class BrainViewer(ABCDisplayer):
         data_shape = time_series_h5.read_data_shape()
         state_variables = time_series_h5.labels_dimensions.load().get(time_series_h5.labels_ordering.load()[1], [])
 
-        if self.surface_h5 and self.region_map_h5:
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_h5,
+        if self.surface_h5 and self.region_map_gid:
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_gid,
                                                                              self.stored_adapter.id)
         else:
             boundary_url = ''
@@ -269,9 +237,9 @@ class BrainViewer(ABCDisplayer):
         shelf_object = None
 
         if shell_surface:
-            shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
-            with shell_h5_class(shell_h5_path) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
+            with h5.h5_file_for_index(shell_surface) as shell_h5:
+                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
+                    shell_h5)
                 shelf_object = json.dumps([shell_vertices, shell_normals, shell_triangles])
 
         params.update(dict(title="Cerebral Activity: " + time_series.title, isOneToOneMapping=self.one_to_one_map,
@@ -280,7 +248,7 @@ class BrainViewer(ABCDisplayer):
                            urlRegionMap=json.dumps(url_region_map), base_activity_url=base_activity_url,
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                            legendLabels=legend_labels, labelsStateVar=state_variables,
-                           labelsModes=range(data_shape[3]), extended_view=False,
+                           labelsModes=list(range(data_shape[3])), extended_view=False,
                            shelfObject=shelf_object,
                            biHemispheric=self.surface_h5.bi_hemispheric.load(),
                            hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
@@ -288,18 +256,13 @@ class BrainViewer(ABCDisplayer):
                            measurePointsLabels=time_series_h5.get_space_labels(),
                            measurePointsTitle=time_series.title))
 
-        params.update(self.build_template_params_for_subselectable_datatype(time_series_h5))
+        params.update(self.build_params_for_subselectable_ts(time_series_h5))
 
         time_series_h5.close()
-        if self.connectivity_h5:
-            self.connectivity_h5.close()
-        if self.region_map_h5:
-            self.region_map_h5.close()
         if self.surface_h5:
             self.surface_h5.close()
 
         return params
-
 
     @staticmethod
     def _prepare_mappings(mappings_dict):
@@ -320,7 +283,6 @@ class BrainViewer(ABCDisplayer):
                         this_mappings.append(index)
             prepared_mappings.append(this_mappings)
         return prepared_mappings
-
 
     @staticmethod
     def _compute_legend_labels(min_val, max_val, nr_labels=5, min_nr_dec=3):
@@ -352,8 +314,8 @@ class BrainViewer(ABCDisplayer):
         inter_values = [round(processed_min_val + value_diff * i, idx) for i in range(nr_labels, 0, -1)]
         return [processed_max_val] + inter_values + [processed_min_val]
 
-
-    def _prepare_data_slices(self, time_series_h5):
+    @staticmethod
+    def _prepare_data_slices(time_series_h5):
         """
         Prepare data URL for retrieval with slices of timeSeries activity and Time-Line.
         :returns: [activity_urls], [timeline_urls]
@@ -364,9 +326,8 @@ class BrainViewer(ABCDisplayer):
         time_series_gid = time_series_h5.gid.load().hex
         activity_base_url = SurfaceURLGenerator.build_base_h5_url(time_series_gid)
         time_urls = [SurfaceURLGenerator.build_h5_url(time_series_gid, 'read_time_page',
-                                    parameter="current_page=0;page_size=" + str(overall_shape[0]))]
+                                                      parameter="current_page=0;page_size=" + str(overall_shape[0]))]
         return activity_base_url, time_urls
-
 
 
 class DualBrainViewerForm(ABCAdapterForm):
@@ -394,9 +355,10 @@ class DualBrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.time_series_type', FilterChain.datatype + '.has_surface_mapping'],
-                           operations=["in", "=="],
-                           values=[['TimeSeriesEEG', 'TimeSeriesSEEG', 'TimeSeriesMEG', 'TimeSeriesRegion'], True])
+        return FilterChain(
+            fields=[FilterChain.datatype + '.time_series_type', FilterChain.datatype + '.has_surface_mapping'],
+            operations=["in", "=="],
+            values=[['TimeSeriesEEG', 'TimeSeriesSEEG', 'TimeSeriesMEG', 'TimeSeriesRegion'], True])
 
 
 class DualBrainViewer(BrainViewer):
@@ -405,12 +367,9 @@ class DualBrainViewer(BrainViewer):
     """
     _ui_name = "Brain Activity Viewer in 3D and 2D"
     _ui_subsection = "brain_dual"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return DualBrainViewerForm
-        return self.form
+    def get_form_class(self):
+        return DualBrainViewerForm
 
     def populate_surface_fields(self, time_series_index):
         """
@@ -431,15 +390,14 @@ class DualBrainViewer(BrainViewer):
                 raise Exception("No EEG Cap Surface found for display!")
             self.surface_index = eeg_cap[0]
 
-        self.surface_h5 = self._get_h5_from_index(self.surface_index)
-
+        self.surface_h5 = h5.h5_file_for_index(self.surface_index)
 
     def retrieve_measure_points_prams(self, time_series):
 
         if isinstance(time_series, TimeSeriesRegionIndex):
             return BrainViewer.retrieve_measure_points_prams(self, time_series)
 
-        sensors_index = dao.get_datatype_by_id(time_series.sensors)
+        sensors_index = dao.get_datatype_by_gid(time_series.sensors_gid)
         self.measure_points_no = sensors_index.number_of_sensors
 
         if isinstance(time_series, TimeSeriesEEGIndex):
@@ -472,4 +430,3 @@ class DualBrainViewer(BrainViewer):
         return self.build_display_result("brain/extendedview", params,
                                          pages=dict(controlPage="brain/extendedcontrols",
                                                     channelsPage="commons/channel_selector.html"))
-

@@ -39,9 +39,8 @@ This is the main UI entry point.
 
 import os
 import cherrypy
-
 from tvb.interfaces.web.controllers import common
-from tvb.config import CONNECTIVITY_CLASS, CONNECTIVITY_MODULE, ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.services.user_service import UserService
@@ -70,7 +69,8 @@ class BaseController(object):
 
         self.connectivity_tab_link = '/flow/step_connectivity'
         view_category = self.flow_service.get_visualisers_category()
-        conn_id = self.flow_service.get_algorithm_by_module_and_class(CONNECTIVITY_MODULE, CONNECTIVITY_CLASS).id
+        conn_id = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.CONNECTIVITY_MODULE,
+                                                                      IntrospectionRegistry.CONNECTIVITY_CLASS).id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
         self.connectivity_submenu = [dict(title="Large Scale Connectivity", link=connectivity_link,
@@ -80,7 +80,8 @@ class BaseController(object):
                                           subsection=WebStructure.SUB_SECTION_LOCAL_CONNECTIVITY,
                                           description="Create or view existent Local Connectivity entities.")]
 
-        allen_algo = self.flow_service.get_algorithm_by_module_and_class(ALLEN_CREATOR_MODULE, ALLEN_CREATOR_CLASS)
+        allen_algo = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ALLEN_CREATOR_MODULE,
+                                                                         IntrospectionRegistry.ALLEN_CREATOR_CLASS)
         if allen_algo and not allen_algo.removed:
             # Only add the Allen Creator if AllenSDK is installed
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
@@ -237,12 +238,12 @@ class BaseController(object):
         """
         Populate Section and Sub-Section fields from current Algorithm-Group.
         """
-        if algorithm.module == CONNECTIVITY_MODULE:
+        if algorithm.module == IntrospectionRegistry.CONNECTIVITY_MODULE:
             result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
             result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_CONNECTIVITY
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
-        elif algorithm.module == ALLEN_CREATOR_MODULE:
+        elif algorithm.module == IntrospectionRegistry.ALLEN_CREATOR_MODULE:
             result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
             result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_ALLEN
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
@@ -330,7 +331,7 @@ class BaseController(object):
         if overlay_indexes is not None:
             template_dictionary[common.KEY_OVERLAY_INDEXES] = overlay_indexes
         else:
-            template_dictionary[common.KEY_OVERLAY_INDEXES] = range(len(tabs_horizontal)) \
+            template_dictionary[common.KEY_OVERLAY_INDEXES] = list(range(len(tabs_horizontal))) \
                 if tabs_horizontal is not None else []
         template_dictionary[common.KEY_OVERLAY_PAGINATION] = False
 

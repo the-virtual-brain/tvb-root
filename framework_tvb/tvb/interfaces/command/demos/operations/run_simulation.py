@@ -32,70 +32,65 @@
 Find a Connectivity in current project (by Subject) and later run a simulation on it.
 
 __main__ will contain the code.
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
-import sys
+import numpy
 from time import sleep
+from tvb.basic.profile import TvbProfile
+from tvb.simulator.coupling import Scaling
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesRegionIndex
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
+from tvb.core.neocom import h5
+from tvb.core.services.flow_service import FlowService
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities import model
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
-from tvb.core.services.operation_service import OperationService
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
-from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.datatypes.connectivity import Connectivity
+from tvb.core.services.simulator_service import SimulatorService
+from tvb.simulator.simulator import Simulator
 
-
-LOG = get_logger(__name__)
-
-
-## Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
+# Before starting this, we need to have TVB web interface launched at least once
+# (to have a default project, user and connectivity)
 if __name__ == "__main__":
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    log = get_logger(__name__)
 
-    flow_service = FlowService()
-    operation_service = OperationService()
-
-    ## This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
+    # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
     project = dao.get_project_by_id(1)
 
-    ## Prepare the Adapter
-    adapter_instance = ABCAdapter.build_adapter_from_class(SimulatorAdapter)
+    # Find a structural Connectivity and load it in memory
+    connectivity_index = dao.get_generic_entity(ConnectivityIndex, DataTypeMetaData.DEFAULT_SUBJECT, "subject")[0]
+    connectivity = h5.load_from_index(connectivity_index)
 
-    ## Prepare the input algorithms as if they were coming from web UI submit:
-    ## TODO create helper methods for working with objects instead of strings.
-    connectivity = dao.get_generic_entity(Connectivity, DataTypeMetaData.DEFAULT_SUBJECT, "subject")[0]
-    launch_args = dict()
-    for f in adapter_instance.flaten_input_interface():
-        launch_args[f["name"]] = str(f["default"]) if 'default' in f else None
-    launch_args["connectivity"] = connectivity.gid
-    launch_args["model_parameters_option_Generic2dOscillator_variables_of_interest"] = 'V'
+    # Prepare a Simulator instance with defaults and configure it to use the previously loaded Connectivity
+    simulator = Simulator()
+    simulator.connectivity = connectivity
+    # Configure the Simulator to use a Scaling type coupling
+    simulator.coupling = Scaling()
+    # Choose a higher value for the 'tau' parameter of the Generic2dOscillator model
+    simulator.model.tau = numpy.array([2.0])
+    # Configure the simulation length
+    simulator.simulation_length = 100
 
-    if len(sys.argv) > 1:
-        launch_args["model_parameters_option_Generic2dOscillator_tau"] = sys.argv[1]
+    # Load the SimulatorAdapter algorithm from DB
+    cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
 
-    ## launch an operation and have the results stored both in DB and on disk
-    launched_operation = flow_service.fire_operation(adapter_instance, project.administrator,
-                                                     project.id, **launch_args)[0]
+    # Instantiate a SimulatorService and launch the configured simulation
+    simulator_service = SimulatorService()
+    launched_operation = simulator_service.async_launch_and_prepare_simulation(None, project.administrator, project,
+                                                                               cached_simulator_algorithm, simulator,
+                                                                               None)
 
-    ## wait for the operation to finish
+    # wait for the operation to finish
     while not launched_operation.has_finished:
         sleep(5)
         launched_operation = dao.get_operation_by_id(launched_operation.id)
 
-    if launched_operation.status == model.STATUS_FINISHED:
-        ts = dao.get_generic_entity(TimeSeriesRegion, launched_operation.id, "fk_from_operation")[0]
-        LOG.info("TimeSeries result is: %s " % ts.summary_info)
-        print(ts.summary_info)
+    if launched_operation.status == STATUS_FINISHED:
+        ts = dao.get_generic_entity(TimeSeriesRegionIndex, launched_operation.id, "fk_from_operation")[0]
+        log.info("TimeSeries result is: %s " % ts)
     else:
-        LOG.warning("Operation ended with problems [%s]: [%s]" % (launched_operation.status,
+        log.warning("Operation ended with problems [%s]: [%s]" % (launched_operation.status,
                                                                   launched_operation.additional_info))
-
-

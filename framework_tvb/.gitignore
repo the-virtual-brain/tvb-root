@@ -10,6 +10,7 @@ __pycache__
 .ipynb_checkpoints/
 
 # testing
+.benchmarks/
 .pytest_cache/
 .tox/
 TEST_OUTPUT/

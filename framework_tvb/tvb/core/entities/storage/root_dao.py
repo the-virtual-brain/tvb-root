@@ -44,12 +44,10 @@ from tvb.config import SIMULATION_DATATYPE_CLASS
 
 
 
-class RootDAO(object):
+class RootDAO(object, metaclass=SESSION_META_CLASS):
     """
     GLOBAL METHODS
     """
-
-    __metaclass__ = SESSION_META_CLASS
     session = None
     logger = get_logger(__name__)
 
@@ -92,7 +90,7 @@ class RootDAO(object):
         """
         Retrieve an entity of entity_type, filtered by select_field = filter_value.
         """
-        if isinstance(entity_type, (str, unicode)):
+        if isinstance(entity_type, str):
             classname = entity_type[entity_type.rfind(".") + 1:]
             entity_class = __import__(entity_type[0: entity_type.rfind(".")], globals(), locals(), classname)
             entity_class = eval("entity_class." + classname)

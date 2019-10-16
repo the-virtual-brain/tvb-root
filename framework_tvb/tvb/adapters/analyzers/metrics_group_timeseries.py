@@ -38,28 +38,53 @@ Analyzer used to calculate a single measure for TimeSeries.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-
+import uuid
 import numpy
+import json
+from collections import OrderedDict
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
-from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.mapped_values import DatatypeMeasure
-
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapter, ABCAdapterForm
-from tvb.datatypes.time_series import TimeSeries
-# from tvb.datatypes.mapped_values import DatatypeMeasure
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.file.datatypes.mapped_value_h5 import DatatypeMeasureH5
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, MultipleSelectField
+# Import metrics here, so that Traits will find them and return them as known subclasses
+import tvb.analyzers.metric_kuramoto_index
+import tvb.analyzers.metric_proxy_metastability
+import tvb.analyzers.metric_variance_global
+import tvb.analyzers.metric_variance_of_node_variance
 
 LOG = get_logger(__name__)
+ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
 
 
 class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
+    @staticmethod
+    def get_extra_algorithm_filters():
+        return {"KuramotoIndex": FilterChain(fields=[FilterChain.datatype + '.data_length_2d'], operations=[">="],
+                                             values=[2])}
+
     def __init__(self, prefix='', project_id=None):
         super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label='')
+        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name="time_series",
+                                               required=True, label=BaseTimeseriesMetricAlgorithm.time_series.label,
+                                               doc = BaseTimeseriesMetricAlgorithm.time_series.doc)
+        self.start_point = ScalarField(BaseTimeseriesMetricAlgorithm.start_point, self)
+        self.segment = ScalarField(BaseTimeseriesMetricAlgorithm.segment, self)
+
+        algo_names = list(ALGORITHMS)
+        algo_names.sort()
+        choices = OrderedDict()
+        for name in algo_names:
+            choices[name] = name
+
+        self.algorithms = MultipleSelectField(choices, self, name="algorithms", include_none=False,
+                                              label='Selected metrics to be applied',
+                                              doc='The selected algorithms will all be applied on the input TimeSeries')
 
     @staticmethod
     def get_required_datatype():
@@ -67,7 +92,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return 'time_series'
+        return '_time_series'
 
     @staticmethod
     def get_filters():
@@ -82,42 +107,20 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
     _ui_name = "TimeSeries Metrics"
     _ui_description = "Compute a single number for a TimeSeries input DataType."
     _ui_subsection = "timeseries"
-    available_algorithms = BaseTimeseriesMetricAlgorithm.get_known_subclasses()
+    input_shape = ()
 
-    def get_form(self):
+    def get_form_class(self):
         return TimeseriesMetricsAdapterForm
 
-    def get_input_tree(self):
-        """
-        Compute interface based on introspected algorithms found.
-        """
-        algorithm = BaseTimeseriesMetricAlgorithm()
-        algorithm.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        tree = algorithm.interface[self.INTERFACE_ATTRIBUTES]
-        tree[0]['conditions'] = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                            operations=["=="], values=[4])
-
-        algo_names = self.available_algorithms.keys()
-        options = []
-        for name in algo_names:
-            options.append({ABCAdapter.KEY_NAME: name, ABCAdapter.KEY_VALUE: name})
-        tree.append({'name': 'algorithms', 'label': 'Selected metrics to be applied',
-                     'type': ABCAdapter.TYPE_MULTIPLE, 'required': False, 'options': options,
-                     'description': 'The selected metric algorithms will be applied on the input TimeSeries'})
-
-        return tree
-
-
     def get_output(self):
-        return [DatatypeMeasure]
-
+        return [DatatypeMeasureIndex]
 
     def configure(self, time_series, **kwargs):
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_shape = time_series.read_data_shape()
-
+        self.input_shape = (time_series.data_length_1d, time_series.data_length_2d,
+                            time_series.data_length_3d, time_series.data_length_4d)
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -126,15 +129,14 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         input_size = numpy.prod(self.input_shape) * 8.0
         return input_size
 
-
     def get_required_disk_size(self, **kwargs):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         return 0
 
-    #TODO: store DatatypeMeasure
     def launch(self, time_series, algorithms=None, start_point=None, segment=None):
+        # type: (TimeSeriesIndex, list, float, int) -> DatatypeMeasureIndex
         """ 
         Launch algorithm and build results.
 
@@ -142,34 +144,26 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         :param algorithms:  the algorithms to be run for computing measures on the time series
         :type  algorithms:  any subclass of BaseTimeseriesMetricAlgorithm
                             (KuramotoIndex, GlobalVariance, VarianceNodeVariance)
-        :rtype: `DatatypeMeasure`
+        :rtype: `DatatypeMeasureIndex`
         """
         if algorithms is None:
-            algorithms = self.available_algorithms.keys()
+            algorithms = list(ALGORITHMS)
 
-        shape = time_series.read_data_shape()
         LOG.debug("time_series shape is %s" % str(self.input_shape))
+        dt_timeseries = h5.load_from_index(time_series)
 
         metrics_results = {}
         for algorithm_name in algorithms:
-            ##------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
-            node_slice = [slice(shape[0]), slice(shape[1]), slice(shape[2]), slice(shape[3])]
 
-            ##---------- Iterate over slices and compose final result ------------##
-            unstored_ts = TimeSeries(use_storage=False)
-
-            unstored_ts.data = time_series.read_data_slice(tuple(node_slice))
-
-            ##-------------------- Fill Algorithm for Analysis -------------------##
-            algorithm = self.available_algorithms[algorithm_name](time_series=unstored_ts)
+            algorithm = ALGORITHMS[algorithm_name](time_series=dt_timeseries)
             if segment is not None:
                 algorithm.segment = segment
             if start_point is not None:
                 algorithm.start_point = start_point
 
-            ## Validate that current algorithm's filter is valid.
-            if (algorithm.accept_filter is not None and
-                    not algorithm.accept_filter.get_python_filter_equivalent(time_series)):
+            # Validate that current algorithm's filter is valid.
+            algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
+            if algorithm_filter is not None and not algorithm_filter.get_python_filter_equivalent(time_series):
                 LOG.warning('Measure algorithm will not be computed because of incompatibility on input. '
                             'Filters failed on algo: ' + str(algorithm_name))
                 continue
@@ -177,13 +171,20 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
                 LOG.debug("Applying measure: " + str(algorithm_name))
 
             unstored_result = algorithm.evaluate()
-            ##----------------- Prepare a Float object(s) for result ----------------##
+            # ----------------- Prepare a Float object(s) for result ----------------##
             if isinstance(unstored_result, dict):
                 metrics_results.update(unstored_result)
             else:
                 metrics_results[algorithm_name] = unstored_result
 
-        result = DatatypeMeasure(analyzed_datatype=time_series, metrics=metrics_results)
+        result = DatatypeMeasureIndex()
+        result.source_gid = time_series.gid
+        result.metrics = json.dumps(metrics_results)
+
+        result_path = h5.path_for(self.storage_path, DatatypeMeasureH5, result.gid)
+        with DatatypeMeasureH5(result_path) as result_h5:
+            result_h5.metrics.store(metrics_results)
+            result_h5.analyzed_datatype.store(dt_timeseries)
+            result_h5.gid.store(uuid.UUID(result.gid))
+
         return result
-
-

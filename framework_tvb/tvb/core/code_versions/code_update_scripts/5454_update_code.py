@@ -48,7 +48,7 @@ def _figures_in_project(project_id):
     grouped_figures, _ = dao.get_previews(project_id)
     figures = []
 
-    for fv in grouped_figures.itervalues():
+    for fv in grouped_figures.values():
         figures.extend(fv)
 
     return figures

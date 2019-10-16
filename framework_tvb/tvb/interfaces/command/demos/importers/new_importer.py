@@ -36,6 +36,7 @@ Adapter example.
 
 import numpy
 from tvb.core.adapters.abcuploader import ABCUploader
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeries
 
@@ -57,7 +58,7 @@ class FooDataImporter(ABCUploader):
         ]
 
     def get_output(self):
-        return [TimeSeries]
+        return [TimeSeriesIndex]
 
     def launch(self, array_data):
 

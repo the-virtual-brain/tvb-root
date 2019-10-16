@@ -138,7 +138,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         Simulate submit of a given params (key:value) and check that they are found in the error response
         """
         submit_data = copy.copy(self.VALID_SETTINGS)
-        for key, value in params_dictionary.iteritems():
+        for key, value in params_dictionary.items():
             submit_data[key] = value
 
         response = self.settings_c.settings(save_settings=True, **submit_data)

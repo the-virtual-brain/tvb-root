@@ -37,19 +37,18 @@ import json
 import math
 import numpy
 from copy import copy
-from tvb.basic.filters.chain import FilterChain
-from tvb.datatypes.graph import ConnectivityMeasure
-
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.config import CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.neotraits._forms import DataTypeSelectField, SimpleFloatField
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleFloatField
+from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.connectivity import Connectivity
 
@@ -69,11 +68,11 @@ class ConnectivityViewerForm(ABCAdapterForm):
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
                                                 label='Connectivity Matrix', conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                                          values=['Cortical Surface'])
+                                         values=['Cortical Surface'])
         self.surface_data = DataTypeSelectField(SurfaceIndex, self, name='surface_data', label='Brain Surface',
                                                 doc='The Brain Surface is used to give you an idea of the connectivity '
-                                                    'position relative to the full brain cortical surface.  This surface '
-                                                    'will be displayed as a shadow (only used in 3D Edges tab).',
+                                                    'position relative to the full brain cortical surface. This surface'
+                                                    ' will be displayed as a shadow (only used in 3D Edges tab).',
                                                 conditions=surface_conditions)
 
         self.step = SimpleFloatField(self, name='step', label='Color Threshold',
@@ -90,9 +89,10 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.rays = DataTypeSelectField(ConnectivityMeasureIndex, self, name='rays', conditions=rays_conditions,
-                                        label='Shapes Dimensions', doc='A ConnectivityMeasure datatype used to establish '
-                                                                       'the size of the spheres representing each node. '
-                                                                       '(It only applies to 3D Nodes tab).')
+                                        label='Shapes Dimensions',
+                                        doc='A ConnectivityMeasure datatype used to establish '
+                                            'the size of the spheres representing each node. '
+                                            '(It only applies to 3D Nodes tab).')
 
     @staticmethod
     def get_required_datatype():
@@ -107,24 +107,16 @@ class ConnectivityViewerForm(ABCAdapterForm):
         return "_input_data"
 
 
-class ConnectivityViewer(ABCDisplayer):
+class ConnectivityViewer(ABCSpaceDisplayer):
     """ 
     Given a Connectivity Matrix and a Surface data the viewer will display the matrix 'inside' the surface data. 
     The surface is only displayed as a shadow.
     """
 
     _ui_name = "Connectivity Visualizer"
-    form = None
 
-    def get_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return ConnectivityViewerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return ConnectivityViewerForm
 
     def get_required_memory_size(self, input_data, surface_data, **kwargs):
         """
@@ -135,38 +127,6 @@ class ConnectivityViewer(ABCDisplayer):
             return surface_data.number_of_vertices * 6 * 4 + surface_data.number_of_vertices * 6 * 8
             # If no surface pass, assume enough memory should be available.
         return -1
-
-
-    def _determine_h5_file_for_inputs(self, index):
-        h5_file = None
-        if index:
-            h5_class, h5_path = self._load_h5_of_gid(index.gid)
-            h5_file = h5_class(h5_path)
-
-        return h5_file
-
-
-    def _load_datatypes_for_inputs(self, connectivity_index, colors_index, rays_index):
-        connectivity_h5 = self._determine_h5_file_for_inputs(connectivity_index)
-        connectivity = Connectivity()
-        connectivity_h5.load_into(connectivity)
-
-        colors_h5 = self._determine_h5_file_for_inputs(colors_index)
-        rays_h5 = self._determine_h5_file_for_inputs(rays_index)
-
-        colors_dt = None
-        if colors_h5:
-            colors_dt = ConnectivityMeasure()
-            colors_h5.load_into(colors_dt)
-            colors_h5.close()
-
-        rays_dt = None
-        if rays_dt:
-            rays_dt = ConnectivityMeasure()
-            rays_h5.load_into(rays_dt)
-            rays_h5.close()
-        return connectivity, connectivity_h5, colors_dt, rays_dt
-
 
     def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None):
         """
@@ -186,14 +146,28 @@ class ConnectivityViewer(ABCDisplayer):
                      the ones with a value greater that this will be displayed as red discs, instead of yellow
         :type step:  float
         """
-        connectivity, connectivity_h5, colors_dt, rays_dt = self._load_datatypes_for_inputs(input_data, colors, rays)
-        surface_h5 = self._determine_h5_file_for_inputs(surface_data)
-        connectivity.type = input_data.type
-        global_params, global_pages = self._compute_connectivity_global_params(connectivity, connectivity_h5)
-        global_params.update(self._compute_surface_global_params(surface_h5))
-        global_params['isSingleMode'] = False
+        connectivity = h5.load_from_index(input_data)
+        assert isinstance(connectivity, Connectivity)
+        if colors:
+            colors_dt = h5.load_from_index(colors)
+        else:
+            colors_dt = None
+        if rays:
+            rays_dt = h5.load_from_index(rays)
+        else:
+            rays_dt = None
 
-        connectivity_h5.close()
+        global_params, global_pages = self._compute_connectivity_global_params(connectivity)
+        if surface_data is not None:
+            surface_h5 = h5.h5_file_for_index(surface_data)
+            url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
+        else:
+            url_vertices, url_normals, url_triangles = [], [], []
+
+        global_params["urlVertices"] = json.dumps(url_vertices)
+        global_params["urlTriangles"] = json.dumps(url_triangles)
+        global_params["urlNormals"] = json.dumps(url_normals)
+        global_params['isSingleMode'] = False
 
         result_params, result_pages = Connectivity2DViewer().compute_parameters(connectivity, colors_dt, rays_dt, step)
         result_params.update(global_params)
@@ -212,8 +186,16 @@ class ConnectivityViewer(ABCDisplayer):
 
         see `launch_`
         """
-        connectivity, connectivity_h5, colors_dt, rays_dt = self._load_datatypes_for_inputs(input_data, colors, rays)
-        connectivity_h5.close()
+        connectivity = h5.load_from_index(input_data)
+        assert isinstance(connectivity, Connectivity)
+        if colors:
+            colors_dt = h5.load_from_index(colors)
+        else:
+            colors_dt = None
+        if rays:
+            rays_dt = h5.load_from_index(rays)
+        else:
+            rays_dt = None
 
         parameters, _ = Connectivity2DViewer().compute_preview_parameters(connectivity, figure_size[0],
                                                                           figure_size[1], colors_dt, rays_dt, step)
@@ -236,38 +218,18 @@ class ConnectivityViewer(ABCDisplayer):
 
         return minv, maxv, min_nonzero
 
-
-    def _compute_surface_global_params(self, surface_h5=None):
-        """
-        Returns a dictionary which contains the data needed for drawing a surface over the connectivity.
-        :param surface_h5: if provided, it is displayed as a shadow to give an idea of the connectivity position
-               relative to the full brain cortical surface
-        :type surface_h5: `SurfaceH5`
-        """
-        if surface_h5:
-            url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
-        else:
-            url_vertices, url_normals, url_triangles = [], [], []
-
-        global_params = dict(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
-                             urlNormals=json.dumps(url_normals), surface_entity=surface_h5)
-        return global_params
-
-
-    def _compute_connectivity_global_params(self, connectivity, connectivity_h5):
+    def _compute_connectivity_global_params(self, connectivity):
         """
         Returns a dictionary which contains the data needed for drawing a connectivity.
 
-        :param connectivity: the `Connectivity` object
-        :param connectivity_index: it is necessary for building the URLs and take some UI specific data
+        :param connectivity: the `Connectivity(HasTraits)` object
         """
-        conn_gid = connectivity_h5.gid.load().hex
+        conn_gid = connectivity.gid.hex
         path_weights = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_weights')
         path_pos = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_centres')
         path_tracts = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_tracts')
         path_labels = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_labels')
         path_hemisphere_order_indices = SurfaceURLGenerator.paths2url(conn_gid, 'hemisphere_order_indices')
-
 
         algo = FlowService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
         submit_url = '/{}/{}/{}'.format(SurfaceURLGenerator.FLOW, algo.fk_category, algo.id)
@@ -288,7 +250,7 @@ class ConnectivityViewer(ABCDisplayer):
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
                              hemisphereOrderUrl=path_hemisphere_order_indices)
-        global_params.update(self.build_template_params_for_subselectable_datatype(connectivity_h5))
+        global_params.update(self.build_params_for_selectable_connectivity(connectivity))
         return global_params, global_pages
 
 
@@ -299,18 +261,13 @@ class ConnectivityViewer(ABCDisplayer):
         """
         viewer = ConnectivityViewer()
         viewer.storage_path = conn_path
-        conn_h5 = viewer._determine_h5_file_for_inputs(input_connectivity)
-        conn_dt = Connectivity()
-        conn_h5.load_into(conn_dt)
-        conn_dt.type = input_connectivity.type
-
-        global_params, global_pages = viewer._compute_connectivity_global_params(conn_dt, conn_h5)
-
-        conn_h5.close()
-
+        conn_dt = h5.load_from_index(input_connectivity)
+        assert isinstance(conn_dt, Connectivity)
+        global_params, global_pages = viewer._compute_connectivity_global_params(conn_dt)
         global_params.update(global_pages)
         global_params['selectedConnectivityGid'] = input_connectivity.gid
         return global_params
+
 
 #
 # -------------------- Connectivity 3D code starting -------------------
@@ -383,11 +340,11 @@ class Connectivity2DViewer(object):
         if input_data.number_of_regions <= 3:
             raise LaunchException('The connectivity matrix you selected has fewer nodes than acceptable for display!')
 
-        half = input_data.number_of_regions / 2
+        half = input_data.number_of_regions // 2
         normalized_weights = self._normalize_weights(input_data.ordered_weights)
         weights = Connectivity2DViewer._get_weights(normalized_weights)
 
-        ## Compute shapes and colors ad adjacent data
+        # Compute shapes and colors ad adjacent data
         norm_rays, min_ray, max_ray = self._normalize_rays(rays, input_data.number_of_regions)
         colors, step = self._prepare_colors(colors, input_data.number_of_regions, step)
 
@@ -459,7 +416,7 @@ class Connectivity2DViewer(object):
         left hemispheres. Those matrixes are obtained from
         a weights matrix which contains data related to both hemispheres.
         """
-        half = len(weights) / 2
+        half = len(weights) // 2
         l_aux, r_aux = weights[:half], weights[half:]
         r_weights = []
         l_weights = []

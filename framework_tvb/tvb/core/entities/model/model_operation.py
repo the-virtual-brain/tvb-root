@@ -41,6 +41,7 @@ import datetime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from tvb.basic.logger.builder import get_logger
+from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.config import TVB_IMPORTER_CLASS, TVB_IMPORTER_MODULE
 from tvb.core.neotraits.db import Base
 from tvb.core.utils import string2date, generate_guid
@@ -218,11 +219,14 @@ class OperationGroup(Base, Exportable):
         """
         new_name = "of " + entities_in_group + " varying "
         if self.range1 is not None:
-            new_name += json.loads(self.range1)[0]
+            range_param1 = RangeParameter.from_json(self.range1)
+            new_name += range_param1.name
         if self.range2 is not None:
-            new_name += " x " + json.loads(self.range2)[0]
+            range_param2 = RangeParameter.from_json(self.range2)
+            new_name += " x " + range_param2.name
         if self.range3 is not None:
-            new_name += " x " + json.loads(self.range3)[0]
+            range_param3 = RangeParameter.from_json(self.range3)
+            new_name += " x " + range_param3.name
 
         new_name += " - " + date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
         self.name = new_name
@@ -361,6 +365,7 @@ class Operation(Base, Exportable):
         return self.__class__.__name__, base_dict
 
 
+    #TODO: Fix this hackish dao pass
     def from_dict(self, dictionary, dao, user_id=None, project_gid=None):
         """
         Add specific attributes from a input dictionary.

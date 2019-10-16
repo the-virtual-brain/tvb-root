@@ -36,7 +36,6 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -244,6 +243,8 @@ class RegionStimulusController(SpatioTemporalController):
 
     @expose_fragment('spatial/equation_displayer')
     def get_equation_chart(self, **form_data):
+        from tvb.basic.traits.parameters_factory import collapse_params
+
         """
         Returns the html which contains the plot with the temporal equation.
         """

@@ -42,10 +42,9 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from tvb.config import ADAPTERS
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-
+from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
@@ -58,13 +57,11 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.transient.burst_export_entities import BurstInformation
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-
+from tvb.core.neocom import h5
 
 
 class ImportService(object):
@@ -215,15 +212,15 @@ class ImportService(object):
             # Keep a list with all burst that were imported since we will want to also add the workflow
             # steps after we are finished with importing the operations and datatypes. We need to first
             # stored bursts since we need to know which new id's they have for operations parent_burst.
-            bursts_dict, dt_mappings_dict = self._load_burst_info_from_json(new_project_path)
-            burst_ids_mapping = self._import_bursts(project_entity, bursts_dict)
+            # bursts_dict, dt_mappings_dict = self._load_burst_info_from_json(new_project_path)
+            # burst_ids_mapping = self._import_bursts(project_entity, bursts_dict)
 
             # Now import project operations
-            self.import_project_operations(project_entity, new_project_path, dt_mappings_dict, burst_ids_mapping)
+            self.import_project_operations(project_entity, new_project_path)
             # Import images
             self._store_imported_images(project_entity)
             # Now we can finally import workflow related entities
-            self.import_workflows(project_entity, bursts_dict, burst_ids_mapping)
+            # self.import_workflows(project_entity, bursts_dict, burst_ids_mapping)
 
 
     def import_workflows(self, project, bursts_dict, burst_ids_mapping):
@@ -448,46 +445,37 @@ class ImportService(object):
         self.files_helper.write_image_metadata(figure)
 
 
-    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None, move=True):
+    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None,
+                                move=True, final_storage=None):
         """
         Creates an instance of datatype from storage / H5 file 
-        :returns: datatype
+        :returns: DatatypeIndex
         """
-        self.logger.debug("Loading datatType from file: %s" % file_name)
-        storage_manager = HDF5StorageManager(storage_folder, file_name)
-        meta_dictionary = storage_manager.get_metadata()
-        meta_structure = DataTypeMetaData(meta_dictionary)
+        self.logger.debug("Loading DataType from file: %s" % file_name)
+        datatype, generic_attributes = h5.load_with_references(os.path.join(storage_folder, file_name))
+        index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)
+        datatype_index = index_class()
+        datatype_index.fill_from_has_traits(datatype)
+        datatype_index.fill_from_generic_attributes(generic_attributes)
 
-        # Now try to determine class and instantiate it
-        class_name = meta_structure[DataTypeMetaData.KEY_CLASS_NAME]
-        class_module = meta_structure[DataTypeMetaData.KEY_MODULE]
-        datatype = __import__(class_module, globals(), locals(), [class_name])
-        datatype = getattr(datatype, class_name)
-        type_instance = manager_of_class(datatype).new_instance()
-
-        # Now we fill data into instance
-        type_instance.type = str(type_instance.__class__.__name__)
-        type_instance.module = str(type_instance.__module__)
-
-        # Fill instance with meta data
-        type_instance.load_from_metadata(meta_dictionary)
-
-        #Add all the required attributes
+        # Add all the required attributes
         if datatype_group is not None:
-            type_instance.fk_datatype_group = datatype_group.id
-        type_instance.set_operation_id(op_id)
+            datatype_index.fk_datatype_group = datatype_group.id
+        datatype_index.fk_from_operation = op_id
 
         associated_file = h5.path_for_stored_index(datatype_index)
         if os.path.exists(associated_file):
             datatype_index.disk_size = FilesHelper.compute_size_on_disk(associated_file)
 
         # Now move storage file into correct folder if necessary
-        current_file = os.path.join(storage_folder, file_name)
-        new_file = type_instance.get_storage_file_path()
-        if new_file != current_file and move:
-            shutil.move(current_file, new_file)
+        if move and final_storage is not None:
+            current_file = os.path.join(storage_folder, file_name)
+            h5_type = h5.REGISTRY.get_h5file_for_datatype(datatype.__class__)
+            final_path = h5.path_for(final_storage, h5_type, datatype.gid)
+            if final_path != current_file and move:
+                shutil.move(current_file, final_path)
 
-        return type_instance
+        return datatype_index
 
 
     def store_datatype(self, datatype):
@@ -552,7 +540,7 @@ class ImportService(object):
                 # If no dataType group present for current op. group, create it.
                 operation_group = dao.get_operationgroup_by_id(operation_group_id)
                 datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
-                datatype_group.state = ADAPTERS['Upload']['defaultdatastate']
+                datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
                 datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
@@ -589,7 +577,7 @@ class ImportService(object):
                 view_step_entity.from_dict(view_step.data)
                 view_step_entity.workflow = workflow_entity
 
-                ## For each visualize step, also load all of the analyze steps.
+                # For each visualize step, also load all of the analyze steps.
                 analyzers = []
                 for an_step in analyze_steps:
                     if (an_step.data["tab_index"] != view_step_entity.tab_index

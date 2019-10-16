@@ -39,7 +39,7 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.model.datatypes.temporal_correlations import CrossCorrelationIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
 class CrossCorrelationVisualizerForm(ABCAdapterForm):
@@ -62,26 +62,16 @@ class CrossCorrelationVisualizerForm(ABCAdapterForm):
         return None
 
 
-class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
+class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin):
     _ui_name = "Cross Correlation Visualizer"
     _ui_subsection = "correlation"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return CrossCorrelationVisualizerForm
-        return self.form
+    def get_form_class(self):
+        return CrossCorrelationVisualizerForm
 
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
-
-
-    #TODO: migrate to neotraits
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
-        labels = self._get_associated_connectivity_labeling(datatype)
-        matrix = datatype.get_data('array_data').mean(axis=0)[:, :, 0, 0]
+        labels, matrix = self._extract_labels_and_data_matrix(datatype)
+        matrix = matrix.mean(axis=0)[:, :, 0, 0]
         pars = self.compute_params(matrix, 'Correlation matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

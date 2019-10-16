@@ -37,33 +37,52 @@ It displays the mixing matrix of siae n_features x n_components
 """
 
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.datatypes.mode_decompositions import IndependentComponents
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.model.datatypes.mode_decompositions import IndependentComponentsIndex
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleIntField
 
 LOG = get_logger(__name__)
 
 
-class ICA(MappedArraySVGVisualizerMixin, ABCDisplayer):
+class ICAForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(ICAForm, self).__init__(prefix, project_id)
+        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
+                                            label='Independent component analysis:', conditions=self.get_filters())
+        self.i_svar = SimpleIntField(self, name='i_svar', default=0,
+                                     label='Index of state variable (defaults to first state variable)')
+        self.i_mode = SimpleIntField(self, name='i_mode', default=0, label='Index of mode (defaults to first mode)')
+
+    @staticmethod
+    def get_required_datatype():
+        return IndependentComponentsIndex
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return '_datatype'
+
+
+class ICA(MappedArraySVGVisualizerMixin):
     _ui_name = "Independent Components Analysis Visualizer"
 
-
-    def get_input_tree(self):
-        """Inform caller of the data we need"""
-        return [{"name": "datatype", "type": IndependentComponents,
-                 "label": "Independent component analysis:", "required": True},
-                {"name": "i_svar", "type": 'int', 'default': 0,
-                 "label": "Index of state variable (defaults to first state variable)",},
-                {"name": "i_mode", "type": 'int', 'default': 0,
-                 "label": "Index of mode (defaults to first mode)",}]
-
+    def get_form_class(self):
+        return ICAForm
 
     def launch(self, datatype, i_svar=0, i_mode=0):
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        unmixing_matrix = datatype.get_data('unmixing_matrix')
-        prewhitening_matrix = datatype.get_data('prewhitening_matrix')
+        h5_class, h5_path = self._load_h5_of_gid(datatype.gid)
+        with h5_class(h5_path) as h5_file:
+            unmixing_matrix = h5_file.unmixing_matrix.load()
+            prewhitening_matrix = h5_file.prewhitening_matrix.load()
 
         unmixing_matrix = unmixing_matrix[..., i_svar, i_mode]
         prewhitening_matrix = prewhitening_matrix[..., i_svar, i_mode]

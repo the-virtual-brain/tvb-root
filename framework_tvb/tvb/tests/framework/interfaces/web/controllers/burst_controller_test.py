@@ -39,7 +39,7 @@ import pytest
 import cherrypy
 from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.datatypes.connectivity import Connectivity
@@ -316,7 +316,8 @@ class TestBurstContoller(BaseControllersTest):
         once that is done.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        algorithm = FlowService().get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                    IntrospectionRegistry.SIMULATOR_CLASS)
         self.operation = model.Operation(self.test_user.id, self.test_project.id, algorithm.id,
                                          json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)

@@ -44,13 +44,13 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
-from tvb.core.neocom.api import TVBLoader
+from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
-from tvb.core.entities.transient.filtering import StaticFiltersFactory
+from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
@@ -58,7 +58,6 @@ from tvb.core.services.exceptions import StructureException, ProjectServiceExcep
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.exceptions import IntrospectionException
 
 
 def initialize_storage():
@@ -74,7 +73,7 @@ def initialize_storage():
         logger.exception("Could not make sure the root folder exists!")
 
 
-## TODO move this page sizes into User-Settings once we have a UI table to set it.
+# TODO move this page sizes into User-Settings once we have a UI table to set it.
 OPERATIONS_PAGE_SIZE = 20
 PROJECTS_PAGE_SIZE = 20
 KEY_VALUE = "value"
@@ -211,15 +210,15 @@ class ProjectService:
                     result['datatype_group_gid'] = None
                 result["algorithm"] = dao.get_algorithm_by_id(one_op[4])
                 result["user"] = dao.get_user_by_id(one_op[5])
-                if type(one_op[6]) in (str, unicode):
+                if type(one_op[6]) is str:
                     result["create"] = string2date(str(one_op[6]))
                 else:
                     result["create"] = one_op[6]
-                if type(one_op[7]) in (str, unicode):
+                if type(one_op[7]) is str:
                     result["start"] = string2date(str(one_op[7]))
                 else:
                     result["start"] = one_op[7]
-                if type(one_op[8]) in (str, unicode):
+                if type(one_op[8]) is str:
                     result["complete"] = string2date(str(one_op[8]))
                 else:
                     result["complete"] = one_op[8]
@@ -422,7 +421,7 @@ class ProjectService:
         if is_group:
             operation_group = self.get_operation_group_by_gid(operation_gid)
             operation = dao.get_operations_in_group(operation_group.id, False, True)
-            ## Reload, to make sure all attributes lazy are populated as well.
+            # Reload, to make sure all attributes lazy are populated as well.
             operation = dao.get_operation_by_gid(operation.gid)
             no_of_op_in_group = dao.get_operations_in_group(operation_group.id, is_count=True)
             datatype_group = self.get_datatypegroup_by_op_group_id(operation_group.id)
@@ -443,7 +442,7 @@ class ProjectService:
         op_details = OperationOverlayDetails(operation, username, len(datatypes_param),
                                              count_result, burst, no_of_op_in_group, op_pid)
 
-        ## Add all parameter which are set differently by the user on this Operation.
+        # Add all parameter which are set differently by the user on this Operation.
         if all_special_params is not None:
             op_details.add_scientific_fields(all_special_params)
         return op_details
@@ -475,7 +474,7 @@ class ProjectService:
             if dt_entity is None:
                 self.logger.warning("Ignored entity (possibly removed DT class)" + str(dt))
                 continue
-            ## Filter by dt.type, otherwise Links to individual DT inside a group will be mistaken
+            #  Filter by dt.type, otherwise Links to individual DT inside a group will be mistaken
             if dt.type == "DataTypeGroup" and dt.parent_operation.operation_group is not None:
                 is_group = True
                 group_op = dt.parent_operation.operation_group
@@ -483,7 +482,7 @@ class ProjectService:
             # All these fields are necessary here for dynamic Tree levels.
             data[DataTypeMetaData.KEY_DATATYPE_ID] = dt.id
             data[DataTypeMetaData.KEY_GID] = dt.gid
-            data[DataTypeMetaData.KEY_NODE_TYPE] = dt.type
+            data[DataTypeMetaData.KEY_NODE_TYPE] = dt.display_type
             data[DataTypeMetaData.KEY_STATE] = dt.state
             data[DataTypeMetaData.KEY_SUBJECT] = str(dt.subject)
             data[DataTypeMetaData.KEY_TITLE] = dt_entity.display_name
@@ -580,7 +579,7 @@ class ProjectService:
             else:
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
-                h5_path = TVBLoader().path_for_stored_index(datatype)
+                h5_path = h5.path_for_stored_index(datatype)
                 self.structure_helper.remove_datatype_file(h5_path)
 
         except RemoveDataTypeException:
@@ -792,10 +791,10 @@ class ProjectService:
             adapter = ABCAdapter.build_adapter(operation.algorithm)
             return adapter.review_operation_inputs(parameters)
 
-        except IntrospectionException:
-            self.logger.warning("Could not find adapter class for operation %s" % operation_gid)
+        except Exception:
+            self.logger.exception("Could not load details for operation %s" % operation_gid)
             inputs_datatypes = []
-            changed_parameters = dict(Warning="Algorithm was Removed. We can not offer more details")
+            changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
             for submit_param in parameters.values():
                 self.logger.debug("Searching DT by GID %s" % submit_param)
                 datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
@@ -816,7 +815,7 @@ class ProjectService:
             op_inputs = self.get_datatype_and_datatypegroup_inputs_for_operation(gid[0], selected_filter)
             for datatype in op_inputs:
                 op_group_inputs[datatype.id] = datatype
-        return op_group_inputs.values()
+        return list(op_group_inputs.values())
 
 
     @staticmethod

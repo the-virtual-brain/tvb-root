@@ -33,15 +33,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import cherrypy
-from tvb.config import DISCRETE_PSE_ADAPTER_MODULE, DISCRETE_PSE_ADAPTER_CLASS
-from tvb.config import ISOCLINE_PSE_ADAPTER_CLASS, ISOCLINE_PSE_ADAPTER_MODULE
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.transient.filtering import FilterChain
+from tvb.core.entities.filters.factory import FilterChain
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user
 from tvb.interfaces.web.controllers.decorators import using_template, expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -69,13 +68,13 @@ class ParameterExplorationController(BaseController):
         If this is not the case fallback to the continous PSE viewer.
         If none are available return: None.
         """
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        DISCRETE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_FLOT
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_ISO
 
@@ -111,8 +110,8 @@ class ParameterExplorationController(BaseController):
         if size_metric == 'None' or size_metric == "undefined":
             size_metric = None
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        DISCRETE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -120,11 +119,11 @@ class ParameterExplorationController(BaseController):
                 pse_context.prepare_individual_jsons()
                 return pse_context
             except LaunchException as ex:
-                error_msg = urllib.quote(ex.message)
+                error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.quote("Discrete PSE is incompatible (most probably due to result size being too large).")
+            error_msg = urllib.parse.quote("Discrete PSE is incompatible (most probably due to result size being too large).")
 
-        name = urllib.quote(adapter._ui_name)
+        name = urllib.parse.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
@@ -137,8 +136,8 @@ class ParameterExplorationController(BaseController):
         if size_metric == 'None':
             size_metric = None
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        DISCRETE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -146,12 +145,12 @@ class ParameterExplorationController(BaseController):
                 return dict(series_array=pse_context.series_array,
                             has_started_ops=pse_context.has_started_ops)
             except LaunchException as ex:
-                error_msg = urllib.quote(ex.message)
+                error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.quote(
+            error_msg = urllib.parse.quote(
                 "Discrete PSE is incompatible (most probably due to result size being too large).")
 
-        name = urllib.quote(adapter._ui_name)
+        name = urllib.parse.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @cherrypy.expose
@@ -160,26 +159,26 @@ class ParameterExplorationController(BaseController):
     @check_user
     def draw_isocline_exploration(self, datatype_group_gid):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
                 return adapter.burst_preview(datatype_group_gid)
             except LaunchException as ex:
                 self.logger.error(ex.message)
-                error_msg = urllib.quote(ex.message)
+                error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
-        name = urllib.quote(adapter._ui_name)
+        name = urllib.parse.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
     def get_metric_matrix(self, datatype_group_gid, metric_name=None):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -187,18 +186,18 @@ class ParameterExplorationController(BaseController):
                 return adapter.get_metric_matrix(datatype_group, metric_name)
             except LaunchException as ex:
                 self.logger.error(ex.message)
-                error_msg = urllib.quote(ex.message)
+                error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
-        name = urllib.quote(adapter._ui_name)
+        name = urllib.parse.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
     def get_node_matrix(self, datatype_group_gid):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -206,9 +205,9 @@ class ParameterExplorationController(BaseController):
                 return adapter.prepare_node_data(datatype_group)
             except LaunchException as ex:
                 self.logger.error(ex.message)
-                error_msg = urllib.quote(ex.message)
+                error_msg = urllib.parse.quote(ex.message)
         else:
-            error_msg = urllib.quote("Isocline PSE requires a 2D range of floating point values.")
+            error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
-        name = urllib.quote(adapter._ui_name)
+        name = urllib.parse.quote(adapter._ui_name)
         raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))

@@ -35,17 +35,20 @@
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.equations import Equation
-
 from tvb.core.entities.model.datatypes.local_connectivity import LocalConnectivityIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.core.neotraits._forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neocom import h5
+
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
-        self.existentEntitiesSelect = DataTypeSelectField(self.get_required_datatype(), self, name='existentEntitiesSelect',
+        self.existentEntitiesSelect = DataTypeSelectField(self.get_required_datatype(), self,
+                                                          name='existentEntitiesSelect',
                                                           label='Load Local Connectivity')
+
     @staticmethod
     def get_required_datatype():
         return LocalConnectivityIndex
@@ -59,7 +62,7 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
         return None
 
 
-#TODO: work also on controller/template. Same for stimuli creators.
+# TODO: work also on controller/template. Same for stimuli creators.
 class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
@@ -90,20 +93,9 @@ class LocalConnectivityCreator(ABCAsynchronous):
     """
     The purpose of this adapter is create a LocalConnectivity.
     """
-    form = None
 
-    def get_input_tree(self): return None
-
-    def get_select_field_form(self):
-        return LocalConnectivitySelectorForm
-
-    def get_form(self):
-        if not self.form:
-            return LocalConnectivityCreatorForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return LocalConnectivityCreatorForm
 
     def get_output(self):
         """
@@ -111,26 +103,24 @@ class LocalConnectivityCreator(ABCAsynchronous):
         """
         return [LocalConnectivityIndex]
 
-
     def launch(self, **kwargs):
         """
         Used for creating a `LocalConnectivity`
         """
         local_connectivity = LocalConnectivity()
         local_connectivity.cutoff = float(kwargs['cutoff'])
-        local_connectivity.surface = kwargs['surface']
+        surface_ht = h5.load_from_index(kwargs['surface'])
+        local_connectivity.surface = surface_ht
         local_connectivity.equation = self.get_lconn_equation(kwargs)
         local_connectivity.compute_sparse_matrix()
 
-        return local_connectivity
+        return h5.store_complete(local_connectivity, self.storage_path)
 
-    
     def get_lconn_equation(self, kwargs):
         """
         Get the equation for the local connectivity from a dictionary of arguments.
         """
         return Equation.build_equation_from_dict('equation', kwargs)
-
 
     def get_required_disk_size(self, **kwargs):
         """
@@ -143,15 +133,8 @@ class LocalConnectivityCreator(ABCAsynchronous):
             return self.array_size2kb(disk_size_b)
         return 0
 
-
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         return self.get_required_disk_size(**kwargs)
-
-
-
-    
-    
-    

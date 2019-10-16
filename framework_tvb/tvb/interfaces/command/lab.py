@@ -30,17 +30,20 @@
 
 """
 A convenience module for the command interface
+
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.simulator.simulator import Simulator
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-
+from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
+from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterForm
 
 
 def list_projects():
@@ -64,7 +67,9 @@ def datatype_details(id):
 
 def load_dt(id):
     dt = dao.get_datatype_by_id(id)
-    return dao.get_generic_entity(dt.module + '.' + dt.type, id)
+    dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, id)[0]
+    dt_ht = h5.load_from_index(dt_idx)
+    return dt_ht
 
 
 def new_project(name):
@@ -75,34 +80,29 @@ def new_project(name):
 
 def import_conn_zip(project_id, zip_path):
     project = dao.get_project_by_id(project_id)
-    group = dao.get_algorithm_by_module('tvb.adapters.uploaders.zip_connectivity_importer', 'ZIPConnectivityImporter')
-    importer = ABCAdapter.build_adapter(group)
-    ### Launch Operation
-    FlowService().fire_operation(importer, project.administrator, project_id, uploaded=zip_path)
+
+    importer = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
+    params = {"_uploaded": zip_path}
+    form = ZIPConnectivityImporterForm()
+    form.uploaded.data = zip_path
+    importer.submit_form(form)
+
+    FlowService().fire_operation(importer, project.administrator, project_id, **params)
 
 
 def fire_simulation(project_id=1, **kwargs):
     project = dao.get_project_by_id(project_id)
-    flow_service = FlowService()
 
-    # below the holy procedure to launch with the correct parameters taken from the defaults
-    stored_adapter = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-    simulator_adapter = ABCAdapter.build_adapter(stored_adapter)
-    flatten_interface = simulator_adapter.flaten_input_interface()
-    itree_mngr = flow_service.input_tree_manager
-    prepared_flatten_interface = itree_mngr.fill_input_tree_with_options(flatten_interface, project.id,
-                                                                         stored_adapter.fk_category)
-    launch_args = {}
-    for entry in prepared_flatten_interface:
-        value = entry['default']
-        if isinstance(value, dict):
-            value = str(value)
-        if hasattr(value, 'tolist'):
-            value = value.tolist()
-        launch_args[entry['name']] = value
-    launch_args.update(**kwargs)
-    # end of magic
+    # Prepare a Simulator instance with defaults and configure it to use the previously loaded Connectivity
+    simulator = Simulator(**kwargs)
 
-    launched_operation = flow_service.fire_operation(simulator_adapter, project.administrator,
-                                                     project.id, **launch_args)[0]
+    # Load the SimulatorAdapter algorithm from DB
+    cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
+
+    # Instantiate a SimulatorService and launch the configured simulation
+    simulator_service = SimulatorService()
+    launched_operation = simulator_service.async_launch_and_prepare_simulation(None, project.administrator, project,
+                                                                               cached_simulator_algorithm, simulator,
+                                                                               None)
     return launched_operation

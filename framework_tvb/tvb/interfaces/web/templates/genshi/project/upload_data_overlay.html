@@ -4,7 +4,8 @@
 
     <py:for each="idx, algorithm in enumerate(uploadAlgorithms)">
         <py:with vars="algo_interface_key = 'template_for_algo_' + str(algorithm.id);
-                       inputList=algorithmsInterface[algo_interface_key].inputList;
+                       inputList=algorithmsInterface[algo_interface_key].get('inputList');
+                       form=algorithmsInterface[algo_interface_key].get('form');
                        submitLink=algorithmsInterface[algo_interface_key].submitLink;">
 
             <section id="overlayTabContent_${idx}" class="uploader upload-${algorithm.subsection_name}">

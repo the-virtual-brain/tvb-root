@@ -30,23 +30,72 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import json
 import os
 import sys
 from threading import Lock
 from abc import ABCMeta
+from six import add_metaclass
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-
+from tvb.core.neocom import h5
 
 LOCK_CREATE_FIGURE = Lock()
 
 
-class ABCDisplayer(ABCSynchronous):
+class URLGenerator(object):
+    FLOW = 'flow'
+    INVOKE_ADAPTER = 'invoke_adapter'
+    H5_FILE = 'read_from_h5_file'
+    DATATYPE_ATTRIBUTE = 'read_datatype_attribute'
+
+    @staticmethod
+    def build_base_h5_url(entity_gid):
+        url_regex = '/{}/{}/{}'
+        return url_regex.format(URLGenerator.FLOW, URLGenerator.H5_FILE, entity_gid)
+
+    @staticmethod
+    def build_url(entity_gid, method_name, adapter_id, parameter=None):
+        url_regex = '/{}/{}/{}/{}/{}'
+        url = url_regex.format(URLGenerator.FLOW, URLGenerator.INVOKE_ADAPTER, adapter_id, method_name, entity_gid)
+
+        if parameter is not None:
+            url += "?" + str(parameter)
+
+        return url
+
+
+    @staticmethod
+    def build_h5_url(entity_gid, method_name, flatten=False, datatype_kwargs=None, parameter=None):
+        json_kwargs = json.dumps(datatype_kwargs)
+
+        url_regex = '/{}/{}/{}/{}/{}/{}'
+        url = url_regex.format(URLGenerator.FLOW, URLGenerator.H5_FILE, entity_gid, method_name, flatten, json_kwargs)
+
+        if parameter is not None:
+            url += "?" + str(parameter)
+
+        return url
+
+
+    @staticmethod
+    def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
+        """
+        Prepare a File System Path for passing into an URL.
+        """
+        url_regex = '/{}/{}/{}/{}/{}'
+        url = url_regex.format(URLGenerator.FLOW, URLGenerator.DATATYPE_ATTRIBUTE,
+                               datatype_gid, attribute_name, flatten)
+        if parameter is not None:
+            url += "?" + str(parameter)
+        return url
+
+
+@add_metaclass(ABCMeta)
+class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     """
     Abstract class, for marking Adapters used for UI display only.
     """
-    __metaclass__ = ABCMeta
     KEY_CONTENT_MODULE = "keyContentModule"
     KEY_CONTENT = "mainContent"
     KEY_IS_ADAPTER = "isAdapter"
@@ -95,7 +144,7 @@ class ABCDisplayer(ABCSynchronous):
         module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
         relative_path = os.path.dirname(module_ref.__file__)
 
-        ### We still need the relative file path into desktop client
+        # We still need the relative file path into desktop client
         if os.path.isabs(template):
             parameters[self.KEY_CONTENT_MODULE] = ""
         else:
@@ -141,6 +190,22 @@ class ABCDisplayer(ABCSynchronous):
                 raise LaunchException(error_msg)
             return list_of_elements[:expected_size]
 
+    # TODO: remove methods that build urls
+    def build_url(self, method_name, entity_gid, parameter=None):
+        url = '/flow/invoke_adapter/' + str(self.stored_adapter.id) + '/' + method_name + '/' + entity_gid
+
+        if parameter is not None:
+            url += "?" + str(parameter)
+
+        return url
+
+    def build_h5_url(self, entity_gid, method_name, parameter=None):
+        url = '/flow/read_from_h5_file/' + entity_gid + '/' + method_name
+
+        if parameter is not None:
+            url += "?" + str(parameter)
+
+        return url
 
     @staticmethod
     def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
@@ -153,18 +218,6 @@ class ABCDisplayer(ABCSynchronous):
             url += "?" + str(parameter)
         return url
 
-
-    @staticmethod
-    def build_template_params_for_subselectable_datatype(sub_selectable, gid):
-        """
-        creates a template dict with the initial selection to be
-        displayed in a time series viewer
-        """
-        return {'measurePointsSelectionGID': gid,
-                'initialSelection': sub_selectable.get_default_selection(),
-                'groupedLabels': sub_selectable.get_grouped_space_labels()}
-
-
     @staticmethod
     def dump_with_precision(xs, precision=3):
         """
@@ -172,3 +225,10 @@ class ABCDisplayer(ABCSynchronous):
         """
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
+
+    # TODO review usages
+    def _load_h5_of_gid(self, entity_gid):
+        entity_index = self.load_entity_by_gid(entity_gid)
+        entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))
+        entity_h5_path = h5.path_for_stored_index(entity_index)
+        return entity_h5_class, entity_h5_path

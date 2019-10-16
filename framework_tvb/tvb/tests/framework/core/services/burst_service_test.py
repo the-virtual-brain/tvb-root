@@ -32,20 +32,22 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import copy
 import pytest
 import numpy
-import json
 from time import sleep
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.mapped_values import DatatypeMeasure
+#from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.datatypes.simulation_state import SimulationState
-from tvb.core.entities import model
-from tvb.core.entities.model import BurstConfiguration
+from tvb.adapters.datatypes.simulation_state import SimulationState
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.model_burst import *
+from tvb.core.entities.model.model_workflow import *
+from tvb.core.entities.model.datatypes.mapped_value import DatatypeMeasureIndex
+#from tvb.core.entities.model import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
@@ -82,7 +84,8 @@ class TestBurstService(BaseTestCase):
     flow_service = FlowService()
     operation_service = OperationService()
     workflow_service = WorkflowService()
-    sim_algorithm = flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
+    sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                   IntrospectionRegistry.SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
 
 
@@ -121,12 +124,12 @@ class TestBurstService(BaseTestCase):
         assert len(
             analyzers) == 1, "Portlet configuration not build properly. " \
                              "Portlet's analyzers list has unexpected number of elements."
-        assert analyzers[0].dynamic_param == {u'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
+        assert analyzers[0].dynamic_param == {'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
                                                                  wf_cfg.STEP_INDEX_KEY: 0}}, \
             "Dynamic parameters not loaded properly"
         visualizer = portlet_configuration.visualizer
         assert visualizer.dynamic_param == {}, "Dynamic parameters not loaded properly"
-        assert visualizer.static_param == {u'test2': u'0'}, 'Static parameters not loaded properly'
+        assert visualizer.static_param == {'test2': '0'}, 'Static parameters not loaded properly'
 
 
     def test_build_portlet_interface(self):
@@ -261,7 +264,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that all the correct burst are returned for the given project.
         """
-        project = model.Project("second_test_proj", self.test_user.id, "description")
+        project = Project("second_test_proj", self.test_user.id, "description")
         second_project = dao.store_entity(project)
         test_project_bursts = [TestFactory.store_burst(self.test_project.id).id for _ in range(4)]
         second_project_bursts = [TestFactory.store_burst(second_project.id).id for _ in range(3)]
@@ -286,10 +289,10 @@ class TestBurstService(BaseTestCase):
         """
         simulator_input_tree = self.flow_service.prepare_adapter(self.test_project.id, self.sim_algorithm)
         child_parameter = ''
-        checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {model.KEY_PARAMETER_CHECKED: True,
-                                                                             model.KEY_SAVED_VALUE: 'new_value'},
-                              simulator_input_tree[1][ABCAdapter.KEY_NAME]: {model.KEY_PARAMETER_CHECKED: True,
-                                                                             model.KEY_SAVED_VALUE: 'new_value'}}
+        checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
+                                                                             KEY_SAVED_VALUE: 'new_value'},
+                              simulator_input_tree[1][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
+                                                                             KEY_SAVED_VALUE: 'new_value'}}
         #Look for a entry from a subtree to add to the selected simulator inputs
         for idx, entry in enumerate(simulator_input_tree):
             found_it = False
@@ -298,11 +301,11 @@ class TestBurstService(BaseTestCase):
                     if option[ABCAdapter.KEY_VALUE] == entry[ABCAdapter.KEY_DEFAULT]:
                         if option[ABCAdapter.KEY_ATTRIBUTES]:
                             child_parameter = option[ABCAdapter.KEY_ATTRIBUTES][0][ABCAdapter.KEY_NAME]
-                            checked_parameters[entry[ABCAdapter.KEY_NAME]] = {model.KEY_PARAMETER_CHECKED: False,
-                                                                              model.KEY_SAVED_VALUE: entry[
+                            checked_parameters[entry[ABCAdapter.KEY_NAME]] = {KEY_PARAMETER_CHECKED: False,
+                                                                              KEY_SAVED_VALUE: entry[
                                                                                   ABCAdapter.KEY_DEFAULT]}
-                            checked_parameters[child_parameter] = {model.KEY_PARAMETER_CHECKED: True,
-                                                                   model.KEY_SAVED_VALUE: 'new_value'}
+                            checked_parameters[child_parameter] = {KEY_PARAMETER_CHECKED: True,
+                                                                   KEY_SAVED_VALUE: 'new_value'}
                             found_it = True
                             break
             if found_it:
@@ -468,8 +471,8 @@ class TestBurstService(BaseTestCase):
         ui_submited_simulator_iface_replica = {}
         kwargs_replica = {}
         for entry in adapter_interface:
-            ui_submited_simulator_iface_replica[entry[ABCAdapter.KEY_NAME]] = {model.KEY_PARAMETER_CHECKED: True,
-                                                                               model.KEY_SAVED_VALUE: entry[
+            ui_submited_simulator_iface_replica[entry[ABCAdapter.KEY_NAME]] = {KEY_PARAMETER_CHECKED: True,
+                                                                               KEY_SAVED_VALUE: entry[
                                                                                    ABCAdapter.KEY_DEFAULT]}
             kwargs_replica[entry[ABCAdapter.KEY_NAME]] = entry[ABCAdapter.KEY_DEFAULT]
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
@@ -505,7 +508,7 @@ class TestBurstService(BaseTestCase):
 
         group_id = self.burst_service.load_burst(burst_id)[1]
         assert group_id >= 0, "Should be part of group."
-        datatype_measures = self.count_all_entities(DatatypeMeasure)
+        datatype_measures = self.count_all_entities(DatatypeMeasureIndex)
         assert 3 == datatype_measures
 
 
@@ -570,10 +573,10 @@ class TestBurstService(BaseTestCase):
         assert len(wf_steps) == 2,\
                         "Should have exactly 2 wf steps. One for 'simulation' one for portlet analyze operation."
         simulator_op = dao.get_operation_by_id(wf_steps[0].fk_operation)
-        assert model.STATUS_FINISHED == simulator_op.status,\
+        assert STATUS_FINISHED == simulator_op.status,\
                          "First operation should be simulator which should have 'finished' status."
         portlet_analyze_op = dao.get_operation_by_id(wf_steps[1].fk_operation)
-        assert portlet_analyze_op.status == model.STATUS_ERROR,\
+        assert portlet_analyze_op.status == STATUS_ERROR,\
                          "Second operation should be portlet analyze step which should have 'error' status."
 
 
@@ -587,8 +590,8 @@ class TestBurstService(BaseTestCase):
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Burst should have finished successfully.")
 
-        op_groups = self.count_all_entities(model.OperationGroup)
-        dt_groups = self.get_all_entities(model.DataTypeGroup)
+        op_groups = self.count_all_entities(OperationGroup)
+        dt_groups = self.get_all_entities(DataTypeGroup)
         assert 2 == op_groups, "An operation group should have been created for each step."
         assert len(dt_groups) == 2, "An dataType group should have been created for each step."
         for datatype in dt_groups:
@@ -604,7 +607,7 @@ class TestBurstService(BaseTestCase):
 
         algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
-        kwargs_replica = {'test1_val1': '[0, 1, 2]', 'test1_val2': '0', model.RANGE_PARAMETER_1: 'test1_val1'}
+        kwargs_replica = {'test1_val1': '[0, 1, 2]', 'test1_val2': '0', RANGE_PARAMETER_1: 'test1_val1'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         tab_config = {test_portlet.id: [(0, 0), (0, 1), (1, 0)]}
         self._add_portlets_to_burst(burst_config, tab_config)
@@ -617,8 +620,8 @@ class TestBurstService(BaseTestCase):
         launched_workflows = dao.get_workflows_for_burst(burst_id, is_count=True)
         assert 3 == launched_workflows, "3 workflows should have been launched due to group parameter."
 
-        op_groups = self.count_all_entities(model.OperationGroup)
-        dt_groups = self.count_all_entities(model.DataTypeGroup)
+        op_groups = self.count_all_entities(OperationGroup)
+        dt_groups = self.count_all_entities(DataTypeGroup)
         assert 5 == op_groups, "An operation group should have been created for each step."
         assert 5 == dt_groups, "An dataType group should have been created for each step."
 
@@ -770,7 +773,7 @@ class TestBurstService(BaseTestCase):
         datatypes = dao.get_datatypes_in_project(self.test_project.id)
         assert 0 == len(datatypes)
 
-        wf_steps = self.count_all_entities(model.WorkflowStep)
+        wf_steps = self.count_all_entities(WorkflowStep)
         datatype1_stored = self.count_all_entities(Datatype1)
         datatype2_stored = self.count_all_entities(Datatype2)
         assert 0 == wf_steps, "Workflow steps were not deleted."
@@ -802,11 +805,11 @@ class TestBurstService(BaseTestCase):
         launch_params = self.local_simulation_params
         launch_params['connectivity'] = connectivity.gid
         if is_range:
-            launch_params['simulation_length'] = str(range(length, length + no_ops))
-            launch_params[model.RANGE_PARAMETER_1] = 'simulation_length'
+            launch_params['simulation_length'] = str(list(range(length, length + no_ops)))
+            launch_params[RANGE_PARAMETER_1] = 'simulation_length'
         else:
             launch_params['simulation_length'] = str(length)
-            launch_params[model.RANGE_PARAMETER_1] = None
+            launch_params[RANGE_PARAMETER_1] = None
 
         return launch_params
 
@@ -817,8 +820,8 @@ class TestBurstService(BaseTestCase):
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
 
-        self.operation = model.Operation(self.test_user.id, self.test_project.id, self.sim_algorithm.id,
-                                         json.dumps(''), meta=json.dumps(meta), status=model.STATUS_STARTED)
+        self.operation = Operation(self.test_user.id, self.test_project.id, self.sim_algorithm.id,
+                                         json.dumps(''), meta=json.dumps(meta), status=STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
         storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
         connectivity = Connectivity(storage_path=storage_path)

@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, DateTime
 from sqlalchemy.orm import relationship, backref
 
+from tvb.core.utils import format_timedelta
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.neotraits.db import HasTraitsIndex
 
 
@@ -18,6 +18,7 @@ class BurstConfiguration2(HasTraitsIndex):
     nr_of_tabs = 0
     selected_tab = -1
     is_group = False
+    datatypes_number = Column(Integer)
 
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
@@ -31,16 +32,28 @@ class BurstConfiguration2(HasTraitsIndex):
     start_time = Column(DateTime)
     finish_time = Column(DateTime)
 
-    simulator_id = Column(Integer, ForeignKey('SimulatorIndex.id'), nullable=False)
-    simulator = relationship(SimulatorIndex, foreign_keys=simulator_id, primaryjoin=SimulatorIndex.id == simulator_id,
-                             cascade='none')
-
     operation_group_id = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
     operation_group = relationship(OperationGroup, foreign_keys=operation_group_id,
                                    primaryjoin=OperationGroup.id == operation_group_id, cascade='none')
 
+    metric_operation_group_id = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
+    metric_operation_group = relationship(OperationGroup, foreign_keys=metric_operation_group_id,
+                                   primaryjoin=OperationGroup.id == metric_operation_group_id, cascade='none')
+
     def __init__(self, project_id, simulator_id=None, status="running", name=None):
-        self.fk_project = project_id
+        self.project_id = project_id
         self.simulator_id = simulator_id
         self.name = name
         self.status = status
+
+    def clone(self):
+        new_burst = BurstConfiguration2(self.project_id)
+        new_burst.name = self.name
+        new_burst.status = self.BURST_RUNNING
+        return new_burst
+
+    @property
+    def process_time(self):
+        if self.finish_time is not None and self.start_time is not None:
+            return format_timedelta(self.finish_time - self.start_time)
+        return ''

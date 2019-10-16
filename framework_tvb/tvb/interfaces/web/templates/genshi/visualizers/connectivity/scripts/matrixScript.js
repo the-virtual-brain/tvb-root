@@ -501,16 +501,16 @@ function MATRIX_colorTable() {
 
 function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
     var data = {
-        original_connectivity: originalConnectivityId,
-        new_weights: $.toJSON(GVAR_interestAreaVariables[1].values),
-        new_tracts: $.toJSON(GVAR_interestAreaVariables[2].values),
-        interest_area_indexes: $.toJSON(GVAR_interestAreaNodeIndexes),
+        _original_connectivity: originalConnectivityId,
+        _new_weights: $.toJSON(GVAR_interestAreaVariables[1].values),
+        _new_tracts: $.toJSON(GVAR_interestAreaVariables[2].values),
+        _interest_area_indexes: $.toJSON(GVAR_interestAreaNodeIndexes),
         User_Tag_1_Perpetuated: $('#newConnectivityNameTag').val()
     };
     // Emulate the way browsers send checkboxes in forms.
     // They send a value only for the checked ones. All values are true
     if (isBranch){
-        data.is_branch = 'on';
+        data._is_branch = 'True';
     }
 
     doAjaxCall({ url: submitUrl, data: data });

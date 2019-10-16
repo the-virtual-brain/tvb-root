@@ -37,23 +37,20 @@ ContinuousWaveletTransform Analyzer.
 
 """
 
-import os
 import uuid
 import numpy
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
 from tvb.basic.neotraits.api import Range
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-
 from tvb.core.entities.file.datatypes.spectral_h5 import WaveletCoefficientsH5
 from tvb.core.entities.model.datatypes.spectral import WaveletCoefficientsIndex
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
-from tvb.core.neotraits._forms import DataTypeSelectField, ScalarField, FormField, Form, SimpleFloatField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, Form, SimpleFloatField
 from tvb.core.neotraits.db import from_ndarray
-from tvb.interfaces.neocom._h5loader import DirLoader
-from tvb.interfaces.neocom.config import registry
+from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
 
@@ -62,13 +59,14 @@ class RangeForm(Form):
     def __init__(self, prefix=''):
         super(RangeForm, self).__init__(prefix)
         self.lo = SimpleFloatField(self, name='lo', required=True, label='Lo', doc='start of range')
-                                   #default=ContinuousWaveletTransform.frequencies.lo)
+        # default=ContinuousWaveletTransform.frequencies.lo)
         self.step = SimpleFloatField(self, name='step', required=True, label='Step', doc='step of range')
-                                     #default=ContinuousWaveletTransform.frequencies.step)
+        # default=ContinuousWaveletTransform.frequencies.step)
         self.hi = SimpleFloatField(self, name='hi', required=True, label='Hi', doc='end of range')
-                                   #default=ContinuousWaveletTransform.frequencies.hi)
+        # default=ContinuousWaveletTransform.frequencies.hi)
 
-#TODO: add all fields
+
+# TODO: add all fields
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
@@ -109,21 +107,12 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
     _ui_name = "Continuous Wavelet Transform"
     _ui_description = "Compute Wavelet Tranformation for a TimeSeries input DataType."
     _ui_subsection = "wavelet"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return ContinuousWaveletTransformAdapterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return ContinuousWaveletTransformAdapterForm
 
     def get_output(self):
         return [WaveletCoefficientsIndex]
-
 
     def configure(self, time_series, mother=None, sample_period=None, normalisation=None, q_ratio=None,
                   frequencies='Range', frequencies_parameters=None):
@@ -142,7 +131,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
 
         self.input_shape = tuple(input_shape)
         LOG.debug("Time series shape is %s" % str(self.input_shape))
-        ##-------------------- Fill Algorithm for Analysis -------------------##
+        # -------------------- Fill Algorithm for Analysis -------------------##
         algorithm = ContinuousWaveletTransform()
         if mother is not None:
             algorithm.mother = mother
@@ -189,20 +178,15 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         """ 
         Launch algorithm and build results. 
         """
-        ##--------- Prepare a WaveletCoefficients object for result ----------##
+        # --------- Prepare a WaveletCoefficients object for result ----------##
         frequencies_array = numpy.array([])
         if self.algorithm.frequencies is not None:
             frequencies_array = self.algorithm.frequencies.to_array()
 
-        loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(time_series.fk_from_operation)))
-        ts_gid = self.input_time_series_index.gid
-        time_series_h5_class = registry.get_h5file_for_index(type(time_series))
-        source_path = loader.path_for(time_series_h5_class, ts_gid)
-        time_series_h5 = time_series_h5_class(path=source_path)
+        time_series_h5 = h5.h5_file_for_index(time_series)
 
-        loader = DirLoader(self.storage_path)
         wavelet_index = WaveletCoefficientsIndex()
-        dest_path = loader.path_for(WaveletCoefficientsH5, wavelet_index.gid)
+        dest_path = h5.path_for(self.storage_path, WaveletCoefficientsH5, wavelet_index.gid)
 
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
         wavelet_h5.gid.store(uuid.UUID(wavelet_index.gid))
@@ -213,13 +197,12 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         wavelet_h5.frequencies.store(frequencies_array)
         wavelet_h5.normalisation.store(self.algorithm.normalisation)
 
-        ##------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
+        # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         node_slice = [slice(self.input_shape[0]), slice(self.input_shape[1]), None, slice(self.input_shape[3])]
 
-        ##---------- Iterate over slices and compose final result ------------##
+        # ---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
-        small_ts.sample_rate = 1  # time_series_h5.sample_rate.load() #TODO: without indexing
-        small_ts.sample_period = time_series_h5.sample_period.load()[0]
+        small_ts.sample_period = time_series_h5.sample_period.load()
         for node in range(self.input_shape[2]):
             node_slice[2] = slice(node, node + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
@@ -228,8 +211,9 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
             wavelet_h5.write_data_slice(partial_wavelet)
 
         wavelet_h5.close()
+        time_series_h5.close()
 
-        wavelet_index.source = self.input_time_series_index
+        wavelet_index.source_gid = self.input_time_series_index.gid
         wavelet_index.mother = self.algorithm.mother
         wavelet_index.normalisation = self.algorithm.normalisation
         wavelet_index.q_ratio = self.algorithm.q_ratio

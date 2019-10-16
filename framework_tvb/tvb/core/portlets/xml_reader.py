@@ -69,8 +69,8 @@ class XMLPortletReader(object):
     def get_algorithms_dictionary(self):
         """ Retrieve the dictionary of available sub-Algorithm references."""
         result = dict()
-        for key in self.algorithms.keys():
-            result[key] = self.algorithms[key].to_dict()
+        for key, value in self.algorithms.items():
+            result[key] = value.to_dict()
         return result
 
 

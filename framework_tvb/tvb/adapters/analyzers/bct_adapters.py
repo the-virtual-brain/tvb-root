@@ -31,15 +31,16 @@
 import os
 from abc import abstractmethod
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
-from tvb.basic.filters.chain import FilterChain
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
+from tvb.core.entities.model.datatypes.mapped_value import ValueWrapperIndex
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
+from tvb.core.neotraits.forms import DataTypeSelectField
 from tvb.core.utils import extract_matlab_doc_string
-from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.datatypes.mapped_values import ValueWrapper
-
 
 BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox", "bct")
 BCT_GROUP_DISTANCE = AlgorithmTransientGroup("Distance Algorithms", "Brain Connectivity Toolbox", "bctdistance")
@@ -58,40 +59,67 @@ def bct_description(mat_file_name):
     return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
 
 
+class BaseBCTForm(ABCAdapterForm):
+    def __init__(self, prefix='', project_id=None, draw_ranges=True):
+        super(BaseBCTForm, self).__init__(prefix, project_id, draw_ranges)
+        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name="connectivity",
+                                                required=True, label=self.get_connectivity_label(),
+                                                conditions=self.get_filters(), has_all_option=True)
+
+    @staticmethod
+    def get_required_datatype():
+        return ConnectivityIndex
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return "_connectivity"
+
+    @staticmethod
+    def get_connectivity_label():
+        return "Connection matrix:"
+
+
+class BaseUnidirectedBCTForm(BaseBCTForm):
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.undirected'], operations=["=="], values=['1'])
+
+    @staticmethod
+    def get_connectivity_label():
+        return "Undirected connection matrix:"
+
+
 class BaseBCT(ABCAsynchronous):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
     This adapter requires BCT deployed locally, and Matlab or Octave installed separately of TVB.
     """
-    _ui_connectivity_label = "Connection matrix:"
-
 
     def __init__(self):
         ABCAsynchronous.__init__(self)
         self.matlab_worker = MatlabWorker()
 
-
     @staticmethod
     def can_be_active():
         return not not TvbProfile.current.MATLAB_EXECUTABLE
 
-
-    def get_input_tree(self):
-        return [dict(name="connectivity", label=self._ui_connectivity_label, type=Connectivity, required=True)]
-
+    def get_form_class(self):
+        return BaseBCTForm
 
     def get_output(self):
-        return [ConnectivityMeasure, ValueWrapper]
-
+        return [ConnectivityMeasureIndex, ValueWrapperIndex]
 
     def get_required_memory_size(self, **kwargs):
         # We do not know how much memory is needed.
         return -1
 
-
     def get_required_disk_size(self, **kwargs):
         return 0
-
 
     def execute_matlab(self, matlab_code, **kwargs):
         self.matlab_worker.add_to_path(BCT_PATH)
@@ -102,9 +130,9 @@ class BaseBCT(ABCAsynchronous):
         self.log.debug("Finished MATLAB execution:" + str(result))
         return result
 
-
     def build_connectivity_measure(self, result, key, connectivity, title="", label_x="", label_y=""):
-        measure = ConnectivityMeasure(storage_path=self.storage_path)
+        # TODO H5
+        measure = ConnectivityMeasure()
         measure.array_data = result[key]
         measure.connectivity = connectivity
         measure.title = title
@@ -112,22 +140,19 @@ class BaseBCT(ABCAsynchronous):
         measure.label_y = label_y
         return measure
 
-
     def build_float_value_wrapper(self, result, key, title=""):
-        value = ValueWrapper(storage_path=self.storage_path)
+        value = ValueWrapperIndex()
         value.data_value = float(result[key])
         value.data_type = 'float'
         value.data_name = title
         return value
 
-
     def build_int_value_wrapper(self, result, key, title=""):
-        value = ValueWrapper(storage_path=self.storage_path)
+        value = ValueWrapperIndex()
         value.data_value = int(result[key])
         value.data_type = 'int'
         value.data_name = title
         return value
-
 
     @abstractmethod
     def launch(self, connectivity, **kwargs):
@@ -137,13 +162,9 @@ class BaseBCT(ABCAsynchronous):
 class BaseUndirected(BaseBCT):
     """
     """
-    _ui_connectivity_label = "Undirected connection matrix:"
 
-    def get_input_tree(self):
-        return [dict(name="connectivity", label=self._ui_connectivity_label, type=Connectivity, required=True,
-                     conditions=FilterChain(fields=[FilterChain.datatype + '._undirected'],
-                                            operations=["=="], values=['1']))]
-
+    def get_form_class(self):
+        return BaseUnidirectedBCTForm
 
     @abstractmethod
     def launch(self, connectivity, **kwargs):
@@ -159,7 +180,6 @@ class ModularityOCSM(BaseBCT):
     _ui_name = "Optimal Community Structure and Modularity"
     _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
-
 
     def launch(self, connectivity, **kwargs):
         # Prepare parameters
@@ -189,7 +209,6 @@ class DistanceDBIN(BaseBCT):
     _ui_description = bct_description("distance_bin.m")
     _matlab_code = "D = distance_bin(A);"
 
-
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights
         result = self.execute_matlab(self._matlab_code, **kwargs)
@@ -212,7 +231,6 @@ class DistanceRDM(DistanceDBIN):
     _ui_name = "Reachability and distance matrices (Breadth-first search)"
     _ui_description = bct_description("breadthdist.m")
     _matlab_code = "[R,D] = breadthdist(A);"
-
 
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights
@@ -237,7 +255,6 @@ class DistanceNETW(DistanceDBIN):
     _ui_name = "Network walks"
     _ui_description = bct_description("findwalks.m")
     _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
-
 
     def launch(self, connectivity, **kwargs):
         kwargs['A'] = connectivity.weights

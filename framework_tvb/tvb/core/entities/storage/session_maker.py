@@ -265,9 +265,9 @@ class SessionMaker(object):
         if current_thread not in self.handled_sessions:
             # This if first session for a new threads. Just create a new one.
             self.handled_sessions[current_thread] = SessionsStack()
-        for thread in self.handled_sessions.keys():
+        for thread in list(self.handled_sessions):
             # If thread finished we just delete entry to avoid dangling unused objects.
-            if not thread.isAlive():
+            if not thread.is_alive():
                 try:
                     del self.handled_sessions[thread]
                 except Exception:

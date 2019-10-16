@@ -1,7 +1,8 @@
 from tvb.simulator.coupling import Linear, Scaling, HyperbolicTangent, Sigmoidal, SigmoidalJansenRit, PreSigmoidal, \
     Difference, Kuramoto
 
-from tvb.core.neotraits._forms import Form, ArrayField, ScalarField
+from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.core.neotraits.forms import ArrayField, ScalarField
 
 
 def get_coupling_to_form_dict():
@@ -20,7 +21,7 @@ def get_coupling_to_form_dict():
 
 def get_ui_name_to_coupling_dict():
     ui_name_to_coupling = {}
-    for coupling_class in get_coupling_to_form_dict().keys():
+    for coupling_class in get_coupling_to_form_dict():
         ui_name_to_coupling.update({coupling_class.__name__: coupling_class})
 
     return ui_name_to_coupling
@@ -30,7 +31,7 @@ def get_form_for_coupling(coupling_class):
     return get_coupling_to_form_dict().get(coupling_class)
 
 
-class LinearCouplingForm(Form):
+class LinearCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(LinearCouplingForm, self).__init__(prefix)
@@ -38,14 +39,14 @@ class LinearCouplingForm(Form):
         self.b = ArrayField(Linear.b, self)
 
 
-class ScalingCouplingForm(Form):
+class ScalingCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ScalingCouplingForm, self).__init__(prefix)
         self.a = ArrayField(Scaling.a, self)
 
 
-class HyperbolicTangentCouplingForm(Form):
+class HyperbolicTangentCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(HyperbolicTangentCouplingForm, self).__init__(prefix)
@@ -55,7 +56,7 @@ class HyperbolicTangentCouplingForm(Form):
         self.sigma = ArrayField(HyperbolicTangent.sigma, self)
 
 
-class SigmoidalCouplingForm(Form):
+class SigmoidalCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(SigmoidalCouplingForm, self).__init__(prefix)
@@ -66,7 +67,7 @@ class SigmoidalCouplingForm(Form):
         self.sigma = ArrayField(Sigmoidal.sigma, self)
 
 
-class SigmoidalJansenRitForm(Form):
+class SigmoidalJansenRitForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(SigmoidalJansenRitForm, self).__init__(prefix)
@@ -77,7 +78,7 @@ class SigmoidalJansenRitForm(Form):
         self.a = ArrayField(SigmoidalJansenRit.a, self)
 
 
-class PreSigmoidalCouplingForm(Form):
+class PreSigmoidalCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(PreSigmoidalCouplingForm, self).__init__(prefix)
@@ -90,14 +91,14 @@ class PreSigmoidalCouplingForm(Form):
         self.globalT= ScalarField(PreSigmoidal.globalT, self)
 
 
-class DifferenceCouplingForm(Form):
+class DifferenceCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(DifferenceCouplingForm, self).__init__(prefix)
         self.a = ArrayField(Difference.a, self)
 
 
-class KuramotoCouplingForm(Form):
+class KuramotoCouplingForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(KuramotoCouplingForm, self).__init__(prefix)

@@ -37,7 +37,7 @@
 		<legend py:if="i == 0 and len(nodeFields) &gt; 1 and 'operation' in nodeType">Changed Input Parameters</legend>
 		
 		<dl>
-			<py:for each="field_key in sorted(fields_dictionary.iterkeys())">
+			<py:for each="field_key in sorted(fields_dictionary.keys())">
 			<py:with vars="field_def = fields_dictionary[field_key]">
 			
 				<py:if test="field_def and not field_def.get('hidden')=='True'">

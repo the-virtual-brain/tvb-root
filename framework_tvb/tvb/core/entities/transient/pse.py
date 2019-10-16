@@ -41,7 +41,7 @@ import json
 import math
 import six
 from tvb.basic.config.utils import EnhancedDictionary
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
 
 
 class ContextDiscretePSE(EnhancedDictionary):
@@ -111,7 +111,7 @@ class ContextDiscretePSE(EnhancedDictionary):
         Build a dictionary with all the required information to be displayed for a given node.
         """
         node_info = {}
-        if operation.status == model.STATUS_FINISHED and datatype is not None:
+        if operation.status == STATUS_FINISHED and datatype is not None:
             ### Prepare attributes to be able to show overlay and launch further analysis.
             node_info[self.KEY_GID] = datatype.gid
             node_info[self.KEY_NODE_TYPE] = datatype.type
@@ -123,7 +123,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                                    "Datatype subject: " + str(datatype.subject) + self.LINE_SEPARATOR +
                                    "Datatype invalid: " + str(datatype.invalid))
             ### Add scientific report to the quick details.
-            if datatype.summary_info is not None:
+            if hasattr(datatype, 'summary_info') and datatype.summary_info is not None:
                 for key, value in six.iteritems(datatype.summary_info):
                     datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
             node_info[self.KEY_TOOLTIP] = datatype_tooltip
@@ -140,7 +140,8 @@ class ContextDiscretePSE(EnhancedDictionary):
         dt_info = {}
         if measures is not None and len(measures) > 0:
             measure = measures[0]
-            self.available_metrics = measure.metrics.keys()
+            metrics = json.loads(measure.metrics)
+            self.available_metrics = list(metrics)
 
             # As default we have the first two metrics available is no metrics are passed from the UI
             if self.color_metric is None and self.size_metric is None:
@@ -150,7 +151,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                     self.size_metric = self.available_metrics[1]
 
             if self.color_metric is not None:
-                color_value = measure.metrics[self.color_metric]
+                color_value = metrics[self.color_metric]
                 if color_value < self.min_color:
                     self.min_color = color_value
                 if color_value > self.max_color:
@@ -158,7 +159,7 @@ class ContextDiscretePSE(EnhancedDictionary):
                 dt_info[self.color_metric] = color_value
 
             if self.size_metric is not None:
-                size_value = measure.metrics[self.size_metric]
+                size_value = metrics[self.size_metric]
                 if size_value < self.min_shape_size:
                     self.min_shape_size = size_value
                 if size_value > self.max_shape_size:
@@ -171,11 +172,11 @@ class ContextDiscretePSE(EnhancedDictionary):
         """ Populate current entity with attributes required for visualizer"""
         all_series = []
         if self.only_numbers:
-            self.values_x = final_dict.keys()
+            self.values_x = list(final_dict)
 
             y_values_set = set()
             for dict_ in final_dict.values():
-                y_values_set = y_values_set.union(dict_.keys())
+                y_values_set = y_values_set.union(list(dict_))
             self.values_y = [a for a in y_values_set]
 
             self.values_x.sort()

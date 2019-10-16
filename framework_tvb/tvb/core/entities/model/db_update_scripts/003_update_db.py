@@ -55,7 +55,7 @@ def _prepare_table(meta, table_name):
     """
     table = Table(table_name, meta, autoload=True)
     for constraint in table._sorted_constraints:
-        if not isinstance(constraint.name, (str, unicode)):
+        if not isinstance(constraint.name, str):
             constraint.name = None
     return table
 

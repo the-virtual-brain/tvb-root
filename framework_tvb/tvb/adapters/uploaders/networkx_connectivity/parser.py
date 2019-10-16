@@ -110,7 +110,7 @@ class NetworkxParser(object):
         labels_vector, positions, cortical, hemisphere = [], [], [], []
 
         try:
-            for node in xrange(1, graph_size + 1):
+            for node in range(1, graph_size + 1):
                 node_data = network.nodes[node]
 
                 pos = self._find_value(node_data, self.KEY_NODE_COORDINATES)

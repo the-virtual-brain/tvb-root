@@ -38,9 +38,9 @@ import json
 import numpy
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.datatypes.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
 class HistogramViewerForm(ABCAdapterForm):
@@ -69,20 +69,11 @@ class HistogramViewer(ABCDisplayer):
     The viewer takes as input a result DataType as computed by BCT analyzers.
     """
     _ui_name = "Connectivity Measure Visualizer"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return HistogramViewerForm
-        return self.form
+    def get_form_class(self):
+        return HistogramViewerForm
 
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
-
-
-    #TODO: migrate to neotraits
+    # TODO: migrate to neotraits
     def launch(self, input_data):
         """
         Prepare input data for display.
@@ -123,5 +114,3 @@ class HistogramViewer(ABCDisplayer):
                       xposition='center' if min(values_list) < 0 else 'bottom',
                       minColor=min(colors_list), maxColor=max(colors_list))
         return params
-    
-    

@@ -37,15 +37,15 @@
 import os
 import sys
 import signal
-import Queue as queue
+import queue as queue
 import threading
 from subprocess import Popen, PIPE
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.utils import parse_json_parameters
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
-from tvb.core.services.workflow_service import WorkflowService
 
 
 LOGGER = get_logger(__name__)
@@ -66,7 +66,7 @@ class OperationExecutor(threading.Thread):
     def __init__(self, op_id):
         threading.Thread.__init__(self)
         self.operation_id = op_id
-        self._stop = threading.Event()
+        self._stop_ev = threading.Event()
 
 
     def run(self):
@@ -105,18 +105,18 @@ class OperationExecutor(threading.Thread):
 
             if returned != 0 and not self.stopped():
                 # Process did not end as expected. (e.g. Segmentation fault)
-                workflow_service = WorkflowService()
+                burst_service = BurstService2()
                 operation = dao.get_operation_by_id(self.operation_id)
                 LOGGER.error("Operation suffered fatal failure! Exit code: %s Exit message: %s" % (returned,
                                                                                                    subprocess_result))
 
-                workflow_service.persist_operation_state(operation, STATUS_ERROR,
+                burst_service.persist_operation_state(operation, STATUS_ERROR,
                                                          "Operation failed unexpectedly! Please check the log files.")
 
                 burst_entity = dao.get_burst_for_operation_id(self.operation_id)
                 if burst_entity:
                     message = "Error in operation process! Possibly segmentation fault."
-                    workflow_service.mark_burst_finished(burst_entity, error_message=message)
+                    burst_service.mark_burst_finished(burst_entity, error_message=message)
 
             del launched_process
 
@@ -125,14 +125,14 @@ class OperationExecutor(threading.Thread):
         LOCKS_QUEUE.put(1)
 
 
-    def stop(self):
+    def _stop(self):
         """ Mark current thread for stop"""
-        self._stop.set()
+        self._stop_ev.set()
 
 
     def stopped(self):
         """Check if current thread was marked for stop."""
-        return self._stop.isSet()
+        return self._stop_ev.isSet()
 
 
     @staticmethod
@@ -189,7 +189,7 @@ class StandAloneClient(object):
         # Set the thread stop flag to true
         for thread in CURRENT_ACTIVE_THREADS:
             if int(thread.operation_id) == operation_id:
-                thread.stop()
+                thread._stop()
                 LOGGER.debug("Found running thread for operation: %d" % operation_id)
 
         # Kill Thread
@@ -204,7 +204,7 @@ class StandAloneClient(object):
                 LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
 
         # Mark operation as canceled in DB and on disk
-        WorkflowService().persist_operation_state(operation, STATUS_CANCELED)
+        BurstService2().persist_operation_state(operation, STATUS_CANCELED)
 
         return stopped
 
@@ -281,7 +281,7 @@ class ClusterSchedulerClient(object):
                 LOGGER.error("Stopping cluster operation was unsuccessful. Try following status with '" +
                              TvbProfile.current.cluster.STATUS_COMMAND + "'" % operation_process.job_id)
 
-        WorkflowService().persist_operation_state(operation, STATUS_CANCELED)
+        BurstService2().persist_operation_state(operation, STATUS_CANCELED)
 
         return result == 0
 

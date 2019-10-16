@@ -109,8 +109,8 @@ class TestSettingsService(BaseTestCase):
         assert not os.path.exists(TEST_CONFIG_FILE)
         assert len(TvbProfile.current.manager.stored_settings) == 0
 
-        to_store_data = {key: value['value'] for key, value in initial_configurations.iteritems()}
-        for key, value in self.TEST_SETTINGS.iteritems():
+        to_store_data = {key: value['value'] for key, value in initial_configurations.items()}
+        for key, value in self.TEST_SETTINGS.items():
             to_store_data[key] = value
         _, shoud_reset = self.settings_service.save_settings(**to_store_data)
 
@@ -127,8 +127,8 @@ class TestSettingsService(BaseTestCase):
         the value from the configuration file after store.
         """
         initial_configurations = self.settings_service.configurable_keys
-        to_store_data = {key: value['value'] for key, value in initial_configurations.iteritems()}
-        for key, value in self.TEST_SETTINGS.iteritems():
+        to_store_data = {key: value['value'] for key, value in initial_configurations.items()}
+        for key, value in self.TEST_SETTINGS.items():
             to_store_data[key] = value
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
@@ -139,7 +139,7 @@ class TestSettingsService(BaseTestCase):
         self.settings_service = SettingsService()
 
         updated_configurations = self.settings_service.configurable_keys
-        for key, value in updated_configurations.iteritems():
+        for key, value in updated_configurations.items():
             if key in self.TEST_SETTINGS:
                 assert self.TEST_SETTINGS[key] == value['value']
             elif key == SettingsService.KEY_ADMIN_PWD:
@@ -154,8 +154,8 @@ class TestSettingsService(BaseTestCase):
         Test update of settings: correct flags should be returned, and check storage folder renamed
         """
         # 1. save on empty config-file:
-        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.iteritems()}
-        for key, value in self.TEST_SETTINGS.iteritems():
+        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.items()}
+        for key, value in self.TEST_SETTINGS.items():
             to_store_data[key] = value
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
@@ -164,7 +164,7 @@ class TestSettingsService(BaseTestCase):
         # 2. Reload and save with the same values (is_changed expected to be False)
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
         self.settings_service = SettingsService()
-        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.iteritems()}
+        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.items()}
 
         is_changed, shoud_reset = self.settings_service.save_settings(**to_store_data)
         assert not is_changed
@@ -173,7 +173,7 @@ class TestSettingsService(BaseTestCase):
         # 3. Reload and check that changing TVB_STORAGE is done correctly
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
         self.settings_service = SettingsService()
-        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.iteritems()}
+        to_store_data = {key: value['value'] for key, value in self.settings_service.configurable_keys.items()}
         to_store_data[SettingsService.KEY_STORAGE] = os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED')
 
         # Write a test-file and check that it is moved

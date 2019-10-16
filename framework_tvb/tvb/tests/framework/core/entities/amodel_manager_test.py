@@ -37,7 +37,7 @@ import pytest
 from tvb.tests.framework.core.base_testcase import BaseTestCase, init_test_env
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model_manager import initialize_startup, reset_database
+from tvb.config.init.model_manager import initialize_startup, reset_database
 
 
 

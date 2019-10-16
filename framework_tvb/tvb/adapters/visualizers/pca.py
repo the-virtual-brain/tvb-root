@@ -35,41 +35,57 @@ A displayer for the principal components analysis.
 
 """
 import json
-from tvb.datatypes.mode_decompositions import PrincipalComponents
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.model.datatypes.mode_decompositions import PrincipalComponentsIndex
+from tvb.core.neotraits.forms import DataTypeSelectField
 
 
+class PCAForm(ABCAdapterForm):
 
-class PCA(ABCDisplayer):
+    def __init__(self, prefix='', project_id=None):
+        super(PCAForm, self).__init__(prefix, project_id)
+        self.pca = DataTypeSelectField(self.get_required_datatype(), self, name='pca', required=True,
+                                       label='Principal component analysis:', conditions=self.get_filters())
+
+    @staticmethod
+    def get_input_name():
+        return '_pca'
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_required_datatype():
+        return PrincipalComponentsIndex
+
+
+class PCA(ABCSpaceDisplayer):
     _ui_name = "Principal Components Analysis Visualizer"
 
-
-    def get_input_tree(self):
-        """Inform caller of the data we need"""
-
-        return [{"name": "pca",
-                 "type": PrincipalComponents,
-                 "label": "Principal component analysis:",
-                 "required": True
-                 }]
-
+    def get_form_class(self):
+        return PCAForm
 
     def get_required_memory_size(self, **kwargs):
         """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
-
     def launch(self, pca):
         """Construct data for visualization and launch it."""
-        ts_entity = self.load_entity_by_gid(pca.source.gid)
-        labels_data = ts_entity.get_space_labels()
-        fractions_update_url = self.paths2url(pca, 'read_fractions_data')
-        weights_update_url = self.paths2url(pca, 'read_weights_data')
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(pca.gid)
+        with ts_h5_class(ts_h5_path) as ts_h5:
+            source_gid = ts_h5.source.load()
+
+        source_h5_class, source_h5_path = self._load_h5_of_gid(source_gid.hex)
+        with source_h5_class(source_h5_path) as source_h5:
+            labels_data = self.get_space_labels(source_h5)
+
+        fractions_update_url = self.build_h5_url(pca.gid, 'read_fractions_data')
+        weights_update_url = self.build_h5_url(pca.gid, 'read_weights_data')
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))
 
-
     def generate_preview(self, pca, figure_size=None):
         return self.launch(pca)
-

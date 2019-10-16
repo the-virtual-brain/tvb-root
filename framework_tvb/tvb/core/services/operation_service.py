@@ -41,25 +41,29 @@ import os
 import json
 import zipfile
 import sys
-import six
 from copy import copy
 from cgi import FieldStorage
-from datetime import datetime
+from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.exceptions import TVBException
-from tvb.basic.traits.types_basic import MapAsJson, Range
+from tvb.basic.neotraits.api import Range
+#from tvb.basic.neotraits.map_as_json import MapAsJson
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
 from tvb.core import utils
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.model.model_workflow import WorkflowStepView
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.backend_client import BACKEND_CLIENT
 
@@ -98,8 +102,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def initiate_operation(self, current_user, project_id, adapter_instance,
-                           temporary_storage, visible=True, **kwargs):
+    def initiate_operation(self, current_user, project_id, adapter_instance, visible=True, **kwargs):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -111,35 +114,7 @@ class OperationService:
             self.logger.warning("Inconsistent Adapter Class:" + str(adapter_instance.__class__))
             raise LaunchException("Developer Exception!!")
 
-        # Prepare Files parameters
-        files = {}
-        kw2 = copy(kwargs)
-        for i, j in six.iteritems(kwargs):
-            if isinstance(j, FieldStorage) or isinstance(j, Part):
-                files[i] = j
-                del kw2[i]
-
-        temp_files = {}
-        try:
-            for i, j in six.iteritems(files):
-                if j.file is None:
-                    kw2[i] = None
-                    continue
-                uq_name = utils.date2string(datetime.now(), True) + '_' + str(i)
-                # We have to add original file name to end, in case file processing
-                # involves file extension reading
-                file_name = TEMPORARY_PREFIX + uq_name + '_' + j.filename
-                file_name = os.path.join(temporary_storage, file_name)
-                kw2[i] = file_name
-                temp_files[i] = file_name
-                with open(file_name, 'wb') as file_obj:
-                    file_obj.write(j.file.read())
-                self.logger.debug("Will store file:" + file_name)
-            kwargs = kw2
-        except Exception as excep:
-            self._handle_exception(excep, temp_files, "Could not launch operation: invalid input files!")
-
-        ### Store Operation entity. 
+        ### Store Operation entity.
         algo = adapter_instance.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
@@ -152,7 +127,7 @@ class OperationService:
             if len(operations) < 1:
                 self.logger.warning("No operation was defined")
                 raise LaunchException("Invalid empty Operation!!!")
-            return self.initiate_prelaunch(operations[0], adapter_instance, temp_files, **kwargs)
+            return self.initiate_prelaunch(operations[0], adapter_instance, **kwargs)
         else:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
@@ -205,6 +180,33 @@ class OperationService:
         for operation in ops:
             self.launch_operation(operation.id, True)
 
+    def _prepare_metric_operation(self, sim_operation):
+        # type: (Operation) -> None
+        metric_algo = dao.get_algorithm_by_module(TimeseriesMetricsAdapter.__module__,
+                                                  TimeseriesMetricsAdapter.__name__)
+
+        time_series_index = dao.get_generic_entity(TimeSeriesIndex, sim_operation.id, 'fk_from_operation')[0]
+        ts_metrics_adapter_form = TimeseriesMetricsAdapterForm()
+        ts_metrics_adapter_form.fill_from_trait(BaseTimeseriesMetricAlgorithm())
+        ts_metrics_adapter_form.time_series.data = time_series_index.gid
+        op_params = json.dumps(ts_metrics_adapter_form.get_dict())
+        range_values = sim_operation.range_values
+        metadata = {DataTypeMetaData.KEY_BURST: time_series_index.fk_parent_burst}
+        metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, op_params)
+        meta_str = json.dumps(metadata)
+
+        parent_burst = dao.get_generic_entity(BurstConfiguration2, time_series_index.fk_parent_burst, 'id')[0]
+        metric_operation_group_id = parent_burst.metric_operation_group_id
+        metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id, op_params,
+                                     meta_str, op_group_id=metric_operation_group_id, range_values=range_values)
+        metric_operation.visible = False
+        operation = dao.store_entity(metric_operation)
+
+        metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id, 'fk_operation_group')[0]
+        if metrics_datatype_group.fk_from_operation is None:
+            metrics_datatype_group.fk_from_operation = metric_operation.id
+
+        return operation
 
     def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
                            visible=True, existing_dt_group=None, **kwargs):
@@ -310,27 +312,45 @@ class OperationService:
                 dao.store_entity(datatype_group)
 
 
-    def initiate_prelaunch(self, operation, adapter_instance, temp_files, **kwargs):
+    def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
         Public method.
         This should be the common point in calling an adapter- method.
         """
         result_msg = ""
+        temp_files = []
         try:
             unique_id = None
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
-            # filtered_kwargs = kwargs
-            # Replace this with a method to retrieve TSI by GID/Keep only GID on kwargs dict
-            # filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
-            # We might not need kwargs anymore
-            filtered_kwargs = adapter_instance.get_form().get_form_values()
-            self.logger.debug("Launching operation " + str(operation.id) + " with " + str(filtered_kwargs))
-            operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
+            #TODO: this currently keeps both ways to display forms
+            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
+                if adapter_instance.get_input_tree() is None:
+                    # form = adapter_instance.get_form()('', project_id=operation.fk_launched_in)
+                    # form.fill_from_post(kwargs)
+                    # dt_dict = None
+                    # if form.validate():
+                    #     dt_dict = form.get_dict()
+                    # if dt_dict is None:
+                    #     raise ValueError("Could not build a dict out of this form!")
+                    # adapter_instance.set_form(form)
+                    filtered_kwargs = adapter_instance.get_form().get_form_values()
+                else:
+                    # Replace this with a method to retrieve TSI by GID/Keep only GID on kwargs dict
+                    # We might not need kwargs anymore
+                    filtered_kwargs = kwargs
+                    filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
 
-            params = dict()
-            for k, value_ in filtered_kwargs.items():
-                params[str(k)] = value_
+                params = dict()
+                for k, value_ in filtered_kwargs.items():
+                    params[str(k)] = value_
+                self.logger.debug("Launching operation " + str(operation.id) + " with " + str(filtered_kwargs))
+            else:
+                params = kwargs
+                self.logger.debug("Launching operation " + str(operation.id) + " with " + str(kwargs))
+
+
+            operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
 
             disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
@@ -346,6 +366,12 @@ class OperationService:
                 #### Write operation meta-XML only if some result are returned
                 self.file_helper.write_operation_metadata(operation)
             dao.store_entity(operation)
+            adapter_form = adapter_instance.get_form()
+            try:
+                temp_files = adapter_form.temporary_files
+            except AttributeError:
+                pass
+
             self._remove_files(temp_files)
 
         except zipfile.BadZipfile as excep:
@@ -361,9 +387,9 @@ class OperationService:
             msg = "Could not launch Operation with the given input data!"
             self._handle_exception(excep1, temp_files, msg, operation)
 
-        ### Try to find next workflow Step. It might throw WorkflowException
-        next_op_id = self.workflow_service.prepare_next_step(operation.id)
-        self.launch_operation(next_op_id)
+        if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname:
+            next_op = self._prepare_metric_operation(operation)
+            self.launch_operation(next_op.id)
         return result_msg
 
 
@@ -389,11 +415,15 @@ class OperationService:
                 algorithm = operation.algorithm
                 adapter_instance = ABCAdapter.build_adapter(algorithm)
             parsed_params = utils.parse_json_parameters(operation.parameters)
+            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
+                adapter_form = adapter_instance.get_form()()
+                adapter_form.fill_from_post(parsed_params)
+                adapter_instance.submit_form(adapter_form)
 
             if send_to_cluster:
                 self._send_to_cluster([operation], adapter_instance, operation.user.username)
             else:
-                self.initiate_prelaunch(operation, adapter_instance, {}, **parsed_params)
+                self.initiate_prelaunch(operation, adapter_instance, **parsed_params)
 
 
     def _handle_exception(self, exception, temp_files, message, operation=None):
@@ -405,19 +435,18 @@ class OperationService:
         """
         self.logger.exception(message)
         if operation is not None:
-            self.workflow_service.persist_operation_state(operation, STATUS_ERROR, unicode(exception))
-            self.workflow_service.update_executed_workflow_state(operation)
+            BurstService2().persist_operation_state(operation, STATUS_ERROR, str(exception))
         self._remove_files(temp_files)
         exception.message = message
-        raise exception, None, sys.exc_info()[2]  # when rethrowing in python this is required to preserve the stack trace
+        raise exception.with_traceback(sys.exc_info()[2])  # when rethrowing in python this is required to preserve the stack trace
 
 
-    def _remove_files(self, file_dictionary):
+    def _remove_files(self, file_list):
         """
         Remove any files that exist in the file_dictionary. 
         Currently used to delete temporary files created during an operation.
         """
-        for pth in file_dictionary.itervalues():
+        for pth in file_list:
             pth = str(pth)
             try:
                 if os.path.exists(pth) and os.path.isfile(pth):
@@ -499,7 +528,7 @@ class OperationService:
             lo_val = float(range_data[constants.ATT_MINVALUE])
             hi_val = float(range_data[constants.ATT_MAXVALUE])
             step = float(range_data[constants.ATT_STEP])
-            range_values = list(Range(lo=lo_val, hi=hi_val, step=step, mode=Range.MODE_INCLUDE_BOTH))
+            range_values = list(Range(lo=lo_val, hi=hi_val, step=step).to_array()) #, mode=Range.MODE_INCLUDE_BOTH))
 
         else:
             for possible_value in range_data:

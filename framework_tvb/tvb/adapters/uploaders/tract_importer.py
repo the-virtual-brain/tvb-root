@@ -32,15 +32,16 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
+from abc import ABCMeta
 from nibabel import trackvis
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
 from tvb.core.entities.model.datatypes.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
 from tvb.datatypes.tracts import Tracts
-from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -68,30 +69,27 @@ class TrackImporterForm(ABCUploaderForm):
                                                  label='Reference Volume Map')
 
 
-class _TrackImporterBase(ABCUploader):
+class TrackZipImporterForm(TrackImporterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(TrackZipImporterForm, self).__init__(prefix, project_id)
+
+        self.data_file = UploadField('.zip', self, name='data_file', required=True,
+                                     label='Please select file to import')
+
+
+class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
     _ui_name = "Tracts TRK"
     _ui_subsection = "tracts_importer"
     _ui_description = "Import tracts"
 
-    READ_CHUNK = 4*1024
+    READ_CHUNK = 4 * 1024
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return TrackImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return TrackImporterForm
 
     def get_output(self):
         return [TractsIndex]
-
 
     def _get_tract_region(self, start_vertex):
         # Map to voxel index space
@@ -114,16 +112,14 @@ class _TrackImporterBase(ABCUploader):
         region_id = self.region_volume.read_data_slice(slices)[0, 0, 0]
         return region_id
 
-
     def _attempt_to_cache_regionmap(self, region_volume):
         a, b, c = region_volume.read_data_shape()
-        if a*b*c <= 256*256*256:
+        if a * b * c <= 256 * 256 * 256:
             # read all
             slices = slice(a), slice(b), slice(c)
             self.full_rmap_cache = region_volume.read_data_slice(slices)
         else:
             self.full_rmap_cache = None
-
 
     def _base_before_launch(self, data_file, region_volume):
         if data_file is None:
@@ -149,11 +145,10 @@ class _SpaceTransform(object):
     """
 
     RAS_TO_TVB = numpy.array(
-      [[ 0.,  1.,  0.,  0.],
-       [-1.,  0.,  0.,  0.],
-       [ 0.,  0.,  1.,  0.],
-       [ 0.,  0.,  0.,  1.]])
-
+        [[0., 1., 0., 0.],
+         [-1., 0., 0., 0.],
+         [0., 0., 1., 0.],
+         [0., 0., 0., 1.]])
 
     def __init__(self, hdr):
         # this is an affine transform mapping the voxel space in which the tracts live to the surface space
@@ -163,7 +158,6 @@ class _SpaceTransform(object):
         if self.vox_to_ras[3][3] == 0:
             # according to http://www.trackvis.org/docs/?subsect=fileformat this means that the matrix cannot be trusted
             self.vox_to_ras = numpy.eye(4)
-
 
     def transform(self, vertices):
         # to vox homogeneous coordinates
@@ -203,7 +197,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
                 if region_volume is not None:
                     tract_region.append(self._get_tract_region(tr[0]))
 
-            vertices = numpy.concatenate(tract_bundle) # in voxel space
+            vertices = numpy.concatenate(tract_bundle)  # in voxel space
             vertices = vox2ras.transform(vertices)
 
             datatype.store_data_chunk("vertices", vertices, grow_dimension=0, close_file=False)
@@ -213,19 +207,14 @@ class TrackvizTractsImporter(_TrackImporterBase):
         return datatype
 
 
-
 class ZipTxtTractsImporter(_TrackImporterBase):
     """
     This imports tracts from a zip containing txt files. One txt file for a tract.
     """
     _ui_name = "Tracts Zipped Txt"
 
-
-    def get_upload_input_tree(self):
-        tree = _TrackImporterBase.get_upload_input_tree(self)
-        tree[0]['required_type'] = '.zip'
-        return tree
-
+    def get_form_class(self):
+        return TrackZipImporterForm
 
     @transactional
     def launch(self, data_file, region_volume=None):
@@ -235,8 +224,8 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_region = []
 
         with TvbZip(data_file) as zipf:
-            for tractf in sorted(zipf.namelist()): # one track per file
-                if not tractf.endswith('.txt'): # omit directories and other non track files
+            for tractf in sorted(zipf.namelist()):  # one track per file
+                if not tractf.endswith('.txt'):  # omit directories and other non track files
                     continue
                 vertices_file = zipf.open(tractf)
                 tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)

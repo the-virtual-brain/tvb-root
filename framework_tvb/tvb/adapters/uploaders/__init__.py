@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -32,8 +32,8 @@
 Define a list with all Python modules in which the introspect mechanism should search for Import Adapters.
 """
 
-__all__ = ["cff_importer", "brco_importer", "connectivity_measure_importer", "csv_connectivity_importer",
-           "gifti_surface_importer", "gifti_timeseries_importer", "mat_timeseries_importer",
-           "networkx_importer", "nifti_importer", "obj_importer", "projection_matrix_importer",
-           "region_mapping_importer", "sensors_importer", "tvb_importer", "tract_importer",
-           "zip_connectivity_importer", "zip_surface_importer"]
+ALL_UPLOADERS = ["brco_importer", "connectivity_measure_importer", "csv_connectivity_importer",
+                 "gifti_surface_importer", "gifti_timeseries_importer", "mat_timeseries_eeg_importer",
+                 "mat_timeseries_importer", "networkx_importer", "nifti_importer", "obj_importer",
+                 "projection_matrix_importer", "region_mapping_importer", "sensors_importer", "tract_importer",
+                 "tvb_importer", "zip_connectivity_importer", "zip_surface_importer"]

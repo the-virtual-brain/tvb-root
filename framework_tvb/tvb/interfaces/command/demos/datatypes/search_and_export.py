@@ -38,7 +38,7 @@ if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
-from tvb.basic.filters.chain import FilterChain
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData

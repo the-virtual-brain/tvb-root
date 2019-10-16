@@ -33,17 +33,17 @@
 
 import json
 import uuid
-from tvb.basic.filters.chain import FilterChain
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.datatypes.time_series import TimeSeriesSurfaceH5
+from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesSurfaceH5
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesSurfaceIndex
-from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.neocom import h5
 
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
@@ -69,19 +69,8 @@ class GIFTITimeSeriesImporter(ABCUploader):
     _ui_subsection = "gifti_timeseries_importer"
     _ui_description = "Import TimeSeries from GIFTI"
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return GIFTITimeSeriesImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return GIFTITimeSeriesImporterForm
 
     def get_output(self):
         return [TimeSeriesSurfaceIndex]
@@ -98,9 +87,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             partial_time_series, gifti_data_arrays = parser.parse(data_file)
 
             ts_idx = TimeSeriesSurfaceIndex()
-
-            loader = DirLoader(self.storage_path)
-            ts_h5_path = loader.path_for(TimeSeriesSurfaceH5, ts_idx.gid)
+            ts_h5_path = h5.path_for(self.storage_path, TimeSeriesSurfaceH5, ts_idx.gid)
 
             ts_h5 = TimeSeriesSurfaceH5(ts_h5_path)
             # todo : make sure that write_time_slice is not required here
@@ -117,14 +104,14 @@ class GIFTITimeSeriesImporter(ABCUploader):
                 raise LaunchException(msg)
             else:
                 ts_h5.surface.store(uuid.UUID(surface.gid))
-                ts_idx.surface = surface
-                ts_idx.surface_id = surface.id
+                ts_idx.surface_gid = surface.gid
             ts_h5.close()
 
             ts_idx.sample_period_unit = partial_time_series.sample_period_unit
             ts_idx.sample_period = partial_time_series.sample_period
             ts_idx.sample_rate = partial_time_series.sample_rate
             ts_idx.labels_ordering = json.dumps(partial_time_series.labels_ordering)
+            ts_idx.labels_dimensions = json.dumps(partial_time_series.labels_dimensions)
             ts_idx.data_ndim = len(ts_data_shape)
             ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(ts_data_shape)
 

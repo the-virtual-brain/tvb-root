@@ -33,26 +33,23 @@
 """
 
 import numpy
-from tvb.basic.traits.types_basic import String, Integer, Float
-from tvb.basic.traits.types_mapped import MappedType
-from tvb.datatypes.arrays import StringArray
+from tvb.core.entities.model.model_datatype import DataType
+from sqlalchemy import String, Column, Integer, Float, ForeignKey
 
 
-
-class Datatype2(MappedType):
+# TODO review all usages and replace with conftest fixture
+class Datatype2(DataType):
     """
-        This class is used for testing purposes only.
+    This class is used for testing purposes only.
     """
-    row1 = String(label="spatial_parameters", default="test-spatial")
-    row2 = String(label="temporal_parameters", default="test-temporal")
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+    row1 = Column(String, default="test-spatial")
+    row2 = Column(String, default="test-temporal")
 
-    number1 = Integer(label="number parameter", default=1)
-    number2 = Float(label="float parameter", default=0.1)
+    number1 = Column(Integer, default=1)
+    number2 = Column(Float, default=0.1)
 
-    string_data = StringArray(label="String data")
-
+    string_data_length = Column(Integer)
 
     def return_test_data(self, length=0):
         return numpy.arange(length)
-    
-    

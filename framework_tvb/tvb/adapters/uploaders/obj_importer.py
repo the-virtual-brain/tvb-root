@@ -32,16 +32,14 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import uuid
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.obj.surface import ObjSurface
 from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.surfaces import make_surface, center_vertices, ALL_SURFACES_SELECTION
-from tvb.core.neotraits._forms import SimpleSelectField, UploadField, SimpleBoolField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.datatypes.surfaces import make_surface, center_vertices
+from tvb.core.neotraits.forms import SimpleSelectField, UploadField, SimpleBoolField
+from tvb.core.neocom import h5
 
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
@@ -50,8 +48,9 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
         super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
 
         self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
-                                              label='Specify file type :')
-        self.data_file = UploadField('.obj', self, name='data_file', required=True, label='Please select file to import')
+                                              label='Specify file type :', default=list(ALL_SURFACES_SELECTION)[0])
+        self.data_file = UploadField('.obj', self, name='data_file', required=True,
+                                     label='Please select file to import')
         self.should_center = SimpleBoolField(self, name='should_center', default=False,
                                              label='Center surface using vertex means along axes')
 
@@ -64,23 +63,11 @@ class ObjSurfaceImporter(ABCUploader):
     _ui_subsection = "obj_importer"
     _ui_description = "Import geometry data stored in wavefront obj format"
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return ObjSurfaceImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return ObjSurfaceImporterForm
 
     def get_output(self):
         return [SurfaceIndex]
-
 
     @transactional
     def launch(self, surface_type, data_file, should_center=False):
@@ -117,21 +104,11 @@ class ObjSurfaceImporter(ABCUploader):
             surface.compute_vertex_normals()
 
             validation_result = surface.validate()
-
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            surface_idx = SurfaceIndex()
-            surface_idx.fill_from_has_traits(surface)
-
-            loader = DirLoader(self.storage_path)
-            surface_h5_path = loader.path_for(SurfaceH5, surface_idx.gid)
-
-            with SurfaceH5(surface_h5_path) as surface_h5:
-                surface_h5.store(surface)
-                surface_h5.gid.store(uuid.UUID(surface_idx.gid))
-
-            return [surface_idx]
+            self.generic_attributes.user_tag_1 = surface.surface_type
+            return h5.store_complete(surface, self.storage_path)
 
         except ParseException as excep:
             self.log.exception(excep)

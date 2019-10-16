@@ -41,7 +41,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage import SA_SESSIONMAKER
-from tvb.datatypes.simulation_state import SimulationState
 
 meta = model.Base.metadata
 COL_RANGES_1 = Column('no_of_ranges', Integer, default=0)
@@ -100,8 +99,9 @@ def upgrade(migrate_engine):
 
     try:
         session = SA_SESSIONMAKER()
-        for sim_state in session.query(SimulationState).filter(SimulationState.fk_datatype_group is not None).all():
-            session.delete(sim_state)
+        # TODO: fix me
+        # for sim_state in session.query(SimulationState).filter(SimulationState.fk_datatype_group is not None).all():
+        #     session.delete(sim_state)
         session.commit()
         session.close()
     except Exception as excep:

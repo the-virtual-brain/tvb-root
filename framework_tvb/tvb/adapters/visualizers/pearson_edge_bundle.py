@@ -35,6 +35,7 @@ from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelatio
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.datatypes.graph import CorrelationCoefficients
 
+
 class PearsonEdgeBundle(ABCDisplayer):
     """
     Viewer for Pearson CorrelationCoefficients.
@@ -42,17 +43,9 @@ class PearsonEdgeBundle(ABCDisplayer):
     """
     _ui_name = "Pearson Edge Bundle"
     _ui_subsection = "correlation_pearson_edge"
-    form = None
 
-    def get_form(self):
-        if not self.form:
-            return PearsonCorrelationCoefficientVisualizerForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    def get_input_tree(self): return None
+    def get_form_class(self):
+        return PearsonCorrelationCoefficientVisualizerForm
 
     def get_required_memory_size(self, datatype):
         """Return required memory."""
@@ -60,7 +53,6 @@ class PearsonEdgeBundle(ABCDisplayer):
         input_size = (datatype.data_length_1d, datatype.data_length_2d,
                       datatype.data_length_3d, datatype.data_length_4d)
         return numpy.prod(input_size) * 8.0
-
 
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
@@ -75,13 +67,14 @@ class PearsonEdgeBundle(ABCDisplayer):
         with ts_h5_class(ts_h5_path) as ts_h5:
             labels = ts_h5.get_space_labels()
         state_list = ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], [])
-        mode_list = range(ts_index.data_length_4d)
+        mode_list = list(range(ts_index.data_length_4d))
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps(labels),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Pearson Edge Bundle',
-                    url_base=URLGenerator.build_h5_url(datatype.gid, 'get_correlation_data',flatten="True", parameter=''),
+                    url_base=URLGenerator.build_h5_url(datatype.gid, 'get_correlation_data', flatten="True",
+                                                       parameter=''),
                     state_variable=0,
                     mode=mode_list[0],
                     state_list=state_list,

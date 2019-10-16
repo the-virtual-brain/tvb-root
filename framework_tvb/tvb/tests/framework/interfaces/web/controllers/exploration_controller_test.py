@@ -63,8 +63,8 @@ class TestExplorationController(BaseTransactionalControllerTest):
         Test that Discrete PSE is getting launched and correct fields are prepared.
         """
         result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
-        assert result['available_metrics'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()
-        assert result['color_metric'] == DatatypesFactory.DATATYPE_MEASURE_METRIC.keys()[0]
+        assert result['available_metrics'] == list(DatatypesFactory.DATATYPE_MEASURE_METRIC)
+        assert result['color_metric'] == list(DatatypesFactory.DATATYPE_MEASURE_METRIC)[0]
         assert result['size_metric'] is None
         assert DatatypesFactory.RANGE_1[1] == json.loads(result['labels_x'])
         assert DatatypesFactory.RANGE_2[1] == json.loads(result['labels_y'])
@@ -83,7 +83,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         Test that isocline PSE gets launched.
         """
         result = self.controller.draw_isocline_exploration(self.dt_group.gid)
-        assert isinstance(result['canvasName'], (str, unicode))
-        assert isinstance(result['xAxisName'], (str, unicode))
-        assert isinstance(result['url_base'], (str, unicode))
-        assert DatatypesFactory.DATATYPE_MEASURE_METRIC.keys() == result['available_metrics']
+        assert isinstance(result['canvasName'], str)
+        assert isinstance(result['xAxisName'], str)
+        assert isinstance(result['url_base'], str)
+        assert list(DatatypesFactory.DATATYPE_MEASURE_METRIC) == result['available_metrics']

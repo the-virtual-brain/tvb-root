@@ -43,19 +43,22 @@ import importlib
 from functools import wraps
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
+from six import add_metaclass
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-import tvb.basic.traits.traited_interface as interface
 from tvb.core.adapters import input_tree
 from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits._forms import Form, DataTypeSelectField
+from tvb.core.neotraits.forms import Form, DataTypeSelectField
 from tvb.tests.framework.interfaces.neoforms_test import jinja_env
 
 ATT_METHOD = "python_method"
@@ -133,10 +136,12 @@ class ABCAdapterForm(Form):
     def get_input_name():
         raise NotImplementedError
 
-    # TODO: This is used to fill in defaults for GET requests. Makes sense only for analyzers?
-    @abstractmethod
     def get_traited_datatype(self):
-        """"""
+        """
+        This is used to fill in defaults for GET requests.
+        Makes sense for analyzers, because for each form, we have an algorithm to relate to.
+        """
+        return None
 
     def _get_original_field_name(self, field):
         return field.name[len(self.prefix) + 1:]
@@ -146,6 +151,8 @@ class ABCAdapterForm(Form):
         attrs_dict = {}
         for field in self.fields:
             attrs_dict.update({field.name: field.data})
+        attrs_dict.update({self.RANGE_1_NAME: self.range_1})
+        attrs_dict.update({self.RANGE_2_NAME: self.range_2})
         return attrs_dict
 
     def get_form_values(self):
@@ -160,11 +167,11 @@ class ABCAdapterForm(Form):
         return attrs_dict
 
     def __str__(self):
-        # TODO: Keep using Jinja2?
-        return jinja_env.get_template("form_field.jinja2").render(form=self)
+        return jinja_env.get_template("form.jinja2").render(form=self)
 
 
 
+@add_metaclass(ABCMeta)
 class ABCAdapter(object):
     """
     Root Abstract class for all TVB Adapters. 
@@ -196,18 +203,18 @@ class ABCAdapter(object):
     KEYWORD_SEPARATOR = input_tree.KEYWORD_SEPARATOR
     KEYWORD_OPTION = input_tree.KEYWORD_OPTION
 
-    INTERFACE_ATTRIBUTES_ONLY = interface.INTERFACE_ATTRIBUTES_ONLY
-    INTERFACE_ATTRIBUTES = interface.INTERFACE_ATTRIBUTES
+    INTERFACE_ATTRIBUTES_ONLY = "attributes-only"
+    INTERFACE_ATTRIBUTES = "attributes"
 
     # model.Algorithm instance that will be set for each adapter created by in build_adapter method
     stored_adapter = None
-
-    __metaclass__ = ABCMeta
 
 
     def __init__(self):
         # It will be populate with key from DataTypeMetaData
         self.meta_data = {DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
+        self.generic_attributes = GenericAttributes()
+        self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
         self.file_handler = FilesHelper()
         self.storage_path = '.'
         # Will be populate with current running operation's identifier
@@ -215,6 +222,7 @@ class ABCAdapter(object):
         self.user_id = None
         self.log = get_logger(self.__class__.__module__)
         self.tree_manager = InputTreeManager()
+        self.submitted_form = None
 
     @classmethod
     def get_group_name(cls):
@@ -257,12 +265,24 @@ class ABCAdapter(object):
         """
         return True
 
-    @abstractmethod
     def get_input_tree(self):
         """
         Describes inputs and outputs of the launch method.
         """
+        return None
 
+    def submit_form(self, form):
+        self.submitted_form = form
+
+    # TODO separate usage of get_form_class (returning a class) and return of a submitted instance
+    def get_form(self):
+        if self.submitted_form is not None:
+            return self.submitted_form
+        return self.get_form_class()
+
+    @abstractmethod
+    def get_form_class(self):
+        return None
 
     @abstractmethod
     def get_output(self):
@@ -319,6 +339,18 @@ class ABCAdapter(object):
         current_op.additional_info = message
         dao.store_entity(current_op)
 
+    def _prepare_generic_attributes(self, user_tag=None):
+
+        self.generic_attributes.subject = str(self.meta_data.get(DataTypeMetaData.KEY_SUBJECT))
+        self.generic_attributes.state = self.meta_data.get(DataTypeMetaData.KEY_STATE)
+
+        perpetuated_identifier = self.generic_attributes.user_tag_1
+        if DataTypeMetaData.KEY_TAG_1 in self.meta_data:
+            perpetuated_identifier = self.meta_data.get(DataTypeMetaData.KEY_TAG_1)
+        if not self.generic_attributes.user_tag_1:
+            self.generic_attributes.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
+        else:
+            self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
 
     @nan_not_allowed()
     def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
@@ -361,22 +393,20 @@ class ABCAdapter(object):
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
 
+        self._prepare_generic_attributes(uid)
         result = self.launch(**kwargs)
 
         if not isinstance(result, (list, tuple)):
             result = [result, ]
-        # TODO: Fix this
-        # self.__check_integrity(result)
-
-        return self._capture_operation_results(result, uid)
+        self.__check_integrity(result)
+        return self._capture_operation_results(result)
 
 
-    def _capture_operation_results(self, result, user_tag=None):
+    def _capture_operation_results(self, result):
         """
         After an operation was finished, make sure the results are stored
         in DB storage and the correct meta-data,IDs are set.
         """
-        results_to_store = []
         data_type_group_id = None
         operation = dao.get_operation_by_id(self.operation_id)
         if operation.user_group is None or len(operation.user_group) == 0:
@@ -384,95 +414,63 @@ class ABCAdapter(object):
             operation = dao.store_entity(operation)
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
-        # All entities will have the same subject and state
-        subject = self.meta_data[DataTypeMetaData.KEY_SUBJECT]
-        state = self.meta_data[DataTypeMetaData.KEY_STATE]
         burst_reference = None
         if DataTypeMetaData.KEY_BURST in self.meta_data:
             burst_reference = self.meta_data[DataTypeMetaData.KEY_BURST]
-        perpetuated_identifier = None
-        if DataTypeMetaData.KEY_TAG_1 in self.meta_data:
-            perpetuated_identifier = self.meta_data[DataTypeMetaData.KEY_TAG_1]
 
+        count_stored = 0
+        group_type = None   # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:
             if res is None:
                 continue
-            res.subject = str(subject)
-            res.state = state
+            res.subject = self.generic_attributes.subject
+            res.state = self.generic_attributes.state
             res.fk_parent_burst = burst_reference
             res.fk_from_operation = self.operation_id
             res.framework_metadata = self.meta_data
-            if not res.user_tag_1:
-                res.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
-            else:
-                res.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
+            res.user_tag_1 = self.generic_attributes.user_tag_1
+            res.user_tag_2 = self.generic_attributes.user_tag_2
             res.fk_datatype_group = data_type_group_id
-            ## Compute size-on disk, in case file-storage is used
-            if hasattr(res, 'storage_path') and hasattr(res, 'get_storage_file_name'):
-                associated_file = os.path.join(res.storage_path, res.get_storage_file_name())
-                res.close_file()
+            # Compute size-on disk, in case file-storage is used
+            associated_file = h5.path_for_stored_index(res)
+            if os.path.exists(associated_file):
                 res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
-            res = dao.store_entity(res)
-            # Write metaData
-            # TODO: persistance should be done inisde launch()
-            # res.persist_full_metadata()
-            results_to_store.append(res)
-        del result[0:len(result)]
-        result.extend(results_to_store)
+                with H5File.from_file(associated_file) as f:
+                    f.store_generic_attributes(self.generic_attributes)
+            dao.store_entity(res)
+            group_type = res.type
+            count_stored += 1
 
-        if len(result) and self._is_group_launch():
-            ## Update the operation group name
+        if count_stored > 0 and self._is_group_launch():
+            # Update the operation group name
             operation_group = dao.get_operationgroup_by_id(operation.fk_operation_group)
-            operation_group.fill_operationgroup_name(result[0].type)
+            operation_group.fill_operationgroup_name(group_type)
             dao.store_entity(operation_group)
 
-        return 'Operation ' + str(self.operation_id) + ' has finished.', len(results_to_store)
+        return 'Operation ' + str(self.operation_id) + ' has finished.', count_stored
 
 
     def __check_integrity(self, result):
         """
-         Check that the returned parameters for LAUNCH operation
+        Check that the returned parameters for LAUNCH operation
         are of the type specified in the adapter's interface.
         """
-        entity_id = self.__module__ + '.' + self.__class__.__name__
-
         for result_entity in result:
-            if type(result_entity) == list and len(result_entity) > 0:
-                #### Determine the first element not None
-                first_item = None
-                for res in result_entity:
-                    if res is not None:
-                        first_item = res
-                        break
-                if first_item is None:
-                    return
-                    #### All list items are None
-                #### Now check if the first item has a supported type
-                if not self.__is_data_in_supported_types(first_item):
-                    msg = "Unexpected DataType %s"
-                    raise InvalidParameterException(msg % type(first_item))
-
-                first_item_type = type(first_item)
-                for res in result_entity:
-                    if not isinstance(res, first_item_type):
-                        msg = '%s-Heterogeneous types (%s).Expected %s list.'
-                        raise InvalidParameterException(msg % (entity_id, type(res), first_item_type))
-            else:
-                if not self.__is_data_in_supported_types(result_entity):
-                    msg = "Unexpected DataType %s"
-                    raise InvalidParameterException(msg % type(result_entity))
+            if result_entity is None:
+                continue
+            if not self.__is_data_in_supported_types(result_entity):
+                msg = "Unexpected output DataType %s"
+                raise InvalidParameterException(msg % type(result_entity))
 
 
     def __is_data_in_supported_types(self, data):
-        """
-        This method checks if the provided data is one of the adapter supported return types 
-        """
+
         if data is None:
             return True
         for supported_type in self.get_output():
             if isinstance(data, supported_type):
                 return True
-        ##### Data can't be mapped on any supported type !!
+        # Data can't be mapped on any supported type !!
         return False
 
 
@@ -528,7 +526,7 @@ class ABCAdapter(object):
             raise IntrospectionException(msg)
 
 
-    ####### METHODS for PROCESSING PARAMETERS start here #############################
+    # METHODS for PROCESSING PARAMETERS start here #############################
 
     def review_operation_inputs(self, parameters):
         """
@@ -564,18 +562,18 @@ class ABCAdapter(object):
 
     def flaten_input_interface(self):
         # TODO: temporary condition to pass introspection on neoforms
-        if self.get_input_tree() is None:
-            return [{"name": self.get_form().get_input_name()}]
-        """ Return a simple dictionary, instead of a Tree."""
+        form = self.get_form_class()()
+        if form:
+            return [form._get_original_field_name(form_field) for form_field in form.fields]
         return self.tree_manager.flatten(self.get_input_tree())
 
 
 
+@add_metaclass(ABCMeta)
 class ABCAsynchronous(ABCAdapter):
     """
     Abstract class, for marking adapters that are prone to be executed  on Cluster.
     """
-    __metaclass__ = ABCMeta
 
     def array_size2kb(self, size):
         """
@@ -585,11 +583,10 @@ class ABCAsynchronous(ABCAdapter):
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
 
 
-
+@add_metaclass(ABCMeta)
 class ABCSynchronous(ABCAdapter):
     """
     Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
     """
-    __metaclass__ = ABCMeta
 
 

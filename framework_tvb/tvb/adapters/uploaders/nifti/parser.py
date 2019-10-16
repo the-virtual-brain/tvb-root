@@ -34,17 +34,16 @@
 """
 
 import os
-import nibabel as nib
+import numpy
+import nibabel
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException
 
 
-
-class NIFTIParser():
+class NIFTIParser(object):
     """
     This class reads content of a NIFTI file and writes a 4D array [time, x, y, z].
     """
-
 
     def __init__(self, data_file):
 
@@ -57,8 +56,8 @@ class NIFTIParser():
             raise ParseException("Provided file %s does not exists" % data_file)
 
         try:
-            self.nifti_image = nib.load(data_file)
-        except nib.spatialimages.ImageFileError as e:
+            self.nifti_image = nibabel.load(data_file)
+        except nibabel.spatialimages.ImageFileError as e:
             self.logger.exception(e)
             msg = "File: %s does not have a valid NIFTI-1 format." % data_file
             raise ParseException(msg)
@@ -77,8 +76,6 @@ class NIFTIParser():
         # Usually zooms defines values for x, y, z, time and other dimensions
         self.zooms = nifti_image_hdr.get_zooms()
 
-
-
     def parse(self):
         """
         Parse NIFTI file and write in result_dt a 4D or 3D array [time*, x, y, z].
@@ -89,4 +86,4 @@ class NIFTIParser():
         # it as first dimension, so we have to adapt imported data
 
         nifti_data = self.nifti_image.get_data()
-        return nifti_data
+        return numpy.array(nifti_data, dtype=numpy.int32)

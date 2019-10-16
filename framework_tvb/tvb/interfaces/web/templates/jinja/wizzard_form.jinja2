@@ -1,5 +1,5 @@
 <form method="post" action="{{ action }}" id="{{ action }}" enctype="multipart/form-data">
-    <fieldset>
+    <fieldset {% if sim_load or sim_copy %} disabled {% endif %}>
         <dl>
             {% if form.ordered_fields %}
                 {% set form_fields = form.ordered_fields %}
@@ -23,24 +23,39 @@
     </fieldset>
 
     {% if is_model_fragment %}
-        <a href="#" title="Set up model parameters for region-based simulations" class="action action-analyze"
-           onclick="configureModelParamsOnRegions();" id="configRegionModelParam">Set up region Model</a>
+        <button title="Set up model parameters for region-based simulations" class="btn btn-primary"
+           onclick="configureModelParamsOnRegions();" id="configRegionModelParam" name="configRegionModelParam"
+           {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Set up region Model</button>
 
         {% if is_surface_simulation %}
-            <a href="#" title="Set up model parameters for surface-based simulations" class="action action-analyze"
-               onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam">Set up surface model</a>
+            <button title="Set up model parameters for surface-based simulations" class="btn btn-primary"
+               onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam" name="configSurfaceModelParam"
+               {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Set up surface model</button>
         {% endif %}
     {% endif %}
 
     {% if is_first_fragment is sameas false %}
         <button id='previous' name="previous" type="button" class="btn btn-primary"
-                onclick="previousWizzardStep(this.parentElement, '{{ previous_action }}')">Previous
+                onclick="previousWizzardStep(this.parentElement, '{{ previous_action }}')"
+                {% if sim_load or (sim_copy and is_last_fragment is sameas false) %} style="visibility: hidden" {% endif %}>Previous
         </button>
     {% endif %}
 
     {% if is_last_fragment is sameas false %}
         <button id='next' name="next" type="button" class="btn btn-primary"
-                onclick="wizzard_submit(this.parentElement)">Next
+                onclick="wizzard_submit(this.parentElement)"
+                {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Next
         </button>
+    {% endif %}
+
+    {% if is_last_fragment and sim_load is sameas false %}
+        <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary"
+        onclick="launchNewBurst(this.parentElement, 'new')">Launch</button>
+        {% if sim_copy %}
+        <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary"
+        onclick="launchNewBurst(this.parentElement, 'branch')">Branch</button>
+        {% endif %}
+        <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary"
+        onclick="wizzard_submit(this.parentElement)">Setup PSE</button>
     {% endif %}
 </form>

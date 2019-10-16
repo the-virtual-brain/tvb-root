@@ -1,9 +1,38 @@
-import os
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 import numpy
 from tvb.analyzers.fft import FFT
 from tvb.datatypes.time_series import TimeSeries
-from tvb.interfaces.neocom.h5 import TimeSeriesH5, store_to_dir, DirLoader
-from tvb.interfaces.neocom.db import TimeSeriesIndex
+from tvb.core.entities.file.datatypes.time_series_h5 import TimeSeriesH5
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.core.neocom import h5
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 
 
@@ -14,12 +43,31 @@ def make_ts():
     # channel 2: a superposition of 100 and 300Hz equal amplitude
     time = numpy.linspace(0, 1000, 4000)
     data = numpy.zeros((time.size, 1, 3, 1))
-    data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time/1000.0 * 40)
-    data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time/1000.0 * 200)
-    data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time/1000.0 * 100) + \
-                       numpy.sin(2 * numpy.pi * time/1000.0 * 300)
+    data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
+    data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
+    data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
+                       numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
 
-    return TimeSeries(time=time, data=data, sample_rate=4000.0, sample_period=1.0/4000)
+    return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
+
+
+def make_ts_from_op(session, operationFactory):
+    # make file stored and indexed time series
+    two_node_simple_sin_ts = make_ts()
+    op = operationFactory()
+
+    ts_db = TimeSeriesIndex()
+    ts_db.fk_from_operation = op.id
+    ts_db.fill_from_has_traits(two_node_simple_sin_ts)
+
+    ts_h5_path = h5.path_for_stored_index(ts_db)
+    with TimeSeriesH5(ts_h5_path) as f:
+        f.store(two_node_simple_sin_ts)
+        f.sample_rate.store(two_node_simple_sin_ts.sample_rate)
+
+    session.add(ts_db)
+    session.commit()
+    return ts_db
 
 
 def test_fourier_analyser():
@@ -38,20 +86,9 @@ def test_fourier_analyser():
     assert numpy.abs(around_peak).sum() < 0.5 * 20
 
 
-
-def test_fourier_adapter(tmpdir, session):
-    loader = DirLoader(str(tmpdir))
+def test_fourier_adapter(tmpdir, session, operationFactory):
     # make file stored and indexed time series
-
-    two_node_simple_sin_ts = make_ts()
-
-    loader.store(two_node_simple_sin_ts)
-
-    ts_db = TimeSeriesIndex()
-    ts_db.fill_from_has_traits(two_node_simple_sin_ts)
-
-    session.add(ts_db)
-    session.commit()
+    ts_db = make_ts_from_op(session, operationFactory)
 
     # we have the required data to start the adapter
     # REVIEW THIS
@@ -68,27 +105,11 @@ def test_fourier_adapter(tmpdir, session):
 
     adapter = FourierAdapter()
     adapter.storage_path = str(tmpdir)
+    adapter.configure(ts_db, segment_length=400)
+    diskq = adapter.get_required_disk_size(ts_db, segment_length=400)
+    memq = adapter.get_required_memory_size(ts_db, segment_length=400)
+    spectra_idx = adapter.launch(ts_db, segment_length=400)
 
-    # todo: this is a very awkward api.
-    # Where will the DirLoader expect to find a time series with this gid
-    # We want to open the file ourselves and need to know where did the loader put it
-    ts_pth = loader.path_for(TimeSeriesH5, ts_db.gid)
-
-    with TimeSeriesH5(ts_pth) as ts_file:
-
-        adapter.configure(ts_file, segment_length=4000)
-
-        diskq = adapter.get_required_disk_size(ts_file, segment_length=4000)
-        memq = adapter.get_required_memory_size(ts_file, segment_length=4000)
-
-        spectra_file = adapter.launch(ts_file, segment_length=4000)
-
-        # REVIEW THIS
-        # the same dilemma that we faced for inputs we face for outputs
-        # Here the same choice was made.
-        # The adapter returns a FourierSpectrumH5 instance
-
-    with spectra_file:
-        assert spectra_file.array_data.shape == (2000, 1, 3, 1, 1)
-        assert spectra_file.source.load() == two_node_simple_sin_ts.gid
-        assert spectra_file.path.endswith(spectra_file.gid.load().hex + '.h5')
+    assert spectra_idx.source_gid == ts_db.gid
+    assert spectra_idx.gid is not None
+    assert spectra_idx.segment_length == 1.0  # only 1 sec of signal

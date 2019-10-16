@@ -26,6 +26,28 @@ and associated scientific modules can be used independently; please see
 the `tvb-library <https://github.com/the-virtual-brain/tvb-library>`__
 repo.
 
+Framework structure
+-------------
+tvb-gdist
+    |
+    |
+tvb-library     tvb-data
+      \          /
+        \       /
+        tvb.config
+            |
+            |
+        tvb.core
+            |
+            |
+        tvb.adapters
+            |
+            |
+        tvb.config.init
+            |
+            |
+        tvb.interfaces
+
 Usage
 -----
 

@@ -32,14 +32,15 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.brco.parser import XMLParser
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.file.datatypes.annotation_h5 import ConnectivityAnnotations
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.annotations import ConnectivityAnnotations
-
-from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
+from tvb.core.entities.model.datatypes.annotation import ConnectivityAnnotationsIndex
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
 
 
 class BRCOImporterForm(ABCUploaderForm):
@@ -61,32 +62,25 @@ class BRCOImporter(ABCUploader):
     _ui_subsection = "brco_importer"
     _ui_description = "Import connectivity annotations from BRCO Ontology"
 
-    form = None
+    def get_form_class(self):
+        return BRCOImporterForm
 
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return BRCOImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
-    #TODO: Following should be adjusted once annotations in tvb-library are migrated to neotraits
     def get_output(self):
-        return [ConnectivityAnnotations]
-
+        return [ConnectivityAnnotationsIndex]
 
     @transactional
     def launch(self, data_file, connectivity):
         try:
-            result = ConnectivityAnnotations(connectivity=connectivity, storage_path=self.storage_path)
-            parser = XMLParser(data_file, connectivity)
+            conn = h5.load_from_index(connectivity)
+
+            parser = XMLParser(data_file, conn.region_labels)
             annotations = parser.read_annotation_terms()
-            result.set_annotations(annotations)
+
+            result_ht = ConnectivityAnnotations()
+            result_ht.set_annotations(annotations)
+            result_ht.connectivity = conn
+
+            result = h5.store_complete(result_ht, self.storage_path)
             return result
         except Exception as excep:
             self.log.exception("Could not process Connectivity Annotations")

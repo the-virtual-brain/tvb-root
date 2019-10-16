@@ -42,7 +42,7 @@ from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
-from new_importer import FooDataImporter
+from .new_importer import FooDataImporter
 
 
 ## Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)

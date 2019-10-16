@@ -39,7 +39,7 @@ because they are too many to easily follow.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-
+from tvb.core.entities.storage.burst_dao import BurstDAO
 from tvb.core.entities.storage.session_maker import transactional, SA_SESSIONMAKER
 from tvb.core.entities.storage.project_dao import CaseDAO
 from tvb.core.entities.storage.datatype_dao import DatatypeDAO
@@ -47,7 +47,7 @@ from tvb.core.entities.storage.operation_dao import OperationDAO
 from tvb.core.entities.storage.workflow_dao import WorkflowDAO
 
 
-class DAO(DatatypeDAO, OperationDAO, CaseDAO, WorkflowDAO):
+class DAO(DatatypeDAO, OperationDAO, CaseDAO, BurstDAO, WorkflowDAO):
     """
     Empty class, build only for inheriting from all DAO classes.
     """

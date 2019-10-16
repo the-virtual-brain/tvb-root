@@ -5,7 +5,7 @@
 		<p>No visualizers configured for this tab.</p>
 	</py:if>
 			
-	<py:for each="i in xrange(len(portlet_tab_list))">
+	<py:for each="i in range(len(portlet_tab_list))">
 		<div class="portlet portlet-type-${portlet_tab_list[i].algorithm_identifier.lower()} portlet-${i}">
 			<h5>${portlet_tab_list[i].name}</h5>
 			<a href="#" title="Configure this view..." class="action action-edit" 

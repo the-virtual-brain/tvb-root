@@ -36,7 +36,7 @@ import json
 import pytest
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.core.entities.model import Dynamic
+from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
@@ -62,7 +62,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
         _, self.connectivity = DatatypesFactory().create_connectivity()
         new_params = {}
-        for key, val in SIMULATOR_PARAMETERS.iteritems():
+        for key, val in SIMULATOR_PARAMETERS.items():
             new_params[key] = {'value': val}
         new_params['connectivity'] = {'value': self.connectivity.gid}
         stored_burst.simulator_configuration = new_params

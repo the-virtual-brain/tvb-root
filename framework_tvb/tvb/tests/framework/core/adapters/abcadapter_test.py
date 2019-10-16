@@ -33,7 +33,7 @@
 
 import pytest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities import model
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.tests.framework.core.factory import TestFactory
@@ -108,7 +108,7 @@ class TestAdapterABC(TransactionalTestCase):
                         "monitors_parameters_option_EEG_mon_att2": "7.3",
                         "length": "23"}
     EXPECTED_FILTERED_SET3 = {"monitors": list, "monitors_parameters": dict,
-                              "length": int, "surface": model.DataType, 'surface_parameters': dict}
+                              "length": int, "surface": DataType, 'surface_parameters': dict}
 
     SUBMIT_DATASET_4 = {"surface": "",
                         "surface_parameters_option_456-GID-1_att1": "10",
@@ -144,7 +144,7 @@ class TestAdapterABC(TransactionalTestCase):
         """
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_1)
 
-        for expected_name, expected_type in self.EXPECTED_FILTERED_SET1.iteritems():
+        for expected_name, expected_type in self.EXPECTED_FILTERED_SET1.items():
             assert expected_name in kwargs
             assert isinstance(kwargs[expected_name], expected_type)
         assert len(self.EXPECTED_FILTERED_SET1) == len(kwargs)
@@ -165,14 +165,14 @@ class TestAdapterABC(TransactionalTestCase):
         Test for ABCAdapter.prepare_ui_inputs method when submitting DataType with sub-attributes.
         """
         parent_op = TestFactory.create_operation()
-        test_entity = dao.store_entity(model.DataType(operation_id=parent_op.id))
+        test_entity = dao.store_entity(DataType(operation_id=parent_op.id))
         dataset_3 = {}
-        for key, value in self.SUBMIT_DATASET_3.iteritems():
+        for key, value in self.SUBMIT_DATASET_3.items():
             dataset_3[key.replace("$GID$", test_entity.gid)] = value.replace("$GID$", test_entity.gid)
 
         kwargs = self.test_adapter.prepare_ui_inputs(dataset_3)
 
-        for expected_name, expected_type in self.EXPECTED_FILTERED_SET3.iteritems():
+        for expected_name, expected_type in self.EXPECTED_FILTERED_SET3.items():
             assert expected_name in kwargs
             assert isinstance(kwargs[expected_name], expected_type)
         assert len(self.EXPECTED_FILTERED_SET3) == len(kwargs)
@@ -187,7 +187,7 @@ class TestAdapterABC(TransactionalTestCase):
         """
         kwargs = self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_4)
 
-        for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.iteritems():
+        for expected_name, expected_type in self.EXPECTED_FILTERED_SET4.items():
             assert expected_name in kwargs
             assert isinstance(kwargs[expected_name], expected_type)
         assert len(self.EXPECTED_FILTERED_SET4) == len(kwargs)

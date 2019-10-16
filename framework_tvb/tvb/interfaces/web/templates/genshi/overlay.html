@@ -13,7 +13,7 @@
 	</hgroup>
 	
 	<ul class="view-switcher tabswitcher" py:if="overlay_tabs_horizontal">
-        <py:for each="idx in xrange(len(overlay_tabs_horizontal))">
+        <py:for each="idx in range(len(overlay_tabs_horizontal))">
         	<py:with vars="tab = overlay_tabs_horizontal[idx];
         	               li_class = tab.css_class if (tab.css_class is not None) else '';
         	               li_class = li_class if (tab.enabled) else li_class + ' disabled';
@@ -37,7 +37,7 @@
         <h4></h4>
 
         <ul>
-            <py:for each="idx in xrange(len(overlay_tabs_vertical))">
+            <py:for each="idx in range(len(overlay_tabs_vertical))">
                 <py:with vars="tab = overlay_tabs_vertical[idx];
                                li_class = tab.css_class if (tab.css_class is not None) else '';
                                li_class = li_class if (tab.enabled) else li_class + ' disabled';

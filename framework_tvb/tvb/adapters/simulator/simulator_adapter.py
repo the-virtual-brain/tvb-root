@@ -39,29 +39,25 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import json
-import os
-import uuid
-
 import numpy
-from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.core.entities.file.datatypes.simulation_state_h5 import SimulationStateH5
+from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.simulation_state import SimulationStateIndex
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits._forms import DataTypeSelectField, SimpleSelectField, FloatField, jinja_env
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField, jinja_env
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.interfaces.neocom._h5loader import DirLoader
-from tvb.interfaces.neocom.config import registry
+from tvb.core.neocom import h5
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, prefix='', project_id=None, is_copy=False):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                                 required=True, label="Connectivity",
@@ -73,6 +69,15 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling.template = 'select_field.jinja2'
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
+        self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
+        self.is_copy = is_copy
+
+    def fill_from_trait(self, trait):
+        # type: (Simulator) -> None
+        if hasattr(trait, 'connectivity'):
+            self.connectivity.data = trait.connectivity.gid.hex
+        self.coupling.data = trait.coupling.__class__
+        self.conduction_speed.data = trait.conduction_speed
 
     @staticmethod
     def get_input_name():
@@ -90,9 +95,10 @@ class SimulatorAdapterForm(ABCAdapterForm):
         return Simulator()
 
     def __str__(self):
-        #TODO: get rid of this
+        # TODO: get rid of this
         return jinja_env.get_template('wizzard_form.jinja2').render(form=self, action="/burst/set_connectivity",
-                                                            is_first_fragment=True, is_last_fragment=False)
+                                                                    is_first_fragment=True, is_last_fragment=False,
+                                                                    is_copy=self.is_copy, is_load=False)
 
 
 
@@ -103,46 +109,18 @@ class SimulatorAdapter(ABCAsynchronous):
     _ui_name = "Simulation Core"
 
     algorithm = None
+    branch_simulation_state_gid = None
 
     # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
     # We exclude from this for example EEG, MEG or Bold which return 
     HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]
 
-    form = None
-
-    def get_form(self):
-        if not self.form:
-            return SimulatorAdapterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
-
     def __init__(self):
         super(SimulatorAdapter, self).__init__()
         self.log.debug("%s: Initialized..." % str(self))
 
-    def get_input_tree2(self):
-        return None
-        # sim = Simulator()
-        # sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        # result = sim.interface_experimental
-        # return result
-
-    def get_input_tree(self):
-        """
-        Return a list of lists describing the interface to the simulator. This
-        is used by the GUI to generate the menus and fields necessary for
-        defining a simulation.
-        """
-        # sim = Simulator()
-        # sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        # result = sim.interface[self.INTERFACE_ATTRIBUTES]
-        # #We should add as hidden the Simulator State attribute.
-        # result.append({self.KEY_NAME: 'simulation_state',
-        #                self.KEY_TYPE: 'tvb.datatypes.simulation_state.SimulationState',
-        #                self.KEY_LABEL: "Continuation of", self.KEY_REQUIRED: False, self.KEY_UI_HIDE: True})
-        return None
+    def get_form_class(self):
+        return SimulatorAdapterForm
 
     def get_output(self):
         """
@@ -157,19 +135,21 @@ class SimulatorAdapter(ABCAsynchronous):
         self.log.debug("%s: Instantiating requested simulator..." % str(self))
 
         simulator_service = SimulatorService()
-        self.algorithm, connectivity_gid = simulator_service.deserialize_simulator(simulator_gid, self.storage_path)
+        self.algorithm, connectivity_gid, simulation_state_gid = simulator_service.deserialize_simulator(simulator_gid,
+                                                                                                         self.storage_path)
+        self.branch_simulation_state_gid = simulation_state_gid
+
+        # for monitor in self.algorithm.monitors:
+        #     if issubclass(monitor, Projection):
+        #         # TODO: add a service that loads a RM with Surface and Connectivity
+        #         pass
 
         connectivity_index = dao.get_datatype_by_gid(connectivity_gid.hex)
-        dir_loader = DirLoader(os.path.join(os.path.dirname(self.storage_path),
-                                            str(connectivity_index.fk_from_operation)))
-        connectivity_path = dir_loader.path_for(ConnectivityH5, connectivity_gid)
-        connectivity = Connectivity()
-        with ConnectivityH5(connectivity_path) as connectivity_h5:
-            connectivity_h5.load_into(connectivity)
+        connectivity = h5.load_from_index(connectivity_index)
 
+        connectivity.gid = connectivity_gid
         self.algorithm.connectivity = connectivity
         self.simulation_length = self.algorithm.simulation_length
-        print('Storage path is: %s' % self.storage_path)
         self.log.debug("%s: Initializing storage..." % str(self))
         try:
             self.algorithm.preconfigure()
@@ -227,7 +207,7 @@ class SimulatorAdapter(ABCAsynchronous):
         :return: None or instance of "mapping_class"
         """
 
-        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, '_connectivity')
+        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'connectivity_gid')
         if len(dts_list) < 1:
             return None
 
@@ -236,6 +216,21 @@ class SimulatorAdapter(ABCAsynchronous):
             if dt_operation.fk_launched_in == self.current_project_id:
                 return dt
         return dts_list[0]
+
+    def _try_load_region_mapping(self):
+        region_map = None
+        region_volume_map = None
+
+        region_map_index = self._try_find_mapping(RegionMappingIndex, self.algorithm.connectivity.gid.hex)
+        region_volume_map_index = self._try_find_mapping(RegionVolumeMappingIndex, self.algorithm.connectivity.gid.hex)
+
+        if region_map_index:
+            region_map = h5.load_from_index(region_map_index)
+
+        if region_volume_map_index:
+            region_volume_map = h5.load_from_index(region_volume_map_index)
+
+        return region_map, region_volume_map
 
     def launch(self, simulator_gid):
         """
@@ -251,28 +246,26 @@ class SimulatorAdapter(ABCAsynchronous):
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
 
         self.algorithm.configure(full_configure=False)
-        # TODO: handle SimulationState
-        # if simulation_state is not None:
-        #     simulation_state.fill_into(self.algorithm)
+        if self.branch_simulation_state_gid is not None:
+            simulation_state_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
+            self.branch_simulation_state_path = h5.path_for_stored_index(simulation_state_index)
 
-        # region_map = self._try_find_mapping(region_mapping.RegionMapping, connectivity.gid)
-        # region_volume_map = self._try_find_mapping(region_mapping.RegionVolumeMapping, connectivity.gid)
+            with SimulationStateH5(self.branch_simulation_state_path) as branch_simulation_state_h5:
+                branch_simulation_state_h5.load_into(self.algorithm)
 
-        dir_loader = DirLoader(self.storage_path)
+        region_map, region_volume_map = self._try_load_region_mapping()
 
         for monitor in self.algorithm.monitors:
             m_name = monitor.__class__.__name__
-            ts = monitor.create_time_series(self.algorithm.connectivity)
+            ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
+                                            region_volume_map)
             self.log.debug("Monitor created the TS")
             ts.start_time = start_time
 
-            ts_index = registry.get_index_for_datatype(type(ts))()
-            ts_index.time_series_type = type(ts).__name__
-            ts_index.sample_period_unit = ts.sample_period_unit
-            ts_index.sample_period = ts.sample_period
-            ts_index.labels_ordering = json.dumps(ts.labels_ordering)
+            ts_index_class = h5.REGISTRY.get_index_for_datatype(type(ts))
+            ts_index = ts_index_class()
+            ts_index.fill_from_has_traits(ts)
             ts_index.data_ndim = 4
-            ts_index.connectivity_id = 1
             ts_index.state = 'INTERMEDIATE'
 
             # state_variable_dimension_name = ts.labels_ordering[1]
@@ -282,21 +275,30 @@ class SimulatorAdapter(ABCAsynchronous):
             #     selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
             #     ts.labels_dimensions[state_variable_dimension_name] = selected_vois
 
-            result_indexes[m_name] = ts_index
-
-            ts_h5_class = registry.get_h5file_for_datatype(type(ts))
-            ts_h5_path = dir_loader.path_for(ts_h5_class, ts_index.gid)
+            ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
+            ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
-            ts_h5.gid.store(uuid.UUID(ts_index.gid))
+            ts_h5.sample_rate.store(ts.sample_rate)
+            ts_h5.nr_dimensions.store(ts_index.data_ndim)
+
+            if self.algorithm.surface:
+                ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
+                ts_h5.surface.store(self.algorithm.surface.gid)
+            else:
+                ts_index.connectivity_gid = self.algorithm.connectivity.gid.hex
+                ts_h5.connectivity.store(self.algorithm.connectivity.gid)
+                if region_map:
+                    ts_index.region_mapping_gid = region_map.gid.hex
+                    ts_h5.region_mapping.store(region_map.gid)
+                if region_volume_map:
+                    ts_index.region_mapping_volume_gid = region_volume_map.gid.hex
+                    ts_h5.region_mapping_volume.store(region_volume_map.gid)
+
+            result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5
 
-        #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
-        # if not self._is_group_launch():
-        #     simulation_state = SimulationState(storage_path=self.storage_path)
-        #     self._capture_operation_results([simulation_state])
-
-        ### Run simulation
+        # Run simulation
         self.log.debug("Starting simulation...")
         for result in self.algorithm(simulation_length=self.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
@@ -307,16 +309,22 @@ class SimulatorAdapter(ABCAsynchronous):
                     ts_h5.write_data_slice([result[j][1]])
 
         self.log.debug("Completed simulation, starting to store simulation state ")
-        ### Populate H5 file for simulator state. This step could also be done while running sim, in background.
-        # if not self._is_group_launch():
-        #     simulation_state.populate_from(self.algorithm)
-        #     self._capture_operation_results([simulation_state])
+        # Populate H5 file for simulator state. This step could also be done while running sim, in background.
+        if not self._is_group_launch():
+            simulation_state_index = SimulationStateIndex()
+            simulation_state_path = h5.path_for(self.storage_path, SimulationStateH5, self.algorithm.gid)
+            with SimulationStateH5(simulation_state_path) as simulation_state_h5:
+                simulation_state_h5.store(self.algorithm)
+            self._capture_operation_results([simulation_state_index])
 
         self.log.debug("Simulation state persisted, returning results ")
-        for result in result_h5.values():
-            result.close()
+        for monitor in self.algorithm.monitors:
+            m_name = monitor.__class__.__name__
+            ts_shape = result_h5[m_name].read_data_shape()
+            result_indexes[m_name].fill_shape(ts_shape)
+            result_h5[m_name].close()
         # self.log.info("%s: Adapter simulation finished!!" % str(self))
-        return result_indexes.values()
+        return list(result_indexes.values())
 
     def _validate_model_parameters(self, model_instance, connectivity, surface):
         """
@@ -357,4 +365,3 @@ class SimulatorAdapter(ABCAsynchronous):
         Is this a surface simulation?
         """
         return surface is not None and surface_parameters is not None
-

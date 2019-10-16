@@ -73,11 +73,8 @@ def _serialize_value(value):
     """
     if value is None:
         return ''
-    # Force unicode strings to simple strings.
-    if isinstance(value, unicode):
-        return str(value)
     # Transform boolean to string and prefix it
-    elif isinstance(value, bool):
+    if isinstance(value, bool):
         return BOOL_VALUE_PREFIX + str(value)
     # Transform date to string and append prefix
     elif isinstance(value, datetime):

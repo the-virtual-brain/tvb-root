@@ -69,9 +69,9 @@ class SurfaceStimulusContext():
         but we can't use update either since that would leave the collapsed dictionaries from a previosly
         loaded stimulus.
         """
-        previous_keys = self.equation_kwargs.keys()
+        previous_keys = list(self.equation_kwargs)
         for entry in previous_keys:
-            if entry not in new_eq_kwargs.keys() and entry not in ('focal_points_surface', 'focal_points_triangles'):
+            if entry not in list(new_eq_kwargs) and entry not in ('focal_points_surface', 'focal_points_triangles'):
                 del self.equation_kwargs[entry]
         for entry in new_eq_kwargs:
             self.equation_kwargs[entry] = new_eq_kwargs[entry]

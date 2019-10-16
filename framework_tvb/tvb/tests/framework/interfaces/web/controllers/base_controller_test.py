@@ -59,7 +59,7 @@ class BaseControllersTest(BaseTestCase):
         try:
             method(*args, **kwargs)
             raise AssertionError("Expected redirect to %s." % (page,))
-        except cherrypy.HTTPRedirect, redirect:
+        except cherrypy.HTTPRedirect as redirect:
             url = redirect.urls[0]
             assert url.endswith(page), "Should be redirect to %s not %s" % (page, url)
 

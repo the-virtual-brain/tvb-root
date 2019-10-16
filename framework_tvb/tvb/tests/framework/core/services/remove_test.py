@@ -36,7 +36,7 @@
 import numpy
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model import DataType, Project
+from tvb.core.entities.model.model_datatype import DataType, Project
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.flow_service import FlowService
@@ -44,8 +44,8 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.arrays import MappedArray
-from tvb.datatypes.mapped_values import ValueWrapper
+#from tvb.datatypes.arrays import MappedArray
+#from tvb.datatypes.mapped_values import ValueWrapper
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import Surface

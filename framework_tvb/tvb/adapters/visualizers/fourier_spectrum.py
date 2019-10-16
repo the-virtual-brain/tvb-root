@@ -36,12 +36,13 @@
 """
 import json
 import numpy
-from tvb.datatypes.spectral import FourierSpectrum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.model.datatypes.spectral import FourierSpectrumIndex
-from tvb.core.neotraits._forms import DataTypeSelectField
-from tvb.interfaces.neocom.config import registry
+from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neocom import h5
+from tvb.datatypes.spectral import FourierSpectrum
+from tvb.datatypes.time_series import TimeSeries
 
 
 class FourierSpectrumForm(ABCAdapterForm):
@@ -76,17 +77,9 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
     _ui_name = "Fourier Visualizer"
     _ui_subsection = "fourier"
-    form = None
 
-    def get_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return FourierSpectrumForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return FourierSpectrumForm
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -97,29 +90,26 @@ class FourierSpectrumDisplay(ABCDisplayer):
     def generate_preview(self, **kwargs):
         return self.launch(**kwargs)
 
-    def launch(self, **kwargs):
+    def launch(self, input_data, **kwargs):
         self.log.debug("Plot started...")
-        input_data = kwargs['input_data']
-
-        input_h5_class, input_h5_path = self._load_h5_of_gid(input_data.gid)
+        # these partial loads are dangerous for TS and FS instances, but efficient
         fourier_spectrum = FourierSpectrum()
-        with input_h5_class(input_h5_path) as input_h5:
+        with h5.h5_file_for_index(input_data) as input_h5:
             shape = list(input_h5.array_data.shape)
-            source_gid = input_h5.source.load().hex
             fourier_spectrum.segment_length = input_h5.segment_length.load()
             fourier_spectrum.windowing_function = input_h5.windowing_function.load()
 
-        source_h5_class, source_h5_path = self._load_h5_of_gid(source_gid)
-        with source_h5_class(source_h5_path) as source_h5:
-            state_list = source_h5.labels_dimensions.load().get(source_h5.labels_ordering.load()[1], [])
+        ts_index = self.load_entity_by_gid(input_data.source_gid)
+        state_list = ts_index.get_labels_for_dimension(1)
         if len(state_list) == 0:
-            state_list = range(shape[3])
+            state_list = list(range(shape[1]))
+        fourier_spectrum.source = TimeSeries(sample_period=ts_index.sample_period)
 
-        mode_list = range(shape[3])
+        mode_list = list(range(shape[3]))
         available_scales = ["Linear", "Logarithmic"]
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
-                      plotName=registry.get_datatype_for_h5file(source_h5_class).__name__,
+                      plotName=ts_index.title,
                       url_base=self.build_h5_url(input_data.gid, "get_fourier_data", parameter=""),
                       xAxisName="Frequency [kHz]",
                       yAxisName="Power",

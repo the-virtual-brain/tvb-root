@@ -33,26 +33,24 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION
-from tvb.core.neotraits._forms import UploadField, SimpleBoolField, SimpleSelectField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.core.neotraits.forms import UploadField, SimpleBoolField, SimpleSelectField
+from tvb.core.neocom import h5
 
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
-        surface_options = {'Specified in the file metadata': OPTION_READ_METADATA}
-        surface_options.update(ALL_SURFACES_SELECTION)
+        surface_types = ALL_SURFACES_SELECTION.copy()
+        surface_types['Specified in the file metadata'] = OPTION_READ_METADATA
 
-        self.file_type = SimpleSelectField(surface_options, self, name='file_type', required=True,
-                                           label='Specify file type : ')
+        self.file_type = SimpleSelectField(surface_types, self, name='file_type', required=True,
+                                           label='Specify file type : ', default=list(surface_types)[0])
         self.data_file = UploadField('.gii', self, name='data_file', required=True,
                                      label='Please select a .gii (LH if cortex)')
         self.data_file_part2 = UploadField('.gii', self, name='data_file_part2',
@@ -70,23 +68,11 @@ class GIFTISurfaceImporter(ABCUploader):
     _ui_subsection = "gifti_surface_importer"
     _ui_description = "Import a surface from GIFTI"
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return GIFTISurfaceImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return GIFTISurfaceImporterForm
 
     def get_output(self):
         return [SurfaceIndex]
-
 
     def launch(self, file_type, data_file, data_file_part2, should_center=False):
         """
@@ -101,15 +87,8 @@ class GIFTISurfaceImporter(ABCUploader):
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
-
-            surface_idx = SurfaceIndex()
-            surface_idx.fill_from_has_traits(surface)
-
-            loader = DirLoader(self.storage_path)
-            surface_h5_path = loader.path_for(SurfaceH5, surface_idx.gid)
-            with SurfaceH5(surface_h5_path) as surface_h5:
-                surface_h5.store(surface)
-
+            self.generic_attributes.user_tag_1 = surface.surface_type
+            surface_idx = h5.store_complete(surface, self.storage_path)
             return [surface_idx]
         except ParseException as excep:
             logger = get_logger(__name__)

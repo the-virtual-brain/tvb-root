@@ -33,17 +33,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import uuid
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
-from tvb.core.entities.model.datatypes.surface import SurfaceIndex
-from tvb.datatypes.surfaces import make_surface, center_vertices, ALL_SURFACES_SELECTION
-from tvb.core.neotraits._forms import UploadField, SimpleSelectField, SimpleBoolField
-from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import UploadField, SimpleSelectField, SimpleBoolField
+from tvb.datatypes.surfaces import make_surface, center_vertices
 
 
 class ZIPSurfaceImporterForm(ABCUploaderForm):
@@ -52,7 +50,7 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
         super(ZIPSurfaceImporterForm, self).__init__(prefix, project_id)
         self.uploaded = UploadField('application/zip', self, name='uploaded', required=True, label='Surface file (zip)')
         self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
-                                              label='Surface type')
+                                              label='Surface type', default=list(ALL_SURFACES_SELECTION)[0])
         self.zero_based_triangles = SimpleBoolField(self, name='zero_based_triangles', default=True,
                                                     label='Zero based triangles')
         self.should_center = SimpleBoolField(self, name='should_center',
@@ -70,23 +68,11 @@ class ZIPSurfaceImporter(ABCUploader):
     _ui_description = "Import a Surface from ZIP"
     logger = get_logger(__name__)
 
-    form = None
-
-    def get_input_tree(self): return None
-
-    def get_upload_input_tree(self): return None
-
-    def get_form(self):
-        if self.form is None:
-            return ZIPSurfaceImporterForm
-        return self.form
-
-    def set_form(self, form):
-        self.form = form
+    def get_form_class(self):
+        return ZIPSurfaceImporterForm
 
     def get_output(self):
         return [SurfaceIndex]
-
 
     @staticmethod
     def _make_surface(surface_type):
@@ -99,14 +85,13 @@ class ZIPSurfaceImporter(ABCUploader):
         exception_str = "Could not determine surface type (selected option %s)" % surface_type
         raise LaunchException(exception_str)
 
-
     def launch(self, uploaded, surface_type, zero_based_triangles=False, should_center=False):
         """
         Execute import operations: unpack ZIP and build Surface object as result.
 
         :param uploaded: an archive containing the Surface data to be imported
-        :param surface_type: a string from the following\: \
-                            "Skin Air", "Skull Skin", "Brain Skull", "Cortical Surface", "EEG Cap", "Face"
+        :param surface_type: a string from the following:
+        "Skin Air", "Skull Skin", "Brain Skull", "Cortical Surface", "EEG Cap", "Face"
 
         :returns: a subclass of `Surface` DataType
         :raises LaunchException: when
@@ -168,17 +153,9 @@ class ZIPSurfaceImporter(ABCUploader):
         if validation_result.warnings:
             self.add_operation_additional_info(validation_result.summary())
 
+        surface.configure()
         self.logger.debug("Surface ready to be stored")
 
-        surf_idx = SurfaceIndex()
-        surf_idx.fill_from_has_traits(surface)
-        surface.configure()
-
-        loader = DirLoader(self.storage_path)
-        surf_path = loader.path_for(SurfaceH5, surf_idx.gid)
-
-        with SurfaceH5(surf_path) as surf_h5:
-            surf_h5.store(surface)
-            surf_h5.gid.store(uuid.UUID(surf_idx.gid))
-
+        surf_idx = h5.store_complete(surface, self.storage_path)
+        self.generic_attributes.user_tag_1 = surface.surface_type
         return surf_idx

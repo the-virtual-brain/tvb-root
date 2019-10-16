@@ -38,10 +38,10 @@ import numpy
 import pytest
 from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.config import DISCRETE_PSE_ADAPTER_CLASS
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-from tvb.datatypes.arrays import MappedArray
-from tvb.basic.filters.chain import FilterChain
+#from tvb.datatypes.arrays import MappedArray
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -150,7 +150,7 @@ class TestFlowService(TransactionalTestCase):
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
         # Only the discreet is expected
         assert 1 == len(result)
-        assert DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
+        assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
 
 
     def test_get_launchable_algorithms(self):
