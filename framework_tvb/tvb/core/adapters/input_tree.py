@@ -38,7 +38,7 @@ import json
 import numpy
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.core import utils
 from tvb.core.adapters.exceptions import InvalidParameterException
