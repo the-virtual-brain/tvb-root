@@ -79,8 +79,9 @@ def test_simple_store_load(session, bazFactory):
 
     res = session.query(BazIndex)
     assert res.count() == 1
-    assert res[0].miu.dtype == 'float64'
+    assert res[0].miu.dtype_kind == 'f'
     assert res[0].scalar_str == 'tick'
+    assert res[0].miu.dtype_str == '<f8'
 
 
 def test_aggregate_store_load(session, fooFactory):
@@ -126,9 +127,9 @@ def test_store_load_inheritance(session, barFactory, bazFactory):
     res = session.query(BarIndex)
     assert res.count() == 1
     # own field
-    assert res[0].array_str.dtype == '|S32'
+    assert res[0].array_str.dtype_str == '|S32'
     # inherited field
-    assert res[0].array_float.dtype == 'float64'
+    assert res[0].array_float.dtype_str == '<f8'
     # relationsip in the parent class
     assert res[0].abaz.scalar_str == 'tick'
 
