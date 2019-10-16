@@ -32,18 +32,30 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
-
 import os
-from tvb.adapters.uploaders.abcuploader import ABCUploader
-from tvb.adapters.uploaders.nifti.parser import NIFTIParser
-from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.entities.storage import transactional
-from tvb.datatypes.connectivity import Connectivity
+import uuid
+
+import numpy
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.time_series import TimeSeriesVolume
 from tvb.datatypes.volumes import Volume
+
+from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.nifti.parser import NIFTIParser
+from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.exceptions import ParseException, LaunchException
+from tvb.core.entities.file.datatypes.region_mapping_h5 import RegionVolumeMappingH5
+from tvb.core.entities.file.datatypes.structural_h5 import StructuralMRIH5
+from tvb.core.entities.file.datatypes.time_series import TimeSeriesVolumeH5
+from tvb.core.entities.file.datatypes.volumes_h5 import VolumeH5
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.region_mapping import RegionVolumeMappingIndex
+from tvb.core.entities.model.datatypes.structural import StructuralMRIIndex
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesVolumeIndex
+from tvb.core.entities.model.datatypes.volume import VolumeIndex
+from tvb.core.entities.storage import transactional
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class NIFTIImporter(ABCUploader):
@@ -72,37 +84,52 @@ class NIFTIImporter(ABCUploader):
                                 'Connectivity [0..N-1] indices'},
 
                 {'name': 'connectivity', 'label': 'Connectivity',
-                 'type': Connectivity, 'required': False, 'datatype': True,
+                 'type': ConnectivityIndex, 'required': False, 'datatype': True,
                  'description': 'Optional Connectivity in case the NII file is a volume2regions mapping.'}]
 
-
     def get_output(self):
-        return [Volume, StructuralMRI, TimeSeriesVolume, RegionVolumeMapping]
-
+        return [VolumeIndex, StructuralMRIIndex, TimeSeriesVolumeIndex, RegionVolumeMappingIndex]
 
     def _create_volume(self):
-        volume = Volume(storage_path=self.storage_path)
-        volume.origin = [[0.0, 0.0, 0.0]]
-        volume.voxel_size = [self.parser.zooms[0], self.parser.zooms[1], self.parser.zooms[2]]
+        volume = Volume()
+        volume.origin = numpy.array([[0.0, 0.0, 0.0]])
+        volume.voxel_size = numpy.array([self.parser.zooms[0], self.parser.zooms[1], self.parser.zooms[2]])
         if self.parser.units is not None and len(self.parser.units) > 0:
             volume.voxel_unit = self.parser.units[0]
-        return volume
 
+        volume_idx = VolumeIndex()
+        volume_idx.fill_from_has_traits(volume)
+
+        volume_h5_path = self.loader.path_for(VolumeH5, volume_idx.gid)
+        with VolumeH5(volume_h5_path) as volume_h5:
+            volume_h5.store(volume)
+
+        return volume_idx
 
     def _create_mri(self, volume):
-        mri = StructuralMRI(storage_path=self.storage_path)
-        mri.volume = volume
+        mri = StructuralMRI()
         mri.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
         mri.dimensions_labels = ["X", "Y", "Z"]
         mri.weighting = "T1"
-        self.parser.parse(mri, False)
-        return mri
 
+        mri_idx = StructuralMRIIndex()
+        mri_idx.volume = volume
+
+        mri_h5_path = self.loader.path_for(StructuralMRIH5, mri_idx.gid)
+        nifti_data = self.parser.parse()
+
+        with StructuralMRIH5(mri_h5_path) as mri_h5:
+            mri_h5.weighting.store(mri.weighting)
+            mri_h5.write_data_slice(nifti_data)
+            mri_h5.volume.store(uuid.UUID(mri_idx.gid))
+
+        mri.array_data = mri_h5.array_data.load()  # TODO?
+        mri_idx.fill_from_has_traits(mri)
+        return mri_idx
 
     def _create_time_series(self, volume):
         # Now create TimeSeries and fill it with data from NIFTI image
-        time_series = TimeSeriesVolume(storage_path=self.storage_path)
-        time_series.volume = volume
+        time_series = TimeSeriesVolume()
         time_series.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
         time_series.labels_ordering = ["Time", "X", "Y", "Z"]
         time_series.start_time = 0.0
@@ -116,22 +143,42 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 1:
             time_series.sample_period_unit = self.parser.units[1]
 
-        self.parser.parse(time_series, True)
-        return time_series
+        ts_idx = TimeSeriesVolumeIndex()
+        ts_idx.volume = volume
 
+        ts_h5_path = self.loader.path_for(TimeSeriesVolumeH5, ts_idx.gid)
+        nifti_data = self.parser.parse()
+
+        with TimeSeriesVolumeH5(ts_h5_path) as ts_h5:
+            ts_h5.volume.store(uuid.UUID(ts_idx.gid))
+            ts_h5.store(time_series, scalars_only=True, store_references=False)
+            for i in range(self.parser.time_dim_size):
+                ts_h5.write_data_slice([nifti_data[:, :, :, i, ...]])
+
+        time_series.data = ts_h5.data.load()  # TODO?
+        ts_idx.fill_from_has_traits(time_series)
+        return ts_idx
 
     def _create_region_map(self, volume, connectivity, apply_corrections, mappings_file):
-        region2volume_mapping = RegionVolumeMapping(storage_path=self.storage_path)
-        region2volume_mapping.volume = volume
-        region2volume_mapping.connectivity = connectivity
+        region2volume_mapping = RegionVolumeMapping()
         region2volume_mapping.title = "NIFTI Import - " + os.path.split(self.data_file)[1]
         region2volume_mapping.dimensions_labels = ["X", "Y", "Z"]
-        region2volume_mapping.apply_corrections = apply_corrections
-        region2volume_mapping.mappings_file = mappings_file
 
-        self.parser.parse(region2volume_mapping, False)
-        return region2volume_mapping
+        rm_idx = RegionVolumeMappingIndex()
+        rm_idx.connectivity = connectivity
+        rm_idx.volume = volume
 
+        rm_h5_path = self.loader.path_for(RegionVolumeMappingH5, rm_idx.gid)
+        nifti_data = self.parser.parse()
+
+        with RegionVolumeMappingH5(rm_h5_path) as rm_h5:
+            rm_h5.write_data_slice(nifti_data, apply_corrections, mappings_file, connectivity.number_of_regions)
+            rm_h5.connectivity.store(uuid.UUID(connectivity.gid))
+            rm_h5.volume.store(uuid.UUID(volume.gid))
+
+        region2volume_mapping.array_data = rm_h5.array_data.load()  # TODO?
+        rm_idx.fill_from_has_traits(region2volume_mapping)
+        return rm_idx
 
     @transactional
     def launch(self, data_file, apply_corrections=False, mappings_file=None, connectivity=None):
@@ -142,6 +189,7 @@ class NIFTIImporter(ABCUploader):
 
         try:
             self.parser = NIFTIParser(data_file)
+            self.loader = DirLoader(self.storage_path)
 
             volume = self._create_volume()
 

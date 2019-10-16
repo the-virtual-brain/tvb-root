@@ -67,7 +67,8 @@ class NIFTIParser():
 
         # Check if there is a time dimensions (4th dimension).
         nifti_data_shape = nifti_image_hdr.get_data_shape()
-        self.has_time_dimension = len(nifti_data_shape) > 3
+        self.nr_dims = len(nifti_data_shape)
+        self.has_time_dimension = self.nr_dims > 3
         self.time_dim_size = nifti_data_shape[3] if self.has_time_dimension else 1
 
         # Extract sample unit measure
@@ -78,7 +79,7 @@ class NIFTIParser():
 
 
 
-    def parse(self, result_dt, keep_result_4d=True):
+    def parse(self):
         """
         Parse NIFTI file and write in result_dt a 4D or 3D array [time*, x, y, z].
         """
@@ -88,15 +89,4 @@ class NIFTIParser():
         # it as first dimension, so we have to adapt imported data
 
         nifti_data = self.nifti_image.get_data()
-
-        if self.has_time_dimension:
-            for i in range(self.time_dim_size):
-                result_dt.write_data_slice([nifti_data[:, :, :, i, ...]])
-        else:
-            if keep_result_4d:
-                result_dt.write_data_slice([nifti_data])
-            else:
-                result_dt.write_data_slice(nifti_data)
-
-        result_dt.close_file()  # Force closing HDF5 file
-
+        return nifti_data
