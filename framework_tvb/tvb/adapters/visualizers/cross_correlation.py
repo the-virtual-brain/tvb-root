@@ -72,6 +72,9 @@ class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin, ABCDisplayer):
             return CrossCorrelationVisualizerForm
         return self.form
 
+    def set_form(self, form):
+        self.form = form
+
     def get_input_tree(self): return None
 
 
