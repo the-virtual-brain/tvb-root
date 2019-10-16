@@ -100,7 +100,7 @@ class UserService:
             raise UsernameException("Passwords do not match!")
 
         try:
-            user_validated = (role == 'ADMINISTRATOR') or validated
+            user_validated = (role == ROLE_ADMINISTRATOR) or validated
             user = User(username, password, email, user_validated, role)
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
@@ -108,7 +108,7 @@ class UserService:
                          'user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
 
-            if role != 'ADMINISTRATOR' and email is not None:
+            if role != ROLE_ADMINISTRATOR and email is not None:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
@@ -120,7 +120,7 @@ class UserService:
 
             user = dao.store_entity(user)
 
-            if role == ROLE_ADMINISTRATOR and not skip_import:
+            if role == ROLE_ADMINISTRATOR:
                 to_upload = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
                 if not os.path.exists(to_upload):
                     self.logger.warning("Could not find DEFAULT PROJECT at path %s. You might want to import it "
