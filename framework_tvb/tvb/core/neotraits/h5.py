@@ -56,6 +56,31 @@ class Scalar(Accessor):
         return self.owner.storage_manager.get_metadata()[self.trait_attribute.field_name]
 
 
+class DataSetMetaData(object):
+    """
+    simple container for dataset metadata
+    Useful as a cache of global min max values.
+    Viewers rely on these for colorbars.
+    """
+    def __init__(self, min, max):
+        self.min, self.max = min, max
+
+    @classmethod
+    def from_array(cls, array):
+        try:
+            return cls(min=array.min(), max=array.max())
+        except TypeError:
+            # likely a string array
+            return cls(min=None, max=None)
+
+    @classmethod
+    def from_dict(cls, dikt):
+        return cls(min=dikt['min'], max=dikt['max'])
+
+    def to_dict(self):
+        return dict(self.__dict__)
+
+
 
 class DataSet(Accessor):
     """
@@ -79,25 +104,41 @@ class DataSet(Accessor):
             grow_dimension=self.expand_dimension,
             close_file=close_file
         )
+        # todo update the cached array min max metadata values
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
         data = self.trait_attribute._validate_set(None, data)
         if data is not None:
             self.owner.storage_manager.store_data(self.trait_attribute.field_name, data)
+            # cache some array information
+            self.owner.storage_manager.set_metadata(
+                DataSetMetaData.from_array(data).to_dict(),
+                self.trait_attribute.field_name
+            )
 
     def load(self):
         # type: () -> numpy.ndarray
         return self.owner.storage_manager.get_data(self.trait_attribute.field_name)
 
     def __getitem__(self, data_slice):
-        # type: (slice) -> numpy.ndarray
+        # type: (typing.Tuple[slice]) -> numpy.ndarray
         return self.owner.storage_manager.get_data(self.trait_attribute.field_name, data_slice)
 
     @property
     def shape(self):
-        # type: () -> int
+        # type: () -> typing.Tuple[int]
         return self.owner.storage_manager.get_data_shape(self.trait_attribute.field_name)
+
+    def get_cached_metadata(self):
+        """
+        Returns cached properties of this dataset, like min max mean etc.
+        This cache is useful for large, expanding datasets,
+        when we want to avoid loading the whole dataset just to compute a max.
+        """
+        meta = self.owner.storage_manager.get_metadata(self.trait_attribute.field_name)
+        return DataSetMetaData.from_dict(meta)
+
 
 
 class Reference(Scalar):

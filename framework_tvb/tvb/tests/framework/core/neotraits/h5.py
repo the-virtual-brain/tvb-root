@@ -35,7 +35,7 @@ def test_accessors_created_for_all_declarative_attributes(tmph5factory):
     assert set(BazDataType.declarative_attrs) <= set(f.__dict__)
 
 
-def test_simple_store_load(tmph5factory, bazFactory):
+def test_simple_store_load(tmph5factory):
     baz = BazDataType(miu=numpy.array([0.0, 1.0, 2.0]), scalar_str='topol')
     f = BazFile(tmph5factory())
     f.store(baz)
@@ -46,6 +46,18 @@ def test_simple_store_load(tmph5factory, bazFactory):
     f.load_into(ret)
     assert ret.scalar_str == 'topol'
     assert numpy.all(ret.miu == [0.0, 1.0, 2.0])
+
+
+def test_dataset_metadata(tmph5factory):
+    baz = BazDataType(miu=numpy.array([0.0, 1.0, 2.0]), scalar_str='topol')
+    path = tmph5factory()
+
+    with BazFile(path) as f:
+        f.store(baz)
+
+    with BazFile(path) as f:
+        assert f.miu.get_cached_metadata().max == 2.0
+
 
 
 def test_aggregate_store(tmph5factory, fooFactory):
