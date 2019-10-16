@@ -39,6 +39,7 @@ import numpy
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.entities.model.datatypes.graph import CorrelationCoefficientsIndex
 from tvb.core.neotraits._forms import DataTypeSelectField
 
@@ -79,29 +80,34 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
 
     def get_input_tree(self): return None
 
-    #TODO: migrate to neotraits
     def get_required_memory_size(self, datatype):
         """Return required memory."""
 
-        input_size = datatype.read_data_shape()
+        input_size = (datatype.data_length_1d, datatype.data_length_2d,
+                      datatype.data_length_3d, datatype.data_length_4d)
         return numpy.prod(input_size) * 8.0
 
     def launch(self, datatype):
         """Construct data for visualization and launch it."""
 
-        matrix_shape = datatype.array_data.shape[0:2]
-        parent_ts = datatype.source
-        parent_ts = self.load_entity_by_gid(parent_ts.gid)
-        labels = parent_ts.get_space_labels()
-        state_list = datatype.source.labels_dimensions.get(datatype.source.labels_ordering[1], [])
-        mode_list = range(datatype.source._length_4d)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(datatype.gid)
+        with datatype_h5_class(datatype_h5_path) as datatype_h5:
+            matrix_shape = datatype_h5.array_data.shape[0:2]
+            ts_gid = datatype_h5.source.load()
+        ts_index = self.load_entity_by_gid(ts_gid.hex)
+
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(ts_index.gid)
+        with ts_h5_class(ts_h5_path) as ts_h5:
+            labels = ts_h5.get_space_labels()
+        state_list = ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], [])
+        mode_list = range(ts_index.data_length_4d)
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps([labels, labels]),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Cross Corelation Matrix plot',
-                    url_base=MappedArrayVisualizer.paths2url(datatype, "get_correlation_data", parameter=""),
-                    state_variable=state_list[0],
+                    url_base=URLGenerator.build_h5_url(datatype.gid, 'get_correlation_data', parameter=''),
+                    state_variable= state_list[0],
                     mode=mode_list[0],
                     state_list=state_list,
                     mode_list=mode_list,
