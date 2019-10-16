@@ -29,6 +29,7 @@
 #
 
 import pytest
+import os.path
 
 
 def pytest_addoption(parser):
@@ -39,3 +40,12 @@ def pytest_addoption(parser):
 @pytest.fixture
 def profile(request):
     return request.config.getoption("--profile")
+
+@pytest.fixture
+def tmph5factory(tmpdir):
+    def build(pth='tmp.h5'):
+        path = os.path.join(str(tmpdir), pth)
+        if os.path.exists(path):
+            os.remove(path)
+        return path
+    return build

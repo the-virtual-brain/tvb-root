@@ -39,16 +39,6 @@ def barFactory():
     return build
 
 
-@pytest.fixture
-def tmph5factory(tmpdir):
-    def build(pth='tmp.h5'):
-        path = os.path.join(str(tmpdir), pth)
-        if os.path.exists(path):
-            os.remove(path)
-        return path
-    return build
-
-
 @pytest.fixture(scope='session')
 def engine(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp('tmp')

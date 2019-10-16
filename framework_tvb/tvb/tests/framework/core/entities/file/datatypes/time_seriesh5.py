@@ -1,5 +1,5 @@
 import numpy
-from tvb.core.entities.file.datatypes.time_series import TimeSeriesFile
+from tvb.core.entities.file.datatypes.time_series import TimeSeriesH5
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -33,7 +33,7 @@ def test_streaming_writes(tmph5factory):
     # t.configure will fail for new files, it wants to read the data shape!
     path = tmph5factory()
 
-    with TimeSeriesFile(path) as f:
+    with TimeSeriesH5(path) as f:
         # when doing a partial write we still should populate the fields that we can
         # we aim to have the file in the right format even after a chunk write
         # This is similar to super.store but for specific scalars
@@ -52,13 +52,13 @@ def test_streaming_reads(tmph5factory):
     t = make_harmonic_ts()
     path = tmph5factory()
 
-    with TimeSeriesFile(path) as f:
+    with TimeSeriesH5(path) as f:
         time = numpy.linspace(0, 33, ntime)
         data = harmonic_chunk(time)
         f.store(t, scalars_only=True)
         f.write_data_slice(data)
 
-    with TimeSeriesFile(path) as f:
+    with TimeSeriesH5(path) as f:
         data = f.read_data_slice((slice(0, 33), slice(None), 0))
         expected = numpy.zeros((33, nsv))
         expected[:, 1] = 1.0   # the cos(0) part

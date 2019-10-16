@@ -2,25 +2,27 @@ import json
 import numpy
 
 from tvb.core.neotraits.h5 import H5File, Scalar, DataSet, Reference, Json
-from tvb.datatypes.time_series import TimeSeries
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesSurface, TimeSeriesVolume, prepare_time_slice
+from tvb.basic.arguments_serialisation import preprocess_time_parameters, preprocess_space_parameters, postprocess_voxel_ts
 
 
-class TimeSeriesFile(H5File):
+class TimeSeriesH5(H5File):
     def __init__(self, path):
-        super(TimeSeriesFile, self).__init__(path)
-        self.title = Scalar(TimeSeries.title, self)
-        self.data = DataSet(TimeSeries.data, self, expand_dimension=0)
-        self.nr_dimensions = Scalar(TimeSeries.nr_dimensions, self)
+        super(TimeSeriesH5, self).__init__(path)
+        self.title = Scalar(TimeSeries.title)
+        self.data = DataSet(TimeSeries.data, expand_dimension=0)
+        self.nr_dimensions = Scalar(TimeSeries.nr_dimensions)
 
         # omitted length_nd , these are indexing props, to be removed from datatype too
-        self.labels_ordering = Json(TimeSeries.labels_ordering, self)
-        self.labels_dimensions = Json(TimeSeries.labels_dimensions, self)
+        self.labels_ordering = Json(TimeSeries.labels_ordering)
+        self.labels_dimensions = Json(TimeSeries.labels_dimensions)
 
-        self.time = DataSet(TimeSeries.time, self, expand_dimension=0)
-        self.start_time = Scalar(TimeSeries.start_time, self)
-        self.sample_period = Scalar(TimeSeries.sample_period, self)
-        self.sample_period_unit = Scalar(TimeSeries.sample_period_unit, self)
-        self.sample_rate = Scalar(TimeSeries.sample_rate, self)
+        self.time = DataSet(TimeSeries.time, expand_dimension=0)
+        self.start_time = Scalar(TimeSeries.start_time)
+        self.sample_period = Scalar(TimeSeries.sample_period)
+        self.sample_period_unit = Scalar(TimeSeries.sample_period_unit)
+        self.sample_rate = Scalar(TimeSeries.sample_rate)
+        self._end_accessor_declarations()
 
         # omitted has_surface_mapping, has_volume_mapping, indexing props, to be removed fro datatype too
 
@@ -32,6 +34,12 @@ class TimeSeriesFile(H5File):
             self._sample_period = self.sample_period.load()
             self._start_time = self.start_time.load()
 
+
+    # experimental port of some of the data access apis from the datatype
+    # NOTE: some methods can not be here as they load data from dependent data types
+    #       or they assume that dependent data has been loaded
+    #       Those belong to a higher level where dependent h5 files are handles and
+    #       partially loaded datatypes are filled
 
 
     def read_data_slice(self, data_slice):
@@ -153,3 +161,80 @@ class TimeSeriesFile(H5File):
         metadata = self.data.get_cached_metadata()
         return metadata.min, metadata.max
 
+
+
+class TimeSeriesRegionH5(TimeSeriesH5):
+    def __init__(self, path):
+        super(TimeSeriesRegionH5, self).__init__(path)
+        self.connectivity = Reference(TimeSeriesRegion.connectivity)
+        self.region_mapping_volume = Reference(TimeSeriesRegion.region_mapping_volume)
+        self.region_mapping = Reference(TimeSeriesRegion.region_mapping)
+        self.labels_ordering = Json(TimeSeriesRegion.labels_ordering)
+        self._end_accessor_declarations()
+
+
+class TimeSeriesSurfaceH5(TimeSeriesH5):
+    def __init__(self, path):
+        super(TimeSeriesSurfaceH5, self).__init__(path)
+        self.surface = Reference(TimeSeriesSurface.surface)
+        self.labels_ordering = Json(TimeSeriesSurface.labels_ordering)
+        self._end_accessor_declarations()
+
+
+class TimeSeriesVolumeH5(TimeSeriesH5):
+    def __init__(self, path):
+        super(TimeSeriesVolumeH5, self).__init__(path)
+        self.volume = Reference(TimeSeriesVolume.volume)
+        self.labels_ordering = Json(TimeSeriesVolume.labels_ordering)
+        self._end_accessor_declarations()
+
+
+    def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, **kwargs):
+        """
+        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
+
+        :param from_idx: int This will be the limit on the first dimension (time)
+        :param to_idx: int Also limit on the first Dimension (time)
+        :param x_plane: int coordinate
+        :param y_plane: int coordinate
+        :param z_plane: int coordinate
+
+        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
+        """
+
+        overall_shape = self.data.shape
+        from_idx, to_idx, time = preprocess_time_parameters(from_idx, to_idx, overall_shape[0])
+        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane,
+                                                                overall_shape[1], overall_shape[2], overall_shape[3])
+
+        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(overall_shape[2]), slice(z_plane, z_plane + 1)
+        slicex = self.read_data_slice(slices)[:, :, :, 0].tolist()
+
+        slices = slice(from_idx, to_idx), slice(x_plane, x_plane + 1), slice(overall_shape[2]), slice(overall_shape[3])
+        slicey = self.read_data_slice(slices)[:, 0, :, :][..., ::-1].tolist()
+
+        slices = slice(from_idx, to_idx), slice(overall_shape[1]), slice(y_plane, y_plane + 1), slice(overall_shape[3])
+        slicez = self.read_data_slice(slices)[:, :, 0, :][..., ::-1].tolist()
+
+        return [slicex, slicey, slicez]
+
+
+    def get_voxel_time_series(self, x, y, z, **kwargs):
+        """
+        Retrieve for a given voxel (x,y,z) the entire timeline.
+
+        :param x: int coordinate
+        :param y: int coordinate
+        :param z: int coordinate
+
+        :return: A complex dictionary with information about current voxel.
+                The main part will be a vector with all the values over time from the x,y,z coordinates.
+        """
+
+        overall_shape = self.data.shape
+        x, y, z = preprocess_space_parameters(x, y, z, overall_shape[1], overall_shape[2], overall_shape[3])
+
+        slices = prepare_time_slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
+
+        result = postprocess_voxel_ts(self, slices)
+        return result

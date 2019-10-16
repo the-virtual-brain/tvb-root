@@ -1,7 +1,6 @@
 import numpy
 import tvb
 from tvb.core.entities.file.datatypes.local_connectivity_h5 import LocalConnectivityH5
-from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.simulation_state import SimulationState
 from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.volumes import Volume
@@ -9,7 +8,7 @@ from tvb.core.entities.file.datatypes.projections_h5 import ProjectionMatrixH5
 from tvb.core.entities.file.datatypes.simulation_state_h5 import SimulationStateH5
 from tvb.core.entities.file.datatypes.structural_h5 import StructuralMRIH5
 from tvb.core.entities.file.datatypes.volumes_h5 import VolumeH5
-from .datatypes import connectivity, surface, region_mapping, sensors, volume, projection_matrix, local_connectivity
+from tvb.tests.framework.core.entities.file.datatypes.datatypes import connectivity, surface, region_mapping, sensors, volume, projection_matrix, local_connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
