@@ -2,8 +2,10 @@ import json
 
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
-from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesSurface, TimeSeriesVolume
+from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesSurface, TimeSeriesVolume, TimeSeriesEEG, \
+    TimeSeriesMEG, TimeSeriesSEEG
 
+from tvb.core.entities.model.datatypes.sensors import SensorsIndex
 from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.model.datatypes.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.core.entities.model.datatypes.surface import SurfaceIndex
@@ -19,12 +21,39 @@ class TimeSeriesIndex(HasTraitsIndex):
     # length = Column(Float)
     labels_ordering = Column(String, nullable=False)
 
+    nr_dimensions = Column(Integer)
+    length_1d = Column(Integer)
+    length_2d = Column(Integer)
+    length_3d = Column(Integer)
+    length_4d = Column(Integer)
+
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
         self.title = datatype.title
         self.sample_period_unit = datatype.sample_period_unit
         self.sample_period = datatype.sample_period
         self.labels_ordering = json.dumps(datatype.labels_ordering)
+
+
+class TimeSeriesEEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesEEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
+
+
+class TimeSeriesMEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesMEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
+
+
+class TimeSeriesSEEGIndex(TimeSeriesIndex):
+    id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
+
+    sensors_id = Column(Integer, ForeignKey(SensorsIndex.id), nullable=not TimeSeriesSEEG.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=sensors_id)
 
 
 class TimeSeriesRegionIndex(TimeSeriesIndex):
@@ -35,7 +64,7 @@ class TimeSeriesRegionIndex(TimeSeriesIndex):
     connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id)
 
     region_mapping_volume_id = Column(Integer, ForeignKey(RegionVolumeMappingIndex.id),
-                                      nullable=TimeSeriesRegion.region_mapping_volume.required)
+                                      nullable=not TimeSeriesRegion.region_mapping_volume.required)
     region_mapping_volume = relationship(RegionVolumeMappingIndex, foreign_keys=region_mapping_volume_id)
 
     region_mapping_id = Column(Integer, ForeignKey(RegionMappingIndex.id),
