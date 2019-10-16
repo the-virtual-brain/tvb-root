@@ -47,7 +47,7 @@ from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Lin
     StoredPSEFilter
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
 from tvb.core.entities.storage.root_dao import RootDAO
-from tvb.core.neotraits.db import Base
+from tvb.core.neotraits.db import Base, NArrayIndex
 
 
 class DatatypeDAO(RootDAO):
@@ -483,6 +483,48 @@ class DatatypeDAO(RootDAO):
             return result[0]
         return None
 
+    # TODO: nicer way to retrieve datatypes
+    def get_values_of_time_series(self, project_id, datatype_class, filters=None, page_size=50):
+        result = []
+        count = 0
+
+        if not issubclass(datatype_class, Base):
+            self.logger.warning("Trying to filter not DB class:" + str(datatype_class))
+            return result, count
+
+        try:
+            # Prepare generic query:
+            query = self.session.query(datatype_class.id,
+                                       func.max(datatype_class.type),
+                                       func.max(datatype_class.gid),
+                                       func.max(datatype_class.subject),
+                                       func.max(Operation.completion_date),
+                                       func.max(Operation.user_group),
+                                       func.max(text('"OPERATION_GROUPS_1".name')),
+                                       func.max(DataType.user_tag_1),
+                                       NArrayIndex.ndim,
+                                       ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                                       ).outerjoin(Links
+                                       ).outerjoin((OperationGroup,
+                                                    Operation.fk_operation_group == OperationGroup.id), aliased=True
+                                       ).join(NArrayIndex, datatype_class.data_id == NArrayIndex.id
+                                       ).filter(DataType.invalid == False
+                                       ).filter(or_(Operation.fk_launched_in == project_id,
+                                                    Links.fk_to_project == project_id))
+            if filters:
+                filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_class')
+                if filter_str is not None:
+                    query = query.filter(eval(filter_str))
+
+            # Retrieve the results
+            query = query.group_by(datatype_class.id).order_by(desc(datatype_class.id))
+
+            result = query.limit(max(page_size, 0)).all()
+            count = query.count()
+        except Exception as excep:
+            self.logger.exception(excep)
+
+        return result, count
 
     def get_values_of_datatype(self, project_id, datatype_class, filters=None, page_size=50):
         """
