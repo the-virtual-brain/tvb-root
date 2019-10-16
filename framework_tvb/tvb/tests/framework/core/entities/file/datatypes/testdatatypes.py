@@ -22,6 +22,7 @@ connectivity = Connectivity(
     number_of_regions=2,
     number_of_connections=4,
     # parent_connectivity=""
+    saved_selection=["a", "b", "C"]
 )
 
 surface = Surface(

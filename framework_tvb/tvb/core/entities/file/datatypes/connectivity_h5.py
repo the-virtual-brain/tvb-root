@@ -1,3 +1,4 @@
+from tvb.core.neotraits._h5accessors import Json
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar
 from tvb.datatypes.connectivity import Connectivity
 
@@ -17,3 +18,4 @@ class ConnectivityH5(H5File):
         self.number_of_regions = Scalar(Connectivity.number_of_regions, self)
         self.number_of_connections = Scalar(Connectivity.number_of_connections, self)
         self.parent_connectivity = Scalar(Connectivity.parent_connectivity, self)
+        self.saved_selection = Json(Connectivity.saved_selection, self)
