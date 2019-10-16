@@ -16,11 +16,11 @@ class RegionMappingIndex(DataType):
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
 
     surface_id = Column(Integer, ForeignKey("SurfaceIndex.id"), nullable=not RegionMapping.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_id, primaryjoin=SurfaceIndex.id == surface_id)
+    surface = relationship(SurfaceIndex, foreign_keys=surface_id, primaryjoin=SurfaceIndex.id == surface_id, cascade='none')
 
     connectivity_id = Column(Integer, ForeignKey("ConnectivityIndex.id"),
                              nullable=not RegionMapping.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id, primaryjoin=ConnectivityIndex.id == connectivity_id)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id, primaryjoin=ConnectivityIndex.id == connectivity_id, cascade='none')
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
