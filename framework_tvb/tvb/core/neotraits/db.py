@@ -1,3 +1,4 @@
+import numpy
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy import String, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -49,6 +50,11 @@ class HasTraitsIndex(Base):
         super(HasTraitsIndex, self).__init__()
         self.type_ = type(self).__name__
 
+    def __repr__(self):
+        cls = type(self)
+        return '<{}.{} gid="{}..." id="{}">'.format(
+            cls.__module__, cls.__name__, self.gid[:4], self.id
+        )
 
 
 class NArrayIndex(Base):
@@ -59,8 +65,12 @@ class NArrayIndex(Base):
     ndim = Column(Integer, nullable=False)
     shape = Column(Text, nullable=False)
     dim_names = Column(Text)
-    minvalue = Column(Float)
-    maxvalue = Column(Float)
+    has_nan = Column(Boolean, nullable=False, default=False)
+    # some statistics, null if they make no sense for the dtype
+    min_value = Column(Float)
+    max_value = Column(Float)
+    median_value = Column(Float)
+
     # unrolled shape for easy querying
     length_1d = Column(Integer)
     length_2d = Column(Integer)
@@ -69,18 +79,24 @@ class NArrayIndex(Base):
 
     @classmethod
     def from_ndarray(cls, array):
-        try:
+        if array.dtype.kind in 'iufc' and array.size != 0:
+            # we compute these simple statistics for integer unsigned float or complex
+            # arrays that are not empty
+            has_nan = numpy.isnan(array).any()
             minvalue, maxvalue = array.min(), array.max()
-        except (TypeError, ValueError):
-            # dtype is string or other non comparable type
-            minvalue, maxvalue = None, None
+            median = numpy.median(array)
+        else:
+            has_nan = False
+            minvalue, maxvalue, median = None, None, None
 
         self = cls(
             dtype=str(array.dtype),
             ndim=array.ndim,
             shape=str(array.shape),
-            minvalue=minvalue,
-            maxvalue=maxvalue
+            has_nan=has_nan,
+            min_value=minvalue,
+            max_value=maxvalue,
+            median_value=median
         )
 
         for i, l in enumerate(array.shape):
@@ -90,3 +106,8 @@ class NArrayIndex(Base):
 
         return self
 
+    def __repr__(self):
+        cls = type(self)
+        return '<{}.{} id="{}" dtype="{}", shape="{}">'.format(
+            cls.__module__, cls.__name__, self.id, self.dtype, self.shape
+        )
