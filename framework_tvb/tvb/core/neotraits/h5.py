@@ -167,26 +167,3 @@ class H5File(object):
                 setattr(datatype,
                         accessor.trait_attribute.field_name,
                         accessor.load())
-
-
-    def _auto_generate_accessor(self, attr):
-        # type: (Attr) -> None
-        """
-        Takes a trait attribute and generates an accessor for it.
-        The accessors are set on self. The attribute names are the same as the traited attribute names
-        """
-        if not isinstance(attr, Attr):
-            raise ValueError('expected a Attr, got a {}'.format(type(attr)))
-
-        if isinstance(attr, NArray):
-            dataset = DataSet(attr, self)
-            setattr(self, attr.field_name, dataset)
-        elif issubclass(attr.field_type, HasTraits):
-            ref = Reference(attr, self)
-            setattr(self, attr.field_name, ref)
-        else:
-            if is_scalar_type(attr.field_type):
-                scalar = Scalar(attr, self)
-                setattr(self, attr.field_name, scalar)
-            else:
-                raise NotImplementedError("don't know how to map attribute to h5 {}".format(attr))
