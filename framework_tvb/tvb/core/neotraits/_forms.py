@@ -120,8 +120,8 @@ class SimpleSelectField(Field):
     template = 'radio_field.jinja2'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc=''):
-        super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc)
+    def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None):
+        super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc, default)
         self.choices = choices
 
     def options(self):
