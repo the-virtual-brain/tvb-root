@@ -95,7 +95,7 @@ class TestSQLiteProfile(WebSettingsProfile):
     DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB_TEST'))
 
     SVN_VERSION = 1
-    CODE_CHECKED_TO_VERSION = sys.maxint
+    CODE_CHECKED_TO_VERSION = sys.maxsize
     TRADE_CRASH_SAFETY_FOR_SPEED = True
 
 
