@@ -46,7 +46,7 @@
 
             <py:if test="number_of_visible_points &lt; page_size and page_size - number_of_visible_points &gt; 49">
                 <select id='page-size-select' onchange="AG_rePaginate($(this).val());" autocomplete="off">
-                    <py:for each="value in range(number_of_visible_points, page_size - 1, (page_size - number_of_visible_points) / 10)">
+                    <py:for each="value in range(number_of_visible_points, page_size - 1, (page_size - number_of_visible_points) // 10)">
                         <option value="${value}">${value} </option>
                     </py:for>
                 </select>
