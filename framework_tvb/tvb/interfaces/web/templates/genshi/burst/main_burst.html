@@ -25,49 +25,8 @@
 	
 	<!--! Configure Simulation -->
 	<section id="section-simulator-main" class="edit-simulator view-column col-2 is-created">
-		<hgroup>
-			<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
-		 
-			<input type="text" id="input-burst-name-id" name="burstName" value="${burstConfig.name if burstConfig.name else ''}"
-                   title="Simulation name" onkeypress="user_edited_title=true;"/>
-		</hgroup>
-		
-		<!--! <a id="button-continue-burst" href="#" onclick="launchNewBurst('continue'); alert('Not yet implemented!')" style="display: none;"
-			title="Continue burst" class="column-control-prev action action-big-continue">Continue</a> -->
-			
-		<a id="button-branch-burst" href="#" onclick="launchNewBurst('branch');" style="display: none;"
-			title="Create a new simulation with current state as initial conditions" class="column-control action action-big-branch">Branch</a>
-			
-		<a id="button-launch-new-burst" href="#" onclick="launchNewBurst('new');" 
-			title="Launch simulation(s) using the current parameters" class="column-control action action-big-launch">Launch</a>
-		
-		<ul class="toolbar-inline">
-			<li>
-				<a href="#" title="Configure simulator visible parameters" class="action action-edit"
-                   onclick="configureSimulator(this);" id="configure-simulator-button">Configure Interface</a>
-			</li>
-			<li>
-				<a href="#" title="Set up model parameters for region-based simulations" class="action action-analyze"
-                   onclick="configureModelParamsOnRegions();" id="configRegionModelParam">Set up region Model</a>
-			</li>
-			<li>
-				<a href="#" title="Configure noise for region-based simulations" class="action action-analyze"
-                   onclick="configureNoiseParameters();" id="configNoiseValues">Configure noise</a>
-			</li>
-			<li>
-				<a href="#" title="Set up model parameters for surface-based simulations" class="action action-analyze"
-                   onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam" style="display:none;">Set up surface model</a>
-			</li>
-			<li>
-				<a href="#" title="Uncheck all parameters" class="action action-toggle action-all-off"
-                   onclick="toggleSimulatorParametersChecks(false);" id="button-uncheck-all-params" style="display:none;">Uncheck All</a>
-			</li>
-			<li>
-				<a href="#" title="Check all parameters to appear visible" class="action action-toggle action-all-on"
-                   onclick="toggleSimulatorParametersChecks(true);" id="button-check-all-params" style="display:none;">Check All</a>
-			</li>
-		</ul>
-		
+		<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
+
 		<div id="div-simulator-parameters">
 			<py:if test="burstConfig.id is None">
 				<xi:include href="../flow/genericAdapterFormFields.html"/>

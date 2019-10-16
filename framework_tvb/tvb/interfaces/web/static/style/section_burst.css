@@ -660,7 +660,7 @@ ul#portlets-toolbar li a.hideable.action {
 /* scroll the burst parameters keep the header fixed at top*/
 #div-simulator-parameters {
     position: absolute;
-    top: 90px;
+    top: 50px;
     bottom: 0;
     left: 0;
     right: 0;
