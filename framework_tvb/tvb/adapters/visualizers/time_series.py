@@ -35,11 +35,39 @@ A Javascript displayer for time series, using SVG.
 
 """
 
+import os
 import json
-import tvb.datatypes.time_series as tsdata
 from tvb.basic.filters.chain import FilterChain
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.core.neotraits._forms import DataTypeSelectField
+from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.interfaces.neocom.config import registry
 
+
+class TimeSeriesForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(TimeSeriesForm, self).__init__(prefix, project_id, False)
+
+        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
+                                          label="Time series to be displayed in a 2D form.",
+                                          conditions=self.get_filters())
+
+    @staticmethod
+    def get_required_datatype():
+        return TimeSeriesIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_time_series'
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.time_series_type'],
+                           operations=["!="],
+                           values=["TimeSeriesVolume"])
 
 
 class TimeSeries(ABCDisplayer):
@@ -48,19 +76,17 @@ class TimeSeries(ABCDisplayer):
 
     MAX_PREVIEW_DATA_LENGTH = 200
 
+    form = None
 
-    def get_input_tree(self):
-        """
-        Inform caller of the data we need as input.
-        """
-        return [{"name": "time_series",
-                 "type": tsdata.TimeSeries,
-                 "label": "Time series to be displayed in a 2D form.",
-                 "required": True,
-                 "conditions": FilterChain(fields=[FilterChain.datatype + '.type'],
-                                           operations=["!="], values=["TimeSeriesVolume"])
-                 }]
+    def get_input_tree(self): return None
 
+    def get_form(self):
+        if self.form is None:
+            return TimeSeriesForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_required_memory_size(self, **kwargs):
         """Return required memory."""
@@ -69,16 +95,19 @@ class TimeSeries(ABCDisplayer):
 
     def launch(self, time_series, preview=False, figsize=None):
         """Construct data for visualization and launch it."""
+        dir_loader = DirLoader(os.path.join(os.path.dirname(self.storage_path), str(time_series.fk_from_operation)))
+        time_series_h5_class = registry.get_h5file_for_index(type(time_series))
+        time_series_path = dir_loader.path_for(time_series_h5_class, time_series.gid)
 
-        ts = time_series.get_data('time')
-        shape = list(time_series.read_data_shape())
+        h5_file = time_series_h5_class(time_series_path)
+        shape = list(h5_file.read_data_shape())
+        ts = h5_file.storage_manager.get_data('time')
+        state_variables = h5_file.labels_dimensions.load().get(time_series.labels_ordering[1], [])
+        labels = self.get_space_labels(h5_file)
 
         ## Assume that the first dimension is the time since that is the case so far
         if preview and shape[0] > self.MAX_PREVIEW_DATA_LENGTH:
             shape[0] = self.MAX_PREVIEW_DATA_LENGTH
-
-        state_variables = time_series.labels_dimensions.get(time_series.labels_ordering[1], [])
-        labels = time_series.get_space_labels()
 
         # when surface-result, the labels will be empty, so fill some of them,
         # but not all, otherwise the viewer will take ages to load.
@@ -86,14 +115,15 @@ class TimeSeries(ABCDisplayer):
             for n in range(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
                 labels.append("Node-" + str(n))
 
-        pars = {'baseURL': ABCDisplayer.VISUALIZERS_URL_PREFIX + time_series.gid,
+        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series.gid),
                 'labels': labels, 'labels_json': json.dumps(labels),
                 'ts_title': time_series.title, 'preview': preview, 'figsize': figsize,
                 'shape': repr(shape), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
                 'labelsStateVar': state_variables, 'labelsModes': range(shape[3])
                 }
-        pars.update(self.build_template_params_for_subselectable_datatype(time_series))
+        pars.update(self.build_template_params_for_subselectable_datatype(h5_file))
+        h5_file.close()
 
         return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))
 

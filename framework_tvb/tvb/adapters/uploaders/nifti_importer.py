@@ -160,6 +160,7 @@ class NIFTIImporter(ABCUploader):
             time_series.sample_period_unit = self.parser.units[1]
 
         ts_idx = TimeSeriesVolumeIndex()
+        ts_idx.time_series_type = type(time_series).__name__
         ts_idx.volume = volume
         ts_idx.has_volume_mapping = True
 
