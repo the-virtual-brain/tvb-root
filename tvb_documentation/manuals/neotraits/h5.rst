@@ -67,9 +67,15 @@ Each defined Accessor will store it's corresponding DataType attribute.
     >>> vol_h5 = VolumeH5('vol.h5')
     >>> rm_h5.store(vol)
 
+Independent Accessors
+---------------------
+
 You can create a new Attr when creating the Accessor.
 This allows you to define h5 formats that do not map one to one with a DataType,
 or even create formats that have no corresponding DataType.
+
+These are independent Accessors. They require a name argument. They are ignored
+by H5File.store and H5File.load_into as they are not connected to a datatype.
 
 .. code-block:: python
 

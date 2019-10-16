@@ -65,7 +65,7 @@ Attributes have attribute-specific parameters. Here is a more complex example.
 
     class Foo(HasTraits):
         food = Attr(str, choices=('fish', 'chicken'), required=False)
-        eye = NArray(dtype=int, ndim=2, default=numpy.eye(4))
+        eye = NArray(dtype=int, default=numpy.eye(4))
         boat = Float(
             default=42.42,
             label='boaty mcboatface',
@@ -230,6 +230,95 @@ The second reference to a cached property will return the cached value.
             return numpy.eye(1001)
 
 
+Attribute options
+-----------------
+
+All attributes can have a default value. This value is a class attribute and is
+shared by all instances. For mutable data this might lead to surprising behaviour.
+In that case you can use a factory function as a default.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        a = Attr(field_type=dict, default=lambda: {'factory': 'default'})
+
+By default attributes are required. Reading an uninitialized one will fail
+
+.. code-block:: python
+
+    class A(HasTraits):
+        a = Attr(str)
+        b = Attr(str, default='hello')
+        c = Attr(str, required=False)
+
+    >>> ainst = A()
+    >>> ainst.a
+    TraitAttributeError: required attribute referenced before assignment. Use a default or assign a value before reading it
+  attribute __main__.A.a = Attr(field_type=<type 'str'>, default=None, required=True)
+
+If a default is present then you get that
+
+.. code-block:: python
+
+    >>> ainst.b
+    'hello'
+
+An attribute may be declared as not required.
+When you read an optional attribute with no default you get None.
+
+.. code-block:: python
+
+    >>> ainst.c is None
+    True
+
+
+Numpy arrays and dimensions
+---------------------------
+
+Narray attributes can declare a symbolic shape.
+Note that when attributes are declared no instance is yet created.
+So you cannot declare a concrete shape.
+
+We define the shape by referring to other attributes defined in the same class.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        n_nodes = Dim(doc='number of nodes')
+        n_sv = Dim()
+        w = NArray(shape=(n_nodes, n_nodes))
+
+These Dim's have to be initialized once when an instance is created.
+Accessing arrays before the dimensions have been initialized is an error.
+
+.. code-block:: python
+
+    # dims are ordinary attributes, you can initialize them in init
+    >>> ainst = A(n_sv=2)
+    # w references the undefined n_nodes
+    >>> ainst.w = numpy.eye(2)
+    tvb.basic.neotraits.ex.TraitAttributeError: Narray's shape references undefined dimension <n_nodes>. Set it before accessing this array
+      attribute __main__.A.w = NArray(label='', dtype=float64, default=None, dim_names=(), ndim=2, required=True)
+
+Once the dimensions have been set on an instance they enforce the shapes of the
+arrays that use them.
+
+.. code-block:: python
+
+    >>> ainst.n_nodes = 42
+    >>> ainst.w = numpy.eye(2)
+    tvb.basic.neotraits.ex.TraitValueError: Shape mismatch. Expected (42, 42). Given (2L, 2L). Not broadcasting
+
+We don't allow arithmetic with symbolic dimensions.
+
+.. code-block:: python
+
+    class A(HasTraits):
+        n_nodes = Dim(doc='number of nodes')
+        flat_w = NArray(shape=(n_nodes * n_nodes, ))
+
+    TypeError: unsupported operand type(s) for *: 'Dim' and 'Dim'
+
 Validation
 ----------
 
@@ -238,14 +327,14 @@ For example the type of an Attr is enforced.
 
 But you might need to do per instance specific validation.
 
-Let's say that for the class below, we want to enforce that the shape of the
-weights is (n_nodes, n_nodes), once n_nodes has been set.
+Let's say that for the class below, we want to enforce that ``labels[::-1] == reversed_labels``
+
 
 .. code-block:: python
 
     class A(HasTraits):
-        n_nodes = Int()
-        weights = NArray(ndim=2)
+        labels = NArray(dtype='S64')
+        reversed_labels = NArray(dtype='S64')
 
 We can override the `validate` method and do the checks in it.
 Validate is not automatically called, but users of the DataType are encouraged to
@@ -254,47 +343,49 @@ call it once they are done with populating the instance.
 .. code-block:: python
 
     class A(HasTraits):
-        n_nodes = Int()
-        weights = NArray(ndim=2)
+        labels = NArray(dtype='S64')
+        reversed_labels = NArray(dtype='S64')
 
         def validate(self):
-            super(A, self).validate(self)
-            if self.weights.shape != (self.n_nodes, self.n_nodes):
-                raise TraitValueError
+            super(A, self).validate()
+            if (self.labels[::-1] != self.reversed_labels).any():
+                raise ValueError
 
-    >>> a = A(n_nodes=4)
-    >>> a.weights = numpy.eye(13)
+    >>> a = A()
+    >>> a.labels = numpy.array(['a', 'b'])
+    >>> a.reversed_labels = numpy.array(['a', 'b'])
     >>> a.validate()
-    TraitValueError
+    ValueError
 
 
 This late optional validation might not be a good fit.
-If you want an error as soon as you assign a badly shaped array then you
-can promote weights from a declarative attribute to a declarative property.
+If you want an error as soon as you assign a bad array then you
+can promote reversed_labels from a declarative attribute to a declarative property.
 
 .. code-block:: python
 
     class A(HasTraits):
-        n_node = Int()
+        labels = NArray(dtype='S64')
 
         def __init__(self, **kwargs):
             super(A, self).__init__(**kwargs)
-            self._weights = None
+            self._reversed = None
 
-        @trait_property(NArray(ndim=2))
-        def weights(self):
-            return self._weights
+        @trait_property(NArray(dtype='S64'))
+        def reversed_labels(self):
+            return self._reversed
 
-        @weights.setter
-        def weights(self, val):
-            if val.shape != (self.n_node, self.n_node):
-                raise TraitValueError
-            self._weights = val
+        @reversed_labels.setter
+        def reversed_labels(self, value):
+            if (value[::-1] != self.labels).any():
+                raise ValueError
+            self._reversed = value
 
-    >>> a = A(n_node=4)
-    >>> a.weights = numpy.eye(4)
-    >>> a.weights = numpy.eye(13)
-    TraitValueError
+        >>> a = A()
+        >>> a.labels = numpy.array(['a', 'b'])
+        >>> a.reversed_labels = numpy.array(['a', 'b'])
+        >>> a.validate()
+        ValueError
 
 
 .. _neotrait_attr_ref:
@@ -308,7 +399,10 @@ Attribute reference
 .. autoclass:: tvb.basic.neotraits.api.NArray
     :members: __init__
 
-.. autoclass:: tvb.basic.neotraits.api.Const
+.. autoclass:: tvb.basic.neotraits.api.Final
+    :members: __init__
+
+.. autoclass:: tvb.basic.neotraits.api.Dim
     :members: __init__
 
 .. autoclass:: tvb.basic.neotraits.api.Int
