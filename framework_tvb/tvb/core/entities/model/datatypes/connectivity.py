@@ -34,7 +34,6 @@ class ConnectivityIndex(DataType):
     tract_lengths_connections = relationship(NArrayIndex, foreign_keys=tract_lengths_connections_id, primaryjoin=NArrayIndex.id == tract_lengths_connections_id)
 
     def fill_from_has_traits(self, datatype):
-        self.gid = datatype.gid.hex
         self.number_of_regions = datatype.number_of_regions
         self.number_of_connections = datatype.number_of_connections
         self.undirected = datatype.undirected

@@ -73,6 +73,7 @@ class ABCDisplayer(ABCSynchronous):
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
+        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
 
         return self.launch(**kwargs), 0
 
@@ -142,11 +143,11 @@ class ABCDisplayer(ABCSynchronous):
 
 
     @staticmethod
-    def paths2url(datatype_entity, attribute_name, flatten=False, parameter=None):
+    def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
         """
         Prepare a File System Path for passing into an URL.
         """
-        url = ABCDisplayer.VISUALIZERS_URL_PREFIX + datatype_entity.gid + '/' + attribute_name + '/' + str(flatten)
+        url = ABCDisplayer.VISUALIZERS_URL_PREFIX + datatype_gid + '/' + attribute_name + '/' + str(flatten)
 
         if parameter is not None:
             url += "?" + str(parameter)
@@ -154,12 +155,12 @@ class ABCDisplayer(ABCSynchronous):
 
 
     @staticmethod
-    def build_template_params_for_subselectable_datatype(sub_selectable):
+    def build_template_params_for_subselectable_datatype(sub_selectable, gid):
         """
         creates a template dict with the initial selection to be
         displayed in a time series viewer
         """
-        return {'measurePointsSelectionGID': sub_selectable.get_measure_points_selection_gid(),
+        return {'measurePointsSelectionGID': gid,
                 'initialSelection': sub_selectable.get_default_selection(),
                 'groupedLabels': sub_selectable.get_grouped_space_labels()}
 
