@@ -115,19 +115,24 @@ examples.
 .. _Compare Integrators: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
 .. _Display Source Sensor Geometry: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
+.. _Exploring Epileptor 2D: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
 .. _Exploring Longer Time Series: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
+.. _Exploring Resting State in Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
 .. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
+.. _Exploring the Epileptor 3D: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_epileptor_codim_3_model.ipynb
 .. _Exporing A Surface Mesh: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
 .. _Generate TimeSeries for import in Web GUI: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
 .. _Interacting With The Framework: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
 .. _Interacting With The Framework and Allen: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
 .. _Simulate for Mouse: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_for_mouse.ipynb
+.. _Applying multiple Stimuli: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/multiple_stimuli.ipynb
 .. _Simulate Bold Continuation: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_bold_continuation.ipynb
 .. _Simulate Reduced Wong Wang: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_reduced_wong_wang.ipynb
 .. _Simulate Region Bold Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_bold_stimulus.ipynb
 .. _Simulate Region Jansen Rit: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_jansen_rit.ipynb
 .. _Simulate Region Stimulus: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_region_stimulus.ipynb
+.. _Simulate SEEG for Epileptor with Observation Noise: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_seeg_from_epileptors_with_observation_noise.ipynb
 .. _Simulate Surface Seeg Eeg Meg: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
 .. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
 
@@ -258,6 +263,48 @@ examples.
       :target: `Using Your Own Connectivity`_
 
       `Using Your Own Connectivity`_
+
+
+.. figure:: figures/stimuli.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Applying multiple Stimuli`_
+
+      `Applying multiple Stimuli`_
+
+
+.. figure:: figures/epileptic_signal.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Exploring Epileptor 2D`_
+
+      `Exploring Epileptor 2D`_
+
+
+.. figure:: figures/epileptic_signal.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Exploring Resting State in Epilepsy`_
+
+      `Exploring Resting State in Epilepsy`_
+
+
+.. figure:: figures/epileptic_signal.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Exploring the Epileptor 3D`_
+
+      `Exploring the Epileptor 3D`_
+
+
+.. figure:: figures/epileptic_signal.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Simulate SEEG for Epileptor with Observation Noise`_
+
+      `Simulate SEEG for Epileptor with Observation Noise`_
+
+
 
 Interact with TVB Framework
 ---------------------------
