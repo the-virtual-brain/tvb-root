@@ -32,12 +32,25 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.uploaders.brco.parser import XMLParser
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
-from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.annotations import ConnectivityAnnotations
+
+from tvb.core.neotraits._forms import UploadField, DataTypeSelectField
+
+
+class BRCOImporterForm(ABCUploaderForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(BRCOImporterForm, self).__init__(prefix, project_id)
+
+        self.data_file = UploadField('.xml', self, name='data_file', required=True, label='Connectivity Annotations')
+        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', required=True,
+                                                label='Target Large Scale Connectivity',
+                                                doc='The Connectivity for which these annotations were made')
 
 
 class BRCOImporter(ABCUploader):
@@ -48,20 +61,21 @@ class BRCOImporter(ABCUploader):
     _ui_subsection = "brco_importer"
     _ui_description = "Import connectivity annotations from BRCO Ontology"
 
+    form = None
 
-    def get_upload_input_tree(self):
-        """
-        Take as input a mat file
-        """
-        return [{'name': 'data_file', 'type': 'upload', 'required_type': '.xml',
-                 'label': 'Connectivity Annotations', 'required': True},
+    def get_input_tree(self): return None
 
-                {'name': 'connectivity', 'label': 'Target Large Scale Connectivity',
-                 'type': Connectivity, 'required': True, 'datatype': True,
-                 'description': 'The Connectivity for which these annotations were made'},
-                ]
+    def get_upload_input_tree(self): return None
 
+    def get_form(self):
+        if self.form is None:
+            return BRCOImporterForm
+        return self.form
 
+    def set_form(self, form):
+        self.form = form
+
+    #TODO: Following should be adjusted once annotations in tvb-library are migrated to neotraits
     def get_output(self):
         return [ConnectivityAnnotations]
 
