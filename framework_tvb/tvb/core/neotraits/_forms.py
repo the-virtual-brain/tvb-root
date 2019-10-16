@@ -88,14 +88,15 @@ class DataTypeSelectField(TraitField):
     template = 'datatype_select_field.jinja2'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, datatype_index, form, name=None, disabled=False):
+    def __init__(self, trait_attribute, datatype_index, form, name=None, disabled=False, conditions=None):
         super(DataTypeSelectField, self).__init__(trait_attribute, form, name, disabled)
         self.datatype_index = datatype_index
+        self.conditions = conditions
 
     def _get_values_from_db(self):
         filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
                                                                self.datatype_index,
-                                                               self.owner.get_filters())
+                                                               self.conditions)
         return filtered_datatypes
 
     def options(self):
@@ -123,7 +124,7 @@ class DataTypeSelectField(TraitField):
             )
 
     def get_dt_from_db(self):
-        return dao.get_time_series_by_gid(self.data)
+        return dao.get_datatype_by_gid(self.data)
 
     def _prepare_display_name(self, value):
         """
@@ -158,6 +159,10 @@ class TimeSeriesSelectField(DataTypeSelectField):
                                                            self.datatype_index,
                                                            self.owner.get_filters())
         return filtered_ts
+
+    def get_dt_from_db(self):
+        return dao.get_time_series_by_gid(self.data)
+
 
 class StrField(TraitField):
     template = 'str_field.jinja2'
@@ -203,6 +208,7 @@ class FloatField(TraitField):
 
     def _from_post(self):
         super(FloatField, self)._from_post()
+        # TODO: Throws exception if attr is optional and has no value
         self.data = float(self.unvalidated_data)
 
 

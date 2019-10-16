@@ -81,25 +81,6 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
     def get_traited_datatype(self):
         return fft.FFT()
 
-    def _get_original_field_name(self, field):
-        return field.name[len(self.prefix) + 1:]
-
-    def get_dict(self):
-        attrs_dict = {}
-        for field in self.fields:
-            attrs_dict.update({field.name: field.data})
-        return attrs_dict
-
-    def get_form_values(self):
-        attrs_dict = {}
-        for field in self.fields:
-            field_name = self._get_original_field_name(field)
-            if isinstance(field, TimeSeriesSelectField):
-                field_data = field.get_dt_from_db()
-            else:
-                field_data = field.data
-            attrs_dict.update({field_name: field_data})
-        return attrs_dict
 
 class FourierAdapter(abcadapter.ABCAsynchronous):
     """ TVB adapter for calling the FFT algorithm. """
