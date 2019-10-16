@@ -36,7 +36,7 @@ Entities to be used with an overlay on Operation or DataType, are defined here.
 import numpy
 import six
 from tvb.basic.config.utils import EnhancedDictionary
-from tvb.core.entities import model
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.utils import date2string
 
 
@@ -281,7 +281,7 @@ class DataTypeOverlayDetails(CommonDetails):
             self.burst_name = ''
 
         ### Populate Group attributes
-        if isinstance(datatype_result, model.DataTypeGroup):
+        if isinstance(datatype_result, DataTypeGroup):
             self.count = datatype_result.count_results
             self.operation_group_name = datatype_result.parent_operation.operation_group.name
             self.operation_label = datatype_result.parent_operation.operation_group.name

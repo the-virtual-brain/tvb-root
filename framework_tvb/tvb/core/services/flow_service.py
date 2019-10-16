@@ -40,11 +40,10 @@ from inspect import getmro
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities import model
 from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.model import AlgorithmTransientGroup
+from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection
+from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -146,7 +145,7 @@ class FlowService:
         For a list of dataType IDs and a project id create all the required links.
         """
         for data in data_ids:
-            link = model.Links(data, project_id)
+            link = Links(data, project_id)
             dao.store_entity(link)
 
 
@@ -157,9 +156,9 @@ class FlowService:
         """
         link = dao.get_link(dt_id, project_id)
         if link is not None:
-            dao.remove_entity(model.Links, link.id)
+            dao.remove_entity(Links, link.id)
     
-        
+
     def fire_operation(self, adapter_instance, current_user, project_id, visible=True, **data):
         """
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
@@ -238,7 +237,7 @@ class FlowService:
         categories = dao.get_launchable_categories()
         datatype_instance, filtered_adapters = self._get_launchable_algorithms(datatype_gid, categories)
 
-        if isinstance(datatype_instance, model.DataTypeGroup):
+        if isinstance(datatype_instance, DataTypeGroup):
             # If part of a group, update also with specific analyzers of the child datatype
             dt_group = dao.get_datatype_group_by_gid(datatype_gid)
             datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
@@ -261,6 +260,8 @@ class FlowService:
         data_class = datatype_instance.__class__
         all_compatible_classes = [data_class.__name__]
         for one_class in getmro(data_class):
+            from tvb.basic.traits.types_mapped import MappedType
+
             if issubclass(one_class, MappedType) and one_class.__name__ not in all_compatible_classes:
                 all_compatible_classes.append(one_class.__name__)
 
@@ -328,7 +329,7 @@ class FlowService:
             select_entity = select_entities[0]
             select_entity.selected_nodes = selected_nodes
         else:
-            select_entity = model.MeasurePointsSelection(ui_name, selected_nodes, datatype_gid, project_id)
+            select_entity = MeasurePointsSelection(ui_name, selected_nodes, datatype_gid, project_id)
 
         dao.store_entity(select_entity)
 
@@ -356,6 +357,6 @@ class FlowService:
             select_entity.threshold_value = threshold_value
             select_entity.applied_on = applied_on  # this is the type, as in applied on size or color
         else:
-            select_entity = model.StoredPSEFilter(ui_name, datatype_group_gid, threshold_value, applied_on)
+            select_entity = StoredPSEFilter(ui_name, datatype_group_gid, threshold_value, applied_on)
 
         dao.store_entity(select_entity)

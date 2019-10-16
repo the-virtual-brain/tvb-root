@@ -45,9 +45,13 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.config import ADAPTERS
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities import model
+
+from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import ResultFigure, Operation
+from tvb.core.entities.model.model_project import Project
+from tvb.core.entities.model.model_workflow import Workflow, WorkflowStep, WorkflowStepView
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
+from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration
 from tvb.core.services.exceptions import ProjectImportException
 from tvb.core.services.flow_service import FlowService
@@ -177,7 +181,7 @@ class ImportService(object):
 
         for old_burst_id in bursts_dict:
             burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
-            burst_entity = model.BurstConfiguration(project_entity.id)
+            burst_entity = BurstConfiguration(project_entity.id)
             burst_entity.from_dict(burst_information.data)
             burst_entity = dao.store_entity(burst_entity)
             burst_ids_mapping[int(old_burst_id)] = burst_entity.id
@@ -238,7 +242,7 @@ class ImportService(object):
             workflows_info = bursts_dict[burst_id].get_workflows()
             for one_wf_info in workflows_info:
                 # Use the new burst id when creating the workflow
-                workflow_entity = model.Workflow(project.id, burst_ids_mapping[int(burst_id)])
+                workflow_entity = Workflow(project.id, burst_ids_mapping[int(burst_id)])
                 workflow_entity.from_dict(one_wf_info.data)
                 workflow_entity = dao.store_entity(workflow_entity)
                 wf_steps_info = one_wf_info.get_workflow_steps()
@@ -270,7 +274,7 @@ class ImportService(object):
                         if entry.index() == position:
                             view_steps.remove(entry)
                     continue
-                wf_step_entity = model.WorkflowStep(algorithm.id)
+                wf_step_entity = WorkflowStep(algorithm.id)
                 wf_step_entity.from_dict(wf_step.data)
                 wf_step_entity.fk_workflow = workflow.id
                 wf_step_entity.fk_operation = wf_step.get_operation_id()
@@ -284,7 +288,7 @@ class ImportService(object):
                 algorithm = view_step.get_algorithm()
                 if algorithm is None:
                     continue
-                view_step_entity = model.WorkflowStepView(algorithm.id)
+                view_step_entity = WorkflowStepView(algorithm.id)
                 view_step_entity.from_dict(view_step.data)
                 view_step_entity.fk_workflow = workflow.id
                 view_step_entity.fk_portlet = view_step.get_portlet().id
@@ -441,7 +445,7 @@ class ImportService(object):
         figure_dict['fk_op_id'] = op.id if op is not None else None
         figure_dict['fk_user_id'] = self.user_id
         figure_dict['fk_project_id'] = project_id
-        figure_entity = manager_of_class(model.ResultFigure).new_instance()
+        figure_entity = manager_of_class(ResultFigure).new_instance()
         figure_entity = figure_entity.from_dict(figure_dict)
         stored_entity = dao.store_entity(figure_entity)
 
@@ -513,7 +517,7 @@ class ImportService(object):
         self.logger.debug("Creating project from path: %s" % project_path)
         project_dict = self.files_helper.read_project_metadata(project_path)
 
-        project_entity = manager_of_class(model.Project).new_instance()
+        project_entity = manager_of_class(Project).new_instance()
         project_entity = project_entity.from_dict(project_dict, self.user_id)
 
         try:
@@ -531,7 +535,7 @@ class ImportService(object):
         Create Operation entity from metadata file.
         """
         operation_dict = XMLReader(operation_file).read_metadata()
-        operation_entity = manager_of_class(model.Operation).new_instance()
+        operation_entity = manager_of_class(Operation).new_instance()
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 
 
@@ -550,7 +554,7 @@ class ImportService(object):
             except SQLAlchemyError:
                 # If no dataType group present for current op. group, create it.
                 operation_group = dao.get_operationgroup_by_id(operation_group_id)
-                datatype_group = model.DataTypeGroup(operation_group, operation_id=operation_entity.id)
+                datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
                 datatype_group.state = ADAPTERS['Upload']['defaultdatastate']
                 datatype_group = dao.store_entity(datatype_group)
 
@@ -568,13 +572,13 @@ class ImportService(object):
         """
 
         burst_information = BurstInformation.load_from_dict(json_burst)
-        burst_entity = model.BurstConfiguration(project_id)
+        burst_entity = BurstConfiguration(project_id)
         burst_entity.from_dict(burst_information.data)
         burst_entity.prepare_after_load()
         burst_entity.reset_tabs()
 
         workflow_info = burst_information.get_workflows()[0]
-        workflow_entity = model.Workflow(project_id, None)
+        workflow_entity = Workflow(project_id, None)
         workflow_entity.from_dict(workflow_info.data)
 
         view_steps = workflow_info.get_view_steps()
@@ -584,7 +588,7 @@ class ImportService(object):
             try:
                 algorithm = view_step.get_algorithm()
                 portlet = view_step.get_portlet()
-                view_step_entity = model.WorkflowStepView(algorithm.id, portlet_id=portlet.id)
+                view_step_entity = WorkflowStepView(algorithm.id, portlet_id=portlet.id)
                 view_step_entity.from_dict(view_step.data)
                 view_step_entity.workflow = workflow_entity
 
@@ -595,7 +599,7 @@ class ImportService(object):
                             or an_step.data["index_in_tab"] != view_step_entity.index_in_tab):
                         continue
                     algorithm = an_step.get_algorithm()
-                    wf_step_entity = model.WorkflowStep(algorithm.id)
+                    wf_step_entity = WorkflowStep(algorithm.id)
                     wf_step_entity.from_dict(an_step.data)
                     wf_step_entity.workflow = workflow_entity
                     analyzers.append(wf_step_entity)

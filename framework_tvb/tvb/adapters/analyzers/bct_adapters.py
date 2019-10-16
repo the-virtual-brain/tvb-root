@@ -34,7 +34,7 @@ from tvb.adapters.analyzers.matlab_worker import MatlabWorker
 from tvb.basic.filters.chain import FilterChain
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAsynchronous
-from tvb.core.entities.model import AlgorithmTransientGroup
+from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.utils import extract_matlab_doc_string
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure

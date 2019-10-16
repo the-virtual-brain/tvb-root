@@ -48,15 +48,15 @@ from tvb.basic.traits.core import FILE_STORAGE_NONE, KWARG_STORAGE_PATH, FILE_ST
 from tvb.basic.traits.exceptions import ValidationException, MissingEntityException, StorageException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.traits.core import compute_table_name
-from tvb.core.entities import model
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.exceptions import MissingDataSetException
 
 
-class MappedType(model.DataType, mapped.MappedTypeLight):
+class MappedType(DataType, mapped.MappedTypeLight):
     """
     Mix-in class combining core Traited mechanics with the db'ed DataType class enabling SQLAlchemy.
     """

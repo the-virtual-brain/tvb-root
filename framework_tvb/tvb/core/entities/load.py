@@ -36,7 +36,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.storage import dao
-from tvb.core.traits.types_mapped import MappedType
 
 LOGGER = get_logger(__name__)
 
@@ -58,6 +57,8 @@ def load_entity_by_gid(data_gid):
     Load a generic DataType, specified by GID.
     """
     datatype = dao.get_datatype_by_gid(data_gid)
+    from tvb.core.traits.types_mapped import MappedType
+
     if isinstance(datatype, MappedType):
         datatype_path = datatype.get_storage_file_path()
         files_update_manager = FilesUpdateManager()

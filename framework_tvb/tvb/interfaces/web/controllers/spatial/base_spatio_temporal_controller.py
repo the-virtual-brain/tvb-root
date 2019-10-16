@@ -39,7 +39,7 @@ from copy import deepcopy
 from tvb.basic.traits import traited_interface
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model import PARAM_SURFACE
+from tvb.core.entities.model.model_burst import PARAM_SURFACE
 
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common

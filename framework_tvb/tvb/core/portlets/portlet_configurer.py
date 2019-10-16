@@ -34,7 +34,7 @@
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities.model import WorkflowStep, WorkflowStepView
+from tvb.core.entities.model.model_workflow import WorkflowStep, WorkflowStepView
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, AdapterConfiguration
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration
 from tvb.core.entities.storage import dao

@@ -40,11 +40,11 @@ from tvb.basic.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.exceptions import TVBException
 from tvb.basic.traits.parameters_factory import collapse_params
-from tvb.basic.traits.types_mapped import MappedType
 from tvb.core import utils
 from tvb.core.adapters.exceptions import InvalidParameterException
-from tvb.core.entities import model
+from tvb.core.entities.model.model_burst import KEY_PARAMETER_CHECKED, KEY_SAVED_VALUE
 from tvb.core.entities.load import get_class_by_name, load_entity_by_gid, get_filtered_datatypes
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.portlets.xml_reader import KEY_DYNAMIC
@@ -88,7 +88,7 @@ KEYWORD_PARAMS = "_parameters_"
 KEYWORD_SEPARATOR = "_"
 KEYWORD_OPTION = "option_"
 
-KEY_PARAMETER_CHECKED = model.KEY_PARAMETER_CHECKED
+KEY_PARAMETER_CHECKED = KEY_PARAMETER_CHECKED
 
 MAXIMUM_DATA_TYPES_DISPLAYED = 50
 KEY_WARNING = "warning"
@@ -383,6 +383,8 @@ class InputTreeManager(object):
                 elif isinstance(field_dict[KEY_TYPE], basestring):
                     try:
                         class_entity = get_class_by_name(field_dict[KEY_TYPE])
+                        from tvb.basic.traits.types_mapped import MappedType
+
                         if issubclass(class_entity, MappedType):
                             data_gid = parameters.get(str(field_dict[KEY_NAME]))
                             data_type = load_entity_by_gid(data_gid)
@@ -612,7 +614,7 @@ class InputTreeManager(object):
             entity_gid = value[2]
             actual_entity = dao.get_generic_entity(type_, entity_gid, "gid")
             display_name = ''
-            if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], model.DataType):
+            if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
                 display_name = actual_entity[0].display_name
             display_name += ' - ' + (value[3] or "None ")
             if value[5]:
@@ -735,7 +737,7 @@ class InputTreeManager(object):
                 param[KEY_LABEL] = prefix + '_' + param[KEY_LABEL]
 
             if param_name in selection_dictionary:
-                selection_val = selection_dictionary[param_name][model.KEY_SAVED_VALUE]
+                selection_val = selection_dictionary[param_name][KEY_SAVED_VALUE]
                 is_checked = selection_dictionary[param_name][KEY_PARAMETER_CHECKED]
             else:
                 selection_val = None

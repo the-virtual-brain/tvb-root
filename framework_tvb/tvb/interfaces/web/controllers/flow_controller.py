@@ -44,7 +44,6 @@ import six
 from tvb.basic.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
-from tvb.datatypes.arrays import MappedArray
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -291,6 +290,8 @@ class FlowController(BaseController):
         if not string2bool(str(reset_session)) and session_dict is not None:
             starts_with_str = select_name + "_" + parameters_prefix + "_"
             ui_sel_items = dict((k, v) for k, v in session_dict.items() if k.startswith(starts_with_str))
+            from tvb.datatypes.arrays import MappedArray
+
             dimensions, selected_agg_functions, required_dimension, _ = MappedArray().parse_selected_items(ui_sel_items)
         template_params["selected_items"] = dimensions
         template_params["selected_functions"] = selected_agg_functions

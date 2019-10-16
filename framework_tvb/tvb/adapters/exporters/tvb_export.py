@@ -33,10 +33,10 @@
 """
 
 import os
-from tvb.core.entities import model 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.exporters.exceptions import ExportException 
+from tvb.adapters.exporters.exceptions import ExportException
+from tvb.core.entities.model.model_datatype import DataType
 
 
 class TVBExporter(ABCExporter):
@@ -46,7 +46,7 @@ class TVBExporter(ABCExporter):
     OPERATION_FOLDER_PREFIX = "Operation_"
     
     def get_supported_types(self):
-        return [model.DataType]
+        return [DataType]
     
     def get_label(self):
         return "TVB Format"

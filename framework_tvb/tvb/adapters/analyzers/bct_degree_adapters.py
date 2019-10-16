@@ -28,7 +28,7 @@
 #
 #
 
-from tvb.core.entities.model import AlgorithmTransientGroup
+from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description
 
 

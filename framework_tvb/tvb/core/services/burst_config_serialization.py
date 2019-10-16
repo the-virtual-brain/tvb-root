@@ -39,8 +39,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN
-from tvb.core.entities.model import PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2, PARAMS_MODEL_PATTERN, \
+    PARAM_MODEL, PARAM_INTEGRATOR, PARAM_CONNECTIVITY, PARAM_SURFACE
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes import noise_framework
 from tvb.simulator.integrators import Integrator

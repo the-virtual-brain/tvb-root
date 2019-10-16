@@ -53,7 +53,10 @@ from tvb.core import utils
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities import model
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
+from tvb.core.entities.model.model_workflow import WorkflowStepView
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -68,8 +71,8 @@ except Exception:
 
 TEMPORARY_PREFIX = ".tmp"
 
-RANGE_PARAMETER_1 = model.RANGE_PARAMETER_1
-RANGE_PARAMETER_2 = model.RANGE_PARAMETER_2
+RANGE_PARAMETER_1 = RANGE_PARAMETER_1
+RANGE_PARAMETER_2 = RANGE_PARAMETER_2
 
 UIKEY_SUBJECT = "RESERVEDsubject"
 UIKEY_USERGROUP = "RESERVEDusergroup"
@@ -231,7 +234,7 @@ class OperationService:
         meta_str = json.dumps(metadata)
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
-            operation = model.Operation(user_id, project_id, algorithm.id,
+            operation = Operation(user_id, project_id, algorithm.id,
                                         json.dumps(one_set_of_args, cls=MapAsJson.MapAsJsonEncoder), meta_str,
                                         op_group_id=group_id, user_group=user_group, range_values=range_values)
             operation.visible = visible_operation
@@ -243,7 +246,7 @@ class OperationService:
             if DataTypeMetaData.KEY_BURST in metadata:
                 burst_id = metadata[DataTypeMetaData.KEY_BURST]
             if existing_dt_group is None:
-                datatype_group = model.DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
+                datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
                                                      state=metadata[DataTypeMetaData.KEY_STATE])
                 dao.store_entity(datatype_group)
             else:
@@ -265,8 +268,8 @@ class OperationService:
 
         for step in workflow_step_list:
             operation_group = None
-            if (group is not None) and not isinstance(step, model.WorkflowStepView):
-                operation_group = model.OperationGroup(project_id=project_id, ranges=group.range_references)
+            if (group is not None) and not isinstance(step, WorkflowStepView):
+                operation_group = OperationGroup(project_id=project_id, ranges=group.range_references)
                 operation_group = dao.store_entity(operation_group)
 
             operation = None
@@ -287,10 +290,10 @@ class OperationService:
                     group_id = operation_group.id
                     range_values = sim_operations[wf_idx].range_values
 
-                if not isinstance(step, model.WorkflowStepView):
+                if not isinstance(step, WorkflowStepView):
                     ## For visualization steps, do not create operations, as those are not really needed.
                     metadata, user_group = self._prepare_metadata(metadata, algo_category, operation_group, op_params)
-                    operation = model.Operation(user_id, project_id, step.fk_algorithm,
+                    operation = Operation(user_id, project_id, step.fk_algorithm,
                                                 json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder),
                                                 meta=json.dumps(metadata),
                                                 op_group_id=group_id, range_values=range_values, user_group=user_group)
@@ -301,7 +304,7 @@ class OperationService:
                 dao.store_entity(cloned_w_step)
 
             if operation_group is not None and operation is not None:
-                datatype_group = model.DataTypeGroup(operation_group, operation_id=operation.id,
+                datatype_group = DataTypeGroup(operation_group, operation_id=operation.id,
                                                      fk_parent_burst=burst_id,
                                                      state=metadata[DataTypeMetaData.KEY_STATE])
                 dao.store_entity(datatype_group)
@@ -334,7 +337,7 @@ class OperationService:
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.parameters = json.dumps(kwargs)
-            operation.mark_complete(model.STATUS_FINISHED)
+            operation.mark_complete(STATUS_FINISHED)
             if nr_datatypes > 0:
                 #### Write operation meta-XML only if some result are returned
                 self.file_helper.write_operation_metadata(operation)
@@ -398,7 +401,7 @@ class OperationService:
         """
         self.logger.exception(message)
         if operation is not None:
-            self.workflow_service.persist_operation_state(operation, model.STATUS_ERROR, unicode(exception))
+            self.workflow_service.persist_operation_state(operation, STATUS_ERROR, unicode(exception))
             self.workflow_service.update_executed_workflow_state(operation)
         self._remove_files(temp_files)
         exception.message = message
@@ -424,7 +427,7 @@ class OperationService:
 
     @staticmethod
     def _range_name(range_no):
-        return model.PARAM_RANGE_PREFIX + str(range_no)
+        return PARAM_RANGE_PREFIX + str(range_no)
 
 
     def _prepare_group(self, project_id, existing_dt_group, kwargs):
@@ -457,7 +460,7 @@ class OperationService:
         if not is_group:
             group = None
         elif existing_dt_group is None:
-            group = model.OperationGroup(project_id=project_id, ranges=ranges)
+            group = OperationGroup(project_id=project_id, ranges=ranges)
             group = dao.store_entity(group)
         else:
             group = existing_dt_group.parent_operation_group

@@ -29,7 +29,7 @@
 #
 
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, LABEL_CONNECTIVITY_BINARY
-from tvb.core.entities.model import AlgorithmTransientGroup
+from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 
 
 BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox", "bctcentrality")

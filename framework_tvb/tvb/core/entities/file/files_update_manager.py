@@ -41,7 +41,6 @@ import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from datetime import datetime
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
-from tvb.basic.traits.types_mapped import MappedType
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -145,6 +144,8 @@ class FilesUpdateManager(UpdateManager):
 
         for datatype in datatypes:
             try:
+                from tvb.basic.traits.types_mapped import MappedType
+
                 specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
 
                 if specific_datatype is None:

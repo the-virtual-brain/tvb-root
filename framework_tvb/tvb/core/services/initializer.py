@@ -38,8 +38,8 @@ import threading
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.introspector import Introspector
 from tvb.core.code_versions.code_update_manager import CodeUpdateManager
-from tvb.core.entities import model
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model_manager import initialize_startup, reset_database
 from tvb.core.services.project_service import initialize_storage
@@ -87,11 +87,11 @@ def initialize(introspected_modules, skip_import=False):
     if not TvbProfile.is_first_run():
         # Create default users.
         if is_db_empty:
-            dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+            dao.store_entity(User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
             UserService().create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
-                                      role=model.ROLE_ADMINISTRATOR, skip_import=skip_import)
+                                      role=ROLE_ADMINISTRATOR, skip_import=skip_import)
 
         # In case actions related to latest code-changes are needed, make sure they are executed.
         CodeUpdateManager().run_all_updates()

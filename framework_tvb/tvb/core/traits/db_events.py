@@ -38,7 +38,6 @@ from sqlalchemy import event
 from sqlalchemy.orm import mapper
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.traits.types_basic import MapAsJson
-from tvb.basic.traits.types_mapped import MappedType
 
 
 # Logging support
@@ -56,6 +55,8 @@ def initialize_on_load(target, _):
     
         - Connectivity instance, and not be a GID, as is default after DB storage.
     """
+    from tvb.basic.traits.types_mapped import MappedType
+
     if MappedType not in target.__class__.mro():
         return
     all_class_traits = getattr(target, 'trait', {})
@@ -82,6 +83,8 @@ def fill_before_insert(_, _ignored, target):
     Any time, when attaching an entity to the session, make sure 
     meta-data are cascaded on update-able attributes automatically.
     """
+    from tvb.basic.traits.types_mapped import MappedType
+
     if MappedType not in target.__class__.mro():
         return
 

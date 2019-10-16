@@ -38,11 +38,10 @@ import migrate.versioning.api as migratesqlapi
 from sqlalchemy.sql import text
 from sqlalchemy.engine import reflection
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.basic.logger.builder import get_logger
 import tvb.core.entities.model.db_update_scripts as scripts
-
+from tvb.core.neotraits.db import Base
 
 LOGGER = get_logger(__name__)
 
@@ -68,7 +67,7 @@ def initialize_startup():
         migratesqlapi.version_control(TvbProfile.current.db.DB_URL, versions_repo,
                                       version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
         session = SA_SESSIONMAKER()
-        model.Base.metadata.create_all(bind=session.connection())
+        Base.metadata.create_all(bind=session.connection())
         session.commit()
         session.close()
         LOGGER.info("Database Default Tables created successfully!")

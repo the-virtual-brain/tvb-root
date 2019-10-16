@@ -35,7 +35,7 @@ Root class for export functionality.
 """
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
-from tvb.core.entities.model import DataTypeGroup
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 

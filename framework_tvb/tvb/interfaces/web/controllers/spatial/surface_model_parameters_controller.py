@@ -41,7 +41,7 @@ import tvb.basic.traits.traited_interface as interface
 from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
 from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
 from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities.model import PARAMS_MODEL_PATTERN
+from tvb.core.entities.model.model_burst import PARAMS_MODEL_PATTERN
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes import equations
 from tvb.interfaces.web.controllers import common

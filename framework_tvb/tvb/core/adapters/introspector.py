@@ -39,9 +39,10 @@ import datetime
 import tvb.core.removers_factory as removers
 from types import ModuleType
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_mapped import MappedType
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import AlgorithmCategory, Algorithm
+from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
+from tvb.core.neotraits.db import Base
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -111,7 +112,7 @@ class Introspector:
                 self.__get_datatypes(path)
 
             session = SA_SESSIONMAKER()
-            model.Base.metadata.create_all(bind=session.connection())
+            Base.metadata.create_all(bind=session.connection())
             session.commit()
             session.close()
 
@@ -128,7 +129,7 @@ class Introspector:
                     category_instance.removed = False
                 else:
                     category_state = category_details.get(STATE, '')
-                    category_instance = model.AlgorithmCategory(category_name, launchable, rawinput, display,
+                    category_instance = AlgorithmCategory(category_name, launchable, rawinput, display,
                                                                 category_state, order_nr, datetime.datetime.now())
                 category_instance = dao.store_entity(category_instance)
                 for actual_module in path_adapters[category_name]['modules']:
@@ -152,7 +153,7 @@ class Introspector:
                     ad_class = adapters_module.__dict__[ad_class]
                     if Introspector._is_concrete_subclass(ad_class, ABCAdapter):
                         if ad_class.can_be_active():
-                            stored_adapter = model.Algorithm(ad_class.__module__, ad_class.__name__, category_key,
+                            stored_adapter = Algorithm(ad_class.__module__, ad_class.__name__, category_key,
                                                                  ad_class.get_group_name(), ad_class.get_group_description(),
                                                                  ad_class.get_ui_name(), ad_class.get_ui_description(),
                                                                  ad_class.get_ui_subsection(), datetime.datetime.now())
@@ -232,7 +233,7 @@ class Introspector:
                                                   adapter[ABCAdapter.KEY_TYPE], algo_identifier))
                                 is_valid = False
                         if is_valid:
-                            portlets_list.append(model.Portlet(algo_identifier, complete_file_path,
+                            portlets_list.append(Portlet(algo_identifier, complete_file_path,
                                                                portlet_list[algo_identifier]['name']))
             except XmlParserException as excep:
                 self.logger.exception(excep)
@@ -270,6 +271,8 @@ class Introspector:
             try:
                 module_ref = __import__(path_types, globals(), locals(), [my_type])
                 module_ref = getattr(module_ref, my_type)
+                from tvb.basic.traits.types_mapped import MappedType
+
                 tree = inspect.getmembers(module_ref, lambda c: self._is_concrete_subclass(c, MappedType))
                 for class_name, class_ref in tree:
                     self.logger.debug("Importing class for DB table to be created: " + class_name)

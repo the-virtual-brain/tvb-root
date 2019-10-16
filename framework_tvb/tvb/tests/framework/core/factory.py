@@ -45,7 +45,7 @@ import tvb_data.cff as cff_dataset
 from hashlib import md5
 from tvb.core.entities import model
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model import BurstConfiguration
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
