@@ -74,7 +74,6 @@ class ExportManager:
         # If new exporters supported, they should be added here
         # Todo: uploaders and visualizers are registered using a different method.
         self._register_exporter(TVBExporter())
-        #self._register_exporter(ObjSurfaceExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
 
