@@ -1,8 +1,10 @@
+import os
 import json
 from collections import namedtuple
-
+from datetime import datetime
 import numpy
 from tvb.core import utils
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.basic.neotraits.ex import TraitError
@@ -18,7 +20,7 @@ jinja_env = None
 class Field(object):
     template = None
 
-    def __init__(self, form, name, disabled=False, required=False, label='', doc=''):
+    def __init__(self, form, name, disabled=False, required=False, label='', doc='', default=None):
         # type: (Form, str, bool, bool, str, str) -> None
         self.owner = form
         self.name = '{}_{}'.format(form.prefix, name)
@@ -31,7 +33,7 @@ class Field(object):
             self.label_classes.append('field-mandatory')
 
         # keeps the deserialized data
-        self.data = None
+        self.data = default
         # keeps user input, even if wrong, we have to redisplay it
         # todo
         self.unvalidated_data = None
@@ -66,30 +68,93 @@ class Field(object):
         return jinja_env.get_template(self.template).render(field=self)
 
 
-class TraitField(Field):
-    # mhtodo: while this is consistent with the h5 api, it has the same problem
-    #         it couples the system to traited attr declarations
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        # type: (Attr, Form, str, bool) -> None
-        self.trait_attribute = trait_attribute  # type: Attr
-        name = name or trait_attribute.field_name
-        label = trait_attribute.label or name
+class SimpleBoolField(Field):
+    template = 'bool_field.jinja2'
 
-        super(TraitField, self).__init__(
-            form,
-            name,
-            disabled,
-            trait_attribute.required,
-            label,
-            trait_attribute.doc
-        )
+    def _from_post(self):
+        self.data = self.unvalidated_data is not None
 
-class DataTypeSelectField(TraitField):
+
+class SimpleStrField(Field):
+    template = 'str_field.jinja2'
+
+    def _from_post(self):
+        if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
+            raise ValueError('Field required')
+        self.data = self.unvalidated_data
+
+
+class SimpleIntField(Field):
+    template = 'number_field.jinja2'
+    min = None
+    max = None
+
+    def _from_post(self):
+        super(SimpleIntField, self)._from_post()
+        if self.unvalidated_data is None or self.unvalidated_data.strip() == '':
+            if self.required:
+                raise ValueError('Field required')
+            self.data = None
+        else:
+            self.data = int(self.unvalidated_data)
+
+
+class SimpleFloatField(Field):
+    template = 'number_field.jinja2'
+    input_type = "number"
+    min = None
+    max = None
+    step = 'any'
+
+    def _from_post(self):
+        super(SimpleFloatField, self)._from_post()
+        if self.unvalidated_data is None or self.unvalidated_data.strip() == '':
+            if self.required:
+                raise ValueError('Field required')
+            self.data = None
+        else:
+            self.data = float(self.unvalidated_data)
+
+
+class SimpleSelectField(Field):
+    template = 'radio_field.jinja2'
+    missing_value = 'explicit-None-value'
+
+    def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc=''):
+        super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc)
+        self.choices = choices
+
+    def options(self):
+        """ to be used from template, assumes self.data is set """
+        if not self.required:
+            choice = None
+            yield Option(
+                id='{}_{}'.format(self.name, None),
+                value=self.missing_value,
+                label=str(choice).title(),
+                checked=self.data is None
+            )
+
+        for i, choice in enumerate(self.choices.keys()):
+            yield Option(
+                id='{}_{}'.format(self.name, i),
+                value=choice,
+                label=str(choice).title(),
+                checked=self.data == choice
+            )
+
+    def fill_from_post(self, post_data):
+        super(SimpleSelectField, self).fill_from_post(post_data)
+        self.data = self.choices.get(self.data)
+
+
+class DataTypeSelectField(Field):
     template = 'datatype_select_field.jinja2'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, datatype_index, form, name=None, disabled=False, conditions=None):
-        super(DataTypeSelectField, self).__init__(trait_attribute, form, name, disabled)
+    def __init__(self, datatype_index, form, name=None, disabled=False, required=False, label='', doc='',
+                 conditions=None):
+        super(DataTypeSelectField, self).__init__(form, name, disabled, required, label, doc)
         self.datatype_index = datatype_index
         self.conditions = conditions
 
@@ -105,7 +170,7 @@ class DataTypeSelectField(TraitField):
 
         filtered_datatypes = self._get_values_from_db()
 
-        if not self.trait_attribute.required:
+        if not self.required:
             choice = None
             yield Option(
                 id='{}_{}'.format(self.name, None),
@@ -151,6 +216,65 @@ class DataTypeSelectField(TraitField):
         display_name += ' - ID:' + str(value[0])
 
         return display_name
+
+
+TEMPORARY_PREFIX = ".tmp"
+class UploadField(Field):
+    template = 'upload_field.jinja2'
+
+    def __init__(self, required_type, form, name, disabled=False, required=False, label='', doc=''):
+        super(UploadField, self).__init__(form, name, disabled, required, label, doc)
+        self.required_type = required_type
+        self.files_helper = FilesHelper()
+
+    def fill_from_post(self, post_data):
+        super(UploadField, self).fill_from_post(post_data)
+
+        if self.data.file is None:
+            self.data = None
+            return
+
+        project = dao.get_project_by_id(self.owner.project_id)
+        temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
+
+        file_name = None
+        try:
+            uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
+            file_name = TEMPORARY_PREFIX + uq_name + '_' + self.data.filename
+            file_name = os.path.join(temporary_storage, file_name)
+            temp_file = file_name
+
+            with open(file_name, 'wb') as file_obj:
+                file_obj.write(self.data.file.read())
+        except Exception as excep:
+            # TODO: is this handled properly?
+            self.files_helper.remove_files([file_name])
+            excep.message = 'Could not continue: Invalid input files'
+            raise excep
+
+        if file:
+            self.data = file_name
+        if temp_file:
+            self.temp_file = temp_file
+
+
+class TraitField(Field):
+    # mhtodo: while this is consistent with the h5 api, it has the same problem
+    #         it couples the system to traited attr declarations
+    def __init__(self, trait_attribute, form, name=None, disabled=False):
+        # type: (Attr, Form, str, bool) -> None
+        self.trait_attribute = trait_attribute  # type: Attr
+        name = name or trait_attribute.field_name
+        label = trait_attribute.label or name
+
+        super(TraitField, self).__init__(
+            form,
+            name,
+            disabled,
+            trait_attribute.required,
+            label,
+            trait_attribute.doc
+        )
 
 
 class StrField(TraitField):
@@ -359,7 +483,9 @@ class FormField(Field):
 
 
 class Form(object):
-    def __init__(self, prefix=''):
+    def __init__(self, prefix='', project_id=None):
+        # TODO: makes sense here?
+        self.project_id = project_id
         self.prefix = prefix
         self.errors = []
 
@@ -373,8 +499,6 @@ class Form(object):
     def trait_fields(self):
         for field in self.__dict__.itervalues():
             if isinstance(field, TraitField):
-                if isinstance(field, DataTypeSelectField):
-                    continue
                 yield field
 
     def validate(self):
