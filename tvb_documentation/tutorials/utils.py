@@ -113,7 +113,7 @@ def run_sim_with_progress_bar(sim, simulation_length, polltime=1):
             break 
     return ar.results
 
-cortex = cortex.Cortex(load_default=True)
+cortex = cortex.Cortex.from_file()
 
 def multiview(data, suptitle='', figsize=(15, 10), **kwds):
 
