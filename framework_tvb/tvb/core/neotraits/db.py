@@ -90,4 +90,8 @@ def prepare_array_shape_meta(shape_array):
     except IndexError:
         pass
 
-    return length_1d, length_2d, length_3d, length_4d
+    shape = []
+    for length in [length_1d, length_2d, length_3d, length_4d]:
+        if length:
+            shape.append(length)
+    return tuple(shape)
