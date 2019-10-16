@@ -39,3 +39,7 @@ class LocalConnectivityH5(H5File):
         eq = datatype.equation.from_json(eq)
         datatype.equation = eq
 
+    def get_min_max_values(self):
+        metadata = self.matrix.get_metadata()
+        return metadata.min, metadata.max
+
