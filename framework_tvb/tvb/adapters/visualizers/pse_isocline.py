@@ -37,7 +37,8 @@ import numpy
 import json
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model import DataTypeGroup, OperationGroup, STATUS_STARTED
+from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import OperationGroup, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.mapped_values import DatatypeMeasure
