@@ -38,7 +38,10 @@ import collections
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.datatypes.sensors import Sensors, SensorsEEG, SensorsMEG, SensorsInternal
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
+from tvb.core.entities.file.datatypes.sensors_h5 import SensorsH5
+from tvb.core.entities.model.datatypes.sensors import SensorsIndex
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class Sensors_Importer(ABCUploader):
@@ -71,7 +74,7 @@ class Sensors_Importer(ABCUploader):
                  }]
 
     def get_output(self):
-        return [Sensors]
+        return [SensorsIndex]
 
 
     def launch(self, sensors_file, sensors_type):
@@ -102,7 +105,6 @@ class Sensors_Importer(ABCUploader):
             exception_str = "Could not determine sensors type (selected option %s)" % sensors_type
             raise LaunchException(exception_str)
             
-        sensors_inst.storage_path = self.storage_path
         locations = self.read_list_data(sensors_file, usecols=[1, 2, 3])
 
         # NOTE: TVB has the nose pointing -y and left ear pointing +x
@@ -111,16 +113,35 @@ class Sensors_Importer(ABCUploader):
         # locations = numpy.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]).dot(locations.T).T
         sensors_inst.locations = locations
         sensors_inst.labels = self.read_list_data(sensors_file, dtype=numpy.str, usecols=[0])
-        
+        sensors_inst.number_of_sensors = sensors_inst.labels.size
+
         if isinstance(sensors_inst, SensorsMEG):
             try:
                 sensors_inst.orientations = self.read_list_data(sensors_file, usecols=[4, 5, 6])
+                sensors_inst.has_orientation = True
             except IndexError:
                 raise LaunchException("Uploaded file does not contains sensors orientation.")
          
         self.logger.debug("Sensors instance ready to be stored")
-        
-        return [sensors_inst]
+
+        sensors_idx = SensorsIndex()
+        sensors_idx.gid = sensors_inst.gid.hex  # TODO: keep GID on HasTraitsIndex
+        sensors_idx.number_of_sensors = sensors_inst.number_of_sensors
+        sensors_idx.sensors_type = sensors_inst.sensors_type
+
+        loader = DirLoader(self.storage_path)
+        sensors_path = loader.path_for(SensorsH5, sensors_idx.gid)
+        sensors_h5 = SensorsH5(sensors_path)
+
+        sensors_h5.sensors_type.store(sensors_inst.sensors_type)
+        sensors_h5.labels.store(sensors_inst.labels)
+        sensors_h5.locations.store(sensors_inst.locations)
+        sensors_h5.has_orientation.store(sensors_inst.has_orientation)
+        sensors_h5.orientations.store(sensors_inst.orientations)
+        sensors_h5.number_of_sensors.store(sensors_inst.number_of_sensors)
+        sensors_h5.usable.store(sensors_inst.usable)
+
+        return sensors_idx
     
     
 class BrainstormSensorUploader(ABCUploader):
@@ -142,7 +163,7 @@ class BrainstormSensorUploader(ABCUploader):
                  'description': 'Brainstorm file described s/M/EEG sensors.'}]
 
     def get_output(self):
-        return [Sensors]
+        return [SensorsIndex]
 
     def launch(self, filename):
         # get & verify data
@@ -163,7 +184,7 @@ class BrainstormSensorUploader(ABCUploader):
         type_ctr = collections.Counter(chtypes)
         (chtype, _), = type_ctr.most_common(1)
         sens_cls = self._bst_type_to_class[chtype]
-        sens = sens_cls(storage_path=self.storage_path)
+        sens = sens_cls()
         ":type : Sensors"
         # workaround: locations & orientations must be homogeneous arrays
         # but in real data, channel types aren't homogeneous so neither are
@@ -180,4 +201,21 @@ class BrainstormSensorUploader(ABCUploader):
             _ = numpy.zeros(chans['Orient'][0][i_type[0]].shape)
             sens.orientations = numpy.array(
                 [ch if ch.shape==_.shape else _ for ch in chans['Orient'][0]])
-        return [sens]
+            sens.has_orientation = True
+
+        sensors_idx = SensorsIndex()
+        sensors_idx.fill_from_has_traits(sens)
+
+        loader = DirLoader(self.storage_path)
+        sensors_path = loader.path_for(SensorsH5, sensors_idx.gid)
+        sensors_h5 = SensorsH5(sensors_path)
+
+        sensors_h5.sensors_type.store(sens.sensors_type)
+        sensors_h5.labels.store(sens.labels)
+        sensors_h5.locations.store(sens.locations)
+        sensors_h5.has_orientation.store(sens.has_orientation)
+        sensors_h5.orientations.store(sens.orientations)
+        sensors_h5.number_of_sensors.store(sens.labels.size)
+        sensors_h5.usable.store(sens.usable)
+
+        return [sensors_idx]
