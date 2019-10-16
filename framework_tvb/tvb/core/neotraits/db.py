@@ -1,9 +1,8 @@
-import json
 import uuid
 from datetime import datetime
 import numpy
 from sqlalchemy import Column, Integer, Text, DateTime
-from sqlalchemy import String, Float, Boolean
+from sqlalchemy import String, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 SCALAR_MAPPING = {
@@ -69,90 +68,9 @@ def from_ndarray(array):
     if array.dtype.kind in 'iufc' and array.size != 0:
         # we compute these simple statistics for integer unsigned float or complex
         # arrays that are not empty
-        has_nan = numpy.isnan(array).any()
         minvalue, maxvalue = array.min(), array.max()
         median = numpy.median(array)
     else:
-        has_nan = False
         minvalue, maxvalue, median = None, None, None
 
     return minvalue, maxvalue, median
-
-
-class NArrayIndex(Base):
-    __tablename__ = 'narrays'
-
-    id = Column(Integer, primary_key=True)
-    dtype_str = Column(String(64), nullable=False)
-    dtype_kind = Column(String(64), nullable=False)
-    ndim = Column(Integer, nullable=False)
-    _shape = Column(Text, nullable=False)
-    _dim_names = Column(Text)
-
-    has_nan = Column(Boolean, nullable=False, default=False)
-    # some statistics, null if they make no sense for the dtype
-    min_value = Column(Float)
-    max_value = Column(Float)
-    median_value = Column(Float)
-
-    # unrolled shape for easy querying
-    length_1d = Column(Integer)
-    length_2d = Column(Integer)
-    length_3d = Column(Integer)
-    length_4d = Column(Integer)
-
-    @property
-    def shape(self):
-        return tuple(json.loads(self._shape))
-
-    @shape.setter
-    def shape(self, val):
-        self._shape = json.dumps(val)
-
-    @property
-    def dim_names(self):
-        return json.loads(self._dim_names)
-
-    @dim_names.setter
-    def dim_names(self, val):
-        self._dim_names = json.dumps(val)
-
-    @classmethod
-    def from_ndarray(cls, array):
-        if array is None:
-            return None
-
-        if array.dtype.kind in 'iufc' and array.size != 0:
-            # we compute these simple statistics for integer unsigned float or complex
-            # arrays that are not empty
-            has_nan = numpy.isnan(array).any()
-            minvalue, maxvalue = array.min(), array.max()
-            median = numpy.median(array)
-        else:
-            has_nan = False
-            minvalue, maxvalue, median = None, None, None
-
-        self = cls(
-            ndim=array.ndim,
-            dtype_str=array.dtype.str,
-            dtype_kind=array.dtype.kind,
-            has_nan=has_nan,
-            min_value=minvalue,
-            max_value=maxvalue,
-            median_value=median
-        )
-
-        self.shape = array.shape
-
-        for i, l in enumerate(array.shape):
-            if i > 4:
-                break
-            setattr(self, 'length_{}d'.format(i + 1), l)
-
-        return self
-
-    def __repr__(self):
-        cls = type(self)
-        return '<{}.{} id="{}" dtype="{}", shape="{}">'.format(
-            cls.__module__, cls.__name__, self.id, self.dtype_str, self.shape
-        )

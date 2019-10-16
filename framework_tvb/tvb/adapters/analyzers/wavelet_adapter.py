@@ -50,7 +50,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.datatypes.spectral_h5 import WaveletCoefficientsH5
 from tvb.core.entities.file.datatypes.time_series import TimeSeriesH5
 from tvb.core.entities.model.datatypes.spectral import WaveletCoefficientsIndex
-from tvb.core.neotraits.db import NArrayIndex
+from tvb.core.neotraits.db import from_ndarray
 from tvb.interfaces.neocom._h5loader import DirLoader
 
 LOG = get_logger(__name__)
@@ -190,6 +190,6 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         wavelet_index.q_ratio = self.algorithm.q_ratio
         wavelet_index.sample_period = self.algorithm.sample_period
         wavelet_index.number_of_scales = frequencies_array.shape[0]
-        wavelet_index.frequencies = NArrayIndex.from_ndarray(frequencies_array)
+        wavelet_index.frequencies_min, wavelet_index.frequencies_max, _ = from_ndarray(frequencies_array)
 
         return wavelet_index

@@ -82,18 +82,18 @@ class ConnectivityViewerForm(ABCAdapterForm):
         colors_attr = Attr(field_type=ConnectivityMeasure, label='Node Colors', required=False,
                            doc='A ConnectivityMeasure DataType that establishes a colormap for the nodes displayed in the '
                                '2D Connectivity tabs.')
-        colors_conditions = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        colors_conditions = FilterChain(fields=[FilterChain.datatype + '.array_data_ndim'], operations=["=="], values=[1])
         rays_attr = Attr(field_type=ConnectivityMeasure, label='Shapes Dimensions', required=False,
                          doc='A ConnectivityMeasure datatype used to establish the size of the spheres representing each '
                              'node. (It only applies to 3D Nodes tab).')
-        rays_conditions = FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        rays_conditions = FilterChain(fields=[FilterChain.datatype + '.array_data_ndim'], operations=["=="], values=[1])
 
         self.connectivity = DataTypeSelectField(connectivity_attr, self.get_required_datatype(), self,
                                                 name='input_data', conditions=self.get_filters())
         self.surface_data = DataTypeSelectField(surface_data_attr, SurfaceIndex, self, name='surface_data')
         self.step = ScalarField(step_attr, self, name='step')
-        self.colors = DataTypeSelectField(colors_attr, ConnectivityMeasureIndex, self, name='colors') # conditions=colors_conditions
-        self.rays = DataTypeSelectField(rays_attr, ConnectivityMeasureIndex, self, name='rays') # conditions=rays_conditions
+        self.colors = DataTypeSelectField(colors_attr, ConnectivityMeasureIndex, self, name='colors', conditions=colors_conditions)
+        self.rays = DataTypeSelectField(rays_attr, ConnectivityMeasureIndex, self, name='rays', conditions=rays_conditions)
 
         self.project_id = project_id
 

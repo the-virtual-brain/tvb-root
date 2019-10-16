@@ -153,17 +153,6 @@ class DataTypeSelectField(TraitField):
         return display_name
 
 
-class TimeSeriesSelectField(DataTypeSelectField):
-    def _get_values_from_db(self):
-        filtered_ts, count = dao.get_values_of_time_series(self.owner.project_id,
-                                                           self.datatype_index,
-                                                           self.owner.get_filters())
-        return filtered_ts
-
-    def get_dt_from_db(self):
-        return dao.get_time_series_by_gid(self.data)
-
-
 class StrField(TraitField):
     template = 'str_field.jinja2'
 

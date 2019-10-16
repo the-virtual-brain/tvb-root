@@ -57,6 +57,7 @@ class ConnectivityMeasureIndex(DataType):
     connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id,
                                 primaryjoin=ConnectivityIndex.id == connectivity_id)
 
+    array_data_ndim = Column(Integer, nullable=False)
     array_data_min = Column(Float)
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
