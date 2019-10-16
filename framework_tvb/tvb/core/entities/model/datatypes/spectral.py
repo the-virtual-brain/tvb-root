@@ -3,14 +3,15 @@ from sqlalchemy.orm import relationship
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
-from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.neotraits.db import NArrayIndex
 
 
-class FourierSpectrumIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class FourierSpectrumIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     segment_length = Column(Float, nullable=False)
-    windowing_function = Column(String, nullable=False)
+    windowing_function = Column(String, nullable=True)
     frequency_step = Column(Float, nullable=False)
     max_frequency = Column(Float, nullable=False)
 
@@ -25,8 +26,8 @@ class FourierSpectrumIndex(HasTraitsIndex):
         self.max_frequency = datatype.max_frequency
 
 
-class WaveletCoefficientsIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class WaveletCoefficientsIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not WaveletCoefficients.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
@@ -50,8 +51,8 @@ class WaveletCoefficientsIndex(HasTraitsIndex):
         self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
 
 
-class CoherenceSpectrumIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class CoherenceSpectrumIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not CoherenceSpectrum.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
@@ -66,8 +67,8 @@ class CoherenceSpectrumIndex(HasTraitsIndex):
         self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
 
 
-class ComplexCoherenceSpectrumIndex(HasTraitsIndex):
-    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+class ComplexCoherenceSpectrumIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not ComplexCoherenceSpectrum.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
