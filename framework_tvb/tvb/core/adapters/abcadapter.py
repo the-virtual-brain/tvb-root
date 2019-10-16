@@ -515,6 +515,9 @@ class ABCAdapter(object):
 
 
     def flaten_input_interface(self):
+        # TODO: temporary condition to pass introspection on neoforms
+        if self.get_input_tree() is None:
+            return [{"name": self.get_form().get_input_name()}]
         """ Return a simple dictionary, instead of a Tree."""
         return self.tree_manager.flatten(self.get_input_tree())
 

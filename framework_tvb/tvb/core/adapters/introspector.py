@@ -158,8 +158,14 @@ class Introspector:
                                                                  ad_class.get_ui_name(), ad_class.get_ui_description(),
                                                                  ad_class.get_ui_subsection(), datetime.datetime.now())
                             adapter_inst = ad_class()
-                            in_params = adapter_inst.get_input_tree()
-                            req_type, param_name, flt = self.__get_required_input(in_params)
+                            if adapter_inst.get_input_tree() is None:
+                                adapter_form = adapter_inst.get_form()
+                                req_type = adapter_form.get_required_datatype().__name__
+                                flt = adapter_form.get_filters().to_json()
+                                param_name = adapter_form.get_input_name()
+                            else:
+                                in_params = adapter_inst.get_input_tree()
+                                req_type, param_name, flt = self.__get_required_input(in_params)
                             stored_adapter.required_datatype = req_type
                             stored_adapter.parameter_name = param_name
                             stored_adapter.datatype_filter = flt
