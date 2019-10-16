@@ -2,8 +2,7 @@ import pytest
 import os
 
 from sqlalchemy.orm import sessionmaker, relationship
-from tvb.core.neotraits import db
-from tvb.core.neotraits.db import Base
+from tvb.core.neotraits.db import Base, NArrayIndex
 from sqlalchemy import create_engine, String, ForeignKey, Column, Integer
 from tvb.tests.framework.core.neotraits.data import FooDatatype
 
@@ -13,21 +12,21 @@ class FooIndexManual(Base):
     id = Column(Integer, primary_key=True)
 
     array_float_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_float = relationship(db.NArray, foreign_keys=array_float_id)
+    array_float = relationship(NArrayIndex, foreign_keys=array_float_id)
 
     array_int_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    array_int = relationship(db.NArray, foreign_keys=array_int_id)
+    array_int = relationship(NArrayIndex, foreign_keys=array_int_id)
 
     scalar_str = Column(String, nullable=False)
     scalar_int = Column(Integer, nullable=False)
 
     def from_datatype(self, datatype):
-        self.array_float = db.NArray(dtype=str(datatype.array_float.dtype),
-                                     ndim=datatype.array_float.ndim,
-                                     shape=str(datatype.array_float.shape))
-        self.array_int = db.NArray(dtype=str(datatype.array_int.dtype),
-                                   ndim=datatype.array_int.ndim,
-                                   shape=str(datatype.array_int.shape))
+        self.array_float = NArrayIndex(dtype=str(datatype.array_float.dtype),
+                                          ndim=datatype.array_float.ndim,
+                                          shape=str(datatype.array_float.shape))
+        self.array_int = NArrayIndex(dtype=str(datatype.array_int.dtype),
+                                        ndim=datatype.array_int.ndim,
+                                        shape=str(datatype.array_int.shape))
         self.scalar_str = datatype.scalar_str
         self.scalar_int = datatype.scalar_int
 
@@ -40,16 +39,6 @@ class FooIndex(Base):
         FooDatatype.scalar_int,
         FooDatatype.scalar_str
     ]
-
-    def from_datatype(self, datatype):
-        self.array_float = db.NArray(dtype=str(datatype.array_float.dtype),
-                                     ndim=datatype.array_float.ndim,
-                                     shape=str(datatype.array_float.shape))
-        self.array_int = db.NArray(dtype=str(datatype.array_int.dtype),
-                                   ndim=datatype.array_int.ndim,
-                                   shape=str(datatype.array_int.shape))
-        self.scalar_str = datatype.scalar_str
-        self.scalar_int = datatype.scalar_int
 
 
 @pytest.fixture(scope='session')
