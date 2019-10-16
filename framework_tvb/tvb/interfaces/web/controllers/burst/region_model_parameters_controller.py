@@ -38,6 +38,7 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
@@ -89,7 +90,11 @@ class RegionsModelParametersController(BurstBaseController):
             common.set_error_message(msg)
             raise ValueError(msg)
 
-        params = ConnectivityViewer.get_connectivity_parameters(connectivity)
+        current_project = common.get_current_project()
+        file_handler = FilesHelper()
+        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
+
+        params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
 
         params.update({
             'title': 'Model parameters',

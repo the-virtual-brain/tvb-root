@@ -39,6 +39,7 @@ from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.basic.traits.parameters_factory import collapse_params
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.transient.context_stimulus import RegionStimulusContext
 from tvb.core.entities.transient.context_stimulus import SCALING_PARAMETER, CONNECTIVITY_PARAMETER
@@ -165,7 +166,12 @@ class RegionStimulusController(SpatioTemporalController):
         Generates the html for displaying the connectivity matrix.
         """
         connectivity = ABCAdapter.load_entity_by_gid(connectivity_gid)
-        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity)
+
+        current_project = common.get_current_project()
+        file_handler = FilesHelper()
+        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
+
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
 
         template_specification = dict()
         template_specification['isSingleMode'] = True

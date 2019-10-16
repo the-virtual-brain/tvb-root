@@ -45,7 +45,7 @@
 	<!--! Connectivity viewer -->
 	<section class="view-column connectivity-viewer col-1">
 	<h4><mark>View</mark> Large Scale Connectivity</h4>
-	<a id="showConnectivityDetailsBtn" href="#" onclick='displayNodeDetails("${connectivity_entity.gid}", "${connectivity_entity.type}", null, "Visualizers");'
+	<a id="showConnectivityDetailsBtn" href="#" onclick='displayNodeDetails("${originalConnectivity}", "${connectivity_entity.type}", null, "Visualizers");'
        class="column-control action action-big-analyze" title="Overlay info for current connectivity entity.">Open Overlay</a>
 	
 	<div class="monitor" id="monitorDiv">
@@ -130,7 +130,7 @@
 
             <li class="selector-storage">
                 <xi:include href="../commons/channel_selector_button.html" />
-                ${drawRegionSelectorButton(connectivity_entity.display_name, groupedLabels, initialSelection, buttonTitle="Select Nodes")}
+                ${drawRegionSelectorButton(connectivity_entity.title, groupedLabels, initialSelection, buttonTitle="Select Nodes")}
             </li>
 
             <li class="selector-storage">

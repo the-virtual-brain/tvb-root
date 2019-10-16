@@ -34,6 +34,7 @@
 import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -54,7 +55,11 @@ class NoiseConfigurationController(BurstBaseController):
         noise_values = self.init_noise_config_values(model, integrator, connectivity)
         initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, connectivity.number_of_regions)
 
-        params = ConnectivityViewer.get_connectivity_parameters(connectivity)
+        current_project = common.get_current_project()
+        file_handler = FilesHelper()
+        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
+
+        params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
         params.update({
             'title': 'Noise configuration',
             'mainContent': 'burst/noise',
