@@ -42,15 +42,14 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_CLASS, TVB_IMPORTER_MODULE
+from tvb.core.neotraits.db import Base
 from tvb.core.utils import string2date, generate_guid
 from tvb.core.entities.exportable import Exportable
-from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project, User
 from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
 
 LOG = get_logger(__name__)
-
 
 
 class AlgorithmCategory(Base):

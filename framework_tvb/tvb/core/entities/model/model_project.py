@@ -43,10 +43,10 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey, Float
 from tvb.core import utils
 from tvb.core.entities.exportable import Exportable
-from tvb.core.entities.model.model_base import Base
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neotraits.db import Base
 
 LOG = get_logger(__name__)
 
@@ -136,6 +136,7 @@ class User(Base):
         if k not in self.preferences:
             self.preferences[k] = "%s,%s" % (DataTypeMetaData.KEY_STATE, DataTypeMetaData.KEY_SUBJECT)
         return self.preferences[k].split(',')
+
 
 class UserPreferences(Base):
     """

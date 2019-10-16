@@ -37,15 +37,16 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 """
 
 from copy import copy
-from datetime import datetime
+# from datetime import datetime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey, DateTime
+from tvb.core.neotraits.db import HasTraitsIndex, Base
 
-from tvb.core.utils import generate_guid
-from tvb.core.entities.model.model_base import Base
+# from tvb.core.utils import generate_guid
+# from tvb.core.entities.model.model_base import Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
-from tvb.core.entities.model.model_burst import BurstConfiguration
+# from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.basic.logger.builder import get_logger
 
 
@@ -76,16 +77,16 @@ FILTER_CATEGORIES = {'model.DataType.subject': {'display': 'Subject', 'type': 's
 
 
 
-class DataType(Base):
+class DataType(HasTraitsIndex):
     """ 
     Base class for DB storage of Types.
     DataTypes, are the common language between Visualizers, 
     Simulator and Analyzers.
 
     """
+
     __tablename__ = 'DATA_TYPES'
-    id = Column(Integer, primary_key=True)
-    gid = Column(String, unique=True)
+    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
     type = Column(String)    # Name of class inheriting from current type
     module = Column(String)
     subject = Column(String)
@@ -93,7 +94,6 @@ class DataType(Base):
     visible = Column(Boolean, default=True)
     invalid = Column(Boolean, default=False)
     is_nan = Column(Boolean, default=False)
-    create_date = Column(DateTime, default=datetime.now)
     disk_size = Column(Integer)
     user_tag_1 = Column(String)     # Name used by framework and perpetuated from a DataType to derived entities.
     user_tag_2 = Column(String)
@@ -104,8 +104,8 @@ class DataType(Base):
     # ID of a burst in which current dataType was generated
     # Native burst-results are referenced from a workflowSet as well
     # But we also have results generated afterwards from TreeBurst tab.
-    fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="SET NULL"))
-    _parent_burst = relationship(BurstConfiguration)
+    # fk_parent_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="SET NULL"))
+    # _parent_burst = relationship(BurstConfiguration)
 
     #it should be a reference to a DataTypeGroup, but we can not create that FK
     #because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
@@ -118,10 +118,10 @@ class DataType(Base):
 
     def __init__(self, gid=None, **kwargs):
 
-        if gid is None:
-            self.gid = generate_guid()
-        else:
-            self.gid = gid
+        # if gid is None:
+        #     self.gid = generate_guid()
+        # else:
+        self.gid = gid
         self.type = self.__class__.__name__
         self.module = self.__class__.__module__
 
@@ -252,7 +252,7 @@ class MeasurePointsSelection(Base):
     #### JSON with node indices in current selection (0-based):
     selected_nodes = Column(String)
     #### A Connectivity of Sensor GID, Referring to the entity that this selection was produced for:
-    fk_datatype_gid = Column(String, ForeignKey('DATA_TYPES.gid', ondelete="CASCADE"))
+    fk_datatype_gid = Column(String, ForeignKey('HasTraitsIndex.gid', ondelete="CASCADE"))
     #### Current Project the selection was defined in:
     fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
 
@@ -279,7 +279,7 @@ class StoredPSEFilter(Base):
     #### Unique name /DataType, to be displayed in selector UI:
     ui_name = Column(String)
     #### A DataType Group GID, Referring to the Group that this filter was stored for:
-    fk_datatype_gid = Column(String, ForeignKey('DATA_TYPES.gid', ondelete="CASCADE"))
+    fk_datatype_gid = Column(String, ForeignKey('HasTraitsIndex.gid', ondelete="CASCADE"))
 
     threshold_value = Column(Float)
 
