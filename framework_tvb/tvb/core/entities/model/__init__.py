@@ -37,10 +37,3 @@ Gather together all model classes, for easy import and usage.
 
 """
 
-from tvb.core.entities.model.model_project import *
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_workflow import *
-from tvb.core.entities.model.model_datatype import *
-from tvb.core.entities.model.model_burst import *
-
-    
