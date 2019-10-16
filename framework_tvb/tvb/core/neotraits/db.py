@@ -62,7 +62,8 @@ class NArrayIndex(Base):
     __tablename__ = 'narrays'
 
     id = Column(Integer, primary_key=True)
-    _dtype = Column(String(64), nullable=False)
+    dtype_str = Column(String(64), nullable=False)
+    dtype_kind = Column(String(64), nullable=False)
     ndim = Column(Integer, nullable=False)
     _shape = Column(Text, nullable=False)
     _dim_names = Column(Text)
@@ -79,14 +80,6 @@ class NArrayIndex(Base):
     length_3d = Column(Integer)
     length_4d = Column(Integer)
 
-    @property
-    def dtype(self):
-        # this complex serialisation of datatypes is to support complex datatypes
-        return numpy.dtype([tuple(i) for i in json.loads(self._dtype)])
-
-    @dtype.setter
-    def dtype(self, dtype):
-        self._dtype = json.dumps(dtype.descr)
 
     @property
     def shape(self):
@@ -106,6 +99,9 @@ class NArrayIndex(Base):
 
     @classmethod
     def from_ndarray(cls, array):
+        if array is None:
+            return None
+
         if array.dtype.kind in 'iufc' and array.size != 0:
             # we compute these simple statistics for integer unsigned float or complex
             # arrays that are not empty
@@ -118,13 +114,14 @@ class NArrayIndex(Base):
 
         self = cls(
             ndim=array.ndim,
+            dtype_str=array.dtype.str,
+            dtype_kind=array.dtype.kind,
             has_nan=has_nan,
             min_value=minvalue,
             max_value=maxvalue,
             median_value=median
         )
 
-        self.dtype = array.dtype
         self.shape = array.shape
 
         for i, l in enumerate(array.shape):
@@ -137,5 +134,5 @@ class NArrayIndex(Base):
     def __repr__(self):
         cls = type(self)
         return '<{}.{} id="{}" dtype="{}", shape="{}">'.format(
-            cls.__module__, cls.__name__, self.id, self.dtype, self.shape
+            cls.__module__, cls.__name__, self.id, self.dtype_str, self.shape
         )
