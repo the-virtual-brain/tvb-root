@@ -32,14 +32,31 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import uuid
 import numpy
-from tvb.adapters.uploaders.abcuploader import ABCUploader
+from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.core.entities.file.datatypes.sensors_h5 import SensorsH5
 from tvb.core.entities.model.datatypes.sensors import SensorsIndex
+from tvb.core.neotraits._forms import UploadField, SimpleSelectField
 from tvb.interfaces.neocom._h5loader import DirLoader
+
+
+class SensorsImporterForm(ABCUploaderForm):
+    options = {'EEG Sensors': SensorsEEG.sensors_type.default,
+               'MEG Sensors': SensorsMEG.sensors_type.default,
+               'Internal Sensors': SensorsInternal.sensors_type.default}
+
+    def __init__(self, prefix='', project_id=None):
+        super(SensorsImporterForm, self).__init__(prefix, project_id)
+
+        self.sensors_file = UploadField('text/plain, .bz2', self, name='sensors_file', required=True,
+                                  label='Please upload sensors file (txt or bz2 format)',
+                                  doc='Expected a text/bz2 file containing sensor measurements.')
+        self.sensors_type = SimpleSelectField(self.options, self, name='sensors_type', required=True,
+                                              label='Sensors type: ')
 
 
 class Sensors_Importer(ABCUploader):
@@ -50,26 +67,21 @@ class Sensors_Importer(ABCUploader):
     _ui_subsection = "sensors_importer"
     _ui_description = "Import Sensor locations from TXT or BZ2"
 
-    EEG_SENSORS = "EEG Sensors"
-    MEG_SENSORS = "MEG sensors"
-    INTERNAL_SENSORS = "Internal Sensors"
     logger = get_logger(__name__)
 
+    form = None
 
-    def get_upload_input_tree(self):
-        """
-        Define input parameters for this importer.
-        """
-        return [{'name': 'sensors_file', 'type': 'upload', 'required_type': 'text/plain, .bz2',
-                 'label': 'Please upload sensors file (txt or bz2 format)', 'required': True,
-                 'description': 'Expected a text/bz2 file containing sensor measurements.'},
-                
-                {'name': 'sensors_type', 'type': 'select', 
-                 'label': 'Sensors type: ', 'required': True,
-                 'options': [{'name': self.EEG_SENSORS, 'value': self.EEG_SENSORS},
-                             {'name': self.MEG_SENSORS, 'value': self.MEG_SENSORS},
-                             {'name': self.INTERNAL_SENSORS, 'value': self.INTERNAL_SENSORS}]
-                 }]
+    def get_input_tree(self): return None
+
+    def get_upload_input_tree(self): return None
+
+    def get_form(self):
+        if self.form is None:
+            return SensorsImporterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def get_output(self):
         return [SensorsIndex]
@@ -93,11 +105,11 @@ class Sensors_Importer(ABCUploader):
             raise LaunchException("Please select sensors file which contains data to import")
 
         self.logger.debug("Create sensors instance")
-        if sensors_type == self.EEG_SENSORS:
+        if sensors_type == SensorsEEG.sensors_type.default:
             sensors_inst = SensorsEEG()
-        elif sensors_type == self.MEG_SENSORS:
+        elif sensors_type == SensorsMEG.sensors_type.default:
             sensors_inst = SensorsMEG()
-        elif sensors_type == self.INTERNAL_SENSORS:
+        elif sensors_type == SensorsInternal.sensors_type.default:
             sensors_inst = SensorsInternal()
         else:
             exception_str = "Could not determine sensors type (selected option %s)" % sensors_type
@@ -119,11 +131,11 @@ class Sensors_Importer(ABCUploader):
                 sensors_inst.has_orientation = True
             except IndexError:
                 raise LaunchException("Uploaded file does not contains sensors orientation.")
-         
+
+        sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
         sensors_idx = SensorsIndex()
-        sensors_idx.gid = sensors_inst.gid.hex  # TODO: keep GID on HasTraitsIndex
         sensors_idx.number_of_sensors = sensors_inst.number_of_sensors
         sensors_idx.sensors_type = sensors_inst.sensors_type
 
@@ -131,6 +143,7 @@ class Sensors_Importer(ABCUploader):
         sensors_path = loader.path_for(SensorsH5, sensors_idx.gid)
         sensors_h5 = SensorsH5(sensors_path)
 
+        sensors_h5.gid.store(uuid.UUID(sensors_idx.gid))
         sensors_h5.sensors_type.store(sensors_inst.sensors_type)
         sensors_h5.labels.store(sensors_inst.labels)
         sensors_h5.locations.store(sensors_inst.locations)

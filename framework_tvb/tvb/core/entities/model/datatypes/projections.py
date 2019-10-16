@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.projections import ProjectionMatrix
 
@@ -9,6 +9,8 @@ from tvb.core.entities.model.model_datatype import DataType
 
 class ProjectionMatrixIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+
+    projection_type = Column(String, nullable=False)
 
     brain_skull_id = Column(Integer, ForeignKey(SurfaceIndex.id), nullable=not ProjectionMatrix.brain_skull.required)
     brain_skull = relationship(SurfaceIndex, foreign_keys=brain_skull_id, primaryjoin=SurfaceIndex.id == brain_skull_id, cascade='none')
