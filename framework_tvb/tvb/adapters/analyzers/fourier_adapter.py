@@ -47,35 +47,79 @@ from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeries
 
 from tvb.core.entities.file.datatypes.spectral_h5 import FourierSpectrumH5
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
+from tvb.core.neotraits._forms import Form, ScalarField
 from tvb.interfaces.neocom.h5 import DirLoader
+from tvb.tests.framework.interfaces.neoforms_test import jinja_env
 
 LOG = get_logger(__name__)
 
 
+class ABCAdapterForm(Form):
+    @staticmethod
+    def get_required_datatype():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_filters():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_input_name():
+        raise NotImplementedError
+
+    def get_traited_datatype(self):
+        raise NotImplementedError
+
+    def __str__(self):
+        return jinja_env.get_template("form_field.jinja2").render(form=self)
+
+
+class FFTAdapterForm(ABCAdapterForm):
+    required_datatype = TimeSeriesIndex
+
+    def __init__(self, prefix=''):
+        super(FFTAdapterForm, self).__init__(prefix)
+        self.segment_length = ScalarField(fft.FFT.segment_length, self)
+        self.window_function = ScalarField(fft.FFT.window_function, self)
+        self.detrend = ScalarField(fft.FFT.detrend, self)
+
+    @staticmethod
+    def get_required_datatype():
+        return TimeSeriesIndex
+
+    @staticmethod
+    def get_filters():
+        return entities_filter.FilterChain(fields=[entities_filter.FilterChain.datatype + '._nr_dimensions'],
+                                           operations=["=="], values=[4])
+
+    @staticmethod
+    def get_input_name():
+        return "time_series"
+
+    def get_traited_datatype(self):
+        return fft.FFT()
+
+    def __str__(self):
+        return jinja_env.get_template("form_field.jinja2").render(form=self)
+
+
 class FourierAdapter(abcadapter.ABCAsynchronous):
     """ TVB adapter for calling the FFT algorithm. """
-    
+
     _ui_name = "Fourier Spectral Analysis"
     _ui_description = "Calculate the FFT of a TimeSeries entity."
     _ui_subsection = "fourier"
-    
+
     def get_input_tree(self):
-        """
-        Return a list of lists describing the interface to the analyzer. This
-        is used by the GUI to generate the menus and fields necessary for
-        defining a simulation.
-        """
-        algorithm = fft.FFT()
-        algorithm.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        tree = algorithm.interface[self.INTERFACE_ATTRIBUTES]
-        for node in tree:
-            if node['name'] == 'time_series':
-                node['conditions'] = entities_filter.FilterChain(
-                    fields=[entities_filter.FilterChain.datatype + '._nr_dimensions'],
-                    operations=["=="], values=[4])
-        return tree
-    
-    
+        return None
+
+    def get_form(self):
+        return FFTAdapterForm
+
+    def get_algorithm(self):
+        return self.algorithm
+
     def get_output(self):
         return [spectral.FourierSpectrum]
 
@@ -85,7 +129,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         self.algorithm = fft.FFT()
         self.memory_factor = 1
 
-    
+
     def configure(self, time_series, segment_length=None, window_function=None, detrend=None):
         """
         Do any configuration needed before launching.
@@ -171,7 +215,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------
         node_slice = [slice(shape[0]), slice(shape[1]), None, slice(shape[3])]
-        
+
         # ---------- Iterate over slices and compose final result ------------
         small_ts = TimeSeries()
         small_ts.sample_period = time_series.sample_period.load()
