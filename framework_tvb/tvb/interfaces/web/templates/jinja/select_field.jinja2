@@ -1,0 +1,7 @@
+<p class="field-data field-series">
+    <select name="{{ field.name }}" id="{{field.name}}" {{ 'disabled' if field.disabled }} class="form-control">
+        {% for option in field.options() %}
+            <option value="{{ option.value }}" {{ 'selected' if option.checked }} class="form-control">{{ option.label }}</option>
+        {% endfor %}
+    </select>
+</p>

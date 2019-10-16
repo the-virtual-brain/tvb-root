@@ -71,6 +71,7 @@ from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import Re
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 
 
 LOGGER = get_logger('tvb.interfaces.web.run')
@@ -98,7 +99,8 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
     cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
     cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
+    # cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
+    cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)
     cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config=CONFIGUER)

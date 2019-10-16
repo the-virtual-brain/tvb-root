@@ -1122,18 +1122,18 @@ function launchNewBurst(launchMode) {
         newBurstName = "none_undefined";
     }
     displayMessage("You've submitted parameters for simulation launch! Please wait for preprocessing steps...", 'warningMessage');
-    const submitableData = getSubmitableData('div-simulator-parameters', false);
+    // const submitableData = getSubmitableData('div-simulator-parameters', false);
     doAjaxCall({
         type: "POST",
-        url: '/burst/launch_burst/' + launchMode + '/' + newBurstName,
-        data: {'simulator_parameters': JSON.stringify(submitableData)},
+        url: '/burst/launch_simulation/' + launchMode + '/' + newBurstName,
+        // data: {'simulator_parameters': JSON.stringify(submitableData)},
         traditional: true,
         success: function (r) {
-            loadBurstHistory();
-            const result = $.parseJSON(r);
-            if ('id' in result) {
-                changeBurstHistory(result.id);
-            }
+            // loadBurstHistory();
+            // const result = $.parseJSON(r);
+            // if ('id' in result) {
+            //     changeBurstHistory(result.id);
+            // }
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
             }
@@ -1145,4 +1145,44 @@ function launchNewBurst(launchMode) {
 }
 
 
+function previousWizzardStep(currentForm, previous_action) {
+    document.getElementById('div-simulator-parameters').removeChild(currentForm);
 
+    var previous_form = document.getElementById(previous_action);
+    var next_button = previous_form.elements.namedItem('next');
+    var previous_button = previous_form.elements.namedItem('previous');
+    var fieldset = previous_form.elements[0];
+
+    next_button.style.visibility = 'visible';
+    if (previous_button != null) {
+        previous_button.style.visibility = 'visible';
+    }
+    fieldset.disabled = false;
+}
+
+function wizzard_submit(currentForm) {
+    event.preventDefault(); //prevent default action
+    var post_url = $(currentForm).attr("action"); //get form action url
+    var request_method = $(currentForm).attr("method"); //get form GET/POST method
+    var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    var next_button = currentForm.elements.namedItem('next');
+    var previous_button = currentForm.elements.namedItem('previous');
+    var fieldset = currentForm.elements[0];
+
+    $.ajax({
+        url: post_url,
+        type: request_method,
+        data: form_data,
+        success: function (response) { //
+            next_button.style.visibility = 'hidden';
+            if (previous_button != null) {
+                previous_button.style.visibility = 'hidden';
+            }
+            fieldset.disabled = true;
+            var t = document.createRange().createContextualFragment(response);
+            document.getElementById('div-simulator-parameters').appendChild(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+
+        }
+    })
+}

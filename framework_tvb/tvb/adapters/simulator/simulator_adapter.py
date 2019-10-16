@@ -39,22 +39,60 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+import json
+import os
+import uuid
+
 import numpy
+from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.simulator import Simulator
-from tvb.simulator.models import Model
-from tvb.simulator.monitors import Monitor
-from tvb.simulator.integrators import Integrator
-from tvb.simulator.coupling import Coupling
+from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
+from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.basic.traits.parameters_factory import get_traited_subclasses
-from tvb.datatypes.equations import HRFKernelEquation
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.simulation_state import SimulationState
-from tvb.datatypes import noise_framework
-import tvb.datatypes.time_series as time_series
-import tvb.datatypes.region_mapping as region_mapping
+from tvb.core.neotraits._forms import DataTypeSelectField, SimpleSelectField, FloatField, jinja_env
+from tvb.core.services.simulator_service import SimulatorService
+from tvb.interfaces.neocom._h5loader import DirLoader
+from tvb.interfaces.neocom.config import registry
+
+
+class SimulatorAdapterForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
+                                                required=True, label="Connectivity",
+                                                doc=Simulator.connectivity.doc,
+                                                conditions=self.get_filters())
+        self.coupling_choices = get_ui_name_to_coupling_dict()
+        self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
+                                          label="Coupling", doc=Simulator.coupling.doc)
+        self.coupling.template = 'select_field.jinja2'
+        self.conduction_speed = FloatField(Simulator.conduction_speed, self)
+        self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
+
+    @staticmethod
+    def get_input_name():
+        return 'connectivity'
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_required_datatype():
+        return ConnectivityIndex
+
+    def get_traited_datatype(self):
+        return Simulator()
+
+    def __str__(self):
+        #TODO: get rid of this
+        return jinja_env.get_template('wizzard_form.jinja2').render(form=self, action="/burst/set_connectivity",
+                                                            is_first_fragment=True, is_last_fragment=False)
 
 
 
@@ -66,25 +104,30 @@ class SimulatorAdapter(ABCAsynchronous):
 
     algorithm = None
 
-    available_models = get_traited_subclasses(Model)
-    available_monitors = get_traited_subclasses(Monitor)
-    available_integrators = get_traited_subclasses(Integrator)
-    available_couplings = get_traited_subclasses(Coupling)
-
     # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
     # We exclude from this for example EEG, MEG or Bold which return 
     HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]
 
+    form = None
+
+    def get_form(self):
+        if not self.form:
+            return SimulatorAdapterForm
+        return self.form
+
+    def set_form(self, form):
+        self.form = form
 
     def __init__(self):
         super(SimulatorAdapter, self).__init__()
         self.log.debug("%s: Initialized..." % str(self))
 
     def get_input_tree2(self):
-        sim = Simulator()
-        sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        result = sim.interface_experimental
-        return result
+        return None
+        # sim = Simulator()
+        # sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
+        # result = sim.interface_experimental
+        # return result
 
     def get_input_tree(self):
         """
@@ -92,85 +135,41 @@ class SimulatorAdapter(ABCAsynchronous):
         is used by the GUI to generate the menus and fields necessary for
         defining a simulation.
         """
-        sim = Simulator()
-        sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
-        result = sim.interface[self.INTERFACE_ATTRIBUTES]
-        # We should add as hidden the Simulator State attribute.
-        result.append({self.KEY_NAME: 'simulation_state',
-                       self.KEY_TYPE: 'tvb.datatypes.simulation_state.SimulationState',
-                       self.KEY_LABEL: "Continuation of", self.KEY_REQUIRED: False, self.KEY_UI_HIDE: True})
-        return result
-
+        # sim = Simulator()
+        # sim.trait.bound = self.INTERFACE_ATTRIBUTES_ONLY
+        # result = sim.interface[self.INTERFACE_ATTRIBUTES]
+        # #We should add as hidden the Simulator State attribute.
+        # result.append({self.KEY_NAME: 'simulation_state',
+        #                self.KEY_TYPE: 'tvb.datatypes.simulation_state.SimulationState',
+        #                self.KEY_LABEL: "Continuation of", self.KEY_REQUIRED: False, self.KEY_UI_HIDE: True})
+        return None
 
     def get_output(self):
         """
         :returns: list of classes for possible results of the Simulator.
         """
-        return [time_series.TimeSeries]
+        return [TimeSeriesIndex]
 
-
-    def configure(self, model, model_parameters, integrator, integrator_parameters, connectivity,
-                  monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
-                  coupling=None, coupling_parameters=None, initial_conditions=None,
-                  conduction_speed=None, simulation_length=0, simulation_state=None):
+    def configure(self, simulator_gid):
         """
         Make preparations for the adapter launch.
         """
-        self.log.debug("available_couplings: %s..." % str(self.available_couplings))
-        self.log.debug("coupling: %s..." % str(coupling))
-        self.log.debug("coupling_parameters: %s..." % str(coupling_parameters))
-
-        self.log.debug("%s: Initializing Model..." % str(self))
-        noise_framework.build_noise(model_parameters)
-        model_instance = self.available_models[str(model)](**model_parameters)
-        self._validate_model_parameters(model_instance, connectivity, surface)
-
-        self.log.debug("%s: Initializing Integration scheme..." % str(self))
-        noise_framework.build_noise(integrator_parameters)
-        integr = self.available_integrators[integrator](**integrator_parameters)
-
-        self.log.debug("%s: Instantiating Monitors..." % str(self))
-        monitors_list = []
-        for monitor_name in monitors:
-            if (monitors_parameters is not None) and (str(monitor_name) in monitors_parameters):
-                current_monitor_parameters = monitors_parameters[str(monitor_name)]
-                HRFKernelEquation.build_equation_from_dict('hrf_kernel', current_monitor_parameters, True)
-                monitors_list.append(self.available_monitors[str(monitor_name)](**current_monitor_parameters))
-            else:
-                ### We have monitors without any UI settable parameter.
-                monitors_list.append(self.available_monitors[str(monitor_name)]())
-
-        if len(monitors) < 1:
-            raise LaunchException("Can not launch operation without monitors selected !!!")
-
-        self.log.debug("%s: Initializing Coupling..." % str(self))
-        coupling_inst = self.available_couplings[str(coupling)](**coupling_parameters)
-
-        self.log.debug("Initializing Cortex...")
-        if self._is_surface_simulation(surface, surface_parameters):
-            cortex_entity = Cortex(use_storage=False).populate_cortex(surface, surface_parameters)
-            if cortex_entity.region_mapping_data.connectivity.number_of_regions != connectivity.number_of_regions:
-                raise LaunchException("Incompatible RegionMapping -- Connectivity !!")
-            if cortex_entity.region_mapping_data.surface.number_of_vertices != surface.number_of_vertices:
-                raise LaunchException("Incompatible RegionMapping -- Surface !!")
-            select_loc_conn = cortex_entity.local_connectivity
-            if select_loc_conn is not None and select_loc_conn.surface.number_of_vertices != surface.number_of_vertices:
-                raise LaunchException("Incompatible LocalConnectivity -- Surface !!")
-        else:
-            cortex_entity = None
-
         self.log.debug("%s: Instantiating requested simulator..." % str(self))
 
-        if conduction_speed not in (0.0, None):
-            connectivity.speed = numpy.array([conduction_speed])
-        else:
-            raise LaunchException("conduction speed cannot be 0 or missing")
+        simulator_service = SimulatorService()
+        self.algorithm, connectivity_gid = simulator_service.deserialize_simulator(simulator_gid, self.storage_path)
 
-        self.algorithm = Simulator(connectivity=connectivity, coupling=coupling_inst, surface=cortex_entity,
-                                   stimulus=stimulus, model=model_instance, integrator=integr,
-                                   monitors=monitors_list, initial_conditions=initial_conditions,
-                                   conduction_speed=conduction_speed)
-        self.simulation_length = simulation_length
+        connectivity_index = dao.get_datatype_by_gid(connectivity_gid.hex)
+        dir_loader = DirLoader(os.path.join(os.path.dirname(self.storage_path),
+                                            str(connectivity_index.fk_from_operation)))
+        connectivity_path = dir_loader.path_for(ConnectivityH5, connectivity_gid)
+        connectivity = Connectivity()
+        with ConnectivityH5(connectivity_path) as connectivity_h5:
+            connectivity_h5.load_into(connectivity)
+
+        self.algorithm.connectivity = connectivity
+        self.simulation_length = self.algorithm.simulation_length
+        print('Storage path is: %s' % self.storage_path)
         self.log.debug("%s: Initializing storage..." % str(self))
         try:
             self.algorithm.preconfigure()
@@ -178,21 +177,18 @@ class SimulatorAdapter(ABCAsynchronous):
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
 
-
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         return self.algorithm.memory_requirement()
 
-
     def get_required_disk_size(self, **kwargs):
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
         return self.algorithm.storage_requirement(self.simulation_length) / 2 ** 10
-    
-    
+
     def get_execution_time_approximation(self, **kwargs):
         """
         Method should approximate based on input arguments, the time it will take for the operation 
@@ -202,7 +198,7 @@ class SimulatorAdapter(ABCAsynchronous):
         # it's finished. This should be done with a higher grade of sensitivity
         # Magic number connecting simulation length to simulation computation time
         # This number should as big as possible, as long as it is still realistic, to
-        magic_number = 6.57e-06     # seconds
+        magic_number = 6.57e-06  # seconds
         approx_number_of_nodes = 500
         approx_nvar = 15
         approx_modes = 15
@@ -217,10 +213,9 @@ class SimulatorAdapter(ABCAsynchronous):
             approx_number_of_nodes *= approx_number_of_nodes
 
         estimation = magic_number * approx_number_of_nodes * approx_nvar * approx_modes * simulation_length \
-            / approx_integrator_dt
+                     / approx_integrator_dt
 
         return max(int(estimation), 1)
-
 
     def _try_find_mapping(self, mapping_class, connectivity_gid):
         """
@@ -242,12 +237,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 return dt
         return dts_list[0]
 
-
-
-    def launch(self, model, model_parameters, integrator, integrator_parameters, connectivity,
-               monitors, monitors_parameters=None, surface=None, surface_parameters=None, stimulus=None,
-               coupling=None, coupling_parameters=None, initial_conditions=None,
-               conduction_speed=None, simulation_length=0, simulation_state=None):
+    def launch(self, simulator_gid):
         """
         Called from the GUI to launch a simulation.
           *: string class name of chosen model, etc...
@@ -256,62 +246,77 @@ class SimulatorAdapter(ABCAsynchronous):
           surface: tvb.datatypes.surfaces.CorticalSurface: or None.
           stimulus: tvb.datatypes.patters.* object
         """
-        result_datatypes = dict()
+        result_h5 = dict()
+        result_indexes = dict()
         start_time = self.algorithm.current_step * self.algorithm.integrator.dt
 
         self.algorithm.configure(full_configure=False)
-        if simulation_state is not None:
-            simulation_state.fill_into(self.algorithm)
+        # TODO: handle SimulationState
+        # if simulation_state is not None:
+        #     simulation_state.fill_into(self.algorithm)
 
-        region_map = self._try_find_mapping(region_mapping.RegionMapping, connectivity.gid)
-        region_volume_map = self._try_find_mapping(region_mapping.RegionVolumeMapping, connectivity.gid)
+        # region_map = self._try_find_mapping(region_mapping.RegionMapping, connectivity.gid)
+        # region_volume_map = self._try_find_mapping(region_mapping.RegionVolumeMapping, connectivity.gid)
+
+        dir_loader = DirLoader(self.storage_path)
 
         for monitor in self.algorithm.monitors:
             m_name = monitor.__class__.__name__
-            ts = monitor.create_time_series(self.storage_path, connectivity, surface, region_map, region_volume_map)
-            self.log.debug("Monitor %s created the TS %s" % (m_name, ts))
-            # Now check if the monitor will return results for each state variable, in which case store
-            # the labels for these state variables.
-            # todo move these into monitors as well
-            #   and replace check if ts.user_tag_1 with something better (e.g. pre_ex & post)
-            state_variable_dimension_name = ts.labels_ordering[1]
-            if ts.user_tag_1:
-                ts.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
-
-            elif m_name in self.HAVE_STATE_VARIABLES:
-                selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
-                ts.labels_dimensions[state_variable_dimension_name] = selected_vois
-
+            ts = monitor.create_time_series(self.algorithm.connectivity)
+            self.log.debug("Monitor created the TS")
             ts.start_time = start_time
-            result_datatypes[m_name] = ts
+
+            ts_index = registry.get_index_for_datatype(type(ts))()
+            ts_index.time_series_type = type(ts).__name__
+            ts_index.sample_period_unit = ts.sample_period_unit
+            ts_index.sample_period = ts.sample_period
+            ts_index.labels_ordering = json.dumps(ts.labels_ordering)
+            ts_index.data_ndim = 4
+            ts_index.connectivity_id = 1
+            ts_index.state = 'INTERMEDIATE'
+
+            # state_variable_dimension_name = ts.labels_ordering[1]
+            # if ts_index.user_tag_1:
+            #     ts_index.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
+            # elif m_name in self.HAVE_STATE_VARIABLES:
+            #     selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
+            #     ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+
+            result_indexes[m_name] = ts_index
+
+            ts_h5_class = registry.get_h5file_for_datatype(type(ts))
+            ts_h5_path = dir_loader.path_for(ts_h5_class, ts_index.gid)
+            ts_h5 = ts_h5_class(ts_h5_path)
+            ts_h5.store(ts, scalars_only=True, store_references=False)
+            ts_h5.gid.store(uuid.UUID(ts_index.gid))
+            result_h5[m_name] = ts_h5
 
         #### Create Simulator State entity and persist it in DB. H5 file will be empty now.
-        if not self._is_group_launch():
-            simulation_state = SimulationState(storage_path=self.storage_path)
-            self._capture_operation_results([simulation_state])
+        # if not self._is_group_launch():
+        #     simulation_state = SimulationState(storage_path=self.storage_path)
+        #     self._capture_operation_results([simulation_state])
 
         ### Run simulation
-        self.log.debug("%s: Starting simulation..." % str(self))
-        for result in self.algorithm(simulation_length=simulation_length):
-            for j, monitor in enumerate(monitors):
+        self.log.debug("Starting simulation...")
+        for result in self.algorithm(simulation_length=self.simulation_length):
+            for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
-                    result_datatypes[monitor].write_time_slice([result[j][0]])
-                    result_datatypes[monitor].write_data_slice([result[j][1]])
+                    m_name = monitor.__class__.__name__
+                    ts_h5 = result_h5[m_name]
+                    ts_h5.write_time_slice([result[j][0]])
+                    ts_h5.write_data_slice([result[j][1]])
 
-        self.log.debug("%s: Completed simulation, starting to store simulation state " % str(self))
+        self.log.debug("Completed simulation, starting to store simulation state ")
         ### Populate H5 file for simulator state. This step could also be done while running sim, in background.
-        if not self._is_group_launch():
-            simulation_state.populate_from(self.algorithm)
-            self._capture_operation_results([simulation_state])
+        # if not self._is_group_launch():
+        #     simulation_state.populate_from(self.algorithm)
+        #     self._capture_operation_results([simulation_state])
 
-        self.log.debug("%s: Simulation state persisted, returning results " % str(self))
-        final_results = []
-        for result in result_datatypes.values():
-            result.close_file()
-            final_results.append(result)
-        self.log.info("%s: Adapter simulation finished!!" % str(self))
-        return final_results
-
+        self.log.debug("Simulation state persisted, returning results ")
+        for result in result_h5.values():
+            result.close()
+        # self.log.info("%s: Adapter simulation finished!!" % str(self))
+        return result_indexes.values()
 
     def _validate_model_parameters(self, model_instance, connectivity, surface):
         """

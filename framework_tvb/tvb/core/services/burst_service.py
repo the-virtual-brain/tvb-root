@@ -150,10 +150,10 @@ class BurstService(object):
         for tab_idx, value in DEFAULT_PORTLETS.items():
             for sel_idx, portlet_identifier in value.items():
                 portlet = BurstService.get_portlet_by_identifier(portlet_identifier)
-                if portlet is not None:
-                    portlet_configuration = self.new_portlet_configuration(portlet.id, tab_idx, sel_idx,
-                                                                           portlet.algorithm_identifier)
-                    burst_configuration.set_portlet(tab_idx, sel_idx, portlet_configuration)
+                # if portlet is not None:
+                    # portlet_configuration = self.new_portlet_configuration(portlet.id, tab_idx, sel_idx,
+                    #                                                        portlet.algorithm_identifier)
+                    # burst_configuration.set_portlet(tab_idx, sel_idx, portlet_configuration)
 
         return burst_configuration
 
@@ -174,8 +174,8 @@ class BurstService(object):
         Return all the burst for the current project.
         """
         bursts = dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
-        for burst in bursts:
-            burst.prepare_after_load()
+        # for burst in bursts:
+        #     burst.prepare_after_load()
         return bursts
 
 
