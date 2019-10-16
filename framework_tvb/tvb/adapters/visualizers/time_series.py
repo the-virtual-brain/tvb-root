@@ -65,9 +65,9 @@ class TimeSeriesForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.time_series_type'],
-                           operations=["!="],
-                           values=["TimeSeriesVolume"])
+        return FilterChain(fields=[FilterChain.datatype + '.time_series_type'], operations=["in"],
+                           values=[['TimeSeriesEEG', 'TimeSeriesSEEG', 'TimeSeriesMEG', 'TimeSeriesRegion',
+                                    'TimeSeriesSurface']])
 
 
 class TimeSeries(ABCDisplayer):
