@@ -69,7 +69,7 @@ class DataSetMetaData(object):
     def from_array(cls, array):
         try:
             return cls(min=array.min(), max=array.max())
-        except TypeError:
+        except (TypeError, ValueError):
             # likely a string array
             return cls(min=None, max=None)
 
@@ -153,6 +153,9 @@ class Reference(Scalar):
         :param val: a datatype
         todo: This is not consistent with load. Load will just return the gid.
         """
+        if val is None and not self.trait_attribute.required:
+            # this is an optional reference and it is missing
+            return
         if not isinstance(val, HasTraits):
             raise TypeError("expected HasTraits, got {}".format(type(val)))
         # urn is a standard encoding, that is obvious an uuid
