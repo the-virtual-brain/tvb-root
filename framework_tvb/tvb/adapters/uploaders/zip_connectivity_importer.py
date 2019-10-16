@@ -32,6 +32,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import uuid
 
 import numpy
 from tvb.adapters.uploaders.abcuploader import ABCUploader, ABCUploaderForm
@@ -210,5 +211,6 @@ class ZIPConnectivityImporter(ABCUploader):
 
         with ConnectivityH5(conn_path) as conn_h5:
             conn_h5.store(result)
+            conn_h5.gid.store(uuid.UUID(conn_idx.gid))
 
         return conn_idx
