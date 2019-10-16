@@ -11,7 +11,7 @@ class TractsIndex(HasTraitsIndex):
 
     region_volume_map_id = Column(Integer, ForeignKey(RegionVolumeMappingIndex.id),
                                   nullable=not Tracts.region_volume_map.required)
-    region_volume_map = relationship(RegionVolumeMappingIndex, foreign_keys=region_volume_map_id)
+    region_volume_map = relationship(RegionVolumeMappingIndex, foreign_keys=region_volume_map_id, primaryjoin=RegionVolumeMappingIndex.id == region_volume_map_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex

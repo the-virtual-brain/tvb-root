@@ -15,7 +15,7 @@ class FourierSpectrumIndex(HasTraitsIndex):
     max_frequency = Column(Float, nullable=False)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not FourierSpectrum.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
@@ -29,7 +29,7 @@ class WaveletCoefficientsIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not WaveletCoefficients.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     mother = Column(String, nullable=False)
     normalisation = Column(String, nullable=False)
@@ -54,7 +54,7 @@ class CoherenceSpectrumIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not CoherenceSpectrum.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     nfft = Column(Integer, nullable=False)
     frequencies_id = Column(Integer, ForeignKey("narrays.id"), nullable=not CoherenceSpectrum.frequency.required)
@@ -70,7 +70,7 @@ class ComplexCoherenceSpectrumIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not ComplexCoherenceSpectrum.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     epoch_length = Column(Float, nullable=False)
     segment_length = Column(Float, nullable=False)

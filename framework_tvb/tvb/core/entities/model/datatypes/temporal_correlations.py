@@ -15,7 +15,7 @@ class CrossCorrelationIndex(HasTraitsIndex):
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not CrossCorrelation.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     labels_ordering = Column(String, nullable=False)
     type = Column(String)

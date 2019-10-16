@@ -17,7 +17,7 @@ class StimuliRegionIndex(HasTraitsIndex):
 
     connectivity_id = Column(Integer, ForeignKey(ConnectivityIndex.id),
                              nullable=not StimuliRegion.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id, primaryjoin=ConnectivityIndex.id == connectivity_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
@@ -36,7 +36,7 @@ class StimuliSurfaceIndex(HasTraitsIndex):
     temporal_parameters = Column(String)
 
     surface_id = Column(Integer, ForeignKey(SurfaceIndex.id), nullable=not StimuliSurface.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_id)
+    surface = relationship(SurfaceIndex, foreign_keys=surface_id, primaryjoin=SurfaceIndex.id == surface_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex

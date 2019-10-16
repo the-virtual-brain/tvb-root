@@ -18,10 +18,10 @@ class TimeSeriesIndex(HasTraitsIndex):
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    data = relationship(NArrayIndex, foreign_keys=data_id)
+    data = relationship(NArrayIndex, foreign_keys=data_id, primaryjoin=NArrayIndex.id == data_id)
 
     time_id = Column(Integer, ForeignKey('narrays.id'))
-    time = relationship(NArrayIndex, foreign_keys=time_id)
+    time = relationship(NArrayIndex, foreign_keys=time_id, primaryjoin=NArrayIndex.id == time_id)
 
     sample_period_unit = Column(String, nullable=False)
     sample_period = Column(Float, nullable=False)

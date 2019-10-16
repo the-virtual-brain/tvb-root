@@ -14,7 +14,7 @@ class CovarianceIndex(HasTraitsIndex):
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not Covariance.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     type = Column(String)
 
@@ -31,7 +31,7 @@ class CorrelationCoefficientsIndex(HasTraitsIndex):
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)
 
     source_id = Column(Integer, ForeignKey(TimeSeriesIndex.id), nullable=not CorrelationCoefficients.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_id)
+    source = relationship(TimeSeriesIndex, foreign_keys=source_id, primaryjoin=TimeSeriesIndex.id == source_id)
 
     type = Column(String)
 
@@ -51,7 +51,7 @@ class ConnectivityMeasureIndex(HasTraitsIndex):
 
     connectivity_id = Column(Integer, ForeignKey(ConnectivityIndex.id),
                              nullable=ConnectivityMeasure.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_id, primaryjoin=ConnectivityIndex.id == connectivity_id)
 
     array_data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     array_data = relationship(NArrayIndex, foreign_keys=array_data_id)

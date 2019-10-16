@@ -15,23 +15,23 @@ class ConnectivityIndex(DataType):
     number_of_connections = Column(Integer, nullable=False)
     undirected = Column(Boolean)
 
-    areas_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    areas = relationship(NArrayIndex, foreign_keys=areas_id)
+    areas_id = Column(Integer, ForeignKey('narrays.id'), nullable=True)
+    areas = relationship(NArrayIndex, foreign_keys=areas_id, primaryjoin=NArrayIndex.id == areas_id)
 
     weights_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    weights = relationship(NArrayIndex, foreign_keys=weights_id)
+    weights = relationship(NArrayIndex, foreign_keys=weights_id, primaryjoin=NArrayIndex.id == weights_id)
 
     weights_non_zero_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    weights_non_zero = relationship(NArrayIndex, foreign_keys=weights_non_zero_id)
+    weights_non_zero = relationship(NArrayIndex, foreign_keys=weights_non_zero_id, primaryjoin=NArrayIndex.id == weights_non_zero_id)
 
     tract_lengths_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    tract_lengths = relationship(NArrayIndex, foreign_keys=tract_lengths_id)
+    tract_lengths = relationship(NArrayIndex, foreign_keys=tract_lengths_id, primaryjoin=NArrayIndex.id == tract_lengths_id)
 
     tract_lengths_non_zero_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    tract_lengths_non_zero = relationship(NArrayIndex, foreign_keys=tract_lengths_non_zero_id)
+    tract_lengths_non_zero = relationship(NArrayIndex, foreign_keys=tract_lengths_non_zero_id, primaryjoin=NArrayIndex.id == tract_lengths_non_zero_id)
 
     tract_lengths_connections_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
-    tract_lengths_connections = relationship(NArrayIndex, foreign_keys=tract_lengths_connections_id)
+    tract_lengths_connections = relationship(NArrayIndex, foreign_keys=tract_lengths_connections_id, primaryjoin=NArrayIndex.id == tract_lengths_connections_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
