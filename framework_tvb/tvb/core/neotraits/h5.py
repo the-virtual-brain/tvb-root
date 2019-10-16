@@ -211,7 +211,7 @@ class H5File(object):
         self.storage_manager.close_file()
 
 
-    def store(self, datatype):
+    def store(self, datatype, scalars_only=False):
         # type: (HasTraits) -> None
         for name, accessor in self.__dict__.iteritems():
             if isinstance(accessor, Accessor):
@@ -226,6 +226,8 @@ class H5File(object):
                             accessor.trait_attribute, f_name, datatype, self.__class__
                         )
                     )
+                if scalars_only and not isinstance(accessor, Scalar):
+                    continue
                 accessor.store(getattr(datatype, f_name))
 
 
