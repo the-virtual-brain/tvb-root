@@ -20,7 +20,7 @@ class TimeSeriesIndex(HasTraitsIndex):
     data_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     data = relationship(NArrayIndex, foreign_keys=data_id)
 
-    time_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
+    time_id = Column(Integer, ForeignKey('narrays.id'))
     time = relationship(NArrayIndex, foreign_keys=time_id)
 
     sample_period_unit = Column(String, nullable=False)
