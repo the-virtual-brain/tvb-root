@@ -40,7 +40,7 @@ import cherrypy
 #Message, Current Project and User values are stored in session, because they
 # need to be translated between multiple pages.
 #The rest of the values are stored in the template dictionary.
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 
 TYPE_ERROR = "ERROR"
 TYPE_WARNING = "WARNING"

@@ -34,7 +34,7 @@
 
 import os
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 
 
 

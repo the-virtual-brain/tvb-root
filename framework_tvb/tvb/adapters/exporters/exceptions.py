@@ -34,7 +34,7 @@ Exceptions for Export mechanism.
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 
 
 class InvalidExportDataException(TVBException):

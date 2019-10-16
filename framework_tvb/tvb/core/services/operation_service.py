@@ -45,7 +45,7 @@ import six
 from copy import copy
 from cgi import FieldStorage
 from datetime import datetime
-from tvb.basic.traits.exceptions import TVBException
+from tvb.basic.exceptions import TVBException
 from tvb.basic.traits.types_basic import MapAsJson, Range
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
