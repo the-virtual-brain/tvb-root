@@ -41,7 +41,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.datatypes.mapped_values import DatatypeMeasure
+#from tvb.datatypes.mapped_values import DatatypeMeasure
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService

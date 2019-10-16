@@ -52,7 +52,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.mapped_values import ValueWrapper
+#from tvb.datatypes.mapped_values import ValueWrapper
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
