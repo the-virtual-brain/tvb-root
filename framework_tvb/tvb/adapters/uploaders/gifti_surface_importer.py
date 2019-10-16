@@ -37,9 +37,11 @@ from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException, ParseException
-from tvb.core.entities.storage import dao
-from tvb.datatypes.surfaces import Surface, ALL_SURFACES_SELECTION
+from tvb.core.entities.file.datatypes.surface_h5 import SurfaceH5
+from tvb.core.entities.model.datatypes.surface import SurfaceIndex
+from tvb.datatypes.surfaces import ALL_SURFACES_SELECTION
 
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class GIFTISurfaceImporter(ABCUploader):
@@ -75,7 +77,7 @@ class GIFTISurfaceImporter(ABCUploader):
 
 
     def get_output(self):
-        return [Surface]
+        return [SurfaceIndex]
 
 
     def launch(self, file_type, data_file, data_file_part2, should_center=False):
@@ -85,12 +87,22 @@ class GIFTISurfaceImporter(ABCUploader):
         parser = GIFTIParser(self.storage_path, self.operation_id)
         try:
             surface = parser.parse(data_file, data_file_part2, file_type, should_center=should_center)
+            surface.compute_triangle_normals()
+            surface.compute_vertex_normals()
             validation_result = surface.validate()
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            return [surface]             
+            surface_idx = SurfaceIndex()
+            surface_idx.fill_from_has_traits(surface)
+
+            loader = DirLoader(self.storage_path)
+            surface_h5_path = loader.path_for(SurfaceH5, surface_idx.gid)
+            with SurfaceH5(surface_h5_path) as surface_h5:
+                surface_h5.store(surface)
+
+            return [surface_idx]
         except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)

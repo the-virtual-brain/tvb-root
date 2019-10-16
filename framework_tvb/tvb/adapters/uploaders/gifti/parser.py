@@ -118,7 +118,6 @@ class GIFTIParser(object):
         if title is not None:
             surface.title = title
 
-        surface.storage_path = self.storage_path
         surface.zero_based_triangles = True
 
         # Now fill TVB data type with geometry data
@@ -142,7 +141,9 @@ class GIFTIParser(object):
             surface.hemisphere_mask[vertices_in_lh:] = 1
 
         surface.vertices = vertices
+        surface.number_of_vertices = surface.vertices.shape[0]
         surface.triangles = triangles
+        surface.number_of_triangles = surface.triangles.shape[0]
         return surface
 
 
