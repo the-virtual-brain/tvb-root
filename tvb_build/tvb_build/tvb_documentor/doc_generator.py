@@ -278,7 +278,7 @@ def main(options, root_folder):
 
 if __name__ == "__main__":
     # By default running this module we generate documentation
-    ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.path.join(os.getcwd()))))
+    ROOT_FOLDER = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
 
     PARSER = OptionParser()
     PARSER.add_option("-p", "--pdf_only", action="store_true", dest="pdfs_only", help="Generates only manual PDFs")
