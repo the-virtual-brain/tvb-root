@@ -33,12 +33,17 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import csv
+import uuid
 import numpy
+import os
 from tvb.adapters.uploaders.abcuploader import ABCUploader
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.datatypes.connectivity_h5 import ConnectivityH5
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.model.datatypes.connectivity import ConnectivityIndex
+from tvb.interfaces.neocom._h5loader import DirLoader
 
 
 class CSVConnectivityParser(object):
@@ -125,7 +130,7 @@ class CSVConnectivityImporter(ABCUploader):
         ABCUploader.__init__(self)
         self.logger = get_logger(self.__class__.__module__)
 
-    
+
     def get_upload_input_tree(self):
         return [{'name': 'weights', 'type': 'upload', 'required_type': '.csv',
                  'label': 'Weights file (csv)', 'required': True},
@@ -140,11 +145,11 @@ class CSVConnectivityImporter(ABCUploader):
                          'required': True, 'options': self.DELIMITER_OPTIONS, 'default': ','},
 
                 {'name': 'input_data', 'label': 'Reference Connectivity Matrix (for node labels, 3d positions etc.)',
-                 'type': Connectivity, 'required': True}]
-        
-        
+                 'type': ConnectivityIndex, 'required': True}]
+
+
     def get_output(self):
-        return [Connectivity]
+        return [ConnectivityIndex]
 
 
     def _read_csv_file(self, csv_file, delimiter):
@@ -178,13 +183,30 @@ class CSVConnectivityImporter(ABCUploader):
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))
         result = Connectivity()
-        result.storage_path = self.storage_path
-        result.centres = input_data.centres
-        result.region_labels = input_data.region_labels
+
+        conn_idx = ConnectivityIndex()
+        conn_idx.gid = uuid.uuid4()  # TODO: GID should be kept on HasTraitsIndex
+
+        loader = DirLoader(self.storage_path)
+        conn_path = loader.path_for(ConnectivityH5, conn_idx.gid)
+
+        input_data_loader_path = os.path.join(os.path.dirname(self.storage_path), str(input_data.fk_from_operation))
+        input_data_loader = DirLoader(input_data_loader_path)
+        input_data_h5_path = input_data_loader.path_for(ConnectivityH5, input_data.gid)
+        input_data_h5 = ConnectivityH5(input_data_h5_path)
+
+        result.centres = input_data_h5.centres.load()
+        result.region_labels = input_data_h5.region_labels.load()
         result.weights = weights_matrix
         result.tract_lengths = tract_matrix
-        result.orientations = input_data.orientations
-        result.areas = input_data.areas
-        result.cortical = input_data.cortical
-        result.hemispheres = input_data.hemispheres
-        return result
+        result.orientations = input_data_h5.orientations.load()
+        result.areas = input_data_h5.areas.load()
+        result.cortical = input_data_h5.cortical.load()
+        result.hemispheres = input_data_h5.hemispheres.load()
+
+        with ConnectivityH5(conn_path) as conn_h5:
+            conn_h5.store(result)
+
+        conn_idx.fill_from_has_traits(result)
+
+        return conn_idx
