@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 from tvb.core.entities.model.datatypes.time_series import TimeSeriesIndex
-from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.neotraits.db import HasTraitsIndex, NArrayIndex
 
 
 class FourierSpectrumIndex(HasTraitsIndex):
@@ -36,8 +36,9 @@ class WaveletCoefficientsIndex(HasTraitsIndex):
     q_ratio = Column(Float, nullable=False)
     sample_period = Column(Float, nullable=False)
     number_of_scales = Column(Integer, nullable=False)
-    min_frequency = Column(Float, nullable=False)
-    max_frequency = Column(Float, nullable=False)
+
+    frequencies_id = Column(Integer, ForeignKey("narrays.id"), nullable=not WaveletCoefficients.frequencies.required)
+    frequencies = relationship(NArrayIndex, foreign_keys=frequencies_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
@@ -46,8 +47,7 @@ class WaveletCoefficientsIndex(HasTraitsIndex):
         self.q_ratio = datatype.q_ratio
         self.sample_period = datatype.sample_period
         self.number_of_scales = datatype.frequencies.shape[0]
-        self.min_frequency = datatype.frequencies[0]
-        self.max_frequency = datatype.frequencies[-1]
+        self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
 
 
 class CoherenceSpectrumIndex(HasTraitsIndex):
@@ -57,16 +57,13 @@ class CoherenceSpectrumIndex(HasTraitsIndex):
     source = relationship(TimeSeriesIndex, foreign_keys=source_id)
 
     nfft = Column(Integer, nullable=False)
-    number_of_frequencies = Column(Integer, nullable=False)
-    min_frequency = Column(Float, nullable=False)
-    max_frequency = Column(Float, nullable=False)
+    frequencies_id = Column(Integer, ForeignKey("narrays.id"), nullable=not CoherenceSpectrum.frequency.required)
+    frequencies = relationship(NArrayIndex, foreign_keys=frequencies_id)
 
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
         self.nfft = datatype.nfft
-        self.number_of_frequencies = datatype.frequency.shape[0]
-        self.min_frequency = datatype.frequency[0]
-        self.max_frequency = datatype.frequency[-1]
+        self.frequencies = NArrayIndex.from_ndarray(datatype.frequencies)
 
 
 class ComplexCoherenceSpectrumIndex(HasTraitsIndex):
