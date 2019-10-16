@@ -47,7 +47,7 @@ ADAPTERS = {"Analyze": {'modules': ["tvb.adapters.analyzers"],
                        'defaultdatastate': 'RAW_DATA', 'order_nr': '0'}
             }
 
-DATATYPES_PATH = ["tvb.datatypes"]
+DATATYPES_PATH = ["tvb.core.entities.model.datatypes"]
 REMOVERS_PATH = ["tvb.datatype_removers"]
 PORTLETS_PATH = ["tvb.adapters.portlets"]
 
