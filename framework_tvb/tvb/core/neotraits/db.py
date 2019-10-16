@@ -1,3 +1,4 @@
+import json
 import numpy
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy import String, Float, Boolean
@@ -61,10 +62,11 @@ class NArrayIndex(Base):
     __tablename__ = 'narrays'
 
     id = Column(Integer, primary_key=True)
-    dtype = Column(String(64), nullable=False)
+    _dtype = Column(String(64), nullable=False)
     ndim = Column(Integer, nullable=False)
-    shape = Column(Text, nullable=False)
-    dim_names = Column(Text)
+    _shape = Column(Text, nullable=False)
+    _dim_names = Column(Text)
+
     has_nan = Column(Boolean, nullable=False, default=False)
     # some statistics, null if they make no sense for the dtype
     min_value = Column(Float)
@@ -76,6 +78,31 @@ class NArrayIndex(Base):
     length_2d = Column(Integer)
     length_3d = Column(Integer)
     length_4d = Column(Integer)
+
+    @property
+    def dtype(self):
+        # this complex serialisation of datatypes is to support complex datatypes
+        return numpy.dtype([tuple(i) for i in json.loads(self._dtype)])
+
+    @dtype.setter
+    def dtype(self, dtype):
+        self._dtype = json.dumps(dtype.descr)
+
+    @property
+    def shape(self):
+        return tuple(json.loads(self._shape))
+
+    @shape.setter
+    def shape(self, val):
+        self._shape = json.dumps(val)
+
+    @property
+    def dim_names(self):
+        return json.loads(self._dim_names)
+
+    @dim_names.setter
+    def dim_names(self, val):
+        self._dim_names = json.dumps(val)
 
     @classmethod
     def from_ndarray(cls, array):
@@ -90,14 +117,15 @@ class NArrayIndex(Base):
             minvalue, maxvalue, median = None, None, None
 
         self = cls(
-            dtype=str(array.dtype),
             ndim=array.ndim,
-            shape=str(array.shape),
             has_nan=has_nan,
             min_value=minvalue,
             max_value=maxvalue,
             median_value=median
         )
+
+        self.dtype = array.dtype
+        self.shape = array.shape
 
         for i, l in enumerate(array.shape):
             if i > 4:
