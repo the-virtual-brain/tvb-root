@@ -112,6 +112,7 @@ def _create_command_file(command_file_path, command, before_message, done_messag
         f.write("    export LANG=en_US.UTF-8\n")
         f.write('fi\n')
         f.write("export LC_ALL=$LANG\n")
+        f.write("export PYTHONIOENCODING=utf8 \n")
         f.write("# export TVB_USER_HOME=`pwd`\n")
         f.write(command + "\n")
         if done_message:
