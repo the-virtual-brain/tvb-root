@@ -2,6 +2,8 @@
 # Runs the tests for TVB project.
 
 echo 'Executing clean before tests...'
+rm -rf TEST_OUTPUT
+
 if [ "$1" ]; then
     # Make sure TVB application is not running....
     python tvb_bin/app.py stop TEST_POSTGRES_PROFILE
