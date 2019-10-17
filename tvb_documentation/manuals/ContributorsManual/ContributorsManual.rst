@@ -45,7 +45,7 @@ The work environment
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 
-We recommend preparing your local Python environment for TVB with `anaconda`_.
+We recommend preparing your local Python environment for TVB with `anaconda`_, then install TVB from Pypi.
 Using a virtual environment inside Anaconda is a good idea.
 
 .. code-block:: bash
@@ -54,7 +54,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ conda create -y -n $envname numpy
    $ source activate $envname
    $ conda config --add channels conda-forge
-   $ conda install tvb-framework  # This will bring tvb and all its dependencies
+   $ pip install tvb-framework  # This will bring tvb and all its dependencies
    $ python -m tvb.interfaces.web.run WEB_PROFILE  # Launch TVB web server locally
 
 Similarly as using conda-forge repo above, you could install from Pypi **tvb-framework** and/or **tvb-library**.
