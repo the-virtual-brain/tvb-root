@@ -49,14 +49,14 @@ Performance evolution from a TVB version to another.
     :width: 1000px
     :figclass: demo-figure
 
-    Only tvb-library Version 1.* vs 2.0
+    Only tvb-library Version 1.* vs 2.0 (* neo) shows a factor 2 improvement here.
 
 
 .. figure:: /_static/benchmarks-evolution-mac.png
     :width: 1000px
     :figclass: demo-figure
 
-    Recent versions - Mac station
+    Recent versions - Mac station. Version 2.0 does not do very good with storage attached, but this was expected, we will work on optimizing this in future releases
 
 
 .. figure:: /_static/benchmarks-evolution.png

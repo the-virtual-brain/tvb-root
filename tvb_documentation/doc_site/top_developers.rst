@@ -19,6 +19,7 @@ You can view open issues on TVB's Jira |open_issues|. You can see ongoing activi
 .. toctree::
    :maxdepth: 2
 
+   /manuals/neotraits/index
    /manuals/ContributorsManual/ContributorsManual
    benchmarks/top_benchmarks
 

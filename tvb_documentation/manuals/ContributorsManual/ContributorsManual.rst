@@ -156,7 +156,8 @@ Datatype:
    They usually contain numeric arrays.
    Many algorithms receive and produce Datatypes.
 
-   Tvb framework organizes them into projects, stores the numeric data in .h5 files and metadata in MAPPED_TYPE... tables in a database.
+   Tvb framework organizes them into projects, stores the numeric data in .h5 files and metadata in
+   tables in a relational database (sqlite or postgresql).
 
    Example: Surface, Connectivity
    Code: scientific_library/tvb/datatypes/
