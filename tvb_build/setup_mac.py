@@ -118,16 +118,6 @@ def _create_command_file(command_file_path, command, before_message, done_messag
             f.write('echo "Done."\n')
 
 
-
-def _add_sitecustomize(base_folder, destination_folder):
-    full_path = os.path.join(base_folder, destination_folder, "sitecustomize.py")
-    print("- Writing file: " + full_path)
-    with open(full_path, 'w') as sc_file:
-        sc_file.write("# -*- coding: utf-8 -*-\n\n")
-        sc_file.write("import sys\n")
-        sc_file.write("sys.setdefaultencoding('utf-8')\n")
-
-
 def _copy_tvb_sources(library_folder):
     """
     Make sure all TVB folders are collapsed together in one folder in the distribution.
@@ -235,8 +225,6 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
 
     for extra in EXTRA_MODULES:
         _copy_module(extra, library_abs_path)
-
-    _add_sitecustomize(DIST_FOLDER, library_path)
 
     bin_src = os.path.join("tvb_bin", "tvb_bin")
     bin_dst = os.path.join(library_abs_path, "tvb_bin")

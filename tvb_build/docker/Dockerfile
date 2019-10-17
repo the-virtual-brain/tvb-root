@@ -30,8 +30,9 @@ RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing
 
-COPY kernel.json /opt/conda/envs/tvb-run/share/jupyter/kernels/python2/
+#COPY kernel.json /opt/conda/envs/tvb-run/share/jupyter/kernels/python2/
 
-# Check why this is not created
-RUN mkdir /root/.tvb-temp
-RUN mkdir /root/.tvb-temp/logs
+RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/tvb-root
+
+# -v [local- tvb-root - clone]:/root/tvb-root
+CMD ["bash","-c","source activate tvb-docs && cd /root/tvb-root/tvb_build && sh install_full_tvb.sh && python build_step1.py"]

@@ -28,20 +28,16 @@
 #
 #
 
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
 import os
 import argparse
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model import Project
+from tvb.core.entities.model.model_project import Project
 
 
 class DiagnoseDiskUsage(object):
     FORMAT_DT = '    {:14} {:20} {:>12} {:>12} {:>12} {:>12}'
     HEADER_DT = FORMAT_DT.format('', '', 'disk_size(kib)', 'db_size(kib)', 'delta(kib)', 'ratio(%)')
-
 
     def __init__(self, prj_id):
         self.file_helper = FilesHelper()
@@ -75,7 +71,6 @@ class DiagnoseDiskUsage(object):
         finally:
             dao.session.close_session()
 
-
     @staticmethod
     def get_h5_by_gid(root, gid):
         for f in os.listdir(root):
@@ -83,11 +78,9 @@ class DiagnoseDiskUsage(object):
             if gid in f and os.path.isfile(fp):
                 return fp
 
-
     @staticmethod
     def get_file_kib_size(fp):
         return int(round((os.path.getsize(fp) / 1024.)))
-
 
     @staticmethod
     def print_usage_line(col1, col2, actual, expected):
@@ -108,7 +101,6 @@ class DiagnoseDiskUsage(object):
 
         print(DiagnoseDiskUsage.FORMAT_DT.format(col1, col2, '{:,}'.format(actual),
                                                  '{:,}'.format(expected), delta, ratio))
-
 
     def analyse_operation(self, op):
         op_disk_size, op_db_size = 0, 0
@@ -139,7 +131,6 @@ class DiagnoseDiskUsage(object):
         self.prj_db_size += op_db_size
         self.print_usage_line('', 'total :', op_disk_size, op_db_size)
         print()
-
 
     def list_unexpected_project_files(self, root_path):
         unexpected = []

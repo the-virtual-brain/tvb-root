@@ -77,10 +77,11 @@ class Config:
     @staticmethod
     def mac64():
         # TODO check paths
-        set_path = 'cd ../tvb_data\n' + \
-                   'export PATH=`pwd`/bin:$PATH\n' + \
-                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
-                   'unset PYTHONHOME\n\n' + \
+        set_path = 'cd ../tvb_data \n' + \
+                   'export PATH=`pwd`/bin:$PATH \n' + \
+                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages \n' + \
+                   'export PYTHONIOENCODING=utf8 \n' + \
+                   'unset PYTHONHOME \n\n' + \
                    '# export TVB_USER_HOME=`pwd` \n'
 
         commands_map = {
@@ -101,6 +102,7 @@ class Config:
         set_path = 'cd ..\\tvb_data \n' + \
                    'set PATH=%cd%;%cd%\\Library\\mingw-w64\\bin;%cd%\\Library\\bin;%cd%\\Scripts;%path%; \n' + \
                    'set PYTHONPATH=%cd%\\Lib;%cd%\\Lib\\site-packages \n' + \
+                   'set PYTHONIOENCODING=utf8 \n' + \
                    'set PYTHONHOME=\n\n' + \
                    'REM set TVB_USER_HOME=%cd% \n'
 
@@ -119,10 +121,11 @@ class Config:
 
     @staticmethod
     def linux64():
-        set_path = 'cd ../tvb_data\n' + \
-                   'export PATH=`pwd`/bin:$PATH\n' + \
-                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages\n' + \
-                   'unset PYTHONHOME\n\n' + \
+        set_path = 'cd ../tvb_data \n' + \
+                   'export PATH=`pwd`/bin:$PATH \n' + \
+                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages \n' + \
+                   'export PYTHONIOENCODING=utf8 \n' + \
+                   'unset PYTHONHOME \n\n' + \
                    '# export TVB_USER_HOME=`pwd` \n'
 
         for env_name in ["LD_LIBRARY_PATH", "LD_RUN_PATH"]:
@@ -173,7 +176,7 @@ def _copy_collapsed(config):
     """
     Merge multiple src folders, and filter some resources which are not needed (tests, docs, svn folders)
     """
-    for module_path, destination_folder in config.tvb_sources.iteritems():
+    for module_path, destination_folder in config.tvb_sources.items():
         _log(2, module_path + " --> " + destination_folder)
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
@@ -224,18 +227,6 @@ def _create_windows_script(target_file, command):
         f.write(command + ' \n')
         f.write('echo "Done."\n')
     os.chmod(target_file, 0o755)
-
-
-def _add_sitecustomize(destination_folder):
-    """
-    Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
-    Most of the comments in the simulator are having pieces outside of ascii coverage
-    """
-    full_path = join(destination_folder, "sitecustomize.py")
-    with open(full_path, 'w') as sc_file:
-        sc_file.write("# -*- coding: utf-8 -*-\n\n")
-        sc_file.write("import sys\n")
-        sc_file.write("sys.setdefaultencoding('utf-8')\n")
 
 
 def _modify_pth(pth_name):
@@ -289,9 +280,6 @@ def prepare_anaconda_dist(config):
     _log(1, "Copying anaconda ENV folder" + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
     shutil.copytree(config.anaconda_env_path, config.target_library_root)
 
-    _log(1, "Adding sitecustomize.py")
-    _add_sitecustomize(os.path.dirname(config.target_site_packages))
-
     _log(1, "Copying TVB sources into site-packages ...")
     _copy_collapsed(config)
 
@@ -309,7 +297,7 @@ def prepare_anaconda_dist(config):
     _modify_pth(config.easy_install_pth)
 
     _log(1, "Creating command files:")
-    for target_file, content in config.commands_map.iteritems():
+    for target_file, content in config.commands_map.items():
         config.command_factory(join(config.target_root, target_file), content)
 
     _log(1, "Introspecting 3rd party licenses...")

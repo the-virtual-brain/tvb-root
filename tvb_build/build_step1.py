@@ -174,7 +174,7 @@ def ensure_svn_current_version():
         real_svn_number = int(os.environ[svn_variable])
     else:
         _proc = Popen(["svnversion", "."], stdout=PIPE)
-        real_svn_number = VersionSettings.parse_svn_version(_proc.communicate()[0])
+        real_svn_number = VersionSettings.parse_svn_version(str(_proc.communicate()[0]))
 
     with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
         version_line = version_file.read()

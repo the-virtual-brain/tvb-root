@@ -40,8 +40,6 @@ based on current running environment (e.g. dev vs deployment), or developer prof
 
 """
 
-import sys
-import importlib
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.profile_settings import BaseSettingsProfile
 
@@ -75,21 +73,6 @@ class TvbProfile(object):
         """
         Sets TVB profile and do related initializations.
         """
-
-        # Ensure Python is using UTF-8 encoding (otherwise default encoding is ASCII)
-        # We should make sure UTF-8 gets set before reading from any TVB files
-        # e.g. TVB_STORAGE will differ if the .tvb.configuration file contains non-ascii bytes
-        # most of the comments in the simulator are having pieces outside of ascii coverage
-        if not cls.env.is_distribution() and sys.getdefaultencoding().lower() != 'utf-8':
-            old_out = sys.stdout
-            if sys.version_info[0] < 3:
-                reload(sys)
-                sys.setdefaultencoding("utf-8")
-            else:
-                importlib.reload(sys)
-                sys.setdefaultencoding('utf-8')
-            sys.stdout = old_out
-
         if selected_profile is not None:
             cls._load_framework_profiles(selected_profile)
             cls._build_profile_class(selected_profile, in_operation, run_init)
