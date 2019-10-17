@@ -119,7 +119,7 @@ class SimulatorModelFragment(ABCAdapterForm):
 
         self.model = SimpleSelectField(choices=self.model_choices, form=self, name='model', required=True,
                                        label=Simulator.model.label, doc=Simulator.model.doc)
-        self.model.template = "select_field.jinja2"
+        self.model.template = "select_field.html"
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -136,7 +136,7 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator = SimpleSelectField(choices=self.integrator_choices, form=self, name='integrator',
                                             required=True,
                                             label=Simulator.integrator.label, doc=Simulator.integrator.doc)
-        self.integrator.template = "select_field.jinja2"
+        self.integrator.template = "select_field.html"
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -152,7 +152,7 @@ class SimulatorMonitorFragment(ABCAdapterForm):
 
         self.monitor = SimpleSelectField(choices=self.monitor_choices, form=self, name='monitor', required=True,
                                          label=Simulator.monitors.label, doc=Simulator.monitors.doc)
-        self.monitor.template = "select_field.jinja2"
+        self.monitor.template = "select_field.html"
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -202,9 +202,9 @@ class SimulatorPSEConfigurationFragment(ABCAdapterForm):
     def __init__(self, choices, prefix='', project_id=None):
         super(SimulatorPSEConfigurationFragment, self).__init__(prefix, project_id)
         self.pse_param1 = SimpleSelectField(choices, form=self, name='pse_param1', required=True, label="PSE param1")
-        self.pse_param1.template = "select_field.jinja2"
+        self.pse_param1.template = "select_field.html"
         self.pse_param2 = SimpleSelectField(choices, form=self, name='pse_param2', label="PSE param2")
-        self.pse_param2.template = "select_field.jinja2"
+        self.pse_param2.template = "select_field.html"
 
 
 class SimulatorPSEParamRangeFragment(ABCAdapterForm):

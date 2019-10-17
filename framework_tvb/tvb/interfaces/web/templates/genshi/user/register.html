@@ -2,7 +2,7 @@
 <!--     Main Content              -->
 <!-- ============================= -->
 <form method="post"> 
-  <div id="main" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <div id="main">
     <aside class="header-component toolbar can-extend auto-extends">
         <h3>User Register</h3>
         <div class="extension">
@@ -14,7 +14,7 @@
             </div>
         </div>
     </aside>
-	<xi:include href="new_user.html"/>
-	${create_user_registration(data, errors, 'Registration Form', True)}
+	{% import "user/new_user.html" as nu %}
+	{{ nu.create_user_registration(data, errors, 'Registration Form', true) }}
   </div>
 </form>

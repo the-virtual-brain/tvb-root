@@ -1,9 +1,14 @@
-<py:def function="draw_upload(inputRow)" xmlns:py="http://genshi.edgewall.org/">
+{% macro draw_upload(inputRow) -%}
  	<!--!
 	This file contains the function to generate file upload Input.
 	 -->
- 	<input type="file" tabindex='1' name="$inputRow.name" id="$inputRow.name" accept="$inputRow.required_type" py:if="'required_type' in inputRow"/>
-    <input type="file" tabindex='1' name="$inputRow.name" id="$inputRow.name" py:if="'required_type' not in inputRow"/>
-    
-    ${add_checkbox_control(inputRow)}
-</py:def>
+    {% if 'required_type' in inputRow %}
+ 	    <input type="file" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}" accept="{{ inputRow.required_type }}"/>
+    {% else %}
+        <input type="file" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}"/>
+    {% endif %}
+
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {{ gatf.add_checkbox_control(inputRow) }}
+
+{%- endmacro %}

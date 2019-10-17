@@ -55,7 +55,7 @@ class IntegratorForm(Form):
 
 
 class IntegratorStochasticForm(IntegratorForm):
-    template = 'select_field.jinja2'
+    template = 'select_field.html'
 
     def __init__(self, prefix=''):
         super(IntegratorStochasticForm, self).__init__(prefix)

@@ -1,20 +1,34 @@
-<div id="portlets-display" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude"
-	 py:with="portlets_len=len(portlet_tab_list)"
-	 class="portlet-container portlet-run visible-${'2-2' if portlets_len==4 else '2-1' if portlets_len==3 else '1-1' if portlets_len==2 else '1'}">
-	
-	<py:if test="portlets_len == 0 and not model.has_finished(status)">
-		<p>Simulation is still running....</p>
-		<p>Visualizers will be loaded when computation has finished!</p>
-	</py:if>
-	<py:if test="portlets_len == 0 and model.has_finished(status)">
-		<p>No visualizers configured for this tab to display.</p>
-	</py:if>
+{% with %}
+	{% set portlets_len = (portlet_tab_list | length) %}
+	<div id="portlets-display" class="portlet-container portlet-run visible-{{ '2-2' if portlets_len==4 else '2-1' if portlets_len==3 else '1-1' if portlets_len==2 else '1' }}">
 
-	<py:for each="portlet_idx, portlet_entity in enumerate(portlet_tab_list)"
-			py:with="width= max_width if (portlets_len==1 or portlets_len==3 and portlet_idx==2) else max_width/2;
-					 height=max_height/2 - 38 if (portlets_len &gt; 1) else max_height - 38;">
+		{% if portlets_len == 0 and not model.has_finished(status) %}
+			<p>Simulation is still running....</p>
+			<p>Visualizers will be loaded when computation has finished!</p>
+		{% endif %}
 
-		<xi:include href="portlet_visualization_template.html"/>
-	</py:for>
-	
-</div>
+		{% if portlets_len == 0 and model.has_finished(status) %}
+			<p>No visualizers configured for this tab to display.</p>
+		{% endif %}
+
+		{% for portlet_entity in portlet_tab_list %}
+			{% with %}
+
+				{% if (portlets_len==1 or portlets_len==3 and loop.index0==2) %}
+					{% set width = max_width %}
+				{% else %}
+					{% set width = max_width / 2 %}
+				{% endif %}
+
+				{% if portlets_len > 1 %}
+					{% set  height = max_height/2 - 38 %}
+				{% else %}
+					{% set height = max_height -38 %}
+				{% endif %}
+
+				{% include 'burst/portlet_visualization_template.html' %}
+
+			{% endwith %}
+		{% endfor %}
+	</div>
+{% endwith %}

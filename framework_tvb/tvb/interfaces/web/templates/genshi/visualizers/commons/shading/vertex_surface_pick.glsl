@@ -1,5 +1,5 @@
-{% include transform.glsl %}
-{% include colorscheme.glsl %}
+{% include 'visualizers/commons/shading/transform.glsl' %}
+{% include 'visualizers/commons/shading/colorscheme.glsl' %}
 /** This shader combines two behaviours
  * It can display surface activity using a color pallete like vertex_one_to_one.
  * It can also color vertices using a explicit color buffer. This is used for vertex picking.

@@ -1,19 +1,22 @@
-<py:def function="draw_brain_component(canvas_id, legend_labels)" xmlns:py="http://genshi.edgewall.org/">
+{% macro draw_brain_component(canvas_id, legend_labels) -%}
     <div id="brainComponentContainer" class="tvb-snapshot-image">
-        <canvas id="$canvas_id" class="brainComponentCanvas" tabindex='100'></canvas>
+        <canvas id="{{ canvas_id }}" class="brainComponentCanvas" tabindex='100'></canvas>
 
         <div id="brainLegendDiv">
-            <table class="brainLegendContent" py:if="legend_labels">
-                <py:for each='label in legend_labels'>
-                    <tr>
-                        <td><label>${label}</label></td>
-                    </tr>
-                </py:for>
-            </table>
+            {% if legend_labels %}
+                <table class="brainLegendContent">
+                    {% for label in legend_labels %}
+                        <tr>
+                            <td><label>{{ label }}</label></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
         </div>
 
         <aside class="menu-node" id="contextMenuDiv" style="display:none">
             <mark id='nodeNameId'></mark>
         </aside>
+
     </div>
-</py:def>
+{%- endmacro %}

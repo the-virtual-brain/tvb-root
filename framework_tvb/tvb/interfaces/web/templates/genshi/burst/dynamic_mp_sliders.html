@@ -1,6 +1,4 @@
-<div xmlns:py="http://genshi.edgewall.org/" py:strip="True" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <xi:include href="dynamic_sliders.html" />
+{% import 'burst/dynamic_sliders.html' as ds with context %}
+{{ ds.drawSliderGroup(parameters, "reset_sliders", "Model parameters") }}
 
-    ${drawSliderGroup(parameters, "reset_sliders", "Model parameters")}
 
-</div>

@@ -1,35 +1,34 @@
-<section xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/"
-        class="select-points view-column col-1">
+<section class="select-points view-column col-1">
 	
 	<h4><mark>View</mark> Local connectivity</h4>
-	
-    ${generateDisplay(existentEntitiesInputList, False, "")}
-	
-	<py:if test="no_local_connectivity == False">
-		<xi:include href="left_template_brain_pick.html"/>
-	</py:if>
-	<py:if test="no_local_connectivity == True">
+
+	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
+
+	{% if no_local_connectivity == false %}
+		{% include 'spatial/left_template_brain_pick.html' %}
+	{% else %}
 		Should not get here before the load of a local connectivity.
-	</py:if>
-    
+	{% endif %}
 
 	<script type="text/javascript">
         $(document).ready(function() {
-            LCON_page_init(${minValue}, ${maxValue});
+            LCON_page_init({{ minValue }}, {{ maxValue }});
         });
     </script>
-    
-    <py:if test="defined('displayedMessage') and displayedMessage != None">
+
+	{% if displayedMessage is defined and displayedMessage != none %}
 		<script type="text/javascript">
-			displayMessage('${displayedMessage}', '${messageType}');
+			displayMessage('{{ displayedMessage }}', '{{ messageType }}');
 		</script>
-    </py:if>
+	{% endif %}
     
-    <form id="load-existing-entity" action="${loadExistentEntityUrl}" method="POST">
-    	<input type="hidden" id="entity-gid" name="local_connectivity_gid" value="None"/>
+    <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
+    	<input type="hidden" id="entity-gid" name="local_connectivity_gid" value="none"/>
     	<input type="hidden" name="from_step" value="2"/>
     </form>
-    <form id="reset-to-default" action="${resetToDefaultUrl}" method="POST">
+
+    <form id="reset-to-default" action="{{ resetToDefaultUrl }}" method="POST">
     	<input type="hidden" name="from_step" value="2"/>
     </form>
     

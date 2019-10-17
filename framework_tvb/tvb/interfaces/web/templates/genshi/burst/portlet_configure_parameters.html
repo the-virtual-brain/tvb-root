@@ -1,16 +1,19 @@
-<div xmlns:py="http://genshi.edgewall.org/" class="adaptersDiv" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
+{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
 
-	<xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
-	
-	<table py:if="adapters_list">
-		<tr py:for="i in range(len(adapters_list))">
-			<py:with vars="is_not_last = (i &lt; len(adapters_list) -1); adapter_config = adapters_list[i];">
-			<td>
-				Configuration for <b>${adapter_config.ui_name}</b>:
-				${generateDisplay(adapter_config.interface, False, "", treeSessionKey, 'forces-create' if is_not_last else '')}
-			</td>
-			</py:with>
-		</tr>
+{% if adapters_list %}
+	<table>
+		{% for i in ((adapters_list | length) | xrange) %}
+			<tr>
+				{% with %}
+					{% set is_not_last = (i < ((adapters_list | length) - 1)) %}
+					{% set adapter_config = adapters_list[i] %}
+
+					<td>
+						Configuration for <b>{{ adapter_config.ui_name }}</b>:
+						{{ gatf.generateDisplay(adapter_config.interface, false, "", treeSessionKey, 'forces-create' if is_not_last else '') }}
+					</td>
+				{% endwith %}
+			</tr>
+		{% endfor %}
 	</table>
-	
-</div>
+{% endif %}

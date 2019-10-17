@@ -1,16 +1,14 @@
-<div xmlns:py="http://genshi.edgewall.org/" py:strip="True">
-    <py:def function="drawStateModeSelector(modeOrStates, componentId, name, callback)" >
-        <py:if test="len(modeOrStates) > 1">
-            <dt>
-                <label for="${componentId}">${name}</label>
-            </dt>
-            <dd>
-                <select id="${componentId}" onchange="${callback}()">
-                    <py:for each="idx, entry in enumerate(modeOrStates)">
-                        <option selected="${'selected' if idx==0 else None}" value="$idx">${entry}</option>
-                    </py:for>
-                </select>
-            </dd>
-        </py:if>
-    </py:def>
-</div>
+{% macro drawStateModeSelector(modeOrStates, componentId, name, callback) -%}
+    {% if (modeOrStates | length) > 1 %}
+        <dt>
+        <label for="{{ componentId }}">{{ name }}</label>
+        </dt>
+        <dd>
+            <select id="{{ componentId }}" onchange="{{ callback }}()">
+                {% for entry in modeOrStates %}
+                    <option {{ 'selected' if loop.index0==0 }} value="{{ loop.index0 }}">{{ entry }}</option>
+                {% endfor %}
+            </select>
+        </dd>
+    {% endif %}
+{%- endmacro %}

@@ -1,16 +1,16 @@
-<div xmlns:xi="http://www.w3.org/2001/XInclude">
-    <xi:include href="../commons/gl_view_header.html" />
-    <xi:include href="../commons/fragment_shader.html" />
-	<xi:include href="../commons/vertex_shader.html"/>
+<div>
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/vertex_shader.html' %}
 
     <script type="text/javascript">
         function launchViewer(width, height) {
-        	VS_StartPortletPreview('${base_activity_url}', '${urlVertices}', '${urlTriangles}', '${urlNormals}',
-                     ${noOfMeasurePoints}, '${urlRegionMap}', '${urlRegionBoundaries}',
-                    '${minActivity}', '${maxActivity}', '${isOneToOneMapping}');
+        	VS_StartPortletPreview('{{ base_activity_url }}', '{{ urlVertices }}', '{{ urlTriangles }}', '{{ urlNormals }}',
+                {{ noOfMeasurePoints | safe }}, '{{ urlRegionMap | safe }}', '{{ urlRegionBoundaries | safe }}',
+                    '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}');
         }
     </script>
 
-    <xi:include href="../commons/brain_component.html"/>
-    ${draw_brain_component("GLcanvas", None)}
+    {% import 'visualizers/commons/brain_component.html' as bc with context %}
+    {{ draw_brain_component("GLcanvas", none) }}
 </div>

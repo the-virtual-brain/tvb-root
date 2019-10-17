@@ -142,7 +142,9 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         :param pages : dictionary of pages to be used with <xi:include>
         """
         module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
-        relative_path = os.path.dirname(module_ref.__file__)
+        relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
+
+
 
         # We still need the relative file path into desktop client
         if os.path.isabs(template):
@@ -153,16 +155,18 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
             parameters[self.KEY_CONTENT_MODULE] = content_module
 
         if not os.path.isabs(template):
-            template = os.path.join(relative_path, template)
-        if not os.path.isabs(template):
-            template = os.path.join(os.path.dirname(sys.executable), template)
+            # template = os.path.join(relative_path, template)
+            template = relative_path + '/' + template
+        #if not os.path.isabs(template):
+        #   template = os.path.join(os.path.dirname(sys.executable), template)
         if pages:
             for key, value in pages.items():
                 if value is not None:
                     if not os.path.isabs(value):
-                        value = os.path.join(relative_path, value)
-                    if not os.path.isabs(value):
-                        value = os.path.join(os.path.dirname(sys.executable), value)
+                        value = relative_path + '/' + value
+                 #TODO: double check if we need this in genshi
+                    #if not os.path.isabs(value):
+                        #value = os.path.join(os.path.dirname(sys.executable), value)
                 parameters[key] = value
         parameters[self.KEY_CONTENT] = template
         parameters[self.KEY_IS_ADAPTER] = True

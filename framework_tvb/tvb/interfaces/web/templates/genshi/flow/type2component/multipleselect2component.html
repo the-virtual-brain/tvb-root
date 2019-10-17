@@ -1,30 +1,50 @@
-<py:def function="draw_multipleselect(inputRow, disabled, treeSessionKey)" xmlns:py="http://genshi.edgewall.org/">
+{% macro draw_multipleselect(inputRow, disabled, treeSessionKey) -%}
 	<!--!
 	Draw Multiple-select control (e.g. for selecting the simutation's monitors).  
 	-->
-	
-    <select name="$inputRow.name" tabindex='1' id="$inputRow.name" multiple="multiple" onchange="multipleSelect(this, 'data_$inputRow.name')">
-        ${create_select_options(inputRow, True)}
-    </select> 
-    
-    ${add_checkbox_control(inputRow)}
-    
-    <py:for each="option in inputRow.options">
-    	<py:if test="'attributes' in option">
-	        <py:with vars="input_row_default = [] if 'default' not in inputRow else inputRow.default.split(',') if isinstance(inputRow.default, (str, unicode)) else inputRow.default;
-						   isEnabled=(str(option.value) in input_row_default) or ('default' not in inputRow and str(option.value)==str(inputRow.options[0].value));
-	        			   add_attrs= {'disabled': 'disabled', 'style': 'display:None;'} if not isEnabled or disabled else {'style': 'display:block;'};">
-	            <div id="data_$inputRow.name$option.value" py:attrs="add_attrs">
-	                <p><b>${option.name}</b></p> 
-	                ${generate_help_tooltip(option)}
-	                
-	                <py:if test="'attributes' in option and option.attributes">
-	                    ${generateDisplay(option.attributes, not isEnabled or disabled, "data_" + inputRow.name + str(option.value), treeSessionKey)}
-	                </py:if>
-	            </div>
-	        </py:with>
-        </py:if>
-    </py:for>
+	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
 
-</py:def> 
+    <select name="{{ inputRow.name }}" tabindex='1' id="{{ inputRow.name }}" multiple="multiple" onchange="multipleSelect(this, 'data_{{ inputRow.name }}')">
+        {{ gatf.create_select_options(inputRow, true) }}
+    </select> 
+
+    {{ gatf.add_checkbox_control(inputRow) }}
+
+	{% for option in inputRow.options %}
+		{% if 'attributes' in option %}
+	        {% with %}
+
+				{% if 'default' not in inputRow %}
+					{% set  input_row_default = [] %}
+				{% else %}
+					{% if inputRow.default | isinstance((str, unicode) | type) %}
+						{% set input_row_default = inputRow.default.split(',') %}
+					{% else %}
+						{% set input_row_default = inputRow.default %}
+					{% endif %}
+				{% endif %}
+
+				{% set  isEnabled = ((option.value | string) in input_row_default) or ('default' not in inputRow and (option.value | string)==(inputRow.options[0].value | string)) %}
+
+				{% if not isEnabled or disabled %}
+					{% set add_attrs = 'disabled ' ~ (' style="display:none;"' | safe) %}
+				{% else %}
+					{% set add_attrs = 'style="display:block;"' | safe %}
+				{% endif %}
+
+	            <div id="data_{{ inputRow.name }}{{ option.value }}" {{ add_attrs }} >
+	                <p><b>{{ option.name }}</b></p>
+					{% import 'flow/generate_help_tooltip.html' as ght with context %}
+	                {{ ght.generate_help_tooltip(option) }}
+
+					{% if 'attributes' in option and option.attributes %}
+	                    {{ gatf.generateDisplay(option.attributes, not isEnabled or disabled, "data_" ~ inputRow.name ~ (option.value | string), treeSessionKey) }}
+	                {% endif %}
+	            </div>
+
+	      	{% endwith %}
+		{% endif %}
+	{% endfor %}
+
+{%- endmacro %}
      

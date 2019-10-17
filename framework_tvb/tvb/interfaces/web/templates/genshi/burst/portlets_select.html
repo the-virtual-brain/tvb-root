@@ -2,27 +2,30 @@
 	Select with all available portlets.
 	User will check one for that spot in a Burst-View TAB.
 	-->
-<py:def function="drawPortletConfiguration(portlets_list, index_in_tab)" xmlns:py="http://genshi.edgewall.org/">
-	<div class="portlet portlet-$index_in_tab">
+{% macro drawPortletConfiguration(portlets_list, index_in_tab) -%}
+	<div class="portlet portlet-{{ index_in_tab }}">
 		<fieldset>
+
 			<dl>
-				<dt><label for="selectportlet-$index_in_tab">Visualizer (plus analyzer):</label></dt>
+				<dt><label for="selectportlet-{{ index_in_tab }}">Visualizer (plus analyzer):</label></dt>
 				<dd>
-					<select id="selectportlet-$index_in_tab" name="selectportlet-$index_in_tab" onchange="updatePortletSelection(this, ${index_in_tab})">
+					<select id="selectportlet-{{ index_in_tab }}" name="selectportlet-{{ index_in_tab }}" onchange="updatePortletSelection(this, {{ index_in_tab }})">
 						<option value="-1">None</option>
-						<py:for each="portlet in portlets_list">
-							<option value="${portlet.id}">${portlet.name}</option>
-				        </py:for>
+						{% for portlet in portlets_list %}
+							<option value="{{ portlet.id }}">{{ portlet.name }}</option>
+						{% endfor %}
 					</select>
 				</dd>
 			</dl>
+
 			<dl>
-				<dt><label for="portlet-name_entry-${index_in_tab}">Custom name:</label></dt>
+				<dt><label for="portlet-name_entry-{{ index_in_tab }}">Custom name:</label></dt>
 				<dd>
-					<input type="text" id="portlet-name_entry-${index_in_tab}" name="portlet-name_entry-${index_in_tab}" value="" />
+					<input type="text" id="portlet-name_entry-{{ index_in_tab }}" name="portlet-name_entry-{{ index_in_tab }}" value="" />
 				</dd>
 			</dl>
+
 		</fieldset>
 	</div>
-</py:def>
+{%- endmacro %}
 

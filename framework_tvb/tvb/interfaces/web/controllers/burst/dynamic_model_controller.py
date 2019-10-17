@@ -143,7 +143,7 @@ class _LeftFragmentAdapter(ABCAdapter):
                 'name': clz._ui_name, # ui-name instaead
                 'value': clz_name,
                 'inline_description': self._dfun_math_directives_to_matjax(clz),
-                'description' : clz.__doc__
+                'description' : multiline_math_directives_to_matjax(clz.__doc__).replace('&', '&amp;').replace('.. math::','')
             })
 
         fragment = _InputTreeFragment()
@@ -166,8 +166,17 @@ class _LeftFragmentAdapter(ABCAdapter):
         def format_doc(doc):
             return multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::','')
 
+        # try in dfun
         try:
             doc = model.dfun.__doc__
+        except AttributeError:
+            doc = None
+
+        if doc is not None:
+            return format_doc(doc)
+        # try in _numpy_dfun
+        try:
+            doc = model._numpy_dfun.__doc__
         except AttributeError:
             doc = None
 

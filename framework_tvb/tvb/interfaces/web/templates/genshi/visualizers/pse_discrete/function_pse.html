@@ -1,5 +1,4 @@
-<py:def function="generateFramePSE(dataTypeGroupGID, available_metrics)" xmlns:py="http://genshi.edgewall.org/"
-        xmlns:xi="http://www.w3.org/2001/XInclude">
+{% macro generateFramePSE(dataTypeGroupGID, available_metrics) -%}
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static/js/alternateDatastructure.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
@@ -9,41 +8,41 @@
     <!--! Controls for changing metrics -->
     <ul class="toolbar-inline burst-pse-metrics">
         <li>
-		<label for="color_metric_select">Color metric</label>
-		<select id="color_metric_select">
-			<option value="None">None</option>
-            <py:for each="metric in available_metrics">
-                <py:if test="metric==color_metric">
-                    <option value="$metric" selected="selected">$metric</option>
-                </py:if>
-                <py:if test="metric!=color_metric">
-                    <option value="$metric">$metric</option>
-                </py:if>
-            </py:for>
-		</select>
+		    <label for="color_metric_select">Color metric</label>
+		    <select id="color_metric_select">
+			    <option value="none">None</option>
+                {% for metric in available_metrics %}
+                    {% if metric==color_metric %}
+                        <option value="{{ metric }}" selected="selected">{{ metric }}</option>
+                    {% else %}
+                       <option value="{{ metric }}">{{ metric }}</option>
+                    {% endif %}
+                {% endfor %}
+		    </select>
         </li>
 
         <li>
-		<label for="size_metric_select">Size metric</label>
-		<select id="size_metric_select">
-			<option value="None">None</option>
-            <py:for each="metric in available_metrics">
-                <py:if test="metric==size_metric">
-                    <option value="$metric" selected="selected">$metric</option>
-                </py:if>
-                <py:if test="metric!=size_metric">
-                    <option value="$metric">$metric</option>
-                </py:if>
-            </py:for>
-		</select>
+		    <label for="size_metric_select">Size metric</label>
+		    <select id="size_metric_select">
+			    <option value="none">None</option>
+                {% for metric in available_metrics %}
+                    {% if metric==size_metric %}
+                        <option value="{{ metric }}" selected="selected">{{ metric }}</option>
+                    {% else %}
+                        <option value="{{ metric }}">{{ metric }}</option>
+                    {% endif %}
+                {% endfor %}
+		    </select>
         </li>
 
         <li>
-		<a href="#" onclick="PSEDiscreet_BurstDraw('pse_discreet_top_id', '${pse_back_page}')" title="Refresh..." class="action action-refresh">Refresh</a>
+		    <a href="#" onclick="PSEDiscreet_BurstDraw('pse_discreet_top_id', '{{ pse_back_page }}')" title="Refresh..." class="action action-refresh">Refresh</a>
         </li>
+
         <li>
             <button id="Explore" class="action action-analyze" disabled="disabled">Explore</button>
         </li>
+
         <li>
             <button id="Filter" class="action action-edit">Filter</button>
         </li>
@@ -53,29 +52,32 @@
     <ul class="toolbar-inline burst-pse-colors">
         <li>
             <label>
-                <mark>Minimum color metric</mark>
-                <span id="minColorLabel"></span> </label>
+            <mark>Minimum color metric</mark>
+            <span id="minColorLabel"></span> </label>
         </li>
+
         <li>
             <label>
-                <mark>Maximum color metric</mark>
-                <span id="maxColorLabel"></span> </label>
+            <mark>Maximum color metric</mark>
+            <span id="maxColorLabel"></span> </label>
         </li>
+
         <li>
             <label>
-                <mark>Minimum shape metric</mark>
-                <span id="minShapeLabel"></span> </label>
-        </li>
+            <mark>Minimum shape metric</mark>
+            <span id="minShapeLabel"></span> </label>
+       </li>
+
         <li>
-            <label>
-                <mark>Maximum shape metric</mark>
-                <span id="maxShapeLabel"></span> </label>
+             <label>
+            <mark>Maximum shape metric</mark>
+            <span id="maxShapeLabel"></span> </label>
         </li>
+
         <li>
-            <label class="pse-graph-title">
-                <mark>axis Y - axis X</mark>
-                $title_y - $title_x</label>
+            <label class="pse-graph-title"><mark>axis Y - axis X</mark>{{ title_y }} - {{ title_x }}</label>
         </li>
+
     </ul>
 
     <div class="tooltip"></div>
@@ -83,6 +85,7 @@
     <div id="FilterDiv" style="display: none;">
         <ul class="toolbar-inline" id="filterTools">
             <li>
+
                 <select name="Storing Selections for Filter" id="filterSelect0" class="filterSelectBar">
                 </select>
                 <input type="text" id="overlayNameInput0"/>
@@ -108,6 +111,7 @@
     <div id="exploreDiv" style="display: none;">
         <ul class="toolbar-inline" id="exploreTools">
             <fieldset>
+
                 <dl>
                     <dt>
                         <label>X range</label>
@@ -118,6 +122,7 @@
                         <input type="number" name="upperBoundX" id="upperX"/>
                     </dd>
                 </dl>
+
                 <dl>
                     <dt>
                         <label>X Step Slider</label>
@@ -130,6 +135,7 @@
                         </div>
                     </dd>
                 </dl>
+
                 <dl>
                     <dt>
                         <label>Y range</label>
@@ -139,6 +145,7 @@
                         <input type="number" name="upperBoundY" id="upperY"/>
                     </dd>
                 </dl>
+
                 <dl>
                     <dt>
                         <label>Y Step Slider</label>
@@ -151,6 +158,7 @@
                         </div>
                     </dd>
                 </dl>
+
                 <dl>
                     <button id="exploreGo" class="action action-confirm">Explore Selected Region</button>
                 </dl>
@@ -160,7 +168,7 @@
     </div>
 
 
-    <input type="hidden" id="datatype-group-gid" value="$dataTypeGroupGID"/>
+    <input type="hidden" id="datatype-group-gid" value="{{ dataTypeGroupGID }}"/>
 
     <!--! Here PSE bubles will be displayed.	-->
     <div id="main_div_pse" class="specialviewer" style="position:relative;">
@@ -168,28 +176,28 @@
         <div class="matrix-legend" id="colorWeightsLegend"></div>
         <div class="matrix-legend">
             <table id="table-colorWeightsLegend" class="table-legend-labels">
-                <py:for each='label in range(7)'>
-                    <py:if test='label != 0'>
-                        <tr height="${str(100/8) + '%'}" style='vertical-align: bottom;'>
-                            <td>${label}</td>
+                {% for label in range(7) %}
+                    {% if label != 0 %}
+                        <tr height="{{ ((100/8) | string) ~ '%' }}" style='vertical-align: bottom;'>
+                            <td>{{ label }}</td>
                         </tr>
-                    </py:if>
-                    <py:if test='label == 0'>
+                    {% else %}
                         <tr height="20px">
-                            <td>${label}</td>
+                            <td>{{ label }}</td>
                         </tr>
-                    </py:if>
-                </py:for>
+                    {% endif %}
+                {% endfor %}
             </table>
         </div>
+
     </div>
 
     <script type="text/javascript">
 
         $(document).ready(function () {
             // the line below this is just to keep certain things in this genshi from being run multiple times
-            PSEDiscreet_Initialize('$labels_x', '$labels_y', '$values_x', '$values_y', '$d3_data', '$pse_back_page',
-                    $has_started_ops, '$min_color', '$max_color', '$min_shape_size', '$max_shape_size');
+            PSEDiscreet_Initialize('{{ labels_x | safe }}', '{{ labels_y | safe }}', '{{ values_x }}', '{{ values_y }}', '{{ d3_data | safe }}', '{{ pse_back_page }}',
+                {{ has_started_ops }}, '{{ min_color }}', '{{ max_color }}', '{{ min_shape_size }}', '{{ max_shape_size }}');
 
             window.onresize = function () {
                 PSEDiscreet_RedrawResize();
@@ -214,6 +222,6 @@
         });
     </script>
 
-</py:def>
+{%- endmacro %}
 
 

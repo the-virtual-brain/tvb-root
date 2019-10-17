@@ -1,15 +1,24 @@
-<div id="s-brain" class="brain" xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <xi:include href="../commons/gl_view_header.html" />
-    <xi:include href="../commons/fragment_shader.html" />
-	<xi:include href="../commons/vertex_shader.html" py:with="isOneToOneMapping=False"/>
+<div id="s-brain" class="brain">
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+
+    {% with %}
+        {% set isOneToOneMapping = false %}
+        {% include 'visualizers/commons/vertex_shader.html' %}
+    {% endwith %}
 
     <script type="text/javascript">
         $(document).ready(function() {
-            VS_StartEEGSensorViewer('${urlVertices}', '${urlLines}', '${urlTriangles}', '${urlNormals}',
-                    '${urlMeasurePoints}', '${noOfMeasurePoints}', '${urlMeasurePointsLabels}',
-                    '${shelfObject}', ${minMeasure}, ${maxMeasure}, '${urlMeasure}');
+            VS_StartEEGSensorViewer('{{ urlVertices | safe }}', '{{ urlLines | safe }}', '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}',
+                    '{{ urlMeasurePoints | safe }}', '{{ noOfMeasurePoints }}', '{{ urlMeasurePointsLabels }}',
+                    '{{ shelfObject | safe }}', {{ minMeasure }}, {{ maxMeasure }}, '{{ urlMeasure }}');
         });
     </script>
 
-    <xi:include href="../commons/gl_view_after.html" py:with="show_navigator=False;extended_view=False"/>
+    {% with %}
+        {% set show_navigator = false %}
+        {% set extended_view = false %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+
 </div>

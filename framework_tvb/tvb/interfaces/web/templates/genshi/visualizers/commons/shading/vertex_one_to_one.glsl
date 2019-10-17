@@ -1,5 +1,5 @@
-{% include transform.glsl %}
-{% include colorscheme.glsl %}
+{% include 'visualizers/commons/shading/transform.glsl' %}
+{% include 'visualizers/commons/shading/colorscheme.glsl' %}
 /**
  * This shader displays surface level activity.
  */

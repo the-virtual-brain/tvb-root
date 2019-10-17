@@ -1,28 +1,30 @@
-<div xmlns:py="http://genshi.edgewall.org/">
+<div>
+
     <ul class="focal-points">
-    	<py:if test="focal_points">
-	        <py:for each="idx in range(len(focal_points))">
+        {% if focal_points %}
+            {% for idx in ((focal_points | length) | xrange) %}
 		        <li>
-		        	<a href="#" onclick="BS_centerNavigatorOnFocalPoint(${focal_points[idx]})">Focal point ${focal_points[idx]}</a>
-		        	<a href="#" onclick="MP_removeFocalPointForSurfaceModelParam(${focal_points[idx]})" class="action action-delete">Delete</a>
+		        	<a href="#" onclick="BS_centerNavigatorOnFocalPoint({{ focal_points[idx] }})">Focal point {{ focal_points[idx] }}</a>
+		        	<a href="#" onclick="MP_removeFocalPointForSurfaceModelParam({{ focal_points[idx] }})" class="action action-delete">Delete</a>
 		        </li>
-	        </py:for>
-   		</py:if>
+	        {% endfor %}
+        {% endif %}
     </ul>
     
     <script type="text/javascript">
 	    $(document).ready(function () {
-            MP_redrawSurfaceFocalPoints('${focal_points_json}');
+            MP_redrawSurfaceFocalPoints('{{ focal_points_json }}');
         });
 	</script>
-    <py:if test="defined('error_msg')">
+
+    {% if error_msg is defined %}
         <script>
-            displayMessage('${error_msg}', "errorMessage");
+            displayMessage('{{ error_msg }}', "errorMessage");
         </script>
-    </py:if>
-    <py:if test="not defined('error_msg')">
+    {% else %}
         <script>
             displayMessage('');
         </script>
-    </py:if>
+    {% endif %}
+
 </div>

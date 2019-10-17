@@ -84,7 +84,7 @@ class ProjectController(BaseController):
         current_project = common.get_current_project()
         if current_project is None:
             raise cherrypy.HTTPRedirect("/project/viewall")
-        template_specification = dict(mainContent="project_submenu", title="TVB Project Menu")
+        template_specification = dict(mainContent="project/project_submenu", title="TVB Project Menu")
         return self.fill_default_attributes(template_specification)
 
 

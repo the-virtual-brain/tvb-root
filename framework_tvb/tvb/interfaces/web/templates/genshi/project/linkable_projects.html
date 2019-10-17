@@ -1,36 +1,49 @@
-<py:for each="i in range(1)" xmlns:py="http://genshi.edgewall.org/" class="link-outgoing">
+{% for i in range(1) %}
+<class="link-outgoing">
 
-    <py:def function="displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid)">
+	{% macro displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid) -%}
     	<div class="link-outgoing">
-    		<py:if test="projectslinked">
+
+			{% if projectslinked %}
 				<h5>Create link in other project(s): </h5>
 	            <ul>
-					<li py:for="prj in projectslinked">
-						<button class="action action-unlink" onclick="removeLink('$datatype_id', '$prj' , '$isGroup'); updateLinkableProjects('$datatype_id', '$isGroup', '$entity_gid');">
-							Unlink from project: "${projectslinked[prj]}"
-						</button>
-					</li>
+					{% for prj in projectslinked %}
+						<li>
+							<button class="action action-unlink" onclick="removeLink('{{ datatype_id }}', '{{ prj }}' , '{{ isGroup }}'); updateLinkableProjects('{{ datatype_id }}', '{{ isGroup }}', '{{ entity_gid }}');">
+								Unlink from project: "{{ projectslinked[prj] }}"
+							</button>
+						</li>
+					{% endfor %}
 				</ul>
-			</py:if>
-			<h5 py:if="not projectslinked">Current entity in not linked in any project!</h5>
+			{% else %}
+				<h5>Current entity in not linked in any project!</h5>
+			{% endif %}
+
 		</div>
 		
     	<div class="link-incoming">
-	        <py:if test="projectsforlink">
+			{% if projectsforlink %}
 	        	<h5>Create link in other project(s): </h5>
 	            <ul>
-					<li py:for="prj in projectsforlink">
-						<button class="action action-link" onclick="createLink('$datatype_id', '$prj' , '$isGroup'); updateLinkableProjects('$datatype_id', '$isGroup', '$entity_gid');">
-							Link into project: "${projectsforlink[prj]}"
-						</button>
-					</li>
+
+					{% for prj in projectsforlink %}
+						<li>
+							<button class="action action-link" onclick="createLink('{{ datatype_id }}', '{{ prj }}' , '{{ isGroup }}');
+								updateLinkableProjects('{{ datatype_id }}', '{{ isGroup }}', '{{ entity_gid }}');"> Link into project: "{{ projectsforlink[prj] }}"
+							</button>
+						</li>
+					{% endfor %}
+
 				</ul>
-	        </py:if>
-	        <h5 py:if="not projectsforlink">There are no project available where this datatype could be linked!</h5>
+	        {% else %}
+				<h5>There are no project available where this datatype could be linked!</h5>
+			{% endif %}
+
 	     </div> 
-    </py:def>
-    
-    ${displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid)}
-</py:for>
+    {%- endmacro %}
+
+    {{ displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid) }}
+
+{% endfor %}
 		
 		

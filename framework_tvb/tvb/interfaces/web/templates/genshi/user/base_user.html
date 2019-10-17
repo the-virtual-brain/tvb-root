@@ -1,14 +1,11 @@
-<!DOCTYPE html> 
-<html lang="en" class="${'user-authorized ss-account' if mainContent in ['profile', 'user_management'] else 'user-anon ss-login'} style-default v-odinson" id="s-user"
-      xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <!-- 
-		TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+<!DOCTYPE html>
+<html lang="en" class="{{ 'user-authorized ss-account' if  mainContent  in ['user/profile', 'user/user_management'] else 'user-anon ss-login' }} style-default v-odinson" id="s-user">
+    <!--
+		TheVirtualBrain-Framework Package. This package holds all Data Management, and
 		Web-UI helpful to run brain-simulations. To use it, you also need do download
 		TheVirtualBrain-Scientific Package (for simulators). See content of the
 		documentation-folder for more details. See also http://www.thevirtualbrain.org
-
 		(c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
-
         This program is free software: you can redistribute it and/or modify it under the
         terms of the GNU General Public License as published by the Free Software Foundation,
         either version 3 of the License, or (at your option) any later version.
@@ -17,8 +14,8 @@
         PARTICULAR PURPOSE.  See the GNU General Public License for more details.
         You should have received a copy of the GNU General Public License along with this
         program.  If not, see <http://www.gnu.org/licenses/>.
-	-->  
-	
+	-->
+
     <!--! ========================================================== -->
     <!--! TEMPLATE CODE: The Virtual Brain / System -->
     <!--! SECTION: Login screen -->
@@ -27,7 +24,7 @@
     <!--! Page Manifest -->
     <!--! ========================================================== -->
     <head>
-        <title>$title | $currentVersion The Virtual Brain</title>
+        <title>{{ title }} | {{ currentVersion }} The Virtual Brain</title>
 
         <meta name="author" content="TVB Team" />
         <meta name="description" content="The Virtual Brain Project" />
@@ -38,51 +35,68 @@
         <meta http-equiv="Cache-Control" content="no-cache" />
 
         <link rel="shortcut icon" href="/static/style/img/favicon.ico" />
-        <link rel="stylesheet" type="text/css" href="/static/style/base.css?$currentVersionJS" />
-        <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?$currentVersionJS" />
-        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?$currentVersionJS"/>
+        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
-        <script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS"></script>
+        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">checkForIE()</script>
     </head>
-    
+
     <!--! ========================================================== -->
     <!--! App Content -->
     <!--! ========================================================== -->
 
-    <body class="${'user-authorized' if mainContent=='profile' else 'user-anon'} style-default v-odinson ${'is-helping' if (showOnlineHelp) else ''}" id="s-user"
-        py:with="msgClass = {'ERROR': 'generic-message errorMessage',
-                             'WARNING': 'generic-message warningMessage',
-                             'INFO': 'generic-message infoMessage',
-                             'IMPORTANT':'generic-message importantMessage'}">
-        <xi:include href="tooltip.html" py:if="defined('includeTooltip') and includeTooltip"/>
+    {% with %}
+        <body class="{{ 'user-authorized' if mainContent=='user/profile' else 'user-anon' }} style-default v-odinson {{ 'is-helping' if showOnlineHelp else '' }}" id="s-user">
+            {% set msgClass = {'ERROR': 'generic-message errorMessage',
+                'WARNING': 'generic-message warningMessage',
+                'INFO': 'generic-message infoMessage',
+                'IMPORTANT': 'generic-message importantMessage'} %}
 
-        <div id="generic-message" class="${msgClass[messageType]} ${'no-message' if len(message)==0 else ''}"><div id="messageDiv">$message</div></div>
+            {% if includeTooltip is defined and includeTooltip %}
+                {% include "user/tooltip.html" %}
+            {% endif %}
 
-        <div id="main" py:if="defined('wrapContentInMainDiv') and wrapContentInMainDiv">
-            <xi:include href="${mainContent}.html"/>
-        </div>
-        <xi:include href="${mainContent}.html" py:if="not defined('wrapContentInMainDiv') or not wrapContentInMainDiv"/>
+            <div id="generic-message" class="{{ msgClass[messageType] }} {{ 'no-message' if (message | length) == 0 else '' }}"><div id="messageDiv">{{ message }}</div></div>
+
+            {% if wrapContentInMainDiv is defined and wrapContentInMainDiv %}
+
+                <div id="main">
+                    {% include mainContent ~ ".html" %}
+                </div>
+
+            {% endif %}
+
+        {% if wrapContentInMainDiv is not defined or not wrapContentInMainDiv %}
+            {% include mainContent ~ ".html" %}
+        {% endif %}
 
         <!--! === Box: Sponsor logos & links -->
-        <aside class="credits"> 
-            <hgroup> 
-                <h3 class="boxtitle">Our<br/>sponsors</h3> 
-            </hgroup> 
+        <aside class="credits">
+            <hgroup>
+                <h3 class="boxtitle">Our<br/>sponsors</h3>
+            </hgroup>
+
             <a href="http://www.jsmf.org" title="Visit the James S. McDonnell Foundation..." target="_new" class="mcdonnell" tabindex="-1">James S. McDonnell Foundation</a>
             <a href="http://edu.univ-amu.fr/en" title="Visit the Aix Marseille Université..." target="_new" class="unimed" tabindex="-1">Aix Marseille Université</a>
             <a href="http://www.baycrest.org" title="Visit the Baycrest Foundation..." target="_new" class="baycrest" tabindex="-1">Baycrest Foundation</a>
             <a href="http://www.oit.on.ca/" title="Visit the Ontario Innovation Trust (English and French)..." target="_new" class="oit" tabindex="-1">Ontario Innovation Trust</a>
         </aside>
 
-        <py:if test="not defined('tvbRestarted') or not tvbRestarted">
-            <xi:include href="../footer.html"/>
-        </py:if>
-    </body>
-    <script type="application/javascript" py:if="not first_run and defined('isStorageInUpdate') and isStorageInUpdate">
-        $(document).ready(function () {
-            waitForStorageUpdateToEnd();
-        });
-    </script>
-       
+        {% if tvbRestarted is not defined or not tvbRestarted %}
+            {% include 'footer.html' %}
+        {% endif %}
+
+            </body>
+    {% endwith %}
+
+    {% if not first_run and isStorageInUpdate is defined and isStorageInUpdate %}
+        <script type="application/javascript">
+            $(document).ready(function () {
+                waitForStorageUpdateToEnd();
+            });
+        </script>
+    {% endif %}
+
 </html>

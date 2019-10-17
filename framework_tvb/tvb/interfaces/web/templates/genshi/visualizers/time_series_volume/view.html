@@ -1,25 +1,25 @@
-<div xmlns:xi="http://www.w3.org/2001/XInclude">
-    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesFragment.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static/js/d3.v3.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
+<div>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesFragment.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/d3.v3.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
 
-    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?$currentVersionJS"/>
-    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?$currentVersionJS"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?{{ currentVersionJS }}"/>
 
-    <xi:include href="drawSliderForAxis.html"/>
+    {% import 'visualizers/time_series_volume/drawSliderForAxis.html' as dsfa  %}
 
     <section class="view-column">
 
         <ul class="toolbar-inline toolbar-with-sliders">
-            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('X')} </li>
-            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Y')} </li>
-            <li class="toolbar-li-with-slider">  ${drawSliderForAxis('Z')} </li>
-            <li class="toolbar-small-li"> <label>(in $voxelUnit)</label></li>
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('X') }} </li>
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('Y') }} </li>
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('Z') }} </li>
+            <li class="toolbar-small-li"> <label>(in {{ voxelUnit }})</label></li>
             <li class="toolbar-large-li">
                 <button id="btnSeekFirst" class="action action-go-first" title="Navigate to the begining of TS"></button>
                 <button id="btnPlayPreviousTimePoint" class="action action-page-back" title="Go back one time step"></button>
@@ -90,22 +90,26 @@
             </li>
 
             <li class="channel-selector">
-                <xi:include href="../commons/timeseries_selector_button.html" />
-                ${drawTimeseriesSelectorButton(ts_title, labelsStateVar, labelsModes, None)}
+                {% import 'visualizers/commons/timeseries_selector_button.html' as tsb  %}
+                {{ tsb.drawTimeseriesSelectorButton(ts_title, labelsStateVar, labelsModes, none) }}
 			</li>
+
         </ul>
+
         <div class="ts-graph-parent">
             <div id="graph"></div>
         </div>
+
     </section>
 
     <script type="text/javascript">
         $(document).ready(function () {
             $("#main").addClass("colscheme-2-even brain-extended");
             TSV_startVolumeTimeSeriesVisualizer(
-                    '$urlVolumeData', '$urlTimeSeriesData', ${minValue}, ${maxValue}, ${samplePeriod},
-                    '${samplePeriodUnit}', '${volumeShape}', '${volumeOrigin}', '${voxelSize}',
-                    '$urlBackgroundVolumeData', ${minBackgroundValue}, ${maxBackgroundValue});
+                    '{{ urlVolumeData | safe }}', '{{ urlTimeSeriesData | safe }}', {{ minValue | safe }}, {{ maxValue | safe }}, {{ samplePeriod | safe }},
+                    '{{ samplePeriodUnit | safe }}', '{{ volumeShape | safe }}', '{{ volumeOrigin | safe }}', '{{ voxelSize | safe }}',
+                    '{{ urlBackgroundVolumeData if urlBackgroundVolumeData else '' }}', {{ minBackgroundValue | safe }}, {{ maxBackgroundValue | safe }});
         })
     </script>
+
 </div>

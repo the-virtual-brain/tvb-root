@@ -1,20 +1,19 @@
 <!-- ====================================================== --> 
 <!-- Display Short-Burst page with 2 areas (left and right) --> 
 <!-- ====================================================== -->
-<div id="main" class="columnized colscheme-3-1st-narrow" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/" >
+<div id="main" class="columnized colscheme-3-1st-narrow">
 
-    <script type="text/javascript" src="/static/js/bursts.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/bursts.js?{{ currentVersionJS }}"></script>
     <!--! We need projectTree.js for the Results TAB. -->
-    <script type="text/javascript" src="/static/js/projectTree.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?$currentVersionJS"></script>
-	<script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/pse_discrete/pse_discreet.js?$currentVersionJS"></script>
-	<script type="text/javascript" src="/static_view/pse_isocline/pse_isocline.js?$currentVersionJS"></script>
-
+    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pse_discrete/pse_discreet.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static_view/pse_isocline/pse_isocline.js?{{ currentVersionJS }}"></script>
 
 	<script type="text/javascript">
     	$(document).ready(function(){
-    		initBurstConfiguration($selectedPortlets, '$burstConfig.selected_tab');
+    		initBurstConfiguration({{ selectedPortlets | safe }}, '{{ burstConfig.selected_tab }}');
 		});
     </script>
     
@@ -28,9 +27,9 @@
 		<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
 
 		<div id="div-simulator-parameters">
-			<py:if test="burstConfig.id is None">
-				<xi:include href="../flow/genericAdapterFormFields.html"/>
-			</py:if>
+			{% if burstConfig.id is none %}
+				{% include 'flow/genericAdapterFormFields.html' %}
+			{% endif %}
 		</div>
 	</section>
 
@@ -59,17 +58,19 @@
 			onclick="toggleMaximizeColumn(this, 'section-portlets');">Maximize</a>
 		
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
-			<py:for each="tab_idx in range(burstConfig.nr_of_tabs)"
-                    py:with="activeTab = str(tab_idx) == str(burstConfig.selected_tab)">
-                <li class="${'active' if activeTab else None}">
-                    <a href="#" id="portletTab_${tab_idx}"
-                       onclick="changeBurstTile(this);">View ${tab_idx+1}</a>
-                </li>
-        	</py:for>
+			{% for tab_idx in range(burstConfig.nr_of_tabs) %}
+				{% with %}
+					{% set activeTab = (tab_idx | string) == (burstConfig.selected_tab | string) %}
 
-            <li class="${'active' if '-1' == str(burstConfig.selected_tab) else None}">
+                	<li class="{{ 'active' if activeTab else none }}">
+                    	<a href="#" id="portletTab_{{ tab_idx }}" onclick="changeBurstTile(this);">View {{ tab_idx+1 }}</a>
+                	</li>
+				{% endwith %}
+        	{% endfor %}
+
+            <li class="{{ 'active' if '-1' == (burstConfig.selected_tab | string) else none }}">
                 <a href="#" id="tab-burst-tree"
-                   onclick="displayBurstTree(this, ${selectedProject.id}, '${baseUrl}');">Results</a>
+                   onclick="displayBurstTree(this, {{ selectedProject.id }}, '{{ baseUrl }}');">Results</a>
             </li>
 		</ul>
 		        	
@@ -100,14 +101,14 @@
 			No visualizers configured for this tab yet.
 		</div>
 		<div class="portlet-container portlet-edit visible-2-2" id="portlets-configure" style="display: none;">
-			<xi:include href="portlets_select.html"/>
-		    ${drawPortletConfiguration(portletList, 0)}
-	        ${drawPortletConfiguration(portletList, 1)}
-	        ${drawPortletConfiguration(portletList, 2)}
-	        ${drawPortletConfiguration(portletList, 3)}
+			{% import 'burst/portlets_select.html' as ps %}
+		    {{ ps.drawPortletConfiguration(portletList, 0) }}
+	        {{ ps.drawPortletConfiguration(portletList, 1) }}
+	        {{ ps.drawPortletConfiguration(portletList, 2) }}
+	        {{ ps.drawPortletConfiguration(portletList, 3) }}
 		</div>
-		<div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;">
-		</div>
+        <div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;"></div>
+
 		
 		<div class="portlet-container specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
 			<div id="treeOverlay"></div>

@@ -1,37 +1,39 @@
-<div xmlns:py="http://genshi.edgewall.org/" class="view-column">
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
-    <script type="text/javascript" src="/static_view/pearson_correlation/pearson_correlation.js?$currentVersionJS"></script>
+<div class="view-column">
 
-    <link rel="stylesheet" href="/static/style/subsection_svg.css?$currentVersionJS" type="text/css"/>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pearson_correlation/pearson_correlation.js?{{ currentVersionJS }}"></script>
+
+    <link rel="stylesheet" href="/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
 
     <ul class="toolbar-inline">
+
         <li>
             <label for="mode_select">Mode</label>
             <select id="mode_select" onchange="Pc_changeMode(this.value)">
-                <py:for each="mod in mode_list">
-                    <py:if test="mod==mode">
-                        <option value="$mod" selected="selected">$mod</option>
-                    </py:if>
-                    <py:if test="mod!=mode">
-                        <option value="$mod">$mod</option>
-                    </py:if>
-                </py:for>
+                {% for mod in mode_list %}
+                    {% if mod==mode %}
+                        <option value="{{ mod }}" selected="selected">{{ mod }}</option>
+                    {% else %}
+                        <option value="{{ mod }}">{{ mod }}</option>
+                    {% endif %}
+                {% endfor %}
             </select>
         </li>
+
         <li>
             <label for="state_select">State Variable</label>
             <select id="state_select" onchange="Pc_changeState(this.value)">
-                <py:for each="idx, state in enumerate(state_list)">
-                    <py:if test="state==state_variable">
-                        <option value="$idx" selected="selected">$state</option>
-                    </py:if>
-                    <py:if test="state!=state_variable">
-                        <option value="$idx">$state</option>
-                    </py:if>
-                </py:for>
+                {% for state in state_list %}
+                    {% if state==state_variable %}
+                        <option value="{{ loop.index0 }}" selected="selected">{{ state }}</option>
+                    {% else %}
+                        <option value="{{ loop.index0 }}">{{ state }}</option>
+                    {% endif %}
+                {% endfor %}
             </select>
         </li>
+
     </ul>
 
     <div id="pearson-viewer"></div>
@@ -40,10 +42,10 @@
 
         function initPcViewer(width, height) {
             $("#main").addClass("colscheme-1");
-            Pc_init('${matrix_shape}', "$viewer_title", '${matrix_labels}',
-                '${url_base}', ["Place mouse over matrix elements to inspect their values",
+            Pc_init('{{ matrix_shape }}', "{{ viewer_title }}", '{{ matrix_labels | safe }}',
+                '{{ url_base  }}', ["Place mouse over matrix elements to inspect their values",
                     "Drag in colorbar to select and show entries in a range of values"],
-                '${pearson_min}', '${pearson_max}', width, height);
+                '{{ pearson_min }}', '{{ pearson_max }}', width, height);
         }
 
         // For the burst Preview part
@@ -52,10 +54,11 @@
             Pc_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text());
         }
         $(document).ready(function () {
-            if (! ${'true' if defined('isPreview') else 'false'}) {
+            if (! {{ 'true' if isPreview is defined else 'false' }}) {
                 initPcViewer();
                 Pc_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text());
             }
         });
     </script>
+
 </div>

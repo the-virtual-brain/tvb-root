@@ -1,10 +1,26 @@
-<py:def function="draw_array_component(inputRow, disabled)" xmlns:py="http://genshi.edgewall.org/">
+{% macro draw_array_component(inputRow, disabled) -%}
  	<!--! Draw Input field for an array (Upload component or text-field with function/comma separated values). -->
- 	<py:with vars="add_attrs={'disabled': 'disabled'} if disabled else {}; value=inputRow.default if 'default' in inputRow else ''">
-        <input type="text" tabindex='1' name="$inputRow.name" id="$inputRow.name" value="${value}" py:attrs="add_attrs"/>
-    </py:with>
-            
-    ${add_checkbox_control(inputRow)}
-    ${drawRangeComponent(inputRow, parentDivId)}
-</py:def>
+    {% with %}
+
+        {% if disabled %}
+            {% set add_attrs = ("disabled='disabled'") | safe %}
+        {% else %}
+            {% set add_attrs = '' %}
+        {% endif %}
+
+        {% if 'default' in inputRow and (inputRow.default | string) != 'None' %}
+            {% set value = inputRow.default %}
+        {% else %}
+            {% set value = '' %}
+        {% endif %}
+
+        <input type="text" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}" value="{{ value }}" {{ add_attrs }}/>
+    {% endwith %}
+
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {% import 'flow/type2component/number2component.html' as n2c %}
+    {{ gatf.add_checkbox_control(inputRow) }}
+    {{ n2c.drawRangeComponent(inputRow, parentDivId) }}
+
+{%- endmacro %}
      

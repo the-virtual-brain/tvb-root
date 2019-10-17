@@ -1,73 +1,102 @@
-<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<div>
 
-	<py:with vars="tab_names = [tab.name for tab in overlay_tabs_horizontal]">
+	{% with %}
 
+	    {% set tab_names = overlay_tabs_horizontal | map(attribute='name') | join(', ') %}
 		<!--! Overlay: Metadata -->
 		<section id="overlayTabContent_0" class="node-data node-metadata active">
-			<xi:include href="details_operation_overlay.html"/>
+			{% include 'project/details_operation_overlay.html' %}
 	    </section>
 
-        <py:def function="displayAlgoGroupButtons(transient_group, category, launchAsync)">
-            <py:with vars="groupName = transient_group.name;
-                           groupDescription = transient_group.description;
-                           algorithmsList = transient_group.children">
+       {% macro displayAlgoGroupButtons(transient_group, category, launchAsync) -%}
+			{% with %}
+				{% set groupName = transient_group.name %}
+				{% set groupDescription = transient_group.description %}
+				{% set algorithmsList = transient_group.children %}
 
-                <h5 py:if="groupName or groupDescription"> $groupName - $groupDescription</h5>
+				{% if groupName or groupDescription %}
+                	<h5> {{ groupName }} - {{ groupDescription }}</h5>
+				{% endif %}
                 <ul>
-                    <li py:for="algo in sorted(algorithmsList, key=lambda k: k.displayname)">
-                        <py:with vars="paramName = algo.parameter_name;
-                                       displayName = algo.displayname;
-                                       isPartOfGroup = isGroup and category != 'view';
-                                       url = '/flow' if not isPartOfGroup else '/flow/prepare_group_launch/' + entity_gid;
-                                       url = url + '/' + str(algo.fk_category) + '/' + str(algo.id);
-                                       launchParamName = paramName if not isPartOfGroup else 'range_param_name';
-                                       launchParamVal = entity_gid if not isPartOfGroup else paramName;">
 
-                            <button class="action action-$category $category-${displayName.lower().replace(' ','')}"
-                                    onclick="launchAdapter('$url', '$launchParamName', '$launchParamVal', '$backPageIdentifier', $launchAsync);">
-                                $displayName
-                            </button>
-                        </py:with>
-                    </li>
+					{% for algo in (algorithmsList | sort(attribute='displayname')) %}
+                    	<li>
+
+							{% with %}
+								{% set paramName = algo.parameter_name %}
+								{% set displayName = algo.displayname %}
+								{% set isPartOfGroup = isGroup and category != 'view' %}
+								{% if not isPartOfGroup %}
+									{% set 	url = '/flow' %}
+								{% else %}
+									{% set url = '/flow/prepare_group_launch/' ~ entity_gid %}
+								{% endif %}
+								{% set url = url ~ '/' ~ (algo.fk_category | string) ~ '/' ~ (algo.id | string) %}
+								{% if not isPartOfGroup %}
+									{% set launchParamName = paramName %}
+									{% set launchParamVal = entity_gid %}
+								{% else %}
+									{% set launchParamName = 'range_param_name' %}
+									{% set launchParamVal = paramName %}
+								{% endif %}
+
+	                            <button class="action action-{{ category }} {{ category }}-{{ displayName | lower | replace(' ', '') | safe }}"
+    	                                onclick="launchAdapter('{{ url }}', '{{ launchParamName }}', '{{ launchParamVal }}', '{{ backPageIdentifier }}', {{ launchAsync }});">
+        	                        	{{ displayName }}
+            	                </button>
+                	        {% endwith %}
+
+                    	</li>
+					{% endfor %}
+
                 </ul>
-            </py:with>
-        </py:def>
+            {% endwith %}
+        {%- endmacro %}
 
 	    <!--! Overlay: Analyzers -->
 		<section id="overlayTabContent_1" class="node-data node-analyze ">
-			<div py:if="categories and 'Analyze' in categories">
-				<py:for each="transient_group in sorted(categories['Analyze'], key=lambda k: k.name)">
-					${displayAlgoGroupButtons(transient_group, 'analyze', 'true')}
-				</py:for>
-			</div>
+			{% if categories and 'Analyze' in categories %}
+				<div>
+					{% for transient_group in (categories['Analyze'] | sort(attribute='name')) %}
+						{{ displayAlgoGroupButtons(transient_group, 'analyze', 'true') }}
+					{% endfor %}
+				</div>
+			{% endif %}
 		</section>  
-		
+
 		<!--! Overlay: Visualizers -->
 		<section id="overlayTabContent_2" class="node-data node-view ">
-			<py:if test="categories and 'View' in categories">
-				<div py:if="categories and 'View' in categories">
-					<py:for each="transient_group in sorted(categories['View'], key=lambda k: k.name)">
-						${displayAlgoGroupButtons(transient_group, 'view', 'false')}
-					</py:for>
+			{% if categories and 'View' in categories %}
+				<div>
+					{% for transient_group in (categories['View'] | sort(attribute='name')) %}
+						{{ displayAlgoGroupButtons(transient_group, 'view', 'false') }}
+					{% endfor %}
 				</div>
-			</py:if>
+			{% endif %}
 		</section>
 	        
 		<!--! Overlay: Project Links -->
 		<section id="overlayTabContent_3" class="node-data node-link ">
-			<div id="linkable_projects_div_${entity_gid}" class="link-incoming">
-		    	<xi:include href="linkable_projects.html"/>
+			<div id="linkable_projects_div_{{ entity_gid }}" class="link-incoming">
+				{% include 'project/linkable_projects.html' %}
 			</div>
 		</section>
 		
 		<!--! Overlay: Data Exporters -->
 		<section id="overlayTabContent_4" class="node-data node-export ">
-			<ul py:if="exporters">
-				<li py:for="exporter in exporters">
-					<button class="action action-export" onclick="window.location='/project/downloaddata/${entity_gid}/${exporter}';">${exporters[exporter]}</button>
-				</li>
-			</ul>
-			<label py:if="not exporters">No exporters are currently available for this DataType.</label>
+
+			{% if exporters %}
+				<ul>
+					{% for exporter in exporters %}
+						<li>
+							<button class="action action-export" onclick="window.location='/project/downloaddata/{{ entity_gid }}/{{ exporter }}';">{{ exporters[exporter] }}</button>
+						</li>
+					{% endfor %}
+				</ul>
+			{% else %}
+				<label>No exporters are currently available for this DataType.</label>
+			{% endif %}
+
 		</section>
 		
 		<!--! Overlay: Data Exporters -->
@@ -76,13 +105,14 @@
 				<div id="treeOverlay"></div>
 				<script type="text/javascript">
 					$(document).ready(function() { 
-                        var filterValue = {'type' : 'from_datatype', 'value' : '$entity_gid'};
-                        updateTree('#treeOverlay', '${selectedProject.id}', '${baseUrl}', JSON.stringify(filterValue));
+                        var filterValue = {'type' : 'from_datatype', 'value' : '{{ entity_gid }}'};
+                        updateTree('#treeOverlay', '{{ selectedProject.id }}', '{{ baseUrl }}', JSON.stringify(filterValue));
                     })
 				</script>
 			</div>
 		</section>
-        
-    </py:with>
+
+    {% endwith %}
+
 </div>
 

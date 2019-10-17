@@ -1,4 +1,4 @@
-{% include transform.glsl %}
+{% include 'visualizers/commons/shading/transform.glsl' %}
 /**
  * This shader draws the connectivity.
  * The cubes and lines are drawn with fixed material colors. Explicit coloring is used for spheres and transparent cortex.

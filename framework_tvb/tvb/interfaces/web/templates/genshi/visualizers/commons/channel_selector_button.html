@@ -1,14 +1,11 @@
-<div xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude" py:strip="True">
-    <py:def function="drawRegionSelectorButton(title, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select channels', radio=False)">
-        <nav class="inline-menu">
-            <button class="action action-menu">$buttonTitle</button>
-
-            <div class="extension">
-                <div class="dropdown-pane">
-                    <xi:include href="../commons/channel_selector.html" />
-                    ${drawRegionSelector(title, "channelSelector", groupedOptions, initialSelection, namedSelections, radio)}
-                </div>
+{% macro drawRegionSelectorButton(title, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select channels', radio=false) -%}
+    <nav class="inline-menu">
+        <button class="action action-menu">{{ buttonTitle }}</button>
+        <div class="extension">
+            <div class="dropdown-pane">
+                {% import 'visualizers/commons/channel_selector.html' as cs  %}
+                {{ cs.drawRegionSelector(title, "channelSelector", groupedOptions, initialSelection, namedSelections, radio) }}
             </div>
-        </nav>
-    </py:def>
-</div>
+        </div>
+    </nav>
+{%- endmacro %}

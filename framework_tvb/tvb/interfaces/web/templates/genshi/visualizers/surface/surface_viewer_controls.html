@@ -1,6 +1,8 @@
-<fieldset xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<fieldset>
     <dl>
-        <xi:include href='../../flow/color_scheme.html'/>
-        <xi:include href='../commons/brain_toggle_controls.html' py:with="urlRegionBoundaries=True"/>
+        {% include 'flow/color_scheme.html' %}
+        {% with %}
+            {% include 'visualizers/commons/brain_toggle_controls.html' %}
+        {% endwith %}
     </dl>
 </fieldset>

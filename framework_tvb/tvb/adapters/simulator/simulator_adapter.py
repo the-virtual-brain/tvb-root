@@ -66,7 +66,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling_choices = get_ui_name_to_coupling_dict()
         self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
                                           label="Coupling", doc=Simulator.coupling.doc)
-        self.coupling.template = 'select_field.jinja2'
+        self.coupling.template = 'select_field.html'
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
@@ -96,7 +96,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __str__(self):
         # TODO: get rid of this
-        return jinja_env.get_template('wizzard_form.jinja2').render(form=self, action="/burst/set_connectivity",
+        return jinja_env.get_template('wizzard_form.html').render(form=self, action="/burst/set_connectivity",
                                                                     is_first_fragment=True, is_last_fragment=False,
                                                                     is_copy=self.is_copy, is_load=False)
 

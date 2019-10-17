@@ -1,24 +1,25 @@
 <!--! used to draw a page that associates something for a connectivity node -->
-<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
+<div id="main" class="columnized colscheme-2-even">
+    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
 
-    <section class="configure-stimulus-equation view-column col-2"  xmlns:xi="http://www.w3.org/2001/XInclude">
+    <section class="configure-stimulus-equation view-column col-2">
         <h4><mark>Select</mark> Connectivity Region</h4>
         <!--! todo: this includes does more than necessary -->
-        <xi:include href="../visualizers/connectivity/left_template_connectivity_view.html"/>
+        {% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
     </section>
 
-    <script type="text/javascript" src="/static/js/region_associator.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static/js/region_associator.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/connectivity/scripts/matrixScript.js?{{ currentVersionJS }}" ></script>
 
     <section class="configure-stimulus-shape view-column col-1">
 
-        <h4><mark>Configure</mark> $section2title</h4>
-        <xi:include href="../visualizers/commons/channel_selector.html" />
-        <xi:include href="../visualizers/commons/channel_selector_quick.html" />
+        <h4><mark>Configure</mark> {{ section2title }}</h4>
+        {% import 'visualizers/commons/channel_selector.html' as cs %}
+        {% import 'visualizers/commons/channel_selector_quick.html' as csq %}
 
         <ul class="toolbar-inline">
 
-            ${hole_form()}
+            {{ hole_form() }}
 
             <li>
                 <button id="put-model" class="action action-store"
@@ -28,14 +29,15 @@
 
             <!--! Quick-Select -->
             <li class="selector-storage">
-                ${drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn")}
+                {{ csq.drawQuickSelector("selection-text-area", "loadSelectionFromTextBtn") }}
             </li>
         </ul>
 
-        ${drawRegionSelector(connectivity_entity.title, "channelSelector", groupedLabels, initialSelection)}
+        {{ cs.drawRegionSelector(connectivity_entity.title, "channelSelector", groupedLabels, initialSelection) }}
+
     </section>
 
-    <form id="base_spatio_temporal_form" action="${submit_parameters_url}" method="POST">
+    <form id="base_spatio_temporal_form" action="{{ submit_parameters_url }}" method="POST">
 	    <aside class="header-component toolbar can-extend auto-extends">
 	    	<h3>SpatioTemporal Entities</h3>
 		  <div class="extension">
@@ -43,7 +45,7 @@
 	        <ul>
 	        	<li>
                     <button class="action action-confirm">
-                    	Submit $sumbitText
+                    	Submit {{ sumbitText }}
                     </button>
                 </li>
 	        </ul>
@@ -53,5 +55,5 @@
         <input type="hidden" name="node_values"/>
 	 </form>
 
-    ${hole_js()}
+    {{ hole_js() }}
 </div>

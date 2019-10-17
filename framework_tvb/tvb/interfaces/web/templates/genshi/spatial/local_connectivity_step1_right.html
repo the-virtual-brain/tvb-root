@@ -1,4 +1,4 @@
-<section class="configure-stimulus-shape view-column col-1" xmlns:py="http://genshi.edgewall.org/">
+<section class="configure-stimulus-shape view-column col-1">
 	
 	<h4><mark>View</mark> Plot</h4>
 	
@@ -7,18 +7,18 @@
 
     <script type="text/javascript">
    		$(document).ready(function() {
-   		   equationsPrefixes = ${equationsPrefixes};
+   		   equationsPrefixes = {{ equationsPrefixes | safe }};
            equationsPrefixes.push('cutoff');
-	       BS_plotEquations('equationDivId', '${equationViewerUrl}', 'form_spatial_local_connectivity_data', equationsPrefixes);
+	       BS_plotEquations('equationDivId', '{{ equationViewerUrl }}', 'form_spatial_local_connectivity_data', equationsPrefixes);
         });
     </script>
-	    
-    <py:if test="defined('displayedMessage') and displayedMessage != None">
+
+    {% if displayedMessage is defined and displayedMessage != none %}
 	    <script type="text/javascript">
 	    	$(document).ready(function() {
-	            displayMessage('${displayedMessage}', "infoMessage");
+	            displayMessage('{{ displayedMessage }}', "infoMessage");
 	        });
 	    </script>
-    </py:if>
+    {% endif %}
    
 </section>

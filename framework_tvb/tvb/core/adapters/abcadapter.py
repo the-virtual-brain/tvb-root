@@ -167,7 +167,7 @@ class ABCAdapterForm(Form):
         return attrs_dict
 
     def __str__(self):
-        return jinja_env.get_template("form.jinja2").render(form=self)
+        return jinja_env.get_template("form.html").render(form=self)
 
 
 

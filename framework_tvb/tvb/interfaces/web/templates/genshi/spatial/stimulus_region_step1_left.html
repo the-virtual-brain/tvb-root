@@ -1,22 +1,29 @@
-<section class="configure-stimulus-equation view-column col-2" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
+<section class="configure-stimulus-equation view-column col-2">
 	
 	<h4><mark>Define</mark> Stimulus</h4>
+
+	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
 	
 	<fieldset>
 		<legend>Loaded stimulus</legend>
-	    ${generateDisplay(existentEntitiesInputList, False, "")}
+	    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
 	</fieldset>
+
 	<form>
     	<fieldset>
 			<legend>Entity details</legend>
-	    	${generateDisplay(entitiySavedName, False, "")}
+	    	{{ gatf.generateDisplay(entitiySavedName, false, "") }}
     	</fieldset>
 	</form>
+
     
     <fieldset>
 	    <legend>Stimulus interface</legend>
 	    <form id="form_spatial_stimulus_equations">
-	        <xi:include href="../flow/genericAdapterFormFields.html" py:with="includeGenericAdapterTemplateFunctions=False"/>
+			{% with  %}
+				{% set includeGenericAdapterTemplateFunctions=false %}
+				{% include 'flow/genericAdapterFormFields.html' %}
+			{% endwith %}
 	    </form>
 	</fieldset>
     

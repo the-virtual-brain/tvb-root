@@ -1,6 +1,6 @@
 precision mediump float;
 
-{% include light.glsl %}
+{% include 'visualizers/commons/shading/light.glsl' %}
 
 // these are used to draw whole objects in a specific color ignoring vertex attributes.
 // for vertex level picking special color buffers are used.

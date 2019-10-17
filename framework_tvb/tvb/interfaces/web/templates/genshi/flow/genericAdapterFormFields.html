@@ -1,20 +1,34 @@
-<div xmlns:py="http://genshi.edgewall.org/" class="adaptersDiv" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <py:if test="not defined('includeGenericAdapterTemplateFunctions') or includeGenericAdapterTemplateFunctions == True">
-        <xi:include href="genericAdapterTemplateFunctions.html"/>
-    </py:if>
+<div class="adaptersDiv">
 
-    <py:with vars="drawHiddenRanges = draw_hidden_ranges if defined('draw_hidden_ranges') else False;
-                   tree_session_key = treeSessionKey if defined('treeSessionKey') else 'defaultTree'">
+    {% if (includeGenericAdapterTemplateFunctions is not defined) or (includeGenericAdapterTemplateFunctions == true) %}
+        {% include 'flow/genericAdapterTemplateFunctions.html' %}
+    {% endif %}
 
-        <py:if test="defined('form')">
-            ${Markup(form)}
-        </py:if>
-        <!--TODO: to be removed when all forms are migrated-->
-        <py:if test="defined('inputList')">
-            ${generateDisplay(inputList, False, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges)}
+    {% with %}
 
-        </py:if>
-    </py:with>
+        {% if draw_hidden_ranges is defined %}
+            {% set drawHiddenRanges =  draw_hidden_ranges %}
+        {% else %}
+            {% set drawHiddenRanges = false %}
+        {% endif %}
+
+        {% if treeSessionKey is defined %}
+            {% set tree_session_key = treeSessionKey %}
+        {% else %}
+            {% set tree_session_key = 'defaultTree' %}
+        {% endif %}
+
+        {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
+
+        {% if form is defined %}
+            {{ form | safe }}
+        {% endif %}
+
+        {% if inputList is defined %}
+            {{ gatf.generateDisplay(inputList, false, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges) }}
+        {% endif %}
+
+    {% endwith %}
 
     <script type="text/javascript">
         $(document).ready(function () {

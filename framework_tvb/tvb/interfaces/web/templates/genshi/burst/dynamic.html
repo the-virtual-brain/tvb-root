@@ -1,8 +1,8 @@
-<div id="main" class="columnized colscheme-2-even" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?$currentVersionJS"/>
-    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?$currentVersionJS"/>
+<div id="main" class="columnized colscheme-2-even">
+    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?{{ currentVersionJS }}"/>
 
-    <xi:include href="../flow/genericAdapterTemplateFunctions.html"/>
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
 
     <script type="text/javascript" src="/static/js/d3.v3.js"></script>
     <script type="text/javascript" src="/static/js/phase_plane_d3.js"></script>
@@ -12,22 +12,17 @@
 
     <section class="configure-stimulus-shape view-column col-1">
         <h4> Model parameter configuration </h4>
-        <div id="left_input_tree">
-            ${generateDisplay(input_tree, False, "")}
-        </div>
-        <fieldset id='div_spatial_model_params'>
-        </fieldset>
+        <div id="left_input_tree">{{ gatf.generateDisplay(input_tree, false, "") }}</div>
+        <fieldset id='div_spatial_model_params'></fieldset>
 
         <h4> Phase plane viewer settings </h4>
-        <div id="integrator_input_tree">
-            ${generateDisplay(integrator_input_tree, False, "")}
-        </div>
+        <div id="integrator_input_tree">{{ gatf.generateDisplay(integrator_input_tree, false, "") }}</div>
 
-        <fieldset id='div_phase_plane_settings'>
-        </fieldset>
+        <fieldset id='div_phase_plane_settings'></fieldset>
     </section>
 
     <section class="configure-stimulus-shape view-column">
+
         <svg class="dynamicChart" id="phasePlane" >
             <defs>
                 <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
@@ -39,6 +34,7 @@
                 </marker>
             </defs>
         </svg>
+
         <svg class="dynamicChart" id="phaseGraph" display="none">
             <defs>
                 <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
@@ -50,6 +46,7 @@
                 </marker>
             </defs>
         </svg>
+
     </section>
 
     <form id="base_spatio_temporal_form">
@@ -58,16 +55,19 @@
 		  <div class="extension">
 		   <div class="dropdown-pane">
 	        <ul>
+
                 <li>
                     <button class="action action-download" type="button" id="ctrl-action-export">
                     	Save Figure
                     </button>
                 </li>
+
 	        	<li>
                     <button class="action action-confirm">
                     	Save new parameter configuration
                     </button>
                 </li>
+
 	        </ul>
 	       </div>
 	      </div>
@@ -76,7 +76,7 @@
 
     <script type="text/javascript">
         $(document).ready(function () {
-            dynamicPage.main('${dynamic_gid}');
+            dynamicPage.main('{{ dynamic_gid }}');
 
             $("#ctrl-action-export").click(function(){
                 C2I_exportFigures({suggestedName:"region-parameters"});

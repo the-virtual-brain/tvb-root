@@ -1,14 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class="user-standard style-default v-odinson ss-$subsection_name"
-      xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<html lang="en" class="user-standard style-default v-odinson ss-{{ subsection_name }}">
 	<!--
-		TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+		TheVirtualBrain-Framework Package. This package holds all Data Management, and
 		Web-UI helpful to run brain-simulations. To use it, you also need do download
 		TheVirtualBrain-Scientific Package (for simulators). See content of the
 		documentation-folder for more details. See also http://www.thevirtualbrain.org
-
 		(c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
-
         This program is free software: you can redistribute it and/or modify it under the
         terms of the GNU General Public License as published by the Free Software Foundation,
         either version 3 of the License, or (at your option) any later version.
@@ -27,7 +24,8 @@
     <!--! Page Manifest -->
     <!--! ========================================================== -->
     <head>
-        <title>$title | $currentVersion The Virtual Brain</title>
+
+        <title>{{ title }} | {{ currentVersion }} The Virtual Brain</title>
 
         <meta name="author" content="TVB Team" />
         <meta name="description" content="The Virtual Brain Project" />
@@ -38,40 +36,69 @@
         <meta http-equiv="Cache-Control" content="no-cache" />
 
         <link rel="shortcut icon" href="/static/style/img/favicon.ico" />
-        <link rel="stylesheet" type="text/css" href="/static/style/base.css?$currentVersionJS" />
-        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?$currentVersionJS"/>
-        <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css?$currentVersionJS"/>
+        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css?{{ currentVersionJS }}"/>
 
-        <xi:include href="mathjax_config.html"/>
+        {% include 'mathjax_config.html' %}
+
         <script type="text/javascript" src="/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
-        <script type="text/javascript" src="/static/jquery/jquery-ui.js?$currentVersionJS"/> <!--JQuery custom imports for the Range, Slider controller -->
+        <script type="text/javascript" src="/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script> <!--JQuery custom imports for the Range, Slider controller -->
         <script type="text/javascript" src="/static/jquery/jquery.json.js"></script>
-        <script type="text/javascript" src="/static/js/genericTVB.js?$currentVersionJS"></script>
+        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
 
         <!--! include specific resources per section-->
-        <xi:include href="${includedResources}.html" py:if="defined('includedResources')"/>
+        {% if includedResources is defined %}
+           {% include includedResources ~ ".html" %}
+        {% endif %}
+
     </head>
 
     <!--! ========================================================== -->
     <!--! App Content -->
     <!--! ========================================================== -->
 
-    <body class="user-standard style-default v-odinson ${'is-helping' if (showOnlineHelp) else ''}" id="s-$section_name">
-        <py:with vars="subMenu='header_menu' if defined('submenu_list') and submenu_list else None;
-                       subMenuContent='project/project_submenu' if section_name=='project' else subMenu">
-        	<xi:include href="header.html"/>
-        </py:with>
+    <body class="user-standard style-default v-odinson {{ 'is-helping' if showOnlineHelp else '' }}" id="s-{{ section_name }}">
 
-        <py:if test="not defined('isAdapter') or not isAdapter">
-        	<xi:include href="${mainContent}.html" py:if="'project_submenu' not in mainContent and 'header_menu' not in mainContent"/>
-        </py:if>
-        <div id="main" class="columnized colscheme-generic" py:if="defined('isAdapter') and isAdapter">
-            <xi:include href="flow/call_out_control.html" py:if="defined('displayControl') and displayControl"/>
-            <xi:include href="${mainContent}.html" py:if="'header_menu' not in mainContent"/>
-        </div>
+        {% with %}
+            {% if submenu_list is defined and submenu_list %}
+                {% set subMenu = 'header_menu' %}
+            {% else %}
+                {% set subMenu = none %}
+            {% endif %}
+            {% if section_name=='project'  %}
+                {% set subMenuContent = 'project/project_submenu' %}
+            {% else %}
+                {% set subMenuContent = subMenu %}
+            {% endif %}
+        	{% include 'header.html' %}
+       {% endwith %}
 
-        <xi:include href="footer.html" py:with="currentTab='nav-' + section_name"/>
+        {% if isAdapter is not defined or not isAdapter %}
+            {% if 'project_submenu' not in mainContent and 'header_menu' not in mainContent %}
+                {% include mainContent ~ ".html" %}
+            {% endif %}
+
+        {% endif %}
+
+        {% if isAdapter is defined and isAdapter %}
+            <div id="main" class="columnized colscheme-generic">
+                {% if displayControl is defined and displayControl %}
+                    {% include 'flow/call_out_control.html' %}
+                {% endif %}
+                {% if 'header_menu' not in mainContent %}
+                    {% include mainContent ~ ".html" %}
+                {% endif %}
+            </div>
+        {% endif %}
+
+
+        {% with %}
+            {% set currentTab='nav-' ~ section_name %}
+            {% include 'footer.html' %}
+         {% endwith %}
+
     </body>
-</html>
 
+</html>
