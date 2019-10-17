@@ -143,7 +143,8 @@ def _copy_demos_collapsed(to_copy):
     """
     Merge multiple src folders, and filter some resources which are not needed (e.g. svn folders)
     """
-    for module_path, destination_folder in to_copy.iteritems():
+    for module_path in to_copy.keys():
+        destination_folder = to_copy[module_path]
         if not os.path.exists(destination_folder):
             os.makedirs(destination_folder)
 

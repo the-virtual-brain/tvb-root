@@ -422,7 +422,7 @@ def extract_matlab_doc_string(file_n):
             else:
                 if doc_started_flag:
                     break
-    return str(result, errors="ignore")
+    return result
 
 
 ################## MATLAB methods end here     ##############
