@@ -37,7 +37,6 @@ import sys
 from tvb_build import third_party_licenses
 import xml.dom.minidom as minidom
 from xml.dom.minidom import Node, Document
-from package_finder import parse_tree_structure
 
 
 CURRENT_FOLDER = third_party_licenses.__path__[0]
@@ -53,16 +52,17 @@ KEY_LICENSE = 'license'
 ATT_VALUE = 'value'
 FILE = os.path.join(CURRENT_FOLDER, "packages_accepted.xml")
 
-def dumps(thedict):
+
+def dumps(the_dict):
     """
-    :param thedict: A dictionary of dependency_name: dependency_attributes (name version license etc...)
-    :return: a dependecy xml as a string
+    :param the_dict: A dictionary of dependency_name: dependency_attributes (name version license etc...)
+    :return: a dependency xml as a string
     """
     doc = Document()
     root_node = doc.createElement(ELEM_ROOT)
 
-    for key in sorted(thedict, key=str.lower):
-        data = thedict[key]
+    for key in sorted(the_dict, key=str.lower):
+        data = the_dict[key]
         dep_node = doc.createElement(ELEM_NODE)
         dep_node.setAttribute(KEY_ENV, data['env'])
         dep_node.setAttribute(KEY_NAME, key)
@@ -75,16 +75,17 @@ def dumps(thedict):
     doc.appendChild(root_node)
     return doc.toprettyxml(indent="    ", newl='\n')
 
+
 def _read_all_attributes(node):
     """
     From an XML node, return the map of all attributes.
     """
-    atts = {}
+    attrs = {}
     all_attributes = node.attributes
     for i in range(all_attributes.length):
         att = all_attributes.item(i)
-        atts[att.name] = str(att.value)
-    return atts
+        attrs[att.name] = str(att.value)
+    return attrs
 
 
 def _read_all_elements(node):
@@ -97,6 +98,7 @@ def _read_all_elements(node):
             continue
         elems[str(child.nodeName)] = str(child.attributes[ATT_VALUE].value)
     return elems
+
 
 def loads(xml_string):
     """
@@ -125,15 +127,16 @@ def merge(xmls):
     :param xmls: a map xml_file_name : xml_file_contents
     :returns: a merged xml string
     """
-    def _merge_node(dst, src):
-        for k, v in src.iteritems():
+
+    def _merge_node(dst, source):
+        for k, v in source.items():
             if k in dst:
                 dst[k].update(v)
             else:
                 dst[k] = v
 
     def _flatten_sets_to_strings(node):
-        for k, v in node.iteritems():
+        for k, v in node.items():
             if len(v) > 1:
                 node[k] = '[' + ','.join(str(a) for a in node[k]) + ']'
             elif len(v) == 1:
@@ -144,21 +147,21 @@ def merge(xmls):
 
     merged = {}
 
-    for file_origin_env, src in xmls.iteritems():
+    for file_origin_env, src in xmls.items():
         deps = loads(src)
-        for name, dep in deps.iteritems():
+        for name, dep in deps.items():
             if dep['env'] == 'unused':
                 continue
             # use the origin of the xml file as the platform. Mainly because linux & linux64 report the same platform
             dep['env'] = file_origin_env
-            set_dep = dict((k, set([v])) for k, v in dep.iteritems())
+            set_dep = dict((k, {v}) for k, v in dep.items())
             if name in merged:
                 dest = merged[name]
                 _merge_node(dest, set_dep)
             else:
                 merged[name] = set_dep
 
-    for k, v in merged.iteritems():
+    for k, v in merged.items():
         _flatten_sets_to_strings(merged[k])
 
     return merged
@@ -168,9 +171,11 @@ def write(thedict, path):
     with open(path, 'w') as f:
         f.write(dumps(thedict))
 
+
 def read(path):
     with open(path) as f:
         return loads(f.read())
+
 
 def read_default():
     """
@@ -182,7 +187,7 @@ def read_default():
 
 def write_used_on_this_platform(accepted, actual, path):
     """
-    From a metadictionary of a model entity create the XML file.
+    From a meta-dictionary of a model entity create the XML file.
     Sets the env attribute to the current platform or 'unused' in the ``accepted`` dict
     """
     for key in accepted:
@@ -192,18 +197,3 @@ def write_used_on_this_platform(accepted, actual, path):
         else:
             data['env'] = 'unused'
     write(accepted, path)
-
-    
-# Test case for Windows or Mac
-if __name__ == '__main__':
-    FILE = "packages_accepted.xml"
-
-    import build_licenses
-
-    ACCEPTED = read_default()
-    ROOT = build_licenses.ROOT_MAC
-    if sys.platform == 'win32':
-        ROOT = build_licenses.ROOT_WINDOWS
-    ACTUAL = parse_tree_structure(ROOT)
-    write_used_on_this_platform(ACCEPTED, ACTUAL, FILE)
-
