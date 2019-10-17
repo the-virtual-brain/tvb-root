@@ -5,18 +5,18 @@ Simple command interface
 Serialize object graphs
 -----------------------
 
-todo
+It is still a todo in our API
 
 Reference
 ---------
 
-.. autofunction:: tvb.interfaces.neocom.h5.load
+.. autofunction:: tvb.core.neocom.h5.load
 
-.. autofunction:: tvb.interfaces.neocom.h5.store
+.. autofunction:: tvb.core.neocom.h5.load_with_references
 
-.. autofunction:: tvb.interfaces.neocom.h5.load_from_dir
+.. autofunction:: tvb.core.neocom.h5.store
 
-.. autofunction:: tvb.interfaces.neocom.h5.store_to_dir
+.. autofunction:: tvb.core.neocom.h5.store_complete
 
 
 
