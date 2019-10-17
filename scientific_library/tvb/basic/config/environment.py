@@ -72,6 +72,14 @@ class Environment(object):
             return False
 
         try:
+            _proc = Popen(["git", "status"], stdout=PIPE, stderr=PIPE)
+            if "On branch " in str(_proc.communicate()):
+                # usage from git
+                return False
+        except Exception:
+            pass
+
+        try:
             _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
             version = VersionSettings.parse_svn_version(_proc.communicate()[0])
             if version:
