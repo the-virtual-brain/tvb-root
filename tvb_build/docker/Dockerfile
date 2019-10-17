@@ -1,7 +1,11 @@
-FROM continuumio/miniconda
+FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y install texlive-base texlive-formats-extra
+
+RUN wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | apt-key add -
+RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+RUN apt-get update
 RUN apt-get -y install postgresql
 
 USER postgres
@@ -10,23 +14,21 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 USER root
 
 RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-docs python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
-RUN conda install -y --name tvb-docs pytest
-RUN conda install -y --name tvb-docs pytables numba scikit-image==0.14.2 simplejson cherrypy
-RUN conda install -y --name tvb-docs -c conda-forge subprocess32
+RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark matplotlib
+RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
+RUN conda install -y --name tvb-docs -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install matplotlib==2.1.0 sphinx==1.2.3 docutils==0.12
-RUN /opt/conda/envs/tvb-docs/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
-RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist mod-pywebsocket apscheduler lxml minixsv tzlocal
+RUN /opt/conda/envs/tvb-docs/bin/pip install h5py>=2.10 formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32
+RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing sphinx==1.2.3 docutils==0.12
 
-RUN conda create -y --name tvb-run python=2.7 nomkl scipy numpy networkx scikit-learn cython h5py pip numexpr psutil
-RUN conda install -y --name tvb-run pytest pytest-cov ipython ipython-notebook psycopg2
-RUN conda install -y --name tvb-run pytables numba scikit-image==0.14.2 simplejson cherrypy docutils
-RUN conda install -y --name tvb-run -c conda-forge subprocess32
+RUN conda create -y --name tvb-run python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark matplotlib
+RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0
-RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
-RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing
 
 COPY kernel.json /opt/conda/envs/tvb-run/share/jupyter/kernels/python2/
 
