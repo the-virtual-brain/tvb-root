@@ -64,7 +64,7 @@ To launch a python terminal in the command profile use
 
 .. code-block:: bash
 
-    $ ./distribution.sh start COMMAND_PROFILE -headless
+    $ ./distribution.sh start COMMAND_PROFILE
     Executing distribution.sh
     >>>
 
@@ -73,7 +73,7 @@ And in the library profile
 
 .. code-block:: bash
 
-    $ ./distribution.sh start LIBRARY_PROFILE -headless
+    $ ./distribution.sh start LIBRARY_PROFILE
     Executing distribution.sh
     >>>
 

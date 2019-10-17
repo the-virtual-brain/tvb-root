@@ -129,18 +129,11 @@ Run `distribution -h` too get help with this command:
    $ ./distribution.sh -h
 
 To access the console interface, run in a terminal `distribution start COMMAND_PROFILE` or `distribution start LIBRARY_PROFILE`.
-A Python shell will appear. See the :ref:`console <shell_ui>`.
+A Python shell will appear.
 
 .. code-block:: bash
 
    $ ./distribution.sh start COMMAND_PROFILE
-
-If you want a plain python text ui shell add the `-headless` flag to the above commands: `distribution start COMMAND_PROFILE -headless`
-This is helpful if |TVB| is installed on a headless server (no GUI).
-
-.. code-block:: bash
-
-   $ ./distribution.sh start COMMAND_PROFILE -headless
 
 
 Configuring TVB
