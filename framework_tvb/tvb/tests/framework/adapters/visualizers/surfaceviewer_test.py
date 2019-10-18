@@ -32,11 +32,14 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+import os
+import tvb_data.surfaceData
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CORTICAL
+import tvb_data.regionMapping as demo_data
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -56,22 +59,27 @@ class TestSurfaceViewers(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.test_user = TestFactory.create_user()
-        self.test_project = TestFactory.import_default_project(self.test_user)
+        self.test_user = TestFactory.create_user('Surface_Viewer_User')
+        self.test_project = TestFactory.create_project(self.test_user, 'Surface_Viewer_Project')
 
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
+        surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surf_skull, CORTICAL)
         assert self.surface is not None
 
-        self.region_mapping = TestFactory.get_entity(self.test_project, RegionMapping())
-        assert self.region_mapping is not None
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert self.connectivity is not None
 
+        TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
+        self.region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, TXT_FILE, self.surface.gid, self.connectivity.gid)
+        assert self.region_mapping is not None
 
     def transactional_teardown_method(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-
 
     def test_launch_surface(self):
         """
@@ -82,7 +90,6 @@ class TestSurfaceViewers(TransactionalTestCase):
         result = viewer.launch(self.surface, self.region_mapping)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
-
 
     def test_launch_region(self):
         """
