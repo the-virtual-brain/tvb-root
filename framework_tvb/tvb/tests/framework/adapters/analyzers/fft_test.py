@@ -29,51 +29,13 @@
 #
 import numpy
 from tvb.analyzers.fft import FFT
-from tvb.datatypes.time_series import TimeSeries
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neocom import h5
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-def make_ts():
-    # 1 second time series, 4000 samples
-    # channel 0: a pure 40hz
-    # channel 1: a pure 200hz
-    # channel 2: a superposition of 100 and 300Hz equal amplitude
-    time = numpy.linspace(0, 1000, 4000)
-    data = numpy.zeros((time.size, 1, 3, 1))
-    data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
-    data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
-    data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
-                       numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
-
-    return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
-
-
-def make_ts_from_op(session, operation_factory):
-    # make file stored and indexed time series
-    two_node_simple_sin_ts = make_ts()
-    op = operation_factory()
-
-    ts_db = TimeSeriesIndex()
-    ts_db.fk_from_operation = op.id
-    ts_db.fill_from_has_traits(two_node_simple_sin_ts)
-
-    ts_h5_path = h5.path_for_stored_index(ts_db)
-    with TimeSeriesH5(ts_h5_path) as f:
-        f.store(two_node_simple_sin_ts)
-        f.sample_rate.store(two_node_simple_sin_ts.sample_rate)
-
-    session.add(ts_db)
-    session.commit()
-    return ts_db
-
-
 class TestFFT(TransactionalTestCase):
-    def test_fourier_analyser(self):
-        two_node_simple_sin_ts = make_ts()
+    def test_fourier_analyser(self, time_series_factory):
+        two_node_simple_sin_ts = time_series_factory()
 
         fft = FFT(time_series=two_node_simple_sin_ts, segment_length=4000.0)
         spectra = fft.evaluate()
@@ -87,10 +49,9 @@ class TestFFT(TransactionalTestCase):
         around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
         assert numpy.abs(around_peak).sum() < 0.5 * 20
 
-
-    def test_fourier_adapter(self, tmpdir, session, operation_factory):
+    def test_fourier_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
         # make file stored and indexed time series
-        ts_db = make_ts_from_op(session, operation_factory)
+        ts_db = time_series_index_factory()
 
         # we have the required data to start the adapter
         # REVIEW THIS
