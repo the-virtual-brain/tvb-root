@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -31,8 +31,7 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
-import networkx
+import pickle
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -88,7 +87,8 @@ class NetworkxConnectivityImporter(ABCUploader):
     def launch(self, data_file, **kwargs):
         try:
             parser = NetworkxParser(**kwargs)
-            net = networkx.read_gpickle(data_file)
+            with open(data_file, 'rb') as f:
+                net = pickle.load(f, encoding='latin1')
             connectivity = parser.parse(net)
             return h5.store_complete(connectivity, self.storage_path)
         except ParseException as excep:
