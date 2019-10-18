@@ -34,6 +34,7 @@
 
 import os
 import tvb_data
+from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
@@ -45,7 +46,6 @@ class TestCovarianceViewer(TransactionalTestCase):
     """
     Unit-tests for Covariance Viewer.
     """
-
 
     def transactional_setup_method(self):
         """
@@ -62,7 +62,6 @@ class TestCovarianceViewer(TransactionalTestCase):
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
 
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
@@ -70,10 +69,11 @@ class TestCovarianceViewer(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
 
-    def test_launch(self, time_series_factory, covariance_factory):
+    def test_launch(self, covariance_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
+
         covariance = covariance_factory()
         viewer = CovarianceVisualizer()
         result = viewer.launch(covariance)

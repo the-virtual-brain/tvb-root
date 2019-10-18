@@ -43,34 +43,28 @@ class TestPSE(TransactionalTestCase):
     Unit-tests for BrainViewer.
     """
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a datatype group
-        """
-        self.datatypeFactory = DatatypesFactory()
-        self.group = self.datatypeFactory.create_datatype_group()
-
-    def test_launch_discrete(self):
+    def test_launch_discrete(self, datatype_group_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
+        group = datatype_group_factory()
         viewer = DiscretePSEAdapter()
-        result = viewer.launch(self.group)
+        result = viewer.launch(group)
 
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
                          'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
         for key in expected_keys:
             assert key in result
-        assert self.group.gid == result["datatype_group_gid"]
+        assert group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
-    def test_launch_isocline(self):
+    def test_launch_isocline(self, datatype_group_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
         viewer = IsoclinePSEAdapter()
-        result = viewer.launch(self.group)
+        group = datatype_group_factory()
+        result = viewer.launch(group)
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])

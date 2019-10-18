@@ -50,14 +50,13 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.test_user = TestFactory.create_user('CrossCoherence_User')
-        self.test_project = TestFactory.create_project(self.test_user, "CrossCoherence_Project")
+        self.test_user = TestFactory.create_user('Cross_Coherence_Viewer_User')
+        self.test_project = TestFactory.create_project(self.test_user, "Cross_Coherence_Viewer__Project")
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex())
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
-
 
     def transactional_teardown_method(self):
         """
@@ -65,13 +64,12 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def test_launch(self):
+    def test_launch(self, time_series_factory, cross_coherence_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        cross_coherence = self.datatypeFactory.create_crosscoherence(time_series)
+        time_series = time_series_factory()
+        cross_coherence = cross_coherence_factory(time_series=time_series)
         viewer = CrossCoherenceVisualizer()
         result = viewer.launch(cross_coherence)
         expected_keys = ['matrix_data', 'matrix_shape', 'frequency']
