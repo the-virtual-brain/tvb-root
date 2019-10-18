@@ -37,8 +37,9 @@ Demo script on how to load a TVB DataType by Id and modify metadata
 import os
 from uuid import UUID
 from datetime import datetime
-from tvb.basic.profile import TvbProfile
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
+from tvb.basic.profile import TvbProfile
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import date2string
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -66,6 +67,18 @@ def update_local_connectivity_metadata(file_path):
                                         'surface': UUID('10467c4f-d487-4186-afa6-d9b1fd8383d8').urn}, )
 
 
+def update_written_by(folder):
+    for root, _, files in os.walk(folder):
+        for file_name in files:
+            if file_name.endswith(".h5"):
+                full_path = os.path.join(root, file_name)
+                with H5File(full_path) as f:
+                    prev_h5_path = f.written_by.load()
+                    new_h5_path = prev_h5_path.replace("tvb.core.entities.file.datatypes", "tvb.adapters.datatypes.h5")
+                    f.written_by.store(new_h5_path)
+
+
 if __name__ == "__main__":
-    update_local_connectivity_metadata(
-        os.path.expanduser('~/Downloads/LocalConnectivity_3e551cbd-47ca-11e4-9f21-3c075431bf56.h5'))
+    # update_local_connectivity_metadata(
+    #     os.path.expanduser('~/Downloads/LocalConnectivity_3e551cbd-47ca-11e4-9f21-3c075431bf56.h5'))
+    update_written_by("/WORK/TVB/tvb-root/tvb_data/tvb_data/Default_Project")
