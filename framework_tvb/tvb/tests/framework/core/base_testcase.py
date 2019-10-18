@@ -41,6 +41,8 @@ from functools import wraps
 from types import FunctionType
 import decorator
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+
 
 def init_test_env():
     """
@@ -234,6 +236,7 @@ def transactional_test(func, callback=None):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
             session_maker.start_transaction()
+            ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
             try:
                 try:
                     if hasattr(args[0], 'transactional_setup_method_TVB'):
