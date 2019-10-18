@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -44,8 +44,9 @@ import tvb_data
 from hashlib import md5
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
 from tvb.datatypes.surfaces import CorticalSurface
-
 from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
@@ -99,7 +100,7 @@ class TestFactory(object):
                     mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
-        
+
         :returns: User entity after persistence.
         """
         user = User(username, password, mail, validated, role)
@@ -109,7 +110,7 @@ class TestFactory(object):
     def create_project(admin, name="TestProject", description='description', users=None):
         """
         Create persisted Project entity, with no linked DataTypes.
-        
+
         :returns: Project entity after persistence.
         """
         if users is None:
@@ -132,9 +133,9 @@ class TestFactory(object):
                          operation_status=STATUS_FINISHED, parameters="test params"):
         """
         Create persisted operation.
-        
+
         :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
-        :return: Operation entity after persistence. 
+        :return: Operation entity after persistence.
         """
         if algorithm is None:
             algorithm = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
@@ -235,6 +236,32 @@ class TestFactory(object):
         return import_service.created_projects[0]
 
     @staticmethod
+    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):
+        """
+                This method is used for importing region mappings
+                :param import_file_path: absolute path of the file to be imported
+                """
+
+        # Retrieve Adapter instance
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
+                                              'RegionMappingImporter')
+        form = RegionMappingImporterForm()
+        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
+                             '_surface': surface_gid,
+                             '_connectivity': connectivity_gid,
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.mapping_file.data = import_file_path
+        importer.submit_form(form)
+
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, **form.get_dict())
+
+        region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
+
+        return region_mapping
+
+    @staticmethod
     def import_surface_gifti(user, project, path):
         """
         This method is used for importing data in GIFIT format
@@ -300,7 +327,7 @@ class TestFactory(object):
 
         form = ObjSurfaceImporterForm()
         form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
-                             '_surface_type': "Face Surface",
+                             '_surface_type': surface_type,
                              '_Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
@@ -309,7 +336,7 @@ class TestFactory(object):
         ### Launch import Operation
         FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
 
-        data_types = FlowService().get_available_datatypes(project.id,  SurfaceIndex)[0]
+        data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
