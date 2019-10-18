@@ -35,6 +35,7 @@
 from os import path
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -50,6 +51,12 @@ class TestConnectivityZip(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
+
+    def transactional_teardown_method(self):
+        """
+        Clean-up tests data
+        """
+        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_happy_flow_import(self):
         """
