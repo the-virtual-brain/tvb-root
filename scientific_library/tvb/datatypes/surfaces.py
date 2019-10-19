@@ -646,19 +646,16 @@ class Surface(HasTraits):
 
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""
-    _ui_name = "A white matter - gray  surface"
     surface_type = Final(WHITE_MATTER)
 
 
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
-    _ui_name = "A cortical surface"
     surface_type = Attr(field_type=str, default=CORTICAL)
 
 
 class SkinAir(Surface):
     """Skin - air interface surface."""
-    _ui_name = "Skin"
     surface_type = Final(OUTER_SKIN)
 
     @classmethod
@@ -668,7 +665,6 @@ class SkinAir(Surface):
 
 class BrainSkull(Surface):
     """Brain - inner skull interface surface."""
-    _ui_name = "Brain - inner skull interface surface."
     surface_type = Final(INNER_SKULL)
 
     @classmethod
@@ -678,7 +674,6 @@ class BrainSkull(Surface):
 
 class SkullSkin(Surface):
     """Outer-skull - scalp interface surface."""
-    _ui_name = "Outer-skull - scalp interface surface"
     surface_type = Final(OUTER_SKULL)
 
     @classmethod
@@ -688,7 +683,6 @@ class SkullSkin(Surface):
 
 class EEGCap(Surface):
     """EEG cap surface."""
-    _ui_name = "EEG Cap"
     surface_type = Final(EEG_CAP)
 
     @classmethod
@@ -698,7 +692,6 @@ class EEGCap(Surface):
 
 class FaceSurface(Surface):
     """Face surface."""
-    _ui_name = "Face surface"
     surface_type = Final(FACE)
 
     @classmethod

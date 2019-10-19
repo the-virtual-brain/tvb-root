@@ -31,9 +31,8 @@
 import os
 import numpy
 import scipy.sparse
-from . import local_connectivity, region_mapping, surfaces
+from tvb.datatypes import local_connectivity, region_mapping, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-
 
 
 class Cortex(HasTraits):
@@ -41,8 +40,6 @@ class Cortex(HasTraits):
     Wrapper Class to gather necessary entities for a surface-based simulation.
     To be used when preparing a simulation launch.
     """
-
-    _ui_name = "A cortex..."
 
     local_connectivity = Attr(
         field_type=local_connectivity.LocalConnectivity,
@@ -66,7 +63,6 @@ class Cortex(HasTraits):
         default=numpy.array([1.0]),
         # file_storage=core.FILE_STORAGE_NONE,
         doc="""A factor that rescales local connectivity strengths.""")
-
 
     @property
     def region_mapping(self):

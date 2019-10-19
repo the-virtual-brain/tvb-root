@@ -40,8 +40,6 @@ class LocalConnectivity(HasTraits):
     """
     A sparse matrix for representing the local connectivity within the Cortex.
     """
-    _ui_name = "Local connectivity"
-
     surface = Attr(field_type=surfaces.Surface, label="Surface")
 
     matrix = Attr(field_type=scipy.sparse.spmatrix, required=False)

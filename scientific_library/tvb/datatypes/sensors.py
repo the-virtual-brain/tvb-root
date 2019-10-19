@@ -52,9 +52,6 @@ class Sensors(HasTraits):
     All sensors have locations.
     Some will have orientations, e.g. MEG.
     """
-
-    _ui_name = "Unknown sensors"
-
     sensors_type = Attr(str, required=False)
 
     labels = NArray(dtype='U128', label="Sensor labels")
@@ -192,8 +189,6 @@ class SensorsEEG(Sensors):
         file columns: labels, x, y, z
 
     """
-    _ui_name = "EEG Sensors"
-
     sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
     has_orientation = Attr(bool, default=False)
@@ -212,8 +207,6 @@ class SensorsMEG(Sensors):
         file columns: labels, x, y, z,   dx, dy, dz
 
     """
-    _ui_name = "MEG sensors"
-
     sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
 
     orientations = NArray(label="Sensor orientations",
@@ -236,8 +229,6 @@ class SensorsInternal(Sensors):
     """
     Sensors inside the brain...
     """
-    _ui_name = "Internal Sensors"
-
     sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
 
     @classmethod
