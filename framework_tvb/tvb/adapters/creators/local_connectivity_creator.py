@@ -128,7 +128,7 @@ class LocalConnectivityCreator(ABCAsynchronous):
         """
         if 'surface' in kwargs:
             surface_index = kwargs['surface']
-            points_no = float(kwargs['cutoff']) / surface_index.edge_length_mean
+            points_no = float(kwargs['cutoff']) / surface_index.edge_mean_length
             disk_size_b = surface_index.number_of_vertices * points_no * points_no * 8
             return self.array_size2kb(disk_size_b)
         return 0

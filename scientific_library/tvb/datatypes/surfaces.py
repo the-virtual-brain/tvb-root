@@ -60,7 +60,6 @@ except ImportError:
     msg = "Geodesic distance module is unavailable; some functionality for surfaces will be unavailable."
     warnings.warn(msg)
 
-
 OUTER_SKIN = "Skin Air"
 OUTER_SKULL = "Skull Skin"
 INNER_SKULL = "Brain Skull"
@@ -193,9 +192,6 @@ class Surface(HasTraits):
     _edges = None
     _number_of_edges = None
     _edge_lengths = None
-    _edge_length_mean = None
-    _edge_length_min = None
-    _edge_length_max = None
     _edge_triangles = None
 
     def summary_info(self):
@@ -210,9 +206,9 @@ class Surface(HasTraits):
             "Number of triangles": self.number_of_triangles,
             "Number of edges": self.number_of_edges,
             "Has two hemispheres": self.bi_hemispheric,
-            "Edge lengths, mean (mm)": self.edge_length_mean,
-            "Edge lengths, shortest (mm)": self.edge_length_min,
-            "Edge lengths, longest (mm)": self.edge_length_max
+            "Edge lengths, mean (mm)": self.edge_mean_length,
+            "Edge lengths, shortest (mm)": self.edge_min_length,
+            "Edge lengths, longest (mm)": self.edge_max_length
         }
 
     def geodesic_distance(self, sources, max_dist=None, targets=None):
@@ -502,15 +498,6 @@ class Surface(HasTraits):
             self._number_of_edges = len(self.edges)
         return self._number_of_edges
 
-    @property
-    def edge_lengths(self):
-        """
-        The length of the edges defined in the ``edges`` attribute.
-        """
-        if self._edge_lengths is None:
-            self._edge_lengths = self._find_edge_lengths()
-        return self._edge_lengths
-
     def _find_edge_lengths(self):
         """
         Calculate the Euclidean distance between the pair of vertices that
@@ -522,29 +509,7 @@ class Surface(HasTraits):
         self.edge_mean_length = float(elem.mean())
         self.edge_min_length = float(elem.min())
         self.edge_max_length = float(elem.max())
-
-        return elem
-
-    @property
-    def edge_length_mean(self):
-        """The mean length of the edges of the mesh."""
-        if self.edge_mean_length is None:
-            self._find_edge_lengths()
-        return self.edge_mean_length
-
-    @property
-    def edge_length_min(self):
-        """The length of the shortest edge in the mesh."""
-        if self.edge_min_length is None:
-            self._find_edge_lengths()
-        return self.edge_min_length
-
-    @property
-    def edge_length_max(self):
-        """The length of the longest edge in the mesh."""
-        if self.edge_max_length is None:
-            self._find_edge_lengths()
-        return self.edge_max_length
+        self._edge_lengths = elem
 
     @property
     def edge_triangles(self):

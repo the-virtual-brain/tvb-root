@@ -211,21 +211,21 @@ def plot_local_connectivity(cortex, cutoff=None):
                 linestyle=dashes[-1], linewidth=3)
 
     # What we'll mostly get
-    avg_res = 2 * int(cutoff / cortex.edge_length_mean)
+    avg_res = 2 * int(cutoff / cortex.surface.edge_mean_length)
     step = cutoff_2 / (avg_res - 1)
     avg_x = numpy.arange(-cutoff, cutoff + step, step)
     pyplot.plot(avg_x, cortex.local_connectivity.equation.evaluate(numpy.abs(avg_x)), 'b',
                 linestyle=dashes[0], linewidth=3)
 
     # It can be this bad
-    worst_res = 2 * int(cutoff / cortex.edge_length_max)
+    worst_res = 2 * int(cutoff / cortex.surface.edge_max_length)
     step = cutoff_2 / (worst_res - 1)
     worst_x = numpy.arange(-cutoff, cutoff + step, step)
     pyplot.plot(worst_x, cortex.local_connectivity.equation.evaluate(numpy.abs(worst_x)), 'r',
                 linestyle=dashes[1], linewidth=3)
 
     # This is as good as it gets...
-    best_res = 2 * int(cutoff / cortex.edge_length_min)
+    best_res = 2 * int(cutoff / cortex.surface.edge_min_length)
     step = cutoff_2 / (best_res - 1)
     best_x = numpy.arange(-cutoff, cutoff + step, step)
     pyplot.plot(best_x, cortex.local_connectivity.equation.evaluate(numpy.abs(best_x)), 'g',

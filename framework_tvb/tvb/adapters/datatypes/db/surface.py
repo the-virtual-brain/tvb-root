@@ -51,9 +51,9 @@ class SurfaceIndex(DataType):
     number_of_triangles = Column(Integer, nullable=False)
     number_of_edges = Column(Integer, nullable=False)
     bi_hemispheric = Column(Boolean, nullable=False)
-    edge_length_mean = Column(Float, nullable=False)
-    edge_length_min = Column(Float, nullable=False)
-    edge_length_max = Column(Float, nullable=False)
+    edge_mean_length = Column(Float, nullable=False)
+    edge_min_length = Column(Float, nullable=False)
+    edge_max_length = Column(Float, nullable=False)
 
     def fill_from_has_traits(self, datatype):
         # type: (Surface)  -> None
@@ -64,6 +64,6 @@ class SurfaceIndex(DataType):
         self.number_of_triangles = datatype.number_of_triangles
         self.number_of_edges = datatype.number_of_edges
         self.bi_hemispheric = datatype.bi_hemispheric
-        self.edge_length_mean = datatype.edge_length_mean
-        self.edge_length_min = datatype.edge_length_min
-        self.edge_length_max = datatype.edge_length_max
+        self.edge_mean_length = datatype.edge_mean_length
+        self.edge_min_length = datatype.edge_min_length
+        self.edge_max_length = datatype.edge_max_length

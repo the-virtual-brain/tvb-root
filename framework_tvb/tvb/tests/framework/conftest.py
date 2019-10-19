@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -36,7 +36,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.datatypes.graph import Covariance
 from tvb.datatypes.time_series import TimeSeries
-
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -54,6 +53,7 @@ from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import TvbProfile
+
 
 def pytest_addoption(parser):
     parser.addoption("--profile", action="store", default="TEST_SQLITE_PROFILE",
@@ -101,6 +101,7 @@ def session(db_engine):
     yield s
     s.close()
     Base.metadata.drop_all(db_engine)
+
 
 @pytest.fixture
 def user_factory():
@@ -202,11 +203,7 @@ def surface_factory():
                 edge_min_length=0.0,
                 edge_max_length=2.0,
                 zero_based_triangles=False,
-                split_triangles=numpy.arange(0),
-                number_of_split_slices=1,
-                split_slices=dict(),
                 bi_hemispheric=False,
-                # surface_type="surface",
                 valid_for_simulations=True
             )
 
@@ -221,9 +218,6 @@ def surface_factory():
             edge_min_length=0.0,
             edge_max_length=2.0,
             zero_based_triangles=False,
-            split_triangles=numpy.arange(0),
-            number_of_split_slices=1,
-            split_slices=dict(),
             bi_hemispheric=False,
             surface_type="surface_cortical",
             valid_for_simulations=valid_for_simulation)
@@ -274,6 +268,7 @@ def region_simulation_factory(connectivity_factory):
 
     return build
 
+
 @pytest.fixture()
 def time_series_factory(operation_factory, session):
     def build():
@@ -281,11 +276,9 @@ def time_series_factory(operation_factory, session):
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
         data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
-        data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
-                           numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
+        data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
 
         ts = TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
-
         op = operation_factory()
 
         ts_db = TimeSeriesIndex()
@@ -299,7 +292,9 @@ def time_series_factory(operation_factory, session):
         session.add(ts_db)
         session.commit()
         return ts_db
+
     return build
+
 
 @pytest.fixture()
 def covariance_factory(time_series_factory, operation_factory, session):
@@ -312,7 +307,6 @@ def covariance_factory(time_series_factory, operation_factory, session):
         ts_h5.close()
 
         data_shape = ts.data.shape
-
         result_shape = (data_shape[2], data_shape[2], data_shape[1], data_shape[3])
         result = numpy.zeros(result_shape)
 

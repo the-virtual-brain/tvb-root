@@ -329,17 +329,17 @@ class LocalConnectivityController(SpatioTemporalController):
                 ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
 
                 # What we'll mostly get
-                avg_res = 2 * int(max_x / surface.edge_length_mean)
+                avg_res = 2 * int(max_x / surface.edge_mean_length)
                 step = max_x * 2 / (avg_res - 1)
                 average_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
 
                 # It can be this bad
-                worst_res = 2 * int(max_x / surface.edge_length_max)
+                worst_res = 2 * int(max_x / surface.edge_max_length)
                 step = 2 * max_x / (worst_res - 1)
                 worst_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
 
                 # This is as good as it gets...
-                best_res = 2 * int(max_x / surface.edge_length_min)
+                best_res = 2 * int(max_x / surface.edge_min_length)
                 step = 2 * max_x / (best_res - 1)
                 best_case_series, _ = equation.get_series_data(0, 2 * max_x, step)
 

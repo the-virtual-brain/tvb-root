@@ -89,9 +89,9 @@ class TestSurfaces(BaseTestCase):
         assert dt.triangle_areas.shape == (32760, 1)
         assert dt.triangle_angles.shape == (32760, 3)
         assert len(dt.edges) == 49140
-        assert abs(dt.edge_length_mean - 3.97605292887) < 0.00000001
-        assert abs(dt.edge_length_min - 0.6638) < 0.0001
-        assert abs(dt.edge_length_max - 7.7567) < 0.0001
+        assert abs(dt.edge_mean_length - 3.97605292887) < 0.00000001
+        assert abs(dt.edge_min_length - 0.6638) < 0.0001
+        assert abs(dt.edge_max_length - 7.7567) < 0.0001
         assert len(dt.edge_triangles) == 49140
         assert [] == dt.validate_topology_for_simulations().warnings
         assert dt.vertices.shape == (16384, 3)
