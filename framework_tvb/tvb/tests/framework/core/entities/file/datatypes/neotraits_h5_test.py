@@ -31,11 +31,10 @@ import numpy
 import pytest
 import scipy
 import tvb
-from tvb.adapters.datatypes.simulation_state import SimulationState
 from tvb.basic.neotraits.ex import TraitAttributeError
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
-from tvb.adapters.datatypes.h5.simulation_state_h5 import SimulationStateH5
+from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.structural_h5 import StructuralMRIH5
 from tvb.adapters.datatypes.h5.volumes_h5 import VolumeH5
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
@@ -184,22 +183,23 @@ def test_store_load_structuralMRI(tmph5factory):
 
 
 def test_store_load_simulation_state(tmph5factory):
-    simulation_state = SimulationState(
+    history = SimulationHistory(
         history=numpy.arange(4),
         current_state=numpy.arange(4),
-        current_step=1
-    )
+        current_step=42)
 
-    tmp_file = tmph5factory("SimulationState_{}.h5".format(simulation_state.gid))
+    tmp_file = tmph5factory("SimulationHistory_{}.h5".format(history.gid))
 
-    with SimulationStateH5(tmp_file) as f:
-        f.store(simulation_state)
+    with SimulationHistoryH5(tmp_file) as f:
+        f.store(history)
 
-    simulation_state_stored = SimulationState()
-    assert simulation_state_stored.history is None
-    with SimulationStateH5(tmp_file) as f:
-        f.load_into(simulation_state_stored)
-    assert simulation_state_stored.history is not None
+    history_retrieved = SimulationHistory()
+    assert history_retrieved.history is None
+    with SimulationHistoryH5(tmp_file) as f:
+        f.load_into(history_retrieved)
+    assert history_retrieved.history is not None
+    assert history_retrieved.history.shape == (4,)
+    assert history_retrieved.current_step == 42
 
 
 def test_store_load_projection_matrix(tmph5factory, sensors_factory, surface_factory):

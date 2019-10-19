@@ -40,7 +40,7 @@ from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.adapters.datatypes.simulation_state import SimulationState
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_burst import *
@@ -378,7 +378,7 @@ class TestBurstService(BaseTestCase):
         self._wait_for_burst(burst_config)
 
         ts_regions = self.count_all_entities(TimeSeriesRegion)
-        sim_states = self.count_all_entities(SimulationState)
+        sim_states = self.count_all_entities(SimulationHistoryIndex)
         assert 2 == ts_regions, "An operation group should have been created for each step."
         assert 2 == sim_states, "An dataType group should have been created for each step."
 

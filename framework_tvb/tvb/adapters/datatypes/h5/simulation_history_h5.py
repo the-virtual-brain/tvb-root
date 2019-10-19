@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -27,25 +27,19 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-"""
-DataType for storing a simulator's state in files and as DB reference.
 
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-"""
-from tvb.basic.neotraits.api import HasTraits, NArray, Int
+from tvb.simulator.integrators import IntegratorStochastic
+from tvb.basic.neotraits.api import HasTraits, NArray, Int, List, Attr, Float
+from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Json
 
 
-class SimulationState(HasTraits):
+class SimulationHistory(HasTraits):
     """
     Simulation State, prepared for H5 file storage.
     """
-
-    # History Array
     history = NArray(required=False)
-
     # State array, all state variables
     current_state = NArray(required=False)
-
     # Simulator's current step number (in time)
     current_step = Int()
 
@@ -66,15 +60,22 @@ class SimulationState(HasTraits):
     monitor_stock_13 = NArray(required=False)
     monitor_stock_14 = NArray(required=False)
     monitor_stock_15 = NArray(required=False)
+    # For matching the stocks above on reload
+    monitor_names = List(of=str)
 
+    # In case of noisy integrator, remember the Random State generator status
+    integrator_noise_rng_state_algo = Attr(field_type=str, required=False)
+    integrator_noise_rng_state_keys = NArray(dtype='uint32', required=False)
+    integrator_noise_rng_state_pos = Int(required=False)
+    integrator_noise_rng_state_has_gauss = Int(required=False)
+    integrator_noise_rng_state_cached_gauss = Float(required=False)
 
     def __init__(self, **kwargs):
-        """ 
+        """
         Constructor for Simulator State
         """
-        super(SimulationState, self).__init__(**kwargs)
+        super(SimulationHistory, self).__init__(**kwargs)
         self.visible = False
-
 
     def populate_from(self, simulator_algorithm):
         """
@@ -84,15 +85,19 @@ class SimulationState(HasTraits):
         self.current_step = simulator_algorithm.current_step
         self.current_state = simulator_algorithm.current_state
 
+        monitor_names = []
         for i, monitor in enumerate(simulator_algorithm.monitors):
             field_name = "monitor_stock_" + str(i + 1)
             setattr(self, field_name, monitor._stock)
+            monitor_names.append(monitor.__class__.__name__)
 
-            if hasattr(monitor, "_ui_name"):
-                self.set_metadata({'monitor_name': monitor._ui_name}, field_name)
-            else:
-                self.set_metadata({'monitor_name': monitor.__class__.__name__}, field_name)
-
+        if isinstance(simulator_algorithm.integrator, IntegratorStochastic):
+            rng_state = simulator_algorithm.integrator.noise.random_stream.get_state()
+            self.integrator_noise_rng_state_algo = rng_state[0]
+            self.integrator_noise_rng_state_keys = rng_state[1]
+            self.integrator_noise_rng_state_pos = rng_state[2]
+            self.integrator_noise_rng_state_has_gauss = rng_state[3]
+            self.integrator_noise_rng_state_cached_gauss = rng_state[4]
 
     def fill_into(self, simulator_algorithm):
         """
@@ -104,6 +109,34 @@ class SimulationState(HasTraits):
 
         for i, monitor in enumerate(simulator_algorithm.monitors):
             monitor._stock = getattr(self, "monitor_stock_" + str(i + 1))
-  
-    
- 
+
+        if self.integrator_noise_rng_state_algo is not None:
+            rng_state = (
+                self.integrator_noise_rng_state_algo,
+                self.integrator_noise_rng_state_keys,
+                self.integrator_noise_rng_state_pos,
+                self.integrator_noise_rng_state_has_gauss,
+                self.integrator_noise_rng_state_cached_gauss
+            )
+            simulator_algorithm.integrator.noise.random_stream.set_state(rng_state)
+
+
+class SimulationHistoryH5(H5File):
+
+    def __init__(self, path):
+        super(SimulationHistoryH5, self).__init__(path)
+        self.history = DataSet(SimulationHistory.history, self)
+        self.current_state = DataSet(SimulationHistory.current_state, self)
+        self.current_step = Scalar(SimulationHistory.current_step, self)
+
+        self.monitor_names = Json(SimulationHistory.monitor_names, self)
+        for i in range(1, 16):
+            stock_name = 'monitor_stock_%i' % i
+            setattr(self, stock_name, DataSet(getattr(SimulationHistory, stock_name), self))
+
+        self.integrator_noise_rng_state_algo = Scalar(SimulationHistory.integrator_noise_rng_state_algo, self)
+        self.integrator_noise_rng_state_keys = DataSet(SimulationHistory.integrator_noise_rng_state_keys, self)
+        self.integrator_noise_rng_state_pos = Scalar(SimulationHistory.integrator_noise_rng_state_pos, self)
+        self.integrator_noise_rng_state_has_gauss = Scalar(SimulationHistory.integrator_noise_rng_state_has_gauss, self)
+        self.integrator_noise_rng_state_cached_gauss = Scalar(SimulationHistory.integrator_noise_rng_state_cached_gauss,
+                                                              self)

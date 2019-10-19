@@ -43,7 +43,7 @@ from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.datatypes.db.simulation_state import SimulationStateIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
@@ -764,9 +764,8 @@ class SimulatorController(BurstBaseController):
             burst_config_to_store = session_burst_config.clone()
             count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.project_id)
             session_burst_config.name = session_burst_config.name + "_" + launch_mode + str(count)
-            simulation_state_index = dao.get_generic_entity(
-                SimulationStateIndex.__module__ + "." + SimulationStateIndex.__name__,
-                session_burst_config.id, "fk_parent_burst")
+            simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
+                                                            session_burst_config.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
                 exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
                                             "it!" % session_burst_config.name)

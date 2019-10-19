@@ -42,10 +42,10 @@ Few supplementary steps are done here:
 import numpy
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.adapters.datatypes.h5.simulation_state_h5 import SimulationStateH5
+from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.simulation_state import SimulationStateIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
@@ -101,7 +101,6 @@ class SimulatorAdapterForm(ABCAdapterForm):
                                                                     is_copy=self.is_copy, is_load=False)
 
 
-
 class SimulatorAdapter(ABCAsynchronous):
     """
     Interface between the Simulator and the Framework.
@@ -126,7 +125,7 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         :returns: list of classes for possible results of the Simulator.
         """
-        return [TimeSeriesIndex]
+        return [TimeSeriesIndex, SimulationHistoryIndex]
 
     def configure(self, simulator_gid):
         """
@@ -135,9 +134,9 @@ class SimulatorAdapter(ABCAsynchronous):
         self.log.debug("%s: Instantiating requested simulator..." % str(self))
 
         simulator_service = SimulatorService()
-        self.algorithm, connectivity_gid, simulation_state_gid = simulator_service.deserialize_simulator(simulator_gid,
-                                                                                                         self.storage_path)
-        self.branch_simulation_state_gid = simulation_state_gid
+        self.algorithm, connectivity_gid, history_gid = simulator_service.deserialize_simulator(simulator_gid,
+                                                                                                self.storage_path)
+        self.branch_simulation_state_gid = history_gid
 
         # for monitor in self.algorithm.monitors:
         #     if issubclass(monitor, Projection):
@@ -247,11 +246,10 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.algorithm.configure(full_configure=False)
         if self.branch_simulation_state_gid is not None:
-            simulation_state_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
-            self.branch_simulation_state_path = h5.path_for_stored_index(simulation_state_index)
-
-            with SimulationStateH5(self.branch_simulation_state_path) as branch_simulation_state_h5:
-                branch_simulation_state_h5.load_into(self.algorithm)
+            history_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
+            history = h5.load_from_index(history_index)
+            assert isinstance(history, SimulationHistory)
+            history.fill_into(self.algorithm)
 
         region_map, region_volume_map = self._try_load_region_mapping()
 
@@ -309,13 +307,13 @@ class SimulatorAdapter(ABCAsynchronous):
                     ts_h5.write_data_slice([result[j][1]])
 
         self.log.debug("Completed simulation, starting to store simulation state ")
-        # Populate H5 file for simulator state. This step could also be done while running sim, in background.
+        # Now store simulator history, at the simulation end
+        results = []
         if not self._is_group_launch():
-            simulation_state_index = SimulationStateIndex()
-            simulation_state_path = h5.path_for(self.storage_path, SimulationStateH5, self.algorithm.gid)
-            with SimulationStateH5(simulation_state_path) as simulation_state_h5:
-                simulation_state_h5.store(self.algorithm)
-            self._capture_operation_results([simulation_state_index])
+            simulation_history = SimulationHistory()
+            simulation_history.populate_from(self.algorithm)
+            history_index = h5.store_complete(simulation_history, self.storage_path)
+            results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")
         for monitor in self.algorithm.monitors:
@@ -324,7 +322,8 @@ class SimulatorAdapter(ABCAsynchronous):
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()
         # self.log.info("%s: Adapter simulation finished!!" % str(self))
-        return list(result_indexes.values())
+        results.extend(result_indexes.values())
+        return results
 
     def _validate_model_parameters(self, model_instance, connectivity, surface):
         """
@@ -347,7 +346,6 @@ class SimulatorAdapter(ABCAsynchronous):
                     msg = self._get_exception_message(param, connectivity.number_of_regions, len(param_value))
                     self.log.error(msg)
                     raise LaunchException(msg)
-
 
     @staticmethod
     def _get_exception_message(param_name, expected_size, actual_size):

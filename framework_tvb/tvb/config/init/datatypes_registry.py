@@ -37,7 +37,6 @@ from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.region_mapping import RegionVolumeMapping, RegionMapping
 from tvb.datatypes.sensors import Sensors
-from tvb.adapters.datatypes.simulation_state import SimulationState
 from tvb.datatypes.spectral import CoherenceSpectrum, ComplexCoherenceSpectrum, FourierSpectrum, WaveletCoefficients
 from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.surfaces import Surface
@@ -59,7 +58,7 @@ from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfac
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5, RegionVolumeMappingH5
 from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
-from tvb.adapters.datatypes.h5.simulation_state_h5 import SimulationStateH5
+from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5, ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5, WaveletCoefficientsH5
 from tvb.adapters.datatypes.h5.structural_h5 import StructuralMRIH5
@@ -82,7 +81,7 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfac
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex, RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.simulation_state import SimulationStateIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex, ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex, WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
@@ -106,7 +105,7 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(RegionVolumeMapping, RegionVolumeMappingH5, RegionVolumeMappingIndex)
     REGISTRY.register_datatype(RegionMapping, RegionMappingH5, RegionMappingIndex)
     REGISTRY.register_datatype(Sensors, SensorsH5, SensorsIndex)
-    REGISTRY.register_datatype(SimulationState, SimulationStateH5, SimulationStateIndex)
+    REGISTRY.register_datatype(SimulationHistory, SimulationHistoryH5, SimulationHistoryIndex)
     REGISTRY.register_datatype(CoherenceSpectrum, CoherenceSpectrumH5, CoherenceSpectrumIndex)
     REGISTRY.register_datatype(ComplexCoherenceSpectrum, ComplexCoherenceSpectrumH5, ComplexCoherenceSpectrumIndex)
     REGISTRY.register_datatype(FourierSpectrum, FourierSpectrumH5, FourierSpectrumIndex)
