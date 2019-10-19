@@ -15,14 +15,14 @@ cd ..
 #cd ../..
 
 cd framework_tvb
-python setup.py develop
+python setup.py develop --no-deps
 cd ..
 
 cd scientific_library
 python setup.py develop
 cd ..
 
-if [ -d "tvb_data" ]; then
+if [[ -d "tvb_data" ]]; then
     cd tvb_data
     python setup.py develop
     cd ..

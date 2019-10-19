@@ -190,7 +190,7 @@ def execute_start_web(profile, reset):
         free_ports[stored.KEY_PORT] = cherrypy_port
         TvbProfile.current.manager.add_entries_to_config_file(free_ports)
 
-    web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile, 'tvb.config']
+    web_args_list = [PYTHON_EXE_PATH, '-m', SCRIPT_FOR_WEB, profile]
 
     if reset:
         web_args_list.append(SUB_PARAMETER_RESET)
