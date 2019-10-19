@@ -66,14 +66,14 @@ def list_datatypes(project_id):
         print(fmt % (dt.type, dt.user_tag_1, dt.id, dt.gid, dt.create_date))
 
 
-def datatype_details(id):
-    dt = dao.get_datatype_by_id(id)
+def datatype_details(dt_id):
+    dt = dao.get_datatype_by_id(dt_id)
     print(ProjectService().get_datatype_details(dt.gid))
 
 
-def load_dt(id):
-    dt = dao.get_datatype_by_id(id)
-    dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, id)[0]
+def load_dt(dt_id):
+    dt = dao.get_datatype_by_id(dt_id)
+    dt_idx = dao.get_generic_entity(dt.module + '.' + dt.type, dt_id)[0]
     dt_ht = h5.load_from_index(dt_idx)
     return dt_ht
 
