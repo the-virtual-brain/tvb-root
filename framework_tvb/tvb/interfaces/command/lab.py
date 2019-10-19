@@ -33,17 +33,23 @@ A convenience module for the command interface
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
-from tvb.simulator.simulator import Simulator
-from tvb.config.init.introspector_registry import IntrospectionRegistry
+from time import sleep
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterForm
+from tvb.basic.profile import TvbProfile
+from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterForm
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.simulator.simulator import Simulator
+
+TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+LOG = get_logger(__name__)
 
 
 def list_projects():
@@ -90,12 +96,9 @@ def import_conn_zip(project_id, zip_path):
     FlowService().fire_operation(importer, project.administrator, project_id, **params)
 
 
-def fire_simulation(project_id=1, **kwargs):
+def fire_simulation(project_id, simulator):
     project = dao.get_project_by_id(project_id)
-
-    # Prepare a Simulator instance with defaults and configure it to use the previously loaded Connectivity
-    simulator = Simulator(**kwargs)
-
+    assert isinstance(simulator, Simulator)
     # Load the SimulatorAdapter algorithm from DB
     cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                                  IntrospectionRegistry.SIMULATOR_CLASS)
@@ -105,4 +108,17 @@ def fire_simulation(project_id=1, **kwargs):
     launched_operation = simulator_service.async_launch_and_prepare_simulation(None, project.administrator, project,
                                                                                cached_simulator_algorithm, simulator,
                                                                                None)
+    LOG.info("Operation launched ....")
     return launched_operation
+
+
+def wait_to_finish(operation):
+    # Wait for the operation to finish
+    while not operation.has_finished:
+        sleep(5)
+        operation = dao.get_operation_by_id(operation.id)
+
+    if operation.status == STATUS_FINISHED:
+        LOG.info("Operation finished successfully")
+    else:
+        LOG.warning("Operation ended with problems [%s]: [%s]" % (operation.status, operation.additional_info))

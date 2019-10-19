@@ -34,24 +34,19 @@ Some standardized simulations are run and a report is generated in the console o
 """
 
 import tvb_data
-from time import sleep
 from datetime import datetime
 from os import path
 from tvb.simulator.coupling import HyperbolicTangent
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import *
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
-from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
-from tvb.interfaces.command import lab
-from tvb.basic.profile import TvbProfile
-
-TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+from tvb.interfaces.command.lab import *
 
 
 def _fire_simulation(project_id, **kwargs):
-    launched_operation = lab.fire_simulation(project_id, **kwargs)
+    # Prepare a Simulator instance with defaults and configure it to use the previously loaded Connectivity
+    simulator = Simulator(**kwargs)
+    launched_operation = fire_simulation(project_id, simulator)
 
     # wait for the operation to finish
     while not launched_operation.has_finished:
@@ -65,14 +60,14 @@ def _fire_simulation(project_id, **kwargs):
 
 
 def _create_bench_project():
-    prj = lab.new_project("benchmark_project_ %s" % datetime.now())
+    prj = new_project("benchmark_project_ %s" % datetime.now())
     data_dir = path.abspath(path.dirname(tvb_data.__file__))
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_68.zip')
-    lab.import_conn_zip(prj.id, zip_path)
+    import_conn_zip(prj.id, zip_path)
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_96.zip')
-    lab.import_conn_zip(prj.id, zip_path)
+    import_conn_zip(prj.id, zip_path)
     zip_path = path.join(data_dir, 'connectivity', 'connectivity_192.zip')
-    lab.import_conn_zip(prj.id, zip_path)
+    import_conn_zip(prj.id, zip_path)
 
     conn68 = dao.get_generic_entity(ConnectivityIndex, 68, "number_of_regions")[0]
     conn68 = h5.load_from_index(conn68)
