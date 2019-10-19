@@ -120,7 +120,7 @@ class UserService:
 
             user = dao.store_entity(user)
 
-            if role == ROLE_ADMINISTRATOR:
+            if role == ROLE_ADMINISTRATOR and not skip_import:
                 to_upload = os.path.join(os.path.dirname(tvb_data.__file__), "Default_Project.zip")
                 if not os.path.exists(to_upload):
                     self.logger.warning("Could not find DEFAULT PROJECT at path %s. You might want to import it "

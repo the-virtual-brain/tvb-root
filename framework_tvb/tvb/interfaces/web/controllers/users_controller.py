@@ -64,7 +64,6 @@ KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
 KEY_STORAGE_IN_UPDATE = "isStorageInUpdate"
 
 
-
 class UserController(BaseController):
     """
     This class takes care of the user authentication and/or register.
@@ -415,13 +414,13 @@ class UserController(BaseController):
             try:
                 context = ssl.SSLContext(ssl.PROTOCOL_TLS)
                 content = urlopen(TvbProfile.current.web.URL_TVB_VERSION, timeout=7, context=context).read()
-                self.version_info = json.loads(content)
+                self.version_info = json.loads(str(content))
                 pos = TvbProfile.current.web.URL_TVB_VERSION.find('/tvb')
                 self.version_info['url'] = TvbProfile.current.web.URL_TVB_VERSION[:pos]
                 self.logger.debug("Read version: " + json.dumps(self.version_info))
             except Exception as excep:
                 self.logger.warning("Could not read current version from remote server!")
-                self.logger.debug(content)
+                self.logger.debug(str(content))
                 self.logger.exception(excep)
                 self.version_info = {}
         template_dictionary[KEY_SERVER_VERSION] = self.version_info
