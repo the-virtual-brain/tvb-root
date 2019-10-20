@@ -817,7 +817,7 @@ class SimulatorController(BurstBaseController):
             project = common.get_current_project()
             storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
 
-            simulator, _, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
+            simulator, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
 
             session_stored_simulator = simulator
             common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
@@ -852,7 +852,7 @@ class SimulatorController(BurstBaseController):
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
 
-        simulator, _, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
+        simulator, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
 
         session_stored_simulator = simulator
         common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)

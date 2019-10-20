@@ -121,7 +121,7 @@ class SimulatorService(object):
             stimulus = h5.load_from_index(stimulus_index)
             simulator_in.stimulus = stimulus
 
-        return simulator_in, connectivity_gid, simulation_state_gid
+        return simulator_in, simulation_state_gid
 
     @transactional
     def _prepare_operation(self, project_id, user_id, simulator_id, simulator_index, algo_category, op_group, metadata,

@@ -131,11 +131,8 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         Make preparations for the adapter launch.
         """
-        self.log.debug("%s: Instantiating requested simulator..." % str(self))
-
-        simulator_service = SimulatorService()
-        self.algorithm, connectivity_gid, history_gid = simulator_service.deserialize_simulator(simulator_gid,
-                                                                                                self.storage_path)
+        self.log.debug("%s: Configuring simulator adapter..." % str(self))
+        self.algorithm, history_gid = SimulatorService().deserialize_simulator(simulator_gid, self.storage_path)
         self.branch_simulation_state_gid = history_gid
 
         # for monitor in self.algorithm.monitors:
@@ -143,13 +140,6 @@ class SimulatorAdapter(ABCAsynchronous):
         #         # TODO: add a service that loads a RM with Surface and Connectivity
         #         pass
 
-        connectivity_index = dao.get_datatype_by_gid(connectivity_gid.hex)
-        connectivity = h5.load_from_index(connectivity_index)
-
-        connectivity.gid = connectivity_gid
-        self.algorithm.connectivity = connectivity
-        self.simulation_length = self.algorithm.simulation_length
-        self.log.debug("%s: Initializing storage..." % str(self))
         try:
             self.algorithm.preconfigure()
         except ValueError as err:
@@ -166,7 +156,7 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
-        return self.algorithm.storage_requirement(self.simulation_length) / 2 ** 10
+        return self.algorithm.storage_requirement() / 2 ** 10
 
     def get_execution_time_approximation(self, **kwargs):
         """
@@ -182,18 +172,15 @@ class SimulatorAdapter(ABCAsynchronous):
         approx_nvar = 15
         approx_modes = 15
 
-        simulation_length = int(float(kwargs['simulation_length']))
-        approx_integrator_dt = float(kwargs['integrator_parameters']['dt'])
-
+        approx_integrator_dt = self.algorithm.integrator.dt
         if approx_integrator_dt == 0.0:
             approx_integrator_dt = 1.0
 
-        if 'surface' in kwargs and kwargs['surface'] is not None and kwargs['surface'] != '':
+        if self.algorithm.is_surface_simulation:
             approx_number_of_nodes *= approx_number_of_nodes
 
-        estimation = magic_number * approx_number_of_nodes * approx_nvar * approx_modes * simulation_length \
-                     / approx_integrator_dt
-
+        estimation = (magic_number * approx_number_of_nodes * approx_nvar *
+                      approx_modes * self.algorithm.simulation_length / approx_integrator_dt)
         return max(int(estimation), 1)
 
     def _try_find_mapping(self, mapping_class, connectivity_gid):
@@ -298,7 +285,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         # Run simulation
         self.log.debug("Starting simulation...")
-        for result in self.algorithm(simulation_length=self.simulation_length):
+        for result in self.algorithm(simulation_length=self.algorithm.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
                     m_name = monitor.__class__.__name__

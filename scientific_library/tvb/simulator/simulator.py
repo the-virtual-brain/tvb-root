@@ -559,13 +559,12 @@ class Simulator(HasTraits):
         return self._runtime
 
     # used by simulator adaptor
-    def storage_requirement(self, simulation_length):
+    def storage_requirement(self):
         """
         Return an estimated storage requirement (Bytes) for the simulator's
         current configuration and a specified simulation length.
 
         """
-        self.simulation_length = simulation_length
         self._calculate_storage_requirement()
         return self._storage_requirement
 
