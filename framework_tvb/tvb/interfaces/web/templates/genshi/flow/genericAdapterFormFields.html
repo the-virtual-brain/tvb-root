@@ -5,19 +5,8 @@
     {% endif %}
 
     {% with %}
-
-        {% if draw_hidden_ranges is defined %}
-            {% set drawHiddenRanges =  draw_hidden_ranges %}
-        {% else %}
-            {% set drawHiddenRanges = false %}
-        {% endif %}
-
-        {% if treeSessionKey is defined %}
-            {% set tree_session_key = treeSessionKey %}
-        {% else %}
-            {% set tree_session_key = 'defaultTree' %}
-        {% endif %}
-
+        {% set drawHiddenRanges =  draw_hidden_ranges if draw_hidden_ranges is defined else false %}
+        {% set tree_session_key = treeSessionKey if treeSessionKey is defined else 'defaultTree' %}
         {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
 
         {% if form is defined %}
@@ -27,7 +16,6 @@
         {% if inputList is defined %}
             {{ gatf.generateDisplay(inputList, false, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges) }}
         {% endif %}
-
     {% endwith %}
 
     <script type="text/javascript">

@@ -5,13 +5,10 @@
 	<div id="main" class="main-settings">
     	<form method="post">
 			<table summary="Config data" class="contentTable">
-
 				{% for key in keys_order %}
-
 					{% if key is none %}
 						<tr><td colspan='2'> <HR/></td> </tr>
 					{% else %}
-
 						{% with %}
 							{% set data = config_data[key] %}
 							<tr>

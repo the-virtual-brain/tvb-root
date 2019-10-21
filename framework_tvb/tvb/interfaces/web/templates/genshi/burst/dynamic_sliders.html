@@ -14,19 +14,17 @@
     <div class="sliderGroup">
         <button id="{{ btn_id }}">Reset</button>
         <h3>{{ title }}</h3>
-        {% with %}
-            {% set step = (1 + (parameters | length)) // 2 %}
-            <table class="paramSlidersTable">
-                {% for i in (step | xrange) %}
-                    <tr>
-                        {{ drawSlider(parameters[i]) }}
-                        {% if (i + step) < (parameters | length) %}
-                            {{ drawSlider(parameters[i + step]) }}
-                        {% endif %}
-                    </tr>
-                {% endfor %}
-            {% endwith %}
-            </table>
+        {% set step = (1 + (parameters | length)) // 2 %}
+        <table class="paramSlidersTable">
+            {% for i in (step | xrange) %}
+                <tr>
+                    {{ drawSlider(parameters[i]) }}
+                    {% if (i + step) < (parameters | length) %}
+                        {{ drawSlider(parameters[i + step]) }}
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </table>
     </div>
 {%- endmacro %}
 
@@ -35,8 +33,9 @@
     <td class="paramValue">
         <select id="{{ selectId }}">
             {% for sv in state_variables %}
-            <option value="{{ sv.name }}"
-                    selected="{{ 'selected' if sv.name == selected_sv else none }}">{{ sv.label }}</option>
+                <option value="{{ sv.name }}" selected="{{ 'selected' if sv.name == selected_sv else none }}">
+                    {{ sv.label }}
+                </option>
             {% endfor %}
         </select>
     </td>

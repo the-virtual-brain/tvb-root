@@ -4,15 +4,12 @@
 	<table>
 		{% for i in ((adapters_list | length) | xrange) %}
 			<tr>
-				{% with %}
-					{% set is_not_last = (i < ((adapters_list | length) - 1)) %}
-					{% set adapter_config = adapters_list[i] %}
-
-					<td>
-						Configuration for <b>{{ adapter_config.ui_name }}</b>:
-						{{ gatf.generateDisplay(adapter_config.interface, false, "", treeSessionKey, 'forces-create' if is_not_last else '') }}
-					</td>
-				{% endwith %}
+                {% set is_not_last = (i < ((adapters_list | length) - 1)) %}
+                {% set adapter_config = adapters_list[i] %}
+                <td>
+                    Configuration for <b>{{ adapter_config.ui_name }}</b>:
+                    {{ gatf.generateDisplay(adapter_config.interface, false, "", treeSessionKey, 'forces-create' if is_not_last else '') }}
+                </td>
 			</tr>
 		{% endfor %}
 	</table>

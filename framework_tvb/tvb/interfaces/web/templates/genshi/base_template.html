@@ -60,27 +60,7 @@
     <!--! ========================================================== -->
 
     <body class="user-standard style-default v-odinson {{ 'is-helping' if showOnlineHelp else '' }}" id="s-{{ section_name }}">
-
-        {% with %}
-            {% if submenu_list is defined and submenu_list %}
-                {% set subMenu = 'header_menu' %}
-            {% else %}
-                {% set subMenu = none %}
-            {% endif %}
-            {% if section_name=='project'  %}
-                {% set subMenuContent = 'project/project_submenu' %}
-            {% else %}
-                {% set subMenuContent = subMenu %}
-            {% endif %}
-        	{% include 'header.html' %}
-       {% endwith %}
-
-        {% if isAdapter is not defined or not isAdapter %}
-            {% if 'project_submenu' not in mainContent and 'header_menu' not in mainContent %}
-                {% include mainContent ~ ".html" %}
-            {% endif %}
-
-        {% endif %}
+        {% include 'header.html' %}
 
         {% if isAdapter is defined and isAdapter %}
             <div id="main" class="columnized colscheme-generic">
@@ -91,14 +71,13 @@
                     {% include mainContent ~ ".html" %}
                 {% endif %}
             </div>
+        {% else %}
+            {% if 'project_submenu' not in mainContent and 'header_menu' not in mainContent %}
+                {% include mainContent ~ ".html" %}
+            {% endif %}
         {% endif %}
 
-
-        {% with %}
-            {% set currentTab='nav-' ~ section_name %}
-            {% include 'footer.html' %}
-         {% endwith %}
-
+        {% include 'footer.html' %}
     </body>
 
 </html>

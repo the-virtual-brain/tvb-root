@@ -1,12 +1,10 @@
- {% macro draw_string_component(inputRow, disabled) -%}
-	 <!--!
-	    Draw Input field for a String  (input text).
-	  -->
-         <input type="text" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}"
-         		value="{{ inputRow.default if ('default' in inputRow) else '' }}" {{ 'readonly' if ('locked' in inputRow and inputRow.locked) }}
-                {{ ("disabled='disabled'") | safe if disabled }}/>
-
-        {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-	    {{ gatf.add_checkbox_control(inputRow) }}
-
+{% macro draw_string_component(inputRow, disabled) -%}
+    <!--!
+       Draw Input field for a String  (input text).
+     -->
+    <input type="text" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}"
+           value="{{ inputRow.default if ('default' in inputRow) else '' }}" {{ 'readonly' if ('locked' in inputRow and inputRow.locked) }}
+            {{ ("disabled='disabled'") | safe if disabled }}/>
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {{ gatf.add_checkbox_control(inputRow) }}
 {%- endmacro %}

@@ -1,4 +1,4 @@
-<script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"> </script>
+<script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
 <script type="text/javascript" src="/static/js/stepsUpdate.js?{{ currentVersionJS }}"></script>
 <script type="text/javascript" src="/static/js/range.js?{{ currentVersionJS }}"></script>
 
@@ -15,45 +15,23 @@
 {% macro create_select_options(inputRow, use_in) -%}
     <!--! Function to generate 'option' elements inside a simple/multiple 'select' components. -->
     {% for option in inputRow.options %}
+        {% set add_attrs1= 'selected' if ('default' in inputRow) and ((option.value | string) == (inputRow.default | string)) else '' %}
 
-        {% with %}
-
-            {% if ('default' in inputRow) and ((option.value | string) == (inputRow.default | string)) %}
-                {% set add_attrs1= 'selected' %}
+        {% if 'default' not in inputRow %}
+            {% set input_row_default = [] %}
+        {% else %}
+            {% if inputRow.default | isinstance(str | type) %}
+                {% set input_row_default = [inputRow.default] %}
             {% else %}
-                {% set add_attrs1 = '' %}
+                {% set input_row_default = inputRow.default %}
             {% endif %}
+        {% endif %}
 
-            {% if 'default' not in inputRow %}
-                {% set input_row_default = [] %}
-            {% else %}
+        {% set add_attrs2 = 'selected' if (option.value | string) in input_row_default else '' %}
+        {% set add_attrs = add_attrs2 if use_in else add_attrs1 %}
 
-                {% if inputRow.default | isinstance((str, unicode) | type) %}
-                    {% set input_row_default = [inputRow.default] %}
-                {% else %}
-                    {% set input_row_default = inputRow.default %}
-                {% endif %}
-
-            {% endif %}
-
-            {% if (option.value | string) in input_row_default %}
-                {% set add_attrs2 = 'selected' %}
-            {% else %}
-                {% set add_attrs2 = '' %}
-            {% endif %}
-
-            {% if use_in %}
-                {% set add_attrs = add_attrs2 %}
-            {% else %}
-                {% set add_attrs = add_attrs1 %}
-            {% endif %}
-
-            <option value="{{ option.value }}" {{ add_attrs }}> {{ option.name }} </option>
-
-        {% endwith %}
-
+        <option value="{{ option.value }}" {{ add_attrs }}> {{ option.name }} </option>
     {% endfor %}
-
 {%- endmacro %}
 
 {% macro add_checkbox_control(inputRow) -%}
@@ -61,18 +39,16 @@
     {% if param_checkbox_config == True %}
         <p class="field-adapters">
             <input type="checkbox" tabindex='1' name="{{ inputRow.name }}_checked" class="param-config-checkbox"
-                    {{ ("checked='checked'") | safe if (none_checked or inputRow.name in selectedParametersDictionary and selectedParametersDictionary[inputRow.name]['checked']) }}
-                    {{ ("disabled='disabled'") | safe if disabled }}
+            {{ ("checked='checked'") | safe if (none_checked or inputRow.name in selectedParametersDictionary and selectedParametersDictionary[inputRow.name]['checked']) }}
+            {{ ("disabled='disabled'") | safe if disabled }}
         </p>
     {% endif %}
-
 {%- endmacro %}
 
 {% macro generateDisplay(inputList, disabled, parentDivId, treeSessionKey='defaultTree', extra_class=none, draw_hidden_ranges = false) -%}
     <!--!    Genshi function, to generate one level in the tree of Adapter input parameters. -->
     <!--! In case some other form of elements except selects and inputs are used /static/JS/bursts.js should also be changed -->
     <fieldset>
-
         {% if draw_hidden_ranges %}
             <!-- This inputs will be used to remember which rangers are currently selected in UI.  -->
             <input type="hidden" id="range_1" name="range_1" value="0"/>
@@ -81,45 +57,27 @@
 
         {% if inputList %}
             <dl>
-
                 {% for inputRow in inputList %}
-
                     {% with %}
-
-                        {% if extra_class is not none %}
-                            {% set dt_class = extra_class %}
-                        {% else %}
-                            {% set dt_class = '' %}
-                        {% endif %}
-
-                        {% if ('required' in inputRow and inputRow.required and not ('locked' in inputRow and inputRow.locked)) %}
-                            {% set dt_class = dt_class ~ ' field-mandatory' %}
-                        {% endif %}
-
-                        {% if (inputRow.type=='select' and 'datatype' in inputRow) %}
-                            {% set dt_class = dt_class ~ ' dataset-selector' %}
-                        {% else %}
-                            {% set dt_class = dt_class ~ ' field-type-' ~ inputRow.type %}
-                        {% endif %}
+                        {% set dt_class = extra_class if extra_class is not none else '' %}
+                        {% set dt_class = dt_class ~ ' field-mandatory' if ('required' in inputRow and inputRow.required and not ('locked' in inputRow and inputRow.locked)) %}
+                        {% set dt_class = dt_class ~ ' dataset-selector' if (inputRow.type=='select' and 'datatype' in inputRow) else dt_class ~ ' field-type-' ~ inputRow.type %}
 
                         <dt class="{{ dt_class }}">
-
                             {% if 'label' in inputRow %}
                                 {% import 'flow/generate_help_tooltip.html' as ght with context %}
                                 <label for="{{ inputRow.name }}">{{ inputRow.label }} {{ ght.generate_help_tooltip(inputRow) }}</label>
                             {% endif %}
                         </dt>
-
                     {% endwith %}
-            	
-                    <dd>
 
+                    <dd>
                         <p class="field-data {{ 'field-series' if (inputRow.type=='select' and 'datatype' not in inputRow and (inputRow.options | length) < 5) else '' }}">
                             {% if inputRow.type=='upload' %}
                                 {{ f2c.draw_upload(inputRow) }}
                             {% elif inputRow.type == 'array' %}
                                 {{ a2c.draw_array_component(inputRow, disabled) }}
-                            <!--! When type is List we expect to have a string which should be the json representation of a list -->
+                                <!--! When type is List we expect to have a string which should be the json representation of a list -->
                             {% elif inputRow.type == 'str' or inputRow.type == 'list' %}
                                 {{ s2c2.draw_string_component(inputRow, disabled) }}
                             {% elif inputRow.type =='bool' %}
@@ -138,7 +96,7 @@
                         {% if 'inputRow.name' in errors %}
                             <p class="field-comment errorMessage">{{ errors[inputRow.name] }}</p>
                         {% endif %}
-                    
+
                         <!--!  In case a new level in the tree is needed, call recursively the function to display it.-->
                         {% if inputRow.type == 'dict' %}
                             <label>Dictionary of parameters</label>
@@ -146,17 +104,11 @@
                                 {{ generateDisplay(inputRow.attributes, true, "dict_" ~ inputRow.name, treeSessionKey) }}
                             </div>
                         {% endif %}
-
                     </dd>
-
                 {% endfor %}
-
             </dl>
-
         {% endif %}
-
     </fieldset>
-
 {%- endmacro %}
 
 

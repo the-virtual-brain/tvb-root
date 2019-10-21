@@ -1,5 +1,4 @@
 <div id="main" class="columnized colscheme-2-even">
-
     {% include 'spatial/stimulus_surface_step1_left.html' %}
     {% include 'spatial/stimulus_surface_step1_right.html' %}
     <aside class="header-component toolbar can-extend auto-extends">
@@ -7,19 +6,16 @@
         <div class="extension">
             <div class="dropdown-pane">
                 <ul>
-
                     <li>
                         <button class="action action-analyze action-idle" disabled="disabled">
                             Edit Stimulus Equations
                         </button>
                     </li>
-
                     <li>
                         <button class="action action-view" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 2); return false;">
                             Edit Focal Points and View
                         </button>
                     </li>
-
                     <li>
                         {% if selectedFocalPoints is not none %}
                             <button class="action action-plus" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 3); return false;">
@@ -31,10 +27,8 @@
                             </button>
                         {% endif %}
                     </li>
-
                 </ul>
             </div>
         </div>
     </aside>
-
 </div>

@@ -31,9 +31,9 @@
                                 Export JSON</button></p>
 
                             <p class="burst-prop-processtime"><mark>Processing time : </mark><span>{{ burst.process_time }}</span></p>
-<!--                            {% if burst.datatypes_number %}-->
-<!--                                <p class="burst-prop-dataweight"><mark>Datatypes : </mark> {{ burst.datatypes_number }}</p>-->
-<!--                            {% endif %}-->
+                            {% if burst.datatypes_number %}
+                                <p class="burst-prop-dataweight"><mark>Datatypes : </mark> {{ burst.datatypes_number }}</p>
+                            {% endif %}
                             {% if burst.disk_size %}
                                 <p class="burst-prop-datasize"><mark>Size : </mark> {{ burst.disk_size }}</p>
                             {% endif %}

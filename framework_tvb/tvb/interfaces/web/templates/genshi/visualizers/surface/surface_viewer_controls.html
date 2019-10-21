@@ -2,6 +2,7 @@
     <dl>
         {% include 'flow/color_scheme.html' %}
         {% with %}
+            {% set urlRegionBoundaries=True %}
             {% include 'visualizers/commons/brain_toggle_controls.html' %}
         {% endwith %}
     </dl>

@@ -4,7 +4,7 @@
 
         <script type="text/javascript">
             $(document).ready(function () {
-            	var options = {xaxes: [{ axisLabel: "{{ 'Time (ms)' if prefix=='temporal' else 'Distance (mm)' }}" }] };
+                var options = {xaxes: [{axisLabel: "{{ 'Time (ms)' if prefix=='temporal' else 'Distance (mm)' }}"}]};
                 $.plot($("#equationCanvasId_{{ prefix }}"), {{ allSeries | safe }}, options);
             });
         </script>
@@ -15,15 +15,15 @@
                 displayMessage("{{ message }}", "warningMessage");
             </script>
         {% endif %}
-   {%- endmacro %}
+    {%- endmacro %}
 
     {% if allSeries is not none %}
-    	{{ plotEquations(allSeries, prefix, message) }}
+        {{ plotEquations(allSeries, prefix, message) }}
     {% else %}
-	    <script type="text/javascript">
-	    	$(document).ready(function () {
-	                displayMessage('{{ errorMsg }}', "warningMessage");
-	            });
-	    </script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                displayMessage('{{ errorMsg }}', "warningMessage");
+            });
+        </script>
     {% endif %}
 </div>

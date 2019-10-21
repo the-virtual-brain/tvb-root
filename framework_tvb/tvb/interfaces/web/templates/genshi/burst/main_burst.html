@@ -58,14 +58,11 @@
 			onclick="toggleMaximizeColumn(this, 'section-portlets');">Maximize</a>
 		
 		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
-			{% for tab_idx in range(burstConfig.nr_of_tabs) %}
-				{% with %}
-					{% set activeTab = (tab_idx | string) == (burstConfig.selected_tab | string) %}
-
-                	<li class="{{ 'active' if activeTab else none }}">
-                    	<a href="#" id="portletTab_{{ tab_idx }}" onclick="changeBurstTile(this);">View {{ tab_idx+1 }}</a>
-                	</li>
-				{% endwith %}
+			{% for tab_idx in (burstConfig.nr_of_tabs | xrange) %}
+                {% set activeTab = (tab_idx | string) == (burstConfig.selected_tab | string) %}
+                <li class="{{ 'active' if activeTab else none }}">
+                    <a href="#" id="portletTab_{{ tab_idx }}" onclick="changeBurstTile(this);">View {{ tab_idx+1 }}</a>
+                </li>
         	{% endfor %}
 
             <li class="{{ 'active' if '-1' == (burstConfig.selected_tab | string) else none }}">

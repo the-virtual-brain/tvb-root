@@ -386,8 +386,8 @@ class UserController(BaseController):
         """
         form = RegisterForm()
         data = form.to_python(data)
-        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD]).hexdigest()
-        data['password2'] = md5(data['password2']).hexdigest()
+        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD].encode('utf-8')).hexdigest()
+        data['password2'] = md5(data['password2'].encode('utf-8')).hexdigest()
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
 
 

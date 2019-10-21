@@ -8,6 +8,9 @@
  	   	</script>
 	</aside>
 
+    {% set subMenu='header_menu' if submenu_list is defined and submenu_list else none %}
+    {% set subMenuContent='project/project_submenu' if section_name=='project' else subMenu %}
+
 	<!--! Section-related sub-navigation -->
 	{% if subMenuContent %}
 		<nav class="header-component can-extend {{ 'auto-extends' if (subMenuContent and subMenuContent in mainContent or mainContent in subMenuContent) else '' }}">
@@ -43,14 +46,12 @@
 
 	<!--! Messages -->
 	<section class="header-component message-container">
-
 		<h3>Messages</h3>
-
 		{% with %}
 			{% set 	msgClass = {'ERROR': 'msg-sticky msg-level-fatal',
-		                         'WARNING': 'msg-transient transient-medium msg-level-warn',
-		                         'INFO': 'msg-transient msg-level-info',
-		                         'IMPORTANT':'msg-transient transient-medium msg-level-confirm'} %}
+			                    'WARNING': 'msg-transient transient-medium msg-level-warn',
+			                    'INFO': 'msg-transient msg-level-info',
+			                    'IMPORTANT':'msg-transient transient-medium msg-level-confirm'} %}
 			<ul>
 				<li id="messageDivParent" class="{{ msgClass[messageType] }}"><div id="messageDiv">{{ message }}</div></li>
 			</ul>

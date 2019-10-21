@@ -1,20 +1,14 @@
 <!--! =========================================== -->
 <!--! Show multiple Algorithms on the same page -->
 <!--! =========================================== -->
-
 <div id="main" class="columnized colscheme-2-even">
-
     {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
 
     {% for part in [algorithms[:((algorithms | length)/2) | int], algorithms[((algorithms | length)/2) | int :]] %}
-
          <section class="view-column col-2">
-
             <h4><mark>Choose</mark> Algorithm</h4>
-
             {% for algorithm in part %}
                 <fieldset>
-
                     <legend>{{ algorithm.displayname }}</legend>
 
                     {% if showOnlineHelp and algorithm.description is not none %}
@@ -33,13 +27,9 @@
                         {{ gatf.generateDisplay(algorithm.input_tree, false, "") }}
                         <button class="action action-confirm" onclick="submitParentForm('{{ algorithm.id }}', '{{ algorithm.link }}');return false;">Launch</button>
                     </form>
-
                 </fieldset>
-
              {% endfor %}
-
          </section>
-
     {% endfor %}
 
     <script type="text/javascript">

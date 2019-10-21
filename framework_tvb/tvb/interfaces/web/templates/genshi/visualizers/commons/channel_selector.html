@@ -18,32 +18,26 @@
 {%- endmacro %}
 
 {% macro drawRegionSelectorChannels(groupedOptions, initialSelection, radio=None) -%}
-        {% for groupName, options in groupedOptions %}
-            {% with %}
-                {% set sectionWidth = 100 / (groupedOptions | length ) %}
-                <section class="submatrix" style="width:{{ sectionWidth }}%">
-                    <h6>{{ groupName }}</h6>
+    {% for groupName, options in groupedOptions %}
+        {% set sectionWidth = 100 / (groupedOptions | length ) %}
+        <section class="submatrix" style="width:{{ sectionWidth }}%">
+            <h6>{{ groupName }}</h6>
+            {% for value, label in options %}
+                {% set selected = value in initialSelection %}
 
-                    {% for value, label in options %}
-                        {% with %}
-                            {% set selected = value in initialSelection %}
-
-                            <label title="{{ label }}" class="{{ 'selected' if selected else none }}">
-                                <input type="{{ 'checkbox' if not radio else 'radio' }}" autocomplete="off"
-                                    name="{{ radio }}"
-                                    value="{{ value }}"
-                                    {{ ("checked='checked'") | safe if selected else None }}"/>
-                                    {{ label }}
-                            </label>
-
-                        {% endwith %}
-                    {% endfor %}
-                </section>
-            {% endwith %}
-        {% endfor %}
+                <label title="{{ label }}" class="{{ 'selected' if selected else none }}">
+                    <input type="{{ 'checkbox' if not radio else 'radio' }}" autocomplete="off"
+                           name="{{ radio }}"
+                           value="{{ value }}"
+                    {{ ("checked='checked'") | safe if selected else None }}"/>
+                    {{ label }}
+                </label>
+            {% endfor %}
+        </section>
+    {% endfor %}
 {%- endmacro %}
 
-{% macro drawRegionSelector(title, divId, groupedOptions, initialSelection=[], namedSelections=[], radio=false)  -%}
+{% macro drawRegionSelector(title, divId, groupedOptions, initialSelection=[], namedSelections=[], radio=false) -%}
     <div id='{{ divId }}' class="regionSelector">
         <h5>{{ title }}</h5>
         {% if not radio %}
@@ -51,6 +45,5 @@
         {% endif %}
 
         {{ drawRegionSelectorChannels(groupedOptions, initialSelection, divId if radio else none) }}
-
     </div>
 {%- endmacro %}

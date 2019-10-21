@@ -1,8 +1,7 @@
 <div id="s-brain" class="brain view-column">
-    {% include 'visualizers/commons/gl_vew_header.html' %}
+    {% include 'visualizers/commons/gl_view_header.html' %}
     {% include 'visualizers/commons/fragment_shader.html' %}
     {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}
-
     <script type="text/javascript" src="/static_view/tract/track.js?{{ currentVersionJS }}"></script>
 
     <script type="text/javascript">
@@ -10,7 +9,6 @@
             TRACK_webGLStart('{{ urlTrackStarts | safe }}', '{{ urlTrackVertices | safe }}', '{{ shelfObject | safe }}');
         });
     </script>
-
 
     <ul class="toolbar-inline">
         <li class="channel-selector can-extend">
@@ -23,5 +21,4 @@
         {% set show_navigator = false %}
         {% include 'visualizers/commons/gl_view_after.html' %}
     {% endwith %}
-
 </div>

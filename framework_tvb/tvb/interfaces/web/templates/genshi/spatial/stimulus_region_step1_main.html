@@ -7,21 +7,17 @@
         <div class="extension">
             <div class="dropdown-pane">
                 <ul>
-
                     <li>
                         <button class="action action-analyze action-idle" disabled="disabled">
                             Edit Stimulus Equations
                         </button>
                     </li>
-
                     <li>
                         <button class="action action-view" onclick="STIM_submitRegionStimulusData('{{ next_step_url }}', 2);return false;">
                             Set Regions Scaling
                         </button>
                     </li>
-
                     <li>
-
                         {% if anyScalling %}
                             <button class="action action-plus" onclick="STIM_submitRegionStimulusData('{{ next_step_url }}', 3);return false;">
                                 Save Stimulus Region
@@ -31,12 +27,9 @@
                                 Save New Stimulus on Region
                             </button>
                         {% endif %}
-
                     </li>
-
                 </ul>
             </div>
         </div>
     </aside>
-
 </div>

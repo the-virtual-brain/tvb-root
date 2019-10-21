@@ -14,7 +14,6 @@
 			<td><label for="password">Password *</label></td>
 			<td><input tabindex='2' id="password" type="password" name="password" value="{{ data.password if ('password' in data) else '' }}" class="inputField"/>
 				<br/>
-
 				{% if 'password' in errors %}
 					<span class="errorMessage">{{ errors.password }}</span>
 				{% endif %}
