@@ -1,6 +1,6 @@
 <div id="s-brain" class="{{ 'brain view-column' if not extended_view else '' }}">
 
-    {% include '../commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/gl_view_header.html' %}
     {% include 'visualizers/commons/fragment_shader.html' %}
     {% include 'visualizers/commons/vertex_shader.html' %}
 
@@ -20,6 +20,6 @@
 
     {% with %}
         {% set show_navigator = not extended_view %}
-        {% include '../commons/gl_view_after.html' %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
     {% endwith %}
 </div>
