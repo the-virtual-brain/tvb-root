@@ -26,28 +26,10 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-docs
                     cd tvb_build
-                    sh install_full_tvb.sh
+                    bash install_full_tvb.sh
                     python build_step1.py
                 '''
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
-            }
-        }
-        stage ('Run tests') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
-            steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    sh install_full_tvb.sh
-                    service postgresql start
-                    cd ../tvb_bin
-                    bash run_tests.sh postgres
-                '''
-                junit 'tvb_bin/TEST_OUTPUT/TEST-*RESULTS.xml'
             }
         }
         stage ('Build for Pypi') {
@@ -57,14 +39,36 @@ pipeline {
                 }
             }
             steps {
-                sh 'rm -R -f tvb_build/build/TVB_Distribution'
                 sh '''#!/bin/bash
                     rm -rf dist
                     source activate tvb-run
                     cd tvb_build
-                    sh package_for_pip.sh
+                    bash package_for_pip.sh
                 '''
                 archiveArtifacts artifacts: 'dist/*'
+            }
+        }
+        stage ('Compute coverage') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                    source activate tvb-run
+                    rm -rf TEST_OUT
+                    mkdir TEST_OUT
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    cd ../scientific_library
+                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_lib.xml --junitxml=../TEST_OUT/results_lib.xml
+                    cd ../framework_tvb
+                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_frw.xml --junitxml=../TEST_OUT/results_frw.xml
+                    exit 0
+                '''
+                 junit 'TEST_OUT/results_*.xml'
+                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUT/coverage_*.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
             }
         }
     }
