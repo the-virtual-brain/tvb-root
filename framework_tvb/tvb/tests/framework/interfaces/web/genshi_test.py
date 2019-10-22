@@ -38,9 +38,9 @@ import re
 import numpy
 import cherrypy
 from tvb.tests.framework.core.base_testcase import BaseTestCase
-import tvb.interfaces.web.templates.genshi.flow as root_html
+import tvb.interfaces.web.templates.jinja2.flow as root_html
 from bs4 import BeautifulSoup
-from genshi.template.loader import TemplateLoader
+from jinja2 import FileSystemLoader
 from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.basic.profile import TvbProfile
 from tvb.interfaces.web.controllers import common
@@ -61,8 +61,8 @@ def _template2string(template_specification):
     Here we use the TemplateLoader from Genshi, so we are linked to this library for comparison.
     """
     template_specification[common.KEY_SHOW_ONLINE_HELP] = False
-    path_to_form = os.path.join(os.path.dirname(root_html.__file__), 'genericAdapterFormFields.html')
-    loader = TemplateLoader()
+    path_to_form = 'genericAdapterFormFields.html'
+    loader = FileSystemLoader(os.path.dirname(root_html.__file__))
     template = loader.load(path_to_form)
     stream = template.generate(**template_specification)
     return stream.render('xhtml').replace('\n', '\t').replace('\'', '"')
