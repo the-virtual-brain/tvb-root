@@ -28,7 +28,9 @@
 
 		<div id="div-simulator-parameters">
 			{% if burstConfig.id is none %}
-				{% include 'flow/genericAdapterFormFields.html' %}
+                <div class="adaptersDiv">
+				    {% include 'simulator_fragment.html' %}
+                </div>
 			{% endif %}
 		</div>
 	</section>

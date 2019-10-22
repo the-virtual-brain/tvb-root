@@ -54,11 +54,10 @@ from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, Flo
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
 
-jinja_env = None
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, is_copy=False):
+    def __init__(self, prefix='', project_id=None):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                                 required=True, label="Connectivity",
@@ -71,7 +70,6 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
-        self.is_copy = is_copy
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -96,11 +94,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         return Simulator()
 
     def __str__(self):
-        # TODO: get rid of this
-        return jinja_env.get_template('simulator_fragment.html').render(form=self, action="/burst/set_connectivity",
-                                                                        is_first_fragment=True, is_last_fragment=False,
-                                                                        is_copy=self.is_copy, is_load=False)
-
+        pass
 
 class SimulatorAdapter(ABCAsynchronous):
     """

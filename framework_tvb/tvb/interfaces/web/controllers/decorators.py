@@ -43,7 +43,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from tvb.basic.profile import TvbProfile
 import tvb.core.adapters.abcadapter
 import tvb.core.neotraits.forms
-import tvb.adapters.simulator.simulator_adapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
@@ -61,7 +60,6 @@ env.filters['xrange'] = range
 # Inject Jinja environment in classes using it
 tvb.core.adapters.abcadapter.jinja_env = env
 tvb.core.neotraits.forms.jinja_env = env
-tvb.adapters.simulator.simulator_adapter.jinja_env = env
 
 # some of these decorators could be cherrypy tools
 

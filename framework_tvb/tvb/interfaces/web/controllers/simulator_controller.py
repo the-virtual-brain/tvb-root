@@ -110,8 +110,17 @@ class SimulatorController(BurstBaseController):
 
         form = self.prepare_first_fragment()
 
+        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD)
+        if is_simulator_load is None:
+            is_simulator_load = False
+        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
+        if is_simulator_copy is None:
+            is_simulator_copy = False
+
         dict_to_render = copy.deepcopy(self.dict_to_render)
         dict_to_render[self.IS_FIRST_FRAGMENT_KEY] = True
+        dict_to_render[self.IS_COPY] = is_simulator_copy
+        dict_to_render[self.IS_LOAD] = is_simulator_load
         dict_to_render[self.FORM_KEY] = form
         dict_to_render[self.ACTION_KEY] = "/burst/set_connectivity"
         template_specification.update(**dict_to_render)
@@ -119,12 +128,8 @@ class SimulatorController(BurstBaseController):
         return self.fill_default_attributes(template_specification)
 
     def prepare_first_fragment(self):
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
-        if is_simulator_copy is None:
-            is_simulator_copy = False
-
         adapter_instance = ABCAdapter.build_adapter(self.cached_simulator_algorithm)
-        form = adapter_instance.get_form()('', common.get_current_project().id, is_simulator_copy)
+        form = adapter_instance.get_form()('', common.get_current_project().id)
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
