@@ -3,13 +3,7 @@ FROM continuumio/miniconda3
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y install texlive-base texlive-formats-extra
 
-# TODO install Octave
-# TODO fix install of Postgres
-
-#RUN wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | apt-key add -
-#RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ stretch-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
-#RUN apt-get update
-#RUN apt-get -y install postgresql
+RUN apt-get -y install octave postgresql
 #
 #USER postgres
 #RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
@@ -44,7 +38,8 @@ RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/tvb-root
 RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -O tvb_data.zip; \
     unzip tvb_data.zip; \
     cd tvb_data; \
-    /opt/conda/envs/tvb-run/bin/python setup.py develop
+    /opt/conda/envs/tvb-run/bin/python setup.py develop;\
+    /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
 COPY .tvb.configuration /root/.tvb.configuration
 RUN mkdir /root/TVB_DATA
@@ -56,6 +51,8 @@ WORKDIR /root/tvb-root
 
 # For running all unit-tests
 # inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
+#<testsuite errors="100" failures="248" hostname="747eee3aaab5" name="pytest" skipped="3" tests="463"
+#<testsuite errors="100" failures="237" hostname="fe4fc3f6b6c7" name="pytest" skipped="3" tests="463"
 #CMD ["bash","-c","source activate tvb-run && cd tvb_build && sh install_full_tvb.sh && cd ../tvb_bin && bash run_tests.sh"]
 
 # For running Jupyter notebooks
@@ -65,4 +62,6 @@ WORKDIR /root/tvb-root
 # For running TVB Web GUI
 # bind port 8080
 # MOUNT -v [local- ~/TVB ]:/root/TVB_DATA
-CMD ["bash","-c","source activate tvb-run && cd tvb_build && sh install_full_tvb.sh && cd ../tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
+#CMD ["bash","-c","source activate tvb-run && cd tvb_build && sh install_full_tvb.sh && cd ../tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
+
+CMD ["bash","-c","source activate tvb-run && cd tvb_build && sh install_full_tvb.sh && /bin/bash"]
