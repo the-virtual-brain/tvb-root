@@ -2,15 +2,14 @@ FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y install texlive-base texlive-formats-extra
-
 RUN apt-get -y install octave postgresql
-#
-#USER postgres
-#RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+USER postgres
+RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
 USER root
+RUN conda update -n base -c defaults conda
 
-#RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark matplotlib
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
@@ -33,16 +32,16 @@ RUN /bin/bash -c "source activate tvb-run"; \
     /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>/root/.jupyter/jupyter_notebook_config.py
 
-RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/tvb-root
-
 RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -O tvb_data.zip; \
     unzip tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop;\
     /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
+RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/tvb-root; mkdir /root/TVB_DATA
+
 COPY .tvb.configuration /root/.tvb.configuration
-RUN mkdir /root/TVB_DATA
+
 WORKDIR /root/tvb-root
 # MOUNT -v [local- tvb-root - clone]:/root/tvb-root
 
