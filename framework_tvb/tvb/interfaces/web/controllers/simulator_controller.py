@@ -585,9 +585,9 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_monitor_params'
         dict_to_render[self.IS_COPY] = is_simulator_copy
         dict_to_render[self.IS_LOAD] = is_simulator_load
-        if is_simulator_load:
-            dict_to_render[self.ACTION_KEY] = ''
-            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        # if is_simulator_load or is_simulator_copy:
+        #     dict_to_render[self.ACTION_KEY] = ''
+        #     dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
@@ -613,9 +613,9 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_monitor_equation'
         dict_to_render[self.IS_COPY] = is_simulator_copy
         dict_to_render[self.IS_LOAD] = is_simulator_load
-        if is_simulator_load:
-            dict_to_render[self.ACTION_KEY] = ''
-            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        # if is_simulator_load or is_simulator_copy:
+        #     dict_to_render[self.ACTION_KEY] = ''
+        #     dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
@@ -651,7 +651,11 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.ACTION_KEY] = '/burst/setup_pse'
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_simulation_length'
         dict_to_render[self.IS_COPY] = is_simulator_copy
+        dict_to_render[self.IS_LOAD] = is_simulator_load
         dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        if is_simulator_load or is_simulator_copy:
+            dict_to_render[self.ACTION_KEY] = ''
+            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
