@@ -34,6 +34,7 @@
 import os
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_coherence import CrossCoherenceVisualizer
@@ -64,12 +65,12 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_launch(self, time_series_factory, cross_coherence_factory):
+    def test_launch(self, time_series_index_factory, cross_coherence_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = time_series_factory()
-        cross_coherence = cross_coherence_factory(time_series=time_series)
+        time_series = time_series_index_factory()
+        cross_coherence = cross_coherence_factory(time_series=h5.load_from_index(time_series));
         viewer = CrossCoherenceVisualizer()
         result = viewer.launch(cross_coherence)
         expected_keys = ['matrix_data', 'matrix_shape', 'frequency']

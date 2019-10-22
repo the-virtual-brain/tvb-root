@@ -34,12 +34,10 @@ import json
 import os
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.sensors as sensors_dataset
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.datatypes.sensors import SensorsEEG
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -72,8 +70,7 @@ class TestEEGMonitor(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__),  'eeg_unitvector_62.txt.bz2')
-        
-        sensors = TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterForm.options['EEG Sensors'])
+
         time_series = time_series_index_factory()
         viewer = EegMonitor()
         result = viewer.launch(time_series)

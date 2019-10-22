@@ -54,8 +54,8 @@ class TestCovarianceViewer(TransactionalTestCase):
         imports a CFF data-set
         """
 
-        self.test_user = TestFactory.create_user("UserCVV")
-        self.test_project = TestFactory.create_project(self.test_user)
+        self.test_user = TestFactory.create_user("Covariance_Viewer_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Covariance_Viewer_Project")
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
