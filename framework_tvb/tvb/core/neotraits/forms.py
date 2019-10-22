@@ -100,7 +100,7 @@ class Field(object):
 
 
 class SimpleBoolField(Field):
-    template = 'bool_field.html'
+    template = 'form_fields/bool_field.html'
 
     def _from_post(self):
         if self.unvalidated_data is None:
@@ -109,7 +109,7 @@ class SimpleBoolField(Field):
 
 
 class SimpleStrField(Field):
-    template = 'str_field.html'
+    template = 'form_fields/str_field.html'
 
     def _from_post(self):
         if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
@@ -118,11 +118,11 @@ class SimpleStrField(Field):
 
 
 class SimpleHiddenField(Field):
-    template = 'hidden_field.html'
+    template = 'form_fields/hidden_field.html'
 
 
 class SimpleIntField(Field):
-    template = 'number_field.html'
+    template = 'form_fields/number_field.html'
     min = None
     max = None
 
@@ -137,7 +137,7 @@ class SimpleIntField(Field):
 
 
 class SimpleFloatField(Field):
-    template = 'number_field.html'
+    template = 'form_fields/number_field.html'
     input_type = "number"
     min = None
     max = None
@@ -154,7 +154,7 @@ class SimpleFloatField(Field):
 
 
 class SimpleSelectField(Field):
-    template = 'radio_field.html'
+    template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
 
     def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None,
@@ -188,7 +188,7 @@ class SimpleSelectField(Field):
 
 
 class MultipleSelectField(SimpleSelectField):
-    template = 'checkbox_field.html'
+    template = 'form_fields/checkbox_field.html'
 
     def fill_from_post(self, post_data):
         super(SimpleSelectField, self).fill_from_post(post_data)
@@ -202,7 +202,7 @@ class MultipleSelectField(SimpleSelectField):
 
 
 class SimpleArrayField(Field):
-    template = 'str_field.html'
+    template = 'form_fields/str_field.html'
 
     def __init__(self, form, name, dtype, disabled=False, required=False, label='', doc='', default=None):
         super(SimpleArrayField, self).__init__(form, name, disabled, required, label, doc, default)
@@ -228,7 +228,7 @@ class SimpleArrayField(Field):
 
 
 class DataTypeSelectField(Field):
-    template = 'datatype_select_field.html'
+    template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
     def __init__(self, datatype_index, form, name=None, disabled=False, required=False, label='', doc='',
@@ -336,7 +336,7 @@ TEMPORARY_PREFIX = ".tmp"
 
 
 class UploadField(Field):
-    template = 'upload_field.html'
+    template = 'form_fields/upload_field.html'
 
     def __init__(self, required_type, form, name, disabled=False, required=False, label='', doc=''):
         super(UploadField, self).__init__(form, name, disabled, required, label, doc)
@@ -393,7 +393,7 @@ class TraitField(Field):
 
 
 class StrField(TraitField):
-    template = 'str_field.html'
+    template = 'form_fields/str_field.html'
 
     def _from_post(self):
         if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
@@ -403,7 +403,7 @@ class StrField(TraitField):
 
 class BytesField(StrField):
     """ StrField for byte strings. """
-    template = 'str_field.html'
+    template = 'form_fields/str_field.html'
 
     def _from_post(self):
         super(BytesField, self)._from_post()
@@ -411,14 +411,14 @@ class BytesField(StrField):
 
 
 class BoolField(TraitField):
-    template = 'bool_field.html'
+    template = 'form_fields/bool_field.html'
 
     def _from_post(self):
         self.data = self.unvalidated_data is not None
 
 
 class IntField(TraitField):
-    template = 'number_field.html'
+    template = 'form_fields/number_field.html'
     min = None
     max = None
 
@@ -428,7 +428,7 @@ class IntField(TraitField):
 
 
 class FloatField(TraitField):
-    template = 'number_field.html'
+    template = 'form_fields/number_field.html'
     input_type = "number"
     min = None
     max = None
@@ -441,7 +441,7 @@ class FloatField(TraitField):
 
 
 class ArrayField(TraitField):
-    template = 'str_field.html'
+    template = 'form_fields/str_field.html'
 
     def _from_post(self):
         data = json.loads(self.unvalidated_data)
@@ -463,7 +463,7 @@ Option = namedtuple('Option', ['id', 'value', 'label', 'checked'])
 
 
 class SelectField(TraitField):
-    template = 'radio_field.html'
+    template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
 
     def __init__(self, trait_attribute, form, name=None, disabled=False):
@@ -514,7 +514,7 @@ class SelectField(TraitField):
 
 
 class MultiSelectField(TraitField):
-    template = 'checkbox_field.html'
+    template = 'form_fields/checkbox_field.html'
 
     def __init__(self, trait_attribute, form, name=None, disabled=False):
         super(MultiSelectField, self).__init__(trait_attribute, form, name, disabled)
@@ -580,7 +580,7 @@ def ScalarField(trait_attribute, form, name=None, disabled=False):
 
 
 class FormField(Field):
-    template = 'form_field.html'
+    template = 'form_fields/form_field.html'
 
     def __init__(self, form_class, form, name, label='', doc=''):
         super(FormField, self).__init__(form, name, False, False, label, doc)

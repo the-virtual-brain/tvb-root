@@ -12,7 +12,7 @@ from tvb.core.neotraits.forms import ScalarField, Form, FormField, ArrayField
 # to ensure sanity do this once at a top level in the app
 
 tvb.core.neotraits.forms.jinja_env = jinja_env = Environment(
-    loader=PackageLoader('tvb.interfaces.web.templates', 'jinja'),
+    loader=PackageLoader('tvb.interfaces.web.templates', 'form_fields'),
     autoescape=True,
     trim_blocks=True,
     lstrip_blocks=True,

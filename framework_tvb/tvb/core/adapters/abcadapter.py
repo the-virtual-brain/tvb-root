@@ -59,7 +59,6 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.neotraits.forms import Form, DataTypeSelectField
-from tvb.tests.framework.interfaces.neoforms_test import jinja_env
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
@@ -70,6 +69,7 @@ KEY_SURFACE_GID = input_tree.KEY_SURFACE_GID
 
 LOGGER = get_logger("ABCAdapter")
 
+jinja_env = None
 
 def nan_not_allowed():
     """
@@ -167,7 +167,7 @@ class ABCAdapterForm(Form):
         return attrs_dict
 
     def __str__(self):
-        return jinja_env.get_template("form.html").render(form=self)
+        return jinja_env.get_template("form_fields/form.html").render(form=self)
 
 
 

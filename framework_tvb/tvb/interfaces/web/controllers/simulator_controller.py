@@ -135,7 +135,7 @@ class SimulatorController(BurstBaseController):
         return form
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_connectivity(self, **data):
@@ -173,7 +173,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_coupling_params(self, **data):
@@ -199,7 +199,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_surface(self, **data):
@@ -244,7 +244,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_cortex(self, **data):
@@ -282,7 +282,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_stimulus(self, **data):
@@ -315,7 +315,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_model(self, **data):
@@ -342,7 +342,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_model_params(self, **data):
@@ -369,7 +369,7 @@ class SimulatorController(BurstBaseController):
 
     # TODO: add state_variables selection step
     # @cherrypy.expose
-    # @using_template("wizzard_form")
+    # @using_template("simulator_fragment")
     # @handle_error(redirect=False)
     # @check_user
     # def set_model_variables_to_monitor(self, data):
@@ -385,7 +385,7 @@ class SimulatorController(BurstBaseController):
     #             'previous_action': '/burst/set_model_variables_to_monitor'}
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_integrator(self, **data):
@@ -411,7 +411,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_integrator_params(self, **data):
@@ -450,7 +450,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_noise_params(self, **data):
@@ -488,7 +488,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_noise_equation_params(self, **data):
@@ -514,7 +514,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitors(self, **data):
@@ -543,7 +543,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitor_params(self, **data):
@@ -586,7 +586,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitor_equation(self, **data):
@@ -614,7 +614,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_simulation_length(self, **data):
@@ -650,7 +650,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def setup_pse(self, **data):
@@ -663,7 +663,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_pse_params(self, **data):
@@ -803,7 +803,7 @@ class SimulatorController(BurstBaseController):
                 'selectedBurst': session_burst.id}
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def load_burst_read_only(self, burst_config_id):
@@ -839,7 +839,7 @@ class SimulatorController(BurstBaseController):
             raise
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def copy_simulator_configuration(self, burst_config_id):
@@ -868,7 +868,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def reset_simulator_configuration(self):

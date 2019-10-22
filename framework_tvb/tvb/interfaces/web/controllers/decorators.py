@@ -34,7 +34,6 @@ Decorators for Cherrypy exposed methods are defined here.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
-import os
 import json
 import cherrypy
 import cProfile
@@ -42,6 +41,9 @@ from datetime import datetime
 from functools import wraps
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from tvb.basic.profile import TvbProfile
+import tvb.core.adapters.abcadapter
+import tvb.core.neotraits.forms
+import tvb.adapters.simulator.simulator_adapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
@@ -55,6 +57,11 @@ env = Environment(loader=FileSystemLoader(TvbProfile.current.web.TEMPLATE_ROOT),
 env.filters['isinstance'] = isinstance
 env.filters['type'] = type
 env.filters['xrange'] = range
+
+# Inject Jinja environment in classes using it
+tvb.core.adapters.abcadapter.jinja_env = env
+tvb.core.neotraits.forms.jinja_env = env
+tvb.adapters.simulator.simulator_adapter.jinja_env = env
 
 # some of these decorators could be cherrypy tools
 
