@@ -24,14 +24,12 @@ pipeline {
             }
             steps {
                 sh '''#!/bin/bash
-                    svn upgrade
                     source activate tvb-docs
                     cd tvb_build
                     sh install_full_tvb.sh
                     python build_step1.py
                 '''
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
-                stash includes: 'tvb_build/build/*.zip', name: 'docs-website'
             }
         }
         stage ('Run tests') {
@@ -49,32 +47,30 @@ pipeline {
                     cd ../tvb_bin
                     bash run_tests.sh postgres
                 '''
+                junit 'tvb_bin/TEST_OUTPUT/TEST-*RESULTS.xml'
             }
         }
-        stage ('Build TVB') {
+        stage ('Build for Pypi') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
                 }
             }
             steps {
-                unstash 'docs-website'
                 sh 'rm -R -f tvb_build/build/TVB_Distribution'
                 sh '''#!/bin/bash
+                    rm -rf dist
                     source activate tvb-run
                     cd tvb_build
-                    sh install_full_tvb.sh
-                    rm -R -f build/TVB_Distribution
-                    python build_from_conda.py
+                    sh package_for_pip.sh
                 '''
-                archiveArtifacts artifacts: 'tvb_build/build/TVB_Linux*.zip'
-                junit 'tvb_bin/TEST_OUTPUT/TEST-*RESULTS.xml'
+                archiveArtifacts artifacts: 'dist/*'
             }
         }
     }
     post {
         changed {
-            mail to: 'lia.domide@codemart.ro, paula.popa@codemart.ro',
+            mail to: 'lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

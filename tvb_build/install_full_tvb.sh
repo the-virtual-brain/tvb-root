@@ -22,7 +22,7 @@ cd scientific_library
 python setup.py develop
 cd ..
 
-if [[ -d "tvb_data" ]]; then
+if [ -d "tvb_data" ]; then
     cd tvb_data
     python setup.py develop
     cd ..
