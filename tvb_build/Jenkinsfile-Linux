@@ -28,14 +28,15 @@ pipeline {
             }
         }
         stage('Copy step 1') {
-         steps {
-             script {
-                 step ([$class: 'CopyArtifact',
-                 projectName: 'TVB - Root',
-                 filter: "tvb_build/build/TVB_build_step1.zip",
-                 target: 'tvb_build/build/']);
+             steps {
+                 script {
+                     step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Root',
+                     filter: "tvb_build/build/TVB_build_step1.zip",
+                     target: 'tvb_build/build/']);
+                 }
              }
-         }
+        }
         stage ('Build TVB Distribution') {
             agent {
                 docker {
