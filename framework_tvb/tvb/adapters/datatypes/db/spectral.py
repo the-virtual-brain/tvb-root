@@ -98,7 +98,7 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         super(CoherenceSpectrumIndex, self).fill_from_has_traits(datatype)
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
-        self.source_gid = datatype.source.gid
+        self.source_gid = datatype.source.gid.hex
 
 
 class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
