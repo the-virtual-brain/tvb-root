@@ -32,21 +32,21 @@ RUN /bin/bash -c "source activate tvb-run"; \
     /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>/root/.jupyter/jupyter_notebook_config.py
 
+WORKDIR /root
+
 RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -O tvb_data.zip; \
-    unzip tvb_data.zip; \
+    unzip tvb_data.zip; rm tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop;\
     /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
-RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_DATA
-
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git; \
     cd tvb-root/tvb_build; \
-    /bin/bash -c "source activate tvb-run"; \
-    /bin/bash install_full_tvb.sh; \
-    /bin/bash -c "source activate tvb-docs"; \
-    /bin/bash install_full_tvb.sh
+    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
+    /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
+
+RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_DATA
 
 COPY .tvb.configuration /root/.tvb.configuration
 

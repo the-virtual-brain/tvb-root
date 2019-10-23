@@ -24,7 +24,7 @@ pipeline {
                     bash run_tests.sh postgres
                     exit 0
                 '''
-                 junit 'TEST_OUT/results_*.xml'
+                 junit 'tvb_bin/TEST_OUT/results_*.xml'
             }
         }
         stage('Copy step 1') {
