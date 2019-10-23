@@ -34,7 +34,6 @@
 
 import os
 import tvb_data
-from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
