@@ -34,25 +34,21 @@ import os.path
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tvb.datatypes.graph import Covariance
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
-from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.project_service import ProjectService
-from tvb.core.neotraits.db import Base
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.core.base_testcase import TvbProfile
+from tvb.tests.framework.core.base_testcase import TvbProfile, Base
 
 
 def pytest_addoption(parser):
@@ -269,7 +265,7 @@ def region_simulation_factory(connectivity_factory):
     return build
 
 @pytest.fixture()
-def time_series_factory(operation_factory, session):
+def time_series_factory(operation_factory):
     def build():
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
@@ -281,8 +277,8 @@ def time_series_factory(operation_factory, session):
 
     return build
 
-pytest.fixture()
-def time_series_index_factory(time_series_factory, operation_factory, session):
+@pytest.fixture()
+def time_series_index_factory(time_series_factory, operation_factory):
     def build():
         op = operation_factory()
         ts = time_series_factory()
@@ -296,14 +292,13 @@ def time_series_index_factory(time_series_factory, operation_factory, session):
             f.sample_rate.store(ts.sample_rate)
             f.nr_dimensions.store(ts.data.ndim)
 
-        session.add(ts_db)
-        session.commit()
+        ts_db = dao.store_entity(ts_db)
         return ts_db
 
     return build
 
 @pytest.fixture()
-def time_series_region_factory(operation_factory, session):
+def time_series_region_factory(operation_factory):
     def build(connectivity, region_mapping):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
@@ -326,47 +321,8 @@ def time_series_region_factory(operation_factory, session):
             f.sample_rate.store(ts.sample_rate)
             f.nr_dimensions.store(ts.data.ndim)
 
-
-        session.add(ts_db)
-        session.commit()
+        ts_db = dao.store_entity(ts_db)
         return ts_db
     return build
 
-@pytest.fixture()
-def covariance_factory(time_series_index_factory, operation_factory, session):
-    def build():
-        ts_index = time_series_index_factory()
-
-        ts_h5 = h5_file_for_index(ts_index)
-        ts = TimeSeries()
-        ts_h5.load_into(ts)
-        ts_h5.close()
-
-        data_shape = ts.data.shape
-
-        result_shape = (data_shape[2], data_shape[2], data_shape[1], data_shape[3])
-        result = numpy.zeros(result_shape)
-
-        for mode in range(data_shape[3]):
-            for var in range(data_shape[1]):
-                data = ts_h5.data[:, var, :, mode]
-                data = data - data.mean(axis=0)[numpy.newaxis, 0]
-                result[:, :, var, mode] = numpy.cov(data.T)
-
-        covariance = Covariance(source=ts, array_data=result)
-
-        op = operation_factory()
-
-        covariance_db = CovarianceIndex()
-        covariance_db.fk_from_operation = op.id
-        covariance_db.fill_from_has_traits(covariance)
-
-        covariance_h5_path = h5.path_for_stored_index(covariance_db)
-        with TimeSeriesH5(covariance_h5_path) as f:
-            f.store(ts)
-
-        session.add(covariance_db)
-        session.commit()
-        return covariance_db
-
-    return build
+# NEED TO IMPLEMENT simple_datatype_factory, datatype_with_storage_factory and datatype_group_factory
