@@ -8,7 +8,7 @@
             VS_StartSurfaceViewer('{{ urlVertices | safe}}', '{{ urlLines | safe }}', '{{ urlTriangles | safe }}',
                     '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
                     '{{ urlRegionMap | safe }}', '{{ urlMeasurePointsLabels | safe }}',
-                    '{{ boundaryURL | safe }}', '{{ shelfObject if shelfObject else null }}', {{ minMeasure }}, {{ maxMeasure }},
+                    '{{ boundaryURL | safe }}', '{{ shelfObject | safe if shelfObject else null }}', {{ minMeasure }}, {{ maxMeasure }},
                     '{{ clientMeasureUrl | safe }}', {{ hemisphereChunkMask }});
         });
     </script>

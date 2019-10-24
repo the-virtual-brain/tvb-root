@@ -6,7 +6,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            TRACK_webGLStart('{{ urlTrackStarts | safe }}', '{{ urlTrackVertices | safe }}', '{{ shelfObject | safe }}');
+            TRACK_webGLStart('{{ urlTrackStarts | safe }}', '{{ urlTrackVertices | safe }}', '{{ shelfObject | safe if shelfObject else null }}');
         });
     </script>
 
