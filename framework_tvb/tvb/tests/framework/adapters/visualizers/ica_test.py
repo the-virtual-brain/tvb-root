@@ -70,13 +70,11 @@ class TestICA(TransactionalTestCase):
                 """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_launch(self, time_series_index_factory, ica_factory):
+    def test_launch(self, ica_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        data = numpy.random.random((10, 10, 10, 10))
-        time_series = time_series_index_factory(data)
-        ica = ica_factory(h5.load_from_index(time_series))
+        ica = ica_factory()
         viewer = ICA()
         result = viewer.launch(ica)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']

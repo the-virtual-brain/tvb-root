@@ -68,14 +68,14 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_launch(self, time_series_index_factory, cross_correlation_factory):
+    def test_launch(self, cross_correlation_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = time_series_index_factory()
-        ccorr = cross_correlation_factory(h5.load_from_index(time_series))
+
+        cross_correlation = cross_correlation_factory()
         viewer = CrossCorrelationVisualizer()
-        result = viewer.launch(ccorr)
+        result = viewer.launch(cross_correlation)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert key in result

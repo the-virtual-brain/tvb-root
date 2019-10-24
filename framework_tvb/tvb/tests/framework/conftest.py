@@ -282,8 +282,10 @@ def time_series_factory(operation_factory):
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
     def build(data=None):
-        op = operation_factory()
         ts = time_series_factory(data)
+
+        op = operation_factory()
+
         ts_db = TimeSeriesIndex()
         ts_db.fk_from_operation = op.id
         ts_db.fill_from_has_traits(ts)
@@ -327,4 +329,4 @@ def time_series_region_factory(operation_factory):
         return ts_db
     return build
 
-# NEED TO IMPLEMENT simple_datatype_factory, datatype_with_storage_factory and datatype_group_factory
+# TODO:NEED TO IMPLEMENT simple_datatype_factory, datatype_with_storage_factory and datatype_group_factory

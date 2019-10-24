@@ -69,7 +69,6 @@ class TestEEGMonitor(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__),  'eeg_unitvector_62.txt.bz2')
 
         time_series = time_series_index_factory()
         viewer = EegMonitor()

@@ -24,7 +24,7 @@ RANGE_2 = ["row2", [0.1, 0.3, 0.5]]
 
 
 @pytest.fixture()
-def covariance_factory(operation_factory, time_series_index_factory):
+def covariance_factory(time_series_index_factory, operation_factory):
     def build():
 
         time_series_index = time_series_index_factory()
@@ -48,7 +48,7 @@ def covariance_factory(operation_factory, time_series_index_factory):
     return build
 
 @pytest.fixture()
-def cross_coherence_factory(operation_factory, time_series_index_factory):
+def cross_coherence_factory(time_series_index_factory, operation_factory):
     def build():
         time_series_index = time_series_index_factory()
         time_series = h5.load_from_index(time_series_index)
@@ -74,8 +74,10 @@ def cross_coherence_factory(operation_factory, time_series_index_factory):
 
 
 @pytest.fixture()
-def cross_correlation_factory(operation_factory):
-    def build(time_series):
+def cross_correlation_factory(time_series_index_factory, operation_factory):
+    def build():
+        time_series_index = time_series_index_factory()
+        time_series = h5.load_from_index(time_series_index)
         data = numpy.random.random((10, 10, 10, 10, 10))
         cross_correlation = temporal_correlations.CrossCorrelation(source=time_series, array_data=data)
 
@@ -95,9 +97,11 @@ def cross_correlation_factory(operation_factory):
     return build
 
 @pytest.fixture()
-def ica_factory(operation_factory):
-    def build(time_series):
-        op = operation_factory()
+def ica_factory(operation_factory, time_series_index_factory):
+    def build():
+        data = numpy.random.random((10, 10, 10, 10))
+        time_series_index = time_series_index_factory(data)
+        time_series = h5.load_from_index(time_series_index)
         n_comp = 5
         ica = mode_decompositions.IndependentComponents(source=time_series,
                                     component_time_series=numpy.random.random((10, n_comp, 10, 10)),
@@ -106,6 +110,9 @@ def ica_factory(operation_factory):
                                     n_components=n_comp)
         ica.compute_norm_source()
         ica.compute_normalised_component_time_series()
+
+        op = operation_factory()
+
         ica_index = IndependentComponentsIndex()
         ica_index.fk_from_operation = op.id
         ica_index.fill_from_has_traits(ica)
