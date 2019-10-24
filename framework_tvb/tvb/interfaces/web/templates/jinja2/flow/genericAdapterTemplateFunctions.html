@@ -46,7 +46,7 @@
 {%- endmacro %}
 
 {% macro generateDisplay(inputList, disabled, parentDivId, treeSessionKey='defaultTree', extra_class=none, draw_hidden_ranges = false) -%}
-    <!--!    Genshi function, to generate one level in the tree of Adapter input parameters. -->
+    <!--! Jinja2 macro, to generate one level in the tree of Adapter input parameters. -->
     <!--! In case some other form of elements except selects and inputs are used /static/JS/bursts.js should also be changed -->
     <fieldset>
         {% if draw_hidden_ranges %}
