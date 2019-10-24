@@ -6,12 +6,13 @@ from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsI
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
+from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.core.entities.storage import dao
 from tvb.datatypes import spectral, temporal_correlations
 from tvb.core.neocom import h5
-from tvb.datatypes.mode_decompositions import IndependentComponents
+from tvb.adapters.datatypes.db import mode_decompositions
 
 USER_FULL_NAME = "Datatype Factory User"
 DATATYPE_STATE = "RAW_DATA"
@@ -94,26 +95,26 @@ def cross_correlation_factory(operation_factory):
     return build
 
 @pytest.fixture()
-def ica_factory(operation_factory, session):
+def ica_factory(operation_factory):
     def build(time_series):
         op = operation_factory()
-
-        ica = IndependentComponents(source=time_series,
-                                    component_time_series=numpy.random.random((10, 10, 10, 10)),
-                                    prewhitening_matrix=numpy.random.random((10, 10, 10, 10)),
-                                    unmixing_matrix=numpy.random.random((10, 10, 10, 10)),
-                                    n_components=10)
-
+        n_comp = 5
+        ica = mode_decompositions.IndependentComponents(source=time_series,
+                                    component_time_series=numpy.random.random((10, n_comp, 10, 10)),
+                                    prewhitening_matrix=numpy.random.random((n_comp, 10, 10, 10)),
+                                    unmixing_matrix=numpy.random.random((n_comp, n_comp, 10, 10)),
+                                    n_components=n_comp)
+        ica.compute_norm_source()
+        ica.compute_normalised_component_time_series()
         ica_index = IndependentComponentsIndex()
         ica_index.fk_from_operation = op.id
         ica_index.fill_from_has_traits(ica)
 
-        # independent_components_h5_path = h5.path_for_stored_index(ica_index)
-        # with IndependentComponentsH5(independent_components_h5_path) as f:
-        #     f.store(ica)
+        independent_components_h5_path = h5.path_for_stored_index(ica_index)
+        with IndependentComponentsH5(independent_components_h5_path) as f:
+            f.store(ica)
 
-        session.add(ica_index)
-        session.commit()
+        ica_index = dao.store_entity(ica_index)
         return ica_index
 
     return build

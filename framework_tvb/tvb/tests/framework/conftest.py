@@ -266,12 +266,14 @@ def region_simulation_factory(connectivity_factory):
 
 @pytest.fixture()
 def time_series_factory(operation_factory):
-    def build():
+    def build(data=None):
         time = numpy.linspace(0, 1000, 4000)
-        data = numpy.zeros((time.size, 1, 3, 1))
-        data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
-        data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
-        data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
+
+        if data is None:
+            data = numpy.zeros((time.size, 1, 3, 1))
+            data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
+            data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
+            data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
 
         return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
 
@@ -279,9 +281,9 @@ def time_series_factory(operation_factory):
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
-    def build():
+    def build(data=None):
         op = operation_factory()
-        ts = time_series_factory()
+        ts = time_series_factory(data)
         ts_db = TimeSeriesIndex()
         ts_db.fk_from_operation = op.id
         ts_db.fill_from_has_traits(ts)

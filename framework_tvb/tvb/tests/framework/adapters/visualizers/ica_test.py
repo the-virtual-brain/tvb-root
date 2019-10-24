@@ -33,6 +33,7 @@
 """
 
 import os
+import numpy
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -73,7 +74,8 @@ class TestICA(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = time_series_index_factory()
+        data = numpy.random.random((10, 10, 10, 10))
+        time_series = time_series_index_factory(data)
         ica = ica_factory(h5.load_from_index(time_series))
         viewer = ICA()
         result = viewer.launch(ica)
