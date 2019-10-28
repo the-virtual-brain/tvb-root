@@ -138,8 +138,7 @@ class TestFactory(object):
         :return: Operation entity after persistence.
         """
         if algorithm is None:
-            algorithm = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                    'NDimensionArrayAdapter')
+            algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
 
         if test_user is None:
             test_user = TestFactory.create_user()
