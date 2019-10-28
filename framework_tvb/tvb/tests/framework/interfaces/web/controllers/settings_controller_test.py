@@ -78,13 +78,11 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'ADMINISTRATOR_PASSWORD': "test_pass",
                       'ADMINISTRATOR_EMAIL': 'admin@test.test'}
 
-
     def transactional_setup_method(self):
 
         self.init(with_data=False)
         self.settings_c = SettingsController()
         assert TvbProfile.is_first_run()
-
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
@@ -92,7 +90,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
             shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
-
 
     def test_with_invalid_admin_settings(self):
 
@@ -102,7 +99,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         self._assert_invalid_parameters({'ADMINISTRATOR_EMAIL': "bla.com"})
 
-
     def test_with_invalid_web_settings(self):
 
         self._assert_invalid_parameters({'URL_WEB': '',
@@ -110,7 +106,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         self._assert_invalid_parameters({'URL_WEB': 'off://bla',
                                          'WEB_SERVER_PORT': '70000'})
-
 
     def test_with_invalid_settings(self):
 
@@ -132,7 +127,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
                                          'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 'b',
                                          'MAXIMUM_NR_OF_OPS_IN_RANGE': 'a'})
 
-
     def _assert_invalid_parameters(self, params_dictionary):
         """
         Simulate submit of a given params (key:value) and check that they are found in the error response
@@ -146,7 +140,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         assert common.KEY_ERRORS in response
         for key in params_dictionary:
             assert key in response[common.KEY_ERRORS], "Not found in errors %s" % key
-
 
     def test_with_valid_settings(self):
 
@@ -177,8 +170,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         assert submit_data['ADMINISTRATOR_NAME'] == TvbProfile.current.web.admin.ADMINISTRATOR_NAME
         assert submit_data['ADMINISTRATOR_EMAIL'] == TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL
         assert hashlib.md5(
-            submit_data['ADMINISTRATOR_PASSWORD']).hexdigest() == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
-
+            submit_data['ADMINISTRATOR_PASSWORD'].encode('utf-8')).hexdigest() == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
 
     def _fake_restart_services(self, should_reset):
         """
@@ -187,7 +179,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         """
         self.was_reset = should_reset
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
-
 
     def test_check_db_url(self):
         """
@@ -201,7 +192,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         submit_data[stored.KEY_DB_URL] = "this URL should be invalid"
         result = json.loads(self.settings_c.check_db_url(**submit_data))
         assert result['status'] == 'not ok'
-
 
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_check_matlab_path(self):

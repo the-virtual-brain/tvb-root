@@ -272,7 +272,7 @@ class UserController(BaseController):
             except Exception as excep:
                 self.logger.exception(excep)
                 common.set_error_message("We are very sorry, but we could not create your user. Most probably is "
-                                         "because it was impossible to sent emails. Please try again later...")
+                                         "because it was impossible to send emails. Please try again later...")
         if redirect:
             raise cherrypy.HTTPRedirect('/user/usermanagement')
         else:

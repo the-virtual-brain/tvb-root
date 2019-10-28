@@ -65,7 +65,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         Tests for a valid redirect on user login
         """
-        user = User('valid_user', md5('valid_pass').hexdigest(), 'mail@mail.com', True, 'CLINICIAN')
+        user = User('valid_user', md5('valid_pass'.encode('utf-8')).hexdigest(), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
