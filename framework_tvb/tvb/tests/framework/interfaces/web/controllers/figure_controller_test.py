@@ -39,10 +39,8 @@ from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.figure_controller import FigureController
 
 
-
 class TestFigureController(BaseTransactionalControllerTest):
     """ Unit tests for FigureController """
-
 
     def transactional_setup_method(self):
         """
@@ -53,12 +51,10 @@ class TestFigureController(BaseTransactionalControllerTest):
         self.figure_c = FigureController()
         self.operation = TestFactory.create_operation(test_user=self.test_user,
                                                       test_project=self.test_project)
-            
-            
+
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-
 
     def test_displayresultfigures(self):
         """
