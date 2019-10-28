@@ -70,11 +70,11 @@ class TestExporters(TransactionalTestCase):
         if os.path.exists(export_folder):
             shutil.rmtree(export_folder)
 
-    def test_get_exporters_for_data(self, simple_datatype_factory):
+    def test_get_exporters_for_data(self, dummy_datatype_index_factory):
         """
         Test retrieval of exporters that can be used for a given data.
         """
-        datatype = simple_datatype_factory()
+        datatype = dummy_datatype_index_factory()
         exporters = self.export_manager.get_exporters_for_data(datatype)
         
         # Only TVB export can export any type of data type
@@ -87,22 +87,22 @@ class TestExporters(TransactionalTestCase):
         with pytest.raises(InvalidExportDataException):
             self.export_manager.get_exporters_for_data(None)
 
-    def test_tvb_export_of_simple_datatype(self, simple_datatype_factory):
+    def test_tvb_export_of_simple_datatype(self, dummy_datatype_index_factory):
         """
         Test export of a data type which has no data stored on file system
         """
-        datatype = simple_datatype_factory()
+        datatype = dummy_datatype_index_factory()
         file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
         
         assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
-    def test_tvb_export_of_datatype_with_storage(self, datatype_with_storage_factory):
+    def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):
         """
         Test export of a data type which has no data stored on file system
         """
-        datatype = datatype_with_storage_factory()
+        datatype = dummy_datatype_index_factory()
         file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
         
         assert file_name is not None, "Export process should return a file name"
@@ -113,7 +113,7 @@ class TestExporters(TransactionalTestCase):
         """
         This method checks export of a data type group
         """
-        datatype_group = datatype_group_factory
+        datatype_group = datatype_group_factory(project=self.test_project)
         file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
         
         assert file_name is not None, "Export process should return a file name"
@@ -128,10 +128,10 @@ class TestExporters(TransactionalTestCase):
     
             count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
             
-            # Check if ZIP files contains files for data types + operation
-            assert count_datatypes * 2 == len(list_of_files), "Should have 2 x nr datatypes files, one for operations one for datatypes"
+            # Check if ZIP files contains files for data types
+            assert count_datatypes == len(list_of_files)
 
-    def test_export_with_invalid_data(self, datatype_with_storage_factory):
+    def test_export_with_invalid_data(self, dummy_datatype_index_factory):
         """
         Test scenarios when data provided to export method is invalid
         """
@@ -139,7 +139,7 @@ class TestExporters(TransactionalTestCase):
         with pytest.raises(InvalidExportDataException):
             self.export_manager.export_data(None, self.TVB_EXPORTER, self.test_project)
         # Test with no exporter 
-        datatype = datatype_with_storage_factory()
+        datatype = dummy_datatype_index_factory()
         with pytest.raises(ExportException):
             self.export_manager.export_data( datatype, None, self.test_project)
         
