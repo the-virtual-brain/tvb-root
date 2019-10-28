@@ -34,10 +34,15 @@ import os.path
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+
+TvbProfile.set_profile('TEST_SQLITE_PROFILE')
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -48,7 +53,10 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
 from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.core.base_testcase import TvbProfile, Base
+from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
+from tvb.tests.framework.test_datatype import DummyDataType
+from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
 
 
 def pytest_addoption(parser):
@@ -139,7 +147,7 @@ def project_factory():
 @pytest.fixture()
 def operation_factory(user_factory, project_factory):
     def build(algorithm=None, test_user=None, test_project=None,
-              operation_status=STATUS_FINISHED, parameters="test params"):
+              operation_status=STATUS_FINISHED, parameters="test params", meta=None):
         """
         Create persisted operation.
         :param algorithm: When not None, Simulator.
@@ -152,8 +160,9 @@ def operation_factory(user_factory, project_factory):
         if test_project is None:
             test_project = project_factory(test_user)
 
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
+        if meta is None:
+            meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
+                    DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
                               status=operation_status)
         dao.store_entity(operation)
@@ -265,7 +274,7 @@ def region_simulation_factory(connectivity_factory):
     return build
 
 @pytest.fixture()
-def time_series_factory(operation_factory):
+def time_series_factory():
     def build(data=None):
         time = numpy.linspace(0, 1000, 4000)
 
@@ -281,10 +290,11 @@ def time_series_factory(operation_factory):
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
-    def build(data=None):
+    def build(data=None, op=None):
         ts = time_series_factory(data)
 
-        op = operation_factory()
+        if op is None:
+            op = operation_factory()
 
         ts_db = TimeSeriesIndex()
         ts_db.fk_from_operation = op.id
@@ -300,6 +310,7 @@ def time_series_index_factory(time_series_factory, operation_factory):
         return ts_db
 
     return build
+
 
 @pytest.fixture()
 def time_series_region_factory(operation_factory):
@@ -329,4 +340,119 @@ def time_series_region_factory(operation_factory):
         return ts_db
     return build
 
-# TODO:NEED TO IMPLEMENT simple_datatype_factory, datatype_with_storage_factory and datatype_group_factory
+
+@pytest.fixture()
+def dummy_datatype_factory():
+    def build():
+        return DummyDataType()
+    return build
+
+
+@pytest.fixture()
+def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
+    def build(row1=None, row2=None):
+        data_type = dummy_datatype_factory()
+        data_type.row1 = row1
+        data_type.row2 = row2
+
+        op = operation_factory()
+
+        data_type_index = DummyDataTypeIndex()
+        data_type_index.fk_from_operation = op.id
+        data_type_index.fill_from_has_traits(data_type)
+
+        data_type_h5_path = h5.path_for_stored_index(data_type_index)
+        with DummyDataTypeH5(data_type_h5_path) as f:
+            f.store(data_type)
+
+        data_type_index = dao.store_entity(data_type_index)
+        return data_type_index
+
+    return build
+
+@pytest.fixture()
+def datatype_measure_factory(operation_factory):
+    def build(analyzed_entity, operation=None):
+        if operation is None:
+            operation = operation_factory()
+
+        measure = DatatypeMeasureIndex()
+        measure.metrics = '{"v": 3}'
+        measure.source = analyzed_entity
+        measure = dao.store_entity(measure)
+
+        return measure
+
+    return build
+
+
+@pytest.fixture()
+def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory, operation_factory):
+    def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
+
+        range_1 = ["row1", [1, 2, 3]]
+        range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        user = user_factory()
+
+        if project is None:
+            project = project_factory(user)
+
+        # Create an algorithm
+        alg_category = AlgorithmCategory('one', True)
+        dao.store_entity(alg_category)
+        ad = Algorithm(IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS,
+                       alg_category.id)
+        algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                IntrospectionRegistry.SIMULATOR_CLASS)
+
+        if algorithm is None:
+            algorithm = dao.store_entity(ad)
+
+        # Create meta
+        meta = {DataTypeMetaData.KEY_SUBJECT: "Datatype Factory User",
+                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
+
+        # Create operation
+        operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project, meta=meta)
+
+        group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group = dao.store_entity(group)
+        group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group_ms = dao.store_entity(group_ms)
+
+        datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
+        # datatype_group.storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+        datatype_group = dao.store_entity(datatype_group)
+
+        dt_group_ms = DataTypeGroup(group_ms, subject=subject, state=state, operation_id=operation.id)
+        # dt_group_ms.storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+        dao.store_entity(dt_group_ms)
+
+        # Now create some data types and add them to group
+        for range_val1 in range_1[1]:
+            for range_val2 in range_2[1]:
+                op = Operation(user.id, project.id, algorithm.id, 'test parameters',
+                               meta=json.dumps(meta), status=STATUS_FINISHED,
+                               range_values=json.dumps({range_1[0]: range_val1,
+                                                        range_2[0]: range_val2}))
+                op.fk_operation_group = group.id
+                op = dao.store_entity(op)
+                datatype = time_series_index_factory(op=op)
+                datatype.number1 = range_val1
+                datatype.number2 = range_val2
+                datatype.fk_datatype_group = datatype_group.id
+                datatype.operation_id = op.id
+                dao.store_entity(datatype)
+
+                op_ms = Operation(user.id, project.id, algorithm.id, 'test parameters',
+                                  meta=json.dumps(meta), status=STATUS_FINISHED,
+                                  range_values=json.dumps({range_1[0]: range_val1,
+                                                           range_2[0]: range_val2}))
+                op_ms.fk_operation_group = group_ms.id
+                op_ms = dao.store_entity(op_ms)
+                datatype_measure_factory(datatype, op_ms)
+
+        return datatype_group
+
+    return build
