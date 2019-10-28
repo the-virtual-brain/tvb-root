@@ -112,7 +112,6 @@ class DataType(HasTraitsIndex):
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
 
-
     def __init__(self, gid=None, **kwargs):
 
         # if gid is None:

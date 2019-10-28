@@ -35,9 +35,8 @@ import copy
 import json
 import cherrypy
 from time import sleep
-
 import pytest
-
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.core.entities.storage import dao
@@ -61,8 +60,7 @@ class TestFlowContoller(BaseControllersTest):
         self.flow_c = FlowController()
         self.burst_c = BurstController()
         self.operation_service = OperationService()
-    
-    
+
     def teardown_method(self):
         """ Cleans up the testing environment """
         self.cleanup()
@@ -73,7 +71,7 @@ class TestFlowContoller(BaseControllersTest):
 
         def build(is_range=False):
             self.burst_c.index()
-            connectivity = connectivity_factory[1]
+            connectivity = connectivity_factory()
             launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
             launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
             launch_params['simulation_length'] = '10000'
@@ -85,16 +83,14 @@ class TestFlowContoller(BaseControllersTest):
             return dao.get_burst_by_id(burst_id)
 
         return build
-            
-            
+
     def test_context_selected(self):
         """
         Remove the project from CherryPy session and check that you are redirected to projects page.
         """
         del cherrypy.session[common.KEY_PROJECT]
         self._expect_redirect('/project/viewall', self.flow_c.step_analyzers)
-        
-        
+
     def test_valid_step(self):
         """
         For all algorithm categories check that a submenu is generated and the result
@@ -105,7 +101,6 @@ class TestFlowContoller(BaseControllersTest):
                         "Expect to have a submenu with available algorithms for category."
         assert result_dict["section_name"] == 'analyze'
 
-
     def test_step_connectivity(self):
         """
         Check that the correct section name and connectivity sub-menu are returned for the connectivity step.
@@ -113,7 +108,6 @@ class TestFlowContoller(BaseControllersTest):
         result_dict = self.flow_c.step_connectivity()
         assert result_dict['section_name'] == 'connectivity'
         assert result_dict['submenu_list'] == self.flow_c.connectivity_submenu
-
 
     def test_default(self):
         """
@@ -129,8 +123,7 @@ class TestFlowContoller(BaseControllersTest):
                 assert result_dict[common.KEY_SUBMIT_LINK] == '/flow/%i/%i' % (categ.id, algo.id)
                 assert 'mainContent' in result_dict
                 assert result_dict['isAdapter']
-                
-                
+
     def test_default_cancel(self):
         """
         On cancel we should get a redirect to the back page link.
@@ -140,41 +133,38 @@ class TestFlowContoller(BaseControllersTest):
         algo_groups = dao.get_adapters_from_categories([categories[0].id])
         self._expect_redirect('/project/viewoperations/%i' % self.test_project.id, self.flow_c.default,
                               categories[0].id, algo_groups[0].id, cancel=True, back_page='operations')
-        
-        
+
     def test_default_invalid_key(self):
         """
         Pass invalid keys for adapter and step and check you get redirect to tvb entry
         page with error set.
         """
         self._expect_redirect('/tvb?error=True', self.flow_c.default, 'invalid', 'invalid')
-        
-        
-    def test_read_datatype_attribute(self, datatype_with_storage_factory):
+
+    def test_read_datatype_attribute(self, dummy_datatype_index_factory):
         """
         Read an attribute from a datatype.
         """
-        dt = datatype_with_storage_factory("test_subject", "RAW_STATE",
-                                                             'this is the stored data'.split())
-        returned_data = self.flow_c.read_datatype_attribute(dt.gid, "string_data")
-        assert returned_data == '["this", "is", "the", "stored", "data"]'
-        
-        
-    def test_read_datatype_attribute_method_call(self, datatype_with_storage_factory):
+        dt = dummy_datatype_index_factory(row1='This is stored data')
+        dt.subject = "test_subject"
+        dt.state = "RAW_STATE"
+
+        returned_data = self.flow_c.read_datatype_attribute(dt.gid, "row1")
+        assert returned_data == '"This is stored data"'
+
+    def test_read_datatype_attribute_method_call(self, dummy_datatype_index_factory):
         """
         Call method on given datatype.
         """
-        dt =datatype_with_storage_factory("test_subject", "RAW_STATE",
-                                                             'this is the stored data'.split())
+        dt = dummy_datatype_index_factory(row1='This is stored data')
         args = {'length': 101}
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
-        assert returned_data == str(list(range(101)))
-        
-        
+        assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
+
     def test_get_simple_adapter_interface(self):
-        adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        adapter = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
-        expected_interface = TestAdapter1().get_input_tree()
+        expected_interface = SimulatorAdapter().get_input_tree()
         assert result['inputList'] == expected_interface
 
     def _wait_for_burst_ops(self, burst_config):
@@ -189,7 +179,6 @@ class TestFlowContoller(BaseControllersTest):
         operations = dao.get_operations_in_burst(burst_config.id)
         return operations
 
-
     def test_stop_burst_operation(self, long_burst_launch):
         burst_config = long_burst_launch
         operation = self._wait_for_burst_ops(burst_config)[0]
@@ -197,8 +186,7 @@ class TestFlowContoller(BaseControllersTest):
         self.flow_c.stop_burst_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
-        
-        
+
     def test_stop_burst_operation_group(self, long_burst_launch):
         burst_config = long_burst_launch(True)
         operations = self._wait_for_burst_ops(burst_config)
@@ -210,17 +198,15 @@ class TestFlowContoller(BaseControllersTest):
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert operation.status == STATUS_CANCELED
-        
-        
+
     def test_remove_burst_operation(self, long_burst_launch):
-        burst_config = long_burst_launch
+        burst_config = long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
-        
-        
+
     def test_remove_burst_operation_group(self, long_burst_launch):
         burst_config = long_burst_launch(True)
         operations = self._wait_for_burst_ops(burst_config)
@@ -233,16 +219,14 @@ class TestFlowContoller(BaseControllersTest):
             operation = dao.try_get_operation_by_id(operation.id)
             assert operation is None
 
-
     def _launch_test_algo_on_cluster(self, **data):
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        adapter = TestFactory.create_adapter('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations
-
 
     def test_stop_operations(self):
         data = {"test1_val1": 5, 'test1_val2': 5}
@@ -252,8 +236,7 @@ class TestFlowContoller(BaseControllersTest):
         self.flow_c.stop_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
-        
-        
+
     def test_stop_operations_group(self):
         data = {RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
         operations = self._launch_test_algo_on_cluster(**data)
