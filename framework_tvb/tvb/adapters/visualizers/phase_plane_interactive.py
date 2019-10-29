@@ -231,7 +231,7 @@ class PhasePlaneD3(PhasePlane):
         vsmall = v[::GRID_SUBSAMPLE, ::GRID_SUBSAMPLE]
 
         d = numpy.dstack((xsmall, ysmall, usmall, vsmall))
-        d = d.reshape(((NUMBEROFGRIDPOINTS / GRID_SUBSAMPLE) ** 2, 4)).tolist()
+        d = d.reshape(((NUMBEROFGRIDPOINTS // GRID_SUBSAMPLE) ** 2, 4)).tolist()
 
         return {'plane': d, 'nullclines': xnull + ynull}
 

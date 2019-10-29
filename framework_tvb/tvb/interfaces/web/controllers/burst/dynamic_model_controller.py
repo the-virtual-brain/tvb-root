@@ -34,14 +34,15 @@
 import json
 import numpy
 import threading
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
+from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
+from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.core import utils
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model.model_burst as model_burst
-#from tvb.datatypes import noise_framework
+from tvb.core.neotraits.forms import SimpleStrField
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template
@@ -92,126 +93,11 @@ class SessionCache(object):
         self._cache[key] = value
 
 
-class _InputTreeFragment(HasTraits):
-    dynamic_name = Attr(field_type=str,
-        label = "Parameter configuration name",
-        doc = """The name of this parameter configuration""")
-
-
-class _IntegratorTreeFragment(HasTraits):
-    """
-    This trait-ed class is used to build the input tree for the integrator.
-    """
-    integrator = Attr(field_type=integrators.Integrator,
-        label = "integrator",
-        default = integrators.HeunDeterministic(),
-        doc = """The integrator"""
-        )
-
-
-class _LeftFragmentAdapter(ABCAdapter):
-    """
-    This adapter is used only to generate the left input tree.
-    """
-    def __init__(self, available_models):
-        ABCAdapter.__init__(self)
-        self.available_models = available_models
-
-    def launch(self):
-        pass
-
-    def get_output(self):
-        pass
-
-    def get_required_memory_size(self):
-        return -1
-
-    def get_required_disk_size(self):
-        return 0
-
-    def get_input_tree(self):
-        from tvb.basic.traits import traited_interface
-
-        models_sub_tree = {
-            'name': 'model_type', 'type': 'select', 'required': True, 'label': 'model',
-            'default' : 'Generic2dOscillator',
-            'options': []
-        }
-
-        for clz_name, clz in self.available_models.items():
-            models_sub_tree['options'].append({
-                'name': clz._ui_name, # ui-name instaead
-                'value': clz_name,
-                'inline_description': self._dfun_math_directives_to_matjax(clz),
-                'description' : multiline_math_directives_to_matjax(clz.__doc__).replace('&', '&amp;').replace('.. math::','')
-            })
-
-        fragment = _InputTreeFragment()
-        fragment.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
-
-        input_tree = fragment.interface[traited_interface.INTERFACE_ATTRIBUTES]
-        input_tree.insert(1, models_sub_tree)
-        #self.log.warn(json.dumps(input_tree, indent=2, sort_keys=1))
-        return input_tree
-
-
-    @staticmethod
-    def _dfun_math_directives_to_matjax(model):
-        """
-        Looks for sphinx math directives if the docstring of the dfun function of a model.
-        It converts them in html text that will be interpreted by mathjax
-        The parsing is simplistic, not a full rst parser.
-        """
-        from tvb.basic.traits.util import multiline_math_directives_to_matjax
-        def format_doc(doc):
-            return multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::','')
-
-        # try in dfun
-        try:
-            doc = model.dfun.__doc__
-        except AttributeError:
-            doc = None
-
-        if doc is not None:
-            return format_doc(doc)
-        # try in _numpy_dfun
-        try:
-            doc = model._numpy_dfun.__doc__
-        except AttributeError:
-            doc = None
-
-        if doc is not None:
-            return format_doc(doc)
-
-        # try the parent __doc__
-        try:
-            doc = model.__mro__[1].dfun.__doc__
-        except (AttributeError, IndexError):
-            doc = None
-
-        if doc is not None:
-            return format_doc('Documentation is missing. Copy-ed from parent\n' + doc)
-
-        return 'Documentation is missing. '
-
-
-class _IntegratorFragmentAdapter(ABCAdapter):
-    def launch(self):
-        pass
-
-    def get_output(self):
-        pass
-
-    def get_required_memory_size(self):
-        return -1
-
-    def get_required_disk_size(self):
-        return 0
-
-    def get_input_tree(self):
-        fragment = _IntegratorTreeFragment()
-        fragment.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
-        return fragment.interface[traited_interface.INTERFACE_ATTRIBUTES]
+class _InputTreeFragment(ABCAdapterForm):
+    def __init__(self):
+        super(_InputTreeFragment, self).__init__()
+        self.dynamic_name = SimpleStrField(self, name='dynamic_name', label = "Parameter configuration name",
+                                           doc = """The name of this parameter configuration""")
 
 
 class DynamicModelController(BurstBaseController):
@@ -219,8 +105,8 @@ class DynamicModelController(BurstBaseController):
 
     def __init__(self):
         BurstBaseController.__init__(self)
-        self.available_models = models.Model.get_known_subclasses()
-        self.available_integrators = integrators.Integrator.get_known_subclasses()
+        self.available_models = get_ui_name_to_model()
+        self.available_integrators = get_ui_name_to_integrator_dict()
         self.cache = SessionCache()
         # Work around a numexpr thread safety issue. See TVB-1639.
         self.traj_lock = threading.Lock()
@@ -242,20 +128,16 @@ class DynamicModelController(BurstBaseController):
     @expose_page
     def index(self):
         dynamic_gid = utils.generate_guid()
-        adapter = _LeftFragmentAdapter(self.available_models)
-        input_tree = adapter.get_input_tree()
-        #WARN: If this input tree will contain data type references then to render it correctly we have to use fill_input_tree_with_options
-        input_tree = InputTreeManager.prepare_param_names(input_tree)
-
-        integrator_adapter = _IntegratorFragmentAdapter()
-        integrator_input_tree = integrator_adapter.get_input_tree()
-        integrator_input_tree  = InputTreeManager.prepare_param_names(integrator_input_tree)
+        model_name_fragment = _InputTreeFragment()
+        model_fragment = SimulatorModelFragment()
+        integrator_fragment = SimulatorIntegratorFragment()
 
         params = {
             'title': "Dynamic model",
             'mainContent': 'burst/dynamic',
-            'input_tree': input_tree,
-            'integrator_input_tree': integrator_input_tree,
+            'model_name_fragment': model_name_fragment,
+            'model_form': model_fragment,
+            'integrator_form': integrator_fragment,
             'dynamic_gid': dynamic_gid
         }
         self.fill_default_attributes(params)
@@ -281,7 +163,7 @@ class DynamicModelController(BurstBaseController):
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
         return {
-            'params' : mp_params, 'graph_params':graph_params,
+            'params': mp_params, 'graph_params': graph_params,
             'model_param_sliders_fragment': self._model_param_sliders_fragment(dynamic_gid),
             'axis_sliders_fragment': self._axis_sliders_fragment(dynamic_gid)
         }
@@ -289,13 +171,14 @@ class DynamicModelController(BurstBaseController):
 
     @expose_json
     def integrator_changed(self, dynamic_gid, **kwargs):
-        adapter = _IntegratorFragmentAdapter()
-        tree = adapter.convert_ui_inputs(kwargs, validation_required=False)
-        integrator_name = tree['integrator']
-        integrator_parameters = tree['integrator_parameters']
+        # TODO: display form for integrator configuration
+        # adapter = _IntegratorFragmentAdapter()
+        # tree = adapter.convert_ui_inputs(kwargs, validation_required=False)
+        # integrator_name = tree['integrator']
+        # integrator_parameters = tree['integrator_parameters']
 
-        noise_framework.build_noise(integrator_parameters)
-        integrator = self.available_integrators[integrator_name](**integrator_parameters)
+        # noise_framework.build_noise(integrator_parameters)
+        integrator = self.available_integrators[kwargs['_integrator']]()
 
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.integrator = integrator
@@ -366,16 +249,16 @@ class DynamicModelController(BurstBaseController):
         For each model parameter return the representation used by the ui (template & js)
         """
         ret = []
-        for name in model.ui_configurable_parameters:
-            parameter_trait = model.trait[name].trait
-            ranger = parameter_trait.range_interval
-            default = float(parameter_trait.inits.kwd.get('default'))
-            trait_kwd = parameter_trait.inits.kwd
+        model_form_class = get_form_for_model(type(model))
+        for name in model_form_class.get_params_configurable_in_phase_plane():
+            attr = getattr(type(model), name)
+            ranger = attr.domain
+            default = float(attr.default)
 
             ret.append({
                 'name': name,
-                'label': trait_kwd.get('label'),
-                'description': trait_kwd.get('doc'),
+                'label': attr.label,
+                'description': attr.doc,
                 'min': ranger.lo,
                 'max': ranger.hi,
                 'step': ranger.step,
@@ -449,7 +332,8 @@ class DynamicModelController(BurstBaseController):
 
         model_parameters = []
 
-        for name in model.ui_configurable_parameters:
+        model_form_class = get_form_for_model(type(model))
+        for name in model_form_class.get_params_configurable_in_phase_plane():
             value = getattr(model, name)[0]
             model_parameters.append((name, value))
 

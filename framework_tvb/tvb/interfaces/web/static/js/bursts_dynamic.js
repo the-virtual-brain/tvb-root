@@ -454,7 +454,7 @@ function _onParameterChanged(){
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
 function onSubmit(event){
-    var name = $('#dynamic_name').val().trim();
+    var name = $('#_dynamic_name').val().trim();
     if (name.length ) {
         doAjaxCall({
             url: _url('submit', name),
@@ -486,7 +486,7 @@ var debouncedOnIntegratorChanged = $.debounce( DEBOUNCE_DELAY, onIntegratorChang
 
 function onLeftInputTreeChange(){
     var state = getSubmitableData('left_input_tree');
-    onModelChanged(state.model_type);
+    onModelChanged(state._model);
 }
 
 function onIntegratorInputTreeChange(){
