@@ -42,8 +42,6 @@ from tvb.core.decorators import synchronized
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData, GenericMetaData
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.file.exceptions import FileStructureException
-
-
 from threading import Lock
 LOCK_CREATE_FOLDER = Lock()
 
@@ -265,7 +263,7 @@ class FilesHelper(object):
         Move H5 storage into a new location
         """
         try:
-            full_path = datatype.get_storage_file_path()
+            full_path = datatype.storage_path
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
