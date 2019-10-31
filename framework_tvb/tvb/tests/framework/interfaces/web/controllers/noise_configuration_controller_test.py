@@ -48,40 +48,14 @@ from tvb.simulator.noise import Additive
 
 class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
-    # def transactional_setup_method(self):
-    #     """
-    #     Sets up the environment for testing
-    #     creates a `NoiseConfigurationController`
-    #     """
-    #     self.init()
-    #     self.noise_c = NoiseConfigurationController()
-    #     _, self.connectivity = DatatypesFactory().create_connectivity()
-    #     BurstController().index()
-    #
-    #     stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-    #
-    #     new_params = {}
-    #     for key, val in SIMULATOR_PARAMETERS.iteritems():
-    #         new_params[key] = {'value': val}
-    #     new_params['connectivity'] = {'value': self.connectivity.gid}
-    #
-    #     # Simulate selection of a specific integration  from the ui
-    #     new_params[PARAM_INTEGRATOR] = {'value': EulerStochastic.__name__}
-    #     new_params[PARAM_MODEL] = {'value': Generic2dOscillator.__name__}
-    #     new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
-    #     stored_burst.simulator_configuration = new_params
-    #
-    #     self.noise_c.index()
-
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
-
     def test_submit_noise_configuration_happy(self, connectivity_factory):
         self.init()
         self.noise_c = NoiseConfigurationController()
-        _, self.connectivity = connectivity_factory()
+        self.connectivity = connectivity_factory()
         BurstController().index()
 
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
