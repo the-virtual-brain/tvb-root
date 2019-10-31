@@ -128,12 +128,12 @@ class UserController(BaseController):
                 form = EditUserForm()
                 data = form.to_python(data)
                 if data.get(KEY_PASSWORD):
-                    user.password = md5(data[KEY_PASSWORD]).hexdigest()
+                    user.password = md5(data[KEY_PASSWORD].encode('utf-8')).hexdigest()
                 if data.get(KEY_EMAIL):
                     user.email = data[KEY_EMAIL]
                 old_password = None
                 if data.get('old_password'):
-                    old_password = md5(data['old_password']).hexdigest()
+                    old_password = md5(data['old_password'].encode('utf-8')).hexdigest()
                 self.user_service.edit_user(user, old_password)
                 if old_password:
                     common.set_info_message("Changes Submitted!")
@@ -386,8 +386,8 @@ class UserController(BaseController):
         """
         form = RegisterForm()
         data = form.to_python(data)
-        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD]).hexdigest()
-        data['password2'] = md5(data['password2']).hexdigest()
+        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD].encode('utf-8')).hexdigest()
+        data['password2'] = md5(data['password2'].encode('utf-8')).hexdigest()
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
 
 

@@ -427,7 +427,7 @@ class ExtremeTestFactory(object):
         for i in range(nr_users):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
-            password = md5("test").hexdigest()
+            password = md5("test".encode('utf-8')).hexdigest()
             new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))

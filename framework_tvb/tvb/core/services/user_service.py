@@ -158,7 +158,7 @@ class UserService:
 
             old_pass = user.password
             new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
-            user.password = md5(new_pass).hexdigest()
+            user.password = md5(new_pass.encode('utf-8')).hexdigest()
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
             email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))

@@ -35,7 +35,7 @@
 import pytest
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from hashlib import md5
-from tvb.core.entities import model
+from tvb.core.entities.model import model_project
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
@@ -75,7 +75,7 @@ class TestUserService(TransactionalTestCase):
         self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
-                                      role=model.ROLE_ADMINISTRATOR, skip_import=True)
+                                      role=model_project.ROLE_ADMINISTRATOR, skip_import=True)
         available_users = dao.get_all_users()
         if len(available_users) != 1:
             raise AssertionError("Something went wrong with database initialization!")
@@ -91,13 +91,13 @@ class TestUserService(TransactionalTestCase):
         Standard flow for creating a user.
         """
         initial_user_count = dao.get_all_users()
-        data = dict(username="test_user", password=md5("test_password").hexdigest(),
+        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         final_user_count = dao.get_all_users()
         assert len(initial_user_count) == len(final_user_count) - 1, "User count was not increased after create."
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
+        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
         assert inserted_user.email == "test_user@tvb.org", "The email inserted is not correct."
         assert inserted_user.role == "user", "The role inserted is not correct."
         assert not inserted_user.validated, "User validation  is not correct."
@@ -146,26 +146,26 @@ class TestUserService(TransactionalTestCase):
         """
         Test method for the reset password method. Happy flow.
         """
-        data = dict(username="test_user", password=md5("test_password").hexdigest(),
+        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
+        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="test_user@tvb.org")
         self.user_service.reset_password(**reset_pass_data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password != md5("test_password"), "Password not reset for some reason!"
+        assert inserted_user.password != md5("test_password".encode('utf-8')), "Password not reset for some reason!"
 
     def test_reset_pass_wrong_email(self):
         """
         Test method for the reset password method. Email is not valid,
         should raise exception
         """
-        data = dict(username="test_user", password=md5("test_password").hexdigest(),
+        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
+        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="wrong_mail@tvb.org")
         with pytest.raises(UsernameException):
             self.user_service.reset_password(**reset_pass_data)
@@ -175,30 +175,30 @@ class TestUserService(TransactionalTestCase):
         Test method for the change password method. Happy flow.
         """
         inserted_user = self._prepare_user_for_change_pwd()
-        self.user_service.edit_user(inserted_user, md5("test_password").hexdigest())
+        self.user_service.edit_user(inserted_user, md5("test_password".encode('utf-8')).hexdigest())
         changed_user = dao.get_user_by_name("test_user")
-        assert changed_user.password == md5("new_test_password").hexdigest(), "The password did not change."
+        assert changed_user.password == md5("new_test_password".encode('utf-8')).hexdigest(), "The password did not change."
 
     def test_change_password_wrong_old(self):
         """
         Test method for the change password method. Old password is wrong, should return false.
         """
         inserted_user = self._prepare_user_for_change_pwd()
-        params = dict(edited_user=inserted_user, old_password=md5("wrong_old_pwd").hexdigest())
+        params = dict(edited_user=inserted_user, old_password=md5("wrong_old_pwd".encode('utf-8')).hexdigest())
         with pytest.raises(UsernameException):
             self.user_service.edit_user(**params)
         user = dao.get_user_by_name("test_user")
-        assert user.password == md5("test_password").hexdigest(), "The password should have not been changed!"
+        assert user.password == md5("test_password".encode('utf-8')).hexdigest(), "The password should have not been changed!"
 
     def _prepare_user_for_change_pwd(self):
         """Private method to prepare password change operation"""
-        data = dict(username="test_user", password=md5("test_password").hexdigest(),
+        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         self.user_service.validate_user("test_user")
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password").hexdigest(), "The password inserted is not correct."
-        inserted_user.password = md5('new_test_password').hexdigest()
+        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "The password inserted is not correct."
+        inserted_user.password = md5('new_test_password'.encode('utf-8')).hexdigest()
         return inserted_user
 
     def test_is_username_valid(self):
@@ -206,7 +206,7 @@ class TestUserService(TransactionalTestCase):
         Test the method that checks if a userName is valid or not (if it already exists
         in the database the userName is not valid).
         """
-        user = model.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert not self.user_service.is_username_valid("test_user"), "Should be False but got True"
         assert self.user_service.is_username_valid("test_user2"), "Should be True but got False"
@@ -215,7 +215,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard flow for a validate user action.
         """
-        user = model.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert self.user_service.validate_user("test_user"), "Validation failed when it shouldn't have."
 
@@ -223,7 +223,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that was already validated.
         """
-        user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user"), "Validation invalid."
 
@@ -231,7 +231,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that doesn't exist in the database.
         """
-        user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent"
 
@@ -239,7 +239,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard login flow with a valid username and password.
         """
-        user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -249,7 +249,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid password.
         """
-        user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -259,7 +259,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid username.
         """
-        user = model.User("test_user", md5("test_pass").hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -269,15 +269,15 @@ class TestUserService(TransactionalTestCase):
         """
         Get all members of a project except the current user.
         """
-        user_1 = model.User("test_user1", "test_pass", "test_mail1@tvb.org", False, "user")
+        user_1 = model_project.User("test_user1", "test_pass", "test_mail1@tvb.org", False, "user")
         dao.store_entity(user_1)
-        user_2 = model.User("test_user2", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_2 = model_project.User("test_user2", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_2)
-        user_3 = model.User("test_user3", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_3 = model_project.User("test_user3", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_3)
-        user_4 = model.User("test_user4", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_4 = model_project.User("test_user4", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_4)
-        user_5 = model.User("test_user5", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_5 = model_project.User("test_user5", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_5)
         admin = dao.get_user_by_name("test_user1")
         member1 = dao.get_user_by_name("test_user2")
@@ -297,7 +297,7 @@ class TestUserService(TransactionalTestCase):
         Try to get the second page of users for a given project
         """
         for i in range(USERS_PAGE_SIZE + 3):
-            exec('user_' + str(i) + '= model.User("test_user' + str(
+            exec('user_' + str(i) + '= model_project.User("test_user' + str(
                 i) + '", "test_pass", "test_mail@tvb.org", False, "user")')
             exec("dao.store_entity(user_" + str(i) + ")")
         for i in range(USERS_PAGE_SIZE + 3):
@@ -317,7 +317,7 @@ class TestUserService(TransactionalTestCase):
         Then delete that user.
         """
         for i in range(USERS_PAGE_SIZE + 1):
-            exec('user_' + str(i) + '= model.User("test_user' + str(i) + \
+            exec('user_' + str(i) + '= model_project.User("test_user' + str(i) + \
                  '", "test_pass", "test_mail@tvb.org", False, "user")')
             exec("dao.store_entity(user_" + str(i) + ")")
         for i in range(USERS_PAGE_SIZE + 1):
@@ -345,11 +345,11 @@ class TestUserService(TransactionalTestCase):
         """
         Test the method of editing a user.
         """
-        data = dict(username="test_user", password=md5("test_password").hexdigest(),
+        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password").hexdigest(), "Incorrect password"
+        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
         inserted_user.role = "new_role"
         inserted_user.validated = 1
         self.user_service.edit_user(inserted_user)
