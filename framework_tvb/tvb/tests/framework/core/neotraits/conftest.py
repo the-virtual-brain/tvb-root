@@ -61,7 +61,7 @@ def barFactory():
             array_float=numpy.linspace(0, 42, 100),
             array_int=numpy.arange(8 * 8).reshape((8, 8)),
             scalar_int=42,
-            array_str=numpy.array(['ana', 'are', 'mere']),
+            array_str=numpy.array(['ana'.encode('utf-8'), 'are'.encode('utf-8'), 'mere'.encode('utf-8')]),
             abaz=BazDataType(miu=numpy.zeros((2, 2)), scalar_str='a baz')
         )
 
