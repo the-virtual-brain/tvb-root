@@ -31,7 +31,8 @@
 """
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
-
+from tvb.tests.framework.adapters.testadapter1 import TestAdapterDatatypeInput
+from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -75,16 +76,13 @@ class TestWorkflow(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
         self.delete_project_folders()
 
-
-    def __create_complex_workflow(self, workflow_step_list):
+    def __create_complex_workflow(self, workflow_step_list, stored_dt):
         """
         Creates a burst with a complex workflow with a given list of workflow steps.
         :param workflow_step_list: a list of workflow steps that will be used in the
             creation of a new workflow for a new burst
         """
         burst_config = TestFactory.store_burst(self.test_project.id)
-
-        stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
 
         first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class("tvb.tests.framework.adapters.testadapter1",
                                                                                    "TestAdapterDatatypeInput")
@@ -107,7 +105,6 @@ class TestWorkflow(TransactionalTestCase):
         if len(operations) > 0:
             self.operation_service.launch_operation(operations[0].id, False)
         return burst_config.id
-
 
     def test_workflow_generation(self):
         """
@@ -137,8 +134,7 @@ class TestWorkflow(TransactionalTestCase):
         assert  started == 0, "Some operations from workflow didnt finish."
         assert  error == 0, "Some operations finished with error status."
 
-
-    def test_workflow_dynamic_params(self):
+    def test_workflow_dynamic_params(self, test_adapter_1_factory):
         """
         A simple test just for the fact that dynamic parameters are passed properly
         between two workflow steps: 
@@ -149,6 +145,7 @@ class TestWorkflow(TransactionalTestCase):
         We check that the steps are actually ran by checking that two operations 
         are created and that two dataTypes are stored.
         """
+        test_adapter_1_factory()
         workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1",
                                                                "TestAdapter1", step_index=1,
                                                                static_kwargs={"test1_val1": 1, "test1_val2": 1}),
@@ -169,12 +166,12 @@ class TestWorkflow(TransactionalTestCase):
         assert  started == 0, "Some operations from workflow didn't finish."
         assert  error == 0, "Some operations finished with error status."
 
-
-    def test_configuration2workflow(self):
+    def test_configuration2workflow(self, test_adapter_1_factory):
         """
         Test that building a WorkflowStep from a WorkflowStepConfiguration. Make sure all the data is
         correctly passed. Also check that any base_wf_step is incremented to dynamic parameters step index.
         """
+        test_adapter_1_factory()
         workflow_step = TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1", "TestAdapter1",
                                                          static_kwargs={"static_param": "test"},
                                                          dynamic_kwargs={"dynamic_param": {wf_cfg.STEP_INDEX_KEY: 0,
@@ -186,18 +183,21 @@ class TestWorkflow(TransactionalTestCase):
                                                                          wf_cfg.DATATYPE_INDEX_KEY: 0}},\
                          "Dynamic parameters not saved properly, or base workflow index not added to step index."
 
-
-    def test_create_workflow(self):
+    def test_create_workflow(self, test_adapter_1_factory, test_adapter_2_factory, test_adapter_3_factory, dummy_datatype_index_factory):
         """
         Test that a workflow with all the associated workflow steps is actually created.
         """
+        test_adapter_1_factory()
+        test_adapter_2_factory(adapter_class=TestAdapter2)
+        test_adapter_3_factory(adapter_class=TestAdapterDatatypeInput)
         workflow_step_list = [TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2",
                                                                "TestAdapter2", step_index=1,
                                                                static_kwargs={"test2": 2}),
                               TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter1",
                                                                "TestAdapter1", step_index=2,
                                                                static_kwargs={"test1_val1": 1, "test1_val2": 1})]
-        burst_id = self.__create_complex_workflow(workflow_step_list)
+        stored_dt = dummy_datatype_index_factory()
+        burst_id = self.__create_complex_workflow(workflow_step_list, stored_dt)
         workflow_entities = dao.get_workflows_for_burst(burst_id)
         assert  len(workflow_entities) == 1, "For some reason workflow was not stored in database."
         workflow_steps = dao.get_workflow_steps(workflow_entities[0].id)

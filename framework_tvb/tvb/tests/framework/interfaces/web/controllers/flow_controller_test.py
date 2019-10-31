@@ -36,7 +36,6 @@ import json
 import cherrypy
 from time import sleep
 import pytest
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.core.entities.storage import dao
@@ -44,11 +43,10 @@ from tvb.core.services.operation_service import OperationService, RANGE_PARAMETE
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
-class TestFlowContoller(BaseControllersTest):
+class TestFlowController(BaseControllersTest):
     """ Unit tests for FlowController """
     
     def setup_method(self):
@@ -161,11 +159,12 @@ class TestFlowContoller(BaseControllersTest):
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
         assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
 
-    def test_get_simple_adapter_interface(self):
-        adapter = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
+    def test_get_simple_adapter_interface(self, test_adapter_1_factory):
+        adapter_inst = test_adapter_1_factory()
+        adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
-        expected_interface = SimulatorAdapter().get_input_tree()
-        assert result['inputList'] == expected_interface
+        expected_interface = adapter_inst.get_form()
+        assert result['form'] == expected_interface
 
     def _wait_for_burst_ops(self, burst_config):
         """ sleeps until some operation of the burst is created"""
@@ -180,7 +179,7 @@ class TestFlowContoller(BaseControllersTest):
         return operations
 
     def test_stop_burst_operation(self, long_burst_launch):
-        burst_config = long_burst_launch
+        burst_config = long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
         self.flow_c.stop_burst_operation(operation.id, 0, False)
@@ -220,7 +219,7 @@ class TestFlowContoller(BaseControllersTest):
             assert operation is None
 
     def _launch_test_algo_on_cluster(self, **data):
-        adapter = TestFactory.create_adapter('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
