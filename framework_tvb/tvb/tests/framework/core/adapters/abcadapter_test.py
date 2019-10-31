@@ -42,6 +42,9 @@ from tvb.tests.framework.core.factory import TestFactory
 class ComplexInterfaceAdapter(ABCSynchronous):
     """Adapter with a complex interface, target for testing ABCAdapter methods."""
 
+    def get_form_class(self):
+        pass
+
     def get_input_tree(self):
         return [{'name': 'surface', 'type': 'tvb.core.entities.model.DataType', "datatype": True,
                  'attributes': [{'name': 'att1', 'type': 'int', 'default': '0'},
@@ -160,11 +163,11 @@ class TestAdapterABC(TransactionalTestCase):
         with pytest.raises(Exception):
             self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_2)
 
-    def test_prepare_inputs_datatype(self):
+    def test_prepare_inputs_datatype(self, operation_factory):
         """
         Test for ABCAdapter.prepare_ui_inputs method when submitting DataType with sub-attributes.
         """
-        parent_op = TestFactory.create_operation()
+        parent_op = operation_factory()
         test_entity = dao.store_entity(DataType(operation_id=parent_op.id))
         dataset_3 = {}
         for key, value in self.SUBMIT_DATASET_3.items():

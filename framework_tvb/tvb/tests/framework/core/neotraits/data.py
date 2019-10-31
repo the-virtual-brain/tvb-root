@@ -30,7 +30,7 @@
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, trait_property, cached_trait_property, Dim
 from tvb.basic.neotraits.ex import TraitValueError
-
+import numpy
 
 class BazDataType(HasTraits):
     miu = NArray()
@@ -40,7 +40,7 @@ class BazDataType(HasTraits):
 class FooDatatype(HasTraits):
     array_float = NArray()
     array_int = NArray(dtype=int, shape=(Dim.any, Dim.any))
-    scalar_int = Attr(int)
+    scalar_int = Int(field_type=numpy.int32)
     abaz = Attr(field_type=BazDataType)
     some_transient = NArray(shape=(Dim.any, Dim.any, Dim.any), required=False)
 
