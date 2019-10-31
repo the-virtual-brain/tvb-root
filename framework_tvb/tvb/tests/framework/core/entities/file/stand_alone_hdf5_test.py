@@ -42,6 +42,7 @@ import os
 import sys
 import threading
 import numpy
+import pytest
 import tables as hdf5
 import h5py
 import tvb.core.entities.file.hdf5_storage_manager as hdf5storage
@@ -54,6 +55,7 @@ ROOT_STORAGE = os.path.dirname(__file__)
 TEST_FILE_NAME = 'test_h5'
 
 
+@pytest.mark.skipif
 def test_using_hdf5manager():
     if os.path.exists(os.path.join(ROOT_STORAGE, TEST_FILE_NAME)):
         os.remove(os.path.join(ROOT_STORAGE, TEST_FILE_NAME))
@@ -93,6 +95,7 @@ def test_using_hdf5manager():
     print("STOPPED DUE TO EXCEPTION " + str(exception))
 
 
+@pytest.mark.skipif
 def test_using_h5py():
     storage_path = os.path.join(ROOT_STORAGE, TEST_FILE_NAME)
 
@@ -135,7 +138,7 @@ def test_using_h5py():
     print("RAN FINE FOR " + str(th_nr * 80) + " THREADS")
     print("STOPPED DUE TO EXCEPTION " + str(exception))
 
-
+@pytest.mark.skipif
 def test_using_pytables():
     storage_path = os.path.join(ROOT_STORAGE, TEST_FILE_NAME)
 
