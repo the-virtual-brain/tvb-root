@@ -32,12 +32,13 @@ import numpy
 import pytest
 import os.path
 import os
+import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 TvbProfile.set_profile('TEST_SQLITE_PROFILE')
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
@@ -456,3 +457,45 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         return datatype_group
 
     return build
+
+
+@pytest.fixture()
+def test_adapter_1_factory():
+    def build(adapter_class=TestAdapter1):
+
+        all_categories = dao.get_algorithm_categories()
+        algo_category_id = [cat.id for cat in all_categories][0]
+
+        stored_adapter = Algorithm(adapter_class.__module__, adapter_class.__name__, algo_category_id,
+                                   adapter_class.get_group_name(), adapter_class.get_group_description(),
+                                   adapter_class.get_ui_name(), adapter_class.get_ui_description(),
+                                   adapter_class.get_ui_subsection(), datetime.datetime.now())
+        adapter_inst = adapter_class()
+
+        adapter_form = adapter_inst.get_form()
+        required_datatype = adapter_form.get_required_datatype()
+        if required_datatype is not None:
+            required_datatype = required_datatype.__name__
+        filters = adapter_form.get_filters()
+        if filters is not None:
+            filters = filters.to_json()
+
+        stored_adapter.required_datatype = required_datatype
+        stored_adapter.datatype_filter_filter = filters
+        stored_adapter.parameter_name = adapter_form.get_input_name()
+        stored_adapter.outputlist = str(adapter_inst.get_output())
+
+        inst_from_db = dao.get_algorithm_by_module(adapter_class.__module__, adapter_class.__name__)
+        if inst_from_db is not None:
+            stored_adapter.id = inst_from_db.id
+
+        dao.store_entity(stored_adapter, inst_from_db is not None)
+        adapter_inst.submitted_form = adapter_form
+        return adapter_inst
+    return build
+
+
+test_adapter_2_factory = test_adapter_1_factory
+
+
+test_adapter_3_factory = test_adapter_1_factory
