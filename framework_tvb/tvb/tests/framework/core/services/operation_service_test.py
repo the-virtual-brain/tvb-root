@@ -38,7 +38,7 @@ import numpy
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import string2array
-from tvb.core.entities import model
+from tvb.core.entities.model import model_burst, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -52,14 +52,12 @@ from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 
 
-
 class TestOperationService(BaseTestCase):
     """
     Test class for the introspection module. Some tests from here do async launches. For those
     cases Transactional tests won't work.
     TODO: this is still to be refactored, for being huge, with duplicates and many irrelevant checks
     """
-
 
     def setup_method(self):
         """
@@ -72,7 +70,6 @@ class TestOperationService(BaseTestCase):
         self.operation_service = OperationService()
         self.backup_hdd_size = TvbProfile.current.MAX_DISK_SPACE
 
-
     def teardown_method(self):
         """
         Reset the database when test is done.
@@ -80,11 +77,9 @@ class TestOperationService(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = self.backup_hdd_size
         self.clean_database()
 
-
     def _assert_no_dt2(self):
         count = dao.count_datatypes(self.test_project.id, Datatype2)
         assert 0 == count
-
 
     def _assert_stored_dt2(self, expected_cnt=1):
         count = dao.count_datatypes(self.test_project.id, Datatype2)
@@ -92,7 +87,6 @@ class TestOperationService(BaseTestCase):
         datatype = dao.try_load_last_entity_of_type(self.test_project.id, Datatype2)
         assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
         return datatype
-
 
     def test_datatypes_groups(self):
         """
@@ -104,7 +98,7 @@ class TestOperationService(BaseTestCase):
         assert len(all_operations) == 0, "There should be no operation"
 
         adapter_instance = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        data = {model.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
+        data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations
         flow_service.fire_operation(adapter_instance, self.test_user, self.test_project.id, **data)
 
@@ -127,7 +121,6 @@ class TestOperationService(BaseTestCase):
         dt = dao.get_datatype_by_id(resulted_datatypes[0].id)
         datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
         assert dt.fk_datatype_group == datatype_group.id, "DataTypeGroup is incorrect"
-
 
     def test_initiate_operation(self):
         """
@@ -153,8 +146,7 @@ class TestOperationService(BaseTestCase):
         assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
         assert datatype.type == output_type, "Wrong data stored."
 
-
-    def test_delete_dt_free_HDD_space(self):
+    def test_delete_dt_free_hdd_space(self):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
@@ -173,8 +165,7 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-
-    def test_launch_two_ops_HDD_with_space(self):
+    def test_launch_two_ops_hdd_with_space(self):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
@@ -193,8 +184,7 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2(2)
 
-
-    def test_launch_two_ops_HDD_full_space(self):
+    def test_launch_two_ops_hdd_full_space(self):
         """
         Launch two operations and give available space for user so that the first should finish,
         but after the update to the user hdd size the second should not.
@@ -216,8 +206,7 @@ class TestOperationService(BaseTestCase):
             self.operation_service.initiate_operation(self.test_user,self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-
-    def test_launch_operation_HDD_with_space(self):
+    def test_launch_operation_hdd_with_space(self):
         """
         Test the actual operation flow by executing a test adapter.
         """
@@ -229,15 +218,14 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-
-    def test_launch_operation_HDD_with_space_started_ops(self):
+    def test_launch_operation_hdd_with_space_started_ops(self):
         """
         Test the actual operation flow by executing a test adapter.
         """
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        started_operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
-                                            status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
+        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
+                                            status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
@@ -245,8 +233,7 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-
-    def test_launch_operation_HDD_full_space(self):
+    def test_launch_operation_hdd_full_space(self):
         """
         Test the actual operation flow by executing a test adapter.
         """
@@ -258,15 +245,14 @@ class TestOperationService(BaseTestCase):
             self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
-
-    def test_launch_operation_HDD_full_space_started_ops(self):
+    def test_launch_operation_hdd_full_space_started_ops(self):
         """
         Test the actual operation flow by executing a test adapter.
         """
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        started_operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
-                                            status=model.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
+        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
+                                            status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
@@ -274,7 +260,6 @@ class TestOperationService(BaseTestCase):
         with pytest.raises(NoMemoryAvailableException):
             self.operation_service.initiate_operation(self.test_user,self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
-
 
     def test_stop_operation(self):
         """
@@ -289,8 +274,7 @@ class TestOperationService(BaseTestCase):
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
-        assert operation.status, model.STATUS_CANCELED == "Operation should have been canceled!"
-
+        assert operation.status, model_operation.STATUS_CANCELED == "Operation should have been canceled!"
 
     def test_stop_operation_finished(self):
         """
@@ -304,12 +288,11 @@ class TestOperationService(BaseTestCase):
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)
-        operation.status = model.STATUS_FINISHED
+        operation.status = model_operation.STATUS_FINISHED
         dao.store_entity(operation)
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
-        assert operation.status, model.STATUS_FINISHED == "Operation shouldn't have been canceled!"
-
+        assert operation.status, model_operation.STATUS_FINISHED == "Operation shouldn't have been canceled!"
 
     def test_array_from_string(self):
         """
@@ -361,7 +344,6 @@ class TestOperationService(BaseTestCase):
         for i in output:
             assert i in [1, 2, 3, 4, 5, 6]
 
-
     def test_wrong_array_from_string(self):
         """Test that parsing an array from string is throwing the expected 
         exception when wrong input string"""
@@ -396,7 +378,6 @@ class TestOperationService(BaseTestCase):
         output = string2array(input_data_string, ',', row['elementType'])
         assert output[0][1] == '2 3'
 
-
     def test_reduce_dimension_component(self):
         """
          This method tests if the data passed to the launch method of
@@ -409,9 +390,9 @@ class TestOperationService(BaseTestCase):
         #create an operation
         algorithm_id = FlowService().get_algorithm_by_module_and_class('tvb.tests.framework.adapters.ndimensionarrayadapter',
                                                                        'NDimensionArrayAdapter').id
-        operation = model.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
+        operation = model_operation.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
                                     meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW_DATA"}),
-                                    status=model.STATUS_FINISHED)
+                                    status=model_operation.STATUS_FINISHED)
         operation = dao.store_entity(operation)
         #save the array wrapper in DB
         adapter_instance = NDimensionArrayAdapter()
@@ -480,6 +461,3 @@ class TestOperationService(BaseTestCase):
         except Exception:
             # OK, do nothing;
             pass
-
-
-    

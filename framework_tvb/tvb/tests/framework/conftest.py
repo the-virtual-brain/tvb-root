@@ -351,15 +351,16 @@ def dummy_datatype_factory():
 
 @pytest.fixture()
 def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
-    def build(row1=None, row2=None):
+    def build(row1=None, row2=None, project=None, operation=None):
         data_type = dummy_datatype_factory()
         data_type.row1 = row1
         data_type.row2 = row2
 
-        op = operation_factory()
+        if operation is None:
+            operation = operation_factory(test_project=project)
 
         data_type_index = DummyDataTypeIndex()
-        data_type_index.fk_from_operation = op.id
+        data_type_index.fk_from_operation = operation.id
         data_type_index.fill_from_has_traits(data_type)
 
         data_type_h5_path = h5.path_for_stored_index(data_type_index)
@@ -370,6 +371,12 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
         return data_type_index
 
     return build
+
+
+dummy_datatype_index_factory2 = dummy_datatype_index_factory
+
+dummy_datatype_index_factory3 = dummy_datatype_index_factory
+
 
 @pytest.fixture()
 def datatype_measure_factory(operation_factory):
