@@ -45,7 +45,7 @@ from tvb.core.services.project_service import ProjectService
 
 class MainSenderDummy(object):
     @staticmethod
-    def send(address_from, address_to, email_subject, email_content):
+    def send(address_from, address_to):
         """
         Overwrite sending of emails for test
         """
@@ -303,8 +303,9 @@ class TestUserService(TransactionalTestCase):
         for i in range(USERS_PAGE_SIZE + 3):
             exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
         admin = dao.get_user_by_name("test_user1")
+        scope = locals()
         data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id') for i in range(USERS_PAGE_SIZE + 3)])
+                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 3)])
         project = ProjectService().store_project(admin, True, None, **data)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
         assert len(page_users) == (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE
@@ -324,14 +325,15 @@ class TestUserService(TransactionalTestCase):
             exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
 
         admin = dao.get_user_by_name("test_user1")
+        scope = locals()
         data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id') for i in range(USERS_PAGE_SIZE + 1)])
+                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 1)])
         project = ProjectService().store_project(admin, True, None, **data)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
         assert len(page_users) == 1, 'Paging not working properly'
         assert len(all_users) == USERS_PAGE_SIZE + 1, 'Not all members returned'
         assert pag == 2, 'Invalid page number returned'
-        self.user_service.delete_user(member2.id)
+        self.user_service.delete_user(scope['member2'].id)
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
         assert len(page_users) == 0, 'Paging not working properly'
         assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
