@@ -32,12 +32,16 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
+
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, MODEL_PARAMETERS, SerializationManager
 from tvb.simulator.integrators import HeunStochastic
 from tvb.simulator.models import Hopfield, Generic2dOscillator
 from tvb.tests.framework.core.factory import TestFactory
+from os import path
+import tvb_data
 
 
 class TestSerializationManager(TransactionalTestCase):
@@ -79,9 +83,11 @@ class TestSerializationManager(TransactionalTestCase):
     """
 
     def transactional_setup_method(self):
-        _, self.connectivity = DatatypesFactory().create_connectivity()
         self.test_user = TestFactory.create_user(username="test_user")
         self.test_project = TestFactory.create_project(self.test_user, "Test")
+        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
         burst_conf = BurstConfiguration(self.test_project.id)
         burst_conf._simulator_configuration = self.CONF_HOPFIELD_HEUN_STOCH_RANGES
@@ -91,11 +97,9 @@ class TestSerializationManager(TransactionalTestCase):
         self.s_manager = SerializationManager(burst_conf)
         self.empty_manager = SerializationManager(BurstConfiguration(None))
 
-
     def test_has_model_pse_ranges(self):
         assert self.s_manager.has_model_pse_ranges()
         assert not self.empty_manager.has_model_pse_ranges()
-
 
     def test_get_params_dict(self):
         d = self.s_manager._get_params_dict()
@@ -108,12 +112,10 @@ class TestSerializationManager(TransactionalTestCase):
         assert 0.09765625 == ip['dt']
         assert [ 0.00123] == ip['noise_parameters']['nsig'].tolist()
 
-
     def test_make_model_and_integrator(self):
         m ,i = self.s_manager.make_model_and_integrator()
         assert isinstance(m,Hopfield)
         assert isinstance(i, HeunStochastic)
-
 
     def test_group_parameter_values_by_name(self):
         gp = SerializationManager.group_parameter_values_by_name(
@@ -121,8 +123,8 @@ class TestSerializationManager(TransactionalTestCase):
              {"a": 3.0, 'b': 7.0}])
         assert {'a': [2.0, 3.0], 'b': [1.0, 7.0]} == gp
 
+    def test_write_model_parameters_one_dynamic(self, connectivity_factory):
 
-    def test_write_model_parameters_one_dynamic(self):
         m_name = Generic2dOscillator.__name__
         m_parms = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
                'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
@@ -141,7 +143,6 @@ class TestSerializationManager(TransactionalTestCase):
         expected = [-10.0]
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
         assert expected == actual
-
 
     def test_write_model_parameters_two_dynamics(self):
         m_name = Generic2dOscillator.__name__
@@ -168,7 +169,6 @@ class TestSerializationManager(TransactionalTestCase):
         expected[0] = -5.0
         actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
         assert expected == actual
-
 
     def test_write_noise_parameters(self):
         disp = [{"x":4,"theta":2} for _ in range(self.connectivity.number_of_regions)]
