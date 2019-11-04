@@ -45,6 +45,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
 
 
 class RegionsModelParametersController(BurstBaseController):
@@ -80,10 +81,8 @@ class RegionsModelParametersController(BurstBaseController):
         if not dynamics:
             return self.no_dynamics_page()
 
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        des = SerializationManager(burst_config)
-
-        connectivity = des.get_connectivity()
+        sim_config = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        connectivity = sim_config.connectivity
 
         if connectivity is None:
             msg = 'You have to select a connectivity before setting up the region Model. '
@@ -92,9 +91,11 @@ class RegionsModelParametersController(BurstBaseController):
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
+        conn_idx = dao.get_datatype_by_gid(connectivity.gid.hex)
+        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
-        params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
+        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
+        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         params.update({
             'title': 'Model parameters',
@@ -103,7 +104,7 @@ class RegionsModelParametersController(BurstBaseController):
             'submit_parameters_url': '/burst/modelparameters/regions/submit_model_parameters',
             'dynamics': dynamics,
             'dynamics_json': self._dynamics_json(dynamics),
-            'initial_dynamic_ids': json.dumps(burst_config.dynamic_ids)
+            'initial_dynamic_ids': burst_config.dynamic_ids
         })
 
         return self.fill_default_attributes(params, 'regionmodel')
@@ -126,16 +127,19 @@ class RegionsModelParametersController(BurstBaseController):
 
         model_name = dynamics[0].model_class
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        simulator_config = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
 
         # update model parameters in burst config
-        des = SerializationManager(burst_config)
+        des = SerializationManager(simulator_config)
         model_parameters = [dict(json.loads(d.model_parameters)) for d in dynamics]
         des.write_model_parameters(model_name, model_parameters)
 
         # update dynamic ids in burst config
-        burst_config.dynamic_ids = dynamic_ids
+        burst_config.dynamic_ids = json.dumps(dynamic_ids)
 
-        # Update in session BURST configuration for burst-page.
-        # todo was this needed? as the burst config in session has already been changed
-        #common.add2session(common.KEY_BURST_CONFIG, burst_config.clone())
+        # Update in session the simulator configuration and the current form URL in wizzard for burst-page.
+        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator_config)
+        common.add2session(common.KEY_BURST_CONFIG, burst_config)
+        common.add2session(SimulatorController.KEY_IS_LOAD_AFTER_REDIRECT, True)
+        common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_INTEGRATOR_URL)
         raise cherrypy.HTTPRedirect("/burst/")

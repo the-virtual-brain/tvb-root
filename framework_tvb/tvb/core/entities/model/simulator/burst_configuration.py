@@ -19,6 +19,7 @@ class BurstConfiguration2(HasTraitsIndex):
     selected_tab = -1
     is_group = False
     datatypes_number = Column(Integer)
+    dynamic_ids = Column(String, default='[]', nullable=False)
 
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
@@ -45,6 +46,7 @@ class BurstConfiguration2(HasTraitsIndex):
         self.simulator_id = simulator_id
         self.name = name
         self.status = status
+        self.dynamic_ids = '[]'
 
     def clone(self):
         new_burst = BurstConfiguration2(self.project_id)

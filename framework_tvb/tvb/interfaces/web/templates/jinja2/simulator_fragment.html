@@ -1,10 +1,10 @@
-<form method="post" action="{{ action }}" id="{{ action }}" enctype="multipart/form-data">
-    <fieldset {% if sim_load or sim_copy %} disabled {% endif %}>
+<form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
+    <fieldset {% if renderer.disable_fields %} disabled {% endif %}>
         <dl>
-            {% if form.ordered_fields %}
-                {% set form_fields = form.ordered_fields %}
+            {% if renderer.form.ordered_fields %}
+                {% set form_fields = renderer.form.ordered_fields %}
             {% else %}
-                {% set form_fields = form.fields %}
+                {% set form_fields = renderer.form.fields %}
             {% endif %}
             {% for field in form_fields %}
                 <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
@@ -22,40 +22,43 @@
         </dl>
     </fieldset>
 
-    {% if is_model_fragment %}
-        <button title="Set up model parameters for region-based simulations" class="btn btn-primary"
+    {% if renderer.include_setup_region_model %}
+        <button type="button" title="Set up model parameters for region-based simulations" class="btn btn-primary"
            onclick="configureModelParamsOnRegions();" id="configRegionModelParam" name="configRegionModelParam"
-           {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Set up region Model</button>
-
-        {% if is_surface_simulation %}
-            <button title="Set up model parameters for surface-based simulations" class="btn btn-primary"
+           {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up region Model</button>
+    {% endif %}
+    {% if renderer.include_setup_surface_model %}
+            <button type="button" title="Set up model parameters for surface-based simulations" class="btn btn-primary"
                onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam" name="configSurfaceModelParam"
-               {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Set up surface model</button>
-        {% endif %}
+               {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up surface model</button>
     {% endif %}
 
-    {% if is_first_fragment is sameas false %}
+    {% if renderer.include_previous_button %}
         <button id='previous' name="previous" type="button" class="btn btn-primary"
-                onclick="previousWizzardStep(this.parentElement, '{{ previous_action }}')"
-                {% if sim_load or (sim_copy and is_last_fragment is sameas false) %} style="visibility: hidden" {% endif %}>Previous
+                onclick="previousWizzardStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
+                {% if renderer.hide_previous_button %} style="visibility: hidden" {% endif %}>Previous
         </button>
     {% endif %}
 
-    {% if is_last_fragment is sameas false %}
+    {% if renderer.include_next_button %}
         <button id='next' name="next" type="button" class="btn btn-primary"
                 onclick="wizzard_submit(this.parentElement)"
-                {% if sim_load or sim_copy %} style="visibility: hidden" {% endif %}>Next
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Next
         </button>
     {% endif %}
 
-    {% if is_last_fragment and sim_load is sameas false %}
+    {% if renderer.include_launch_button %}
         <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary"
-        onclick="launchNewBurst(this.parentElement, 'new')">Launch</button>
-        {% if sim_copy %}
+                onclick="launchNewBurst(this.parentElement, 'new')">Launch</button>
+    {% endif %}
+
+    {% if renderer.include_branch_button %}
         <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary"
-        onclick="launchNewBurst(this.parentElement, 'branch')">Branch</button>
-        {% endif %}
+                onclick="launchNewBurst(this.parentElement, 'branch')">Branch</button>
+    {% endif %}
+
+    {% if renderer.include_setup_pse %}
         <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary"
-        onclick="wizzard_submit(this.parentElement)">Setup PSE</button>
+                onclick="wizzard_submit(this.parentElement)">Setup PSE</button>
     {% endif %}
 </form>

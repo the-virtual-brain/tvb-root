@@ -40,6 +40,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import *
 from tvb.core.services.flow_service import FlowService
 #from tvb.datatypes import noise_framework
+from tvb.simulator import models
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models import Model
 
@@ -167,11 +168,11 @@ class SerializationManager(object):
 
         model_parameters = self.group_parameter_values_by_name(model_parameters_list)
         # change selected model in burst config
-        self.conf.update_simulation_parameter(PARAM_MODEL, model_name)
+        model_class = getattr(models, model_name)
+        self.conf.model = model_class()
 
         for param_name, param_vals in six.iteritems(model_parameters):
-            full_name = PARAMS_MODEL_PATTERN % (model_name, param_name)
-            self.conf.update_simulation_parameter(full_name, format_param_vals(param_vals))
+            setattr(self.conf, param_name, format_param_vals(param_vals))
 
 
     def write_noise_parameters(self, noise_dispersions):

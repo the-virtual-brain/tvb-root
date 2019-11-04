@@ -25,6 +25,12 @@
     <script type="text/javascript">
         $(document).ready(function() {
             GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+
+            {#Need this to pass JSON parsing later in JS#}
+            {% if urlVertices is undefined %}
+                {% set urlVertices='""' %}
+            {% endif %}
+
             prepareConnectivity('{{ urlWeights }}', '{{ urlTracts }}', '{{ urlPositions | safe }}', '{{ urlVertices | safe }}', '{{ urlTriangles | safe }}',
                                 '{{ urlNormals | safe }}', '{{ urlLabels | safe }}', true, '{{ conductionSpeed }}');
         });
