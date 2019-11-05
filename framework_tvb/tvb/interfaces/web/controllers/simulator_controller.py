@@ -28,6 +28,8 @@
 #
 #
 import threading
+from cherrypy.lib.static import serve_file
+from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.monitors import Bold
 from tvb.simulator.noise import Additive
@@ -1024,3 +1026,13 @@ class SimulatorController(BurstBaseController):
         For each burst id received, get the status and return it.
         """
         return self.burst_service2.update_history_status(json.loads(data['burst_ids']))
+
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @check_user
+    def export(self, burst_id):
+        export_manager = ExportManager()
+        export_zip = export_manager.export_simulator_configuration(burst_id)
+
+        result_name = "tvb_simulation_" + str(burst_id) + ".zip"
+        return serve_file(export_zip, "application/x-download", "attachment", result_name)

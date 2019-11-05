@@ -44,9 +44,11 @@ from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.transient.burst_export_entities import BurstInformation, WorkflowInformation
 from tvb.core.entities.transient.burst_export_entities import WorkflowStepInformation, WorkflowViewStepInformation
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
 
@@ -374,15 +376,23 @@ class ExportManager:
 
         return data_export_folder
 
-
-    def export_burst(self, burst_id):
-        """
-        :param burst_id: ID for existing burst
-        :return: JSON of burst representation.
-        """
+    def export_simulator_configuration(self, burst_id):
         burst = dao.get_burst_by_id(burst_id)
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        burst_info = self._build_burst_export_dict(burst)
-        return json.dumps(burst_info)
+        simulator_from_burst = dao.get_generic_entity(SimulatorIndex, burst.id, 'fk_parent_burst')[0]
+        simulator_h5 = h5.path_for_stored_index(simulator_from_burst)
+        simulator_config_folder = os.path.dirname(simulator_h5)
+
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d_%H-%M")
+        zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
+        tmp_export_folder = self._build_data_export_folder(simulator_from_burst)
+        result_path = os.path.join(tmp_export_folder, zip_file_name)
+
+        with TvbZip(result_path, "w") as zip_file:
+            for filename in os.listdir(simulator_config_folder):
+                zip_file.write(os.path.join(simulator_config_folder, filename), filename)
+
+        return result_path
