@@ -32,7 +32,7 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
-
+from tvb.simulator.simulator import Simulator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -45,42 +45,6 @@ import tvb_data
 
 
 class TestSerializationManager(TransactionalTestCase):
-    CONF_HOPFIELD_HEUN_STOCH_RANGES = r"""
-    {"": {"value": "0.1"},
-    "model_parameters_option_Hopfield_noise_parameters_option_Noise_random_stream": {"value": "RandomStream"},
-     "model_parameters_option_Hopfield_state_variable_range_parameters_theta": {"value": "[ 0.  1.]"},
-     "integrator": {"value": "HeunStochastic"},
-     "model_parameters_option_Hopfield_variables_of_interest": {"value": ["x"]},
-     "surface": {"value": ""},
-     "simulation_length": {"value": "100.0"},
-     "monitors_parameters_option_TemporalAverage_period": {"value": "0.9765625"},
-     "integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig": {"value": "[0.00123]"},
-     "monitors": {"value": ["TemporalAverage"]},
-     "model_parameters_option_Hopfield_noise_parameters_option_Noise_random_stream_parameters_option_RandomStream_init_seed": {"value": "42"},
-     "conduction_speed": {"value": "3.0"},
-     "model_parameters_option_Hopfield_noise_parameters_option_Noise_ntau": {"value": "0.0"},
-     "currentAlgoId": {"value": 64},
-     "integrator_parameters_option_HeunStochastic_noise_parameters_option_Multiplicative_random_stream_parameters_option_RandomStream_init_seed": {"value": "42"},
-     "integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream": {"value": "RandomStream"},
-     "connectivity": {"value": "be827732-1655-11e4-ae16-c860002c3492"},
-     "model_parameters_option_Hopfield_noise": {"value": "Noise"},
-     "range_1": {"value": "model_parameters_option_Hopfield_taux"},
-     "model_parameters_option_Hopfield_taux": {"value": "{\"minValue\":0.7,\"maxValue\":1,\"step\":0.1}"},
-     "range_2": {"value": "0"},
-     "coupling_parameters_option_Linear_b": {"value": "[0.0]"},
-     "coupling_parameters_option_Linear_a": {"value": "[0.00390625]"},
-     "coupling": {"value": "Linear"},
-     "model_parameters_option_Hopfield_state_variable_range_parameters_x": {"value": "[-1.  2.]"},
-     "stimulus": {"value": ""},
-     "integrator_parameters_option_HeunStochastic_dt": {"value": "0.09765625"},
-     "model_parameters_option_Hopfield_dynamic": {"value": "[0]"},
-     "integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_ntau": {"value": "0.0"},
-     "model_parameters_option_Hopfield_tauT": {"value": "[5.0]"},
-     "integrator_parameters_option_HeunStochastic_noise": {"value": "Additive"},
-     "model": {"value": "Hopfield"},
-     "integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_random_stream_parameters_option_RandomStream_init_seed": {"value": "42"}
-     }
-    """
 
     def transactional_setup_method(self):
         self.test_user = TestFactory.create_user(username="test_user")
@@ -89,12 +53,9 @@ class TestSerializationManager(TransactionalTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        burst_conf = BurstConfiguration(self.test_project.id)
-        burst_conf._simulator_configuration = self.CONF_HOPFIELD_HEUN_STOCH_RANGES
-        burst_conf.prepare_after_load()
-        burst_conf.simulator_configuration['connectivity'] = {'value': self.connectivity.gid}
+        sim_conf = Simulator()
 
-        self.s_manager = SerializationManager(burst_conf)
+        self.s_manager = SerializationManager(sim_conf)
         self.empty_manager = SerializationManager(BurstConfiguration(None))
 
     def test_has_model_pse_ranges(self):
@@ -124,51 +85,53 @@ class TestSerializationManager(TransactionalTestCase):
         assert {'a': [2.0, 3.0], 'b': [1.0, 7.0]} == gp
 
     def test_write_model_parameters_one_dynamic(self, connectivity_factory):
-
+        connectivity = connectivity_factory()
         m_name = Generic2dOscillator.__name__
         m_parms = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
-               'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+                   'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
 
-        self.s_manager.write_model_parameters(m_name, [m_parms.copy() for _ in range(self.connectivity.number_of_regions)])
+        self.s_manager.write_model_parameters(m_name, [m_parms.copy() for _ in range(connectivity.number_of_regions)])
 
-        sc = self.s_manager.conf.simulator_configuration
+        sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert Generic2dOscillator.__name__ == sc['model']['value']
+        assert Generic2dOscillator.__name__ == sc.model.__class__.__name__
 
         # a modified parameter
         expected = [1.75]  # we expect same value arrays to contract to 1 element
-        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
+        actual = sc.model.a
         assert expected == actual
         # one with the same value as the default
         expected = [-10.0]
-        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
+        actual = sc.model.b
         assert expected == actual
 
-    def test_write_model_parameters_two_dynamics(self):
+
+    def test_write_model_parameters_two_dynamics(self, connectivity_factory):
+        connectivity = connectivity_factory()
         m_name = Generic2dOscillator.__name__
         m_parms_1 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
-               'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+                     'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
         m_parms_2 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -5.0, 'beta': 1.0, 'c': 0.0,
-               'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
+                     'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
         # all nodes except the first have dynamic 1
-        model_parameter_list = [m_parms_1.copy() for _ in range(self.connectivity.number_of_regions)]
+        model_parameter_list = [m_parms_1.copy() for _ in range(connectivity.number_of_regions)]
         model_parameter_list[0] = m_parms_2
 
         self.s_manager.write_model_parameters(m_name, model_parameter_list)
 
-        sc = self.s_manager.conf.simulator_configuration
+        sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert Generic2dOscillator.__name__ == sc['model']['value']
+        assert Generic2dOscillator.__name__ == sc.model.__class__.__name__
 
         expected = [1.75]  # array contracted to one value
-        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_a']['value'])
+        actual = sc.model.a
         assert expected == actual
 
         # b is not the same across models. We will have a full array
-        expected = [-10.0 for _ in range(self.connectivity.number_of_regions)]
+        expected = [-10.0 for _ in range(connectivity.number_of_regions)]
         expected[0] = -5.0
-        actual = json.loads(sc['model_parameters_option_Generic2dOscillator_b']['value'])
-        assert expected == actual
+        actual = sc.model.b
+        assert expected == actual.tolist()
 
     def test_write_noise_parameters(self):
         disp = [{"x":4,"theta":2} for _ in range(self.connectivity.number_of_regions)]

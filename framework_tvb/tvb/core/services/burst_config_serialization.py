@@ -33,7 +33,7 @@ Service for serianlizing a Burst (Simulator) configuration.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -164,7 +164,7 @@ class SerializationManager(object):
             # contract constant array
             if len(set(vals)) == 1:
                 vals = [vals[0]]
-            return str(vals)
+            return numpy.array(vals)
 
         model_parameters = self.group_parameter_values_by_name(model_parameters_list)
         # change selected model in burst config
@@ -172,7 +172,7 @@ class SerializationManager(object):
         self.conf.model = model_class()
 
         for param_name, param_vals in six.iteritems(model_parameters):
-            setattr(self.conf, param_name, format_param_vals(param_vals))
+            setattr(self.conf.model, param_name, format_param_vals(param_vals))
 
 
     def write_noise_parameters(self, noise_dispersions):
