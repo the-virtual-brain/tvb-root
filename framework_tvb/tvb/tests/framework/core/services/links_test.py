@@ -34,6 +34,7 @@ Testing linking datatypes between projects.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import pytest
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -45,8 +46,10 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
+from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+import os
+import tvb_data
 
 
 class _BaseLinksTest(TransactionalTestCase):
@@ -54,8 +57,8 @@ class _BaseLinksTest(TransactionalTestCase):
     GEORGE1st = "george the grey"
     GEORGE2nd = "george"
 
-    @pytest.fixture(scope='module')
-    def initialize_two_projects(self, simple_datatype_factory, datatype_with_storage_factory):
+    @pytest.fixture()
+    def initialize_two_projects(self, dummy_datatype_index_factory, dummy_datatype2_index_factory):
         """
         Creates a user, an algorithm and 2 projects
         Project src_project will have an operation and 2 datatypes
@@ -64,13 +67,12 @@ class _BaseLinksTest(TransactionalTestCase):
         """
         self.clean_database(delete_folders=True)
 
-
         src_user = TestFactory.create_user('Source_User')
         self.src_usr_id = src_user.id
         self.src_project = TestFactory.create_project(src_user, "Source_Project")
 
-        self.red_datatype = simple_datatype_factory(subject=self.GEORGE1st)
-        self.blue_datatype = datatype_with_storage_factory(subject=self.GEORGE2nd)
+        self.red_datatype = dummy_datatype_index_factory(subject=self.GEORGE1st)
+        self.blue_datatype = dummy_datatype2_index_factory(subject=self.GEORGE2nd)
 
         # create the destination project
         dst_user = TestFactory.create_user('Destination_User')
@@ -80,23 +82,14 @@ class _BaseLinksTest(TransactionalTestCase):
         self.flow_service = FlowService()
         self.project_service = ProjectService()
 
-
-    # def transactional_setup_method(self):
-    #     self.clean_database(delete_folders=True)
-    #     self._initialize_two_projects()
-
-
     def transactional_teardown_method(self):
         self.clean_database(delete_folders=True)
 
-
     def red_datatypes_in(self, project_id):
-        return self.flow_service.get_available_datatypes(project_id, Datatype1)[1]
-
+        return self.flow_service.get_available_datatypes(project_id, DummyDataTypeIndex)[1]
 
     def blue_datatypes_in(self, project_id):
-        return self.flow_service.get_available_datatypes(project_id, Datatype2)[1]
-
+        return self.flow_service.get_available_datatypes(project_id, DummyDataType2Index)[1]
 
 
 class TestLinks(_BaseLinksTest):
@@ -106,7 +99,6 @@ class TestLinks(_BaseLinksTest):
 
     def assertRedsInDest(self, count):
         assert count == self.red_datatypes_in(self.dest_project.id)
-
 
     def test_create_link(self, initialize_two_projects):
         dest_id = self.dest_project.id
@@ -147,35 +139,32 @@ class TestLinks(_BaseLinksTest):
         assert 0 == len(dt_links)
 
 
-class ImportExportProjectWithLinksTest(_BaseLinksTest):
+class TestImportExportProjectWithLinksTest(_BaseLinksTest):
 
-    def transactional_setup_method(self, _initialize_two_projects):
+    @pytest.fixture()
+    def transactional_setup_fixture(self, initialize_two_projects):
         """
         Adds to the _BaseLinksTest setup the following
         2 links from src to dest project
         Import/export services
         """
         self.clean_database(delete_folders=True)
-        self._initialize_two_projects()
 
         dest_id = self.dest_project.id
         self.flow_service.create_link([self.red_datatype.id], dest_id)
         self.flow_service.create_link([self.blue_datatype.id], dest_id)
         self.export_mng = ExportManager()
 
-
-    def test_export(self):
+    def test_export(self, transactional_setup_fixture):
         export_file = self.export_mng.export_project(self.dest_project)
         with TvbZip(export_file) as z:
             assert 'links-to-external-projects/Operation.xml' in z.namelist()
-
 
     def _export_and_remove(self, project):
         """export the project and remove it"""
         export_file = self.export_mng.export_project(project)
         self.project_service.remove_project(project.id)
         return export_file
-
 
     def _import(self, export_file, user_id):
         """ import a project zip for a user """
@@ -184,8 +173,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         import_service.import_project_structure(export_file, user_id)
         return import_service.created_projects[0].id
 
-
-    def test_links_recreated_on_import(self):
+    def test_links_recreated_on_import(self, transactional_setup_fixture):
         export_file = self._export_and_remove(self.dest_project)
         imported_proj_id = self._import(export_file, self.dest_usr_id)
         assert 1 == self.red_datatypes_in(imported_proj_id)
@@ -193,8 +181,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         links = dao.get_linked_datatypes_in_project(imported_proj_id)
         assert 2 == len(links)
 
-
-    def test_datatypes_recreated_on_import(self):
+    def test_datatypes_recreated_on_import(self, transactional_setup_fixture):
         export_file = self._export_and_remove(self.dest_project)
         self.project_service.remove_project(self.src_project.id)
         # both projects have been deleted
@@ -205,8 +192,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         links = dao.get_linked_datatypes_in_project(imported_proj_id)
         assert 0 == len(links)
 
-
-    def test_datatypes_and_links_recreated_on_import(self):
+    def test_datatypes_and_links_recreated_on_import(self, transactional_setup_fixture):
         export_file = self._export_and_remove(self.dest_project)
         # remove datatype 2 from source project
         self.project_service.remove_datatype(self.src_project.id, self.blue_datatype.gid)
@@ -219,18 +205,21 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         assert 1 == len(links)
         assert self.red_datatype.gid == links[0].gid
 
-
-    def _create_interlinked_projects(self):
+    @pytest.fixture()
+    def create_interlinked_projects(self, region_mapping_factory, time_series_region_factory):
         """
         Extend the two projects created in setup.
         Project src will have 3 datatypes, one a connectivity, and a link to the time series from the dest project.
         Project dest will have 3 links to the datatypes in src and a time series derived from the linked connectivity
         """
         # add a connectivity to src project and link it to dest project
-        _, conn = self.datatype_factory_src.create_connectivity()
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         self.flow_service.create_link([conn.id], self.dest_project.id)
         # in dest derive a time series from the linked conn
-        ts = self.datatype_factory_dest.create_timeseries(conn)
+        rm = region_mapping_factory()
+        ts = time_series_region_factory(connectivity=conn, region_mapping=rm)
         # then link the time series in the src project
         self.flow_service.create_link([ts.id], self.src_project.id)
 
@@ -239,12 +228,10 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         assert 1 == len(dao.get_datatypes_in_project(self.dest_project.id))
         assert 3 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
 
+    def test_create_interlinked_projects(self, transactional_setup_fixture, create_interlinked_projects):
+        create_interlinked_projects()
 
-    def test_create_interlinked_projects(self):
-        self._create_interlinked_projects()
-
-
-    def test_linked_datatype_dependencies_restored_on_import(self):
+    def test_linked_datatype_dependencies_restored_on_import(self, transactional_setup_fixture):
         self._create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
@@ -261,8 +248,7 @@ class ImportExportProjectWithLinksTest(_BaseLinksTest):
         assert 0 == len(dao.get_datatypes_in_project(imported_id_2))
         assert 4 == len(dao.get_linked_datatypes_in_project(imported_id_2))
 
-
-    def test_linked_datatype_dependencies_restored_on_import_inverse_order(self):
+    def test_linked_datatype_dependencies_restored_on_import_inverse_order(self, transactional_setup_fixture):
         self._create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
