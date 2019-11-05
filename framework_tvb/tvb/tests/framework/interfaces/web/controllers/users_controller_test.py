@@ -54,12 +54,15 @@ class TestUsersController(BaseTransactionalControllerTest):
         Sets up the testing environment;
         creates a `UserController`
         """
+        self.clean_database()
         self.init(user_role=ROLE_ADMINISTRATOR)
         self.user_c = UserController()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
+        self.clean_database()
+
 
     def test_index_valid_post(self):
         """
@@ -138,6 +141,8 @@ class TestUsersController(BaseTransactionalControllerTest):
                     password="pass",
                     password2="pass",
                     email="email@email.com",
+                    email_subject="registration",
+                    email_content="I want to registrate",
                     comment="This is some dummy comment",
                     role="CLINICIAN")
         self._expect_redirect('/user', self.user_c.register, **data)
