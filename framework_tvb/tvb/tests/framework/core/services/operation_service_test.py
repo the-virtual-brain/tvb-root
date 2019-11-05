@@ -35,6 +35,9 @@
 import pytest
 import json
 import numpy
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.utils import string2array
@@ -50,6 +53,7 @@ from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
+from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
 
 
 class TestOperationService(BaseTestCase):
@@ -78,7 +82,7 @@ class TestOperationService(BaseTestCase):
         self.clean_database()
 
     def _assert_no_dt2(self):
-        count = dao.count_datatypes(self.test_project.id, Datatype2)
+        count = dao.count_datatypes(self.test_project.id, DummyDataTypeIndex)
         assert 0 == count
 
     def _assert_stored_dt2(self, expected_cnt=1):
@@ -88,19 +92,20 @@ class TestOperationService(BaseTestCase):
         assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
         return datatype
 
-    def test_datatypes_groups(self):
+    def test_datatypes_groups(self, test_adapter_factory):
         """
         Tests if the dataType group is set correct on the dataTypes resulted from the same operation group.
         """
-        flow_service = FlowService()
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
-        adapter_instance = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
+        test_adapter_factory(TestAdapter3)
+        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
+        adapter_instance = ABCAdapter.build_adapter(algo)
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations
-        flow_service.fire_operation(adapter_instance, self.test_user, self.test_project.id, **data)
+        FlowService().fire_operation(adapter_instance, self.test_user, self.test_project.id, **data)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 1, "Expected one operation group"
@@ -122,12 +127,13 @@ class TestOperationService(BaseTestCase):
         datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
         assert dt.fk_datatype_group == datatype_group.id, "DataTypeGroup is incorrect"
 
-    def test_initiate_operation(self):
+    def test_initiate_operation(self, test_adapter_factory):
         """
         Test the actual operation flow by executing a test adapter.
         """
         module = "tvb.tests.framework.adapters.testadapter1"
         class_name = "TestAdapter1"
+        test_adapter_factory()
         adapter = TestFactory.create_adapter(module, class_name)
         output = adapter.get_output()
         output_type = output[0].__name__
@@ -135,21 +141,22 @@ class TestOperationService(BaseTestCase):
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         res = self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
                                                         tmp_folder, **data)
-        assert res.index("has finished.") > 10, "Operation didn't finish"
+
         group = dao.get_algorithm_by_module(module, class_name)
         assert group.module == 'tvb.tests.framework.adapters.testadapter1', "Wrong data stored."
         assert group.classname == 'TestAdapter1', "Wrong data stored."
-        dts, count = dao.get_values_of_datatype(self.test_project.id, Datatype1)
+        dts, count = dao.get_values_of_datatype(self.test_project.id, DummyDataTypeIndex)
         assert count == 1
         assert len(dts) == 1
         datatype = dao.get_datatype_by_id(dts[0][0])
         assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
         assert datatype.type == output_type, "Wrong data stored."
 
-    def test_delete_dt_free_hdd_space(self):
+    def test_delete_dt_free_hdd_space(self, test_adapter_factory, operation_factory):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
+        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
@@ -218,12 +225,17 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-    def test_launch_operation_hdd_with_space_started_ops(self):
+    def test_launch_operation_hdd_with_space_started_ops(self, test_adapter_factory):
         """
         Test the actual operation flow by executing a test adapter.
         """
+        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
+
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        form = TestAdapterHDDRequiredForm()
+        form.fill_from_post({'_test': "100"})
+        adapter.submit_form(form)
         started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
                                             status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
@@ -233,11 +245,15 @@ class TestOperationService(BaseTestCase):
         self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
-    def test_launch_operation_hdd_full_space(self):
+    def test_launch_operation_hdd_full_space(self, test_adapter_factory):
         """
         Test the actual operation flow by executing a test adapter.
         """
+        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
+
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        form = TestAdapterHDDRequiredForm()
+        adapter.submit_form(form)
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
@@ -245,12 +261,16 @@ class TestOperationService(BaseTestCase):
             self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
-    def test_launch_operation_hdd_full_space_started_ops(self):
+    def test_launch_operation_hdd_full_space_started_ops(self, test_adapter_factory):
         """
         Test the actual operation flow by executing a test adapter.
         """
+        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
+
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        form = TestAdapterHDDRequiredForm()
+        adapter.submit_form(form)
         started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
                                             status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
         dao.store_entity(started_operation)
@@ -261,10 +281,11 @@ class TestOperationService(BaseTestCase):
             self.operation_service.initiate_operation(self.test_user,self.test_project.id, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
-    def test_stop_operation(self):
+    def test_stop_operation(self, test_adapter_factory):
         """
         Test that an operation is successfully stopped.
         """
+        test_adapter_factory(adapter_class=TestAdapter2)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter2", "TestAdapter2")
         data = {"test": 5}
         algo = adapter.stored_adapter
@@ -276,10 +297,11 @@ class TestOperationService(BaseTestCase):
         operation = dao.get_operation_by_id(operations[0].id)
         assert operation.status, model_operation.STATUS_CANCELED == "Operation should have been canceled!"
 
-    def test_stop_operation_finished(self):
+    def test_stop_operation_finished(self, test_adapter_factory):
         """
         Test that an operation that is already finished is not changed by the stop operation.
         """
+        test_adapter_factory()
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
         data = {"test1_val1": 5, 'test1_val2': 5}
         algo = adapter.stored_adapter

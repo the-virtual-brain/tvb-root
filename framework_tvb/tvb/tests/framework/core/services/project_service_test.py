@@ -403,7 +403,7 @@ class TestProjectService(TransactionalTestCase):
                 else:
                     assert value == new_datatype.parent_operation.user_group
 
-    def test_remove_project_node(self):
+    def test_remove_project_node(self, test_adapter_factory):
         """
         Test removing of a node from a project.
         """
@@ -422,7 +422,7 @@ class TestProjectService(TransactionalTestCase):
         ### Validate that no more files are created than needed.
 
         if(dao.get_system_user() is None):
-            dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+            dao.store_entity(model_operation.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
         self.project_service._remove_project_node_files(inserted_project.id, gid)
         sub_files = os.listdir(op_folder)
         assert 1 == len(sub_files)
@@ -500,44 +500,44 @@ class TestProjectService(TransactionalTestCase):
         resulted_dts = operations[0]['results']
         assert len(resulted_dts) == 3, "3 datatypes should be created."
 
-
-    def test_get_project_structure(self):
+    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory, project_factory, user_factory):
         """
         Tests project structure is as expected and contains all datatypes
         """
         SELF_DTS_NUMBER = 3
-        dt_factory_1 = datatypes_factory.DatatypesFactory()
-        self._create_datatypes(dt_factory_1, SELF_DTS_NUMBER)
-        dt_group = dt_factory_1.create_datatype_group()
+
+        user = user_factory()
+        project = project_factory(user)
+
+        dt_group = datatype_group_factory(project=project)
 
         link_ids, expected_links = [], []
         # Prepare link towards a simple DT
-        dt_factory_2 = datatypes_factory.DatatypesFactory()
-        dt_to_link = dt_factory_2.create_simple_datatype()
+        dt_to_link = dummy_datatype_index_factory()
         link_ids.append(dt_to_link.id)
         expected_links.append(dt_to_link.gid)
 
         # Prepare links towards a full DT Group, but expecting only the DT_Group in the final tree
-        link_gr = dt_factory_2.create_datatype_group()
+        link_gr = dt_group
         dts = dao.get_datatype_in_group(datatype_group_id=link_gr.id)
         link_ids.extend([dt_to_link.id for dt_to_link in dts])
         link_ids.append(link_gr.id)
         expected_links.append(link_gr.gid)
 
         # Prepare link towards a single DT inside a group, and expecting to find the DT in the final tree
-        link_gr = dt_factory_2.create_datatype_group()
+        link_gr = dt_group
         dt_to_link = dao.get_datatype_in_group(datatype_group_id=link_gr.id)[0]
         link_ids.append(dt_to_link.id)
         expected_links.append(dt_to_link.gid)
 
         # Actually create the links from Prj2 into Prj1
-        FlowService().create_link(link_ids, dt_factory_1.project.id)
+        FlowService().create_link(link_ids, project.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
-        dts_in_tree = dao.get_data_in_project(dt_factory_1.project.id)
+        dts_in_tree = dao.get_data_in_project(project.id)
         dts_in_tree = [dt.gid for dt in dts_in_tree]
         # Retrieve the tree json (for trivial validations only, as we can not decode)
-        node_json = self.project_service.get_project_structure(dt_factory_1.project, None, DataTypeMetaData.KEY_STATE,
+        node_json = self.project_service.get_project_structure(project, None, DataTypeMetaData.KEY_STATE,
                                                                DataTypeMetaData.KEY_SUBJECT, None)
 
         assert len(expected_links) + SELF_DTS_NUMBER + 2 == len(dts_in_tree), "invalid number of nodes in tree"
@@ -545,7 +545,7 @@ class TestProjectService(TransactionalTestCase):
         assert dt_group.gid in dts_in_tree, "DT_Group should be in the Project Tree!"
         assert dt_group.gid in node_json, "DT_Group should be in the Project Tree JSON!"
 
-        project_dts = dao.get_datatypes_in_project(dt_factory_1.project.id)
+        project_dts = dao.get_datatypes_in_project(project.id)
         for dt in project_dts:
             if dt.fk_datatype_group is not None:
                 assert not dt.gid in node_json, "DTs part of a group should not be"
