@@ -36,6 +36,7 @@ import json
 import cherrypy
 from time import sleep
 import pytest
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.core.entities.storage import dao
@@ -159,12 +160,17 @@ class TestFlowController(BaseControllersTest):
         returned_data = self.flow_c.read_datatype_attribute(dt.gid, 'return_test_data', **args)
         assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
 
-    def test_get_simple_adapter_interface(self, test_adapter_1_factory):
-        adapter_inst = test_adapter_1_factory()
+    def test_get_simple_adapter_interface(self, test_adapter_factory):
+        adapter_inst = test_adapter_factory()
+        form = TestAdapter1Form()
+        adapter_inst.submit_form(form)
+
         adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         result = self.flow_c.get_simple_adapter_interface(adapter.id)
         expected_interface = adapter_inst.get_form()
-        assert result['form'] == expected_interface
+        assert type(result['form']) == type(expected_interface)
+        assert result['form'].test1_val1.value == expected_interface.test1_val1.value
+        assert result['form'].test1_val2.value == expected_interface.test1_val2.value
 
     def _wait_for_burst_ops(self, burst_config):
         """ sleeps until some operation of the burst is created"""
