@@ -39,19 +39,18 @@ from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import K
 from tvb.core.entities.transient.context_stimulus import SURFACE_PARAMETER
 
 
-
 class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def transactional_setup_method(self):
+        self.clean_database()
         self.init()
         self.surface_s_c = SurfaceStimulusController()
-
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-
+        self.clean_database()
 
     def test_step_1(self):
         self.surface_s_c.step_1_submit(1, 1)
@@ -76,4 +75,3 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_2_submit'
         assert result_dict['mainContent'] == 'spatial/stimulus_surface_step2_main'
         assert result_dict['loadExistentEntityUrl'] == '/spatial/stimulus/surface/load_surface_stimulus'
-
