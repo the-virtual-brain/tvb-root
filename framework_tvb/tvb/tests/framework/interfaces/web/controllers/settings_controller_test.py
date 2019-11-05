@@ -87,6 +87,9 @@ class TestSettingsController(BaseTransactionalControllerTest):
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
+        self.clean_database()
+
+
 
         if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
             shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
