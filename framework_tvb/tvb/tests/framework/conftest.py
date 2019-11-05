@@ -39,6 +39,7 @@ from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
+from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
 TvbProfile.set_profile('TEST_SQLITE_PROFILE')
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
@@ -350,8 +351,15 @@ def dummy_datatype_factory():
 
 
 @pytest.fixture()
+def dummy_datatype2_index_factory():
+    def build(subject=None):
+        return DummyDataType2Index(subject=subject)
+    return build
+
+
+@pytest.fixture()
 def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
-    def build(row1=None, row2=None, project=None, operation=None):
+    def build(row1=None, row2=None, project=None, operation=None, subject=None):
         data_type = dummy_datatype_factory()
         data_type.row1 = row1
         data_type.row2 = row2
@@ -359,7 +367,7 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
         if operation is None:
             operation = operation_factory(test_project=project)
 
-        data_type_index = DummyDataTypeIndex()
+        data_type_index = DummyDataTypeIndex(subject=subject)
         data_type_index.fk_from_operation = operation.id
         data_type_index.fill_from_has_traits(data_type)
 
@@ -380,9 +388,7 @@ dummy_datatype_index_factory3 = dummy_datatype_index_factory
 
 @pytest.fixture()
 def datatype_measure_factory(operation_factory):
-    def build(analyzed_entity, operation=None):
-        if operation is None:
-            operation = operation_factory()
+    def build(analyzed_entity):
 
         measure = DatatypeMeasureIndex()
         measure.metrics = '{"v": 3}'
@@ -459,7 +465,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(datatype, op_ms)
+                datatype_measure_factory(datatype)
 
         return datatype_group
 
@@ -467,7 +473,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
 
 
 @pytest.fixture()
-def test_adapter_1_factory():
+def test_adapter_factory():
     def build(adapter_class=TestAdapter1):
 
         all_categories = dao.get_algorithm_categories()
@@ -502,7 +508,7 @@ def test_adapter_1_factory():
     return build
 
 
-test_adapter_2_factory = test_adapter_1_factory
+test_adapter_2_factory = test_adapter_factory
 
 
-test_adapter_3_factory = test_adapter_1_factory
+test_adapter_3_factory = test_adapter_factory
