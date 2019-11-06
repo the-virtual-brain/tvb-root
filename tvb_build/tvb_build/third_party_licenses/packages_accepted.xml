@@ -370,14 +370,14 @@
         <copyright-notice value="Copyright (c) 2013-2016 Python Charmers Pty Ltd, Australia"/>
         <description value="Clean single-source support for Python 3 and 2"/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="genshi">
-        <full-name value="Genshi"/>
-        <project-home value="http://genshi.edgewall.org/"/>
-        <version value="0.7"/>
+    <dependency env="[win,mac,linux]" name="jinja2">
+        <full-name value="Jinja2"/>
+        <project-home value="https://jinja.palletsprojects.com/en/2.10.x/"/>
+        <version value="2.10.3"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_genshi_0.6.txt"/>
-        <license-type value="BSD_ 2 clause"/>
-        <copyright-notice value="Copyright 2006-2011 Edgewall Software"/>
+        <license value="LICENSE_jinja2_2.10.3.txt"/>
+        <license-type value="BSD_ 3rd clause"/>
+        <copyright-notice value="Copyright 2007 Pallets"/>
         <description value="Templating library for HTML pages."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="genxmlif">
