@@ -212,7 +212,7 @@ class WebSettings(object):
     ENABLED = False
     LOCALHOST = "127.0.0.1"
     RENDER_HTML = True
-    VISUALIZERS_ROOT = "tvb.interfaces.web.templates.genshi.visualizers"
+    VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
     VISUALIZERS_URL_PREFIX = "/flow/read_datatype_attribute/"
 
 
@@ -244,7 +244,7 @@ class WebSettings(object):
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"
         self.URL_TVB_VERSION = manager.get_attribute(stored.KEY_URL_VERSION, default)
 
-        self.TEMPLATE_ROOT = os.path.join(self.CURRENT_DIR, 'interfaces', 'web', 'templates', 'genshi')
+        self.TEMPLATE_ROOT = os.path.join(self.CURRENT_DIR, 'interfaces', 'web', 'templates', 'jinja2')
         self.CHERRYPY_CONFIGURATION = {'global': {'server.socket_host': '0.0.0.0',
                                                   'server.socket_port': self.SERVER_PORT,
                                                   'server.thread_pool': 20,
@@ -278,7 +278,7 @@ class WebSettings(object):
                                        '/static_view': {'tools.staticdir.root': self.CURRENT_DIR,
                                                         'tools.staticdir.on': True,
                                                         'tools.staticdir.dir': os.path.join('interfaces', 'web',
-                                                                                            'templates', 'genshi',
+                                                                                            'templates', 'jinja2',
                                                                                             'visualizers'),
                                                         },
                                        }

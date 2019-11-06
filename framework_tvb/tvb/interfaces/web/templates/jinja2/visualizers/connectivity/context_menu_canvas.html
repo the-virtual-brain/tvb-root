@@ -1,0 +1,40 @@
+<div>
+    <input type='hidden' id='selectedNodeIndex'/>
+
+    <aside class="menu-node" id="contextMenuDiv">
+    	<mark id='nodeNameId'>Please select a node</mark>
+
+		<ul class="node-lines">
+			<li>
+				<a tabindex='-1' href="#" id="drawComingOutLinesForSelectedNodeItemId"
+				class="action action-plus" title="Draw outgoing lines"
+				onclick='handleLines(parseInt($("#selectedNodeIndex").val()), 1, 1)'>Draw outgoing</a>
+			</li>
+
+			<li>
+				<a tabindex='-1' href="#" id="removeComingOutLinesForSelectedNodeItemId"
+				class="action action-minus" title="Hide outgoing lines"
+				onclick='handleLines(parseInt($("#selectedNodeIndex").val()), 1, 0)'>Hide outgoing</a>
+			</li>
+
+			<li>
+				<a tabindex='-1' href="#" id="drawComingInLinesForSelectedNodeItemId"
+				class="action action-plus" title="Draw incoming lines"
+				onclick='handleLines(parseInt($("#selectedNodeIndex").val()), 0, 1)'>Draw incoming</a>
+			</li>
+
+			<li>
+				<a tabindex='-1' href="#" id="removeComingInLinesForSelectedNodeItemId"
+				class="action action-minus" title="Hide incoming lines"
+				onclick='handleLines(parseInt($("#selectedNodeIndex").val()), 0, 0)'>Hide incoming</a>
+			</li>
+
+			<li>
+				<a tabindex='-1' href="#" class="action action-edit" id="setCurrentColorForNodeItemId"
+				title="Set color on the edges from this node"
+				onclick='setCurrentColorForNode(parseInt($("#selectedNodeIndex").val()))'>Set color</a>
+			</li>
+		</ul>
+
+    </aside>
+</div>

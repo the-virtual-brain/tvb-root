@@ -82,7 +82,7 @@ class UserController(BaseController):
         """
         Login page (with or without messages).
         """
-        template_specification = dict(mainContent="login", title="Login", data=data)
+        template_specification = dict(mainContent="user/login", title="Login", data=data)
         if cherrypy.request.method == 'POST':
             form = LoginForm()
             try:
@@ -120,7 +120,7 @@ class UserController(BaseController):
         """
         if cherrypy.request.method == 'POST' and logout:
             raise cherrypy.HTTPRedirect('/user/logout')
-        template_specification = dict(mainContent="profile", title="User Profile")
+        template_specification = dict(mainContent="user/profile", title="User Profile")
         user = common.get_logged_user()
 
         if cherrypy.request.method == 'POST' and save:
@@ -217,7 +217,7 @@ class UserController(BaseController):
         """
         This register form send an e-mail to the user and to the site admin.
         """
-        template_specification = dict(mainContent="register", title="Register", data=data)
+        template_specification = dict(mainContent="user/register", title="Register", data=data)
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
@@ -253,7 +253,7 @@ class UserController(BaseController):
         """
         if cancel:
             raise cherrypy.HTTPRedirect('/user/usermanagement')
-        template_specification = dict(mainContent="create_new", title="Create New", data=data)
+        template_specification = dict(mainContent="user/create_new", title="Create New", data=data)
         redirect = False
         if cherrypy.request.method == 'POST':
             try:
@@ -310,7 +310,7 @@ class UserController(BaseController):
 
         admin_ = common.get_logged_user().username
         user_list, pages_no = self.user_service.retrieve_all_users(admin_, page)
-        template_specification = dict(mainContent="user_management", title="Users management", page_number=page,
+        template_specification = dict(mainContent="user/user_management", title="Users management", page_number=page,
                                       total_pages=pages_no, userList=user_list, allRoles=UserService.USER_ROLES,
                                       data={})
         return self.fill_default_attributes(template_specification)
@@ -324,7 +324,7 @@ class UserController(BaseController):
         This form should reset a password for a given userName/email and send a 
         notification message to that email.
         """
-        template_specification = dict(mainContent="recover_password", title="Recover password", data=data)
+        template_specification = dict(mainContent="user/recover_password", title="Recover password", data=data)
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
@@ -386,8 +386,8 @@ class UserController(BaseController):
         """
         form = RegisterForm()
         data = form.to_python(data)
-        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD]).hexdigest()
-        data['password2'] = md5(data['password2']).hexdigest()
+        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD].encode('utf-8')).hexdigest()
+        data['password2'] = md5(data['password2'].encode('utf-8')).hexdigest()
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
 
 

@@ -1,0 +1,37 @@
+<h3><mark>Project ID</mark>{{ selectedProject.id if selectedProject else '-' }}</h3>
+
+<p class="ops-beacon {{ 'ops-pending' if (selectedProject and selectedProject.operations_started > 0) else '' }}"
+	title="Show all ops for this project">{{ selectedProject.operations_started if selectedProject else '-' }} background operations pending</p>
+
+<div class="extension">
+	{% if selectedProject %}
+		<div class="dropdown-pane">
+			<h4>Current Project <a href="/project/viewall" title="Go to the list of all projects, to change the current selected project">[Change]</a> </h4>
+			<p tabindex="51" onkeypress="redirectToHrefChild(this)">
+				<a href="/project/editone/{{ selectedProject.id }}" tabindex='-1' title="Show details about the current selected project">{{ selectedProject.name }}</a>
+				{{ selectedProject.description }}
+			</p>
+
+			<h4>Main operations</h4>
+			<dl>
+				<dt><mark>Simulation</mark> Cockpit</dt>
+				<dd><a href="/burst/" title="This ops…">Show</a></dd>
+
+				<dt><mark>Stimuli</mark> Entities</dt>
+				<dd><a href="/spatial/" title="This ops…">Show</a></dd>
+
+			</dl>
+
+			<ul>
+				<li class="ops-pending"><a href="/project/viewoperations/{{ selectedProject.id }}" title="View started operations here ..."><mark>{{ selectedProject.operations_started ~ selectedProject.operations_pending }}</mark> submitted ops</a></li>
+				<li class="ops-error"><a href="/project/viewoperations/{{ selectedProject.id }}" title="View failed operations here..."><mark>{{ selectedProject.operations_error }}</mark> failed ops</a></li>
+				<li class="ops-done"><a href="/project/viewoperations/{{ selectedProject.id }}" title="View finished operations here..."><mark>{{ selectedProject.operations_finished }}</mark> ready ops</a></li>
+			</ul>
+		</div>
+	{% endif %}
+</div>
+
+<script type="text/javascript">
+	setTimeout(function() { updateCallOutProject(); }, 7000);
+</script>
+

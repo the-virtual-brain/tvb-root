@@ -1,0 +1,16 @@
+<div>
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/vertex_shader.html' %}
+
+    <script type="text/javascript">
+        function launchViewer(width, height) {
+        	VS_StartPortletPreview('{{ base_activity_url }}', '{{ urlVertices }}', '{{ urlTriangles }}', '{{ urlNormals }}',
+                {{ noOfMeasurePoints | safe }}, '{{ urlRegionMap | safe }}', '{{ urlRegionBoundaries | safe }}',
+                    '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}');
+        }
+    </script>
+
+    {% import 'visualizers/commons/brain_component.html' as bc with context %}
+    {{ draw_brain_component("GLcanvas", none) }}
+</div>

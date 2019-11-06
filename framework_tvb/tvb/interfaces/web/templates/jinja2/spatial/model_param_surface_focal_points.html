@@ -1,0 +1,30 @@
+<div>
+
+    <ul class="focal-points">
+        {% if focal_points %}
+            {% for idx in ((focal_points | length) | xrange) %}
+		        <li>
+		        	<a href="#" onclick="BS_centerNavigatorOnFocalPoint({{ focal_points[idx] }})">Focal point {{ focal_points[idx] }}</a>
+		        	<a href="#" onclick="MP_removeFocalPointForSurfaceModelParam({{ focal_points[idx] }})" class="action action-delete">Delete</a>
+		        </li>
+	        {% endfor %}
+        {% endif %}
+    </ul>
+    
+    <script type="text/javascript">
+	    $(document).ready(function () {
+            MP_redrawSurfaceFocalPoints('{{ focal_points_json }}');
+        });
+	</script>
+
+    {% if error_msg is defined %}
+        <script>
+            displayMessage('{{ error_msg }}', "errorMessage");
+        </script>
+    {% else %}
+        <script>
+            displayMessage('');
+        </script>
+    {% endif %}
+
+</div>

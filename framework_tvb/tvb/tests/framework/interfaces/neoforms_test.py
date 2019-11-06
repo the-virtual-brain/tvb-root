@@ -12,7 +12,7 @@ from tvb.core.neotraits.forms import ScalarField, Form, FormField, ArrayField
 # to ensure sanity do this once at a top level in the app
 
 tvb.core.neotraits.forms.jinja_env = jinja_env = Environment(
-    loader=PackageLoader('tvb.interfaces.web.templates', 'jinja'),
+    loader=PackageLoader('tvb.interfaces.web.templates', 'form_fields'),
     autoescape=True,
     trim_blocks=True,
     lstrip_blocks=True,
@@ -131,7 +131,7 @@ class View(object):
 
         barbaz = self._get_trait_instance()
         output = '\n'.join([str(barbaz), str(barbaz.bar), str(barbaz.baz)])
-        return jinja_env.get_template('test1.jinja2').render(form=form, output=output)
+        return jinja_env.get_template('test1.html').render(form=form, output=output)
 
 
 def main():

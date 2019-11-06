@@ -1,0 +1,22 @@
+{% macro draw_brain_component(canvas_id, legend_labels) -%}
+    <div id="brainComponentContainer" class="tvb-snapshot-image">
+        <canvas id="{{ canvas_id }}" class="brainComponentCanvas" tabindex='100'></canvas>
+
+        <div id="brainLegendDiv">
+            {% if legend_labels %}
+                <table class="brainLegendContent">
+                    {% for label in legend_labels %}
+                        <tr>
+                            <td><label>{{ label }}</label></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+        </div>
+
+        <aside class="menu-node" id="contextMenuDiv" style="display:none">
+            <mark id='nodeNameId'></mark>
+        </aside>
+
+    </div>
+{%- endmacro %}

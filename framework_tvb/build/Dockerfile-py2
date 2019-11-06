@@ -18,7 +18,7 @@ RUN conda install -y --name tvb-run -c conda-forge tvb-data
 
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install matplotlib==2.1.0 h5py>=2.10
-RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib genshi nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
+RUN /opt/conda/envs/tvb-run/bin/pip install formencode cfflib Jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing
 
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-library.git;\

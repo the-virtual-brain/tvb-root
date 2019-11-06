@@ -1,0 +1,14 @@
+{% macro draw_array_component(inputRow, disabled) -%}
+ 	<!--! Draw Input field for an array (Upload component or text-field with function/comma separated values). -->
+    {% with %}
+        {% set add_attrs = ("disabled='disabled'") | safe if disabled else '' %}
+        {% set value = inputRow.default if 'default' in inputRow and (inputRow.default | string) != 'None' else '' %}
+        <input type="text" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}" value="{{ value }}" {{ add_attrs }}/>
+    {% endwith %}
+
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {% import 'flow/type2component/number2component.html' as n2c %}
+    {{ gatf.add_checkbox_control(inputRow) }}
+    {{ n2c.drawRangeComponent(inputRow, parentDivId) }}
+{%- endmacro %}
+     

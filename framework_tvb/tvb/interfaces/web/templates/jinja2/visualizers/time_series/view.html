@@ -1,0 +1,38 @@
+<div>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?$currentVersionJS"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series/scripts/timeseriesSVG.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?{{ currentVersionJS }}"></script>
+
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_eeg.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?{{ currentVersionJS }}"/>
+
+	<section class="view-column timeseries-display col-1">
+        {% if not preview %}
+		    <ul class="toolbar-inline">
+                {% if preview == false %}
+			        <li class="channel-selector">
+                        {% import 'visualizers/commons/timeseries_selector_button.html' as tsb  %}
+                        {{ tsb.drawTimeseriesSelectorButton(ts_title,labelsStateVar, labelsModes, groupedLabels, initialSelection) }}
+			        </li>
+                {% endif %}
+		    </ul>
+        {% endif %}
+
+		<!--! Actual visualizer -->
+	    <div id="time-series-viewer"></div>
+
+	    <script type="text/javascript">
+			function launchViewer(width, height) {
+	        	// Global method automatically called when portlet is initialized.
+	        	// E.g. it might arrange the drawing to fill the page.
+	        }
+
+	        $(document).ready(function () {
+	            initTimeseriesViewer("{{ baseURL }}", "{{ preview }}", "{{ shape }}", "{{ t0 }}", "{{ dt }}", {{ labels_json | safe }}, "{{ measurePointsSelectionGID }}")
+	        });
+	    </script>
+    </section>
+</div>

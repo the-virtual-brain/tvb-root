@@ -1,0 +1,66 @@
+{% macro draw2DConnectivityMatrix(hemisphereId, nr, pointsLabels, startHemisphereIdx, endHemisphereIdx, startHemisphereIdy, endHemisphereIdy, prefix) -%}
+  <div id="{{ hemisphereId }}">
+    <table>
+      <thead>
+        <tr>
+            <!--! Quadrant selector -->
+            <th>
+                <nav class="inline-menu quadrant-selector">
+                    <button class="action action-menu">Q {{ nr+1 }}</button>
+
+                    <div class="extension">
+                        <div class="dropdown-pane">
+                            <mark>Select a quadrant to work with:</mark>
+                            <ul>
+
+                                {% for i in range(4) %}
+                                    <li class="{{ 'active' if nr==i else '' }}"
+                                        style="margin: 0 1px 5px 0;"
+                                        tabindex="7"
+                                        onclick="selectHemisphere({{ i }})" onkeypress="fireOnClick(this)">
+                                        <a href="#" title="Select this quadrant" onclick="selectHemisphere({{ i }})">Quadrant {{ i+1 }}</a>
+                                    </li>
+                                {% endfor %}
+
+                            </ul>
+                        </div>
+                    </div>
+
+                </nav>
+            </th>
+
+            <!--! Horizontal column headers -->
+            {% for i in (startHemisphereIdx | xrange(endHemisphereIdx)) %}
+                <th id="upper_change_{{ i }}_{{ hemisphereId }}" onclick="changeEntireColumn(this)"
+                    scope="col" tabindex="8" onkeypress="fireOnClick(this)" title='{{ pointsLabels[i] }}'>
+                    <a href="#" tabindex='-1' title='{{ pointsLabels[i] }}' class="action-select select-col">{{ pointsLabels[i] }}</a>
+                </th>
+            {% endfor %}
+
+        </tr>
+
+      </thead>
+
+      <!--! Table rows -->
+      <tbody>
+        {% for i in (startHemisphereIdy | xrange(endHemisphereIdy)) %}
+            <tr>
+
+                <!--! Header cell -->
+                <td id="left_change_{{ i }}_{{ hemisphereId }}" onclick="changeEntireRow(this, {{ startHemisphereIdx }}, {{ endHemisphereIdx }})"
+                    scope="row" class="identifier" tabindex="9" onkeypress="fireOnClick(this)">
+                    <a href="#" title="{{ '%02d' % i }}" tabindex='-1' class="action-select select-row">{{ pointsLabels[i] }}</a>
+                </td>
+
+                <!--! Actual node cells -->
+                {% for j in (startHemisphereIdx | xrange(endHemisphereIdx)) %}
+                    <td id='td_{{ prefix }}_{{ i }}_{{ j }}' tabindex="9"></td>
+                {% endfor %}
+
+            </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+{%- endmacro %}

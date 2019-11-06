@@ -1,0 +1,43 @@
+<!-- ================================================ --> 
+<!-- Project second level navigation     --> 
+<!-- ================================================ -->
+{% if selectedProject %}
+	<ul>
+
+		<li id="nav-project-operations" class="{{ 'active' if subsection_name=='operations' else '' }}">
+			<a href="/project/viewoperations/{{ selectedProject.id }}" title="View Operations in current Project">
+				<p>Operations</p>
+				<p>Work with operations launched for a project: view all, filter, cancel, relaunch</p>
+			</a>
+		</li>
+
+		<li id="nav-project-data" class="{{ 'active' if subsection_name=='data' else '' }}">
+			<a href="/project/editstructure/{{ selectedProject.id }}" title="List of data-types in current project">
+				<p>Data Structure</p>
+				<p>Inspect the existing data for a project. Launch simple analyses and viewers.</p>
+			</a>
+		</li>
+		
+		<li id="nav-project-properties" class="{{ 'active' if subsection_name=='properties' else '' }}">
+			<a href="/project/editone/{{ selectedProject.id }}" title="Show Current project properties">
+				<p>Basic Properties</p>
+				<p>Edit a project's properties. Remove, export or share it with other users.</p>
+			</a>
+		</li>
+
+		<li id="nav-project-list" class="{{ 'active' if subsection_name=='list' else '' }}">
+			<a href="/project/viewall" title="Switch to this sub-section to change current selected project">
+				<p>List of all projects</p>
+				<p>Switch to another project, import a project structure.</p>
+			</a>
+		</li>
+
+		<li id="nav-project-figures" class="{{ 'active' if subsection_name=='figures' else '' }}">
+			<a href="/project/figure/displayresultfigures/" title="View Figures">
+				<p>Image archive</p>
+				<p>Manage your saved images from various visualizers.</p>
+			</a>
+		</li>
+
+	</ul>
+{% endif %}

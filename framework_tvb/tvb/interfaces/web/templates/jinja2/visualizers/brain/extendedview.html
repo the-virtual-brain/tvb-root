@@ -1,0 +1,32 @@
+<div>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#main").addClass("colscheme-2-even brain-extended");
+            $("#eegSectionId").removeClass("view-column col-1");
+        });
+    </script>
+
+    <section class="view-column">{% include 'visualizers/brain/' ~ brainViewerTemplate  %}</section>
+
+    <section class="view-column">{% include 'visualizers/eeg/view.html' %}</section>
+
+    <!--!
+        These functions depend on globals created by the brain and the eeg viewer
+        They do some synchronisation between the viewers.
+    -->
+    {% if isSEEG is not defined %}
+        <script type="text/javascript">
+            $(document).ready(function(){
+                EX_initializeChannels();
+            });
+        </script>
+    {% else %}
+        <script type="text/javascript">
+            $(document).ready(function(){
+                EX_initializeChannelsForSensorsInternal();
+            });
+        </script>
+   {% endif %}
+
+</div>

@@ -1,0 +1,69 @@
+<div class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/topographic/topographic.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="https://d3js.org/d3-contour.v1.min.js"></script>
+    <script type="text/javascript" src="https://d3js.org/d3-geo.v1.min.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+
+    {% macro drawTopography(index,length) -%}
+
+        <div class="topographic_{{ length }}">
+            <canvas class="topographic_canvas" id="canvas-{{ index+1 }}"></canvas>
+            <svg class="topographic_svg" id="svg-container-{{ index+1 }}"></svg>
+            <label class="topographic_title">{{ titles[index] }}</label>
+            <label class="topographic_nose">Nose</label>
+            <div class="topographic_text_allign">
+                <label class="topographic_left_ear">Left Ear</label>
+                <label class="topographic_right_ear">Right Ear</label>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                if ("{{ index }}==0") {
+                    $("#main").addClass("colscheme-1");
+                    window.onresize = TOPO_DrawContours;
+
+                    function launchViewer(width, height) {
+                    }
+                }
+                TOPO_Init('{{ matrix_datas[index] }}', '{{ matrix_shape }}', {{ vmin }}, {{ vmax }}, {{ index }});
+            });
+        </script>
+
+    {%- endmacro %}
+
+    <div class="topographic_space">
+        <div class="matrix-legend" id="colorWeightsLegend"></div>
+
+        <div class="matrix-legend">
+            <table id="table-colorWeightsLegend" class="table-legend-labels">
+                {% for label in range(7) %}
+                    {% if label != 0 %}
+                        <tr height="{{ ((100/8) | string) ~ '%' }}" style='vertical-align: bottom;'>
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% else %}
+                        <tr height="20px">
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+
+        {{ drawTopography(0,titles | length) }}
+
+        {% if (titles | length) > 1 %}
+            {{ drawTopography(1,titles | length) }}
+        {% endif %}
+        {% if (titles | length) > 2 %}
+            {{ drawTopography(2,titles | length) }}
+        {% endif %}
+
+    </div>
+
+</div>

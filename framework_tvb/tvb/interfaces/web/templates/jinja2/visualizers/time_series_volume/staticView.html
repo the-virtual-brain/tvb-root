@@ -1,0 +1,45 @@
+<div>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeView.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/volumeRPC.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/time_series_volume/scripts/timeseriesVolume.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_timeseries.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?{{ currentVersionJS }}"/>
+
+    {% import 'visualizers/time_series_volume/drawSliderForAxis.html' as dsfa %}
+
+    <section class="view-column">
+
+        <ul class="toolbar-inline toolbar-with-sliders">
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('X') }} </li>
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('Y') }} </li>
+            <li class="toolbar-li-with-slider">  {{ dsfa.drawSliderForAxis('Z') }} </li>
+            <li class="toolbar-small-li"> <label>(in {{ voxelUnit }})</label></li>
+        </ul>
+
+        <div class="canvas-parent"><canvas id="canvasVolumes"></canvas></div>
+
+        <div>
+            <p> Selected voxel is in region <b id="voxelRegionLabel"></b></p>
+            {% if measureSlice is defined %}
+                <p> Measure shape is <b>{{ measureShape }}</b></p>
+                <p> Measure sliced by <b>{{ measureSlice }}</b> </p>
+                <p> You may change the slice in the visualizer menu</p>
+            {% endif %}
+        </div>
+
+    </section>
+
+    <script type="text/javascript">
+        $("#main").addClass("colscheme-2-even brain-extended");
+        $(document).ready(function () {
+            TSV_startVolumeStaticVisualizer(
+                    '{{ urlVolumeData | safe }}', '{{ urlVoxelRegion }}', {{ minValue }}, {{ maxValue }},
+                    '{{ volumeShape }}', '{{ volumeOrigin }}', '{{ voxelSize }}',
+                    '{{ urlBackgroundVolumeData if urlBackgroundVolumeData else '' }}', {{ minBackgroundValue }}, {{ maxBackgroundValue }});
+        })
+    </script>
+
+</div>

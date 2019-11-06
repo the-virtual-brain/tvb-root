@@ -32,7 +32,6 @@
 """
 import json
 import os
-import sys
 from threading import Lock
 from abc import ABCMeta
 from six import add_metaclass
@@ -96,7 +95,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     """
     Abstract class, for marking Adapters used for UI display only.
     """
-    KEY_CONTENT_MODULE = "keyContentModule"
     KEY_CONTENT = "mainContent"
     KEY_IS_ADAPTER = "isAdapter"
     PARAM_FIGURE_SIZE = 'figure_size'
@@ -137,32 +135,19 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     def build_display_result(self, template, parameters, pages=None):
         """
         Helper method for building the result of the ABCDisplayer.
-        :param template : path towards the HTML template to display. It can be absolute path, or relative
+        :param template : relative path towards the HTML template to display
         :param parameters : dictionary with parameters for "template"
         :param pages : dictionary of pages to be used with <xi:include>
         """
         module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
-        relative_path = os.path.dirname(module_ref.__file__)
+        relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
+        jinja_separator = '/'
 
-        # We still need the relative file path into desktop client
-        if os.path.isabs(template):
-            parameters[self.KEY_CONTENT_MODULE] = ""
-        else:
-            content_module = self.VISUALIZERS_ROOT + "."
-            content_module = content_module + template.replace("/", ".")
-            parameters[self.KEY_CONTENT_MODULE] = content_module
-
-        if not os.path.isabs(template):
-            template = os.path.join(relative_path, template)
-        if not os.path.isabs(template):
-            template = os.path.join(os.path.dirname(sys.executable), template)
+        template = os.path.join(relative_path, template)
         if pages:
             for key, value in pages.items():
                 if value is not None:
-                    if not os.path.isabs(value):
-                        value = os.path.join(relative_path, value)
-                    if not os.path.isabs(value):
-                        value = os.path.join(os.path.dirname(sys.executable), value)
+                    value = relative_path + jinja_separator + value
                 parameters[key] = value
         parameters[self.KEY_CONTENT] = template
         parameters[self.KEY_IS_ADAPTER] = True

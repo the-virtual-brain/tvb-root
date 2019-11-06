@@ -1,0 +1,24 @@
+<section class="manage-points view-column col-2">
+    <h4><mark>Select color scheme</mark> for movie preview</h4>
+
+    <fieldset>
+        <dl>{% include 'flow/color_scheme.html' %}</dl>
+    </fieldset>
+
+	<h4><mark>Manage</mark> Focal points</h4>
+	
+	<ul class="focal-points"></ul>
+	
+	<ul class="toolbar-inline">
+		<li><a href="#" title="Delete all vertices…" class="action action-delete" onclick="STIM_deleteAllFocalPoints()">Delete all</a></li>
+	</ul>
+	
+    <script type="text/javascript">
+        $(document).ready(function() {
+	        $('#spatial_placeholder_div_id')
+                    .unbind('click.displayIndexForThePickedVertex')
+                    .bind('click.displayIndexForThePickedVertex', BS_displayIndexForThePickedVertex);
+            ColSch_initColorSchemeGUI(0, 0);
+        });
+    </script>
+</section>

@@ -1,0 +1,27 @@
+<div id="s-brain" class="brain">
+    {% include 'visualizers/commons/gl_view_header.html' %}
+
+    <script type="text/javascript" src="/static_view/commons/scripts/internalBrain.js?{{ currentVersionJS }}"></script>
+
+    {% include 'visualizers/commons/fragment_shader.html' %}
+
+    {% with %}
+        {% set isOneToOneMapping = false %}
+        {% include 'visualizers/commons/vertex_shader.html' %}
+    {% endwith %}
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            VSI_StartInternalSensorViewer('{{ urlMeasurePoints | safe }}', '{{ noOfMeasurePoints }}',
+                    '{{ urlMeasurePointsLabels }}', '{{ shelfObject | safe if shelfObject else null }}',
+                    '{{ minMeasure }}', '{{ maxMeasure }}', '{{ urlMeasure }}');
+        });
+    </script>
+
+    {% with %}
+        {% set show_navigator = false %}
+        {% set extended_view = false %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+
+</div>

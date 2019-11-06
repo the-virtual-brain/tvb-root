@@ -140,7 +140,7 @@ TVB uses numpy extensively.
 Numpy is quite different from other python libraries.
 Learn a bit about it before trying to understand TVB code.
 
-The TVB framework uses sqlalchemy for ORM mapping, cherrypy as a web framework and server and genshi for html templating.
+The TVB framework uses sqlalchemy for ORM mapping, cherrypy as a web framework and server and jinja2 for html templating.
 Numeric arrays are stored in the hdf5 format.
 Client side we use jquery, d3 and webgl.
 

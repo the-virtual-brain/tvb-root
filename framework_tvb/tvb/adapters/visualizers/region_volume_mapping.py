@@ -294,7 +294,7 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
 
     def launch(self, measure, region_mapping_volume=None, data_slice='', background=None):
         params = self.compute_params(region_mapping_volume, measure, data_slice, background=background)
-        params['title'] = "Mapped array on region volume Visualizer",
+        params['title'] = "Mapped array on region volume Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
 

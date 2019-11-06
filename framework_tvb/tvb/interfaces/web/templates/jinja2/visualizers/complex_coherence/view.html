@@ -1,0 +1,57 @@
+<div id="complex_coherence" class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/complex_coherence/complex_coherence.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/drawCurve.js?{{ currentVersionJS }}"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+
+    <div id="svg-viewer"></div>
+
+    <ul class="toolbar-inline">
+
+        <li>
+            <label for="xScale_select">X Scale</label>
+            <select id="xScale_select" onchange="Plot_changeXScale(this.value)">
+                {% for scale in available_xScale %}
+                    {% if scale == xscale %}
+                        <option value="{{ scale }}" selected="selected">{{ scale }}</option>
+                    {% else %}
+                        <option value="{{ scale }}">{{ scale }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="spectrum_select">Spectrum</label>
+            <select id="spectrum_select" onchange="Complex_getSpectrum(this.value)">
+                {% for spec in spectrum_list %}
+                    {% if spec == spectrum %}
+                        <option value="{{ spec }}" selected="selected">{{ spec }}</option>
+                    {% else %}
+                        <option value="{{ spec }}">{{ spec }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+    </ul>
+
+    <div class="curve_draw_area"><svg class="draw-svg-container" id="svg-container"></svg></div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            Complex_complex_coherence_init('{{ plotName }}', '{{ xAxisName }}', '{{ yAxisName }}', {{ xmin }}, {{ xmax }}, '{{ url_base }}', '{{ available_spectrum | safe }}', "svg-container");
+            Complex_getSpectrum('{{ spectrum }}');
+            window.onresize = Plot_drawGraph;
+        });
+
+        // For the burst Preview part
+        function launchViewer(width, height) {
+        }
+    </script>
+
+</div>

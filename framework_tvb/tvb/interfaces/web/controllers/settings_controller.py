@@ -65,7 +65,7 @@ class SettingsController(UserController):
     @check_admin
     def settings(self, save_settings=False, **data):
         """Main settings page submit and get"""
-        template_specification = dict(mainContent="../settings/system_settings", title="System Settings")
+        template_specification = dict(mainContent="settings/system_settings", title="System Settings")
         if save_settings:
             try:
                 form = SettingsForm()

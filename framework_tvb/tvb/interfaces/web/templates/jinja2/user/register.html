@@ -1,0 +1,20 @@
+<!-- ============================= -->
+<!--     Main Content              -->
+<!-- ============================= -->
+<form method="post"> 
+  <div id="main">
+    <aside class="header-component toolbar can-extend auto-extends">
+        <h3>User Register</h3>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <ul>
+                    <li><button tabindex='50' type="submit" class="action action-confirm">Register</button></li>
+                    <li class="action-dismiss"><button tabindex='50' type="submit" value="Cancel" name="cancel" class="action action-cancel">Cancel</button></li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+	{% import "user/new_user.html" as nu %}
+	{{ nu.create_user_registration(data, errors, 'Registration Form', true) }}
+  </div>
+</form>

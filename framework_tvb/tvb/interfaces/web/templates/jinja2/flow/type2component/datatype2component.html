@@ -1,0 +1,62 @@
+{% macro reduceArrayDimension(parentFieldName, parameters_prefix, parameters) -%}
+    <!--!    Function to generate the UI component for a datatype array reduce transformation. -->
+    <p class="field-adapters" id="dimensionsDiv_{{ parentFieldName }}"></p>
+    {% if ('required_dimension' in parameters and 'value' in parameters.required_dimension) %}
+        {% set required_dimension = parameters.required_dimension.value %}
+    {% else %}
+        {% set required_dimension = 1 %}
+    {% endif %}
+
+    {% if ('expected_shape' in parameters and 'value' in parameters.expected_shape) %}
+        {% set expected_shape = parameters.expected_shape.value %}
+    {% else %}
+        {% set expected_shape = '' %}
+    {% endif %}
+
+    {% if ('expected_shape' in parameters and 'operations' in parameters.expected_shape) %}
+        {% set operations = parameters.expected_shape.operations %}
+    {% else %}
+        {% set operations = '' %}
+    {% endif %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("select[name='{{ parentFieldName }}']").change(function () {
+                updateDimensionsSelect('{{ parentFieldName }}', '{{ parameters_prefix }}', '{{ required_dimension }}', "{{ expected_shape }}", "{{ operations }}", "true");
+            });
+            updateDimensionsSelect('{{ parentFieldName }}', '{{ parameters_prefix }}', '{{ required_dimension }}', "{{ expected_shape }}", "{{ operations }}", "false");
+        });
+    </script>
+{%- endmacro %}
+
+{% macro draw_datatype_full(inputRow, disabled, parentDivId, treeSessionKey) -%}
+    <!--!     Draw full control for DataType select (filters and reduce dimention controls included).     -->
+    {% include 'flow/type2component/datatype2select_simple.html' %}
+    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
+    {{ gatf.add_checkbox_control(inputRow) }}
+
+    {% if 'ui_method' in inputRow and inputRow.ui_method == 'reduceDimension' and 'parameters_prefix' in inputRow and 'parameters' in inputRow %}
+        {{ reduceArrayDimension(inputRow.name, inputRow.parameters_prefix, inputRow.parameters) }}
+    {% endif %}
+
+    {% if not inputRow.get('dynamic', false) %}
+        <p class="field-adapters" id="{{ parentDivId }}{{ inputRow.name }}data_select">
+            <input type="button" tabindex='1' value="Add Filter"
+                   onclick="addFilter('{{ parentDivId }}' + '{{ inputRow.name }}' + 'data_select', {{ inputRow.filterable  if 'filterable' in inputRow else 'false' }})"/>
+            <input type="button" tabindex='1' value="Apply Filters"
+                   onclick="refreshData('{{ parentDivId }}', '{{ inputRow.name }}' + 'data_select', '{{ inputRow.name }}', '{{ treeSessionKey }}')"/>
+        </p>
+    {% endif %}
+
+    {% for option in inputRow.options %}
+        {% set isEnabled =('default' in inputRow and ((option.value | string)==(inputRow.default | string))) or ('default' not in inputRow and (option.value | string)==(inputRow.options[0].value | string)) %}
+        {% set add_attrs = ("disabled='disabled'") | safe if (not isEnabled or disabled) else '' %}
+        {% set add_attrs2 = 'style="display:none"' | safe if (not isEnabled or disabled) else 'style="display:block"' | safe %}
+
+        <div id="data_{{ inputRow.name }}{{ option.value }}" {{ add_attrs }} {{ add_attrs2 }}>
+            {% if 'attributes' in option and option.attributes %}
+                {{ gatf.generateDisplay(option.attributes, not isEnabled or disabled, 'data_' ~ inputRow.name ~ (option.value | string), treeSessionKey) }}
+            {% endif %}
+        </div>
+    {% endfor %}
+{%- endmacro %}

@@ -1,0 +1,21 @@
+<div id="section-pse" class="view-column">
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_burst.css?{{ currentVersionJS }}"/>
+
+    <!--! We need projectTree.js for launching algorithm methods, from overlay. -->
+    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pse_isocline/pse_isocline.js?{{ currentVersionJS }}"></script>
+
+    {% include 'visualizers/pse_isocline/function_pse.html' %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            redrawCanvas("{{ color_metric }}");
+            drawAxis();
+        });
+    </script>
+
+</div>

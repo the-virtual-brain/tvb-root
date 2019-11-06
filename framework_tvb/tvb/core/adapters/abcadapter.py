@@ -59,7 +59,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.neotraits.forms import Form, DataTypeSelectField
-from tvb.tests.framework.interfaces.neoforms_test import jinja_env
+from tvb.interfaces.web.controllers.decorators import using_template
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
@@ -166,9 +166,9 @@ class ABCAdapterForm(Form):
             attrs_dict.update({field_name: field_data})
         return attrs_dict
 
+    @using_template('form_fields/form')
     def __str__(self):
-        return jinja_env.get_template("form.jinja2").render(form=self)
-
+        return {'form': self}
 
 
 @add_metaclass(ABCMeta)

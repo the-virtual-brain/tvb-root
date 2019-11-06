@@ -50,14 +50,14 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField, jinja_env
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, is_copy=False):
+    def __init__(self, prefix='', project_id=None):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                                 required=True, label="Connectivity",
@@ -66,11 +66,10 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling_choices = get_ui_name_to_coupling_dict()
         self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
                                           label="Coupling", doc=Simulator.coupling.doc)
-        self.coupling.template = 'select_field.jinja2'
+        self.coupling.template = 'form_fields/select_field.html'
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
-        self.is_copy = is_copy
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -95,11 +94,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         return Simulator()
 
     def __str__(self):
-        # TODO: get rid of this
-        return jinja_env.get_template('wizzard_form.jinja2').render(form=self, action="/burst/set_connectivity",
-                                                                    is_first_fragment=True, is_last_fragment=False,
-                                                                    is_copy=self.is_copy, is_load=False)
-
+        pass
 
 class SimulatorAdapter(ABCAsynchronous):
     """

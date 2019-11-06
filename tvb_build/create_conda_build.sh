@@ -8,7 +8,7 @@ source activate $envname
 
 conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils
 
-pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allensdk BeautifulSoup4
+pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4
 
 # The next ones are for Mac build env:
 # pip install py2app docutils apscheduler pyobjc

@@ -1,0 +1,27 @@
+<div id="s-brain" class="{{ 'brain' if not extended_view else '' }}">
+
+    {% include 'visualizers/commons/gl_view_header.html' %}
+
+    <script type="text/javascript" src="/static_view/commons/scripts/internalBrain.js?{{ currentVersionJS }}"></script>
+
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/vertex_shader.html' %}
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            VSI_StartInternalActivityViewer('{{ base_activity_url }}', {{ pageSize }}, '{{ time | safe }}', '{{ urlVertices if urlVertices else '' }}',
+                    '{{urlLines | safe }}', '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
+                    '{{ urlRegionMap | safe }}', '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}',
+                     {{ 'true' if extended_view else 'false' }}, {{ ("'" ~ shelfObject ~ "'" if shelfObject else 'null') | safe }},
+                    '{{ urlMeasurePointsLabels | safe }}', '{{ urlRegionBoundaries }}');
+        });
+    </script>
+
+    {% include 'visualizers/commons/activity_toolbar.html' %}
+
+    {% with %}
+        {% set show_navigator = not extended_view %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+
+</div>

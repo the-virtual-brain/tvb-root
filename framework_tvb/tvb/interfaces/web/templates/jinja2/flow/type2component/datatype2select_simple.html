@@ -1,0 +1,33 @@
+{% macro draw_datatype_select(inputRow, disabled, parentDivId, treeSessionKey) -%}
+    {% if 'filters_ui' in inputRow %}
+        {% set linkedFilter = 'filterLinked(' + inputRow.filters_ui + ', \'\'+this.value, \'' | safe + treeSessionKey + '\')' | safe %}
+    {% else %}
+        {% set linkedFilter = '' %}
+    {% endif %}
+
+    {% set add_attrs = ("disabled='disabled'") | safe if disabled else '' %}
+    {% set options_title = inputRow.warning if 'warning' in inputRow else 'Fully Loaded!' %}
+
+    <!--! 	Redraw A DataType select when drawing full interface or after filtering from UI (AJAX call).	 -->
+    <select tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}" class="dataset-selector" {{ add_attrs }}
+            onchange="updateDivContent('data_{{ inputRow.name }}', this, '{{ parentDivId }}'); updateDatatypeDiv(this); {{ linkedFilter }}"
+            title="{{ options_title }}">
+
+        {% if ('required' not in inputRow) or (not inputRow.required) %}
+            <option value="">None</option>
+        {% endif %}
+
+        {% for option in inputRow.options %}
+            {% if ('default' in inputRow) and ((option.value | string) == (inputRow.default | string)) %}
+                {% set add_attrs = ("selected='selected'") | safe %}
+            {% else %}
+                {% set add_attrs = '' %}
+            {% endif %}
+
+            <option value="{{ option.value }}" {{ add_attrs }} title="{{ options_title }}"> {{ option.name }} </option>
+        {% endfor %}
+    </select>
+{%- endmacro %}
+
+{{ draw_datatype_select(inputRow, disabled, parentDivId, treeSessionKey) }}
+

@@ -1,0 +1,54 @@
+<div>
+	{% macro drawConnectivityPlotViewer() -%}
+		<div id="monitor-plot-id" class="monitor-container">
+
+			<script id="shader-plot-fs" type="x-shader/x-fragment">
+				{% include 'visualizers/commons/shading/fragment_connectivity_plot.glsl' %}
+			</script>
+			
+			<script id="shader-plot-vs" type="x-shader/x-vertex">
+				{% include 'visualizers/commons/shading/vertex_connectivity_plot.glsl' %}
+			</script>
+
+			{% if not isSingleMode %}
+			<!-- Toolbar -->
+				<ul class="toolbar-inline monitor-control">
+					<li><span>Conduction speed:</span></li>
+                	<li><input class="space-time-input" type="text" id="conductionSpeedValue" onchange="updateSpaceTimeHeader()"/></li>
+
+                	<li><span>From[ms]:</span></li>
+                	<li><input class="space-time-input" type="text" id="fromDelaysValue" onchange="updateSpaceTimeHeader()"/></li>
+
+                	<li><span>To[ms]:</span></li>
+                	<li><input class="space-time-input" type="text" id="toDelaysValue" onchange="updateSpaceTimeHeader()"/></li>
+
+					<li><span>Selection[ms]:</span><span id="selectedMatrixValue"></span></li>
+				</ul>
+			{% endif %}
+		
+			<div class="specialviewer" id="canvasDiv">
+		        <canvas id="GLcanvas_SPACETIME"  tabindex='1'></canvas>
+		        <nav class="inline-menu monitor-legend">
+					<button class="action action-menu">Legend</button>
+					<div class="extension">
+						<div class="dropdown-pane">
+							<mark>Plot details</mark>
+							<ul>
+								<li> Conduction speed           : <span id="leg_conduction_speed"></span> mm/ms</li>
+								<li> Min(non-zero) delay        : <span id="leg_min_delay"></span> ms</li>
+								<li> Max delay                  : <span id="leg_max_delay"></span> ms</li>
+								<li> Min(non-zero) tract length : <span id="leg_min_tract"></span> mm</li>
+								<li> Max tract length           : <span id="leg_max_tract"></span> mm</li>
+								<li> Min(non-zero) weight       : <span id="leg_min_weights"></span> </li>
+								<li> Max weight                 : <span id="leg_max_weights"></span> </li>
+							</ul>
+						</div>
+					</div>
+				</nav>
+			</div>
+
+		</div>
+
+	{%- endmacro %}
+
+</div>

@@ -1,0 +1,28 @@
+<section class="configure-stimulus-shape view-column col-1">
+	<h4><mark>Shape</mark> Stimulus</h4>
+	
+    <div id="equationDivId"></div>
+
+	<form id="temporalEquationAxisParams">
+        {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
+    	{{ gatf.generateDisplay(temporalPlotInputList, false, "") }}
+    </form>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+        	$("select[name='existentEntitiesSelect']").change(function () {
+                BS_loadEntity();
+            });
+            BS_plotEquations('equationDivId', '{{ equationViewerUrl }}', 'form_spatial_stimulus_equations', {{ fieldsPrefixes | safe }}, 'temporalEquationAxisParams');
+        });
+    </script>
+    
+    <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
+    	<input type="hidden" id="entity-gid" name="region_stimulus_gid" value="none"/>
+    	<input type="hidden" name="from_step" value="1"/>
+    </form>
+
+    <form id="reset-to-default" action="{{ resetToDefaultUrl }}" method="POST">
+    	<input type="hidden" name="from_step" value="1"/>
+    </form>
+</section>

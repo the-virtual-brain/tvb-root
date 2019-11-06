@@ -1,0 +1,53 @@
+<div class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/matrix_view.js?{{ currentVersionJS }}"></script>
+
+    <link rel="stylesheet" href="/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
+
+    <div id="svg-viewer"></div>
+
+    {% if show_slice_info %}
+
+        <div class="slice-info">
+            <p>Matrix shape <span class="npy-slice">{{ original_matrix_shape }}</span></p>
+
+            {% if is_default_slice %}
+                {% if not given_slice %}
+                    You have not entered a slice.
+                {% else %}
+                    The given slice <span class="npy-slice">[{{ given_slice }}]</span> has not produced a 2d view of the data.
+                {% endif %}
+
+                The above view was produced by the default slice <span class="npy-slice">{{ slice_used }}</span>.
+            {% else %}
+                <span>
+                    Current slice <span class="npy-slice">{{ slice_used }}</span>.
+                </span>
+            {% endif %}
+
+        </div>
+    {% endif %}
+
+    <script type="text/javascript">
+
+        function initMatrixViewer(width, height) {
+            $("#main").addClass("colscheme-1");
+            matrix_view_init_svg('{{ matrix_data }}', '{{ matrix_shape }}', "{{ viewer_title }}", '{{ matrix_labels | safe }}',
+                ["Place mouse over matrix elements to inspect their values",
+                    "Drag in colorbar to select and show entries in a range of values"], width, height);
+        }
+
+        // For the burst Preview part
+        function launchViewer(width, height) {
+            initMatrixViewer(width, height);
+        }
+        $(document).ready(function () {
+            if (! {{ 'true' if isPreview is defined else 'false' }}) {
+                initMatrixViewer();
+            }
+        });
+    </script>
+
+</div>

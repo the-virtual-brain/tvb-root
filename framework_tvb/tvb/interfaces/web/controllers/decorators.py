@@ -34,18 +34,30 @@ Decorators for Cherrypy exposed methods are defined here.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import numpy
-import os
 import json
 import cherrypy
 import cProfile
 from datetime import datetime
 from functools import wraps
-from genshi.template import TemplateLoader
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from tvb.basic.profile import TvbProfile
+import tvb.core.neotraits.forms
 from tvb.basic.logger.builder import get_logger
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
+
+env = Environment(loader=FileSystemLoader(TvbProfile.current.web.TEMPLATE_ROOT),
+                  autoescape=select_autoescape(
+                      enabled_extensions=('html', 'xml', 'js', 'jinja2'),
+                      default_for_string=True),
+                  lstrip_blocks=True,
+                  trim_blocks=True)
+env.filters['isinstance'] = isinstance
+env.filters['type'] = type
+env.filters['xrange'] = range
+
+# Inject Jinja environment in classes using it
+tvb.core.neotraits.forms.jinja_env = env
 
 # some of these decorators could be cherrypy tools
 
@@ -56,40 +68,10 @@ def using_template(template_name):
     """
     Decorator that renders a template
     """
-    template_path = os.path.join(TvbProfile.current.web.TEMPLATE_ROOT, template_name + '.html')
+    template_path = template_name + '.html'
 
     def dec(func):
 
-        @wraps(func)
-        def deco(*a, **b):
-            template_dict = func(*a, **b)
-            if not TvbProfile.current.web.RENDER_HTML:
-                return template_dict
-
-            ### Generate HTML given the path to the template and the data dictionary.
-            loader = TemplateLoader()
-            template = loader.load(template_path)
-            stream = template.generate(**template_dict)
-            return stream.render('xhtml')
-
-        return deco
-    return dec
-
-# TODO: this decorator is temporary, until PR#47 is merged
-env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(TvbProfile.current.web.TEMPLATE_ROOT), 'jinja')),
-                  autoescape=select_autoescape(
-                  enabled_extensions=('html', 'xml', 'js', 'jinja2'),
-                  default_for_string=True),
-                  lstrip_blocks=True,
-                  trim_blocks=True)
-
-def using_jinja_template(template_name):
-    """
-    Decorator that renders a template
-    """
-    template_path = template_name + '.jinja2'
-
-    def dec(func):
         @wraps(func)
         def deco(*a, **b):
             template_dict = func(*a, **b)
@@ -100,7 +82,6 @@ def using_jinja_template(template_name):
             return template.render(**template_dict)
 
         return deco
-
     return dec
 
 

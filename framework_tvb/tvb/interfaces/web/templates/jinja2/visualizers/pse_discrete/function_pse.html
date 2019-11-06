@@ -1,0 +1,227 @@
+{% macro generateFramePSE(dataTypeGroupGID, available_metrics) -%}
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/alternateDatastructure.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.symbol.js"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js"></script>
+
+    <!--! Controls for changing metrics -->
+    <ul class="toolbar-inline burst-pse-metrics">
+        <li>
+		    <label for="color_metric_select">Color metric</label>
+		    <select id="color_metric_select">
+			    <option value="none">None</option>
+                {% for metric in available_metrics %}
+                    {% if metric==color_metric %}
+                        <option value="{{ metric }}" selected="selected">{{ metric }}</option>
+                    {% else %}
+                       <option value="{{ metric }}">{{ metric }}</option>
+                    {% endif %}
+                {% endfor %}
+		    </select>
+        </li>
+
+        <li>
+		    <label for="size_metric_select">Size metric</label>
+		    <select id="size_metric_select">
+			    <option value="none">None</option>
+                {% for metric in available_metrics %}
+                    {% if metric==size_metric %}
+                        <option value="{{ metric }}" selected="selected">{{ metric }}</option>
+                    {% else %}
+                        <option value="{{ metric }}">{{ metric }}</option>
+                    {% endif %}
+                {% endfor %}
+		    </select>
+        </li>
+
+        <li>
+		    <a href="#" onclick="PSEDiscreet_BurstDraw('pse_discreet_top_id', '{{ pse_back_page }}')" title="Refresh..." class="action action-refresh">Refresh</a>
+        </li>
+
+        <li>
+            <button id="Explore" class="action action-analyze" disabled="disabled">Explore</button>
+        </li>
+
+        <li>
+            <button id="Filter" class="action action-edit">Filter</button>
+        </li>
+    </ul>
+
+    <!--! Controls for displaying MAX / MIN values -->
+    <ul class="toolbar-inline burst-pse-colors">
+        <li>
+            <label>
+            <mark>Minimum color metric</mark>
+            <span id="minColorLabel"></span> </label>
+        </li>
+
+        <li>
+            <label>
+            <mark>Maximum color metric</mark>
+            <span id="maxColorLabel"></span> </label>
+        </li>
+
+        <li>
+            <label>
+            <mark>Minimum shape metric</mark>
+            <span id="minShapeLabel"></span> </label>
+       </li>
+
+        <li>
+             <label>
+            <mark>Maximum shape metric</mark>
+            <span id="maxShapeLabel"></span> </label>
+        </li>
+
+        <li>
+            <label class="pse-graph-title"><mark>axis Y - axis X</mark>{{ title_y }} - {{ title_x }}</label>
+        </li>
+
+    </ul>
+
+    <div class="tooltip"></div>
+    <!-- should I make the tooltipwindows into a jinja2 template to be called when the buttons are clickedd? -->
+    <div id="FilterDiv" style="display: none;">
+        <ul class="toolbar-inline" id="filterTools">
+            <li>
+
+                <select name="Storing Selections for Filter" id="filterSelect0" class="filterSelectBar">
+                </select>
+                <input type="text" id="overlayNameInput0"/>
+                <button class="action-store action" title="Save your filter inputs" id="saveButton0">Save</button>
+
+                <br/>
+                <label for="threshold">Threshold: </label>
+                <input class="thresholdInput" type="text" id="threshold0" value="0.35"/>
+                <input type="checkbox" name="notButton" id="Not0"/>Not
+
+                <form>
+                    <input type="radio" name="thresholdType" id="Size0" checked="checked"/>Size
+                    <input type="radio" name="thresholdType" id="Color0"/>Color <br/>
+                </form>
+
+                <button class="action action-plus" id="addFilterOps">Add Options</button>
+                <button class="action action-confirm" id="filterGo">Start Filter</button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tooltip"></div>
+    <div id="exploreDiv" style="display: none;">
+        <ul class="toolbar-inline" id="exploreTools">
+            <fieldset>
+
+                <dl>
+                    <dt>
+                        <label>X range</label>
+                    </dt>
+                    <dd>
+                        <input type="number" name="lowerBoundX" id="lowX"/>
+                        <!-- will need to put in some way to tie the increase in the range to the stepvalue selection -->
+                        <input type="number" name="upperBoundX" id="upperX"/>
+                    </dd>
+                </dl>
+
+                <dl>
+                    <dt>
+                        <label>X Step Slider</label>
+                    </dt>
+                    <dd>
+                        <input type="number" name="xStepInput" value=".5"/>
+                        <div class="sliderStepDiv">
+                            <div id="XStepSlider"
+                                 title="Slider to adjust the step increment of the next exploration"></div>
+                        </div>
+                    </dd>
+                </dl>
+
+                <dl>
+                    <dt>
+                        <label>Y range</label>
+                    </dt>
+                    <dd>
+                        <input type="number" name="lowerBoundY" id="lowY"/>
+                        <input type="number" name="upperBoundY" id="upperY"/>
+                    </dd>
+                </dl>
+
+                <dl>
+                    <dt>
+                        <label>Y Step Slider</label>
+                    </dt>
+                    <dd>
+                        <input type="number" name="yStepInput" value=".5"/>
+                        <div class="sliderStepDiv">
+                            <div id="YStepSlider"
+                                 title="Slider to adjust the step increment of the next exploration"></div>
+                        </div>
+                    </dd>
+                </dl>
+
+                <dl>
+                    <button id="exploreGo" class="action action-confirm">Explore Selected Region</button>
+                </dl>
+
+            </fieldset>
+        </ul>
+    </div>
+
+
+    <input type="hidden" id="datatype-group-gid" value="{{ dataTypeGroupGID }}"/>
+
+    <!--! Here PSE bubles will be displayed.	-->
+    <div id="main_div_pse" class="specialviewer" style="position:relative;">
+
+        <div class="matrix-legend" id="colorWeightsLegend"></div>
+        <div class="matrix-legend">
+            <table id="table-colorWeightsLegend" class="table-legend-labels">
+                {% for label in range(7) %}
+                    {% if label != 0 %}
+                        <tr height="{{ ((100/8) | string) ~ '%' }}" style='vertical-align: bottom;'>
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% else %}
+                        <tr height="20px">
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            // the line below this is just to keep certain things in this jinja2 from being run multiple times
+            PSEDiscreet_Initialize('{{ labels_x | safe }}', '{{ labels_y | safe }}', '{{ values_x }}', '{{ values_y }}', '{{ d3_data | safe }}', '{{ pse_back_page }}',
+                {{ has_started_ops }}, '{{ min_color }}', '{{ max_color }}', '{{ min_shape_size }}', '{{ max_shape_size }}');
+
+            window.onresize = function () {
+                PSEDiscreet_RedrawResize();
+            };
+
+            // TODO: not yet complete. Needed for Explore functionality
+            var elemSliderA = $('#XStepSlider');
+            elemSliderA.slider({
+                min: 0, max: 1, step: .0001, value: 0.5,
+                slide: function (event, ui) {
+                    d3.select('input[name="xStepInput"]').property('value', ui.value);
+                }
+            });
+            var elemSliderB = $('#YStepSlider');
+            elemSliderB.slider({
+                min: 0, max: 1, step: .0001, value: .5,
+                slide: function (event, ui) {
+                    d3.select('input[name="yStepInput"]').property('value', ui.value);
+                }
+            });
+            PSEDiscreet_LoadNodesMatrix();
+        });
+    </script>
+
+{%- endmacro %}
+
+

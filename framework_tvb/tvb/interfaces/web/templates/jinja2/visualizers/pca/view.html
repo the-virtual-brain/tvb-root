@@ -1,0 +1,42 @@
+<div>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pca/pca.js?{{ currentVersionJS }}"></script>
+
+    <link rel="stylesheet" href="/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
+
+    <div id="pca-comp-selector">
+        <label for="first-chan-selector"> From component: </label>
+        <select id="first-chan-selector" tabindex="10"></select>
+        <label for="second-chan-selector"> To component: </label>
+        <select id="second-chan-selector" tabindex="11"></select>
+        <input id="refresh-channels" type="button" value="Refresh" tabindex="12"/>
+    </div>
+
+    <div id="pca-viewer-id"></div>
+
+    <script type="text/javascript">
+
+        function launchViewer(width, height) {
+            // Directly called for the burst Preview part
+            const div = d3.select("#pca-viewer-id").attr("style", "width:" + width + "px; height:" + height + "px;");
+            div.append("svg").attr("width", width).attr("height", height);
+            let pl = new PCAViewer("pca-viewer-id", '{{ fractions_update_url }}', '{{ weights_update_url }}', '{{ labels_data | safe }}', width, height);
+            pl.plot();
+
+            // add usage notes
+            tv.util.usage(div, "Portion of variance explained by principal componenents (left)",
+                ["Place mouse over chart to inspect individual components"]);
+
+            tv.util.usage(div, "Loading of components on each node (right)", [])
+        }
+
+        $(document).ready(function () {
+            // setup dimensions, div, svg elements and plotter
+            const w = 1500;
+            const h = 600;
+            launchViewer(w, h);
+        });
+    </script>
+
+</div>

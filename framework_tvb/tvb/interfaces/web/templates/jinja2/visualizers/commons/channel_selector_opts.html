@@ -1,0 +1,6 @@
+<!--! The name of the first option should equal FlowController.NEW_SELECTION_NAME
+It could be passed via a template variable. Should it? -->
+<option selected="selected" value="{{ 'noneSelectionVal' if noneSelectionVal is defined else '[]' }}">New selection</option>
+{% for name, val in namedSelections %}
+    <option value="{{ val }}">{{ name }}</option>
+{% endfor %}

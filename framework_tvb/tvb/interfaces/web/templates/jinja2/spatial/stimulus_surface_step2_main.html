@@ -1,0 +1,47 @@
+<div id="main" class="columnized colscheme-2-2nd-narrow">
+    <script type="text/javascript" src="/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
+
+    {% include 'spatial/stimulus_surface_step2_left.html' %}
+    {% include 'spatial/stimulus_surface_step2_right.html' %}
+
+    <form id="surface_stimulus_step1_form" method="POST">
+        <aside class="header-component toolbar can-extend auto-extends">
+            <h3>SpatioTemporal Entities</h3>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+                        <li>
+                            <button class="action action-download" type="button" id="ctrl-action-export">
+                                Save Figure
+                            </button>
+                        </li>
+                        <li>
+                            <button class="action action-analyze" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 1, true);return false;">
+                                Edit Stimulus Equations
+                            </button>
+                        </li>
+                        <li>
+                            <button class="action action-view action-idle" onclick="displayMessage('You are already in the view page. You can select a different entity from the select above the canvas.', 'infoMessage'); return false;">
+                                Edit Focal Points and View
+                            </button>
+                        </li>
+                        <li>
+                            <button class="action action-plus" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 3, true);return false;">
+                                Save new Stimulus on Surface
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+    </form>
+
+	<script type="text/javascript">
+        $(document).ready(function () {
+            $("#ctrl-action-export").click(function(){
+                C2I_exportFigures({suggestedName:"surface-stimulus"});
+                return false;
+            });
+        });
+    </script>
+</div>

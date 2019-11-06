@@ -1,0 +1,37 @@
+<div id="main" class="columnized colscheme-1">
+    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+
+    <section class="configure-stimulus-equation view-column col-2" >
+        <div class="model-param-empty">
+            <h1> No model dynamics have been defined. </h1>
+            <p> Before assigning model dynamics for nodes you have to define some.</p>
+            <h2> Click <a href="/burst/dynamic">here</a> to go to the phase plane page.</h2>
+        </div>
+    </section>
+
+    <form id="base_spatio_temporal_form" action="/burst">
+	    <aside class="header-component toolbar can-extend auto-extends">
+            <h3>SpatioTemporal Entities</h3>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+
+                        <li>
+                            <a href="/burst/dynamic" class="action action-new">
+                                Define dynamic
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/burst" class="action action-cancel">
+                                Cancel
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+	    </aside>
+	 </form>
+
+</div>
