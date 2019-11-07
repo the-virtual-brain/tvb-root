@@ -110,7 +110,7 @@ class SimulatorFragmentRenderingRules(object):
     def __init__(self, form=None, form_action_url=None, previous_form_action_url=None, is_simulation_copy=False,
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type='GET', is_first_fragment=False, is_launch_fragment=False, is_model_fragment=False,
-                 is_surface_simulation=False):
+                 is_surface_simulation=False, is_noise_fragment=False):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -133,6 +133,7 @@ class SimulatorFragmentRenderingRules(object):
         self.is_launch_fragment = is_launch_fragment
         self.is_model_fragment = is_model_fragment
         self.is_surface_simulation = is_surface_simulation
+        self.is_noise_fragment = is_noise_fragment
 
     @property
     def load_readonly(self):
@@ -177,8 +178,10 @@ class SimulatorFragmentRenderingRules(object):
         return False
 
     @property
-    def display_setup_noise(self):
-        raise NotImplementedError
+    def include_setup_noise(self):
+        if self.is_noise_fragment:
+            return True
+        return False
 
     @property
     def include_launch_button(self):
@@ -479,11 +482,6 @@ class SimulatorController(BurstBaseController):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
-        is_load_after_redirect = common.get_from_session(self.KEY_IS_LOAD_AFTER_REDIRECT)
-
-        if is_load_after_redirect:
-            is_simulator_copy = False
-            common.add2session(self.KEY_IS_LOAD_AFTER_REDIRECT, False)
 
         if cherrypy.request.method == 'POST':
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
@@ -571,7 +569,8 @@ class SimulatorController(BurstBaseController):
                                                               SimulatorWizzardURLs.SET_NOISE_PARAMS_URL,
                                                               SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL,
                                                               is_simulator_copy, is_simulator_load,
-                                                              self.last_loaded_form_url, cherrypy.request.method)
+                                                              self.last_loaded_form_url, cherrypy.request.method,
+                                                              is_noise_fragment=True)
             return rendering_rules.to_dict()
 
         monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id)

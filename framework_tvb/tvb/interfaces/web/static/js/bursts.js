@@ -1207,6 +1207,7 @@ function previousWizzardStep(currentForm, previous_action) {
     var previous_button = previous_form.elements.namedItem('previous');
     var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
+    var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -1221,6 +1222,9 @@ function previousWizzardStep(currentForm, previous_action) {
     if (config_surface_param_button != null) {
         config_surface_param_button.style.visibility = 'visible';
     }
+    if (config_noise_button != null) {
+        config_noise_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
@@ -1233,6 +1237,7 @@ function wizzard_submit(currentForm) {
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
+    var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -1251,6 +1256,9 @@ function wizzard_submit(currentForm) {
             }
             if (config_surface_param_button != null) {
                 config_surface_param_button.style.visibility = 'hidden';
+            }
+            if (config_noise_button != null) {
+                config_noise_button.style.visibility = 'hidden';
             }
             fieldset.disabled = true;
             var t = document.createRange().createContextualFragment(response);

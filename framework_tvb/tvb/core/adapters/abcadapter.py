@@ -556,10 +556,6 @@ class ABCAdapter(object):
                                                    validation_required)
 
 
-    def noise_configurable_parameters(self):
-        return [entry[self.KEY_NAME] for entry in self.flaten_input_interface() if 'configurableNoise' in entry]
-
-
     def flaten_input_interface(self):
         # TODO: temporary condition to pass introspection on neoforms
         form = self.get_form_class()

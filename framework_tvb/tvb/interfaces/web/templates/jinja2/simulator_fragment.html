@@ -32,6 +32,11 @@
                onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam" name="configSurfaceModelParam"
                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up surface model</button>
     {% endif %}
+    {% if renderer.include_setup_noise %}
+            <button type="button" title="Configure noise for region-based simulations" class="btn btn-primary"
+               onclick="configureNoiseParameters();" id="configNoiseValues" name="configNoiseValues"
+               {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Configure noise</button>
+    {% endif %}
 
     {% if renderer.include_previous_button %}
         <button id='previous' name="previous" type="button" class="btn btn-primary"

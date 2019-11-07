@@ -35,10 +35,12 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
 
 
 class NoiseConfigurationController(BurstBaseController):
@@ -47,9 +49,10 @@ class NoiseConfigurationController(BurstBaseController):
     """
     @expose_page
     def index(self):
-        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
-        connectivity = des.get_connectivity()
-        model, integrator = des.make_model_and_integrator()
+        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
+        connectivity = des.conf.connectivity
+        model = des.conf.model
+        integrator = des.conf.integrator
 
         state_vars = model.state_variables
         noise_values = self.init_noise_config_values(model, integrator, connectivity)
@@ -57,9 +60,10 @@ class NoiseConfigurationController(BurstBaseController):
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
+        conn_idx = dao.get_datatype_by_gid(connectivity.gid.hex)
+        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
-        params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
+        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
         params.update({
             'title': 'Noise configuration',
             'mainContent': 'burst/noise',
@@ -80,8 +84,9 @@ class NoiseConfigurationController(BurstBaseController):
         Submit noise dispersions
         :param node_values: A map from state variable names to noise dispersion arrays. Ex {'V': [1,2...74]}
         """
-        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
+        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
         des.write_noise_parameters(json.loads(node_values))
+        common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
         raise cherrypy.HTTPRedirect("/burst/")
 
 

@@ -31,7 +31,6 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import json
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -53,14 +52,10 @@ class TestSerializationManager(TransactionalTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        sim_conf = Simulator()
+        sim_conf = Simulator(model=Hopfield(), integrator=HeunStochastic())
 
         self.s_manager = SerializationManager(sim_conf)
         self.empty_manager = SerializationManager(BurstConfiguration(None))
-
-    def test_has_model_pse_ranges(self):
-        assert self.s_manager.has_model_pse_ranges()
-        assert not self.empty_manager.has_model_pse_ranges()
 
     def test_get_params_dict(self):
         d = self.s_manager._get_params_dict()
@@ -71,12 +66,7 @@ class TestSerializationManager(TransactionalTestCase):
         assert [{'step': 0.1, 'maxValue': 1, 'minValue': 0.7}] == mp['taux'].tolist()
         # test integrator param deserialization
         assert 0.09765625 == ip['dt']
-        assert [ 0.00123] == ip['noise_parameters']['nsig'].tolist()
-
-    def test_make_model_and_integrator(self):
-        m ,i = self.s_manager.make_model_and_integrator()
-        assert isinstance(m,Hopfield)
-        assert isinstance(i, HeunStochastic)
+        assert [0.00123] == ip['noise_parameters']['nsig'].tolist()
 
     def test_group_parameter_values_by_name(self):
         gp = SerializationManager.group_parameter_values_by_name(
@@ -94,7 +84,7 @@ class TestSerializationManager(TransactionalTestCase):
 
         sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert Generic2dOscillator.__name__ == sc.model.__class__.__name__
+        assert isinstance(sc.model, Generic2dOscillator)
 
         # a modified parameter
         expected = [1.75]  # we expect same value arrays to contract to 1 element
@@ -104,7 +94,6 @@ class TestSerializationManager(TransactionalTestCase):
         expected = [-10.0]
         actual = sc.model.b
         assert expected == actual
-
 
     def test_write_model_parameters_two_dynamics(self, connectivity_factory):
         connectivity = connectivity_factory()
@@ -121,7 +110,7 @@ class TestSerializationManager(TransactionalTestCase):
 
         sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert Generic2dOscillator.__name__ == sc.model.__class__.__name__
+        assert isinstance(sc.model, Generic2dOscillator)
 
         expected = [1.75]  # array contracted to one value
         actual = sc.model.a
@@ -133,17 +122,13 @@ class TestSerializationManager(TransactionalTestCase):
         actual = sc.model.b
         assert expected == actual.tolist()
 
-    def test_write_noise_parameters(self):
-        disp = [{"x":4,"theta":2} for _ in range(self.connectivity.number_of_regions)]
+    def test_write_noise_parameters(self, connectivity_factory):
+        connectivity = connectivity_factory()
+        disp = [{"x": 4, "theta": 2} for _ in range(connectivity.number_of_regions)]
         self.s_manager.write_noise_parameters(disp)
 
-        sc = self.s_manager.conf.simulator_configuration
-        assert HeunStochastic.__name__ == sc['integrator']['value']
-        nodes_nr = self.connectivity.number_of_regions
-        expected = [[4] * nodes_nr , [2] * nodes_nr]
-        actual = json.loads(sc['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig']['value'])
-        assert expected == actual
-
-
-
-
+        assert isinstance(self.s_manager.conf.integrator, HeunStochastic)
+        nodes_nr = connectivity.number_of_regions
+        expected = [[4] * nodes_nr, [2] * nodes_nr]
+        actual = self.s_manager.conf.integrator.noise.nsig
+        assert expected == actual.tolist()

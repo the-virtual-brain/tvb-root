@@ -35,11 +35,9 @@ Service for serianlizing a Burst (Simulator) configuration.
 """
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import *
 from tvb.core.services.flow_service import FlowService
-#from tvb.datatypes import noise_framework
 from tvb.simulator import models
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models import Model
@@ -63,11 +61,6 @@ class SerializationManager(object):
         self.conf = conf
 
 
-    def _build_simulator_adapter(self):
-        stored_adapter = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS)
-        return ABCAdapter.build_adapter(stored_adapter)
-
-
     def has_model_pse_ranges(self):
         """ Returns True if the burst configuration describes a range on a model parameter """
         first_range = self.conf.get_simulation_parameter_value(RANGE_PARAMETER_1)
@@ -75,12 +68,6 @@ class SerializationManager(object):
         first_range_on = first_range is not None and str(first_range).startswith(MODEL_PARAMETERS)
         second_range_on = second_range is not None and str(second_range).startswith(MODEL_PARAMETERS)
         return first_range_on or second_range_on
-
-
-    def _get_params_dict(self):
-        """ Convert ui inputs from the configuration to python types """
-        simulator_adapter = self._build_simulator_adapter()
-        return simulator_adapter.convert_ui_inputs(self.conf.get_all_simulator_values()[0], False)
 
 
     def __make_instance_from_burst_config(self, params_dict, parent_class, class_name_key, params_key):
@@ -98,14 +85,6 @@ class SerializationManager(object):
             return get_traited_instance_for_name(class_name, parent_class, {})
 
 
-    def __make_shallow_model(self):
-        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
-
-        """ Creates a model of the type present in the config without setting any parameters on it """
-        class_name = self.conf.get_simulation_parameter_value(PARAM_MODEL)
-        return get_traited_instance_for_name(class_name, Model, {})
-
-
     def make_model_and_integrator(self):
         """
         :return: A model and an integrator.
@@ -116,12 +95,6 @@ class SerializationManager(object):
         integrator = self.__make_instance_from_burst_config(params_dict, Integrator,
                                                             PARAM_INTEGRATOR, INTEGRATOR_PARAMETERS)
         return model, integrator
-
-
-    def get_connectivity(self):
-        """ Prepare Connectivity """
-        connectivity_gid = self.conf.get_simulation_parameter_value(PARAM_CONNECTIVITY)
-        return ABCAdapter.load_entity_by_gid(connectivity_gid)
 
 
     def get_surface(self):
@@ -183,9 +156,7 @@ class SerializationManager(object):
         """
         noise_dispersions = self.group_parameter_values_by_name(noise_dispersions)
         # Flatten the dict to an array of shape (state_vars, nodes)
-        state_vars = self.__make_shallow_model().state_variables
+        state_vars = self.conf.model.state_variables
         noise_arr = [noise_dispersions[sv] for sv in state_vars]
 
-        simulator_adapter = self._build_simulator_adapter()
-        for param_name in simulator_adapter.noise_configurable_parameters():
-            self.conf.update_simulation_parameter(param_name, str(noise_arr))
+        self.conf.integrator.noise.nsig = numpy.array(noise_arr)
