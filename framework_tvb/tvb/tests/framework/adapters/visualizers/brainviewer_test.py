@@ -83,14 +83,14 @@ class TestBrainViewer(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_launch(self, time_series_region_factory):
+    def test_launch(self, time_series_region_index_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
 
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_factory(conn, rm)
+        time_series = time_series_region_index_factory(conn, rm)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         result = viewer.launch(time_series=time_series, shell_surface=self.face_surface)
@@ -99,34 +99,34 @@ class TestBrainViewer(TransactionalTestCase):
             assert key in result and result[key] is not None
         assert not result['extended_view']
 
-    def test_get_required_memory(self, time_series_region_factory):
+    def test_get_required_memory(self, time_series_region_index_factory):
         """
         Brainviewer should know required memory so expect positive number and not -1.
         """
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_factory(conn, rm)
+        time_series = time_series_region_index_factory(conn, rm)
         assert BrainViewer().get_required_memory_size(time_series) > 0
 
-    def test_generate_preview(self, time_series_region_factory):
+    def test_generate_preview(self, time_series_region_index_factory):
         """
         Check that all required keys are present in preview generate by BrainViewer.
         """
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_factory(conn, rm)
+        time_series = time_series_region_index_factory(conn, rm)
         viewer = BrainViewer()
         result = viewer.generate_preview(time_series, figure_size=(500, 200))
         for key in TestBrainViewer.EXPECTED_KEYS:
             assert key in result and result[key] is not None, key
 
-    def test_launch_eeg(self, time_series_region_factory):
+    def test_launch_eeg(self, time_series_region_index_factory):
         """
         Tests successful launch of a BrainEEG and that all required keys are present in returned template dictionary
         """
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_factory(conn, rm)
+        time_series = time_series_region_index_factory(conn, rm)
         #time_series.configure()
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id

@@ -184,13 +184,13 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_fcd_adapter(self, tmpdir, session, operation_factory, time_series_region_factory,
+    def test_fcd_adapter(self, tmpdir, session, operation_factory, time_series_region_index_factory,
                          connectivity_factory, region_mapping_factory, surface_factory):
         storage_folder = str(tmpdir)
         connectivity = connectivity_factory()
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
-        ts_index = time_series_region_factory(connectivity=connectivity, region_mapping=region_mapping)
+        ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
         sw = 0.5
         sp = 0.2
 
@@ -206,14 +206,14 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, FcdH5, fcd_idx[0].gid)
         assert os.path.exists(result_h5)
 
-    def test_fmri_balloon_adapter(self, tmpdir, session, operation_factory, time_series_region_factory,
+    def test_fmri_balloon_adapter(self, tmpdir, session, operation_factory, time_series_region_index_factory,
                                   connectivity_factory, region_mapping_factory, surface_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
         connectivity = connectivity_factory()
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
-        ts_index = time_series_region_factory(connectivity=connectivity, region_mapping=region_mapping)
+        ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         fmri_balloon_adapter = BalloonModelAdapter()
         fmri_balloon_adapter.storage_path = storage_folder

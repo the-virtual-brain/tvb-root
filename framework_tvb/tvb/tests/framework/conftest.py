@@ -315,7 +315,7 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 
 @pytest.fixture()
-def time_series_region_factory(operation_factory):
+def time_series_region_index_factory(operation_factory):
     def build(connectivity, region_mapping):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))

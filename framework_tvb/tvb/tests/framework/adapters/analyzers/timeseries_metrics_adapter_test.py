@@ -68,7 +68,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_adapter_launch(self, connectivity_factory, region_mapping_factory, time_series_region_factory):
+    def test_adapter_launch(self, connectivity_factory, region_mapping_factory, time_series_region_index_factory):
         """
         Test that the adapters launches and successfully generates a datatype measure entry.
         """
@@ -82,7 +82,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         # Get connectivity, region_mapping and a dummy time_series_region
         connectivity = connectivity_factory()
         region_mapping = region_mapping_factory()
-        dummy_time_series = time_series_region_factory(connectivity=connectivity, region_mapping=region_mapping)
+        dummy_time_series = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         dummy_time_series.start_time = 0.0
         dummy_time_series.sample_period = 1.0

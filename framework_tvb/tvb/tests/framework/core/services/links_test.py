@@ -210,7 +210,7 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
         assert self.red_datatype.gid == links[0].gid
 
     @pytest.fixture()
-    def create_interlinked_projects(self, region_mapping_factory, time_series_region_factory):
+    def create_interlinked_projects(self, region_mapping_factory, time_series_region_index_factory):
         """
         Extend the two projects created in setup.
         Project src will have 3 datatypes, one a connectivity, and a link to the time series from the dest project.
@@ -230,7 +230,7 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
         region_mapping = TestFactory.import_region_mapping(self.dst_user, self.dest_project, TXT_FILE,
                                                                 surface.gid, conn.gid)
 
-        ts = time_series_region_factory(connectivity=h5.load_from_index(conn), region_mapping=h5.load_from_index(region_mapping))
+        ts = time_series_region_index_factory(connectivity=h5.load_from_index(conn), region_mapping=h5.load_from_index(region_mapping))
         # then link the time series in the src project
         self.flow_service.create_link([ts.id], self.src_project.id)
 
