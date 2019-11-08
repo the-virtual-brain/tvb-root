@@ -398,7 +398,7 @@ class TestProjectService(TransactionalTestCase):
                 if DataTypeMetaData.KEY_OP_GROUP_ID in expected_meta_data:
                     # We have a Group to check
                     op_group = new_datatype.parent_operation.fk_operation_group
-                    op_group = dao.get_generic_entity(model.OperationGroup, op_group)[0]
+                    op_group = dao.get_generic_entity(model_operation.OperationGroup, op_group)[0]
                     assert value == op_group.name
                 else:
                     assert value == new_datatype.parent_operation.user_group
@@ -513,7 +513,7 @@ class TestProjectService(TransactionalTestCase):
 
         link_ids, expected_links = [], []
         # Prepare link towards a simple DT
-        dt_to_link = dummy_datatype_index_factory()
+        dt_to_link = dummy_datatype_index_factory(state="RAW_DATA")
         link_ids.append(dt_to_link.id)
         expected_links.append(dt_to_link.gid)
 

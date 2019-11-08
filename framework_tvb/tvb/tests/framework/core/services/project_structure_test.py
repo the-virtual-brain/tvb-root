@@ -32,7 +32,8 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+from tvb.tests.framework.adapters.storeadapter import StoreAdapter
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_operation import *
@@ -44,7 +45,6 @@ from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.core.services.project_service_test import TestProjectService
 from tvb.tests.framework.core.services.flow_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
 
 
@@ -258,12 +258,13 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
 
-    def test_get_operations_for_dt(self):
+    def test_get_operations_for_dt(self, datatype_group_factory):
         """
         Tests method get_operations_for_datatype.
         Verifies result dictionary has the correct values
         """
-        created_ops, datatype_gid = self._create_operations_with_inputs()
+        group = datatype_group_factory()
+        created_ops, datatype_gid = self._create_operations_with_inputs(group)
         operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter)
         assert len(operations) == 2
         assert created_ops[0].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
@@ -312,7 +313,7 @@ class TestProjectStructure(TransactionalTestCase):
         assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
-    def test_get_inputs_for_operation(self):
+    def test_get_inputs_for_operation(self, datatype_group_factory):
         """
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
         Verifies filters' influence over results is as expected
@@ -347,11 +348,12 @@ class TestProjectStructure(TransactionalTestCase):
         assert ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
         assert ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
 
-        project, dt_group_id, first_dt, _ = self._create_datatype_group()
-        first_dt.visible = False
-        dao.store_entity(first_dt)
-        parameters = json.dumps({"other_param": "_", "param_1": first_dt.gid})
-        operation = Operation(self.test_user.id, project.id, algo.id, parameters)
+        group = datatype_group_factory(project=self.test_project)
+        datatypes = dao.get_datatypes_from_datatype_group(group.id)
+        datatypes[0].visible = False
+        dao.store_entity(datatypes[0])
+        parameters = json.dumps({"other_param": "_", "param_1": datatypes[0].gid})
+        operation = Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
         operation = dao.store_entity(operation)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
@@ -360,29 +362,32 @@ class TestProjectStructure(TransactionalTestCase):
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert inputs[0].id == dt_group_id, "Wrong dataType."
-        assert inputs[0].id != first_dt.id, "Wrong dataType."
+        assert inputs[0].id == group.id, "Wrong dataType."
+        assert inputs[0].id != datatypes[0].id, "Wrong dataType."
 
-    def test_get_inputs_for_op_group(self):
+    def test_get_inputs_for_op_group(self, datatype_group_factory, test_adapter_factory):
         """
         Tests method get_datatypes_inputs_for_operation_group.
         The DataType inputs will be from a DataType group.
         """
-        project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
-        first_dt.visible = False
-        dao.store_entity(first_dt)
-        second_dt.visible = False
-        dao.store_entity(second_dt)
+        group = datatype_group_factory(project=self.test_project)
+        datatypes = dao.get_datatypes_from_datatype_group(group.id)
 
-        op_group = OperationGroup(project.id, "group", "range1[1..2]")
+        datatypes[0].visible = False
+        dao.store_entity(datatypes[0])
+        datatypes[1].visible = False
+        dao.store_entity(datatypes[1])
+
+        op_group = OperationGroup(self.test_project.id, "group", "range1[1..2]")
         op_group = dao.store_entity(op_group)
-        params_1 = json.dumps({"param_5": "1", "param_1": first_dt.gid, "param_6": "2"})
-        params_2 = json.dumps({"param_5": "1", "param_4": second_dt.gid, "param_6": "5"})
+        params_1 = json.dumps({"param_5": "1", "param_1": datatypes[0].gid, "param_6": "2"})
+        params_2 = json.dumps({"param_5": "1", "param_4": datatypes[1].gid, "param_6": "5"})
 
+        test_adapter_factory(adapter_class=TestAdapter3)
         algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
-        op1 = Operation(self.test_user.id, project.id, algo.id, params_1, op_group_id=op_group.id)
-        op2 = Operation(self.test_user.id, project.id, algo.id, params_2, op_group_id=op_group.id)
+        op1 = Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
+        op2 = Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
         dao.store_entities([op1, op2])
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
@@ -390,24 +395,24 @@ class TestProjectStructure(TransactionalTestCase):
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[0].id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[1].id == inputs[0].id, "Retrieved wrong dataType."
+        assert group.id == inputs[0].id, "Retrieved wrong dataType."
 
-        first_dt.visible = True
-        dao.store_entity(first_dt)
+        datatypes[0].visible = True
+        dao.store_entity(datatypes[0])
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.relevant_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[0].id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[1].id == inputs[0].id, "Retrieved wrong dataType."
+        assert group.id == inputs[0].id, "Retrieved wrong dataType."
 
         inputs = self.project_service.get_datatypes_inputs_for_operation_group(op_group.id, self.full_filter)
         assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert not first_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert not second_dt.id == inputs[0].id, "Retrieved wrong dataType."
-        assert dt_group_id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[0].id == inputs[0].id, "Retrieved wrong dataType."
+        assert not datatypes[1].id == inputs[0].id, "Retrieved wrong dataType."
+        assert group.id == inputs[0].id, "Retrieved wrong dataType."
 
     def test_get_inputs_for_op_group_simple_inputs(self):
         """
@@ -470,7 +475,6 @@ class TestProjectStructure(TransactionalTestCase):
         project = project_factory(user)
         group = datatype_group_factory(project=project)
 
-        # project, dt_group_id, first_dt, second_dt = self._create_datatype_group()
         datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
 
@@ -539,19 +543,29 @@ class TestProjectStructure(TransactionalTestCase):
                               meta=json.dumps(meta), status=STATUS_FINISHED)
         return dao.store_entity(operation)
 
-    def _create_datatype_group(self):
+    @staticmethod
+    def _create_value_wrapper(test_user, test_project=None):
         """
-        Creates a project, one DataTypeGroup with 2 DataTypes into the new group.
+        Creates a ValueWrapper dataType, and the associated parent Operation.
+        This is also used in ProjectStructureTest.
         """
-        test_project = TestFactory.create_project(self.test_user, "NewProject")
-
-        all_operations = dao.get_filtered_operations(test_project.id, None, is_count=True)
-        assert 0 == all_operations, "There should be no operation."
-
-        datatypes, op_group_id = TestFactory.create_group(self.test_user, test_project)
-        dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)
-
-        return test_project, dt_group.id, datatypes[0], datatypes[1]
+        if test_project is None:
+            test_project = TestFactory.create_project(test_user, 'test_proj')
+        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
+        value_wrapper = ValueWrapper(data_value=5.0, data_name="my_value")
+        value_wrapper.type = "ValueWrapper"
+        value_wrapper.module = "tvb.datatypes.mapped_values"
+        value_wrapper.subject = "John Doe"
+        value_wrapper.state = "RAW_STATE"
+        value_wrapper.set_operation_id(operation.id)
+        adapter_instance = StoreAdapter([value_wrapper])
+        OperationService().initiate_prelaunch(operation, adapter_instance, {})
+        all_value_wrappers = FlowService().get_available_datatypes(test_project.id,
+                                                                   "tvb.datatypes.mapped_values.ValueWrapper")[0]
+        if len(all_value_wrappers) != 1:
+            raise Exception("Should be only one value wrapper.")
+        result_vw = ABCAdapter.load_entity_by_gid(all_value_wrappers[0][2])
+        return test_project, result_vw.gid, operation.gid
 
     def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):
         """
@@ -564,7 +578,7 @@ class TestProjectStructure(TransactionalTestCase):
         if is_group_parent:
             datatype_gid = group_dts[0].gid
         else:
-            datatype_gid = TestProjectService._create_value_wrapper(self.test_user, self.test_project)[1]
+            datatype_gid = self._create_value_wrapper(self.test_user, self.test_project)[1]
 
         parameters = json.dumps({"param_name": datatype_gid})
 
