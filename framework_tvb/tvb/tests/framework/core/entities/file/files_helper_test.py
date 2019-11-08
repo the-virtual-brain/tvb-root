@@ -175,9 +175,8 @@ class TestFilesHelper(TransactionalTestCase):
         """
         folder_path = self.files_helper.get_project_folder(self.test_project, "42")
         datatype = dummy_datatype_index_factory()
-        datatype.storage_path = folder_path
         assert os.path.exists(folder_path), "Test file was not created!"
-        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '11', "43") 
+        self.files_helper.move_datatype(datatype, folder_path, self.PROJECT_NAME + '11', "43")
         
         assert not os.path.exists(folder_path), "Test file was not moved!"
         datatype.storage_path = self.files_helper.get_project_folder(self.PROJECT_NAME + '11', "43")

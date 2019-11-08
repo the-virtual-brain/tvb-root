@@ -258,12 +258,12 @@ class FilesHelper(object):
             raise FileStructureException("Could not remove " + str(h5_file))
             
             
-    def move_datatype(self, datatype, new_project_name, new_op_id):
+    def move_datatype(self, datatype, old_project_name, new_project_name, new_op_id):
         """
         Move H5 storage into a new location
         """
         try:
-            full_path = datatype.storage_path
+            full_path = FilesHelper().get_project_folder(old_project_name)
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
