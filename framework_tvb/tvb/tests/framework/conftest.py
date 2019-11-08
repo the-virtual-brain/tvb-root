@@ -352,14 +352,14 @@ def dummy_datatype_factory():
 
 @pytest.fixture()
 def dummy_datatype2_index_factory():
-    def build(subject=None):
-        return DummyDataType2Index(subject=subject)
+    def build(subject=None, state=None):
+        return DummyDataType2Index(subject=subject, state=state)
     return build
 
 
 @pytest.fixture()
 def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
-    def build(row1=None, row2=None, project=None, operation=None, subject=None):
+    def build(row1=None, row2=None, project=None, operation=None, subject=None, state=None):
         data_type = dummy_datatype_factory()
         data_type.row1 = row1
         data_type.row2 = row2
@@ -367,7 +367,7 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
         if operation is None:
             operation = operation_factory(test_project=project)
 
-        data_type_index = DummyDataTypeIndex(subject=subject)
+        data_type_index = DummyDataTypeIndex(subject=subject, state=state)
         data_type_index.fk_from_operation = operation.id
         data_type_index.fill_from_has_traits(data_type)
 
@@ -436,11 +436,10 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         group_ms = dao.store_entity(group_ms)
 
         datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
-        # datatype_group.storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+
         datatype_group = dao.store_entity(datatype_group)
 
         dt_group_ms = DataTypeGroup(group_ms, subject=subject, state=state, operation_id=operation.id)
-        # dt_group_ms.storage_path = self.files_helper.get_project_folder(project, str(operation.id))
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
