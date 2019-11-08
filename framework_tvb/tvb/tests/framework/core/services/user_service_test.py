@@ -45,7 +45,7 @@ from tvb.core.services.project_service import ProjectService
 
 class MainSenderDummy(object):
     @staticmethod
-    def send(address_from, address_to):
+    def send(address_from, address_to, email_subject, email_content):
         """
         Overwrite sending of emails for test
         """

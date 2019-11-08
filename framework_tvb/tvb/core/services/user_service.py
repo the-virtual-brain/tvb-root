@@ -111,9 +111,9 @@ class UserService:
                 admin = admins[randint(0, len(admins) - 1)]
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
                     # Do not send validation email in case default admin email remained unchanged
-                    email_sender.send(FROM_ADDRESS, admin.email)
+                    email_sender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
                     self.logger.debug("Email sent to:" + admin.email + " for validating user:" + username + " !")
-                email_sender.send(FROM_ADDRESS, email)
+                email_sender.send(FROM_ADDRESS, email, SUBJECT_REGISTER, email_msg)
                 self.logger.debug("Email sent to:" + email + " for notifying new user:" + username + " !")
 
             user = dao.store_entity(user)
@@ -158,7 +158,7 @@ class UserService:
             user.password = md5(new_pass.encode('utf-8')).hexdigest()
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
-            email_sender.send(FROM_ADDRESS, email)
+            email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))
             return TEXT_DISPLAY
         except Exception as excep:
             if old_pass and len(old_pass) > 1 and user:
@@ -192,7 +192,8 @@ class UserService:
             user.validated = True
             user = dao.store_entity(user)
             self.logger.debug("Sending validation email for userName=" + name + " to address=" + user.email)
-            email_sender.send(FROM_ADDRESS, user.email)
+            email_sender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
+                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
         except Exception as excep:
