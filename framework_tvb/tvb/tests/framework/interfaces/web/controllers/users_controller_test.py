@@ -141,8 +141,6 @@ class TestUsersController(BaseTransactionalControllerTest):
                     password="pass",
                     password2="pass",
                     email="email@email.com",
-                    email_subject="registration",
-                    email_content="I want to registrate",
                     comment="This is some dummy comment",
                     role="CLINICIAN")
         self._expect_redirect('/user', self.user_c.register, **data)
@@ -237,7 +235,8 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         cherrypy.request.method = "POST"
         data = {"email": self.test_user.email,
-                "username": ""}
+                "username": self.test_user.username,
+               }
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
             "Info message informing successfull reset should be present"
