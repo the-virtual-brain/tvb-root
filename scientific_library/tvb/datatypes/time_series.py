@@ -82,6 +82,8 @@ class TimeSeries(HasTraits):
 
     @property
     def sample_rate(self):
+        if len(self.sample_period_unit) > 0 and self.sample_period_unit[0] == "m":
+            return 1000.0 / self.sample_period
         return 1.0 / self.sample_period
 
     def summary_info(self):
@@ -98,6 +100,100 @@ class TimeSeries(HasTraits):
         }
         summary.update(narray_summary_info(self.data))
         return summary
+
+    def duplicate(self, **kwargs):
+        duplicate = deepcopy(self)
+        for attr, value in kwargs.items():
+            setattr(duplicate, attr, value)
+        duplicate.configure()
+        return duplicate
+
+    def _get_index_of_state_variable(self, sv_label):
+        try:
+            sv_index = numpy.where(self.variables_labels == sv_label)[0][0]
+        except KeyError:
+            self.logger.error("There are no state variables defined for this instance. Its shape is: %s",
+                              self.data.shape)
+            raise
+        except IndexError:
+            self.logger.error("Cannot access index of state variable label: %s. Existing state variables: %s" % (
+                sv_label, self.variables_labels))
+            raise
+        return sv_index
+
+    def get_state_variable(self, sv_label):
+        sv_data = self.data[:, self._get_index_of_state_variable(sv_label), :, :]
+        subspace_labels_dimensions = deepcopy(self.labels_dimensions)
+        subspace_labels_dimensions[self.labels_ordering[1]] = [sv_label]
+        if sv_data.ndim == 3:
+            sv_data = numpy.expand_dims(sv_data, 1)
+        return self.duplicate(data=sv_data, labels_dimensions=subspace_labels_dimensions)
+
+    def _get_indices_for_labels(self, list_of_labels):
+        list_of_indices_for_labels = []
+        for label in list_of_labels:
+            try:
+                space_index = numpy.where(self.space_labels == label)[0][0]
+            except ValueError:
+                self.logger.error("Cannot access index of space label: %s. Existing space labels: %s" %
+                                  (label, self.space_labels))
+                raise
+            list_of_indices_for_labels.append(space_index)
+        return list_of_indices_for_labels
+
+    def get_subspace_by_index(self, list_of_index, **kwargs):
+        self._check_space_indices(list_of_index)
+        subspace_data = self.data[:, :, list_of_index, :]
+        subspace_labels_dimensions = deepcopy(self.labels_dimensions)
+        subspace_labels_dimensions[self.labels_ordering[2]] = self.space_labels[list_of_index].tolist()
+        if subspace_data.ndim == 3:
+            subspace_data = numpy.expand_dims(subspace_data, 2)
+        return self.duplicate(data=subspace_data, labels_dimensions=subspace_labels_dimensions, **kwargs)
+
+    def get_subspace_by_labels(self, list_of_labels):
+        list_of_indices_for_labels = self._get_indices_for_labels(list_of_labels)
+        return self.get_subspace_by_index(list_of_indices_for_labels)
+
+    def __getattr__(self, attr_name):
+        if self.labels_ordering[1] in self.labels_dimensions.keys():
+            if attr_name in self.variables_labels:
+                return self.get_state_variable(attr_name)
+        if self.labels_ordering[2] in self.labels_dimensions.keys():
+            if attr_name in self.space_labels:
+                return self.get_subspace_by_labels([attr_name])
+        raise AttributeError("%r object has no attribute %r" % (self.__class__.__name__, attr_name))
+
+    def _get_index_for_slice_label(self, slice_label, slice_idx):
+        if slice_idx == 1:
+            return self._get_indices_for_labels([slice_label])[0]
+        if slice_idx == 2:
+            return self._get_index_of_state_variable(slice_label)
+
+    @property
+    def shape(self):
+        return self.data.shape
+
+    @property
+    def time_unit(self):
+        return self.sample_period_unit
+
+    @property
+    def space_labels(self):
+        try:
+            return numpy.array(self.get_space_labels())
+        except:
+            return numpy.array(self.labels_dimensions.get(self.labels_ordering[2], []))
+
+    @property
+    def variables_labels(self):
+        return numpy.array(self.labels_dimensions.get(self.labels_ordering[1], []))
+
+    def _check_space_indices(self, list_of_index):
+        for index in list_of_index:
+            if index < 0 or index > self.data.shape[1]:
+                self.logger.error("Some of the given indices are out of space range: [0, %s]",
+                                  self.data.shape[1])
+                raise IndexError
 
 
 class SensorsTSBase(TimeSeries):
