@@ -37,7 +37,8 @@ The TimeSeries datatypes.
 
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, narray_summary_info
-
+import numpy
+from copy import deepcopy
 
 class TimeSeries(HasTraits):
     """

@@ -3,8 +3,8 @@
 import numpy as np
 from scipy.signal import welch, periodogram, spectrogram
 from scipy.interpolate import interp1d, griddata
-from scientific_library.tvb.simulator.plot.config import CONFIGURED
-from scientific_library.tvb.basic.logger.builder import get_logger
+from tvb.simulator.plot.config import CONFIGURED
+from tvb.basic.logger.builder import get_logger
 
 
 LOG = get_logger(__name__)

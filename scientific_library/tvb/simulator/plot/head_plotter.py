@@ -2,10 +2,10 @@
 
 from matplotlib import pyplot
 import numpy
-from scientific_library.tvb.simulator.plot.utils import compute_in_degree
-from scientific_library.tvb.simulator.plot.base_plotter import BasePlotter
-from scientific_library.tvb.datatypes.sensors import Sensors
-from scientific_library.tvb.datatypes.projections import ProjectionMatrix
+from tvb.simulator.plot.utils import compute_in_degree
+from tvb.simulator.plot.base_plotter import BasePlotter
+from tvb.datatypes.sensors import Sensors
+from tvb.datatypes.projections import ProjectionMatrix
 
 
 class HeadPlotter(BasePlotter):
@@ -94,7 +94,7 @@ class HeadPlotter(BasePlotter):
         order_columns = order_rows.T
 
         if plot_hinton:
-            from scientific_library.tvb.simulator.plot.tools import hinton_diagram
+            from tvb.simulator.plot.tools import hinton_diagram
             weights_axes = hinton_diagram(connectivity.weights[order_rows, order_columns], num)
             weights_figure = None
         else:

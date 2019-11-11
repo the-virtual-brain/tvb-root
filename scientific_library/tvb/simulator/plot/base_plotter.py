@@ -3,8 +3,8 @@
 import os
 import numpy
 
-from scientific_library.tvb.basic.logger.builder import get_logger
-from scientific_library.tvb.simulator.plot.config import CONFIGURED
+from tvb.basic.logger.builder import get_logger
+from tvb.simulator.plot.config import CONFIGURED
 
 import matplotlib
 matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
@@ -13,7 +13,7 @@ from matplotlib import pyplot
 pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from scientific_library.tvb.simulator.plot.utils import ensure_list, generate_region_labels
+from tvb.simulator.plot.utils import ensure_list, generate_region_labels
 
 
 class BasePlotter(object):
@@ -448,7 +448,7 @@ class BasePlotter(object):
         return fig, ax
 
     def plot(self, plot_fun_name, *args, **kwargs):
-        import scientific_library.tvb.simulator.plot.tools as TVB_plot_tools
+        import tvb.simulator.plot.tools as TVB_plot_tools
         getattr(TVB_plot_tools, plot_fun_name)(*args, **kwargs)
         fig = pyplot.gcf()
         self._save_figure(fig)

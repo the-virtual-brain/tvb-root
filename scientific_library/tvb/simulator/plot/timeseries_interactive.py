@@ -62,9 +62,9 @@ import numpy
 import pylab
 import matplotlib.widgets as widgets
 from matplotlib import rcParams
-from scientific_library.tvb.simulator.common import get_logger
-import scientific_library.tvb.datatypes.time_series as time_series_datatypes
-from scientific_library.tvb.basic.neotraits.api import HasTraits, Attr, Int
+from tvb.simulator.common import get_logger
+import tvb.datatypes.time_series as time_series_datatypes
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 
 LOG = get_logger(__name__)
 # Define a colour theme... see: matplotlib.colors.cnames.keys()

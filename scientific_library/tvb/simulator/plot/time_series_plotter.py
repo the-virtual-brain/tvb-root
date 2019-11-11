@@ -5,11 +5,11 @@ import matplotlib
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
 import numpy
-from scientific_library.tvb.simulator.plot.utils import ensure_list, isequal_string, generate_region_labels
-from scientific_library.tvb.basic.logger.builder import get_logger
-from scientific_library.tvb.simulator.plot.utils import time_spectral_analysis
-from scientific_library.tvb.simulator.plot.base_plotter import BasePlotter
-from scientific_library.tvb.datatypes.time_series import TimeSeries
+from tvb.simulator.plot.utils import ensure_list, isequal_string, generate_region_labels
+from tvb.basic.logger.builder import get_logger
+from tvb.simulator.plot.utils import time_spectral_analysis
+from tvb.simulator.plot.base_plotter import BasePlotter
+from tvb.datatypes.time_series import TimeSeries
 LOG = get_logger(__name__)
 
 def assert_time(time, n_times, time_unit="ms", logger=None):
@@ -400,7 +400,7 @@ class TimeSeriesPlotter(BasePlotter):
 
     @staticmethod
     def plot_tvb_time_series_interactive(time_series, first_n=-1, **kwargs):
-        from scientific_library.tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractive
+        from tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractive
         interactive_plotter = TimeSeriesInteractive(time_series=time_series, first_n=first_n)
         interactive_plotter.configure()
         block = kwargs.pop("block", True)
@@ -427,7 +427,7 @@ class TimeSeriesPlotter(BasePlotter):
 
     @staticmethod
     def plot_tvb_power_spectra_interactive(time_series, spectral_props, **kwargs):
-        from scientific_library.tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
+        from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
         interactive_plotters = PowerSpectraInteractive(time_series=time_series, **spectral_props)
         interactive_plotters.configure()
         block = kwargs.pop("block", True)
