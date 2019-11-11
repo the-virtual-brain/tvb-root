@@ -256,8 +256,7 @@ class FilesHelper(object):
         except Exception:
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
-            
-            
+
     def move_datatype(self, datatype, old_project_name, new_project_name, new_op_id):
         """
         Move H5 storage into a new location
@@ -270,8 +269,7 @@ class FilesHelper(object):
         except Exception:
             self.logger.exception("Could not move file")
             raise FileStructureException("Could not move " + str(datatype))
-    
-    
+
     ######################## IMAGES METHODS Start Here #######################    
     def get_images_folder(self, project_name):
         """

@@ -41,7 +41,7 @@ from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.core.factory import TestFactory
@@ -89,9 +89,11 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
 
         dummy_time_series = dao.get_generic_entity(dummy_time_series.__class__, dummy_time_series.gid, 'gid')[0]
         ts_metric_adapter = TimeseriesMetricsAdapter()
+        form = TimeseriesMetricsAdapterForm()
+        ts_metric_adapter.submit_form(form)
         resulted_metric = ts_metric_adapter.launch(dummy_time_series)
         assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."
-        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.input_shape)),\
+        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.get_form().algorithms.choices)),\
                         "At least a result should have been generated for every metric."
         for metric_value in json.loads(resulted_metric.metrics).values():
             assert isinstance(metric_value, (float, int))

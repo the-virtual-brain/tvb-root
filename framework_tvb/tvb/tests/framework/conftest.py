@@ -476,7 +476,7 @@ def test_adapter_factory():
     def build(adapter_class=TestAdapter1):
 
         all_categories = dao.get_algorithm_categories()
-        algo_category_id = [cat.id for cat in all_categories][0]
+        algo_category_id = all_categories[0].id
 
         stored_adapter = Algorithm(adapter_class.__module__, adapter_class.__name__, algo_category_id,
                                    adapter_class.get_group_name(), adapter_class.get_group_description(),
@@ -502,8 +502,6 @@ def test_adapter_factory():
             stored_adapter.id = inst_from_db.id
 
         dao.store_entity(stored_adapter, inst_from_db is not None)
-        adapter_inst.submitted_form = adapter_form
-        return adapter_inst
     return build
 
 

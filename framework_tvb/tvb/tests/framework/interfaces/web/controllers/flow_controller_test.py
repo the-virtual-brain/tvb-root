@@ -161,13 +161,13 @@ class TestFlowController(BaseControllersTest):
         assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
 
     def test_get_simple_adapter_interface(self, test_adapter_factory):
-        adapter_inst = test_adapter_factory()
+        test_adapter_factory()
         form = TestAdapter1Form()
-        adapter_inst.submit_form(form)
-
-        adapter = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        result = self.flow_c.get_simple_adapter_interface(adapter.id)
-        expected_interface = adapter_inst.get_form()
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        algo = adapter.stored_adapter
+        adapter.submit_form(form)
+        result = self.flow_c.get_simple_adapter_interface(algo.id)
+        expected_interface = adapter.get_form()
         assert type(result['form']) == type(expected_interface)
         assert result['form'].test1_val1.value == expected_interface.test1_val1.value
         assert result['form'].test1_val2.value == expected_interface.test1_val2.value

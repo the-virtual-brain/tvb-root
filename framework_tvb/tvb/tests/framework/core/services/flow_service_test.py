@@ -45,43 +45,18 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter
+from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter, ABCAsynchronous
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
 
-TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.core.services.flow_service_test"
-TEST_ADAPTER_VALID_CLASS = "ValidTestAdapter"
+TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
+TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
 TEST_ADAPTER_INVALID_CLASS = "InvalidTestAdapter"
 
 CATEGORY1 = 1
 CATEGORY2 = 2
-
-
-class ValidTestAdapter(ABCSynchronous):
-    """ Adapter used for testing purposes. """
-
-    def __init__(self):
-        ABCSynchronous.__init__(self)
-
-    def get_input_tree(self):
-        return [{'name': 'test', 'type': 'int', 'default': '0'}]
-
-    def get_output(self):
-        return []
-
-    def get_required_memory_size(self, **kwargs):
-        # Don't know how much memory is needed.
-        return -1
-
-    def get_required_disk_size(self, **kwargs):
-        # Don't know how much memory is needed.
-        return -1
-
-    def launch(self, **kwarg):
-        pass
 
 
 class InvalidTestAdapter():
@@ -144,11 +119,11 @@ class TestFlowService(TransactionalTestCase):
         assert 1 == len(result)
         assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
 
-    def test_get_launchable_algorithms(self, time_series_region_factory, connectivity_factory, region_mapping_factory):
+    def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory, region_mapping_factory):
 
         conn = connectivity_factory()
         rm = region_mapping_factory()
-        ts = time_series_region_factory(connectivity=conn, region_mapping=rm)
+        ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
         result = self.flow_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
@@ -163,12 +138,13 @@ class TestFlowService(TransactionalTestCase):
         assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
         assert algo_ret.classname == self.algorithm.classname, "Class names are different!"
 
-    def test_build_adapter_instance(self):
+    def test_build_adapter_instance(self, test_adapter_factory):
         """
         Test standard flow for building an adapter instance.
         """
+        test_adapter_factory()
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
+        assert isinstance(adapter, ABCAsynchronous), "Something went wrong with valid data!"
 
     def test_build_adapter_invalid(self):
         """

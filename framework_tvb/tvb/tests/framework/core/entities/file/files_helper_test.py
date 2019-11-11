@@ -179,8 +179,8 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper.move_datatype(datatype, folder_path, self.PROJECT_NAME + '11', "43")
         
         assert not os.path.exists(folder_path), "Test file was not moved!"
-        datatype.storage_path = self.files_helper.get_project_folder(self.PROJECT_NAME + '11', "43")
-        assert os.path.exists(datatype.storage_path), "Test file was not created!"
+        storage_path = self.files_helper.get_project_folder(self.PROJECT_NAME + '11', "43")
+        assert os.path.exists(storage_path), "Test file was not created!"
 
     def test_find_relative_path(self):
         """
