@@ -32,10 +32,46 @@
 .. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-from tvb.core.adapters.abcadapter import ABCSynchronous
+import uuid
+import numpy
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation
+from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
-from tvb.datatypes.equations import Equation
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
+from tvb.datatypes.surfaces import CorticalSurface
+
+
+class SurfaceStimulusCreatorForm(ABCAdapterForm):
+
+    def __init__(self, spatial_equation_choices, temporal_equation_choices, project_id):
+        super(SurfaceStimulusCreatorForm, self).__init__()
+        self.project_id = project_id
+
+        # TODO: filter CorticalSurafces
+        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True, label='Surface',
+                                           conditions=self.get_filters())
+        self.spatial = SimpleSelectField(spatial_equation_choices, self, name='spatial', required=True,
+                                         label='Spatial equation')
+        self.temporal = SimpleSelectField(temporal_equation_choices, self, name='temporal', required=True,
+                                          label='Temporal equation')
+
+    @staticmethod
+    def get_required_datatype():
+        return SurfaceIndex
+
+    @staticmethod
+    def get_input_name():
+        return '_surface'
+
+    @staticmethod
+    def get_filters():
+        return None
 
 
 class SurfaceStimulusCreator(ABCSynchronous):
@@ -43,19 +79,8 @@ class SurfaceStimulusCreator(ABCSynchronous):
     The purpose of this adapter is to create a StimuliSurface.
     """
 
-
-    def get_input_tree(self):
-        import tvb.basic.traits.traited_interface as interface
-
-        """
-        Returns the input interface for this adapter.
-        """
-        stimuli_surface = StimuliSurface()
-        stimuli_surface.trait.bound = interface.INTERFACE_ATTRIBUTES_ONLY
-        inputList = stimuli_surface.interface[interface.INTERFACE_ATTRIBUTES]
-
-        return inputList
-
+    def get_form_class(self):
+        return SurfaceStimulusCreatorForm
 
     def get_output(self):
         """
@@ -63,40 +88,57 @@ class SurfaceStimulusCreator(ABCSynchronous):
         """
         return [StimuliSurfaceIndex]
 
-
     def launch(self, **kwargs):
         """
         Used for creating a `StimuliSurface` instance
         """
-        stimuli_surface = StimuliSurface(storage_path=self.storage_path)
-        stimuli_surface.surface = kwargs['surface']
         triangles_indices = kwargs['focal_points_triangles']
         focal_points = []
         fp_triangle_indices = []
+
+        stimuli_surface = StimuliSurface()
+
+        surface_gid = kwargs['surface']
+        stimuli_surface.surface = CorticalSurface()
+        stimuli_surface.surface.gid = uuid.UUID(surface_gid)
+
+        surface_index = dao.get_datatype_by_gid(surface_gid)
+        surface_h5 = h5.h5_file_for_index(surface_index)
+        triangles = surface_h5.triangles.load()
+        surface_h5.close()
+
         for triangle_index in triangles_indices:
-            focal_points.append(int(stimuli_surface.surface.triangles[triangle_index][0]))
+            focal_points.append(int(triangles[triangle_index][0]))
             fp_triangle_indices.append(int(triangle_index))
-        stimuli_surface.focal_points_triangles = fp_triangle_indices
-        stimuli_surface.focal_points_surface = focal_points
+
+        stimuli_surface.focal_points_triangles = numpy.array(fp_triangle_indices)
+        stimuli_surface.focal_points_surface = numpy.array(focal_points)
+
         stimuli_surface.spatial = self.get_spatial_equation(kwargs)
         stimuli_surface.temporal = self.get_temporal_equation(kwargs)
 
-        return stimuli_surface
+        stimuli_surface_index = StimuliSurfaceIndex()
+        stimuli_surface_index.fill_from_has_traits(stimuli_surface)
 
+        h5.store_complete(stimuli_surface, self.storage_path)
+        return stimuli_surface_index
 
     def get_spatial_equation(self, kwargs):
-        """
-        From a dictionary of arguments build the spatial equation.
-        """
-        return Equation.build_equation_from_dict('spatial', kwargs)
-
+        return self._prepare_equation('spatial', kwargs)
 
     def get_temporal_equation(self, kwargs):
-        """
-        From a dictionary of arguments build the temporal equation.
-        """
-        return Equation.build_equation_from_dict('temporal', kwargs)
+        return self._prepare_equation('temporal', kwargs)
 
+    def _prepare_equation(self, equation_type, kwargs):
+        """
+        From a dictionary of arguments build the equation.
+        """
+        equation_name = kwargs[equation_type]
+        equation = get_ui_name_to_equation_dict().get(equation_name)()
+        equation_form = get_form_for_equation(type(equation))(prefix=equation_type)
+        equation_form.fill_from_post(kwargs)
+        equation_form.fill_trait(equation)
+        return equation
 
     def get_required_memory_size(self, **kwargs):
         """
@@ -104,13 +146,36 @@ class SurfaceStimulusCreator(ABCSynchronous):
         """
         return -1
 
-
     def get_required_disk_size(self, **kwargs):
         """
         Returns the required disk size to be able to run the adapter. (in kB)
         """
         return 0
 
+
+class RegionStimulusCreatorForm(ABCAdapterForm):
+
+    def __init__(self, equation_choices, project_id):
+        super(RegionStimulusCreatorForm, self).__init__()
+        self.project_id = project_id
+
+        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
+                                                required=True)
+        self.temporal = SimpleSelectField(equation_choices, self, name='equation', label='Temporal equation',
+                                          required=True)
+        self.temporal.template = 'form_fields/select_field.html'
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return '_connectivity'
+
+    @staticmethod
+    def get_required_datatype():
+        return ConnectivityIndex
 
 
 class RegionStimulusCreator(ABCSynchronous):
@@ -118,19 +183,8 @@ class RegionStimulusCreator(ABCSynchronous):
     The purpose of this adapter is to create a StimuliRegion.
     """
 
-
-    def get_input_tree(self):
-        import tvb.basic.traits.traited_interface as interface
-
-        """
-        Returns the input interface for this adapter.
-        """
-        stimuli_region = StimuliRegion()
-        stimuli_region.trait.bound = interface.INTERFACE_ATTRIBUTES_ONLY
-        inputList = stimuli_region.interface[interface.INTERFACE_ATTRIBUTES]
-
-        return inputList
-
+    def get_form_class(self):
+        return RegionStimulusCreatorForm
 
     def get_output(self):
         """
@@ -138,18 +192,25 @@ class RegionStimulusCreator(ABCSynchronous):
         """
         return [StimuliRegionIndex]
 
-
     def launch(self, **kwargs):
         """
         Used for creating a `StimuliRegion` instance
         """
-        stimuli_region = StimuliRegion(storage_path=self.storage_path)
-        stimuli_region.connectivity = kwargs['connectivity']
-        stimuli_region.weight = kwargs['weight']
-        stimuli_region.temporal = Equation.build_equation_from_dict('temporal', kwargs)
+        stimuli_region = StimuliRegion()
+        stimuli_region.connectivity = Connectivity()
+        stimuli_region.connectivity.gid = uuid.UUID(kwargs['connectivity'])
+        stimuli_region.weight = numpy.array(kwargs['weight'])
+        stimuli_region.temporal = get_ui_name_to_equation_dict().get(kwargs['temporal'])()
+        # TODO: keep prefix in one place
+        temporal_equation_form = get_form_for_equation(type(stimuli_region.temporal))(prefix='temporal')
+        temporal_equation_form.fill_from_post(kwargs)
+        temporal_equation_form.fill_trait(stimuli_region.temporal)
 
-        return stimuli_region
+        stimuli_region_idx = StimuliRegionIndex()
+        stimuli_region_idx.fill_from_has_traits(stimuli_region)
 
+        h5.store_complete(stimuli_region, self.storage_path)
+        return stimuli_region_idx
 
     def get_required_disk_size(self, **kwargs):
         """
@@ -157,12 +218,8 @@ class RegionStimulusCreator(ABCSynchronous):
         """
         return 0
 
-
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
         """
         return -1
-    
-    
-    
