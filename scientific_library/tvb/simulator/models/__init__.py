@@ -38,6 +38,15 @@ Specific models inherit from the abstract class Model.
 
 """
 
+# we don't import all models by default here, since they are time consuming
+# to setup (e.g. numba gufunc compilation), but provide them as module-level
+# properties for compatibility with previous version of TVB. For example
+# 
+#     import tvb.simulator.models.Epileptor
+# 
+# works, but only lazily loads the tvb.simulator.models.epileptor module
+# and returns the Epileptor class.
+
 _module_models = {
     'base': 'Model'.split(', '),
     'epileptor': 'Epileptor, Epileptor2D'.split(', '),
@@ -54,3 +63,33 @@ _module_models = {
     'wong_wang_exc_inh': 'ReducedWongWangExcInh'.split(', '),
     'zerlaut': 'ZerlautFirstOrder, ZerlautSecondOrder'.split(', '),
 }
+
+
+def _delay_model_imports():
+    # create properties for each model
+    for mod, models in _module_models.items():
+        for model in models:
+            code = f'''
+@property
+def {model}(m):
+    from tvb.simulator.models.{mod} import {model} as model
+    return model
+'''
+            exec(code, globals())
+    # create substitute module class & object
+    class _Module:
+        pass
+    module = _Module()
+    module.__dict__ = globals()
+    # move properties into module class
+    for k, v in list(module.__dict__.items()):
+        if isinstance(v, property):
+            setattr(_Module, k, v)
+            del module.__dict__[k]
+    # register module object
+    import sys
+    module._module = sys.modules[module.__name__]
+    module._pmodule = module
+    sys.modules[module.__name__] = module
+
+_delay_model_imports()
