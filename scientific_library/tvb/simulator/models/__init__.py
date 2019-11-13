@@ -38,17 +38,19 @@ Specific models inherit from the abstract class Model.
 
 """
 
-from .base import Model
-from .epileptor import Epileptor, Epileptor2D
-from .epileptor_rs import EpileptorRestingState
-from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
-from .hopfield import Hopfield
-from .jansen_rit import JansenRit, ZetterbergJansen
-from .larter_breakspear import LarterBreakspear
-from .linear import Linear
-from .oscillator import Generic2dOscillator, Kuramoto, SupHopf
-from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
-from .wilson_cowan import WilsonCowan
-from .wong_wang import ReducedWongWang
-from .wong_wang_exc_inh import ReducedWongWangExcInh
-from .zerlaut import ZerlautFirstOrder, ZerlautSecondOrder
+_module_models = {
+    'base': 'Model'.split(', '),
+    'epileptor': 'Epileptor, Epileptor2D'.split(', '),
+    'epileptor_rs': 'EpileptorRestingState'.split(', '),
+    'epileptorcodim3': 'EpileptorCodim3, EpileptorCodim3SlowMod'.split(', '),
+    'hopfield': 'Hopfield'.split(', '),
+    'jansen_rit': 'JansenRit, ZetterbergJansen'.split(', '),
+    'larter_breakspear': 'LarterBreakspear'.split(', '),
+    'linear': 'Linear'.split(', '),
+    'oscillator': 'Generic2dOscillator, Kuramoto, SupHopf'.split(', '),
+    'stefanescu_jirsa': 'ReducedSetFitzHughNagumo, ReducedSetHindmarshRose'.split(', '),
+    'wilson_cowan': 'WilsonCowan'.split(', '),
+    'wong_wang': 'ReducedWongWang'.split(', '),
+    'wong_wang_exc_inh': 'ReducedWongWangExcInh'.split(', '),
+    'zerlaut': 'ZerlautFirstOrder, ZerlautSecondOrder'.split(', '),
+}
