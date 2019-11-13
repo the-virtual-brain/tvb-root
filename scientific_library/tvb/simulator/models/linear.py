@@ -64,3 +64,15 @@ class Linear(Model):
         c, = coupling
         dx = self.gamma * x + c + local_coupling * x
         return numpy.array([dx])
+
+    def make_dfun(self, numpy=numpy):
+        # need closure to contain only numpy stuff objects, not self
+        gamma = self.gamma
+        def dfun(state, coupling, local_coupling=0.0):
+            x, = state
+            c, = coupling
+            dx = gamma * x + c + local_coupling * x
+            return numpy.array([dx])
+        return dfun
+
+
