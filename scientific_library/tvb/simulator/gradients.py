@@ -25,54 +25,22 @@
 #   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
 
 """
-Generic linear model.
+Utilities for generating gradients with simulator components.
+Strategy will be to do opt-in gradients: a component should mix
+in the HasGradient type tag and implement methods with names
+_*_ad to implement in autodiff-friendly fashion.
+
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
-import numpy
-from .base import Model
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+
+class HasGradient:
+    pass
 
 
-class Linear(Model):
-    gamma = NArray(
-        label=r":math:`\gamma`",
-        default=numpy.array([-10.0]),
-        domain=Range(lo=-100.0, hi=0.0, step=1.0),
-        doc="The damping coefficient specifies how quickly the node's activity relaxes, must be larger"
-            " than the node's in-degree in order to remain stable.")
-
-    state_variable_range = Final(
-        label="State Variable ranges [lo, hi]",
-        default={"x": numpy.array([-1, 1])},
-        doc="Range used for state variable initialization and visualization.")
-
-    variables_of_interest = List(
-        of=str,
-        label="Variables watched by Monitors",
-        choices=("x",),
-        default=("x",), )
-
-    state_variables = ('x',)
-    _nvar = 1
-    cvar = numpy.array([0], dtype=numpy.int32)
-
-    def dfun(self, state, coupling, local_coupling=0.0):
-        x, = state
-        c, = coupling
-        dx = self.gamma * x + c + local_coupling * x
-        return numpy.array([dx])
-
-    def make_dfun(self, numpy=numpy):
-        # need closure to contain only numpy stuff objects, not self
-        gamma = self.gamma
-        def dfun(state, coupling, local_coupling=0.0):
-            x, = state
-            c, = coupling
-            dx = gamma * x + c + local_coupling * x
-            return numpy.array([dx])
-        return dfun
-
-
+def has_gradient(obj):
+    return isinstance(obj, HasGradient)

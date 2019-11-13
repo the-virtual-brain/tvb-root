@@ -288,6 +288,19 @@ class EulerDeterministic(Integrator):
             self.clamp_state(X_next)
         return X_next
 
+    def make_scheme(self, dfun):
+        if self.state_variable_boundaries is not None:
+            raise NotImplementedError("make_scheme does not implement state variable boundaries")
+        if self.clamped_state_variable_values is not None:
+            raise NotImplementedError("make_scheme does not implement clamped state variable")
+        dt = self.dt
+        def scheme(X, coupling, local_coupling=0, stimulus=0):
+            dX = dfun(X, coupling, local_coupling)
+            X_next = X + dt * (dX + stimulus)
+            return X_next
+        return scheme
+
+
 
 class EulerStochastic(IntegratorStochastic):
     """
