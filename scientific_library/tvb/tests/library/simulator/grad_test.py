@@ -58,7 +58,9 @@ class TestTimeSeriesGradient:
 
     def test_grad(self):
         init = anp.random.randn(1, 5, 1)
-        assert anp.sum(anp.square(init - self.init)) > 0.1
-        for i in range(20):
+        err = anp.sum(anp.square(init - self.init))
+        for i in range(5):
             init += -0.1 * self.grad_func(init)
-        assert anp.sum(anp.square(init - self.init)) < 0.1
+            new_err = anp.sum(anp.square(init - self.init))
+            assert new_err < err
+            err = new_err
