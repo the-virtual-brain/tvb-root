@@ -65,31 +65,35 @@ _module_models = {
 }
 
 
+def _delay_import_one(mod, model):
+    """Create getter thunk for module and model name.
+    """
+    import importlib
+    def do_import(_):
+        module_name = f'tvb.simulator.models.{mod}'
+        model_module = importlib.import_module(module_name)
+        return getattr(model_module, model)
+    return property(do_import)
+
+
 def _delay_model_imports():
-    # create properties for each model
-    for mod, models in _module_models.items():
-        for model in models:
-            code = f'''
-@property
-def {model}(m):
-    from tvb.simulator.models.{mod} import {model} as model
-    return model
-'''
-            exec(code, globals())
+    """Set up this module with all properties for all models.
+    """
     # create substitute module class & object
     class _Module:
         pass
     module = _Module()
     module.__dict__ = globals()
-    # move properties into module class
-    for k, v in list(module.__dict__.items()):
-        if isinstance(v, property):
-            setattr(_Module, k, v)
-            del module.__dict__[k]
+    # create properties for each model
+    props = {}
+    for mod, models in _module_models.items():
+        for model in models:
+            setattr(_Module, model, _delay_import_one(mod, model))
     # register module object
     import sys
     module._module = sys.modules[module.__name__]
     module._pmodule = module
     sys.modules[module.__name__] = module
+
 
 _delay_model_imports()
