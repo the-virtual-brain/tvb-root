@@ -85,7 +85,6 @@ def _delay_model_imports():
     module = _Module()
     module.__dict__ = globals()
     # create properties for each model
-    props = {}
     for mod, models in _module_models.items():
         for model in models:
             setattr(_Module, model, _delay_import_one(mod, model))
