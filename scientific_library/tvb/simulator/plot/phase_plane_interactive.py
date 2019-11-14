@@ -649,7 +649,7 @@ class PhasePlaneInteractive(HasTraits):
         """ Clear the axes and redraw the phase-plane. """
         self.pp_ax.clear()
         self.pp_splt.clear()
-        self.pp_splt.set_color_cycle(get_color(self.model.nvar))
+        self.pp_splt.set_prop_cycle('color',get_color(self.model.nvar))
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS+1) * self.integrator.dt,
                           numpy.zeros((TRAJ_STEPS+1, self.model.nvar)))
         if hasattr(self.pp_splt, 'autoscale'):
