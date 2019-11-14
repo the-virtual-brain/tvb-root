@@ -118,7 +118,7 @@ class TestGradDelays:
         return sse
 
     def test_opt(self):
-        # simulated data
+        "Attempt optimization by gradient descent."
         k = 0.15
         data = self._run_loop(k)
         # guess w/ initial sse
@@ -127,7 +127,28 @@ class TestGradDelays:
         grad_sse = grad(lambda k_i: self._sse_loop(k_i, data))
         # do opt
         for i in range(5):
-            k_hat += -0.1 * grad_sse(k_hat)
+            g = grad_sse(k_hat)
+            k_hat += -0.1 * g
         sse_ip1 = self._sse_loop(k_hat, data).ravel()._value.item()
+        assert sse_ip1 < sse_i
+        sse_i = sse_ip1
+
+    def _grad_df(self, f, h):
+        "Construct a gradient function via finite difference."
+        return lambda x: (f(x + h) - f(x)) / h
+
+    def test_opt_fd(self):
+        "Attempt optimization by gradient descent with finite differences."
+        k = 0.15
+        data = self._run_loop(k)
+        # guess w/ initial sse
+        k_hat = 0.1
+        sse_i = self._sse_loop(k_hat, data)
+        grad_sse = self._grad_df(lambda k_i: self._sse_loop(k_i, data), 1e-3)
+        # do opt
+        for i in range(5):
+            g = grad_sse(k_hat)
+            k_hat += -0.1 * g
+        sse_ip1 = self._sse_loop(k_hat, data)
         assert sse_ip1 < sse_i
         sse_i = sse_ip1
