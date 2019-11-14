@@ -71,7 +71,7 @@ class TestTimeSeriesGradient:
 class TestGradDelays:
     "Test taking autodiffing through time delay ring buffer."
 
-    def setup_method(self):
+    def _setup_data(self):
         "setup data for delay buffer."
         self.nn = 2
         self.nt = 3
@@ -96,15 +96,18 @@ class TestGradDelays:
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
+        self._setup_data()
         for i in range(10):
             self._loop_iter(k=0)
             lag1 = self.trace[(self.trpos + self.nt - 1) % self.nt]
             lag0 = self.state
             assert_allclose(lag1, 2.0 * lag0)
             assert self.trpos == ((i + 1) % self.nt)
+            assert self.trace.shape == (self.nt, self.nn)
 
     def _run_loop(self, k):
         "Run simulation loop for value of k."
+        self._setup_data()
         trace = []
         for i in range(10):
             self._loop_iter(k=k)
@@ -129,7 +132,7 @@ class TestGradDelays:
         for i in range(5):
             g = grad_sse(k_hat)
             k_hat += -0.1 * g
-        sse_ip1 = self._sse_loop(k_hat, data).ravel()._value.item()
+        sse_ip1 = self._sse_loop(k_hat, data)
         assert sse_ip1 < sse_i
         sse_i = sse_ip1
 
