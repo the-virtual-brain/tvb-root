@@ -720,15 +720,16 @@ class SimulatorController(BurstBaseController):
     @check_user
     def set_monitor_equation(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        monitor = session_stored_simulator.monitors[0]
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
             is_simulator_copy = False
-            form = get_form_for_monitor(type(session_stored_simulator.monitors[0]))()
+            form = get_form_for_equation(type(monitor.equation))()
             form.fill_from_post(data)
-            form.fill_trait(session_stored_simulator.monitor.hrf_kernel)
+            form.fill_trait(monitor.hrf_kernel)
 
         next_form = SimulatorLengthFragment()
 
