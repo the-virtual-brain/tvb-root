@@ -169,9 +169,9 @@ class TestGradDelays:
         for i in range(5):
             g = grad_sse(k_hat)
             k_hat += -0.1 * g
-        sse_ip1 = self._sse_loop(k_hat, data)
-        assert sse_ip1 < sse_i
-        sse_i = sse_ip1
+            sse_ip1 = self._sse_loop(k_hat, data)
+            assert sse_ip1 < sse_i
+            sse_i = sse_ip1
 
     def _grad_df(self, f, h):
         "Construct a gradient function via finite difference."
@@ -189,6 +189,6 @@ class TestGradDelays:
         for i in range(5):
             g = grad_sse(k_hat)
             k_hat += -0.1 * g
-        sse_ip1 = self._sse_loop(k_hat, data)
-        assert sse_ip1 < sse_i
-        sse_i = sse_ip1
+            sse_ip1 = self._sse_loop(k_hat, data)
+            assert sse_ip1 < sse_i
+            sse_i = sse_ip1
