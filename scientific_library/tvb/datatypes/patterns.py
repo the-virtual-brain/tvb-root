@@ -165,7 +165,7 @@ class StimuliRegion(SpatioTemporalPattern):
         Returns a list with a number of elements
         equal to the given number of regions.
         """
-        return [0.0] * number_of_regions
+        return numpy.array([0.0] * number_of_regions)
 
     @property
     def weight_array(self):
