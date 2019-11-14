@@ -1199,8 +1199,8 @@ function launchNewBurst(currentForm, launchMode) {
 }
 
 
-function previousWizzardStep(currentForm, previous_action) {
-    document.getElementById('div-simulator-parameters').removeChild(currentForm);
+function previousWizzardStep(currentForm, previous_action, div_id='div-simulator-parameters') {
+    document.getElementById(div_id).removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
@@ -1228,7 +1228,7 @@ function previousWizzardStep(currentForm, previous_action) {
     fieldset.disabled = false;
 }
 
-function wizzard_submit(currentForm) {
+function wizzard_submit(currentForm, div_id='div-simulator-parameters') {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
@@ -1262,8 +1262,8 @@ function wizzard_submit(currentForm) {
             }
             fieldset.disabled = true;
             var t = document.createRange().createContextualFragment(response);
-            document.getElementById('div-simulator-parameters').appendChild(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+            document.getElementById(div_id).appendChild(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
 
         }
     })
