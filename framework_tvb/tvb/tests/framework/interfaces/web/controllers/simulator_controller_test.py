@@ -42,13 +42,20 @@ import cherrypy
 from cherrypy.lib.sessions import RamSession
 from cherrypy.test import helper
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import KEY_USER, KEY_PROJECT
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
 from tvb.simulator.coupling import Sigmoidal
-from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic
+from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic, EulerDeterministic, \
+    EulerStochastic
 from tvb.simulator.models import Generic2dOscillator
-from tvb.simulator.monitors import TemporalAverage, MEG
+from tvb.simulator.monitors import TemporalAverage, MEG, Bold
 from tvb.simulator.noise import Multiplicative
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.factory import TestFactory
@@ -117,6 +124,35 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_surface(**self.sess_mock._data)
 
         assert self.session_stored_simulator.surface is None, "Surface should not be set."
+
+    def test_set_cortex_without_local_connectivity(self):
+        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+
+        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
+        surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
+
+        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
+        region_mapping = TestFactory.import_region_mapping(text_file, surface.gid, connectivity.gid, self.test_user, self.test_project)
+
+        self.session_stored_simulator.surface = Cortex()
+
+        self.sess_mock['_region_mapping'] = region_mapping.gid
+        self.sess_mock['_local_connectivity'] = 'explicit-None-value'
+        self.sess_mock['_coupling_strength'] = '[1.0]'
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_cortex(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.surface.region_mapping_data.gid.hex == region_mapping.gid,\
+            'Region mapping was not set correctly'
+        assert self.session_stored_simulator.surface.local_connectivity is None,\
+            'Default value should have been set to local connectivity.'
+        assert self.session_stored_simulator.surface.coupling_strength == [1.0],\
+            "coupling_strength was not set correctly."
 
     def test_set_stimulus_none(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -201,6 +237,45 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.integrator.dt == 0.01220703125, 'dt value was not set correctly.'
         assert isinstance(self.session_stored_simulator.integrator.noise, Multiplicative), 'Noise class is incorrect.'
 
+    def test_set_noise_params(self):
+        self.sess_mock['_ntau'] = '0.0'
+        self.sess_mock['_noise_seed'] = '42'
+        self.sess_mock['_nsig'] = '[1.0]'
+
+        self.session_stored_simulator.integrator = EulerStochastic()
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_noise_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.integrator.noise.ntau == 0.0, "ntau value was not set correctly."
+        assert self.session_stored_simulator.integrator.noise.noise_seed == 42, \
+            "noise_seed value was not set correctly."
+        assert self.session_stored_simulator.integrator.noise.nsig == [1.0], "nsig value was not set correctly."
+
+    def test_set_noise_equation_params(self):
+        self.sess_mock['_low'] = '0.1'
+        self.sess_mock['_high'] = '1.0'
+        self.sess_mock['_midpoint'] = '1.0'
+        self.sess_mock['_sigma'] = '0.3'
+
+        self.session_stored_simulator.integrator = Dopri5Stochastic()
+        self.session_stored_simulator.integrator.noise = Multiplicative()
+        self.session_stored_simulator.integrator.noise.b = GeneralizedSigmoid()
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_noise_equation_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.integrator.noise.b.parameters['low'] == 0.1,\
+            "low value was not set correctly"
+        assert self.session_stored_simulator.integrator.noise.b.parameters['high'] == 1.0,\
+            "high value was not set correctly"
+        assert self.session_stored_simulator.integrator.noise.b.parameters['midpoint'] == 1.0,\
+            "midpoint value was not set correctly"
+        assert self.session_stored_simulator.integrator.noise.b.parameters['sigma'] == 0.3,\
+            "sigma value was not set correctly"
+
     def test_set_monitors(self):
         self.sess_mock['_monitor'] = 'Temporal average'
 
@@ -251,6 +326,105 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         # assert self.session_stored_simulator.monitors[0].projection is not None, "Projection was not added."
         assert self.session_stored_simulator.monitors[0].sigma == 1.0, "Sigma was not set correctly."
         # assert self.session_stored_simulator.monitors[0].sensors is not None, "Sensors where not added."
+
+    def test_set_monitor_params_bold(self):
+        self.sess_mock['_period'] = '2000.0'
+        self.sess_mock['_variables_of_interest'] = ''
+        self.sess_mock['_equation'] = 'HRF kernel: Volterra Kernel'
+
+        self.session_stored_simulator.monitors = [Bold()]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_monitor_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
+        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
+            "Variables of interest should have not been added."
+
+    def test_set_monitor_equation(self):
+        self.sess_mock['_tau_s'] = '0.8'
+        self.sess_mock['_tau_f'] = '0.4'
+        self.sess_mock['_k_1'] = '5.6'
+        self.sess_mock['_V_0'] = '0.02'
+
+        self.session_stored_simulator.monitors = [Bold()]
+        self.session_stored_simulator.monitors[0].equation = FirstOrderVolterra()
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_monitor_equation(**self.sess_mock._data)
+
+        form = get_form_for_equation(type(self.session_stored_simulator.monitors[0].equation))()
+
+        assert form.tau_s.data == 0.8, "tau_s value was not set correctly."
+        assert form.tau_f.data == 0.4, "tau_f value was not set correctly."
+        assert form.k_1.data == 5.6, "k_1 value was not set correctly."
+        assert form.V_0.data == 0.02, "V_0 value was not set correctly."
+
+    def test_set_simulation_length(self):
+        burst_config = BurstConfiguration2(self.test_project.id)
+
+        self.sess_mock['_simulation_length'] = '1000.0'
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
+
+    def test_set_simulation_length_with_burst_config_name(self):
+        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config.name = "Test Burst Config"
+        self.sess_mock['_simulation_length'] = '1000.0'
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
+
+    def test_load_burst_history(self):
+        burst_config1 = BurstConfiguration2(self.test_project.id)
+        burst_config2 = BurstConfiguration2(self.test_project.id)
+        burst_config3 = BurstConfiguration2(self.test_project.id)
+
+        dao.store_entity(burst_config1)
+        dao.store_entity(burst_config2)
+        dao.store_entity(burst_config3)
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_BURST_CONFIG, burst_config1)
+            burst_parameters = self.simulator_controller.load_burst_history()
+
+        assert len(burst_parameters['burst_list']) == 3, "The burst configurations where not stored."
+
+    def test_reset_simulator_configuration(self):
+        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+
+        self.sess_mock['_connectivity'] = connectivity.gid
+        self.sess_mock['_conduction_speed'] = "3.0"
+        self.sess_mock['_coupling'] = "Sigmoidal"
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            rendering_rules = self.simulator_controller.set_connectivity(**self.sess_mock._data)
+
+        assert rendering_rules['renderer'].is_first_fragment is False,\
+            "Page should have advanced past the first fragment."
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            rendering_rules = self.simulator_controller.reset_simulator_configuration()
+
+        assert rendering_rules['renderer'].is_first_fragment is True,\
+            "Page should be set to the first fragment."
+
+
+
 
 
 
