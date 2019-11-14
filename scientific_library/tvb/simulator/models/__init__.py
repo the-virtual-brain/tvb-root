@@ -29,12 +29,8 @@
 """
 A collection of neuronal dynamics models.
 
-Specific models inherit from the abstract class Model.
-
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
-.. moduleauthor:: Gaurav Malhotra <Gaurav@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
+Specific models inherit from the abstract class base.Model, please consult
+the individual model modules for more information
 
 """
 
