@@ -111,12 +111,11 @@ class TestGradDelays:
     class CatRingBuffer:
         "Concatenating ring buffer."
 
-        def __init__(self, nn, nt):
+        def __init__(self, init, nt):
             "setup data for delay buffer."
-            self.nn = nn
             self.nt = nt
-            self.state = np.r_[:self.nn].astype('d')
-            self.trace = np.zeros((self.nt, self.nn))
+            self.state = init
+            self.trace = np.zeros((self.nt, ) + init.shape)
             self.trpos = -1
             self.update(self.state)
 
@@ -139,11 +138,9 @@ class TestGradDelays:
     class NoopBuffer:
         "Same interface as CatRingBuffer but no delays."
 
-        def __init__(self, nn, nt=0):
+        def __init__(self, init, nt=0):
             "setup data for no delay buffer."
-            self.nn = nn
-            self.nt = nt
-            self.state = np.r_[:self.nn].astype('d')
+            self.state = init
 
         def update(self, new_state):
             "Update state."
@@ -151,7 +148,6 @@ class TestGradDelays:
 
         def read(self, lag=None):
             "Read latest state."
-            assert lag == None
             return self.state
 
     class Loop:
@@ -169,6 +165,10 @@ class TestGradDelays:
             self.buf.update(new_state)
             return new_state
 
+    def setup_method(self):
+        self.nn = 2
+        self.init = np.r_[:self.nn].astype('d')
+
     def _loop_iter(self, k=0):
         "Loop body."
         lag2 = self.crb.read()
@@ -177,18 +177,18 @@ class TestGradDelays:
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
-        crb = self.CatRingBuffer(2, 3)
+        crb = self.CatRingBuffer(self.init, 3)
         loop = self.Loop(k=0, buf=crb)
         for i in range(10):
             lag0 = loop.step()
             lag1 = crb.read(lag=1)
             assert_allclose(lag1, 2.0 * lag0)
             assert crb.trpos == ((i + 1) % crb.nt)
-            assert crb.trace.shape == (crb.nt, crb.nn)
+            assert crb.trace.shape == ((crb.nt, ) + crb.state.shape)
 
     def _run_loop(self, k, Buf):
         "Run simulation loop for value of k."
-        loop = self.Loop(k=k, buf=Buf(2, 3))
+        loop = self.Loop(k=k, buf=Buf(self.init, 3))
         trace = []
         for i in range(10):
             trace.append(loop.step())
