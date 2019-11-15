@@ -108,47 +108,58 @@ class TestTimeSeriesGradient:
 class TestGradDelays:
     "Test taking autodiffing through time delay ring buffer."
 
-    def _setup_data(self):
-        "setup data for delay buffer."
-        self.nn = 2
-        self.nt = 3
-        self.state = np.r_[:self.nn].astype('d')
-        self.trace = np.zeros((self.nt, self.nn))
-        self.trpos = 0
-        self._update_trace()
+    class CatRingBuffer:
+        "Concatenating ring buffer."
 
-    def _update_trace(self):
-        "Non-in-place update for delay buffer 'trace'."
-        self.trace = np.concatenate([
-            self.trace[:self.trpos],
-            self.state.reshape((1, -1)),
-            self.trace[self.trpos + 1:]])
+        def __init__(self, nn, nt):
+            "setup data for delay buffer."
+            self.nn = nn
+            self.nt = nt
+            self.state = np.r_[:self.nn].astype('d')
+            self.trace = np.zeros((self.nt, self.nn))
+            self.trpos = -1
+            self.update(self.state)
+
+        def update(self, new_state):
+            "Non-in-place update for delay buffer 'trace'."
+            self.state = new_state
+            self.trpos = (self.trpos + 1) % self.nt
+            self.trace = np.concatenate([
+                self.trace[:self.trpos],
+                self.state.reshape((1, -1)),
+                self.trace[self.trpos + 1:]])
+
+        def read(self, lag=None):
+            "Read delayed data from buffer."
+            # for the purposes of testing autodiff, the delays don't
+            # matter, so we choose something simple for testing.
+            lag = lag or self.nt - 1
+            return self.trace[(self.trpos + self.nt - lag) % self.nt]
 
     def _loop_iter(self, k=0):
         "Loop body."
-        lag2 = self.trace[(self.trpos + self.nt - 2) % self.nt]
-        self.state = self.state  * 0.5 + k * lag2.mean()
-        self.trpos = (self.trpos + 1) % self.nt
-        self._update_trace()
+        lag2 = self.crb.read()
+        self.crb.state = self.crb.state  * 0.5 + k * lag2.mean()
+        self.crb.update(self.crb.state)
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
-        self._setup_data()
+        self.crb = self.CatRingBuffer(2, 3)
         for i in range(10):
             self._loop_iter(k=0)
-            lag1 = self.trace[(self.trpos + self.nt - 1) % self.nt]
-            lag0 = self.state
+            lag1 = self.crb.read(lag=1)
+            lag0 = self.crb.state
             assert_allclose(lag1, 2.0 * lag0)
-            assert self.trpos == ((i + 1) % self.nt)
-            assert self.trace.shape == (self.nt, self.nn)
+            assert self.crb.trpos == ((i + 1) % self.crb.nt)
+            assert self.crb.trace.shape == (self.crb.nt, self.crb.nn)
 
     def _run_loop(self, k):
         "Run simulation loop for value of k."
-        self._setup_data()
+        self.crb = self.CatRingBuffer(2, 3)
         trace = []
         for i in range(10):
             self._loop_iter(k=k)
-            trace.append(self.state)
+            trace.append(self.crb.state)
         return np.array(trace)
 
     def _sse_loop(self, k, data):
@@ -165,26 +176,6 @@ class TestGradDelays:
         k_hat = 0.1
         sse_i = self._sse_loop(k_hat, data)
         grad_sse = grad(lambda k_i: self._sse_loop(k_i, data))
-        # do opt
-        for i in range(5):
-            g = grad_sse(k_hat)
-            k_hat += -0.1 * g
-            sse_ip1 = self._sse_loop(k_hat, data)
-            assert sse_ip1 < sse_i
-            sse_i = sse_ip1
-
-    def _grad_df(self, f, h):
-        "Construct a gradient function via finite difference."
-        return lambda x: (f(x + h) - f(x)) / h
-
-    def test_opt_fd(self):
-        "Attempt optimization by gradient descent with finite differences."
-        k = 0.15
-        data = self._run_loop(k)
-        # guess w/ initial sse
-        k_hat = 0.1
-        sse_i = self._sse_loop(k_hat, data)
-        grad_sse = self._grad_df(lambda k_i: self._sse_loop(k_i, data), 1e-3)
         # do opt
         for i in range(5):
             g = grad_sse(k_hat)
