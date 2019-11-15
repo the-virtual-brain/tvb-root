@@ -1,30 +1,7 @@
 <section class="configure-stimulus-equation view-column col-2">
-	
-	<h4><mark>Define</mark> Stimulus</h4>
 
-	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-	
-	<fieldset>
-		<legend>Loaded stimulus</legend>
-	    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
-	</fieldset>
-
-	<form>
-    	<fieldset>
-			<legend>Entity details</legend>
-	    	{{ gatf.generateDisplay(entitiySavedName, false, "") }}
-    	</fieldset>
-	</form>
-
-    
-    <fieldset>
-	    <legend>Stimulus interface</legend>
-	    <form id="form_spatial_stimulus_equations">
-			{% with  %}
-				{% set includeGenericAdapterTemplateFunctions=false %}
-				{% include 'flow/genericAdapterFormFields.html' %}
-			{% endwith %}
-	    </form>
-	</fieldset>
-    
+    <h4><mark>Define</mark> Stimulus</h4>
+    <div id="form_spatial_model_param_equations">
+        {{ existentEntitiesInputList | safe }}
+    </div>
 </section>

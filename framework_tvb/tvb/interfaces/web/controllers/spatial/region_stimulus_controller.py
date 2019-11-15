@@ -34,86 +34,158 @@
 """
 
 import json
+import uuid
 import cherrypy
+import numpy
+from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorForm, RegionStimulusCreator
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
+from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation, \
+    get_ui_name_for_equation
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
+from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.transient.context_stimulus import RegionStimulusContext
-from tvb.core.entities.transient.context_stimulus import SCALING_PARAMETER, CONNECTIVITY_PARAMETER
-from tvb.datatypes.equations import Equation
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import Form, DataTypeSelectField, SimpleStrField, prepare_prefixed_name_for_field
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.equations import Linear
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
-from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment
+from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
+    check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-
-
-REGION_STIMULUS_CREATOR_MODULE = "tvb.adapters.creators.stimulus_creator"
-REGION_STIMULUS_CREATOR_CLASS = "RegionStimulusCreator"
+from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
 
 LOAD_EXISTING_URL = '/spatial/stimulus/region/load_region_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/region/reset_region_stimulus'
 
-KEY_REGION_CONTEXT = "stim-region-ctx"
+KEY_REGION_STIMULUS = "stim-region"
+KEY_REGION_STIMULUS_NAME = "stim-region-name"
 
+
+class StimulusRegionFirstFragment(Form):
+    include_next_button = True
+
+    def __init__(self, project_id):
+        super(StimulusRegionFirstFragment, self).__init__()
+        self.project_id = project_id
+        self.region_stimulus = DataTypeSelectField(StimuliRegionIndex, self, name='region_stimulus',
+                                                   label='Load Region Stimulus')
+        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'next_action': '/spatial/stimulus/region/set_region_stimulus',
+                'include_previous_button': False, 'include_next_button': self.include_next_button,
+                'legend': 'Loaded stimulus'}
 
 
 class RegionStimulusController(SpatioTemporalController):
     """
     Control layer for defining Stimulus entities on Regions.
     """
+    PREFIX_TEMPORAL_EQUATION_PARAMS = '_' + RegionStimulusCreator.KEY_TEMPORAL
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
-        #if any field that starts with one of the following prefixes is changed than the equation chart will be redrawn
-        self.fields_prefixes = ['temporal', 'min_x', 'max_x']
+        # if any field that starts with one of the following prefixes is changed than the equation chart will be redrawn
+        self.fields_prefixes = [self.PREFIX_TEMPORAL_EQUATION_PARAMS, '_min_x', '_max_x']
+        self.equation_choices = get_ui_name_to_equation_dict()
 
+    @cherrypy.expose
+    @using_template("spatial/spatial_fragment")
+    @handle_error(redirect=False)
+    @check_user
+    def set_region_stimulus(self, **data):
+        first_fragment = StimulusRegionFirstFragment(common.get_current_project().id)
+        first_fragment.fill_from_post(data)
+
+        if not first_fragment.region_stimulus.value:
+            stimuli_region = StimuliRegion()
+            dummy_connectivity = Connectivity()
+            stimuli_region.connectivity = dummy_connectivity
+            stimuli_region.temporal = Linear()
+        else:
+            stimuli_region = self._load_existent_region_stimuli(first_fragment.region_stimulus.value)
+
+        common.add2session(KEY_REGION_STIMULUS, stimuli_region)
+        common.add2session(KEY_REGION_STIMULUS_NAME, first_fragment.display_name.value)
+
+        next_fragment = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id)
+        next_fragment.fill_from_trait(stimuli_region)
+        return {'form': next_fragment, 'next_action': '/spatial/stimulus/region/set_equation',
+                'previous_form_action_url': '/spatial/stimulus/region/set_region_stimulus',
+                'include_previous_button': True, 'include_next_button': True, 'legend': 'Stimulus parameters'}
+
+    @cherrypy.expose
+    @using_template("spatial/spatial_fragment")
+    @handle_error(redirect=False)
+    @check_user
+    def set_equation(self, **data):
+        current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
+        form = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id)
+        form.fill_from_post(data)
+
+        form_connectivity_gid = uuid.UUID(form.connectivity.value)
+        if current_stimuli_region.connectivity.gid != form_connectivity_gid:
+            current_stimuli_region.connectivity.gid = form_connectivity_gid
+            conn_idx = dao.get_datatype_by_gid(form.connectivity.value)
+            current_stimuli_region.weight = current_stimuli_region.get_default_weights(conn_idx.number_of_regions)
+
+        form_temporal_value = form.temporal.value
+        if type(current_stimuli_region.temporal) != form_temporal_value:
+            current_stimuli_region.temporal = form_temporal_value()
+
+        next_form = get_form_for_equation(form.temporal.value)(prefix=self.PREFIX_TEMPORAL_EQUATION_PARAMS)
+        next_form.fill_from_trait(current_stimuli_region.temporal)
+        return {'form': next_form, 'previous_form_action_url': '/spatial/stimulus/region/set_equation',
+                'include_next_button': False, 'include_previous_button': True}
 
     def step_1(self):
         """
         Generate the required template dictionary for the first step.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        right_side_interface, any_scaling = self._get_stimulus_interface()
-        selected_stimulus_gid = context.selected_stimulus
-        left_side_interface = self.get_select_existent_entities('Load Region Stimulus:',
-                                                                StimuliRegion, selected_stimulus_gid)
-        #add interface to session, needed for filters
-        self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
+        current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
+        selected_stimulus_gid = current_stimuli_region.gid.hex
+        left_side_form = StimulusRegionFirstFragment(common.get_current_project().id)
+        left_side_form.region_stimulus.data = selected_stimulus_gid
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step1_main'
         template_specification['isSingleMode'] = True
-        template_specification.update(right_side_interface)
-        template_specification['existentEntitiesInputList'] = left_side_interface
+        template_specification['existentEntitiesInputList'] = left_side_form
         template_specification['equationViewerUrl'] = '/spatial/stimulus/region/get_equation_chart'
         template_specification['fieldsPrefixes'] = json.dumps(self.fields_prefixes)
         template_specification['next_step_url'] = '/spatial/stimulus/region/step_1_submit'
-        template_specification['anyScaling'] = any_scaling
+        template_specification['anyScaling'] = 0
+        template_specification = self._add_extra_fields_to_interface(template_specification)
         return self.fill_default_attributes(template_specification)
-
 
     def step_2(self):
         """
         Generate the required template dictionary for the second step.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        selected_stimulus_gid = context.selected_stimulus
-        left_side_interface = self.get_select_existent_entities('Load Region Stimulus:',
-                                                                StimuliRegion, selected_stimulus_gid)
+        current_region_stimulus = common.get_from_session(KEY_REGION_STIMULUS)
+        left_side_form = StimulusRegionFirstFragment(common.get_current_project().id)
+        left_side_form.region_stimulus.data = current_region_stimulus.gid.hex
+        left_side_form.include_next_button = False
+
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step2_main'
         template_specification['next_step_url'] = '/spatial/stimulus/region/step_2_submit'
-        template_specification['existentEntitiesInputList'] = left_side_interface
-        default_weights = context.get_weights()
-        if len(default_weights) == 0:
-            selected_connectivity = ABCAdapter.load_entity_by_gid(context.get_session_connectivity())
-            default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
-        template_specification['node_weights'] = json.dumps(default_weights)
-        template_specification[common.KEY_PARAMETERS_CONFIG] = False
-        template_specification.update(self.display_connectivity(context.get_session_connectivity()))
-        return self.fill_default_attributes(template_specification)
+        template_specification['existentEntitiesInputList'] = left_side_form
 
+        default_weights = current_region_stimulus.weight
+        if len(default_weights) == 0:
+            selected_connectivity = ABCAdapter.load_entity_by_gid(current_region_stimulus.connectivity.gid.hex)
+            default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
+
+        template_specification['node_weights'] = json.dumps(default_weights.tolist())
+        template_specification[common.KEY_PARAMETERS_CONFIG] = False
+        template_specification.update(self.display_connectivity(current_region_stimulus.connectivity.gid.hex))
+        return self.fill_default_attributes(template_specification)
 
     def do_step(self, step_idx, from_step=None):
         """
@@ -131,7 +203,6 @@ class RegionStimulusController(SpatioTemporalController):
                 return self.step_2()
             return self.step_1()
 
-
     @expose_page
     def step_1_submit(self, next_step, do_reset=0, **kwargs):
         """
@@ -139,14 +210,14 @@ class RegionStimulusController(SpatioTemporalController):
         go to the next step as required. In case a reset is needed create a clear context.
         """
         if int(do_reset) == 1:
-            new_context = RegionStimulusContext()
-            common.add2session(KEY_REGION_CONTEXT, new_context)
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        if kwargs.get(CONNECTIVITY_PARAMETER) != context.get_session_connectivity():
-            context.set_weights([])
-        context.equation_kwargs = kwargs
+            new_region_stimulus = StimuliRegion()
+            common.add2session(KEY_REGION_STIMULUS, new_region_stimulus)
+        else:
+            stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
+            last_fragment = get_form_for_equation(type(stimuli_region.temporal))(self.PREFIX_TEMPORAL_EQUATION_PARAMS)
+            last_fragment.fill_from_post(kwargs)
+            last_fragment.fill_trait(stimuli_region.temporal)
         return self.do_step(next_step)
-
 
     @expose_page
     def step_2_submit(self, next_step, **kwargs):
@@ -154,10 +225,9 @@ class RegionStimulusController(SpatioTemporalController):
         Any submit from the second step should be handled here. Update the context and then do 
         the next step as required.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = kwargs[DataTypeMetaData.KEY_TAG_1]
+        context = common.get_from_session(KEY_REGION_STIMULUS)
+        # context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = kwargs[DataTypeMetaData.KEY_TAG_1]
         return self.do_step(next_step, 2)
-
 
     @staticmethod
     def display_connectivity(connectivity_gid):
@@ -177,53 +247,26 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification.update(connectivity_viewer_params)
         return template_specification
 
+    def _prepare_operation_params(self, stimului_region):
+        params_dict = {RegionStimulusCreator.KEY_CONNECTIVITY: stimului_region.connectivity.gid.hex,
+                       RegionStimulusCreator.KEY_WEIGHT: stimului_region.weight.tolist(),
+                       RegionStimulusCreator.KEY_TEMPORAL: get_ui_name_for_equation(type(stimului_region.temporal))
+                       }
+        for param_key, param_val in stimului_region.temporal.parameters.items():
+            param_full_key = prepare_prefixed_name_for_field(RegionStimulusCreator.KEY_TEMPORAL, param_key)
+            params_dict.update({param_full_key: str(param_val)})
+        return params_dict
 
     def create_stimulus(self):
         """
         Creates a stimulus from the given data.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        local_connectivity_creator = self.get_creator_and_interface(REGION_STIMULUS_CREATOR_MODULE,
-                                                                    REGION_STIMULUS_CREATOR_CLASS, StimuliRegion())[0]
-        context.equation_kwargs.update({'weight': json.dumps(context.get_weights())})
-        self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
-                                         common.get_current_project().id, **context.equation_kwargs)
+        current_stimulus_region = common.get_from_session(KEY_REGION_STIMULUS)
+        region_stimulus_creator = ABCAdapter.build_adapter_from_class(RegionStimulusCreator)
+        params_dict = self._prepare_operation_params(current_stimulus_region)
+        self.flow_service.fire_operation(region_stimulus_creator, common.get_logged_user(),
+                                         common.get_current_project().id, **params_dict)
         common.set_important_message("The operation for creating the stimulus was successfully launched.")
-
-
-    def _get_stimulus_interface(self):
-        """
-        Returns a dictionary which contains the data needed
-        for creating the interface for a stimulus.
-        """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        input_list = self.get_creator_and_interface(REGION_STIMULUS_CREATOR_MODULE,
-                                                    REGION_STIMULUS_CREATOR_CLASS, StimuliRegion())[1]
-        context.equation_kwargs.update({SCALING_PARAMETER: context.get_weights()})
-        input_list = InputTreeManager.fill_defaults(input_list, context.equation_kwargs)
-        input_list, any_scaling = self._remove_scaling(input_list)
-        template_specification = {'inputList': input_list, common.KEY_PARAMETERS_CONFIG: False}
-        return self._add_extra_fields_to_interface(template_specification), any_scaling
-
-
-    @staticmethod
-    def _remove_scaling(input_list):
-        """
-        Remove the scaling entry from the UI since we no longer use them in the first step.
-        """
-        result = []
-        any_scaling = False
-        for entry in input_list:
-            if entry[ABCAdapter.KEY_NAME] != SCALING_PARAMETER:
-                result.append(entry)
-            if entry[ABCAdapter.KEY_NAME] == SCALING_PARAMETER:
-                scaling_values = entry[ABCAdapter.KEY_DEFAULT]
-                for scaling in scaling_values:
-                    if float(scaling) > 0:
-                        any_scaling = True
-                        break
-        return result, any_scaling
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -231,28 +274,26 @@ class RegionStimulusController(SpatioTemporalController):
         """
         Update the scaling according to the UI.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
+        current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
         try:
             scaling = json.loads(kwargs['scaling'])
-            context.set_weights(scaling)
+            current_stimuli_region.weight = numpy.array(scaling)
             return 'true'
         except Exception as ex:
             self.logger.exception(ex)
             return 'false'
 
-
     @expose_fragment('spatial/equation_displayer')
     def get_equation_chart(self, **form_data):
-        from tvb.basic.traits.parameters_factory import collapse_params
-
         """
         Returns the html which contains the plot with the temporal equation.
         """
         try:
-            form_data = collapse_params(form_data, ['temporal'])
-            min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
-            equation = Equation.build_equation_from_dict('temporal', form_data)
-            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
+            min_x, max_x, ui_message = self.get_x_axis_range(form_data['_min_x'], form_data['_max_x'])
+            if '_temporal' not in form_data:
+                current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
+            series_data, display_ui_message = current_stimuli_region.spatial.get_series_data(min_range=min_x,
+                                                                                             max_range=max_x)
             all_series = self.get_series_json(series_data, 'Temporal')
 
             if display_ui_message:
@@ -267,43 +308,33 @@ class RegionStimulusController(SpatioTemporalController):
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
         except Exception as ex:
             self.logger.exception(ex)
-            return {'allSeries': None, 'errorMsg': ex.message}
+            return {'allSeries': None, 'errorMsg': ex}
 
+    def _load_existent_region_stimuli(self, region_stimulus_gid):
+        existent_region_stimulus_index = dao.get_datatype_by_gid(region_stimulus_gid)
+        stimuli_region = StimuliRegion()
+
+        stimuli_region_path = h5.path_for_stored_index(existent_region_stimulus_index)
+        with StimuliRegionH5(stimuli_region_path) as stimuli_region_h5:
+            stimuli_region_h5.load_into(stimuli_region)
+            temporal_gid = stimuli_region_h5.temporal.load()
+
+        equation_h5 = SimulatorConfigurationH5(stimuli_region_path)
+        stimuli_region.temporal = equation_h5.load_from_reference(temporal_gid)
+
+        dummy_connectivity = Connectivity()
+        dummy_connectivity.gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)
+        stimuli_region.connectivity = dummy_connectivity
+        return stimuli_region
 
     @expose_page
     def load_region_stimulus(self, region_stimulus_gid, from_step=None):
         """
         Loads the interface for the selected region stimulus.
         """
-        selected_region_stimulus = ABCAdapter.load_entity_by_gid(region_stimulus_gid)
-        temporal_eq = selected_region_stimulus.temporal
-        spatial_eq = selected_region_stimulus.spatial
-        connectivity = selected_region_stimulus.connectivity
-        weights = selected_region_stimulus.weight
-
-        temporal_eq_type = temporal_eq.__class__.__name__
-        spatial_eq_type = spatial_eq.__class__.__name__
-        default_dict = {'temporal': temporal_eq_type, 'spatial': spatial_eq_type,
-                        'connectivity': connectivity.gid, 'weight': json.dumps(weights)}
-        for param in temporal_eq.parameters:
-            prepared_name = 'temporal_parameters_option_' + str(temporal_eq_type)
-            prepared_name = prepared_name + '_parameters_parameters_' + str(param)
-            default_dict[prepared_name] = str(temporal_eq.parameters[param])
-        for param in spatial_eq.parameters:
-            prepared_name = 'spatial_parameters_option_' + str(spatial_eq_type) + '_parameters_parameters_' + str(param)
-            default_dict[prepared_name] = str(spatial_eq.parameters[param])
-
-        input_list = self.get_creator_and_interface(REGION_STIMULUS_CREATOR_MODULE,
-                                                    REGION_STIMULUS_CREATOR_CLASS, StimuliRegion())[1]
-        input_list = InputTreeManager.fill_defaults(input_list, default_dict)
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        context.reset()
-        context.update_from_interface(input_list)
-        context.equation_kwargs[DataTypeMetaData.KEY_TAG_1] = selected_region_stimulus.user_tag_1
-        context.set_active_stimulus(region_stimulus_gid)
-
+        stimuli_region = self._load_existent_region_stimuli(region_stimulus_gid)
+        common.add2session(KEY_REGION_STIMULUS, stimuli_region)
         return self.do_step(from_step)
-
 
     @expose_page
     def reset_region_stimulus(self, from_step):
@@ -317,10 +348,9 @@ class RegionStimulusController(SpatioTemporalController):
             stimulus where we want to stay in the same page.
 
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        context.reset()
+        default_stimuli_region = StimuliRegion()
+        common.add2session(KEY_REGION_STIMULUS, default_stimuli_region)
         return self.do_step(1)
-
 
     @staticmethod
     def _add_extra_fields_to_interface(input_list):
@@ -328,28 +358,29 @@ class RegionStimulusController(SpatioTemporalController):
         The fields that have to be added to the existent
         adapter interface should be added in this method.
         """
-        temporal_iface = []
-        min_x = {'name': 'min_x', 'label': 'Temporal Start Time(ms)', 'type': 'str', "disabled": "False", "default": 0,
-                 "description": "The minimum value of the x-axis for temporal equation plot. "
-                                "Not persisted, used only for visualization."}
-        max_x = {'name': 'max_x', 'label': 'Temporal End Time(ms)', 'type': 'str', "disabled": "False", "default": 100,
-                 "description": "The maximum value of the x-axis for temporal equation plot. "
-                                "Not persisted, used only for visualization."}
-        temporal_iface.append(min_x)
-        temporal_iface.append(max_x)
 
-        input_list['temporalPlotInputList'] = temporal_iface
+        class TemporalPlotForm(EquationPlotForm):
+            def __init__(self):
+                super(TemporalPlotForm, self).__init__()
+                self.min_x.label = 'Temporal Start Time(ms)'
+                self.min_x.doc = "The minimum value of the x-axis for temporal equation plot. " \
+                                 "Not persisted, used only for visualization."
+                self.max_x.label = 'Temporal Start Time(ms)'
+                self.max_x.doc = "The maximum value of the x-axis for temporal equation plot. " \
+                                 "Not persisted, used only for visualization."
+
+        temporal_plot_list_form = TemporalPlotForm()
+        input_list['temporalPlotInputList'] = temporal_plot_list_form
         return input_list
-
 
     def fill_default_attributes(self, template_dictionary):
         """
         Overwrite base controller to add required parameters for adapter templates.
         """
-        context = common.get_from_session(KEY_REGION_CONTEXT)
-        default = context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')
+        # context = common.get_from_session(KEY_REGION_CONTEXT)
+        # default = context.equation_kwargs.get(DataTypeMetaData.KEY_TAG_1, '')
         template_dictionary["entitiySavedName"] = [{'name': DataTypeMetaData.KEY_TAG_1, "disabled": "False",
-                                                    'label': 'Display name', 'type': 'str', "default": default}]
+                                                    'label': 'Display name', 'type': 'str', "default": ''}]
         template_dictionary['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_dictionary['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         msg, msg_type = common.get_message_from_session()

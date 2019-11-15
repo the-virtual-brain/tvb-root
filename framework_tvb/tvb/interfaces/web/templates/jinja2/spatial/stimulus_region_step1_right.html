@@ -4,8 +4,7 @@
     <div id="equationDivId"></div>
 
 	<form id="temporalEquationAxisParams">
-        {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
-    	{{ gatf.generateDisplay(temporalPlotInputList, false, "") }}
+    	{{ temporalPlotInputList | safe }}
     </form>
 
     <script type="text/javascript">

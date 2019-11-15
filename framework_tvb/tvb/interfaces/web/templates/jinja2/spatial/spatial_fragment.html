@@ -1,0 +1,36 @@
+<form method="post" action="{{ next_action }}" id="{{ next_action }}" enctype="multipart/form-data">
+    <fieldset>
+        <legend>{{ legend }}</legend>
+        <dl>
+            {% for field in form.fields %}
+                <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+                    <label for="{{ field.name }}">{{ field.label }}</label>
+                    {#        {{ generate_help_tooltip(field) }}#}
+                </dt>
+                <dd>
+                    {{ field | safe }}
+                    <p class="errorMessage">
+                        {% for error in field.errors %}
+                            <span> {{ error }} </span>
+                        {% endfor %}
+                    </p>
+                </dd>
+            {% endfor %}
+        </dl>
+    </fieldset>
+    {% if include_previous_button %}
+        <button id='previous' name="previous" type="button" class="btn btn-primary"
+                onclick="previousWizzardStep(this.parentElement, '{{ previous_form_action_url }}', 'form_spatial_model_param_equations')"
+                {% if hide_previous_button %} style="visibility: hidden" {% endif %}>Previous
+        </button>
+    {% endif %}
+    {% if include_next_button %}
+        <button id='next' name="next" type="button" class="btn btn-primary"
+                onclick="wizzard_submit(this.parentElement, 'form_spatial_model_param_equations')"
+                {% if load_readonly %} style="visibility: hidden" {% endif %}>Next
+        </button>
+    {% endif %}
+    {% if include_apply_button %}
+	    <button class="action" onclick="MP_applyEquationForParameter(this.parentElement)" style="float: right">Apply equation</button>
+    {% endif %}
+</form>

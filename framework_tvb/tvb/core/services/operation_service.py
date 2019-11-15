@@ -324,7 +324,7 @@ class OperationService:
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
             #TODO: this currently keeps both ways to display forms
-            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
+            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__ and not 'RegionStimulusCreator' in adapter_instance.__class__.__name__:
                 if adapter_instance.get_input_tree() is None:
                     filtered_kwargs = adapter_instance.get_form().get_form_values()
                 else:

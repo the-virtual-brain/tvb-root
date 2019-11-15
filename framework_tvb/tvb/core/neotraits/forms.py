@@ -48,13 +48,16 @@ from tvb.basic.neotraits.api import List, Attr
 jinja_env = None
 
 
+def prepare_prefixed_name_for_field(prefix, name):
+    return '{}_{}'.format(prefix, name)
+
 class Field(object):
     template = None
 
     def __init__(self, form, name, disabled=False, required=False, label='', doc='', default=None):
         # type: (Form, str, bool, bool, str, str, object) -> None
         self.owner = form
-        self.name = '{}_{}'.format(form.prefix, name)
+        self.name = prepare_prefixed_name_for_field(form.prefix, name)
         self.disabled = disabled
         self.required = required
         self.label = label
@@ -454,7 +457,11 @@ class ArrayField(TraitField):
             # this None means self.data is missing, either not set or unset cause of validation error
             return self.unvalidated_data
         try:
-            return json.dumps(self.data.tolist())
+            if self.data.size > 100:
+                data_to_display = self.data[:100]
+            else:
+                data_to_display = self.data
+            return json.dumps(data_to_display.tolist())
         except (TypeError, ValueError):
             return self.unvalidated_data
 

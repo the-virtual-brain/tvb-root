@@ -2,19 +2,7 @@
 	
 	<h4><mark>Select</mark> Regions</h4>
 
-	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-	
-	<fieldset>
-		<legend>Loaded stimulus</legend>
-	    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
-	</fieldset>
-
-	<form>
-    	<fieldset>
-			<legend>Entity details</legend>
-	    	{{ gatf.generateDisplay(entitiySavedName, false, "") }}
-    	</fieldset>
-	</form>
+    {{ existentEntitiesInputList | safe }}
 
 	{% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
 
