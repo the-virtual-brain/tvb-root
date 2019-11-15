@@ -136,6 +136,39 @@ class TestGradDelays:
             lag = lag or self.nt - 1
             return self.trace[(self.trpos + self.nt - lag) % self.nt]
 
+    class NoopBuffer:
+        "Same interface as CatRingBuffer but no delays."
+
+        def __init__(self, nn, nt=0):
+            "setup data for no delay buffer."
+            self.nn = nn
+            self.nt = nt
+            self.state = np.r_[:self.nn].astype('d')
+
+        def update(self, new_state):
+            "Update state."
+            self.state = new_state
+
+        def read(self, lag=None):
+            "Read latest state."
+            assert lag == None
+            return self.state
+
+    class Loop:
+
+        def __init__(self, k, buf):
+            "Setup loop."
+            self.k = k
+            self.buf = buf
+
+        def step(self):
+            "Loop body."
+            lag = self.buf.read()
+            state = self.buf.state
+            new_state = state * 0.5 + self.k * lag.mean()
+            self.buf.update(new_state)
+            return new_state
+
     def _loop_iter(self, k=0):
         "Loop body."
         lag2 = self.crb.read()
@@ -144,42 +177,47 @@ class TestGradDelays:
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
-        self.crb = self.CatRingBuffer(2, 3)
+        crb = self.CatRingBuffer(2, 3)
+        loop = self.Loop(k=0, buf=crb)
         for i in range(10):
-            self._loop_iter(k=0)
-            lag1 = self.crb.read(lag=1)
-            lag0 = self.crb.state
+            lag0 = loop.step()
+            lag1 = crb.read(lag=1)
             assert_allclose(lag1, 2.0 * lag0)
-            assert self.crb.trpos == ((i + 1) % self.crb.nt)
-            assert self.crb.trace.shape == (self.crb.nt, self.crb.nn)
+            assert crb.trpos == ((i + 1) % crb.nt)
+            assert crb.trace.shape == (crb.nt, crb.nn)
 
-    def _run_loop(self, k):
+    def _run_loop(self, k, Buf):
         "Run simulation loop for value of k."
-        self.crb = self.CatRingBuffer(2, 3)
+        loop = self.Loop(k=k, buf=Buf(2, 3))
         trace = []
         for i in range(10):
-            self._loop_iter(k=k)
-            trace.append(self.crb.state)
+            trace.append(loop.step())
         return np.array(trace)
 
-    def _sse_loop(self, k, data):
+    def _sse_loop(self, k, data, Buf):
         "Eval sum squared error of simulation vs data."
-        sim = self._run_loop(k)
+        sim = self._run_loop(k, Buf)
         sse = np.sum(np.square(sim - data))
         return sse
 
-    def test_opt(self):
+    def _run_opt(self, Buf):
         "Attempt optimization by gradient descent."
         k = 0.15
-        data = self._run_loop(k)
+        data = self._run_loop(k, Buf)
         # guess w/ initial sse
         k_hat = 0.1
-        sse_i = self._sse_loop(k_hat, data)
-        grad_sse = grad(lambda k_i: self._sse_loop(k_i, data))
+        sse_i = self._sse_loop(k_hat, data, Buf)
+        grad_sse = grad(lambda k_i: self._sse_loop(k_i, data, Buf))
         # do opt
         for i in range(5):
             g = grad_sse(k_hat)
             k_hat += -0.1 * g
-            sse_ip1 = self._sse_loop(k_hat, data)
+            sse_ip1 = self._sse_loop(k_hat, data, Buf)
             assert sse_ip1 < sse_i
             sse_i = sse_ip1
+
+    def test_delay(self):
+        self._run_opt(self.CatRingBuffer)
+
+    def test_no_delay(self):
+        self._run_opt(self.NoopBuffer)
