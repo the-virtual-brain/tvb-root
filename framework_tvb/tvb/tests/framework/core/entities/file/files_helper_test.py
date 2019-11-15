@@ -173,14 +173,15 @@ class TestFilesHelper(TransactionalTestCase):
         """
         Make sure associated H5 file is moved to a correct new location.
         """
-        folder_path = self.files_helper.get_project_folder(self.test_project, "42")
-        datatype = dummy_datatype_index_factory()
-        assert os.path.exists(folder_path), "Test file was not created!"
-        self.files_helper.move_datatype(datatype, folder_path, self.PROJECT_NAME + '11', "43")
+        datatype = dummy_datatype_index_factory(project=self.test_project)
+        old_file_path = h5.path_for_stored_index(datatype)
+        assert os.path.exists(old_file_path), "Test file was not created!"
+        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1")
         
-        assert not os.path.exists(folder_path), "Test file was not moved!"
-        storage_path = self.files_helper.get_project_folder(self.PROJECT_NAME + '11', "43")
-        assert os.path.exists(storage_path), "Test file was not created!"
+        assert not os.path.exists(old_file_path), "Test file was not moved!"
+        datatype.fk_from_operation = 43
+        new_file_path = os.path.join(self.files_helper.get_project_folder(self.PROJECT_NAME + '2', "1"), old_file_path.split("\\")[-1])
+        assert os.path.exists(new_file_path), "Test file was not created!"
 
     def test_find_relative_path(self):
         """

@@ -52,7 +52,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestAdapters(TransactionalTestCase):
-    def test_wavelet_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_wavelet_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -68,7 +68,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, WaveletCoefficientsH5, wavelet_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_pca_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_pca_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -84,7 +84,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, PrincipalComponentsH5, pca_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_ica_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_ica_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -100,7 +100,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, IndependentComponentsH5, ica_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_metrics_adapter_launch(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_metrics_adapter_launch(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -116,7 +116,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, DatatypeMeasureH5, datatype_measure_index.gid)
         assert os.path.exists(result_h5)
 
-    def test_cross_correlation_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_cross_correlation_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -132,7 +132,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, CrossCorrelationH5, cross_correlation_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_pearson_correlation_coefficient_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_pearson_correlation_coefficient_adapter(self, tmpdir, time_series_index_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
         ts_index =time_series_index_factory()
@@ -151,7 +151,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, CorrelationCoefficientsH5, correlation_coefficients_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_node_coherence_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_node_coherence_adapter(self, tmpdir, time_series_index_factory):
         # algorithm returns complex values instead of float
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
@@ -168,7 +168,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, CoherenceSpectrumH5, coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_node_complex_coherence_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_node_complex_coherence_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 
@@ -184,7 +184,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_fcd_adapter(self, tmpdir, session, operation_factory, time_series_region_index_factory,
+    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory,
                          connectivity_factory, region_mapping_factory, surface_factory):
         storage_folder = str(tmpdir)
         connectivity = connectivity_factory()
@@ -206,7 +206,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, FcdH5, fcd_idx[0].gid)
         assert os.path.exists(result_h5)
 
-    def test_fmri_balloon_adapter(self, tmpdir, session, operation_factory, time_series_region_index_factory,
+    def test_fmri_balloon_adapter(self, tmpdir, time_series_region_index_factory,
                                   connectivity_factory, region_mapping_factory, surface_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
@@ -227,7 +227,7 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, TimeSeriesRegionH5, ts_index.gid)
         assert os.path.exists(result_h5)
 
-    def test_node_covariance_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_node_covariance_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
 

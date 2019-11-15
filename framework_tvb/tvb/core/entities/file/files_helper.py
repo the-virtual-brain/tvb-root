@@ -43,6 +43,8 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData, Gen
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.file.exceptions import FileStructureException
 from threading import Lock
+
+
 LOCK_CREATE_FOLDER = Lock()
 
 
@@ -257,12 +259,13 @@ class FilesHelper(object):
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
 
-    def move_datatype(self, datatype, old_project_name, new_project_name, new_op_id):
+    def move_datatype(self, datatype, new_project_name, new_op_id):
         """
         Move H5 storage into a new location
         """
         try:
-            full_path = FilesHelper().get_project_folder(old_project_name)
+            from tvb.core.neocom import h5
+            full_path = h5.path_for_stored_index(datatype)
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)

@@ -98,9 +98,6 @@ from tvb.core.neocom.h5 import REGISTRY
 
 # an alternative approach is to make each h5file declare if it has a corresponding datatype
 # then in a metaclass hook each class creation and populate a map
-from tvb.tests.framework.test_datatype import DummyDataType
-from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
 
 
 def populate_datatypes_registry():
@@ -139,4 +136,3 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(None, ValueWrapperH5, ValueWrapperIndex)
     REGISTRY.register_datatype(Cortex, CortexH5, None)
-    REGISTRY.register_datatype(DummyDataType, DummyDataTypeH5, DummyDataTypeIndex)

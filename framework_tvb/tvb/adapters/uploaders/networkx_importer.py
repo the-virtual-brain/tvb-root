@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import pickle
+import pandas
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -87,8 +87,7 @@ class NetworkxConnectivityImporter(ABCUploader):
     def launch(self, data_file, **kwargs):
         try:
             parser = NetworkxParser(**kwargs)
-            with open(data_file, 'rb') as f:
-                net = pickle.load(f, encoding='latin1')
+            net = pandas.read_pickle(data_file)
             connectivity = parser.parse(net)
             return h5.store_complete(connectivity, self.storage_path)
         except ParseException as excep:

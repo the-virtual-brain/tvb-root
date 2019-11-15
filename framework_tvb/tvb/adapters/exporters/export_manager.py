@@ -48,6 +48,7 @@ from tvb.core.entities.transient.burst_export_entities import BurstInformation, 
 from tvb.core.entities.transient.burst_export_entities import WorkflowStepInformation, WorkflowViewStepInformation
 from tvb.core.entities.storage import dao
 from tvb.basic.logger.builder import get_logger
+from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
 BURST_PAGE_SIZE = 100
@@ -164,7 +165,7 @@ class ExportManager:
         for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
             # get datatype as a mapped type
             lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
-            path = FilesHelper().get_project_folder(project)
+            path = h5.path_for_stored_index(lnk_dt)
             if path is not None:
                 paths.append(path)
             else:
