@@ -12,3 +12,9 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build the Docker image
       run: cd tvb_build/docker && docker build . --file Dockerfile --tag tvb
+    - name: Login to registry
+      run: docker login docker.pkg.github.com -u USERNAME -p ${{ secrets.GITHUB_TOKEN }}
+    - name: Tag new image for registry
+      run: docker tag tvb docker.pkg.github.com/the-virtual-brain/tvb-root/tvb:latest
+    - name: Push image to registry
+      run: docker push docker.pkg.github.com/the-virtual-brain/tvb-root/tvb:latest
