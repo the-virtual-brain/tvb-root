@@ -36,27 +36,16 @@ class StimuliRegionH5(H5File):
 
     def __init__(self, path):
         super(StimuliRegionH5, self).__init__(path)
-        self.spatial = Scalar(Attr(str), self, name='spatial')
-        self.temporal = Scalar(Attr(str), self, name='temporal')
+        self.spatial = Reference(StimuliRegion.spatial, self)
+        self.temporal = Reference(StimuliRegion.temporal, self)
         self.connectivity = Reference(StimuliRegion.connectivity, self)
         self.weight = DataSet(StimuliRegion.weight, self)
 
     def store(self, datatype, scalars_only=False):
+        super(StimuliRegionH5, self).store(datatype, scalars_only)
         self.connectivity.store(datatype.connectivity)
-        self.weight.store(datatype.weight)
-        self.spatial.store(datatype.spatial.to_json(datatype.spatial))
-        self.temporal.store(datatype.temporal.to_json(datatype.temporal))
-
-    def load_into(self, datatype):
-        datatype.gid = self.gid.load()
-        datatype.connectivity = self.connectivity.load()
-        datatype.weight = self.weight.load()
-        spatial_eq = self.spatial.load()
-        spatial_eq = datatype.spatial.from_json(spatial_eq)
-        datatype.spatial = spatial_eq
-        temporal_eq = self.temporal.load()
-        temporal_eq = datatype.temporal.from_json(temporal_eq)
-        datatype.temporal = temporal_eq
+        self.spatial.store(datatype.spatial.gid)
+        self.temporal.store(datatype.temporal.gid)
 
 
 class StimuliSurfaceH5(H5File):

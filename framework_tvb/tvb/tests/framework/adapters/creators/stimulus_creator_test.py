@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 import os
 import numpy
 import tvb_data
@@ -61,7 +62,7 @@ class TestStimulusCreator(TransactionalTestCase):
         region_stimulus_creator = RegionStimulusCreator()
         region_stimulus_index = region_stimulus_creator.launch(**input_dict)
         assert region_stimulus_index.temporal_equation == 'Linear'
-        assert region_stimulus_index.temporal_parameters == {'a': 1.0, 'b': 2.0}
+        assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
         assert region_stimulus_index.connectivity_gid == self.connectivity.gid
 
     def test_create_stimulus_surface(self):

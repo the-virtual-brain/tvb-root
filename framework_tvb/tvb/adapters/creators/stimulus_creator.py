@@ -38,6 +38,8 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
+from tvb.core.entities.file.simulator.h5_factory import equation_h5_factory
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField
@@ -161,7 +163,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
 
         self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
                                                 required=True)
-        self.temporal = SimpleSelectField(equation_choices, self, name='equation', label='Temporal equation',
+        self.temporal = SimpleSelectField(equation_choices, self, name='temporal', label='Temporal equation',
                                           required=True)
         self.temporal.template = 'form_fields/select_field.html'
 
@@ -177,11 +179,18 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
     def get_required_datatype():
         return ConnectivityIndex
 
+    def fill_from_trait(self, trait):
+        self.connectivity.data = trait.connectivity.gid.hex
+        self.temporal.data = type(trait.temporal)
+
 
 class RegionStimulusCreator(ABCSynchronous):
     """
     The purpose of this adapter is to create a StimuliRegion.
     """
+    KEY_WEIGHT = 'weight'
+    KEY_CONNECTIVITY = 'connectivity'
+    KEY_TEMPORAL = 'temporal'
 
     def get_form_class(self):
         return RegionStimulusCreatorForm
@@ -198,16 +207,21 @@ class RegionStimulusCreator(ABCSynchronous):
         """
         stimuli_region = StimuliRegion()
         stimuli_region.connectivity = Connectivity()
-        stimuli_region.connectivity.gid = uuid.UUID(kwargs['connectivity'])
-        stimuli_region.weight = numpy.array(kwargs['weight'])
-        stimuli_region.temporal = get_ui_name_to_equation_dict().get(kwargs['temporal'])()
-        # TODO: keep prefix in one place
-        temporal_equation_form = get_form_for_equation(type(stimuli_region.temporal))(prefix='temporal')
+        stimuli_region.connectivity.gid = uuid.UUID(kwargs[self.KEY_CONNECTIVITY])
+        stimuli_region.weight = numpy.array(kwargs[self.KEY_WEIGHT])
+        stimuli_region.temporal = get_ui_name_to_equation_dict().get(kwargs[self.KEY_TEMPORAL])()
+        temporal_equation_form = get_form_for_equation(type(stimuli_region.temporal))(prefix=self.KEY_TEMPORAL)
         temporal_equation_form.fill_from_post(kwargs)
         temporal_equation_form.fill_trait(stimuli_region.temporal)
 
         stimuli_region_idx = StimuliRegionIndex()
         stimuli_region_idx.fill_from_has_traits(stimuli_region)
+
+        equation_h5_class = equation_h5_factory(type(stimuli_region.temporal))
+        equation_h5_path = h5.path_for(self.storage_path, equation_h5_class, stimuli_region.temporal.gid)
+        with equation_h5_class(equation_h5_path) as equation_h5:
+            equation_h5.store(stimuli_region.temporal)
+            equation_h5.type.store(SimulatorConfigurationH5.get_full_class_name(type(stimuli_region.temporal)))
 
         h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx
