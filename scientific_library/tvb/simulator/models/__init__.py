@@ -29,26 +29,66 @@
 """
 A collection of neuronal dynamics models.
 
-Specific models inherit from the abstract class Model.
-
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
-.. moduleauthor:: Gaurav Malhotra <Gaurav@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
+Specific models inherit from the abstract class base.Model, please consult
+the individual model modules for more information
 
 """
 
-from .base import Model
-from .epileptor import Epileptor, Epileptor2D
-from .epileptor_rs import EpileptorRestingState
-from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
-from .hopfield import Hopfield
-from .jansen_rit import JansenRit, ZetterbergJansen
-from .larter_breakspear import LarterBreakspear
-from .linear import Linear
-from .oscillator import Generic2dOscillator, Kuramoto, SupHopf
-from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
-from .wilson_cowan import WilsonCowan
-from .wong_wang import ReducedWongWang
-from .wong_wang_exc_inh import ReducedWongWangExcInh
-from .zerlaut import ZerlautFirstOrder, ZerlautSecondOrder
+# we don't import all models by default here, since they are time consuming
+# to setup (e.g. numba gufunc compilation), but provide them as module-level
+# properties for compatibility with previous version of TVB. For example
+# 
+#     import tvb.simulator.models.Epileptor
+# 
+# works, but only lazily loads the tvb.simulator.models.epileptor module
+# and returns the Epileptor class.
+
+_module_models = {
+    'base': 'Model'.split(', '),
+    'epileptor': 'Epileptor, Epileptor2D'.split(', '),
+    'epileptor_rs': 'EpileptorRestingState'.split(', '),
+    'epileptorcodim3': 'EpileptorCodim3, EpileptorCodim3SlowMod'.split(', '),
+    'hopfield': 'Hopfield'.split(', '),
+    'jansen_rit': 'JansenRit, ZetterbergJansen'.split(', '),
+    'larter_breakspear': 'LarterBreakspear'.split(', '),
+    'linear': 'Linear'.split(', '),
+    'oscillator': 'Generic2dOscillator, Kuramoto, SupHopf'.split(', '),
+    'stefanescu_jirsa': 'ReducedSetFitzHughNagumo, ReducedSetHindmarshRose'.split(', '),
+    'wilson_cowan': 'WilsonCowan'.split(', '),
+    'wong_wang': 'ReducedWongWang'.split(', '),
+    'wong_wang_exc_inh': 'ReducedWongWangExcInh'.split(', '),
+    'zerlaut': 'ZerlautFirstOrder, ZerlautSecondOrder'.split(', '),
+}
+
+
+def _delay_import_one(mod, model):
+    """Create getter thunk for module and model name.
+    """
+    import importlib
+    def do_import(_):
+        module_name = f'tvb.simulator.models.{mod}'
+        model_module = importlib.import_module(module_name)
+        return getattr(model_module, model)
+    return property(do_import)
+
+
+def _delay_model_imports():
+    """Set up this module with all properties for all models.
+    """
+    # create substitute module class & object
+    class _Module:
+        pass
+    module = _Module()
+    module.__dict__ = globals()
+    # create properties for each model
+    for mod, models in _module_models.items():
+        for model in models:
+            setattr(_Module, model, _delay_import_one(mod, model))
+    # register module object
+    import sys
+    module._module = sys.modules[module.__name__]
+    module._pmodule = module
+    sys.modules[module.__name__] = module
+
+
+_delay_model_imports()
