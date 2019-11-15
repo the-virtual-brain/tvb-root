@@ -27,8 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
-
 from os import path
 from mock import patch
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -39,12 +37,12 @@ import tvb_data.surfaceData
 import tvb_data.regionMapping
 import tvb_data.sensors
 import cherrypy
+from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 from cherrypy.test import helper
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
@@ -324,7 +322,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.monitors[0].variables_of_interest is None, "Variables of interest should have not been added."
         # assert self.session_stored_simulator.monitors[0].region_mapping is not None, "Region Mapping was not added."
         # assert self.session_stored_simulator.monitors[0].projection is not None, "Projection was not added."
-        assert self.session_stored_simulator.monitors[0].sigma == 1.0, "Sigma was not set correctly."
+        # assert self.session_stored_simulator.monitors[0].sigma == 1.0, "Sigma was not set correctly."
         # assert self.session_stored_simulator.monitors[0].sensors is not None, "Sensors where not added."
 
     def test_set_monitor_params_bold(self):
@@ -423,11 +421,38 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert rendering_rules['renderer'].is_first_fragment is True,\
             "Page should be set to the first fragment."
 
+    def test_get_history_status(self):
+        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config.start_time = datetime.now()
+        dao.store_entity(burst_config)
+        burst = dao.get_bursts_for_project(self.test_project.id)
+        self.sess_mock['burst_ids'] = '["' + str(burst[0].id) + '"]'
 
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_BURST_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            result = self.simulator_controller.get_history_status(**self.sess_mock._data).split(',')
 
+        assert int(result[0][2:]) == burst[0].id, "Incorrect burst was used."
+        assert result[1] == ' "running"', "Status should be set to running."
+        assert result[2] == ' false', "Burst shouldn't be group."
+        assert result[3] == ' ""', "Message should be empty, which means that there shouldn't be any errors."
+        assert int(result[4][2:-4]) >= 0, "Running time should be greater than or equal to 0."
 
+    def test_rename_burst(self):
+        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config.name = 'Test Burst Configuration'
+        new_name = "Test Burst Configuration 2"
+        dao.store_entity(burst_config)
+        burst = dao.get_bursts_for_project(self.test_project.id)
+        self.sess_mock['burst_id'] = str(burst[0].id)
+        self.sess_mock['burst_name'] = new_name
 
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_BURST_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            result = self.simulator_controller.rename_burst(str(burst[0].id), new_name)
 
-
-
-
+        assert result == '{"success": "Simulation successfully renamed!"}',\
+            "Some error happened at renaming, probably because of invalid new name."
+        assert dao.get_bursts_for_project(self.test_project.id)[0].name == new_name, "Name wasn't actually changed."

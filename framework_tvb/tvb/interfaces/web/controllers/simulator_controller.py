@@ -57,6 +57,7 @@ from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
 
+
 class SimulatorWizzardURLs(object):
     SET_CONNECTIVITY_URL = '/burst/set_connectivity'
     SET_COUPLING_PARAMS_URL = '/burst/set_coupling_params'
