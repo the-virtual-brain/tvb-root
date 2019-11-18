@@ -39,6 +39,7 @@ import pytest
 from tvb.simulator.models.linear import Linear
 from tvb.simulator.integrators import EulerDeterministic
 from tvb.simulator.gradients import HasGradient, has_gradient
+from tvb.simulator.history import CatRingBuffer, NoopBuffer
 from autograd import grad
 from autograd.extend import primitive, defvjp
 import autograd.numpy as np
@@ -109,48 +110,6 @@ class TestTimeSeriesGradient:
 class TestGradDelays:
     "Test taking autodiffing through time delay ring buffer."
 
-    class CatRingBuffer:
-        "Concatenating ring buffer."
-
-        def __init__(self, init, nt):
-            "setup data for delay buffer."
-            self.nt = nt
-            self.state = init
-            self.trace = np.zeros((self.nt, ) + init.shape)
-            self.trpos = -1
-            self.update(self.state)
-
-        def update(self, new_state):
-            "Non-in-place update for delay buffer 'trace'."
-            self.state = new_state
-            self.trpos = (self.trpos + 1) % self.nt
-            self.trace = np.concatenate([
-                self.trace[:self.trpos],
-                self.state.reshape((1, -1)),
-                self.trace[self.trpos + 1:]])
-
-        def read(self, lag=None):
-            "Read delayed data from buffer."
-            # for the purposes of testing autodiff, the delays don't
-            # matter, so we choose something simple for testing.
-            lag = self.nt - 1 if lag is None else lag
-            return self.trace[(self.trpos + self.nt - lag) % self.nt]
-
-    class NoopBuffer:
-        "Same interface as CatRingBuffer but no delays."
-
-        def __init__(self, init, nt=0):
-            "setup data for no delay buffer."
-            self.state = init
-
-        def update(self, new_state):
-            "Update state."
-            self.state = new_state
-
-        def read(self, lag=None):
-            "Read latest state."
-            return self.state
-
     class Loop:
 
         def __init__(self, k, buf, lag=None):
@@ -173,7 +132,7 @@ class TestGradDelays:
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
-        crb = self.CatRingBuffer(self.init, 3)
+        crb = CatRingBuffer(self.init, 3)
         loop = self.Loop(k=0, buf=crb)
         for i in range(10):
             lag0 = loop.step()
@@ -213,14 +172,14 @@ class TestGradDelays:
             sse_i = sse_ip1
 
     def test_delay(self):
-        self._run_opt(self.CatRingBuffer)
+        self._run_opt(CatRingBuffer)
 
     def test_delay_matrix_lags(self):
         lag = np.array([[2, 1], [0, 2]])
-        self._run_opt(self.CatRingBuffer, lag=lag)
+        self._run_opt(CatRingBuffer, lag=lag)
 
     def test_no_delay(self):
-        self._run_opt(self.NoopBuffer)
+        self._run_opt(NoopBuffer)
 
 
 class TestMemberPrimitives:

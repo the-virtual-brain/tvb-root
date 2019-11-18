@@ -38,8 +38,11 @@ Simulator history implementations.
 
 
 import numpy
+from autograd import numpy as anp
 from tvb.simulator.common import get_logger
 from .descriptors import StaticAttr, Dim, NDArray
+from .gradients import HasGradient
+
 
 LOG = get_logger(__name__)
 
@@ -179,14 +182,48 @@ class SparseHistory(DenseHistory):
         return nbytes
 
 
-# implement in order  NumPy, Numba & OpenCL versions
+# autograd-friendly implementations
 
-# simulator.history becomes impl instance
 
-# state must also transpose for performance reasons
+class CatRingBuffer(HasGradient):
+    "Concatenating ring buffer."
 
-# bench history impl like other components
+    def __init__(self, init, nt):
+        "setup data for delay buffer."
+        self.nt = nt
+        self.state = init
+        self.trace = anp.zeros((self.nt, ) + init.shape)
+        self.trpos = -1
+        self.update(self.state)
 
-# trace history accesses
+    def update(self, new_state):
+        "Non-in-place update for delay buffer 'trace'."
+        self.state = new_state
+        self.trpos = (self.trpos + 1) % self.nt
+        self.trace = anp.concatenate([
+            self.trace[:self.trpos],
+            self.state.reshape((1, -1)),
+            self.trace[self.trpos + 1:]])
 
-# cfun must also now expect to operate on (nnz, ncvar, nmode)
+    def read(self, lag=None):
+        "Read delayed data from buffer."
+        # for the purposes of testing autodiff, the delays don't
+        # matter, so we choose something simple for testing.
+        lag = self.nt - 1 if lag is None else lag
+        return self.trace[(self.trpos + self.nt - lag) % self.nt]
+
+
+class NoopBuffer(HasGradient):
+    "Same interface as CatRingBuffer but no delays."
+
+    def __init__(self, init, nt=0):
+        "setup data for no delay buffer."
+        self.state = init
+
+    def update(self, new_state):
+        "Update state."
+        self.state = new_state
+
+    def read(self, lag=None):
+        "Read latest state."
+        return self.state
