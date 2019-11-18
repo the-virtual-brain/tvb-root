@@ -66,6 +66,28 @@ class TestGradients:
         assert self.grad_func(0.4) == -0.96
 
 
+class TestGradientsJax:
+
+    def setup_method(self):
+        from jax import numpy as np, grad
+        self.dfun = Linear().make_dfun(numpy=np)
+        self.scheme = EulerDeterministic(dt=0.1).make_scheme(self.dfun)
+        def example(scl):
+            X = np.ones((1, 5, 1))
+            C = np.zeros((1, 5, 1)) + scl
+            Xn = self.scheme(X, C)
+            sse = np.sum(np.square(X - Xn))
+            return sse
+        self.scalar_func = example
+        self.grad_func = grad(example)
+
+    def test_scalar_func(self):
+        assert np.allclose(self.scalar_func(0.4).item(), 4.608)
+
+    def test_grad(self):
+        assert np.allclose(self.grad_func(0.4).item(), -0.96)
+
+
 class TestHasGradient:
 
     def setup_method(self):
