@@ -172,6 +172,7 @@ class TestGradDelays:
             sse_i = sse_ip1
 
     def test_delay(self):
+        assert has_gradient(CatRingBuffer)
         self._run_opt(CatRingBuffer)
 
     def test_delay_matrix_lags(self):
@@ -179,6 +180,7 @@ class TestGradDelays:
         self._run_opt(CatRingBuffer, lag=lag)
 
     def test_no_delay(self):
+        assert has_gradient(NoopBuffer)
         self._run_opt(NoopBuffer)
 
 
