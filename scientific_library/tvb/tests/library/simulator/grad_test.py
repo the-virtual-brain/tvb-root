@@ -133,7 +133,7 @@ class TestGradDelays:
             "Read delayed data from buffer."
             # for the purposes of testing autodiff, the delays don't
             # matter, so we choose something simple for testing.
-            lag = lag or self.nt - 1
+            lag = self.nt - 1 if lag is None else lag
             return self.trace[(self.trpos + self.nt - lag) % self.nt]
 
     class NoopBuffer:
@@ -153,28 +153,23 @@ class TestGradDelays:
 
     class Loop:
 
-        def __init__(self, k, buf):
+        def __init__(self, k, buf, lag=None):
             "Setup loop."
             self.k = k
             self.buf = buf
+            self.lag = lag
 
         def step(self):
             "Loop body."
-            lag = self.buf.read()
+            lagged = self.buf.read(lag=self.lag)
             state = self.buf.state
-            new_state = state * 0.5 + self.k * lag.mean()
+            new_state = state * 0.5 + self.k * lagged.mean()
             self.buf.update(new_state)
             return new_state
 
     def setup_method(self):
         self.nn = 2
         self.init = np.r_[:self.nn].astype('d')
-
-    def _loop_iter(self, k=0):
-        "Loop body."
-        lag2 = self.crb.read()
-        self.crb.state = self.crb.state  * 0.5 + k * lag2.mean()
-        self.crb.update(self.crb.state)
 
     def test_loop_k0(self):
         "Test loop for k=0 for known delay values."
@@ -187,38 +182,42 @@ class TestGradDelays:
             assert crb.trpos == ((i + 1) % crb.nt)
             assert crb.trace.shape == ((crb.nt, ) + crb.state.shape)
 
-    def _run_loop(self, k, Buf):
+    def _run_loop(self, k, Buf, lag=None):
         "Run simulation loop for value of k."
-        loop = self.Loop(k=k, buf=Buf(self.init, 3))
+        loop = self.Loop(k=k, buf=Buf(self.init, 3), lag=lag)
         trace = []
         for i in range(10):
             trace.append(loop.step())
         return np.array(trace)
 
-    def _sse_loop(self, k, data, Buf):
+    def _sse_loop(self, k, data, Buf, lag=None):
         "Eval sum squared error of simulation vs data."
-        sim = self._run_loop(k, Buf)
+        sim = self._run_loop(k, Buf, lag=lag)
         sse = np.sum(np.square(sim - data))
         return sse
 
-    def _run_opt(self, Buf):
+    def _run_opt(self, Buf, lag=None):
         "Attempt optimization by gradient descent."
         k = 0.15
-        data = self._run_loop(k, Buf)
+        data = self._run_loop(k, Buf, lag=lag)
         # guess w/ initial sse
         k_hat = 0.1
-        sse_i = self._sse_loop(k_hat, data, Buf)
-        grad_sse = grad(lambda k_i: self._sse_loop(k_i, data, Buf))
+        sse_i = self._sse_loop(k_hat, data, Buf, lag=lag)
+        grad_sse = grad(lambda k_i: self._sse_loop(k_i, data, Buf, lag=lag))
         # do opt
         for i in range(5):
             g = grad_sse(k_hat)
             k_hat += -0.1 * g
-            sse_ip1 = self._sse_loop(k_hat, data, Buf)
+            sse_ip1 = self._sse_loop(k_hat, data, Buf, lag=lag)
             assert sse_ip1 < sse_i
             sse_i = sse_ip1
 
     def test_delay(self):
         self._run_opt(self.CatRingBuffer)
+
+    def test_delay_matrix_lags(self):
+        lag = np.array([[2, 1], [0, 2]])
+        self._run_opt(self.CatRingBuffer, lag=lag)
 
     def test_no_delay(self):
         self._run_opt(self.NoopBuffer)
