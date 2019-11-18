@@ -148,9 +148,9 @@ class SparseCoupling(Coupling):
             self.log.debug('lri.size %d nzr.size %d', self._cached_lri.size, self._cached_nzr.size)
         return self._cached_lri, self._cached_nzr
 
-    def __call__(self, step, history):
+    def __call__(self, step, history, history_query, bind=True):
         h = history # type: SparseHistory
-        x_i, x_j = h.query_sparse(step)
+        x_i, x_j = history_query(step)
         assert x_i.shape == (h.n_cvar, h.n_node, h.n_mode)
         assert x_j.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
         #                              ^ from (columns)
@@ -158,15 +158,27 @@ class SparseCoupling(Coupling):
         sum = numpy.zeros_like(x_i)
         x_i = x_i[:, h.nnz_row_el_idx]
         assert x_i.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
-        #                              ^ to (rows)
+                                     # ^ to (rows)
 
         pre = self.pre(x_i, x_j)
         assert pre.shape == (h.n_cvar, h.n_nnzw, h.n_mode)
 
         weights_col = h.nnz_weights.reshape((h.n_nnzw, 1))
         lri, nzr = self._lri(h.nnz_row_el_idx)
+
         sum[:, nzr] = numpy.add.reduceat(weights_col * pre, lri, axis=1)
-        return self.post(sum)
+        result = self.post(sum)
+
+        post_bind = self.bind_post()
+
+        def _(step):
+            x_i, x_j = history_query(step)
+            sum = numpy.zeros_like(x_i)
+            x_i = x_i[:, h.nnz_row_el_idx]
+            pre = self.pre(x_i, x_j)
+            sum[:, nzr] = numpy.add.reduceat(weights_col * pre, lri, axis=1)
+            return post_bind(sum)
+        return _ if bind else result
 
 
 class Linear(SparseCoupling):
@@ -193,6 +205,12 @@ class Linear(SparseCoupling):
 
     def post(self, gx):
         return self.a * gx + self.b
+
+    def bind_post(self):
+        a, b = self.a, self.b
+        def _(gx):
+            return a * gx + b
+        return _
 
     def __str__(self):
         return simple_gen_astr(self, 'a b')

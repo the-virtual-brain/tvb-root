@@ -119,6 +119,14 @@ class DenseHistory(BaseHistory):
     def update(self, step, new_state):
         self.buffer[step % self.n_time] = new_state[self.cvars]
 
+    def bind_update(self):
+        buffer = self.buffer
+        n_time = self.n_time
+        cvars = self.cvars
+        def update(step, new_state):
+            buffer[step % n_time] = new_state[cvars]
+        return update
+
 
 class SparseHistory(DenseHistory):
     "History implementation which stores data only for non-zero weights."
@@ -170,6 +178,20 @@ class SparseHistory(DenseHistory):
         delayed_state = self.buffer.take(time_indices + self.const_indices)
         current_state = self.buffer[(step - 1) % self.n_time]
         return current_state, delayed_state
+
+    def bind_query_sparse(self):
+        nnz_idelays = self.nnz_idelays
+        n_time = self.n_time
+        time_stride = self.time_stride
+        buffer = self.buffer
+        const_indices = self.const_indices
+        def _(step):
+            time_indices = ((step - 1 - nnz_idelays + n_time) % n_time) # type: numpy.ndarray
+            time_indices = time_indices.reshape((-1, 1)) * time_stride # type: numpy.ndarray
+            delayed_state = buffer.take(time_indices + const_indices)
+            current_state = buffer[(step - 1) % n_time]
+            return current_state, delayed_state
+        return _
 
     @property
     def nbytes(self):

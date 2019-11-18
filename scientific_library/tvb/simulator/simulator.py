@@ -331,28 +331,32 @@ class Simulator(HasTraits):
             self.log.debug("stimulus shape is: %s", stimulus.shape)
         return stimulus
 
-    def _loop_compute_node_coupling(self, step):
+    def _loop_compute_node_coupling(self, step, coupling_closure):
         """Compute delayed node coupling values."""
-        coupling = self.coupling(step, self.history)
+        coupling = coupling_closure(step)
         if self.surface is not None:
             coupling = coupling[:, self._regmap]
         return coupling
 
-    def _loop_update_stimulus(self, step, stimulus):
+    def _bind_loop_update_stimulus(self):
         """Update stimulus values for current time step."""
-        if self.stimulus is not None:
-            # TODO stim_step != current step
-            stim_step = step - (self.current_step + 1)
-            stimulus[self.model.cvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
+        stim = self.stimulus
+        curr_step = self.current_step
+        def _(step, stimulus):
+            if stim is not None:
+                # TODO stim_step != current step
+                stim_step = step - (current_step + 1)
+                stimulus[self.model.cvar, :, :] = stim(stim_step).reshape((1, -1, 1))
+        return _
 
-    def _loop_update_history(self, step, n_reg, state):
+    def _loop_update_history(self, step, n_reg, state, history_update):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
             region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode)
             numpy_add_at(region_state, self._regmap, state.transpose((1, 0, 2)))        # sum within region
             region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))            # div by n node in region
             state = region_state.transpose((1, 0, 2))                                   # (cvar, node, mode)
-        self.history.update(step, state)
+        history_update(step, state)
 
     def _loop_monitor_output(self, step, state):
         observed = self.model.observe(state)
@@ -384,14 +388,21 @@ class Simulator(HasTraits):
         stimulus = self._prepare_stimulus()
         state = self.current_state
 
+        # binds
+        update_stimulus = self._bind_loop_update_stimulus()
+        history_query = self.history.bind_query_sparse()
+        coupling_closure = self.coupling(0, self.history, history_query, bind=True)
+        history_update = self.history.bind_update()
+        model_dfun = self.model.bind_dfun()
+
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
-            self._loop_update_stimulus(step, stimulus)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
+            node_coupling = self._loop_compute_node_coupling(step, coupling_closure)
+            update_stimulus(step, stimulus)
+            state = self.integrator.scheme(state, model_dfun, node_coupling, local_coupling, stimulus)
+            self._loop_update_history(step, n_reg, state, history_update)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output

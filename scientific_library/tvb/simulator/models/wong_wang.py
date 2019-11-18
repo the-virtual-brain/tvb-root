@@ -181,3 +181,12 @@ class ReducedWongWang(ModelNumbaDfun):
         deriv = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,
                         self.tau_s, self.w, self.J_N, self.I_o)
         return deriv.T[..., numpy.newaxis]
+
+    def bind_dfun(self):
+        pars = self.a, self.b, self.d, self.gamma, self.tau_s, self.w, self.J_N, self.I_o
+        def dfun(x, c, local_coupling=0.0):
+            x_ = x.reshape(x.shape[:-1]).T
+            c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
+            deriv = _numba_dfun(x_, c_, *pars)
+            return deriv.T[..., numpy.newaxis]
+        return dfun
