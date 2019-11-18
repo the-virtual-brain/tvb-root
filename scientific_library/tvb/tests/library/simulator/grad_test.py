@@ -40,6 +40,7 @@ from tvb.simulator.models.linear import Linear
 from tvb.simulator.integrators import EulerDeterministic
 from tvb.simulator.gradients import HasGradient, has_gradient
 from autograd import grad
+from autograd.extend import primitive, defvjp
 import autograd.numpy as np
 from numpy.testing import assert_allclose
 
@@ -221,3 +222,30 @@ class TestGradDelays:
 
     def test_no_delay(self):
         self._run_opt(self.NoopBuffer)
+
+
+class TestMemberPrimitives:
+    
+    class Primitive:
+        def __init__(self):
+            self.logsumexp = primitive(self.logsumexp)
+            defvjp(self.logsumexp, self.logsumexp_vjp)
+        
+        def logsumexp(self, x):
+            """Numerically stable log(sum(exp(x)))"""
+            max_x = np.max(x)
+            return max_x + np.log(np.sum(np.exp(x - max_x)))
+
+        def logsumexp_vjp(self, ans, x):
+            x_shape = x.shape
+            return lambda g: np.full(x_shape, g) * np.exp(x - np.full(x_shape, ans))
+
+    def test_usage(self):
+        primitive = self.Primitive()
+        def example_func(y):
+            z = y**2
+            lse = primitive.logsumexp(z)
+            return np.sum(lse)
+        grad_of_example = grad(example_func)
+        grad_of_example(np.array([1.5, 6.7, 1e-10]))
+
