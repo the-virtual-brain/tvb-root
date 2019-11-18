@@ -225,27 +225,36 @@ class TestGradDelays:
 
 
 class TestMemberPrimitives:
-    
+
     class Primitive:
-        def __init__(self):
-            self.logsumexp = primitive(self.logsumexp)
-            defvjp(self.logsumexp, self.logsumexp_vjp)
+        def __init__(self, param):
+            self.param = param
+            self.logsumexp1 = primitive(self.logsumexp)
+            defvjp(self.logsumexp1, self.logsumexp1_vjp)
         
         def logsumexp(self, x):
             """Numerically stable log(sum(exp(x)))"""
-            max_x = np.max(x)
+            max_x = np.max(x) + self.param
             return max_x + np.log(np.sum(np.exp(x - max_x)))
 
-        def logsumexp_vjp(self, ans, x):
+        def logsumexp1_vjp(self, ans, x):
             x_shape = x.shape
             return lambda g: np.full(x_shape, g) * np.exp(x - np.full(x_shape, ans))
 
     def test_usage(self):
-        primitive = self.Primitive()
-        def example_func(y):
+        # instantiate primitive
+        primitive = self.Primitive(param=1.5)
+        # use autograd version
+        def f_ad(y):
             z = y**2
             lse = primitive.logsumexp(z)
             return np.sum(lse)
-        grad_of_example = grad(example_func)
-        grad_of_example(np.array([1.5, 6.7, 1e-10]))
+        # and version using custom primitive
+        def f_prim(y):
+            z = y**2
+            lse = primitive.logsumexp1(z)
+            return np.sum(lse)
+        # check result is the same
+        y = np.array([1.5, 6.7, 1e-10])
+        assert (grad(f_ad)(y) == grad(f_prim)(y)).all()
 
