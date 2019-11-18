@@ -59,4 +59,8 @@ class CouplingGradient(HasGradient):
 
 
 def has_gradient(obj):
-    return isinstance(obj, HasGradient)
+	if isinstance(obj, type):
+		has = issubclass(obj, HasGradient)
+	else:
+		has = isinstance(obj, HasGradient)
+	return has
