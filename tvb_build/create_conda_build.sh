@@ -6,9 +6,9 @@ conda create -y -n $envname nomkl scipy numpy networkx scikit-learn cython h5py 
 
 source activate $envname
 
-conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils
+conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils sympy
 
-pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4
+pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4 autograd
 
 # The next ones are for Mac build env:
 # pip install py2app docutils apscheduler pyobjc
