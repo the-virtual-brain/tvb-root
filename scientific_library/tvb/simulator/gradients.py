@@ -42,5 +42,21 @@ class HasGradient:
     pass
 
 
+class BufferGradient(HasGradient):
+	"Type tag for differentiable delay buffer."
+
+
+class ModelGradient(HasGradient):
+	"Type tag for differentiable model."
+
+
+class SchemeGradient(HasGradient):
+	"Type tag for differentiable integration scheme."
+
+
+class CouplingGradient(HasGradient):
+	"Type tag for differentiable coupling."
+
+
 def has_gradient(obj):
     return isinstance(obj, HasGradient)
