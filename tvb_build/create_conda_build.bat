@@ -4,13 +4,13 @@ conda create -y -n tvb-run scipy numpy networkx scikit-learn cython h5py pip num
 REM use environment
 call activate tvb-run
 
-conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils
+conda install matplotlib pytables numba scikit-image pytest pytest-cov simplejson cherrypy sqlalchemy psycopg2 docutils sympy
 
 REM make sure at least networkx 2.0 is installed
 conda update networkx
 
 REM add locally built or pure Python packages
-pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4
+pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4 autograd
 
 
 REM Now Install TVB packages in the correct order:
