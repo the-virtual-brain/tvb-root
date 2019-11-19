@@ -2,8 +2,7 @@
 	
 	<h4><mark>View</mark> Local connectivity</h4>
 
-	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
+	{{ existentEntitiesInputList | safe }}
 
 	{% if no_local_connectivity == false %}
 		{% include 'spatial/left_template_brain_pick.html' %}
@@ -11,11 +10,11 @@
 		Should not get here before the load of a local connectivity.
 	{% endif %}
 
-	<script type="text/javascript">
-        $(document).ready(function() {
-            LCON_page_init({{ minValue }}, {{ maxValue }});
-        });
-    </script>
+{#	<script type="text/javascript">#}
+{#        $(document).ready(function() {#}
+{#            LCON_page_init({{ minValue }}, {{ maxValue }});#}
+{#        });#}
+{#    </script>#}
 
 	{% if displayedMessage is defined and displayedMessage != none %}
 		<script type="text/javascript">

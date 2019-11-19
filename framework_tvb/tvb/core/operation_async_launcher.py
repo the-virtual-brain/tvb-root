@@ -43,6 +43,7 @@ The results of the computation will be stored by the adapter itself.
 """
 
 import sys
+from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreator
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -74,7 +75,7 @@ def do_operation_launch(operation_id):
         params = parse_json_parameters(curent_operation.parameters)
         adapter_instance = ABCAdapter.build_adapter(stored_adapter)
         # These should go once we have a common place for it
-        if not isinstance(adapter_instance, SimulatorAdapter):
+        if not isinstance(adapter_instance, SimulatorAdapter) and not isinstance(adapter_instance, LocalConnectivityCreator):
             adapter_form = adapter_instance.get_form()(project_id=curent_operation.fk_launched_in)
             adapter_form.fill_from_post(params)
             adapter_instance.submit_form(adapter_form)

@@ -4,51 +4,37 @@
         Equation
     </h4>
 
-     {% import 'flow/genericAdapterTemplateFunctions.html' as gatf  %}
+    {{ existentEntitiesInputList | safe }}
+    {{ inputList | safe }}
 
-    <fieldset>
-        <legend>Selected entity</legend>
-        {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
-    </fieldset>
-
-    <fieldset>
-        <legend>Local connectivity parameters</legend>
-        <form id="form_spatial_local_connectivity_data">
-            {% with %}
-                {% set includeGenericAdapterTemplateFunctions=false %}
-                {% include 'flow/genericAdapterFormFields.html' %}
-            {% endwith %}
-        </form>
-    </fieldset>
-
-    <script type="text/javascript">
-        $(document).ready(function () {
-            var entityElement = $("select[name='existentEntitiesSelect']");
-            entityElement.change(function () { BS_loadEntity(); });
-            // Any on change event should reset the loaded entity, disable the view button and enable the create button
-            $("input").change(function () {
-                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
-                selectEntity.options[selectEntity.options.selectedIndex].selected = false;
-                selectEntity.options[0].selected = true;
-                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
-                LCONN_enableCreate();
-            });
-            $("select[name!='existentEntitiesSelect']").change(function () {
-                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
-                selectEntity.options[selectEntity.options.selectedIndex].selected = false;
-                selectEntity.options[0].selected = true;
-                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
-                LCONN_enableCreate();
-            });
-            // On the page load check if we have a loaded entity so we know if we should disable the view or create steps.
-            var selectedEntityGid = entityElement.val();
-            if (selectedEntityGid == undefined || selectedEntityGid == "none" || (selectedEntityGid.trim().length) == 0) {
-                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
-            } else {
-                LCONN_disableCreate('You have not changed any of the current Local Connectivity parameters. No point to create new entity.');
-            }
-        });
-    </script>
+{#    <script type="text/javascript">#}
+{#        $(document).ready(function () {#}
+{#            var entityElement = $("select[name='existentEntitiesSelect']");#}
+{#            entityElement.change(function () { BS_loadEntity(); });#}
+{#            // Any on change event should reset the loaded entity, disable the view button and enable the create button#}
+{#            $("input").change(function () {#}
+{#                var selectEntity = $("select[name='existentEntitiesSelect']")[0];#}
+{#                selectEntity.options[selectEntity.options.selectedIndex].selected = false;#}
+{#                selectEntity.options[0].selected = true;#}
+{#                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');#}
+{#                LCONN_enableCreate();#}
+{#            });#}
+{#            $("select[name!='existentEntitiesSelect']").change(function () {#}
+{#                var selectEntity = $("select[name='existentEntitiesSelect']")[0];#}
+{#                selectEntity.options[selectEntity.options.selectedIndex].selected = false;#}
+{#                selectEntity.options[0].selected = true;#}
+{#                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');#}
+{#                LCONN_enableCreate();#}
+{#            });#}
+{#            // On the page load check if we have a loaded entity so we know if we should disable the view or create steps.#}
+{#            var selectedEntityGid = entityElement.val();#}
+{#            if (selectedEntityGid == undefined || selectedEntityGid == "none" || (selectedEntityGid.trim().length) == 0) {#}
+{#                LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');#}
+{#            } else {#}
+{#                LCONN_disableCreate('You have not changed any of the current Local Connectivity parameters. No point to create new entity.');#}
+{#            }#}
+{#        });#}
+{#    </script>#}
 
     <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
         <input type="hidden" id="entity-gid" name="local_connectivity_gid" value="none"/>

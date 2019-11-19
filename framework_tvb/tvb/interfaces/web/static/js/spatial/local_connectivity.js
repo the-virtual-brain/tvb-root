@@ -166,3 +166,71 @@ function _drawDefaultColorBuffers() {
     BASE_PICK_buffer_default_color();
     drawScene();
 }
+
+// Following functions are used for updating the current LCONN on server and redraw the chart
+function change_equation_params_form(base_url, method_to_call, current_equation, equation_params_div, fields_with_events) {
+    let url = base_url + "/" + method_to_call + "/" + current_equation;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (response) {
+            var t = document.createRange().createContextualFragment(response);
+            $("#" + equation_params_div).empty().append(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equation_params_div]);
+            set_events_on_form_fields(fields_with_events, base_url, true);
+            plot_equation(base_url)
+        }
+    })
+}
+
+function set_lconn_param_and_redraw_chart(base_url, method_to_call, field_name, field_value) {
+    let current_param = field_name + '=' + field_value;
+    let url = base_url + '/' + method_to_call + '?' + current_param;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function () {
+            plot_equation(base_url)
+        }
+    })
+}
+
+function set_events_on_form_fields(fields_with_events, url, only_equation_params = false) {
+    let SURFACE_FIELD = 'set_surface';
+    let EQUATION_FIELD = 'set_equation';
+    let CUTOFF_FIELD = 'set_cutoff_value';
+    let EQUATION_PARAMS_FIELD = 'set_equation_param';
+
+    if (only_equation_params === false) {
+        $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
+            set_lconn_param_and_redraw_chart(url, SURFACE_FIELD, this.name, this.value)
+        });
+        $('input[name^="' + fields_with_events[CUTOFF_FIELD] + '"]').change(function () {
+            set_lconn_param_and_redraw_chart(url, CUTOFF_FIELD, this.name, this.value)
+        });
+
+        //TODO: we want to have also support fields for this/ extract hardcoded strings
+        let equation_select_fields = document.getElementsByName(fields_with_events[EQUATION_FIELD]);
+        for (let i=0; i<equation_select_fields.length; i++) {
+            equation_select_fields[i].onclick = function () {
+                change_equation_params_form(url, EQUATION_FIELD, this.value, 'spatial_params',
+                    fields_with_events)
+            };
+        }
+    }
+    $('input[name^="' + fields_with_events[EQUATION_PARAMS_FIELD] + '"]').change(function () {
+        set_lconn_param_and_redraw_chart(url, EQUATION_PARAMS_FIELD, this.name, this.value)
+    });
+}
+
+function plot_equation(base_url) {
+    let url = base_url + '/get_equation_chart';
+    doAjaxCall({
+        async: false,
+        type: 'GET',
+        url: url,
+        success: function (data) {
+            $("#" + 'equationDivId').empty().append(data);
+        }
+    });
+}

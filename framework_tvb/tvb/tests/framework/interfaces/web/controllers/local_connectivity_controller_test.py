@@ -36,7 +36,7 @@ import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
-from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN_CONTEXT
+from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN
 
 
 class TestLocalConnectivityController(BaseTransactionalControllerTest):
@@ -82,7 +82,7 @@ class TestLocalConnectivityController(BaseTransactionalControllerTest):
         Test that the dictionary returned by the controller for the LC Workflow second step is correct.
         """
         context = ContextLocalConnectivity()
-        cherrypy.session[KEY_LCONN_CONTEXT] = context
+        cherrypy.session[KEY_LCONN] = context
         result_dict = self.local_p_c.step_2()
         self._default_checks(result_dict)
         assert result_dict['loadExistentEntityUrl'] == '/spatial/localconnectivity/load_local_connectivity'

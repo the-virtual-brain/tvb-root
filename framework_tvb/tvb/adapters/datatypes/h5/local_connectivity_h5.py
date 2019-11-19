@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.neotraits.api import Attr
 from tvb.core.neotraits.h5 import H5File, Scalar, Reference, SparseMatrix
 from tvb.datatypes.local_connectivity import LocalConnectivity
 
@@ -37,22 +36,22 @@ class LocalConnectivityH5(H5File):
         super(LocalConnectivityH5, self).__init__(path)
         self.surface = Reference(LocalConnectivity.surface, self)
         self.matrix = SparseMatrix(LocalConnectivity.matrix, self)
-        self.equation = Scalar(Attr(str), self, name='equation')
+        self.equation = Reference(LocalConnectivity.equation, self)
         self.cutoff = Scalar(LocalConnectivity.cutoff, self)
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (LocalConnectivity, bool, bool) -> None
         super(LocalConnectivityH5, self).store(datatype, scalars_only, store_references)
         # equations are such a special case that we will have to implement custom load store
-        self.equation.store(datatype.equation.to_json(datatype.equation))
+        # self.equation.store(datatype.equation.to_json(datatype.equation))
 
     def load_into(self, datatype):
         # type: (LocalConnectivity) -> None
         super(LocalConnectivityH5, self).load_into(datatype)
 
-        eq = self.equation.load()
-        eq = datatype.equation.from_json(eq)
-        datatype.equation = eq
+        # eq = self.equation.load()
+        # eq = datatype.equation.from_json(eq)
+        # datatype.equation = eq
 
     def get_min_max_values(self):
         metadata = self.matrix.get_metadata()
