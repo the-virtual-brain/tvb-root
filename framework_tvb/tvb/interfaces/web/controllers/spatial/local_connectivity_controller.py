@@ -38,12 +38,15 @@ import uuid
 import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivitySelectorForm, \
     LocalConnectivityCreatorForm, LocalConnectivityCreator
+from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
     get_ui_name_to_equation_dict, get_form_for_equation, get_ui_name_for_equation
+from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import prepare_prefixed_name_for_field
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
@@ -90,14 +93,16 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn = common.get_from_session(KEY_LCONN)
         project_id = common.get_current_project().id
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
+        existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
         configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
 
         # TODO: find a nicer way
         if not hasattr(current_lconn, 'surface') or not current_lconn.surface:
             current_surface_in_form = configure_lcon_form.surface._get_values_from_db()[0]
             configure_lcon_form.surface.data = current_surface_in_form[2]
-            current_lconn.surface = Surface()
+            current_lconn.surface = CorticalSurface()
             current_lconn.surface.gid = uuid.UUID(configure_lcon_form.surface.value)
+        configure_lcon_form.fill_from_trait(current_lconn)
 
         # add interface to session, needed for filters
         # self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
@@ -153,7 +158,7 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn = common.get_from_session(KEY_LCONN)
         surface_form_field = LocalConnectivityCreatorForm(self.possible_equations).surface
         surface_form_field.fill_from_post(param)
-        current_lconn.surface = Surface()
+        current_lconn.surface = CorticalSurface()
         current_lconn.surface.gid = uuid.UUID(surface_form_field.value)
 
     @expose_page
@@ -219,8 +224,22 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         Loads the interface for an existing local connectivity.
         """
-        context = common.get_from_session(KEY_LCONN)
-        context.selected_entity = local_connectivity_gid
+        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
+        existent_lconn = LocalConnectivity()
+        lconn_h5_path = h5.path_for_stored_index(lconn_index)
+        with LocalConnectivityH5(lconn_h5_path) as lconn_h5:
+            lconn_h5.load_into(existent_lconn)
+            equation_gid = lconn_h5.equation.load()
+
+        equation_h5 = SimulatorConfigurationH5(lconn_h5_path)
+        existent_lconn.equation = equation_h5.load_from_reference(equation_gid)
+
+        # prepare dummy surface, we need only the GID at this step, for serialization
+        existent_lconn.surface = CorticalSurface()
+        existent_lconn.surface.gid = uuid.UUID(lconn_index.surface_gid)
+
+        common.add2session(KEY_LCONN, existent_lconn)
+
         msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
         common.set_message(msg)
         if int(from_step) == 1:
@@ -239,9 +258,7 @@ class LocalConnectivityController(SpatioTemporalController):
         step 2 in case none was selected. We are keeping it so far to remain compatible with the
         stimulus pages.
         """
-        context = common.get_from_session(KEY_LCONN)
-        # context.reset()
-        return self.step_1()
+        return self.step_1(do_reset=1)
 
     def fill_default_attributes(self, template_dictionary):
         """

@@ -7,10 +7,10 @@
     {{ existentEntitiesInputList | safe }}
     {{ inputList | safe }}
 
-{#    <script type="text/javascript">#}
-{#        $(document).ready(function () {#}
-{#            var entityElement = $("select[name='existentEntitiesSelect']");#}
-{#            entityElement.change(function () { BS_loadEntity(); });#}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var entityElement = $("select[name='_existentEntitiesSelect']");
+            entityElement.change(function () { BS_loadEntity(); });
 {#            // Any on change event should reset the loaded entity, disable the view button and enable the create button#}
 {#            $("input").change(function () {#}
 {#                var selectEntity = $("select[name='existentEntitiesSelect']")[0];#}
@@ -33,8 +33,8 @@
 {#            } else {#}
 {#                LCONN_disableCreate('You have not changed any of the current Local Connectivity parameters. No point to create new entity.');#}
 {#            }#}
-{#        });#}
-{#    </script>#}
+        });
+    </script>
 
     <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
         <input type="hidden" id="entity-gid" name="local_connectivity_gid" value="none"/>

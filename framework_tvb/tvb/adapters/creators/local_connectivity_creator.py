@@ -34,7 +34,7 @@
 
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, \
     get_ui_name_to_equation_dict
-from tvb.basic.neotraits._attr import Attr
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
 from tvb.core.entities.file.simulator.h5_factory import equation_h5_factory
@@ -68,7 +68,7 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self}
+        return {'form': self, 'legend': 'Selected entity'}
 
 
 class LocalConnectivityCreatorForm(ABCAdapterForm):
@@ -102,10 +102,17 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
     def get_traited_datatype(self):
         return LocalConnectivity()
 
+    def fill_from_trait(self, trait):
+        self.surface.data = trait.surface.gid.hex
+        self.cutoff.data = trait.cutoff
+        self.spatial.data = type(trait.equation)
+        self.spatial_params.form = get_form_for_equation(type(trait.equation))(self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial_params.form.fill_from_trait(trait.equation)
+
     @using_template('spatial/spatial_fragment')
     def __str__(self):
         return {'form': self, 'next_action': 'form_spatial_local_connectivity_data',
-                'equation_params_div': self.NAME_EQUATION_PARAMS_DIV}
+                'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 
 
 class LocalConnectivityCreator(ABCAsynchronous):
