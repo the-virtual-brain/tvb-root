@@ -85,7 +85,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
                                         label='Equation parameters')
         self.cutoff = ScalarField(LocalConnectivity.cutoff, self)
-        self.display_name = ScalarField(Attr(str, label='Display name'), self)
+        self.display_name = ScalarField(Attr(str, label='Display name', required=False), self, name='display_name')
 
     @staticmethod
     def get_required_datatype():

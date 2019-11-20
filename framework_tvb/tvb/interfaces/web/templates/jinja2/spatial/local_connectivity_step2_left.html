@@ -10,11 +10,11 @@
 		Should not get here before the load of a local connectivity.
 	{% endif %}
 
-{#	<script type="text/javascript">#}
-{#        $(document).ready(function() {#}
-{#            LCON_page_init({{ minValue }}, {{ maxValue }});#}
-{#        });#}
-{#    </script>#}
+	<script type="text/javascript">
+        $(document).ready(function() {
+            LCON_page_init({{ minValue }}, {{ maxValue }});
+        });
+    </script>
 
 	{% if displayedMessage is defined and displayedMessage != none %}
 		<script type="text/javascript">

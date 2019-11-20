@@ -42,6 +42,7 @@ from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
     get_ui_name_to_equation_dict, get_form_for_equation, get_ui_name_for_equation
 from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import prepare_prefixed_name_for_field
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -59,6 +60,7 @@ LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 
 KEY_LCONN = "local-conn"
+KEY_LCONN_NAME = "local-conn-name"
 
 
 class LocalConnectivityController(SpatioTemporalController):
@@ -69,11 +71,12 @@ class LocalConnectivityController(SpatioTemporalController):
     SURFACE_FIELD = 'set_surface'
     EQUATION_FIELD = 'set_equation'
     CUTOFF_FIELD = 'set_cutoff_value'
+    DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
-        self.plotted_equations_prefixes = {}
+        self.plotted_equation_prefixes = {}
         ui_name_to_equation_dict = get_ui_name_to_equation_dict()
         self.possible_equations = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
                                    DOUBLE_GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(DOUBLE_GAUSSIAN_EQUATION),
@@ -90,6 +93,7 @@ class LocalConnectivityController(SpatioTemporalController):
         if int(do_reset) == 1:
             new_lconn = LocalConnectivity()
             common.add2session(KEY_LCONN, new_lconn)
+            common.add2session(KEY_LCONN_NAME, None)
         current_lconn = common.get_from_session(KEY_LCONN)
         project_id = common.get_current_project().id
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
@@ -103,9 +107,8 @@ class LocalConnectivityController(SpatioTemporalController):
             current_lconn.surface = CorticalSurface()
             current_lconn.surface.gid = uuid.UUID(configure_lcon_form.surface.value)
         configure_lcon_form.fill_from_trait(current_lconn)
+        configure_lcon_form.display_name.data = common.get_from_session(KEY_LCONN_NAME)
 
-        # add interface to session, needed for filters
-        # self.add_interface_to_session(left_side_interface, right_side_interface['inputList'])
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
         template_specification['inputList'] = configure_lcon_form
@@ -116,10 +119,13 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
         template_specification['localConnBaseUrl'] = '/spatial/localconnectivity'
+
         self.plotted_equation_prefixes = {self.SURFACE_FIELD: configure_lcon_form.surface.name,
                                           self.EQUATION_FIELD: configure_lcon_form.spatial.name,
                                           self.CUTOFF_FIELD: configure_lcon_form.cutoff.name,
+                                          self.DISPLAY_NAME_FIELD: configure_lcon_form.display_name.name,
                                           self.EQUATION_PARAMS_FIELD: configure_lcon_form.spatial_params.name[1:]}
+
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
         msg, msg_type = common.get_message_from_session()
@@ -161,6 +167,13 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn.surface = CorticalSurface()
         current_lconn.surface.gid = uuid.UUID(surface_form_field.value)
 
+    @cherrypy.expose
+    def set_display_name(self, **param):
+        display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations).display_name
+        display_name_form_field.fill_from_post(param)
+        if display_name_form_field.value is not None:
+            common.add2session(KEY_LCONN_NAME, display_name_form_field.value)
+
     @expose_page
     def step_2(self, **kwargs):
         """
@@ -170,6 +183,7 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         current_lconn = common.get_from_session(KEY_LCONN)
         left_side_form = LocalConnectivitySelectorForm(project_id=common.get_current_project().id)
+        left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
         template_specification['existentEntitiesInputList'] = left_side_form
@@ -178,14 +192,12 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_1'
         msg, _ = common.get_message_from_session()
         template_specification['displayedMessage'] = msg
-        # TODO: handle case when Lconn is None in UI
         if current_lconn is not None:
             selected_local_conn = ABCAdapter.load_entity_by_gid(current_lconn.gid.hex)
-            template_specification.update(self.display_surface(selected_local_conn.surface.gid))
+            template_specification.update(self.display_surface(selected_local_conn.surface_gid))
             template_specification['no_local_connectivity'] = False
-            min_value, max_value = selected_local_conn.get_min_max_values()
-            template_specification['minValue'] = min_value
-            template_specification['maxValue'] = max_value
+            template_specification['minValue'] = selected_local_conn.matrix_non_zero_min
+            template_specification['maxValue'] = selected_local_conn.matrix_non_zero_max
         else:
             template_specification['no_local_connectivity'] = True
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
@@ -194,7 +206,8 @@ class LocalConnectivityController(SpatioTemporalController):
     def _prepare_operation_params(self, lconn):
         params_dict = {LocalConnectivityCreator.KEY_SURFACE: lconn.surface.gid.hex,
                        LocalConnectivityCreator.KEY_CUTOFF: str(lconn.cutoff),
-                       LocalConnectivityCreator.KEY_EQUATION: get_ui_name_for_equation(type(lconn.equation))
+                       LocalConnectivityCreator.KEY_EQUATION: get_ui_name_for_equation(type(lconn.equation)),
+                       DataTypeMetaData.KEY_TAG_1: common.get_from_session(KEY_LCONN_NAME)
                        }
         for param_key, param_val in lconn.equation.parameters.items():
             param_full_key = prepare_prefixed_name_for_field(LocalConnectivityCreator.KEY_EQUATION, param_key)
@@ -214,7 +227,6 @@ class LocalConnectivityController(SpatioTemporalController):
         self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
                                          common.get_current_project().id, **params_dict)
         common.set_important_message("The operation for creating the local connectivity was successfully launched.")
-        # current_lconn.reset()
         return self.step_1()
 
     @cherrypy.expose
@@ -222,7 +234,7 @@ class LocalConnectivityController(SpatioTemporalController):
     @check_user
     def load_local_connectivity(self, local_connectivity_gid, from_step=None):
         """
-        Loads the interface for an existing local connectivity.
+        Loads an existing local connectivity.
         """
         lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
         existent_lconn = LocalConnectivity()
@@ -239,6 +251,7 @@ class LocalConnectivityController(SpatioTemporalController):
         existent_lconn.surface.gid = uuid.UUID(lconn_index.surface_gid)
 
         common.add2session(KEY_LCONN, existent_lconn)
+        common.add2session(KEY_LCONN_NAME, lconn_index.user_tag_1)
 
         msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
         common.set_message(msg)
@@ -279,20 +292,28 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        selected_local_conn = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
-        surface = selected_local_conn.surface
+        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
-        vertex_index = int(surface.triangles[triangle_index][0])
-        picked_data = list(selected_local_conn.matrix[vertex_index].toarray().squeeze())
+
+        surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.surface_gid)
+        surface_h5 = h5.h5_file_for_index(surface_indx)
+        vertex_index = int(surface_h5.triangles[triangle_index][0])
+
+        lconn_h5 = h5.h5_file_for_index(lconn_index)
+        lconn_matrix = lconn_h5.matrix.load()
+        picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())
+        lconn_h5.close()
 
         result = []
-        if surface.number_of_split_slices <= 1:
+        number_of_split_slices = surface_h5.number_of_split_slices.load()
+        if number_of_split_slices <= 1:
             result.append(picked_data)
         else:
-            for slice_number in range(surface.number_of_split_slices):
-                start_idx, end_idx = surface.get_slice_vertex_boundaries(slice_number)
+            for slice_number in range(number_of_split_slices):
+                start_idx, end_idx = surface_h5.get_slice_vertex_boundaries(slice_number)
                 result.append(picked_data[start_idx:end_idx])
 
+        surface_h5.close()
         result = {'data': json.dumps(result)}
         return result
 

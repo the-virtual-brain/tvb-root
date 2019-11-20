@@ -35,10 +35,11 @@
 
 import json
 from copy import deepcopy
-#from tvb.basic.traits import traited_interface
+from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import PARAM_SURFACE
+from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -84,8 +85,10 @@ class SpatioTemporalController(BaseController):
         """
         surface = ABCAdapter.load_entity_by_gid(surface_gid)
         common.add2session(PARAM_SURFACE, surface_gid)
-        url_vertices_pick, url_normals_pick, url_triangles_pick = surface.get_urls_for_pick_rendering()
-        url_vertices, url_normals, _, url_triangles = surface.get_urls_for_rendering()
+        surface_h5 = h5.h5_file_for_index(surface)
+        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
+        url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
+        surface_h5.close()
 
         return {
             'urlVerticesPick': json.dumps(url_vertices_pick),
@@ -94,7 +97,7 @@ class SpatioTemporalController(BaseController):
             'urlVertices': json.dumps(url_vertices),
             'urlTriangles': json.dumps(url_triangles),
             'urlNormals': json.dumps(url_normals),
-            'brainCenter': json.dumps(surface.center())
+            'brainCenter': json.dumps(surface_h5.center())
         }
 
 

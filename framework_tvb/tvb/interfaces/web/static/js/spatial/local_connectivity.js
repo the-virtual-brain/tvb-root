@@ -41,7 +41,7 @@ function LCON_page_init(minValue, maxValue) {
         BS_displayIndexForThePickedVertex();
     });
     LCON_viewer_init(minValue, maxValue);
-    $("select[name='existentEntitiesSelect']").change(function () {
+    $("select[name='_existentEntitiesSelect']").change(function () {
         BS_loadEntity();
     });
     LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
@@ -55,7 +55,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
 
     if (TRIANGLE_pickedIndex >= 0) {
         if (selectedLocalConnectivity == null) {
-            selectedLocalConnectivity = $("select[name='existentEntitiesSelect']").val();
+            selectedLocalConnectivity = $("select[name='_existentEntitiesSelect']").val();
         }
 
         if (selectedLocalConnectivity == null || selectedLocalConnectivity == "None" ||
@@ -199,6 +199,7 @@ function set_events_on_form_fields(fields_with_events, url, only_equation_params
     let SURFACE_FIELD = 'set_surface';
     let EQUATION_FIELD = 'set_equation';
     let CUTOFF_FIELD = 'set_cutoff_value';
+    let DISPLAY_NAME_FIELD = 'set_display_name';
     let EQUATION_PARAMS_FIELD = 'set_equation_param';
 
     if (only_equation_params === false) {
@@ -207,6 +208,9 @@ function set_events_on_form_fields(fields_with_events, url, only_equation_params
         });
         $('input[name^="' + fields_with_events[CUTOFF_FIELD] + '"]').change(function () {
             set_lconn_param_and_redraw_chart(url, CUTOFF_FIELD, this.name, this.value)
+        });
+        $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
+            set_lconn_param_and_redraw_chart(url, DISPLAY_NAME_FIELD, this.name, this.value)
         });
 
         //TODO: we want to have also support fields for this/ extract hardcoded strings
