@@ -181,7 +181,7 @@ class Surface(HasTraits):
             self.log.debug("End computing vertex normals")
 
         if self._edge_lengths is None:
-            self._find_edge_lengths()
+            self._edge_lengths = self.edge_lengths
 
     # from scientific surfaces
     _vertex_neighbours = None
@@ -498,18 +498,25 @@ class Surface(HasTraits):
             self._number_of_edges = len(self.edges)
         return self._number_of_edges
 
-    def _find_edge_lengths(self):
+    @property
+    def edge_lengths(self):
         """
-        Calculate the Euclidean distance between the pair of vertices that
-        define the edges in the ``edges`` attribute.
-        """
-        elem = numpy.sqrt(((self.vertices[self.edges, :][:, 0, :] -
-                            self.vertices[self.edges, :][:, 1, :]) ** 2).sum(axis=1))
+        The length of the edges defined in the ``edges`` attribute.
 
-        self.edge_mean_length = float(elem.mean())
-        self.edge_min_length = float(elem.min())
-        self.edge_max_length = float(elem.max())
-        self._edge_lengths = elem
+        Calculate the Euclidean distance between the pair of vertices that
+        define the edges in the ``edges`` attribute, when missing.
+        """
+        if self._edge_lengths is None:
+            elem = numpy.sqrt(((self.vertices[self.edges, :][:, 0, :] -
+                                self.vertices[self.edges, :][:, 1, :]) ** 2).sum(axis=1))
+
+            self.edge_mean_length = float(elem.mean())
+            self.edge_min_length = float(elem.min())
+            self.edge_max_length = float(elem.max())
+
+            self._edge_lengths = elem
+        return self._edge_lengths
+
 
     @property
     def edge_triangles(self):
