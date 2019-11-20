@@ -6,7 +6,7 @@ from tvb.core.neotraits.forms import Form, ScalarField, SimpleFloatField
 
 LINEAR_EQUATION = 'Linear'
 GAUSSIAN_EQUATION = 'Gaussian'
-DOUBLE_GAUSSIAN_EQUATION = 'DoubleGaussian'
+DOUBLE_GAUSSIAN_EQUATION = 'Mexican-hat'
 SIGMOID_EQUATION = 'Sigmoid'
 GENRALIZED_SIGMOID_EQUATION = 'GeneralizedSigmoid'
 SINUSOID_EQUATION = 'Sinusoid'
