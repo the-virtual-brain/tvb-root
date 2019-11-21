@@ -264,6 +264,7 @@ class FilesHelper(object):
         Move H5 storage into a new location
         """
         try:
+            #TODO FOR LIA : CHECK CIRCULAR DEPENDENCY
             from tvb.core.neocom import h5
             full_path = h5.path_for_stored_index(datatype)
             folder = self.get_project_folder(new_project_name, str(new_op_id))

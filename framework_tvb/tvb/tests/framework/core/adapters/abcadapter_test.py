@@ -130,15 +130,6 @@ class TestAdapterABC(TransactionalTestCase):
         """
         self.test_adapter = ComplexInterfaceAdapter()
 
-    def test_flat_interface(self):
-        """
-        Test method flaten_input_interface on a complex adapter interface.
-        """
-        list_flat = self.test_adapter.flaten_input_interface()
-        assert len(self.EXPECTED_FLAT_NAMES) == len(list_flat)
-        for row in list_flat:
-            assert row["name"] in self.EXPECTED_FLAT_NAMES
-
     def test_prepare_ui_inputs_simple(self):
         """
         Test for ABCAdapter.prepare_ui_inputs on a complex adapter interface.
