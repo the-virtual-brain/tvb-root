@@ -44,7 +44,7 @@ from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
-from tvb.core.utils import get_matlab_executable
+from tvb.core.utils import get_matlab_executable, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
 
@@ -172,8 +172,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
         assert submit_data['ADMINISTRATOR_NAME'] == TvbProfile.current.web.admin.ADMINISTRATOR_NAME
         assert submit_data['ADMINISTRATOR_EMAIL'] == TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL
-        assert hashlib.md5(
-            submit_data['ADMINISTRATOR_PASSWORD'].encode('utf-8')).hexdigest() == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
+        assert hash_password(submit_data['ADMINISTRATOR_PASSWORD']) == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
 
     def _fake_restart_services(self, should_reset):
         """

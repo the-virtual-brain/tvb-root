@@ -33,8 +33,8 @@
 """
 
 import pytest
+from tvb.core.utils import hash_password
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from hashlib import md5
 from tvb.core.entities.model import model_project
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
@@ -91,13 +91,13 @@ class TestUserService(TransactionalTestCase):
         Standard flow for creating a user.
         """
         initial_user_count = dao.get_all_users()
-        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
+        data = dict(username="test_user", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         final_user_count = dao.get_all_users()
         assert len(initial_user_count) == len(final_user_count) - 1, "User count was not increased after create."
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
+        assert inserted_user.password == hash_password("test_password"), "Incorrect password"
         assert inserted_user.email == "test_user@tvb.org", "The email inserted is not correct."
         assert inserted_user.role == "user", "The role inserted is not correct."
         assert not inserted_user.validated, "User validation  is not correct."
@@ -146,26 +146,26 @@ class TestUserService(TransactionalTestCase):
         """
         Test method for the reset password method. Happy flow.
         """
-        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
+        data = dict(username="test_user", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
+        assert inserted_user.password == hash_password("test_password"), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="test_user@tvb.org")
         self.user_service.reset_password(**reset_pass_data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password != md5("test_password".encode('utf-8')), "Password not reset for some reason!"
+        assert inserted_user.password != hash_password("test_password"), "Password not reset for some reason!"
 
     def test_reset_pass_wrong_email(self):
         """
         Test method for the reset password method. Email is not valid,
         should raise exception
         """
-        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
+        data = dict(username="test_user", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
+        assert inserted_user.password == hash_password("test_password"), "Incorrect password"
         reset_pass_data = dict(username="test_user", email="wrong_mail@tvb.org")
         with pytest.raises(UsernameException):
             self.user_service.reset_password(**reset_pass_data)
@@ -175,30 +175,30 @@ class TestUserService(TransactionalTestCase):
         Test method for the change password method. Happy flow.
         """
         inserted_user = self._prepare_user_for_change_pwd()
-        self.user_service.edit_user(inserted_user, md5("test_password".encode('utf-8')).hexdigest())
+        self.user_service.edit_user(inserted_user, hash_password("test_password"))
         changed_user = dao.get_user_by_name("test_user")
-        assert changed_user.password == md5("new_test_password".encode('utf-8')).hexdigest(), "The password did not change."
+        assert changed_user.password == hash_password("new_test_password"), "The password did not change."
 
     def test_change_password_wrong_old(self):
         """
         Test method for the change password method. Old password is wrong, should return false.
         """
         inserted_user = self._prepare_user_for_change_pwd()
-        params = dict(edited_user=inserted_user, old_password=md5("wrong_old_pwd".encode('utf-8')).hexdigest())
+        params = dict(edited_user=inserted_user, old_password=hash_password("wrong_old_pwd"))
         with pytest.raises(UsernameException):
             self.user_service.edit_user(**params)
         user = dao.get_user_by_name("test_user")
-        assert user.password == md5("test_password".encode('utf-8')).hexdigest(), "The password should have not been changed!"
+        assert user.password == hash_password("test_password"), "The password should have not been changed!"
 
     def _prepare_user_for_change_pwd(self):
         """Private method to prepare password change operation"""
-        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
+        data = dict(username="test_user", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         self.user_service.validate_user("test_user")
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "The password inserted is not correct."
-        inserted_user.password = md5('new_test_password'.encode('utf-8')).hexdigest()
+        assert inserted_user.password == hash_password("test_password"), "The password inserted is not correct."
+        inserted_user.password = hash_password("new_test_password")
         return inserted_user
 
     def test_is_username_valid(self):
@@ -239,7 +239,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard login flow with a valid username and password.
         """
-        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -249,7 +249,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid password.
         """
-        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -259,7 +259,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid username.
         """
-        user = model_project.User("test_user", md5("test_pass".encode('utf-8')).hexdigest(), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -347,11 +347,11 @@ class TestUserService(TransactionalTestCase):
         """
         Test the method of editing a user.
         """
-        data = dict(username="test_user", password=md5("test_password".encode('utf-8')).hexdigest(),
+        data = dict(username="test_user", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
-        assert inserted_user.password == md5("test_password".encode('utf-8')).hexdigest(), "Incorrect password"
+        assert inserted_user.password == hash_password("test_password"), "Incorrect password"
         inserted_user.role = "new_role"
         inserted_user.validated = 1
         self.user_service.edit_user(inserted_user)

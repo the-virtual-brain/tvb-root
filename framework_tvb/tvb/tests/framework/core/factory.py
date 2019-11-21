@@ -41,11 +41,11 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import tvb_data
-from hashlib import md5
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
+from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
@@ -427,7 +427,7 @@ class ExtremeTestFactory(object):
         for i in range(nr_users):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
-            password = md5("test".encode('utf-8')).hexdigest()
+            password = hash_password("test")
             new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))

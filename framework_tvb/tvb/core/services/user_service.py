@@ -38,7 +38,6 @@ import os
 import six
 import tvb_data
 from random import randint
-from hashlib import md5
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import DEFAULT_PROJECT_GID
@@ -48,6 +47,8 @@ from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
+from tvb.core.utils import hash_password
+
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -155,7 +156,7 @@ class UserService:
 
             old_pass = user.password
             new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
-            user.password = md5(new_pass.encode('utf-8')).hexdigest()
+            user.password = hash_password(new_pass)
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
             email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))
@@ -207,7 +208,7 @@ class UserService:
         Service layer to check if given UserName and Password are according to DB.
         """
         user = dao.get_user_by_name(username)
-        if user is not None and user.password == md5(password.encode('utf-8')).hexdigest() and user.validated:
+        if user is not None and user.password == hash_password(password) and user.validated:
             return user
         else:
             return None

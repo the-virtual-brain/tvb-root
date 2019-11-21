@@ -34,8 +34,8 @@
 
 import os
 import cherrypy
+from tvb.core.utils import hash_password
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from hashlib import md5
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core import utils
 from tvb.interfaces.web.controllers import common
@@ -68,7 +68,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         Tests for a valid redirect on user login
         """
-        user = User('valid_user', md5('valid_pass'.encode('utf-8')).hexdigest(), 'mail@mail.com', True, 'CLINICIAN')
+        user = User('valid_user', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"

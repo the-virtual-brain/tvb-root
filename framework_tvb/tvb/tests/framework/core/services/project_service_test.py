@@ -482,7 +482,7 @@ class TestProjectService(TransactionalTestCase):
             dt.row2 = "value%i" % (idx + 1,)
             dt_factory._store_datatype(dt)
 
-    def test_retrieve_project_full(self, dummy_datatype_index_factory, dummy_datatype_index_factory2, dummy_datatype_index_factory3):
+    def test_retrieve_project_full(self, dummy_datatype_index_factory):
         """
         Tests full project information is retrieved by method `ProjectService.retrieve_project_full(...)`
         """
@@ -490,9 +490,9 @@ class TestProjectService(TransactionalTestCase):
         project = TestFactory.create_project(self.test_user)
         operation = TestFactory.create_operation(test_user=self.test_user, test_project=project)
 
-        dt1 = dummy_datatype_index_factory(project=project, operation=operation)
-        dt2 = dummy_datatype_index_factory2(project=project, operation=operation)
-        dt3 = dummy_datatype_index_factory3(project=project, operation=operation)
+        dummy_datatype_index_factory(project=project, operation=operation)
+        dummy_datatype_index_factory(project=project, operation=operation)
+        dummy_datatype_index_factory(project=project, operation=operation)
 
         _, ops_nr, operations, pages_no = self.project_service.retrieve_project_full(project.id)
         assert ops_nr == 1, "DataType Factory should only use one operation to store all it's datatypes."

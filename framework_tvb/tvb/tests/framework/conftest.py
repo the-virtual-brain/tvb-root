@@ -40,7 +40,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
-TvbProfile.set_profile('TEST_SQLITE_PROFILE')
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
@@ -381,11 +380,6 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
     return build
 
 
-dummy_datatype_index_factory2 = dummy_datatype_index_factory
-
-dummy_datatype_index_factory3 = dummy_datatype_index_factory
-
-
 @pytest.fixture()
 def datatype_measure_factory(operation_factory):
     def build(analyzed_entity):
@@ -503,9 +497,3 @@ def test_adapter_factory():
 
         dao.store_entity(stored_adapter, inst_from_db is not None)
     return build
-
-
-test_adapter_2_factory = test_adapter_factory
-
-
-test_adapter_3_factory = test_adapter_factory
