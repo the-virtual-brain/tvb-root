@@ -1,0 +1,17 @@
+<div id="monitor-2D-id" class="monitor-container monitor-2d">
+	<script type="text/javascript" src="/static_view/connectivity/scripts/connectivity2DScript.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static/js/jit-tvb.js?{{ currentVersionJS }}" ></script>
+	<script type="text/javascript" src="/static/jquery/jquery.json.js" ></script>
+	
+	<link rel="stylesheet" type="text/css" href="/static/style/section_connectivity.css?{{ currentVersionJS }}" />
+	<div id="hemispheresDisplay" class="viewer-portlet"></div>
+
+	<script type="text/javascript">
+		function launchViewer(width, height) {
+			C2D_hemispheresJSON = {};
+			C2D_hemispheresJSON['both'] = {{ bothHemisphereJson }};
+			startPreviewConnectivity();
+		}
+	</script>
+
+</div>

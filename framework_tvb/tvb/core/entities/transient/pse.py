@@ -34,7 +34,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 
 Data for Parameter Space Exploration view will be defined here.
-The purpose of this entities is to be used in Genshi UI, or for populating visualizer.
+The purpose of this entities is to be used in Jinja2 UI, or for populating visualizer.
 """
 
 import json

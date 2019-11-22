@@ -1,0 +1,49 @@
+<div id="main" class="columnized colscheme-2-even">
+	<script type="text/javascript" src="/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript">
+        // 	Define function here to use when create button is not disabled and populate with jinja2 provided values.
+        function createLocalConnectivity() {
+            LCONN_submitLocalConnectivityData('{{ submit_parameters_url }}', 'form_spatial_local_connectivity_data');
+        }
+	</script>
+	
+	<div>
+        {% include 'spatial/local_connectivity_step1_left.html' %}
+        {% include 'spatial/local_connectivity_step1_right.html' %}
+
+        <!--! NOTE: The form below is used only for the default behaviour used by clicking the
+        step 1 'Edit Local Connectivity' button. For the view and create buttons the form
+        'form_spatial_local_connectivity_data' from local_connectivity_step1_left is dynamically submited. -->
+        <form id="base_spatio_temporal_form" action="{{ resetToDefaultUrl }}/1" method="POST">
+            <aside class="header-component toolbar can-extend auto-extends">
+                <h3>SpatioTemporal Entities</h3>
+                <div class="extension">
+                    <div class="dropdown-pane">
+                        <ul>
+                            <li>
+                                <button id="ctrl-action-export" class="action action-download action-idle" disabled="disabled">
+                                Save Figure
+                                </button>
+                            </li>
+                            <li>
+                                <button id="lconn_step_1" class="action action-analyze action-idle" disabled="disabled">
+                                Edit Local Connectivity Equation
+                                </button>
+                            </li>
+                            <li>
+                                <button id="lconn_step_2" class="action action-view" onclick="LCONN_submitLocalConnectivityData('{{ next_step_url }}', 'form_spatial_local_connectivity_data'); return false;">
+                                View Local Connectivity on surface
+                                </button>
+                            </li>
+                            <li>
+                                <button id="lconn_step_3" class="action action-plus" onclick="createLocalConnectivity(); return false;">
+                                Create new Local Connectivity
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+        </form>
+	</div>
+</div>

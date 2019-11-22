@@ -1,0 +1,21 @@
+<div id="s-brain" class="brain view-column">
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/vertex_shader.html' %}
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            VS_StartSurfaceViewer('{{ urlVertices | safe}}', '{{ urlLines | safe }}', '{{ urlTriangles | safe }}',
+                    '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
+                    '{{ urlRegionMap | safe }}', '{{ urlMeasurePointsLabels | safe }}',
+                    '{{ boundaryURL | safe }}', '{{ shelfObject | safe if shelfObject else null }}', {{ minMeasure }}, {{ maxMeasure }},
+                    '{{ clientMeasureUrl | safe }}', {{ hemisphereChunkMask }});
+        });
+    </script>
+
+    {% with %}
+        {% set show_navigator = not extended_view %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+
+</div>

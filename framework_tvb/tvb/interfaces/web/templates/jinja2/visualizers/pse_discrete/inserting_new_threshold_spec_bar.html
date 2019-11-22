@@ -1,0 +1,24 @@
+<!--! how am i supposed to use this without an ajax call if there is no function? -->
+<form>
+    <label>Logic Options: </label>
+    <input type="radio" name="logicButton" id="And"/>And
+    <input type="radio" name="logicButton" id="Or" checked="checked"/>Or
+
+    <br/>
+</form>
+
+<select name="Storing Selections for Filter" id="{{ 'filterSelect' ~ id_increment_count }}" class="filterSelectBar"></select>
+
+<input type="text" id="{{ 'overlayNameInput' ~ id_increment_count }}"/>
+<button class="action-store action " id="{{ 'saveButtonNumber' ~ id_increment_count }}" title="Save your filter inputs">Save</button>
+<br/>
+<label for="threshold">Threshold: </label>
+<input type="text" class="thresholdInput" id="{{ 'threshold' ~ id_increment_count }}" value="0"/>
+<input type="checkbox" name="notButton" id="{{ 'Not' ~ id_increment_count }}"/>Not
+<form>
+    <input type="radio" name="thresholdType" id="{{ 'Size' ~ id_increment_count }}"/>Size
+    <input type="radio" name="thresholdType" id="{{ 'Color' ~ id_increment_count }}"
+           checked="checked"/>Color <br/>
+</form>
+<button class="action action-minus" id="{{ 'removeFilterOps' ~ id_increment_count }}">Remove Options</button>
+

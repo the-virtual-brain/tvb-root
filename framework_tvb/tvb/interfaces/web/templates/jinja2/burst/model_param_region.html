@@ -1,0 +1,38 @@
+{% macro hole_form() -%}
+
+    <li>
+        <label for="current_dynamic">Select model configuration</label>
+        <select id="current_dynamic" tabindex="1" class="dataset-selector">
+            {% for dyn in dynamics %}
+                <option value="{{ dyn.id }}">{{ dyn.model_class }} - {{ dyn.name }}</option>
+            {% endfor %}
+        </select>
+    </li>
+
+    <li>
+        <nav class="inline-menu" id="dynamic-detail">
+            <button class="action action-menu"> Values </button>
+            <div class="extension">
+                <div class="dropdown-pane"></div>
+            </div>
+        </nav>
+    </li>
+
+{%- endmacro %}
+
+{% macro hole_js() -%}
+    <script type="text/javascript" src="/static/js/bursts_model_parameters.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            modelParam.main({{ dynamics_json | safe }}, {{ initial_dynamic_ids }}, "{{ measurePointsSelectionGID }}");
+            GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+        });
+    </script>
+{%- endmacro %}
+
+<!--! the above functions will be used by the template below to draw the form and execute startup js-->
+{% with %}
+    {% set section2title = 'Node Parameters' %}
+    {% set submitText = 'Region Parameters' %}
+    {% include 'burst/region_associator.html' %}
+{% endwith %}

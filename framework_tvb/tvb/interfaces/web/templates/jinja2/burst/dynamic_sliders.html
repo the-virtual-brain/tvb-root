@@ -1,0 +1,45 @@
+<!--! This file defines functions used by concrete slider generating templates -->
+{% import 'flow/generate_help_tooltip.html' as ght with context %}
+
+{% macro drawSlider(par) -%}
+    <td class="paramName">{{ par.label }}</td>
+        <td class="paramHelp"> {{ ght.generate_help_tooltip(par) }}</td>
+        <td class="paramSlider"><div id="slider_{{ par.name }}"></div></td>
+        <td class="paramValue"><input type="number" id="value_{{ par.name }}"
+                   value="{{ par.default }}" min="{{ par.min }}" max="{{ par.max }}" step="{{ par.step }}"/>
+    </td>
+{%- endmacro %}
+
+{% macro drawSliderGroup(parameters, btn_id, title) -%}
+    <div class="sliderGroup">
+        <button id="{{ btn_id }}">Reset</button>
+        <h3>{{ title }}</h3>
+        {% set step = (1 + (parameters | length)) // 2 %}
+        <table class="paramSlidersTable">
+            {% for i in (step | xrange) %}
+                <tr>
+                    {{ drawSlider(parameters[i]) }}
+                    {% if (i + step) < (parameters | length) %}
+                        {{ drawSlider(parameters[i + step]) }}
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{%- endmacro %}
+
+{% macro drawAxis(name, state_variables, selected_sv, selectId, sliderId, spanId) -%}
+    <td class="paramName">{{ name }}</td>
+    <td class="paramValue">
+        <select id="{{ selectId }}">
+            {% for sv in state_variables %}
+                <option value="{{ sv.name }}" selected="{{ 'selected' if sv.name == selected_sv else none }}">
+                    {{ sv.label }}
+                </option>
+            {% endfor %}
+        </select>
+    </td>
+    <td class="c3"><div id="{{ sliderId }}"></div></td>
+    <td><span id="{{ spanId }}"> </span></td>
+{%- endmacro %}
+

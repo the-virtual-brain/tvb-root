@@ -1,0 +1,44 @@
+<!-- ============================================ -->
+<!-- Render a generic input page for any adapter  -->
+<!-- ============================================ -->
+<div id="adapterDiv">
+    <form method="post" action="{{ submitLink }}" enctype="multipart/form-data" id="generic_form_all_inputs">
+        {% with %}
+            {% set draw_hidden_ranges = true %}
+            {% include 'flow/genericAdapterFormFields.html' %}
+        {% endwith %}
+
+        <!-- Standard tall toolbar -->
+        {% if not displayControl %}
+            <aside class="header-component toolbar can-extend auto-extends">
+                <h3>Controls</h3>
+                <div class="extension">
+                    <div class="dropdown-pane">
+                        <ul>
+                            <li>
+                                <button tabindex='2' type="submit" class="action action-analyze">Launch</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+        {% endif %}
+
+        <!--! This is a component that only goes into view controllers -->
+        {% if displayControl %}
+            <ul class="toolbar-inline">
+                <li>
+                    <button tabindex='-1' id="ctrl-action-relaunch" type="submit"
+                            class="action action-controller-launch"
+                            title="Relaunch the visualizer using a different entity">Update Visualizer
+                    </button>
+                </li>
+                <li>
+                    <button tabindex='-1' id="ctrl-action-export" type="button" class="action action-download"
+                            title="Store PNG figure preview">Save Figure
+                    </button>
+                </li>
+            </ul>
+        {% endif %}
+    </form>
+</div>

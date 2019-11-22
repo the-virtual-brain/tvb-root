@@ -1,0 +1,7 @@
+<script id="shader-vs" type="x-shader/x-vertex">
+    {% if isOneToOneMapping %}
+        {% include 'visualizers/commons/shading/vertex_one_to_one.glsl' %}
+    {% else %}
+        {% include 'visualizers/commons/shading/vertex_region.glsl' %}
+    {% endif %}
+</script>

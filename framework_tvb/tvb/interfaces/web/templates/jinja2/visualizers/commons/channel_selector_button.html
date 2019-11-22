@@ -1,0 +1,11 @@
+{% macro drawRegionSelectorButton(title, groupedOptions, initialSelection=[], namedSelections=[], buttonTitle='Select channels', radio=false) -%}
+    <nav class="inline-menu">
+        <button class="action action-menu">{{ buttonTitle }}</button>
+        <div class="extension">
+            <div class="dropdown-pane">
+                {% import 'visualizers/commons/channel_selector.html' as cs  %}
+                {{ cs.drawRegionSelector(title, "channelSelector", groupedOptions, initialSelection, namedSelections, radio) }}
+            </div>
+        </div>
+    </nav>
+{%- endmacro %}

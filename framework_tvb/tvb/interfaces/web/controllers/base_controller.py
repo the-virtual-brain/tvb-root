@@ -174,7 +174,7 @@ class BaseController(object):
         Returns the home page with the messages stored in the user's session.
         """
         self.logger.debug("Unused submit attributes:" + str(data))
-        template_dictionary = dict(mainContent="../index", title="The Virtual Brain Project")
+        template_dictionary = dict(mainContent="index", title="The Virtual Brain Project")
         template_dictionary = self._fill_user_specific_attributes(template_dictionary)
         if common.get_from_session(common.KEY_IS_RESTART):
             template_dictionary[common.KEY_IS_RESTART] = True
@@ -186,7 +186,7 @@ class BaseController(object):
     @using_template('user/base_user')
     def error(self, **data):
         """Error page to redirect when something extremely bad happened"""
-        template_specification = dict(mainContent="../error", title="Error page", data=data)
+        template_specification = dict(mainContent="error", title="Error page", data=data)
         template_specification = self._fill_user_specific_attributes(template_specification)
         return self.fill_default_attributes(template_specification)
 

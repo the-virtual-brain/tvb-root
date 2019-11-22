@@ -4,6 +4,7 @@ __pycache__
 
 # packaging
 *.egg-info/
+dist/
 
 # ide's
 .idea/

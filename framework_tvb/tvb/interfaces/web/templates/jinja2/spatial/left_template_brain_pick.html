@@ -1,0 +1,55 @@
+<div id="s-pick">
+    <script type="text/javascript" src="/static/jquery/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="/static/js/sylvester.js"></script>
+    <script type="text/javascript" src="/static/js/glUtils.js"></script>
+    <script type="text/javascript" src="/static/js/zoom.js"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/brainLegend.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/shading/shading.js"></script>
+    <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/webGL_Mouse.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/webGL_Pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}
+
+    <div class="mainDiv">
+
+        <div class="controllersDiv">
+            {% if subsection_name == 'surfacestim' %}
+                <a href="#" title="Add focal point…" class="action action-plus addFocalPoint"
+                   onclick="BS_addSurfaceFocalPoint()">Add focal point</a>
+                <div class="action-block block-player">
+                    <button class="action action-stop action-idle" onclick="BS_stopSignalVisualization()">Stop</button>
+                    <button class="action action-run" onclick="BS_startSignalVisualization()">Play</button>
+                </div>
+            {% elif subsection_name == 'surfacemodel' %}
+                <a href="#" title="Add focal point…" class="action action-plus addFocalPoint"
+                   onclick="MP_addFocalPointForSurfaceModelParam()">Add focal point</a>
+            {% endif %}
+        </div>
+
+        <div class="brainDiv">
+            {% import 'visualizers/commons/brain_component.html' as bc %}
+            {{ bc.draw_brain_component("GLcanvas", none) }}
+        </div>
+
+        <div class="slider-div lastChild slider-div-right" style="display: none;">
+            <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                    onclick="pauseMovie();" tabindex="1"></button>
+            <div id="slider"></div>
+            <div class="movie-time"> <input type="text" disabled="disabled" id="TimeNow" value="0" /> ms </div>
+        </div>
+
+    </div>
+        
+    <script type="text/javascript">
+        $(document).ready(function() {
+            BASE_PICK_webGLStart('{{ urlVerticesPick | safe }}', '{{ urlTrianglesPick | safe }}', '{{ urlNormalsPick | safe }}', '{{ urlVertices | safe }}',
+                    '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}', '{{ brainCenter }}', "{{ callback if callback is defined else '' }}");
+        });
+    </script>
+
+</div>

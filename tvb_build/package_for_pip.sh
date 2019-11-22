@@ -5,8 +5,8 @@ cd ..
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("tvb_data" "framework_tvb" "scientific_library" "externals/tvb_gdist")
-if [ "$1" != "" ]; then
+declare -a folders2pack=("framework_tvb" "scientific_library" "externals/tvb_gdist")
+if [[ "$1" != "" ]]; then
     echo "Received param: " "$1"
     folders2pack=("$1")
 fi

@@ -238,5 +238,6 @@ def build_step1():
 
 
 if __name__ == '__main__':
-    ensure_svn_current_version()
+    # TODO TVB-2415
+    # ensure_svn_current_version()
     build_step1()

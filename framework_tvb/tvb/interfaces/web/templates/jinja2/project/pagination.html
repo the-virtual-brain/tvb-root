@@ -1,0 +1,26 @@
+{% macro displayPaginationControls(page_number, total_pages, col_span, submit_form_id) -%}
+	{% if total_pages > 1 %}
+		<tr class="toolbar-inline">
+			<th colspan="{{ col_span }}">
+				<ul class="action-block block-pager">
+					<li>
+						{% if page_number != 1 %}
+							<a href="#" title="Go to previous page" class="action action-page-back" onclick="changeDisplayPage({{ page_number-1 }}, '{{ submit_form_id }}')">&lt;</a>
+						{% endif %}
+						{% if page_number <= 1 %}
+							<a href="#" title="Go to previous page" class="action action-page-back action-idle">&lt;</a>
+						{% endif %}
+					</li>
+					<li class="signpost">Page {{ page_number }} of {{ total_pages }}</li>
+					<li>
+						{% if page_number < total_pages %}
+							<a href="#" title="Go to next page" class="action action-page-fwd" onclick="changeDisplayPage({{ page_number+1 }}, '{{ submit_form_id }}')">&gt;</a>
+						{% else %}
+							<a href="#" title="Go to next page" class="action action-page-fwd action-idle">&gt;</a>
+						{% endif %}
+					</li>
+				</ul>
+			</th>
+		</tr>
+	{% endif %}
+{%- endmacro %}

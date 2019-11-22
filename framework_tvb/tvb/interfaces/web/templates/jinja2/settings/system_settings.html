@@ -1,0 +1,126 @@
+
+<!--     Settings Page Content     -->
+<!-- ============================= -->
+<tvb>
+	<div id="main" class="main-settings">
+    	<form method="post">
+			<table summary="Config data" class="contentTable">
+				{% for key in keys_order %}
+					{% if key is none %}
+						<tr><td colspan='2'> <HR/></td> </tr>
+					{% else %}
+						{% with %}
+							{% set data = config_data[key] %}
+							<tr>
+								<td>{{ data.label }}:</td>
+								<td>
+									{% if data.type=='text' and ('readonly' not in data or not data.readonly) %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="text" value="{{ data.value if data.value is not none else '' }}"/>
+									{% endif %}
+
+									{% if data.type=='text' and ('readonly' in data and data.readonly) %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="text" readonly="readonly" value="{{ data.value if data.value is not none else '' }}"/>
+									{% endif %}
+
+									{% if data.type=='password' and ('readonly' not in data or not data.readonly) %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="password" value="{{ data.value if data.value is not none else '' }}"/>
+									{% endif %}
+
+									{% if data.type=='password' and ('readonly' in data and data.readonly) %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="password" readonly="readonly" value="{{ data.value if data.value is not none else '' }}"/>
+									{% endif %}
+
+									{% if data.type=='boolean' and data.value %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="checkbox" checked="checked"/>
+									{% endif %}
+
+									{% if data.type=='boolean' and not data.value %}
+										<input name='{{ key }}' id='{{ key }}' class="inputField" type="checkbox"/>
+									{% endif %}
+
+									{% if data.type=='select' and key=='SELECTED_DB' and ('readonly' not in data or not data.readonly) %}
+										<select name="{{ key }}" id='{{ key }}' class="inputField" onchange="changeDBValue(this);">
+											{% for option in data.options %}
+												{% if (option == data.value) %}
+                            						<option value="{{ option }}" selected="selected" correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+												{% else %}
+                            						<option value="{{ option }}"correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+												{% endif %}
+                        					{% endfor %}
+                    					</select>
+									{% endif %}
+
+									{% if data.type=='select' and key!='SELECTED_DB' and ('readonly' not in data or not data.readonly) %}
+                                		<select name="{{ key }}" id='{{ key }}' class="inputField">
+											{% for option in data.options %}
+												{% if (option == data.value) %}
+                            						<option value="{{ option }}" selected="selected" correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+												{% else %}
+                            						<option value="{{ option }}" correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+												{% endif %}
+											{% endfor %}
+                    					</select>
+									{% endif %}
+                                	<!--! The select is readonly-->
+									{% if data.type=='select' and ('readonly' in data and data.readonly) %}
+                    					<select name="{{ key }}" id='{{ key }}' class="inputField" disabled="disabled">
+											{% for option in data.options %}
+												{% if option == data.value %}
+                                            		<option value="{{ option }}" selected="selected" correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+                                            		<input type="hidden" name="{{ key }}" value="{{ option }}"/>
+                                        		{% else %}
+                            						<option value="{{ option }}" correspondingVal='{{ data.options[option] }}'>{{ option }} </option>
+												{% endif %}
+											{% endfor %}
+                    					</select>
+									{% endif %}
+
+									{% if key == 'URL_VALUE' %}
+                    					<button type='button' onclick="validateDb('{{ key }}', 'TVB_STORAGE')" value='validate'>Validate DB</button>
+									{% endif %}
+
+									{% if key == 'MATLAB_EXECUTABLE' %}
+                    					<button type='button' onclick="validateMatlabPath('{{ key }}')" value='validate'>Validate path</button>
+									{% endif %}
+
+								</td>
+							</tr>
+
+							<tr>
+								<td colspan='2'>
+									{% if ('description' in data) %}
+										<span class="inputDescription">{{ data.description }}</span>
+									{% endif %}
+								</td>
+							</tr>
+
+							<tr>
+								<td colspan='2'>
+									{% if key in errors %}
+										<span class="errorMessage">{{ errors[key] }}</span>
+									{% endif %}
+								</td>
+							</tr>
+
+						{% endwith %}
+					{% endif %}
+				{% endfor %}
+			</table>
+
+			<aside class="header-component toolbar can-extend auto-extends">
+				<h3>System Settings</h3>
+			  <div class="extension">
+			   <div class="dropdown-pane">
+		        <ul>
+		            <li><button tabindex='50' type="submit" class="action action-confirm" name='save_settings' value='save_settings' title="The application will need to restart when you apply this changes, if this is the first run or if any settings were changed. Please be patient !!!">Apply</button></li>
+		        </ul>
+		       </div>
+		      </div>
+		    </aside>
+		</form>
+	</div>
+
+	<script type="text/javascript">
+		$(document).ready(settingsPageInitialize);
+	</script>
+</tvb>

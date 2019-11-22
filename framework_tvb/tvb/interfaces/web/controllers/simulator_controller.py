@@ -110,8 +110,17 @@ class SimulatorController(BurstBaseController):
 
         form = self.prepare_first_fragment()
 
+        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD)
+        if is_simulator_load is None:
+            is_simulator_load = False
+        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
+        if is_simulator_copy is None:
+            is_simulator_copy = False
+
         dict_to_render = copy.deepcopy(self.dict_to_render)
         dict_to_render[self.IS_FIRST_FRAGMENT_KEY] = True
+        dict_to_render[self.IS_COPY] = is_simulator_copy
+        dict_to_render[self.IS_LOAD] = is_simulator_load
         dict_to_render[self.FORM_KEY] = form
         dict_to_render[self.ACTION_KEY] = "/burst/set_connectivity"
         template_specification.update(**dict_to_render)
@@ -119,12 +128,8 @@ class SimulatorController(BurstBaseController):
         return self.fill_default_attributes(template_specification)
 
     def prepare_first_fragment(self):
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
-        if is_simulator_copy is None:
-            is_simulator_copy = False
-
         adapter_instance = ABCAdapter.build_adapter(self.cached_simulator_algorithm)
-        form = adapter_instance.get_form()('', common.get_current_project().id, is_simulator_copy)
+        form = adapter_instance.get_form()('', common.get_current_project().id)
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
@@ -135,7 +140,7 @@ class SimulatorController(BurstBaseController):
         return form
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_connectivity(self, **data):
@@ -173,7 +178,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_coupling_params(self, **data):
@@ -199,7 +204,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_surface(self, **data):
@@ -244,7 +249,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_cortex(self, **data):
@@ -282,7 +287,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_stimulus(self, **data):
@@ -315,7 +320,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_model(self, **data):
@@ -342,7 +347,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_model_params(self, **data):
@@ -369,7 +374,7 @@ class SimulatorController(BurstBaseController):
 
     # TODO: add state_variables selection step
     # @cherrypy.expose
-    # @using_jinja_template("wizzard_form")
+    # @using_template("simulator_fragment")
     # @handle_error(redirect=False)
     # @check_user
     # def set_model_variables_to_monitor(self, data):
@@ -385,7 +390,7 @@ class SimulatorController(BurstBaseController):
     #             'previous_action': '/burst/set_model_variables_to_monitor'}
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_integrator(self, **data):
@@ -411,7 +416,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_integrator_params(self, **data):
@@ -450,7 +455,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_noise_params(self, **data):
@@ -488,7 +493,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_noise_equation_params(self, **data):
@@ -514,7 +519,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitors(self, **data):
@@ -543,7 +548,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitor_params(self, **data):
@@ -580,13 +585,13 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_monitor_params'
         dict_to_render[self.IS_COPY] = is_simulator_copy
         dict_to_render[self.IS_LOAD] = is_simulator_load
-        if is_simulator_load:
-            dict_to_render[self.ACTION_KEY] = ''
-            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        # if is_simulator_load or is_simulator_copy:
+        #     dict_to_render[self.ACTION_KEY] = ''
+        #     dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_monitor_equation(self, **data):
@@ -608,13 +613,13 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_monitor_equation'
         dict_to_render[self.IS_COPY] = is_simulator_copy
         dict_to_render[self.IS_LOAD] = is_simulator_load
-        if is_simulator_load:
-            dict_to_render[self.ACTION_KEY] = ''
-            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        # if is_simulator_load or is_simulator_copy:
+        #     dict_to_render[self.ACTION_KEY] = ''
+        #     dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_simulation_length(self, **data):
@@ -646,11 +651,15 @@ class SimulatorController(BurstBaseController):
         dict_to_render[self.ACTION_KEY] = '/burst/setup_pse'
         dict_to_render[self.PREVIOUS_ACTION_KEY] = '/burst/set_simulation_length'
         dict_to_render[self.IS_COPY] = is_simulator_copy
+        dict_to_render[self.IS_LOAD] = is_simulator_load
         dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
+        if is_simulator_load or is_simulator_copy:
+            dict_to_render[self.ACTION_KEY] = ''
+            dict_to_render[self.IS_LAST_FRAGMENT_KEY] = True
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def setup_pse(self, **data):
@@ -663,7 +672,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def set_pse_params(self, **data):
@@ -803,7 +812,7 @@ class SimulatorController(BurstBaseController):
                 'selectedBurst': session_burst.id}
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def load_burst_read_only(self, burst_config_id):
@@ -839,7 +848,7 @@ class SimulatorController(BurstBaseController):
             raise
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def copy_simulator_configuration(self, burst_config_id):
@@ -868,7 +877,7 @@ class SimulatorController(BurstBaseController):
         return dict_to_render
 
     @cherrypy.expose
-    @using_jinja_template("wizzard_form")
+    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def reset_simulator_configuration(self):

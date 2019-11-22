@@ -88,7 +88,7 @@ for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
         elif pyfile.endswith(".js") and '/static/js' in pydir:
             JS_LIST.append((count_lines(totalpath), tmp))
 
-        elif pyfile.endswith(".html") and '/templates/genshi' in pydir:
+        elif pyfile.endswith(".html") and '/templates/jinja2' in pydir:
             HTML_LIST.append((count_lines(totalpath), tmp))
 
 print("Total: %s lines in %s .py TVB files (%d lines of code)" % (

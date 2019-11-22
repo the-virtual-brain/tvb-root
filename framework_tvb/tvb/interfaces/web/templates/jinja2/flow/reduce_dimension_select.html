@@ -1,0 +1,64 @@
+<div>
+    <!--!
+    data parameter wil be of form [[[l1,l2,l3,..], [v1,v2,v3,...], dict()],[],...]; where l1,l2,l3,.. are the
+    labels of the options and the v1,v2,v3,... represents the values of the options; dict() represents a
+    dictionary which contains the allowed aggregation functions on each dimension-->
+    {% macro drawReduceComponent(select_name, data, parameters_prefix, required_dimension, selected_items, selected_functions, expected_shape, operations) -%}
+        <input id="{{ select_name }}_expected_shape" name="{{ select_name }}_{{ parameters_prefix }}_0" type="hidden" value="expected_shape_{{ expected_shape }}"/>
+        <input id="{{ select_name }}_operations" name="{{ select_name }}_{{ parameters_prefix }}_0" type="hidden" value="operations_{{ operations }}"/>
+        <input id="{{ select_name }}_expected_dim" name="{{ select_name }}_{{ parameters_prefix }}_0" type="hidden" value="requiredDim_{{ required_dimension }}"/>
+        <input id="{{ select_name }}_array_shape" type="hidden" value="{{ array_shape }}"/>
+
+        <table>
+            <tr>
+                <td colspan="{{ data | length }}">The input expects an array of {{ required_dimension }}D</td>
+            </tr>
+            <tr>
+                <td colspan="{{ data | length }}"><span style="color: red;" id="{{ select_name }}_span_expected_dim">{{ required_dim_msg }}</span></td>
+            </tr>
+            <tr>
+                {% for idx in ((data | length) | xrange) %}
+                    <td>
+                        <select id="dimId_{{ select_name }}_{{ parameters_prefix }}_{{ idx }}"
+                                name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}' multiple='multiple'
+                                onchange="updateShapeLabel('{{ select_name }}', '{{ parameters_prefix }}', {{ idx }})">
+                            {% for idx2 in ((data[idx][0] | length) | xrange) %}
+                                {% if (idx in selected_items) and (idx2 in selected_items[idx]) %}
+                                    <option value='{{ data[idx][1][idx2] }}' selected="selected">{{ data[idx][0][idx2] }}</option>
+                                {% endif %}
+
+                                {% if (idx not in selected_items) or (idx2 not in selected_items[idx]) %}
+                                    <option value='{{ data[idx][1][idx2] }}'>{{ data[idx][0][idx2] }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for idx in ((data | length) | xrange) %}
+                    <td>
+                        <select id="funcId_{{ select_name }}_{{ parameters_prefix }}_{{ idx }}" name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}'
+                                onchange="updateShapeLabel('{{ select_name }}', '{{ parameters_prefix }}',{{ idx }})">
+                                <option value='func_none'>None</option>
+
+                                 {% for key, value in data[idx][2].items() %}
+                                    {% if (idx in selected_functions) and (key == selected_functions[idx]) %}
+                                        <option value='func_{{ key }}' selected="selected">{{ value }}</option>
+                                    {% endif %}
+
+                                     {% if (idx not in selected_functions) or (key != selected_functions[idx]) %}
+                                        <option value='func_{{ key }}'>{{ value }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                    </td>
+                 {% endfor %}
+            </tr>
+            <tr>
+                <td colspan="{{ data | length }}"><span id="{{ select_name }}_span_shape">Array shape: {{ array_shape }} => {{ currentDim }}</span></td>
+            </tr>
+        </table>
+    {%- endmacro %}
+
+    {{ drawReduceComponent(select_name, data, parameters_prefix, required_dimension, selected_items, selected_functions, expected_shape, operations) }}
+</div>

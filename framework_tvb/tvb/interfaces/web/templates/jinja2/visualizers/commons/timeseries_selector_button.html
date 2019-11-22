@@ -1,0 +1,51 @@
+{% macro drawStateModeSelectorInline(modes, states) -%}
+    <span>
+        <label>
+            State variable
+            <select class="state-variable-select">
+                {% for entry in states %}
+                    <option {{ 'selected' if loop.index0==0 }}" value="{{ loop.index0 }}">{{ entry }} </option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Mode
+            <select class="mode-select">
+                {% for entry in modes %}
+                    <option {{ 'selected' if loop.index0==0 }} value="{{ loop.index0 }}">{{ entry }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+    </span>
+{%- endmacro %}
+
+{% macro drawTimeseriesSelectorButton(title, labelsStateVar, labelsModes, groupedOptions=None,
+                                                   initialSelection=[], namedSelections=[],
+                                                   buttonTitle='Select Input Signals', containerId='channelSelector') -%}
+
+    {% import 'visualizers/commons/channel_selector.html' as cs  %}
+
+    <nav class="inline-menu">
+        <button class="action action-menu">{{ buttonTitle }}</button>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <div id="{{ containerId }}" class="regionSelector">
+                    <h5>{{ title }}</h5>
+
+                    {% if (labelsStateVar | length) > 1 or (labelsModes | length) > 1 %}
+                        <div class="modeSelectorInline">
+                            {{ drawStateModeSelectorInline(labelsModes, labelsStateVar) }}
+                        </div>
+                    {% endif %}
+
+                    {% if groupedOptions is not none %}
+                        {{ cs.drawRegionSelectorToolbar(namedSelections) }}
+                        {{ cs.drawRegionSelectorChannels(groupedOptions, initialSelection) }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+{%- endmacro %}

@@ -52,7 +52,7 @@ def update():
         for srf in all_surfaces:
             surface = dao.get_datatype_by_gid(srf.gid)
             if isinstance(surface, Surface):
-                surface._find_edge_lengths()
+                surface.configure()
                 dao.store_entity(surface)
                 surface.persist_full_metadata()
     except Exception:

@@ -1,0 +1,23 @@
+{% macro hole_form() -%}
+    {% for sv in stateVars %}
+        <li>
+            <label>{{ sv }}<input type="text" id="noisevalue_{{ loop.index0 }}" value="{{ noiseInputValues[sv] }}" style="width:50px;"/></label>
+        </li>
+    {% endfor %}
+{%- endmacro %}
+
+{% macro hole_js() -%}
+    <script type="text/javascript" src="/static/js/bursts_noise.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            noiseParam.main({{ stateVarsJson | safe }}, {{ initialNoiseValues | safe }}, "{{ measurePointsSelectionGID }}");
+            GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+        });
+    </script>
+{%- endmacro %}
+ <!--! the above functions will be used by the template below to draw the form and execute startup js-->
+{% with %}
+    {% set section2title='noise dispersion for state variables' %}
+    {% set sumbitText='Noise Configuration' %}
+    {% include 'burst/region_associator.html' %}
+{% endwith %}

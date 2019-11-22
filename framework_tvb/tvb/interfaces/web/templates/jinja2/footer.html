@@ -1,0 +1,47 @@
+<!--! ========================================================== -->
+<!--!    Main Navigation - Common footer for all pages           -->
+<!--! ========================================================== -->
+<footer>
+    {% set currentTab='nav-' ~ section_name %}
+    <nav>
+        <ul>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-user" class="{{ 'active ' if (currentTab=='nav-user' and not first_run) else '' }}{{'enabled' if not first_run else 'idle' }}">
+                <span class="left"></span>
+                <a href="{{ '/user/profile' if (user and not first_run) else '/user' if not first_run else '#' }}" tabindex='-1' title="">User</a>
+                <span class="right"></span>
+            </li>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-project" class="{{ 'active ' if (currentTab=='nav-project' and not first_run) else '' }}{{ 'enabled' if (user and not first_run) else 'idle' }}">
+                <span class="left"></span>
+                <a href="{{ '/project/' if (user and not first_run) else '#' }}" tabindex='-1' title="">Project</a>
+                <span class="right"></span>
+            </li>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-burst" class="{{ 'active ' if currentTab=='nav-burst' else '' }}{{'enabled' if selectedProject else 'idle' }}"
+            	title="{{ 'Burst Cockpit' if selectedProject else 'Please select a working project first!' }}">
+                <span class="left"></span>
+                <a href="{{ '/burst/' if selectedProject else '#' }}" tabindex='-1' title="">Simulator</a>
+                <span class="right"></span>
+            </li>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-analyze" class="{{ 'active ' if currentTab=='nav-analyze' else '' }}{{'enabled' if selectedProject else 'idle' }}"
+            	title="{{ 'Analyzers List' if selectedProject else 'Please select a working project first!' }}">
+                <span class="left"></span>
+                <a href="{{ analyzeCategoryLink if selectedProject else '#' }}" tabindex='-1' title="">Analysis</a>
+                <span class="right"></span>
+            </li>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-stimulus" class="{{ 'active ' if currentTab=='nav-stimulus' else '' }}{{ 'enabled' if selectedProject else 'idle' }}"
+            	title="{{ 'Define Region and Surface Stimulus Entities' if selectedProject else 'Please select a working project first!' }}">
+                <span class="left"></span>
+                <a href="{{ '/spatial/' if selectedProject else '#' }}" tabindex='-1' title="">Stimulus</a>
+                <span class="right"></span>
+            </li>
+            <li tabindex='99' onkeypress="redirectToHrefChild(this)" id="nav-connectivity" class="{{ 'active ' if currentTab=='nav-connectivity' else '' }}{{ 'enabled' if selectedProject else 'idle' }}"
+            	title="{{ 'Edit Connectivity' if selectedProject else 'Please select a working project first!' }}">
+                <span class="left"></span>
+                <a href="{{ connectivityTabLink if selectedProject else '#' }}" tabindex='-1' title="">Connectivity</a>
+                <span class="right"></span>
+            </li>
+        </ul> 
+    </nav> 
+    <script type="text/javascript">
+    	setUpKeyWatch()
+    </script>
+</footer>

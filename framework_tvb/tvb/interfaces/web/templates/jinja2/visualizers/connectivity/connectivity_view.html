@@ -1,0 +1,86 @@
+<div>
+	{% macro drawConnectivityViewer(includeLegend) -%}
+		<div id="monitor-3Dedges-id" class="monitor-container">
+
+			<script id="shader-fs" type="x-shader/x-fragment">
+				{% include 'visualizers/commons/shading/fragment.glsl' %}
+			</script>
+			
+			<script id="shader-vs" type="x-shader/x-vertex">
+				{% include 'visualizers/commons/shading/vertex_connectivity.glsl' %}
+			</script>
+		
+			<!--! Toolbar -->
+			{% if not isSingleMode %}
+				<ul class="toolbar-inline monitor-control">
+					<li>Edges color</li>
+				
+					<li class="tool-color">
+						<nav id="nodeColorSelector" class="inline-menu colorTilePicker">
+		        	    	<div class="colorTilePickerSelected"></div>
+                    	    <div class="extension">
+                        	    <div class="dropdown-pane"><ul></ul></div>
+                       		</div>
+		        		</nav>
+					</li>
+				
+					<li class="tool-all-edges" tabindex="4" onkeypress="redirectToHrefChild(this)">
+						All
+						<a href="#" tabindex='-1' class="action action-plus" title="Display edges from all nodes" onclick='checkAll();'>Show</a>
+						<a href="#" tabindex='-1' class="action action-minus" title="Hide edges from all nodes" onclick='clearAll();'>Hide</a>
+					</li>
+				
+					<li class="tool-selected-edges" tabindex="5" onkeypress="redirectToHrefChild(this)">
+						Selected
+						<a href="#" tabindex='-1' class="action action-plus" title="Display edges from selected nodes" onclick='checkAllSelected();'>Show</a>
+						<a href="#" tabindex='-1' class="action action-minus" title="Hide edges from selected nodes" onclick='clearAllSelected();'>Hide</a>
+					</li>
+
+					<li>Metrics details: <input type="checkbox" id="displayNodeDetails" onchange="toogleShowMetrics()"/></li>
+
+				</ul>
+			{% endif %}
+
+			{% if not isSingleMode %}
+				<div>
+					<input type="hidden" id="colorMinId" value="{{ colorMin }}"/>
+		    		<input type="hidden" id="colorMaxId" value="{{ colorMax }}"/>
+			    	<input type="hidden" id="rayMinId" value="{{ rayMin }}"/>
+			    	<input type="hidden" id="rayMaxId" value="{{ rayMax }}"/>
+				</div>
+			{% endif %}
+		
+			<!--! Viewer -->
+			<div class="specialviewer" id="canvasDiv">
+
+				{% if includeLegend %}
+					<nav class="inline-menu monitor-legend">
+						<button class="action action-menu">Legend</button>
+
+							<div class="extension">
+								<div class="dropdown-pane">
+									<mark>Node colors</mark>
+									<ul>
+						                <li class="node-3d-picked">Picked</li>
+						                <li class="node-3d-column">Column</li>
+						                <li class="node-3d-row">Row</li>
+						                <li class="node-3d-interest">Interest area</li>
+						            </ul>
+								</div>
+							</div>
+					</nav>
+				{% endif %}
+
+		        <canvas id="GLcanvas"  tabindex='1'></canvas>
+
+				{% if isSingleMode %}
+					<aside class="menu-node" id="contextMenuDiv" style="display:none"><mark id='nodeNameId'></mark></aside>
+				{% else %}
+					{% include 'visualizers/connectivity/context_menu_canvas.html' %}
+				{% endif %}
+
+			</div>
+
+		</div>
+	{%- endmacro %}
+</div>

@@ -1,0 +1,21 @@
+<section class="configure-stimulus-shape view-column col-1">
+	<h4><mark>View</mark> Plot</h4>
+	<!--! Div used by the plotEquations function to display the actual plot. -->
+    <div id="equationDivId"></div>
+
+    <script type="text/javascript">
+   		$(document).ready(function() {
+   		   equationsPrefixes = {{ equationsPrefixes | safe }};
+           equationsPrefixes.push('cutoff');
+	       BS_plotEquations('equationDivId', '{{ equationViewerUrl }}', 'form_spatial_local_connectivity_data', equationsPrefixes);
+        });
+    </script>
+
+    {% if displayedMessage is defined and displayedMessage != none %}
+	    <script type="text/javascript">
+	    	$(document).ready(function() {
+	            displayMessage('{{ displayedMessage }}', "infoMessage");
+	        });
+	    </script>
+    {% endif %}
+</section>

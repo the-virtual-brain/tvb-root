@@ -10,7 +10,7 @@ REM make sure at least networkx 2.0 is installed
 conda update networkx
 
 REM add locally built or pure Python packages
-pip install tvb-gdist formencode cfflib genshi nibabel sqlalchemy-migrate allensdk BeautifulSoup4
+pip install tvb-gdist formencode cfflib jinja2 nibabel sqlalchemy-migrate allensdk BeautifulSoup4
 
 
 REM Now Install TVB packages in the correct order:
