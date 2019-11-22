@@ -204,7 +204,23 @@ class SurfaceStimulusCreator(ABCSynchronous):
         return 0
 
 
+class StimulusRegionSelectorForm(ABCAdapterForm):
+
+    def __init__(self, project_id):
+        super(StimulusRegionSelectorForm, self).__init__()
+        self.project_id = project_id
+        self.region_stimulus = DataTypeSelectField(StimuliRegionIndex, self, name='existentEntitiesSelect',
+                                                   label='Load Region Stimulus')
+        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'legend': 'Loaded stimulus'}
+
+
 class RegionStimulusCreatorForm(ABCAdapterForm):
+    NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
+    default_temporal = PulseTrain
 
     def __init__(self, equation_choices, project_id):
         super(RegionStimulusCreatorForm, self).__init__()
@@ -213,8 +229,10 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
                                                 required=True)
         self.temporal = SimpleSelectField(equation_choices, self, name='temporal', label='Temporal equation',
-                                          required=True)
-        self.temporal.template = 'form_fields/select_field.html'
+                                          required=True, default=self.default_temporal)
+        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
+                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
+        # self.temporal.template = 'form_fields/select_field.html'
 
     @staticmethod
     def get_filters():
@@ -231,6 +249,13 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         self.connectivity.data = trait.connectivity.gid.hex
         self.temporal.data = type(trait.temporal)
+        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal_params.form.fill_from_trait(trait.temporal)
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
+                'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
 
 class RegionStimulusCreator(ABCSynchronous):

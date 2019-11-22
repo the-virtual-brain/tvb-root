@@ -9,10 +9,12 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-        	$("select[name='existentEntitiesSelect']").change(function () {
+        	$("select[name='_existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
-            BS_plotEquations('equationDivId', '{{ equationViewerUrl }}', 'form_spatial_stimulus_equations', {{ fieldsPrefixes | safe }}, 'temporalEquationAxisParams');
+        	setEventsOnFormFields({{ fieldsWithEvents | safe }}, '{{ baseUrl | safe }}');
+        	plotEquation('{{ baseUrl | safe }}');
+            redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}')
         });
     </script>
     

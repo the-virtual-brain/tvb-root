@@ -2,7 +2,7 @@
 	
 	<h4><mark>Select</mark> Regions</h4>
 
-    {{ existentEntitiesInputList | safe }}
+    {{ regionStimSelectorForm | safe }}
 
 	{% include 'visualizers/connectivity/left_template_connectivity_view.html' %}
 
@@ -10,7 +10,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-        	$("select[name='existentEntitiesSelect']").change(function () {
+        	$("select[name='_existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
 			main({{ node_weights }}, "{{ measurePointsSelectionGID }}");
