@@ -42,9 +42,9 @@ from tvb.core.decorators import synchronized
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData, GenericMetaData
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.file.exceptions import FileStructureException
-
-
 from threading import Lock
+
+
 LOCK_CREATE_FOLDER = Lock()
 
 
@@ -258,22 +258,22 @@ class FilesHelper(object):
         except Exception:
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
-            
-            
+
     def move_datatype(self, datatype, new_project_name, new_op_id):
         """
         Move H5 storage into a new location
         """
         try:
-            full_path = datatype.get_storage_file_path()
+            #TODO FOR LIA : CHECK CIRCULAR DEPENDENCY
+            from tvb.core.neocom import h5
+            full_path = h5.path_for_stored_index(datatype)
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
         except Exception:
             self.logger.exception("Could not move file")
             raise FileStructureException("Could not move " + str(datatype))
-    
-    
+
     ######################## IMAGES METHODS Start Here #######################    
     def get_images_folder(self, project_name):
         """

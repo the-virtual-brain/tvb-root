@@ -70,7 +70,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.surface = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                            required=LocalConnectivity.surface.required,
                                            label=LocalConnectivity.surface.label, doc=LocalConnectivity.surface.doc)
-        self.equation = ScalarField(LocalConnectivity.equation, self)
+        self.equation = DataTypeSelectField(LocalConnectivity.equation, self)
         self.cutoff = ScalarField(LocalConnectivity.cutoff, self)
 
     @staticmethod

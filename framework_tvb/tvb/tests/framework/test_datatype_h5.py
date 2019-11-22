@@ -27,32 +27,21 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
-from sqlalchemy import Column, Integer, ForeignKey, String, Float
-from sqlalchemy.orm import relationship
-from tvb.datatypes.temporal_correlations import CrossCorrelation
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neotraits.db import from_ndarray
+
+from tvb.core.neotraits.h5 import H5File, Scalar
+from tvb.tests.framework.test_datatype import DummyDataType
 
 
-class CrossCorrelationIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+class DummyDataTypeH5(H5File):
+    def __init__(self, path):
+        super(DummyDataTypeH5, self).__init__(path)
+        self.row1 = Scalar(DummyDataType.row1, self)
+        self.row2 = Scalar(DummyDataType.row2, self)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
+    def store(self, datatype, scalars_only=False, store_references=False):
+        # type: (DummyDataType, bool, bool) -> None
+        super(DummyDataTypeH5, self).store(datatype, scalars_only, store_references)
 
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not CrossCorrelation.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
-
-    labels_ordering = Column(String, nullable=False)
-    subtype = Column(String)
-
-    def fill_from_has_traits(self, datatype):
-        # type: (CrossCorrelation)  -> None
-        super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.labels_ordering = json.dumps(datatype.labels_ordering)
-        self.subtype = datatype.__class__.__name__
-        self.source_gid = datatype.source.gid.hex
+    def load_into(self, datatype):
+        # type: (DummyDataType) -> None
+        super(DummyDataTypeH5, self).load_into(datatype)

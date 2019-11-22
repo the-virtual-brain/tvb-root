@@ -41,13 +41,14 @@ from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
-from tvb.core.entities import model
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.transient.burst_export_entities import BurstInformation, WorkflowInformation
 from tvb.core.entities.transient.burst_export_entities import WorkflowStepInformation, WorkflowViewStepInformation
 from tvb.core.entities.storage import dao
 from tvb.basic.logger.builder import get_logger
+from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
 BURST_PAGE_SIZE = 100
@@ -164,8 +165,9 @@ class ExportManager:
         for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
             # get datatype as a mapped type
             lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
-            if lnk_dt.storage_path is not None:
-                paths.append(lnk_dt.get_storage_file_path())
+            path = h5.path_for_stored_index(lnk_dt)
+            if path is not None:
+                paths.append(path)
             else:
                 LOG.warning("Problem when trying to retrieve path on %s:%s for export!" % (lnk_dt.type, lnk_dt.gid))
         return paths
@@ -181,12 +183,12 @@ class ExportManager:
 
         # Make a import operation which will contain links to other projects
         algo = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
-        op = model.Operation(None, project.id, algo.id, '')
+        op = model_operation.Operation(None, project.id, algo.id, '')
         op.project = project
         op.algorithm = algo
         op.id = 'links-to-external-projects'
         op.start_now()
-        op.mark_complete(model.STATUS_FINISHED)
+        op.mark_complete(model_operation.STATUS_FINISHED)
 
         # write operation.xml to disk
         files_helper.write_operation_metadata(op)

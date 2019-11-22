@@ -33,10 +33,10 @@
 """
 import os
 import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.time_series import TimeSeries
-from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -45,22 +45,19 @@ class TestTimeSeries(TransactionalTestCase):
     Unit-tests for Time Series Viewer.
     """
 
-
     def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
+        self.test_user = TestFactory.create_user('Time_Series_User')
+        self.test_project = TestFactory.create_project(self.test_user, 'Time_Series_Project')
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
-
 
     def transactional_teardown_method(self):
         """
@@ -68,12 +65,11 @@ class TestTimeSeries(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def test_launch(self):
+    def test_launch(self, time_series_index_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        timeseries = self.datatypeFactory.create_timeseries(self.connectivity)
+        timeseries = time_series_index_factory()
         viewer = TimeSeries()
         result = viewer.launch(timeseries)
         expected_keys = ['t0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',

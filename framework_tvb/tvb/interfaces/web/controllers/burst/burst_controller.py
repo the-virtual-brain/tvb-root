@@ -93,8 +93,7 @@ class BurstController(BurstBaseController):
         """
         cached_simulator_tree = common.get_from_session(common.KEY_CACHED_SIMULATOR_TREE)
         if cached_simulator_tree is None:
-            cached_simulator_tree = self.flow_service.prepare_adapter(common.get_current_project().id,
-                                                                      self.cached_simulator_algorithm)
+            cached_simulator_tree = self.flow_service.prepare_adapter(self.cached_simulator_algorithm)
             common.add2session(common.KEY_CACHED_SIMULATOR_TREE, cached_simulator_tree)
         return copy.deepcopy(cached_simulator_tree)
 

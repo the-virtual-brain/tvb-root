@@ -572,7 +572,7 @@ class ProjectService:
                     new_op_loaded = dao.get_operation_by_id(new_op.id)
                     self.structure_helper.write_operation_metadata(new_op_loaded)
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id))
-                    datatype.set_operation_id(new_op.id)
+                    datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
                     dao.store_entity(datatype)
                     dao.remove_entity(Links, links[0].id)

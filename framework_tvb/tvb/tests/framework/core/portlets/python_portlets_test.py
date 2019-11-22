@@ -33,34 +33,31 @@
 """
 
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities import model
+from tvb.core.entities.model import model_project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.portlets.portlet_configurer import PortletConfigurer
 
 
 class TestPythonPortlets(TransactionalTestCase):
-    
-    
+
     def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a test user, a test project and saves config file
         """
 #        self.clean_database()
-        user = model.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
         self.test_user = dao.store_entity(user) 
-        project = model.Project("test_proj", self.test_user.id, "description")
+        project = model_project.Project("test_proj", self.test_user.id, "description")
         self.test_project = dao.store_entity(project)
-        
-        
+
     def transactional_teardown_method(self):
         """
         Remove project folders and restore config file
         """
         FilesHelper().remove_project_structure(self.test_project.name)
-        
-        
+
     def test_portlet_configurable_interface(self):
         """
         A simple test for the get configurable interface method.
@@ -75,4 +72,3 @@ class TestPythonPortlets(TransactionalTestCase):
                     assert entry['default'] == 'step_0[0]', "Overwritten default not in effect."
                 if entry['name'] == 'test2':
                     assert entry['default'] == '0', "Value that was not overwritten changed."
-

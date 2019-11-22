@@ -41,6 +41,12 @@ from functools import wraps
 from types import FunctionType
 import decorator
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.neocom.h5 import REGISTRY
+from tvb.tests.framework.test_datatype import DummyDataType
+from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+
 
 def init_test_env():
     """
@@ -64,6 +70,9 @@ def init_test_env():
 
     reset_database()
     initialize(skip_import=True)
+
+    # Add Dummy DataType
+    REGISTRY.register_datatype(DummyDataType, DummyDataTypeH5, DummyDataTypeIndex)
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.
@@ -234,6 +243,7 @@ def transactional_test(func, callback=None):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
             session_maker.start_transaction()
+            ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
             try:
                 try:
                     if hasattr(args[0], 'transactional_setup_method_TVB'):

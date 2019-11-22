@@ -562,7 +562,7 @@ class ABCAdapter(object):
 
     def flaten_input_interface(self):
         # TODO: temporary condition to pass introspection on neoforms
-        form = self.get_form_class()()
+        form = self.get_form_class()
         if form:
             return [form._get_original_field_name(form_field) for form_field in form.fields]
         return self.tree_manager.flatten(self.get_input_tree())

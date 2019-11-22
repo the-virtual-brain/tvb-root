@@ -62,6 +62,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
+        self.clean_database()
         self.cleanup()
 
 

@@ -102,7 +102,6 @@ class FlowService:
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-
     def prepare_adapter_form(self, adapter_instance, project_id):
         form = adapter_instance.get_form()(project_id=project_id)
         try:

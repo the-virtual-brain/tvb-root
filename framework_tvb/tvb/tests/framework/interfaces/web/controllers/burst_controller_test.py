@@ -56,10 +56,8 @@ from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
-
 class TestBurstContoller(BaseControllersTest):
     """ Unit tests for burst_controller """
-
 
     def setup_method(self):
         """
@@ -69,14 +67,12 @@ class TestBurstContoller(BaseControllersTest):
         BaseControllersTest.init(self)
         self.burst_c = BurstController()
 
-
     def teardown_method(self):
         """
         Cleans up the environment after testing is done
         """
         self.cleanup()
         self.clean_database()
-
 
     def test_index(self):
         """
@@ -100,7 +96,6 @@ class TestBurstContoller(BaseControllersTest):
                     assert value == [-1, "None"]
         assert result_dict['draw_hidden_ranges']
 
-
     def test_load_burst_history(self):
         """
         Create two burst, load the burst and check that we get back
@@ -114,7 +109,6 @@ class TestBurstContoller(BaseControllersTest):
         assert len(burst_history) == 2
         for burst in burst_history:
             assert burst.name in ('burst1', 'burst2')
-
 
     def test_get_selected_burst(self):
         """
@@ -130,7 +124,6 @@ class TestBurstContoller(BaseControllersTest):
         cherrypy.session[common.KEY_BURST_CONFIG] = burst_entity
         stored_id = self.burst_c.get_selected_burst()
         assert str(stored_id) == str(burst_entity.id)
-
 
     def test_get_portlet_configurable_interface(self):
         """
@@ -148,7 +141,6 @@ class TestBurstContoller(BaseControllersTest):
         assert len(adapter_config) == 1
         assert isinstance(adapter_config[0], AdapterConfiguration)
 
-
     def test_portlet_tab_display(self):
         """
         Update the default portlet configuration, by storing a TimeSeries
@@ -164,7 +156,6 @@ class TestBurstContoller(BaseControllersTest):
         for entry in selected_portlets:
             assert entry.id == portlet_id
 
-
     def test_get_configured_portlets_no_session(self):
         """
         Test that if we have no burst stored in session, an empty
@@ -173,7 +164,6 @@ class TestBurstContoller(BaseControllersTest):
         result = self.burst_c.get_configured_portlets()
         assert 'portlet_tab_list' in result
         assert result['portlet_tab_list'] == []
-
 
     def test_get_configured_portlets_default(self):
         """
@@ -186,7 +176,6 @@ class TestBurstContoller(BaseControllersTest):
         portlets_list = result['portlet_tab_list']
         assert len(portlets_list) == 1
         assert portlets_list[0].algorithm_identifier == 'TimeSeries'
-
 
     def test_get_portlet_session_configuration(self):
         """
@@ -203,7 +192,6 @@ class TestBurstContoller(BaseControllersTest):
                 else:
                     assert value == [-1, "None"]
 
-
     def test_save_parameters_no_relaunch(self):
         """
         Test the save parameters for the default TimeSeries portlet and
@@ -212,7 +200,6 @@ class TestBurstContoller(BaseControllersTest):
         """
         self.burst_c.index()
         assert 'noRelaunch' == self.burst_c.save_parameters(0, portlet_parameters="{}")
-
 
     def test_rename_burst(self):
         """
@@ -223,7 +210,6 @@ class TestBurstContoller(BaseControllersTest):
         self.burst_c.rename_burst(burst.id, "test_new_burst_name")
         renamed_burst = dao.get_burst_by_id(burst.id)
         assert renamed_burst.name == "test_new_burst_name"
-
 
     def test_launch_burst(self):
         """
@@ -249,7 +235,6 @@ class TestBurstContoller(BaseControllersTest):
             BurstService().stop_burst(burst_config)
             raise AssertionError("Burst should have finished successfully.")
 
-
     def test_load_burst(self):
         """
         Test loading and burst and checking you get expected dictionary.
@@ -260,7 +245,6 @@ class TestBurstContoller(BaseControllersTest):
         assert result["status"] == "started"
         assert result['group_gid'] == None
         assert result['selected_tab'] == 0
-
 
     def test_load_burst_removed(self):
         """
@@ -275,7 +259,6 @@ class TestBurstContoller(BaseControllersTest):
             self.burst_c.load_burst(burst_id)
         assert common.KEY_BURST_CONFIG not in cherrypy.session
 
-
     def test_remove_burst_not_session(self):
         """
         Test removing a burst that is not the one currently stored in 
@@ -287,7 +270,6 @@ class TestBurstContoller(BaseControllersTest):
         result = self.burst_c.cancel_or_remove_burst(another_burst.id)
         assert result == 'done'
 
-
     def test_remove_burst_in_session(self):
         """
         Test that if we remove the burst that is the current one from the
@@ -298,7 +280,6 @@ class TestBurstContoller(BaseControllersTest):
         result = self.burst_c.cancel_or_remove_burst(burst.id)
         assert result == 'reset-new'
 
-
     def _store_burst(self, proj_id, status, sim_config, name):
         """
         Create and store a burst entity, for the project given project_id, having the
@@ -307,7 +288,6 @@ class TestBurstContoller(BaseControllersTest):
         burst = BurstConfiguration(proj_id, status, sim_config, name)
         burst.prepare_before_save()
         return dao.store_entity(burst)
-
 
     def _burst_create_connectivity(self):
         """

@@ -41,6 +41,7 @@ from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.tests.framework.core.factory import TestFactory
 
+
 class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
 
@@ -53,11 +54,9 @@ class TestProjectController(BaseTransactionalControllerTest):
         self.init()
         self.project_c = ProjectController()
 
-
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-
 
     def test_index_no_project(self):
         """
@@ -65,7 +64,6 @@ class TestProjectController(BaseTransactionalControllerTest):
         """
         del cherrypy.session[common.KEY_PROJECT]
         self._expect_redirect('/project/viewall', self.project_c.index)
-
 
     def test_index(self):
         """
@@ -76,7 +74,6 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert result[common.KEY_PROJECT].id == self.test_project.id
         assert result['subsection_name'] == 'project'
         assert result[common.KEY_USER].id == self.test_user.id
-
 
     def test_viewall_valid_data(self):
         """
@@ -92,7 +89,6 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert result['page_number'] == 1
         assert result[common.KEY_PROJECT].name == 'prj1'
 
-
     def test_viewall_invalid_projectid(self):
         """
         Try to pass on an invalid id for the selected project.
@@ -101,7 +97,6 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert result[common.KEY_MESSAGE_TYPE] == common.TYPE_ERROR
         assert result[common.KEY_PROJECT].id == self.test_project.id
 
-
     def test_viewall_post_create(self):
         """
         Test that you are redirected to edit project page in case of correct post.
@@ -109,14 +104,12 @@ class TestProjectController(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         self._expect_redirect('/project/editone', self.project_c.viewall, create=True)
 
-
     def test_editone_cancel(self):
         """
         Test that cancel redirects to appropriate page.
         """
         cherrypy.request.method = "POST"
         self._expect_redirect('/project', self.project_c.editone, cancel=True)
-
 
     def test_editone_remove(self):
         """
@@ -127,7 +120,6 @@ class TestProjectController(BaseTransactionalControllerTest):
                               self.test_project.id, delete=True)
         with pytest.raises(NoResultFound):
             dao.get_project_by_id(self.test_project.id)
-
 
     def test_editone_create(self):
         """
@@ -143,7 +135,6 @@ class TestProjectController(BaseTransactionalControllerTest):
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 2
 
-
     def test_getmemberspage(self):
         """
         Get the first page of the members page.
@@ -157,12 +148,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         # as owned for the project.
         assert len(result['usersList']) == users_count
 
-
-    def test_set_visibility_datatype(self, datatype_with_storage_factory):
+    def test_set_visibility_datatype(self, dummy_datatype_index_factory):
         """
         Set datatype visibility to true and false and check results are updated.
         """
-        datatype = datatype_with_storage_factory
+        datatype = dummy_datatype_index_factory()
         assert datatype.visible
         self.project_c.set_visibility('datatype', datatype.gid, 'False')
         datatype = dao.get_datatype_by_gid(datatype.gid)
@@ -171,13 +161,12 @@ class TestProjectController(BaseTransactionalControllerTest):
         datatype = dao.get_datatype_by_gid(datatype.gid)
         assert datatype.visible
 
-
-    def test_set_visibility_operation(self, datatype_factory):
+    def test_set_visibility_operation(self, operation_factory):
         """
         Same flow of operations as per test_set_visibilty_datatype just for
         operation entity.
         """
-        operation = datatype_factory['operation']
+        operation = operation_factory()
         assert operation.visible
         self.project_c.set_visibility('operation', operation.gid, 'False')
         operation = dao.get_operation_by_gid(operation.gid)
@@ -186,13 +175,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         operation = dao.get_operation_by_gid(operation.gid)
         assert operation.visible
 
-
-    def test_viewoperations(self):
+    def test_viewoperations(self, operation_factory):
         """ 
         Test the viewoperations from projectcontroller.
         """
-        operation = TestFactory.create_operation(test_user=self.test_user,
-                                                 test_project=self.test_project)
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
         result_dict = self.project_c.viewoperations(self.test_project.id)
         operation_list = result_dict['operationsList']
         assert len(operation_list) == 1
@@ -200,12 +187,11 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert 'no_filter_selected' in result_dict
         assert 'total_op_count' in result_dict
 
-
-    def test_get_datatype_details(self, datatype_with_storage_factory):
+    def test_get_datatype_details(self, dummy_datatype_index_factory):
         """
         Check for various field in the datatype details dictionary.
         """
-        datatype = datatype_with_storage_factory
+        datatype = dummy_datatype_index_factory()
         dt_details = self.project_c.get_datatype_details(datatype.gid)
         assert dt_details['datatype_id'] == datatype.id
         assert dt_details['entity_gid'] == datatype.gid
@@ -213,38 +199,32 @@ class TestProjectController(BaseTransactionalControllerTest):
         assert dt_details['isRelevant']
         assert len(dt_details['overlay_indexes']) == len(dt_details['overlay_tabs_horizontal'])
 
-
-    def test_get_linkable_projects(self, datatype_with_storage_factory):
+    def test_get_linkable_projects(self, dummy_datatype_index_factory):
         """
         Test get linkable project, no projects linked so should just return none.
         """
-        datatype = datatype_with_storage_factory
+        datatype = dummy_datatype_index_factory()
         result_dict = self.project_c.get_linkable_projects(datatype.id, False, False)
         assert result_dict['projectslinked'] is None
         assert result_dict['datatype_id'] == datatype.id
 
-
-    def test_get_operation_details(self):
+    def test_get_operation_details(self, operation_factory):
         """
         Verifies result dictionary has the expected keys / values after call to
         `get_operation_details(...`
         """
-        operation = TestFactory.create_operation(test_user=self.test_user,
-                                                 test_project=self.test_project,
-                                                 parameters='{"test" : "test"}')
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project, parameters='{"test" : "test"}')
         result_dict = self.project_c.get_operation_details(operation.gid)
         assert result_dict['entity_gid'] == operation.gid
         assert result_dict['nodeType'] == 'operation'
-        operation_dict = result_dict['nodeFields'][0]
+        operation_dict = result_dict['nodeFields'][1]
         assert operation_dict['burst_name']['value'] == ''
         assert operation_dict['count']['value'] == 1
         assert operation_dict['gid']['value'] == operation.gid
         assert operation_dict['operation_id']['value'] == operation.id
 
-
     def test_editstructure_invalid_proj(self):
         self._expect_redirect('/project', self.project_c.editstructure, None)
-
 
     def test_editproject_valid(self):
         """

@@ -34,10 +34,11 @@
 
 import os
 import pytest
+from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
-from tvb.core.entities import model
+from tvb.core.entities.model import model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -52,8 +53,7 @@ class TestFilesHelper(TransactionalTestCase):
     This class contains tests for the tvb.core.entities.file.files_helper module.
     """ 
     PROJECT_NAME = "test_proj"
-           
-           
+
     def transactional_setup_method(self):
         """
         Set up the context needed by the tests.
@@ -61,13 +61,11 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper = FilesHelper()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user, self.PROJECT_NAME)
-    
-    
+
     def transactional_teardown_method(self):
         """ Remove generated project during tests. """
         self.delete_project_folders()
-    
-    
+
     def test_check_created(self):
         """ Test standard flows for check created. """
         self.files_helper.check_created()
@@ -76,8 +74,7 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper.check_created(os.path.join(root_storage, "test"))
         assert os.path.exists(root_storage), "Storage not created!"
         assert os.path.exists(os.path.join(root_storage, "test")), "Test directory not created!"
-            
-    
+
     def test_get_project_folder(self):
         """
         Test the get_project_folder method which should create a folder in case
@@ -89,14 +86,12 @@ class TestFilesHelper(TransactionalTestCase):
         folder_path = self.files_helper.get_project_folder(self.test_project, "43")
         assert os.path.exists(project_path), "Folder doesn't exist"
         assert os.path.exists(folder_path), "Folder doesn't exist"
-        
-   
+
     def test_rename_project_structure(self):
         """ Try to rename the folder structure of a project. Standard flow. """
         self.files_helper.get_project_folder(self.test_project)
         path, name = self.files_helper.rename_project_structure(self.test_project.name, "new_name")
         assert path != name, "Rename didn't take effect."
-
 
     def test_rename_structure_same_name(self):
         """ Try to rename the folder structure of a project. Same name. """
@@ -105,7 +100,6 @@ class TestFilesHelper(TransactionalTestCase):
         with pytest.raises(FileStructureException):
             self.files_helper.rename_project_structure(self.test_project.name, self.PROJECT_NAME)
 
-
     def test_remove_project_structure(self):
         """ Check that remove project structure deletes the corresponding folder. Standard flow. """
         full_path = self.files_helper.get_project_folder(self.test_project)
@@ -113,15 +107,14 @@ class TestFilesHelper(TransactionalTestCase):
         
         self.files_helper.remove_project_structure(self.test_project.name)
         assert not os.path.exists(full_path), "Project folder not deleted."
-        
-    
+
     def test_write_project_metadata(self):
         """  Write XML for test-project. """
         self.files_helper.write_project_metadata(self.test_project)
         expected_file = self.files_helper.get_project_meta_file_path(self.PROJECT_NAME)
         assert os.path.exists(expected_file)
         project_meta = XMLReader(expected_file).read_metadata()
-        loaded_project = model.Project(None, None)
+        loaded_project = model_project.Project(None, None)
         loaded_project.from_dict(project_meta, self.test_user.id)
         assert self.test_project.name == loaded_project.name
         assert self.test_project.description == loaded_project.description
@@ -132,8 +125,7 @@ class TestFilesHelper(TransactionalTestCase):
         del found_dict['last_updated']
         self._dictContainsSubset(expected_dict, found_dict)
         self._dictContainsSubset(found_dict, expected_dict)
-    
-    
+
     def test_write_operation_metadata(self):
         """
         Test that a correct XML is created for an operation.
@@ -144,7 +136,7 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper.write_operation_metadata(operation)
         assert os.path.exists(expected_file)
         operation_meta = XMLReader(expected_file).read_metadata()
-        loaded_operation = model.Operation(None, None, None, None)
+        loaded_operation = model_operation.Operation(None, None, None, None)
         loaded_operation.from_dict(operation_meta, dao, user_id=self.test_user.id)
         expected_dict = operation.to_dict()[1]
         found_dict = loaded_operation.to_dict()[1]
@@ -155,57 +147,49 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper.update_operation_metadata(self.PROJECT_NAME, "new_group_name", operation.id) 
         found_dict = XMLReader(expected_file).read_metadata()  
         assert "new_group_name" == found_dict['user_group']
-        
-    
-    def test_remove_dt_happy_flow(self):
+
+    def test_remove_dt_happy_flow(self, dummy_datatype_index_factory):
         """
         Happy flow for removing a file related to a DataType.
         """
-        folder_path = self.files_helper.get_project_folder(self.test_project, "42")
-        datatype = MappedType()
-        datatype.storage_path = folder_path
-        open(datatype.get_storage_file_path(), 'w') 
-        assert os.path.exists(datatype.get_storage_file_path()), "Test file was not created!"
-        self.files_helper.remove_datatype(datatype) 
-        assert not os.path.exists(datatype.get_storage_file_path()), "Test file was not deleted!"
-        
-        
-    def test_remove_dt_non_existent(self):
+        datatype = dummy_datatype_index_factory()
+        h5_path = h5.path_for_stored_index(datatype)
+        assert os.path.exists(h5_path), "Test file was not created!"
+        self.files_helper.remove_datatype_file(h5_path)
+        assert not os.path.exists(h5_path), "Test file was not deleted!"
+
+    def test_remove_dt_non_existent(self, dummy_datatype_index_factory):
         """
         Try to call remove on a dataType with no H5 file.
         Should work.
         """
-        folder_path = self.files_helper.get_project_folder(self.test_project, "42")
-        datatype = MappedType()
-        datatype.storage_path = folder_path
-        assert not os.path.exists(datatype.get_storage_file_path())
-        self.files_helper.remove_datatype(datatype)
-        
+        datatype = dummy_datatype_index_factory()
+        h5_path = h5.path_for_stored_index(datatype)
+        wrong_path = os.path.join(h5_path, "WRONG_PATH")
+        assert not os.path.exists(wrong_path)
+        self.files_helper.remove_datatype_file(wrong_path)
 
-    def test_move_datatype(self):
+    def test_move_datatype(self, dummy_datatype_index_factory):
         """
         Make sure associated H5 file is moved to a correct new location.
         """
-        folder_path = self.files_helper.get_project_folder(self.test_project, "42")
-        datatype = MappedType()
-        datatype.storage_path = folder_path
-        open(datatype.get_storage_file_path(), 'w') 
-        assert os.path.exists(datatype.get_storage_file_path()), "Test file was not created!"
-        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '11', "43") 
+        datatype = dummy_datatype_index_factory(project=self.test_project)
+        old_file_path = h5.path_for_stored_index(datatype)
+        assert os.path.exists(old_file_path), "Test file was not created!"
+        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1")
         
-        assert not os.path.exists(datatype.get_storage_file_path()), "Test file was not moved!"
-        datatype.storage_path = self.files_helper.get_project_folder(self.PROJECT_NAME + '11', "43")
-        assert os.path.exists(datatype.get_storage_file_path()), "Test file was not created!"
-        
-        
+        assert not os.path.exists(old_file_path), "Test file was not moved!"
+        datatype.fk_from_operation = 43
+        new_file_path = os.path.join(self.files_helper.get_project_folder(self.PROJECT_NAME + '2', "1"), old_file_path.split("\\")[-1])
+        assert os.path.exists(new_file_path), "Test file was not created!"
+
     def test_find_relative_path(self):
         """
         Tests that relative path is computed properly.
         """
         rel_path = self.files_helper.find_relative_path("/root/up/to/here/test/it/now", "/root/up/to/here")
         assert rel_path == os.sep.join(["test", "it", "now"]), "Did not extract relative path as expected."
-        
-        
+
     def test_remove_files_valid(self):
         """
         Pass a valid list of files and check they are all removed.
@@ -220,7 +204,6 @@ class TestFilesHelper(TransactionalTestCase):
         self.files_helper.remove_files(file_list)
         for file_n in file_list:
             assert not os.path.isfile(file_n)
-
 
     def test_remove_folder(self):
         """
@@ -239,8 +222,7 @@ class TestFilesHelper(TransactionalTestCase):
         folder_name = "test_folder"
         assert not os.path.isdir(folder_name), "Folder should not exist before call."
         self.files_helper.remove_folder(folder_name, ignore_errors=True)
-        
-        
+
     def test_remove_folder_non_existing(self):
         """
         Pass an open file pointer, but ignore exceptions.

@@ -34,22 +34,48 @@ Created on Jul 21, 2011
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.adapters.abcadapter import ABCSynchronous
+import tvb.core.adapters.abcadapter as abcadapter
+from tvb.core.neotraits.forms import SimpleIntField, DataTypeSelectField
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
+from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
 
-class TestAdapter1(ABCSynchronous):
+
+class TestAdapter1Form(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
+
+    def __init__(self, prefix='', project_id=None):
+        super(TestAdapter1Form, self).__init__(prefix, project_id)
+        self.test1_val1 = SimpleIntField(self, name='test1_val1', default=0)
+        self.test1_val2 = SimpleIntField(self, name='test1_val2', default=0)
+
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class TestAdapter1(abcadapter.ABCAsynchronous):
+    """
+        This class is used for testing purposes.
+    """
+
     def __init__(self):
-        ABCSynchronous.__init__(self)
-        
-    def get_input_tree(self):
-        return [{'name':'test1_val1', 'type':'int', 'default':'0'},
-                 {'name':'test1_val2', 'type':'int', 'default':'0'}]
-                
+        super(TestAdapter1, self).__init__()
+
+    def get_form_class(self):
+        return TestAdapter1Form
+
     def get_output(self):
-        return [Datatype1]
+        return [DummyDataTypeIndex]
     
     def get_required_memory_size(self, **kwargs):
         """
@@ -64,7 +90,7 @@ class TestAdapter1(ABCSynchronous):
         """
         return 0
         
-    def launch(self, test1_val1, test1_val2):
+    def launch(self):
         """
         Tests successful launch of an ABCSynchronous adapter
 
@@ -72,29 +98,48 @@ class TestAdapter1(ABCSynchronous):
         :param test1_val2: a dummy integer value
         :return: a `Datatype1` object
         """
-        int(test1_val1)
-        int(test1_val2)
-        result = Datatype1()
+        result = DummyDataTypeIndex()
         result.row1 = 'test'
         result.row2 = 'test'
         result.storage_path = self.storage_path
         return result
-    
-    
-class TestAdapterDatatypeInput(ABCSynchronous):
+
+
+class TestAdapterDatatypeInputForm(abcadapter.ABCAdapterForm):
+    """
+        This class is used for testing purposes.
+    """
+    def __init__(self, prefix='', project_id=None):
+        super(TestAdapterDatatypeInputForm, self).__init__(prefix, project_id)
+        self.test1_dt_input = DataTypeSelectField(self.get_required_datatype(), self, name="test1_dt_input")
+        self.test1_non_dt_input = SimpleIntField(self, name='test1_non_dt_input', default=0)
+
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class TestAdapterDatatypeInput(abcadapter.ABCSynchronous):
     """
         This class is used for testing purposes.
     """
     def __init__(self):
-        ABCSynchronous.__init__(self)
-        
-    def get_input_tree(self):
-        return [{'name':'test_dt_input', 'type' : Datatype1}, 
-                {'name':'test_non_dt_input', 'type': 'int', 'default':'0'}]
-                
+        abcadapter.ABCSynchronous.__init__(self)
+
+    def get_form_class(self):
+        return TestAdapter1Form
+
     def get_output(self):
         return [Datatype1]
-    
+
     def get_required_memory_size(self, **kwargs):
         """
         Return the required memory to run this algorithm.
@@ -108,9 +153,8 @@ class TestAdapterDatatypeInput(ABCSynchronous):
         """
         return 0
         
-    def launch(self, test_dt_input, test_non_dt_input):
-        str(test_dt_input)
-        result = Datatype1()
+    def launch(self):
+        result = DummyDataTypeIndex()
         result.row1 = 'test'
         result.row2 = 'test'
         result.storage_path = self.storage_path

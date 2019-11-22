@@ -38,7 +38,6 @@ import os
 import six
 import tvb_data
 from random import randint
-from hashlib import md5
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import DEFAULT_PROJECT_GID
@@ -48,6 +47,8 @@ from tvb.core.services import email_sender
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
+from tvb.core.utils import hash_password
+
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -80,10 +81,8 @@ class UserService:
     """
     USER_ROLES = USER_ROLES
 
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-
 
     def create_user(self, username=None, password=None, password2=None,
                     role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False):
@@ -140,7 +139,6 @@ class UserService:
             self.logger.exception("Could not create user!")
             raise UsernameException(str(excep))
 
-
     def reset_password(self, **data):
         """
         Service Layer for resetting a password.
@@ -158,7 +156,7 @@ class UserService:
 
             old_pass = user.password
             new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
-            user.password = md5(new_pass).hexdigest()
+            user.password = hash_password(new_pass)
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
             email_sender.send(FROM_ADDRESS, email, SUBJECT_RECOVERY, TEXT_RECOVERY % (user.username, new_pass))
@@ -168,8 +166,7 @@ class UserService:
                 user.password = old_pass
                 dao.store_entity(user)
             self.logger.exception("Could not change user password!")
-            raise UsernameException(excep.message)
-
+            raise UsernameException(excep)
 
     @staticmethod
     def is_username_valid(name):
@@ -180,7 +177,6 @@ class UserService:
         if users_no > 0:
             return False
         return True
-
 
     def validate_user(self, name='', user_id=None):
         """
@@ -206,18 +202,16 @@ class UserService:
             self.logger.warning('WARNING : ' + str(excep))
             return False
 
-
     @staticmethod
     def check_login(username, password):
         """
         Service layer to check if given UserName and Password are according to DB.
         """
         user = dao.get_user_by_name(username)
-        if user is not None and user.password == md5(password.encode('utf-8')).hexdigest() and user.validated:
+        if user is not None and user.password == hash_password(password) and user.validated:
             return user
         else:
             return None
-
 
     def get_users_for_project(self, user_name, project_id, page=1):
         """
@@ -239,7 +233,6 @@ class UserService:
             self.logger.exception("Invalid userName or project identifier")
             raise UsernameException(str(excep))
 
-
     @staticmethod
     def retrieve_all_users(username, current_page=1):
         """
@@ -250,7 +243,6 @@ class UserService:
         user_list = dao.get_all_users(username, start_idx, USERS_PAGE_SIZE)
         pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
-
 
     def edit_user(self, edited_user, old_password=None):
         """
@@ -274,7 +266,6 @@ class UserService:
             TvbProfile.current.manager.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
                                                                    SettingsService.KEY_ADMIN_PWD: user.password})
 
-
     def delete_user(self, user_id):
         """
         Delete a user with a given ID.
@@ -286,13 +277,11 @@ class UserService:
             self.logger.exception(excep)
             return False
 
-
     @staticmethod
     def get_administrators():
         """Retrieve system administrators.
         Will be used for sending emails, for example."""
         return dao.get_administrators()
-
 
     @staticmethod
     def save_project_to_user(user_id, project_id):
@@ -302,7 +291,6 @@ class UserService:
         user = dao.get_user_by_id(user_id)
         user.selected_project = project_id
         dao.store_entity(user)
-
 
     @staticmethod
     def get_user_by_id(user_id):

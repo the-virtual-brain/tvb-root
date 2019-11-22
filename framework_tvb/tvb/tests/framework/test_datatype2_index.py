@@ -26,33 +26,27 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
-import json
-from sqlalchemy import Column, Integer, ForeignKey, String, Float
-from sqlalchemy.orm import relationship
-from tvb.datatypes.temporal_correlations import CrossCorrelation
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neotraits.db import from_ndarray
 
 
-class CrossCorrelationIndex(DataType):
+class DummyDataType2Index(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
+    row1 = Column(String, default="test-spatial")
+    row2 = Column(String, default="test-temporal")
 
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not CrossCorrelation.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
-
-    labels_ordering = Column(String, nullable=False)
-    subtype = Column(String)
+    number1 = Column(Integer, default=1)
+    number2 = Column(Float, default=0.1)
 
     def fill_from_has_traits(self, datatype):
-        # type: (CrossCorrelation)  -> None
-        super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.labels_ordering = json.dumps(datatype.labels_ordering)
-        self.subtype = datatype.__class__.__name__
-        self.source_gid = datatype.source.gid.hex
+        # type: (HasTraits) -> None
+        super(DummyDataType2Index, self).fill_from_has_traits(datatype)
+        self.row1 = datatype.row1
+        self.row2 = datatype.row2
+
+    @staticmethod
+    def accepted_filters():
+        filters = DataType.accepted_filters()
+        return filters
