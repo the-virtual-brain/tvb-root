@@ -1,6 +1,9 @@
 <div id="main" class="columnized colscheme-2-even">
+	<script type="text/javascript" src="/static/js/spatial/stimulus_surface.js"></script>
+
     {% include 'spatial/stimulus_surface_step1_left.html' %}
     {% include 'spatial/stimulus_surface_step1_right.html' %}
+
     <aside class="header-component toolbar can-extend auto-extends">
         <h3>SpatioTemporal Entities</h3>
         <div class="extension">
@@ -17,7 +20,7 @@
                         </button>
                     </li>
                     <li>
-                        {% if selectedFocalPoints is not none %}
+                        {% if definedFocalPoints is not none and (definedFocalPoints | length) > 0 %}
                             <button class="action action-plus" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 3); return false;">
                                 Save Stimulus Surface
                             </button>

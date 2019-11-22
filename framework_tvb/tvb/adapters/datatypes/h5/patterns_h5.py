@@ -27,9 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import NArray
 from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
-from tvb.core.neotraits.h5 import H5File, Reference, DataSet, Scalar
+from tvb.core.neotraits.h5 import H5File, Reference, DataSet
 
 
 class StimuliRegionH5(H5File):
@@ -52,27 +52,13 @@ class StimuliSurfaceH5(H5File):
 
     def __init__(self, path):
         super(StimuliSurfaceH5, self).__init__(path)
-        self.spatial = Scalar(Attr(str), self, name='spatial')
-        self.temporal = Scalar(Attr(str), self, name='temporal')
+        self.spatial = Reference(StimuliSurface.spatial, self)
+        self.temporal = Reference(StimuliSurface.temporal, self)
         self.surface = Reference(StimuliSurface.surface, self)
-        self.focal_points_surface = DataSet(StimuliSurface.focal_points_surface, self)
+        self.focal_points_surface = DataSet(NArray(dtype=int), self, name='focal_points_surface')
         self.focal_points_triangles = DataSet(StimuliSurface.focal_points_triangles, self)
 
     def store(self, datatype, scalars_only=False):
-        self.surface.store(datatype.surface)
+        super(StimuliSurfaceH5, self).store(datatype, scalars_only)
         self.focal_points_surface.store(datatype.focal_points_surface)
-        self.focal_points_triangles.store(datatype.focal_points_triangles)
-        self.spatial.store(datatype.spatial.to_json(datatype.spatial))
-        self.temporal.store(datatype.temporal.to_json(datatype.temporal))
 
-    def load_into(self, datatype):
-        datatype.gid = self.gid.load()
-        datatype.surface = self.surface.load()
-        datatype.focal_points_triangles = self.focal_points_triangles.load()
-        datatype.focal_points_surface = self.focal_points_surface.load()
-        spatial_eq = self.spatial.load()
-        spatial_eq = datatype.spatial.from_json(spatial_eq)
-        datatype.spatial = spatial_eq
-        temporal_eq = self.temporal.load()
-        temporal_eq = datatype.temporal.from_json(temporal_eq)
-        datatype.temporal = temporal_eq

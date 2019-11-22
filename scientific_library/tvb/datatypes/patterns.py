@@ -196,9 +196,19 @@ class StimuliSurface(SpatioTemporalPattern):
 
     surface = Attr(field_type=surfaces.CorticalSurface, label="Surface")
 
-    focal_points_surface = NArray(dtype=int, label="Focal points")  # , locked=True, order=4)
-
     focal_points_triangles = NArray(dtype=int, label="Focal points triangles")  # , locked=True, order=4)
+
+    @property
+    def focal_points_surface(self):
+        focal_points = []
+
+        if self.surface is None or self.surface.triangles is None:
+            self.log.warn('Focal points list will be empty. Load the surface triangles before accessing this property!')
+            return numpy.array(focal_points)
+
+        for triangle_index in self.focal_points_triangles:
+            focal_points.append(int(self.surface.triangles[triangle_index][0]))
+        return numpy.array(focal_points)
 
     def configure_space(self, region_mapping=None):
         """

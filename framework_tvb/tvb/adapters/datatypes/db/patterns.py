@@ -74,7 +74,7 @@ class StimuliSurfaceIndex(DataType):
         # type: (StimuliSurface)  -> None
         super(StimuliSurfaceIndex, self).fill_from_has_traits(datatype)
         self.spatial_equation = datatype.spatial.__class__.__name__
-        self.spatial_parameters = datatype.spatial.parameters
+        self.spatial_parameters = json.dumps(datatype.spatial.parameters)
         self.temporal_equation = datatype.temporal.__class__.__name__
-        self.temporal_parameters = datatype.temporal.parameters
+        self.temporal_parameters = json.dumps(datatype.temporal.parameters)
         self.surface_gid = datatype.surface.gid.hex

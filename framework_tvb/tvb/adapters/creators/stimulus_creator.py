@@ -42,14 +42,42 @@ from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigur
 from tvb.core.entities.file.simulator.h5_factory import equation_h5_factory
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FormField, SimpleStrField
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.equations import Sigmoid, PulseTrain
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.interfaces.web.controllers.decorators import using_template
+
+
+def store_equation_in_h5(storage_path, equation):
+    equation_h5_class = equation_h5_factory(type(equation))
+    equation_h5_path = h5.path_for(storage_path, equation_h5_class, equation.gid)
+    with equation_h5_class(equation_h5_path) as equation_h5:
+        equation_h5.store(equation)
+        equation_h5.type.store(SimulatorConfigurationH5.get_full_class_name(type(equation)))
+
+
+class StimulusSurfaceSelectorForm(ABCAdapterForm):
+
+    def __init__(self, project_id):
+        super(StimulusSurfaceSelectorForm, self).__init__()
+        self.project_id = project_id
+        self.surface_stimulus = DataTypeSelectField(StimuliSurfaceIndex, self, name='existentEntitiesSelect',
+                                                    label='Load Surface Stimulus')
+        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'legend': 'Loaded stimulus'}
 
 
 class SurfaceStimulusCreatorForm(ABCAdapterForm):
+    NAME_SPATIAL_PARAMS_DIV = 'spatial_params'
+    NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
+    default_spatial = Sigmoid
+    default_temporal = PulseTrain
 
     def __init__(self, spatial_equation_choices, temporal_equation_choices, project_id):
         super(SurfaceStimulusCreatorForm, self).__init__()
@@ -59,9 +87,13 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True, label='Surface',
                                            conditions=self.get_filters())
         self.spatial = SimpleSelectField(spatial_equation_choices, self, name='spatial', required=True,
-                                         label='Spatial equation')
+                                         label='Spatial equation', default=self.default_spatial)
+        self.spatial_params = FormField(get_form_for_equation(self.default_spatial), self,
+                                        name=self.NAME_SPATIAL_PARAMS_DIV)
         self.temporal = SimpleSelectField(temporal_equation_choices, self, name='temporal', required=True,
-                                          label='Temporal equation')
+                                          label='Temporal equation', default=self.default_temporal)
+        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
+                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
 
     @staticmethod
     def get_required_datatype():
@@ -75,11 +107,30 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     def get_filters():
         return None
 
+    def fill_from_trait(self, trait):
+        self.surface.data = trait.surface.gid.hex
+        self.spatial.data = type(trait.spatial)
+        self.temporal.data = type(trait.temporal)
+        self.spatial_params.form = get_form_for_equation(type(trait.spatial))(self.NAME_SPATIAL_PARAMS_DIV)
+        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
+        self.spatial_params.form.fill_from_trait(trait.spatial)
+        self.temporal_params.form.fill_from_trait(trait.temporal)
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
+                'spatial_params_div': self.NAME_SPATIAL_PARAMS_DIV,
+                'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
+
 
 class SurfaceStimulusCreator(ABCSynchronous):
     """
     The purpose of this adapter is to create a StimuliSurface.
     """
+    KEY_SURFACE = 'surface'
+    KEY_SPATIAL = 'spatial'
+    KEY_TEMPORAL = 'temporal'
+    KEY_FOCAL_POINTS_TRIANGLES = 'focal_points_triangles'
 
     def get_form_class(self):
         return SurfaceStimulusCreatorForm
@@ -94,42 +145,40 @@ class SurfaceStimulusCreator(ABCSynchronous):
         """
         Used for creating a `StimuliSurface` instance
         """
-        triangles_indices = kwargs['focal_points_triangles']
-        focal_points = []
+        triangles_indices = kwargs[self.KEY_FOCAL_POINTS_TRIANGLES]
         fp_triangle_indices = []
 
         stimuli_surface = StimuliSurface()
 
-        surface_gid = kwargs['surface']
+        surface_gid = kwargs[self.KEY_SURFACE]
         stimuli_surface.surface = CorticalSurface()
         stimuli_surface.surface.gid = uuid.UUID(surface_gid)
 
         surface_index = dao.get_datatype_by_gid(surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_index)
-        triangles = surface_h5.triangles.load()
+        stimuli_surface.surface.triangles = surface_h5.triangles.load()
         surface_h5.close()
 
         for triangle_index in triangles_indices:
-            focal_points.append(int(triangles[triangle_index][0]))
             fp_triangle_indices.append(int(triangle_index))
 
         stimuli_surface.focal_points_triangles = numpy.array(fp_triangle_indices)
-        stimuli_surface.focal_points_surface = numpy.array(focal_points)
-
         stimuli_surface.spatial = self.get_spatial_equation(kwargs)
         stimuli_surface.temporal = self.get_temporal_equation(kwargs)
 
         stimuli_surface_index = StimuliSurfaceIndex()
         stimuli_surface_index.fill_from_has_traits(stimuli_surface)
 
+        store_equation_in_h5(self.storage_path, stimuli_surface.temporal)
+        store_equation_in_h5(self.storage_path, stimuli_surface.spatial)
         h5.store_complete(stimuli_surface, self.storage_path)
         return stimuli_surface_index
 
     def get_spatial_equation(self, kwargs):
-        return self._prepare_equation('spatial', kwargs)
+        return self._prepare_equation(self.KEY_SPATIAL, kwargs)
 
     def get_temporal_equation(self, kwargs):
-        return self._prepare_equation('temporal', kwargs)
+        return self._prepare_equation(self.KEY_TEMPORAL, kwargs)
 
     def _prepare_equation(self, equation_type, kwargs):
         """
@@ -217,12 +266,7 @@ class RegionStimulusCreator(ABCSynchronous):
         stimuli_region_idx = StimuliRegionIndex()
         stimuli_region_idx.fill_from_has_traits(stimuli_region)
 
-        equation_h5_class = equation_h5_factory(type(stimuli_region.temporal))
-        equation_h5_path = h5.path_for(self.storage_path, equation_h5_class, stimuli_region.temporal.gid)
-        with equation_h5_class(equation_h5_path) as equation_h5:
-            equation_h5.store(stimuli_region.temporal)
-            equation_h5.type.store(SimulatorConfigurationH5.get_full_class_name(type(stimuli_region.temporal)))
-
+        store_equation_in_h5(self.storage_path, stimuli_region.temporal)
         h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx
 

@@ -67,10 +67,10 @@ class Field(object):
             self.label_classes.append('field-mandatory')
 
         # keeps the deserialized data
-        self.data = default
+        self.data = None
         # keeps user input, even if wrong, we have to redisplay it
         # todo
-        self.unvalidated_data = None
+        self.unvalidated_data = default
         self.errors = []
 
 

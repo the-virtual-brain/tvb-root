@@ -2,39 +2,19 @@
 	<div>
 		<h4><mark>Define</mark> Stimulus</h4>
 
-		{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-		<fieldset>
-			<legend>Loaded stimulus</legend>
-	    	{{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
-    	</fieldset>
+		{{ surfaceStimulusSelectForm | safe }}
 
-    	<form>
-	    	<fieldset>
-				<legend>Entity details</legend>
-		    	{{ gatf.generateDisplay(entitiySavedName, false, "") }}
-	    	</fieldset>
-    	</form>
-
-    	<fieldset>
-	    	<legend>Stimulus interface</legend>
-		    <form id="form_spatial_surface_stimulus_equations">
-				{% with %}
-					{% set includeGenericAdapterTemplateFunctions=false %}
-					{% include 'flow/genericAdapterFormFields.html' %}
-				{% endwith %}
-		    </form>
-		</fieldset>
+        {{ surfaceStimulusCreateForm | safe }}
 
 	    <script type="text/javascript">
 	    	$(document).ready(function() {
-	    		$("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
-	            BS_plotEquations('temporalEquationDivId', '{{ temporalEquationViewerUrl }}',
-		            'form_spatial_surface_stimulus_equations', $.parseJSON('{{ temporalFieldsPrefixes | safe }}'), 'temporalEquationAxisParams');
-		        BS_plotEquations('spatialEquationDivId', '{{ spatialEquationViewerUrl }}',
-		            'form_spatial_surface_stimulus_equations', $.parseJSON('{{ spatialFieldsPrefixes | safe }}'), 'spatialEquationAxisParams');
-		        {% if displayedMessage is defined and displayedMessage != none %}
+	    		$("select[name='_existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+                {% if displayedMessage is defined and displayedMessage != none %}
 					displayMessage('{{ displayedMessage }}', '{{ messageType }}');
 				{% endif %}
+                setEventsOnFormFields({{ spatialFieldsPrefixes | safe }}, '{{ baseUrl | safe }}');
+                plotEquations('{{ baseUrl | safe }}');
+                redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}')
 	        });
 	    </script>
 
