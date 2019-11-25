@@ -143,7 +143,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
         jinja_separator = '/'
 
-        template = os.path.join(relative_path, template)
+        template = relative_path + jinja_separator + template
         if pages:
             for key, value in pages.items():
                 if value is not None:
