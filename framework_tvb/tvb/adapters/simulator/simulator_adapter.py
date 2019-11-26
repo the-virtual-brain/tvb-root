@@ -96,6 +96,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def __str__(self):
         pass
 
+
 class SimulatorAdapter(ABCAsynchronous):
     """
     Interface between the Simulator and the Framework.
@@ -266,14 +267,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
                 ts_h5.surface.store(self.algorithm.surface.gid)
             else:
-                ts_index.connectivity_gid = self.algorithm.connectivity.gid.hex
-                ts_h5.connectivity.store(self.algorithm.connectivity.gid)
-                if region_map:
-                    ts_index.region_mapping_gid = region_map.gid.hex
-                    ts_h5.region_mapping.store(region_map.gid)
-                if region_volume_map:
-                    ts_index.region_mapping_volume_gid = region_volume_map.gid.hex
-                    ts_h5.region_mapping_volume.store(region_volume_map.gid)
+                ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5

@@ -24,10 +24,14 @@ class SimulatorConfigurationH5(H5File):
 
         return gid
 
-    def load_from_reference(self, gid):
+    def get_reference_path(self, gid):
         dir_loader = h5.DirLoader(os.path.dirname(self.path), h5.REGISTRY)
         config_filename = dir_loader.find_file_name(gid)
         config_path = os.path.join(dir_loader.base_dir, config_filename)
+        return config_path
+
+    def load_from_reference(self, gid):
+        config_path = self.get_reference_path(gid)
 
         config_h5 = H5File.from_file(config_path)
 

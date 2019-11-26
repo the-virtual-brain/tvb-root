@@ -229,6 +229,9 @@ class TimeSeriesH5(H5File):
         """
         return ''
 
+    def store_references(self, ts):
+        pass
+
 
 class TimeSeriesRegionH5(TimeSeriesH5):
     def __init__(self, path):
@@ -251,6 +254,15 @@ class TimeSeriesRegionH5(TimeSeriesH5):
             return ''
         return connectivity_gid.hex
 
+    def store_references(self, ts):
+        self.connectivity.store(ts.connectivity.gid)
+
+        if ts.region_mapping_volume is not None:
+            self.region_mapping_volume.store(ts.region_mapping_volume.gid)
+
+        if ts.region_mapping is not None:
+            self.region_mapping.store(ts.region_mapping.gid)
+
 
 class TimeSeriesSurfaceH5(TimeSeriesH5):
     SELECTION_LIMIT = 100
@@ -259,6 +271,9 @@ class TimeSeriesSurfaceH5(TimeSeriesH5):
         super(TimeSeriesSurfaceH5, self).__init__(path)
         self.surface = Reference(TimeSeriesSurface.surface, self)
         self.labels_ordering = Json(TimeSeriesSurface.labels_ordering, self)
+
+    def store_references(self, ts):
+        self.surface.store(ts.surface)
 
     # fixme
     def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
@@ -286,6 +301,9 @@ class TimeSeriesVolumeH5(TimeSeriesH5):
         super(TimeSeriesVolumeH5, self).__init__(path)
         self.volume = Reference(TimeSeriesVolume.volume, self)
         self.labels_ordering = Json(TimeSeriesVolume.labels_ordering, self)
+
+    def store_references(self, ts):
+        self.volume.store(ts.volume.gid)
 
     def get_volume_view(self, from_idx, to_idx, x_plane, y_plane, z_plane, **kwargs):
         """
@@ -344,12 +362,18 @@ class TimeSeriesSensorsH5(TimeSeriesH5):
             return sensors_gid
         return ''
 
+    def store_references(self, ts):
+        pass
+
 
 class TimeSeriesEEGH5(TimeSeriesSensorsH5):
     def __init__(self, path):
         super(TimeSeriesEEGH5, self).__init__(path)
         self.sensors = Reference(TimeSeriesEEG.sensors, self)
         self.labels_order = Json(TimeSeriesEEG.labels_ordering, self)
+
+    def store_references(self, ts):
+        self.sensors.store(ts.sensors.gid)
 
 
 class TimeSeriesMEGH5(TimeSeriesSensorsH5):
@@ -358,9 +382,15 @@ class TimeSeriesMEGH5(TimeSeriesSensorsH5):
         self.sensors = Reference(TimeSeriesMEG.sensors, self)
         self.labels_order = Json(TimeSeriesMEG.labels_ordering, self)
 
+    def store_references(self, ts):
+        self.sensors.store(ts.sensors.gid)
+
 
 class TimeSeriesSEEGH5(TimeSeriesSensorsH5):
     def __init__(self, path):
         super(TimeSeriesSEEGH5, self).__init__(path)
         self.sensors = Reference(TimeSeriesSEEG.sensors, self)
         self.labels_order = Json(TimeSeriesSEEG.labels_ordering, self)
+
+    def store_references(self, ts):
+        self.sensors.store(ts.sensors.gid)

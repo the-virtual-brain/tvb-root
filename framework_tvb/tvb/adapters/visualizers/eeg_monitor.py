@@ -208,12 +208,10 @@ class EegMonitor(ABCDisplayer):
 
         return parameters
 
-
     def generate_preview(self, input_data, data_2=None, data_3=None, figure_size=None):
         params = self.compute_parameters(input_data, data_2, data_3, is_preview=True)
         pages = dict(channelsPage=None)
         return self.build_display_result("eeg/preview", params, pages)
-
 
     def launch(self, input_data, data_2=None, data_3=None):
         """
@@ -222,7 +220,6 @@ class EegMonitor(ABCDisplayer):
         params = self.compute_parameters(input_data, data_2, data_3)
         pages = dict(controlPage="eeg/controls", channelsPage="commons/channel_selector.html")
         return self.build_display_result("eeg/view", params, pages=pages)
-
 
     def _pre_process(self, timeseries_list):
         """From input, Compute no of lines and labels."""
@@ -250,7 +247,7 @@ class EegMonitor(ABCDisplayer):
             else:
                 initial_selections.append(timeseries.get_default_selection())
 
-            measures_sel_gids.append(timeseries.get_measure_points_selection_gid())
+            measures_sel_gids.append(timeseries.get_measure_points_selection_gid().hex)
             grouped_labels.append(timeseries.get_grouped_space_labels())
 
             state_vars[ts_name] = timeseries.labels_dimensions.load().get(timeseries.labels_ordering.load()[1], [])
@@ -278,7 +275,6 @@ class EegMonitor(ABCDisplayer):
                 this_label = str(idx + 1) + '.' + this_label
             graph_labels.append(this_label)
 
-
     @staticmethod
     def _replace_nan_values(input_data):
         """ Replace NAN values with a given values"""
@@ -288,7 +284,6 @@ class EegMonitor(ABCDisplayer):
                 input_data[idx] = numpy.nan_to_num(input_data[idx])
             is_any_value_nan = True
         return is_any_value_nan
-
 
     def compute_required_info(self, list_of_timeseries):
         """Compute average difference between Max and Min."""
@@ -321,18 +316,15 @@ class EegMonitor(ABCDisplayer):
 
         return float(max(step)), translations, channels_per_set
 
-
     @staticmethod
     def _get_sub_title(datatype_list):
         """ Compute sub-title for current page"""
         return "_".join(d.display_name for d in datatype_list)
 
-
     @staticmethod
     def _get_label_x(original_timeseries):
         """ Compute the label displayed on the x axis """
         return "Time(%s)" % original_timeseries.sample_period_unit
-
 
     def _get_data_set_urls(self, list_of_timeseries, is_preview=False):
         """

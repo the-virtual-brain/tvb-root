@@ -30,8 +30,10 @@
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold
+from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG
 from tvb.simulator.noise import Additive
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
@@ -705,6 +707,33 @@ class SimulatorController(BurstBaseController):
             return rendering_rules.to_dict()
 
         session_stored_simulator.monitors = [monitor]
+
+        if isinstance(session_stored_simulator.monitors[0], Projection):
+            # load region mapping
+            region_mapping_index = ABCAdapter.load_entity_by_gid(data['_region_mapping'])
+            region_mapping = h5.load_from_index(region_mapping_index)
+            session_stored_simulator.monitors[0].region_mapping = region_mapping
+
+            # load sensors and projection
+            sensors_index = ABCAdapter.load_entity_by_gid(data['_sensors'])
+            sensors = h5.load_from_index(sensors_index)
+
+            projection_surface_index = ABCAdapter.load_entity_by_gid(data['_projection'])
+            projection_surface = h5.load_from_index(projection_surface_index)
+
+            if isinstance(session_stored_simulator.monitors[0], EEG):
+                sensors = SensorsEEG.build_sensors_subclass(sensors)
+                session_stored_simulator.monitors[0].projection = ProjectionSurfaceEEG()
+            elif isinstance(session_stored_simulator.monitors[0], MEG):
+                sensors = SensorsMEG.build_sensors_subclass(sensors)
+                session_stored_simulator.monitors[0].projection = ProjectionSurfaceMEG()
+            elif isinstance(session_stored_simulator.monitors[0], iEEG):
+                sensors = SensorsInternal.build_sensors_subclass(sensors)
+                session_stored_simulator.monitors[0].projection = ProjectionSurfaceSEEG()
+
+            session_stored_simulator.monitors[0].sensors = sensors
+            session_stored_simulator.monitors[0].projection.gid = projection_surface.gid
+
         next_form = SimulatorLengthFragment()
         next_form.fill_from_trait(session_stored_simulator)
 
