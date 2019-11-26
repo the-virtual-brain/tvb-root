@@ -26,7 +26,7 @@
     {% endif %}
     {% if include_next_button %}
         <button id='next' name="next" type="button" class="btn btn-primary"
-                onclick="wizzard_submit(this.parentElement, 'form_spatial_model_param_equations')"
+                onclick="wizzard_submit(this.parentElement, null, 'form_spatial_model_param_equations')"
                 {% if load_readonly %} style="visibility: hidden" {% endif %}>Next
         </button>
     {% endif %}

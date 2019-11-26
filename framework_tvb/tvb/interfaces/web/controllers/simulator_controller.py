@@ -409,6 +409,8 @@ class SimulatorController(BurstBaseController):
             rm_index = ABCAdapter.load_entity_by_gid(rm_gid)
             rm = h5.load_from_index(rm_index)
             session_stored_simulator.surface.region_mapping_data = rm
+            session_stored_simulator.surface.region_mapping_data.surface = CorticalSurface()
+            session_stored_simulator.surface.region_mapping_data.surface.gid = uuid.UUID(rm_index.surface_gid)
 
         stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, True)
         stimuli_fragment.fill_from_trait(session_stored_simulator)

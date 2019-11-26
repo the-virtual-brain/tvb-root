@@ -35,12 +35,9 @@ Service for serianlizing a Burst (Simulator) configuration.
 """
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import *
 from tvb.core.services.flow_service import FlowService
 from tvb.simulator import models
-from tvb.simulator.integrators import Integrator
-from tvb.simulator.models import Model
 
 MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
@@ -60,50 +57,6 @@ class SerializationManager(object):
         self.flow_service = FlowService()
         self.conf = conf
 
-
-    def has_model_pse_ranges(self):
-        """ Returns True if the burst configuration describes a range on a model parameter """
-        first_range = self.conf.get_simulation_parameter_value(RANGE_PARAMETER_1)
-        second_range = self.conf.get_simulation_parameter_value(RANGE_PARAMETER_2)
-        first_range_on = first_range is not None and str(first_range).startswith(MODEL_PARAMETERS)
-        second_range_on = second_range is not None and str(second_range).startswith(MODEL_PARAMETERS)
-        return first_range_on or second_range_on
-
-
-    def __make_instance_from_burst_config(self, params_dict, parent_class, class_name_key, params_key):
-        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name
-
-        """ This is used internally to create a model or an integrator based on the burst config """
-        class_name = self.conf.get_simulation_parameter_value(class_name_key)
-        parameters = params_dict[params_key]
-        noise_framework.build_noise(parameters)
-        try:
-            return get_traited_instance_for_name(class_name, parent_class, parameters)
-        except Exception:
-            self.logger.exception("Could not create an instance of %s with the given parameters. "
-                                  "A new instance will be created with the default values." % class_name)
-            return get_traited_instance_for_name(class_name, parent_class, {})
-
-
-    def make_model_and_integrator(self):
-        """
-        :return: A model and an integrator.
-        :rtype: Model, Integrator
-        """
-        params_dict = self._get_params_dict()
-        model = self.__make_instance_from_burst_config(params_dict, Model, PARAM_MODEL, MODEL_PARAMETERS)
-        integrator = self.__make_instance_from_burst_config(params_dict, Integrator,
-                                                            PARAM_INTEGRATOR, INTEGRATOR_PARAMETERS)
-        return model, integrator
-
-
-    def get_surface(self):
-        """ Prepare Surface """
-        surface_gid = self.conf.get_simulation_parameter_value(PARAM_SURFACE)
-        if surface_gid:
-            return ABCAdapter.load_entity_by_gid(surface_gid)
-        return None
-
     @staticmethod
     def group_parameter_values_by_name(model_parameters_list):
         """
@@ -122,7 +75,6 @@ class SerializationManager(object):
                 ret[param_name].append(param_val)
         return ret
 
-
     def write_model_parameters(self, model_name, model_parameters_list):
         """
         Update model parameters in burst config.
@@ -131,7 +83,6 @@ class SerializationManager(object):
         :param model_parameters_list: A list of model parameter configurations. One for each connectivity node.
                 Ex. [{'a': 1, 'b': 2}, ...]
         """
-
 
         def format_param_vals(vals):
             # contract constant array
@@ -146,7 +97,6 @@ class SerializationManager(object):
 
         for param_name, param_vals in six.iteritems(model_parameters):
             setattr(self.conf.model, param_name, format_param_vals(param_vals))
-
 
     def write_noise_parameters(self, noise_dispersions):
         """

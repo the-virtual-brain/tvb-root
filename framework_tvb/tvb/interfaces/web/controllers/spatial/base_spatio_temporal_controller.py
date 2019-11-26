@@ -79,7 +79,7 @@ class SpatioTemporalController(BaseController):
 
 
     @staticmethod
-    def display_surface(surface_gid):
+    def display_surface(surface_gid, region_mapping_gid=None):
         """
         Generates the HTML for displaying the surface with the given ID.
         """
@@ -87,7 +87,7 @@ class SpatioTemporalController(BaseController):
         common.add2session(PARAM_SURFACE, surface_gid)
         surface_h5 = h5.h5_file_for_index(surface)
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
-        url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
+        url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5, region_mapping_gid)
         surface_h5.close()
 
         return {

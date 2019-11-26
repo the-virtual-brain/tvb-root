@@ -112,7 +112,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
     });
 }
 
-function _renderAllSimulatorForms(url, stop_at_url='') {
+function _renderAllSimulatorForms(url, stop_at_url = '') {
     if (url != stop_at_url) {
         doAjaxCall({
             type: "GET",
@@ -446,9 +446,9 @@ function configureSimulator(configureHref) {
 function toggleSimulatorParametersChecks(beChecked) {
     $(".param-config-checkbox").each(function () {
         if (beChecked) {
-            $(this).prop( "checked", true);
+            $(this).prop("checked", true);
         } else {
-            $(this).prop( "checked", false);
+            $(this).prop("checked", false);
         }
     });
 }
@@ -1199,7 +1199,7 @@ function launchNewBurst(currentForm, launchMode) {
 }
 
 
-function previousWizzardStep(currentForm, previous_action, div_id='div-simulator-parameters') {
+function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
     document.getElementById(div_id).removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
@@ -1228,7 +1228,7 @@ function previousWizzardStep(currentForm, previous_action, div_id='div-simulator
     fieldset.disabled = false;
 }
 
-function wizzard_submit(currentForm, div_id='div-simulator-parameters') {
+function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
@@ -1245,26 +1245,29 @@ function wizzard_submit(currentForm, div_id='div-simulator-parameters') {
         type: request_method,
         data: form_data,
         success: function (response) {
-            if (next_button != null) {
-                next_button.style.visibility = 'hidden';
+            if (success_function != null) {
+                success_function();
+            } else {
+                if (next_button != null) {
+                    next_button.style.visibility = 'hidden';
+                }
+                if (previous_button != null) {
+                    previous_button.style.visibility = 'hidden';
+                }
+                if (config_region_param_button != null) {
+                    config_region_param_button.style.visibility = 'hidden';
+                }
+                if (config_surface_param_button != null) {
+                    config_surface_param_button.style.visibility = 'hidden';
+                }
+                if (config_noise_button != null) {
+                    config_noise_button.style.visibility = 'hidden';
+                }
+                fieldset.disabled = true;
+                var t = document.createRange().createContextualFragment(response);
+                document.getElementById(div_id).appendChild(t);
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
             }
-            if (previous_button != null) {
-                previous_button.style.visibility = 'hidden';
-            }
-            if (config_region_param_button != null) {
-                config_region_param_button.style.visibility = 'hidden';
-            }
-            if (config_surface_param_button != null) {
-                config_surface_param_button.style.visibility = 'hidden';
-            }
-            if (config_noise_button != null) {
-                config_noise_button.style.visibility = 'hidden';
-            }
-            fieldset.disabled = true;
-            var t = document.createRange().createContextualFragment(response);
-            document.getElementById(div_id).appendChild(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
-
         }
     })
 }

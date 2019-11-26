@@ -64,10 +64,6 @@ from tvb.interfaces.web.controllers.decorators import using_template
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
 
-KEY_EQUATION = input_tree.KEY_EQUATION
-KEY_FOCAL_POINTS = input_tree.KEY_FOCAL_POINTS
-KEY_SURFACE_GID = input_tree.KEY_SURFACE_GID
-
 LOGGER = get_logger("ABCAdapter")
 
 

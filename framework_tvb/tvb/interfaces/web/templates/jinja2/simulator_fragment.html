@@ -29,7 +29,7 @@
     {% endif %}
     {% if renderer.include_setup_surface_model %}
             <button type="button" title="Set up model parameters for surface-based simulations" class="btn btn-primary"
-               onclick="configureModelParamsOnSurface();" id="configSurfaceModelParam" name="configSurfaceModelParam"
+               onclick="wizzard_submit(this.parentElement, configureModelParamsOnSurface);" id="configSurfaceModelParam" name="configSurfaceModelParam"
                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Set up surface model</button>
     {% endif %}
     {% if renderer.include_setup_noise %}
