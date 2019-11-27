@@ -34,7 +34,6 @@
 """
 
 import json
-from copy import deepcopy
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -44,8 +43,6 @@ from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import settings, expose_page
-from tvb.interfaces.web.controllers.flow_controller import SelectedAdapterContext
-
 
 MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
@@ -66,7 +63,6 @@ class SpatioTemporalController(BaseController):
                                   subsection='surfacestim', description='Create a new Stimulus on Surface level')]
         self.submenu_list = editable_entities
 
-
     @expose_page
     @settings
     def index(self, **data):
@@ -76,8 +72,6 @@ class SpatioTemporalController(BaseController):
         template_specification = {'title': "Spatio temporal", 'data': data, 'mainContent': 'header_menu'}
         return self.fill_default_attributes(template_specification)
 
-
-
     @staticmethod
     def display_surface(surface_gid, region_mapping_gid=None):
         """
@@ -86,8 +80,10 @@ class SpatioTemporalController(BaseController):
         surface = ABCAdapter.load_entity_by_gid(surface_gid)
         common.add2session(PARAM_SURFACE, surface_gid)
         surface_h5 = h5.h5_file_for_index(surface)
-        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
-        url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5, region_mapping_gid)
+        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
+            surface_h5)
+        url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5,
+                                                                                                    region_mapping_gid)
         surface_h5.close()
 
         return {
@@ -100,44 +96,10 @@ class SpatioTemporalController(BaseController):
             'brainCenter': json.dumps(surface_h5.center())
         }
 
-
-    @staticmethod
-    def prepare_entity_interface(input_list):
-        """
-        Prepares the input tree obtained from a creator.
-        """
-        return {'inputList': input_list,
-                common.KEY_PARAMETERS_CONFIG: False}
-
-
-    def get_creator_and_interface(self, creator_module, creator_class, datatype_instance, lock_midpoint_for_eq=None):
-        """
-        Returns a Tuple: a creator instance and a dictionary for the creator interface.
-        The interface is prepared for rendering, it is populated with existent data, in case of a
-        parameter of type DataType. The name of the attributes are also prefixed to identify groups.
-        """
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(creator_module, creator_class)
-
-        # We can't use 'build_adapter_from_class' from flow service
-        # because the selects that display dataTypes will also have the 'All' entry.
-        datatype_instance.trait.bound = traited_interface.INTERFACE_ATTRIBUTES_ONLY
-        input_list = datatype_instance.interface[traited_interface.INTERFACE_ATTRIBUTES]
-        if lock_midpoint_for_eq is not None:
-            for idx in lock_midpoint_for_eq:
-                input_list[idx] = self._lock_midpoints(input_list[idx])
-        category = self.flow_service.get_visualisers_category()
-        itree_mngr = self.flow_service.input_tree_manager
-        input_list = itree_mngr.fill_input_tree_with_options(input_list, common.get_current_project().id, category.id)
-        input_list = itree_mngr.prepare_param_names(input_list)
-
-        return ABCAdapter.build_adapter(algorithm), input_list
-
-
     @staticmethod
     def get_series_json(data, label):
         """ For each data point entry, build the FLOT specific JSON. """
         return json.dumps([{'data': data, 'label': label}])
-
 
     @staticmethod
     def get_ui_message(list_of_equation_names):
@@ -147,41 +109,9 @@ class SpatioTemporalController(BaseController):
         """
         if list_of_equation_names:
             return ("Could not evaluate the " + ", ".join(list_of_equation_names) + " equation(s) "
-                    "in all the points. Some of the values were changed.")
+                                                                                    "in all the points. Some of the values were changed.")
         else:
             return ""
-
-
-    def get_select_existent_entities(self, label, entity_type, entity_gid=None):
-        """
-        Returns the dictionary needed for drawing the select which display all
-        the created entities of the specified type.
-        """
-        project_id = common.get_current_project().id
-        category = self.flow_service.get_visualisers_category()
-
-        interface = [{'name': 'existentEntitiesSelect', 'label': label, 'type': entity_type}]
-        if entity_gid is not None:
-            interface[0]['default'] = entity_gid
-        itree_mngr = self.flow_service.input_tree_manager
-        interface = itree_mngr.fill_input_tree_with_options(interface, project_id, category.id)
-        interface = itree_mngr.prepare_param_names(interface)
-
-        return interface
-
-
-    @staticmethod
-    def add_interface_to_session(left_input_tree, right_input_tree):
-        """
-        left_input_tree and right_input_tree are expected to be lists of dictionaries.
-
-        Those 2 given lists will be concatenated and added to session.
-        In order to work the filters, the interface should be added to session.
-        """
-        entire_tree = deepcopy(left_input_tree)
-        entire_tree.extend(right_input_tree)
-        SelectedAdapterContext().add_adapter_to_session(None, entire_tree)
-
 
     def fill_default_attributes(self, template_dictionary, subsection='stimulus'):
         """
@@ -193,7 +123,6 @@ class SpatioTemporalController(BaseController):
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'spatial/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-
 
     def get_x_axis_range(self, min_x_str, max_x_str):
         """
@@ -213,20 +142,3 @@ class SpatioTemporalController(BaseController):
             return 0, 100, "The min value for the x-axis should be smaller then the max value of the x-axis."
 
         return min_x, max_x, ''
-
-
-    @staticmethod
-    def _lock_midpoints(equations_dict):
-        """
-        Set mid-points for gaussian / double gausians as locked to 0.0 in case of spatial equations.
-        """
-        for equation in equations_dict[ABCAdapter.KEY_OPTIONS]:
-            if equation[ABCAdapter.KEY_NAME] == 'Gaussian':
-                for entry in equation[ABCAdapter.KEY_ATTRIBUTES][1][ABCAdapter.KEY_ATTRIBUTES]:
-                    if entry[ABCAdapter.KEY_NAME] == 'midpoint':
-                        entry['locked'] = True
-            if equation[ABCAdapter.KEY_NAME] == 'DoubleGaussian':
-                for entry in equation[ABCAdapter.KEY_ATTRIBUTES][1][ABCAdapter.KEY_ATTRIBUTES]:
-                    if entry[ABCAdapter.KEY_NAME] == 'midpoint1':
-                        entry['locked'] = True
-        return equations_dict
