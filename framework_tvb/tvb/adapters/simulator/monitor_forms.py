@@ -1,3 +1,5 @@
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY,  INTERNAL_POLYMORPHIC_IDENTITY
 from tvb.simulator.monitors import Monitor, Raw, SpatialAverage, Projection, EEG, MEG, iEEG, Bold, SubSample, \
     GlobalAverage, TemporalAverage, BoldRegionROI
 
@@ -106,10 +108,14 @@ class EEGMonitorForm(ProjectionMonitorForm):
         self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
                                               label=EEG.projection.label, doc=EEG.projection.label, conditions=None)
         self.reference = ScalarField(EEG.reference, self)
-        # TODO: filter EEG sensors
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=EEG.sensors.label,
-                                           doc=EEG.sensors.doc, conditions=None)
+                                           doc=EEG.sensors.doc, conditions=self.get_filters())
         self.sigma = ScalarField(EEG.sigma, self)
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
+                           values=[EEG_POLYMORPHIC_IDENTITY])
 
 
 class MEGMonitorForm(ProjectionMonitorForm):
@@ -119,9 +125,13 @@ class MEGMonitorForm(ProjectionMonitorForm):
         # TODO: filter surfaces to show only ProjectionSurfaceMEG
         self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
                                               label=MEG.projection.label, doc=MEG.projection.doc, conditions=None)
-        # TODO: filter MEG sensors
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=MEG.sensors.label,
-                                           doc=MEG.sensors.doc, conditions=None)
+                                           doc=MEG.sensors.doc, conditions=self.get_filters())
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
+                           values=[MEG_POLYMORPHIC_IDENTITY])
 
 
 class iEEGMonitorForm(ProjectionMonitorForm):
@@ -132,9 +142,13 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         self.projection = DataTypeSelectField(SensorsIndex, self, name='projection', required=True,
                                               label=iEEG.projection.label, doc=iEEG.projection.doc, conditions=None)
         self.sigma = ScalarField(iEEG.sigma, self)
-        # TODO: filter SEEG sensors
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=iEEG.sensors.label,
-                                           doc=iEEG.sensors.doc, conditions=None)
+                                           doc=iEEG.sensors.doc, conditions=self.get_filters())
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
+                           values=[INTERNAL_POLYMORPHIC_IDENTITY])
 
 
 class BoldMonitorForm(MonitorForm):
