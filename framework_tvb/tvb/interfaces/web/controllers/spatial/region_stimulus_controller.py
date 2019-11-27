@@ -328,10 +328,6 @@ class RegionStimulusController(SpatioTemporalController):
         stimuli_region_path = h5.path_for_stored_index(existent_region_stimulus_index)
         with StimuliRegionH5(stimuli_region_path) as stimuli_region_h5:
             stimuli_region_h5.load_into(stimuli_region)
-            temporal_gid = stimuli_region_h5.temporal.load()
-
-        equation_h5 = SimulatorConfigurationH5(stimuli_region_path)
-        stimuli_region.temporal = equation_h5.load_from_reference(temporal_gid)
 
         dummy_connectivity = Connectivity()
         dummy_connectivity.gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)

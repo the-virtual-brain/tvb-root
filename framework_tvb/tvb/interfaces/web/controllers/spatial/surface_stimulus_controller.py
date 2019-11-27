@@ -335,13 +335,6 @@ class SurfaceStimulusController(SpatioTemporalController):
         existent_surface_stim = StimuliSurface()
         with StimuliSurfaceH5(surface_stim_h5_path) as surface_stim_h5:
             surface_stim_h5.load_into(existent_surface_stim)
-            spatial_gid = surface_stim_h5.spatial.load()
-            temporal_gid = surface_stim_h5.temporal.load()
-
-        spatial_h5 = SimulatorConfigurationH5(surface_stim_h5_path)
-        existent_surface_stim.spatial = spatial_h5.load_from_reference(spatial_gid)
-        temporal_h5 = SimulatorConfigurationH5(surface_stim_h5_path)
-        existent_surface_stim.temporal = temporal_h5.load_from_reference(temporal_gid)
 
         # prepare dummy surface, we need only the GID at this step, for serialization
         existent_surface_stim.surface = CorticalSurface()

@@ -29,31 +29,29 @@
 #
 from tvb.basic.neotraits.api import NArray
 from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
-from tvb.core.neotraits.h5 import H5File, Reference, DataSet
+from tvb.core.neotraits.h5 import H5File, Reference, DataSet, EquationScalar
 
 
 class StimuliRegionH5(H5File):
 
     def __init__(self, path):
         super(StimuliRegionH5, self).__init__(path)
-        self.spatial = Reference(StimuliRegion.spatial, self)
-        self.temporal = Reference(StimuliRegion.temporal, self)
+        self.spatial = EquationScalar(StimuliRegion.spatial, self)
+        self.temporal = EquationScalar(StimuliRegion.temporal, self)
         self.connectivity = Reference(StimuliRegion.connectivity, self)
         self.weight = DataSet(StimuliRegion.weight, self)
 
     def store(self, datatype, scalars_only=False):
         super(StimuliRegionH5, self).store(datatype, scalars_only)
         self.connectivity.store(datatype.connectivity)
-        self.spatial.store(datatype.spatial.gid)
-        self.temporal.store(datatype.temporal.gid)
 
 
 class StimuliSurfaceH5(H5File):
 
     def __init__(self, path):
         super(StimuliSurfaceH5, self).__init__(path)
-        self.spatial = Reference(StimuliSurface.spatial, self)
-        self.temporal = Reference(StimuliSurface.temporal, self)
+        self.spatial = EquationScalar(StimuliSurface.spatial, self)
+        self.temporal = EquationScalar(StimuliSurface.temporal, self)
         self.surface = Reference(StimuliSurface.surface, self)
         self.focal_points_surface = DataSet(NArray(dtype=int), self, name='focal_points_surface')
         self.focal_points_triangles = DataSet(StimuliSurface.focal_points_triangles, self)

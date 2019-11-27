@@ -41,7 +41,6 @@ from tvb.adapters.creators.local_connectivity_creator import LocalConnectivitySe
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
     get_ui_name_to_equation_dict, get_form_for_equation, get_ui_name_for_equation
-from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import prepare_prefixed_name_for_field
@@ -241,10 +240,6 @@ class LocalConnectivityController(SpatioTemporalController):
         lconn_h5_path = h5.path_for_stored_index(lconn_index)
         with LocalConnectivityH5(lconn_h5_path) as lconn_h5:
             lconn_h5.load_into(existent_lconn)
-            equation_gid = lconn_h5.equation.load()
-
-        equation_h5 = SimulatorConfigurationH5(lconn_h5_path)
-        existent_lconn.equation = equation_h5.load_from_reference(equation_gid)
 
         # prepare dummy surface, we need only the GID at this step, for serialization
         existent_lconn.surface = CorticalSurface()

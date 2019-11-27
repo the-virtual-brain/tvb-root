@@ -36,8 +36,6 @@ from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form
     get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
-from tvb.core.entities.file.simulator.h5_factory import equation_h5_factory
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -150,12 +148,6 @@ class LocalConnectivityCreator(ABCAsynchronous):
         equation_form.fill_from_post(kwargs)
         equation_form.fill_trait(local_connectivity.equation)
         local_connectivity.compute_sparse_matrix()
-
-        equation_h5_class = equation_h5_factory(type(local_connectivity.equation))
-        equation_h5_path = h5.path_for(self.storage_path, equation_h5_class, local_connectivity.equation.gid)
-        with equation_h5_class(equation_h5_path) as equation_h5:
-            equation_h5.store(local_connectivity.equation)
-            equation_h5.type.store(SimulatorConfigurationH5.get_full_class_name(type(local_connectivity.equation)))
 
         return h5.store_complete(local_connectivity, self.storage_path)
 

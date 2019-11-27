@@ -38,8 +38,6 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
-from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
-from tvb.core.entities.file.simulator.h5_factory import equation_h5_factory
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FormField, SimpleStrField
@@ -49,14 +47,6 @@ from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.interfaces.web.controllers.decorators import using_template
-
-
-def store_equation_in_h5(storage_path, equation):
-    equation_h5_class = equation_h5_factory(type(equation))
-    equation_h5_path = h5.path_for(storage_path, equation_h5_class, equation.gid)
-    with equation_h5_class(equation_h5_path) as equation_h5:
-        equation_h5.store(equation)
-        equation_h5.type.store(SimulatorConfigurationH5.get_full_class_name(type(equation)))
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
@@ -169,8 +159,6 @@ class SurfaceStimulusCreator(ABCSynchronous):
         stimuli_surface_index = StimuliSurfaceIndex()
         stimuli_surface_index.fill_from_has_traits(stimuli_surface)
 
-        store_equation_in_h5(self.storage_path, stimuli_surface.temporal)
-        store_equation_in_h5(self.storage_path, stimuli_surface.spatial)
         h5.store_complete(stimuli_surface, self.storage_path)
         return stimuli_surface_index
 
@@ -291,7 +279,6 @@ class RegionStimulusCreator(ABCSynchronous):
         stimuli_region_idx = StimuliRegionIndex()
         stimuli_region_idx.fill_from_has_traits(stimuli_region)
 
-        store_equation_in_h5(self.storage_path, stimuli_region.temporal)
         h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx
 
