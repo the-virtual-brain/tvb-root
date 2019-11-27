@@ -617,22 +617,22 @@ class PhasePlaneInteractive(HasTraits):
 
         """
         #TODO: Grab caller and use val directly, ie independent range update.
-        self.axes_range_sliders["sl_x_min"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_x_max"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_y_max"].ax.set_axis_bgcolor(AXCOLOUR)
+        self.axes_range_sliders["sl_x_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_x_max"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_max"].ax.set_facecolor(AXCOLOUR)
 
         if (self.axes_range_sliders["sl_x_min"].val >=
             self.axes_range_sliders["sl_x_max"].val):
             LOG.error("X-axis min must be less than max...")
-            self.axes_range_sliders["sl_x_min"].ax.set_axis_bgcolor("Red")
-            self.axes_range_sliders["sl_x_max"].ax.set_axis_bgcolor("Red")
+            self.axes_range_sliders["sl_x_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_x_max"].ax.set_facecolor("Red")
             return
         if (self.axes_range_sliders["sl_y_min"].val >=
             self.axes_range_sliders["sl_y_max"].val):
             LOG.error("Y-axis min must be less than max...")
-            self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor("Red")
-            self.axes_range_sliders["sl_y_max"].ax.set_axis_bgcolor("Red")
+            self.axes_range_sliders["sl_y_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_y_max"].ax.set_facecolor("Red")
             return
 
         msv_range = self.model.state_variable_range

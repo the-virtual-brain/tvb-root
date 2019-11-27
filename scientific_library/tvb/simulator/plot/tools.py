@@ -282,7 +282,7 @@ def show_me_the_colours():
         ax = colours_fig.add_subplot(rows, columns, k)
         ax.set_yticklabels([])
         ax.set_xticklabels([])
-        ax.set_axis_bgcolor(colours[k])
+        ax.set_facecolor(colours[k])
         ax.text(0.05, 0.5, colours[k])
 
 
