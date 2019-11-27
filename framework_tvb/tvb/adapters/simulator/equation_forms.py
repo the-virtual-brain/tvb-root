@@ -80,6 +80,11 @@ class EquationForm(Form):
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, SimpleFloatField(self, param_key, required=True, label=param_key, default=param))
 
+    def fill_from_post(self, form_data):
+        for field in self.fields:
+            if field.name in form_data:
+                field.fill_from_post(form_data)
+
 
 class LinearEquationForm(EquationForm):
 
@@ -90,8 +95,8 @@ class LinearEquationForm(EquationForm):
         super(LinearEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['a'] = self.a.data
-        datatype.parameters['b'] = self.b.data
+        datatype.parameters['a'] = self.a.value
+        datatype.parameters['b'] = self.b.value
 
     def fill_from_trait(self, trait):
         self.a.data = trait.parameters['a']
@@ -106,10 +111,10 @@ class GaussianEquationForm(EquationForm):
         super(GaussianEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['amp'] = self.amp.data
-        datatype.parameters['sigma'] = self.sigma.data
-        datatype.parameters['midpoint'] = self.midpoint.data
-        datatype.parameters['offset'] = self.offset.data
+        datatype.parameters['amp'] = self.amp.value
+        datatype.parameters['sigma'] = self.sigma.value
+        datatype.parameters['midpoint'] = self.midpoint.value
+        datatype.parameters['offset'] = self.offset.value
 
     def fill_from_trait(self, trait):
         self.amp.data = trait.parameters['amp']
@@ -127,12 +132,12 @@ class DoubleGaussianEquationForm(EquationForm):
         super(DoubleGaussianEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['amp_1'] = self.amp_1.data
-        datatype.parameters['amp_2'] = self.amp_2.data
-        datatype.parameters['sigma_1'] = self.sigma_1.data
-        datatype.parameters['sigma_2'] = self.sigma_2.data
-        datatype.parameters['midpoint_1'] = self.midpoint_1.data
-        datatype.parameters['midpoint_2'] = self.midpoint_2.data
+        datatype.parameters['amp_1'] = self.amp_1.value
+        datatype.parameters['amp_2'] = self.amp_2.value
+        datatype.parameters['sigma_1'] = self.sigma_1.value
+        datatype.parameters['sigma_2'] = self.sigma_2.value
+        datatype.parameters['midpoint_1'] = self.midpoint_1.value
+        datatype.parameters['midpoint_2'] = self.midpoint_2.value
 
     def fill_from_trait(self, trait):
         self.amp_1.data = trait.parameters['amp_1']
@@ -152,10 +157,10 @@ class SigmoidEquationForm(EquationForm):
         super(SigmoidEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['amp'] = self.amp.data
-        datatype.parameters['radius'] = self.radius.data
-        datatype.parameters['sigma'] = self.sigma.data
-        datatype.parameters['offset'] = self.offset.data
+        datatype.parameters['amp'] = self.amp.value
+        datatype.parameters['radius'] = self.radius.value
+        datatype.parameters['sigma'] = self.sigma.value
+        datatype.parameters['offset'] = self.offset.value
 
     def fill_from_trait(self, trait):
         self.amp.data = trait.parameters['amp']
@@ -173,10 +178,10 @@ class GeneralizedSigmoidEquationForm(EquationForm):
         super(GeneralizedSigmoidEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['low'] = self.low.data
-        datatype.parameters['high'] = self.high.data
-        datatype.parameters['midpoint'] = self.midpoint.data
-        datatype.parameters['sigma'] = self.sigma.data
+        datatype.parameters['low'] = self.low.value
+        datatype.parameters['high'] = self.high.value
+        datatype.parameters['midpoint'] = self.midpoint.value
+        datatype.parameters['sigma'] = self.sigma.value
 
     def fill_from_trait(self, trait):
         self.low.data = trait.parameters['low']
@@ -194,8 +199,8 @@ class SinusoidEquationForm(EquationForm):
         super(SinusoidEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['amp'] = self.amp.data
-        datatype.parameters['frequency'] = self.frequency.data
+        datatype.parameters['amp'] = self.amp.value
+        datatype.parameters['frequency'] = self.frequency.value
 
     def fill_from_trait(self, trait):
         self.amp.data = trait.parameters['amp']
@@ -211,8 +216,8 @@ class CosineEquationForm(EquationForm):
         super(CosineEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['amp'] = self.amp.data
-        datatype.parameters['frequency'] = self.frequency.data
+        datatype.parameters['amp'] = self.amp.value
+        datatype.parameters['frequency'] = self.frequency.value
 
     def fill_from_trait(self, trait):
         self.amp.data = trait.parameters['amp']
@@ -228,9 +233,9 @@ class AlphaEquationForm(EquationForm):
         super(AlphaEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['onset'] = self.onset.data
-        datatype.parameters['alpha'] = self.alpha.data
-        datatype.parameters['beta'] = self.beta.data
+        datatype.parameters['onset'] = self.onset.value
+        datatype.parameters['alpha'] = self.alpha.value
+        datatype.parameters['beta'] = self.beta.value
 
     def fill_from_trait(self, trait):
         self.onset.data = trait.parameters['onset']
@@ -247,10 +252,10 @@ class PulseTrainEquationForm(EquationForm):
         super(PulseTrainEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['T'] = self.T.data
-        datatype.parameters['tau'] = self.tau.data
-        datatype.parameters['amp'] = self.amp.data
-        datatype.parameters['onset'] = self.onset.data
+        datatype.parameters['T'] = self.T.value
+        datatype.parameters['tau'] = self.tau.value
+        datatype.parameters['amp'] = self.amp.value
+        datatype.parameters['onset'] = self.onset.value
 
     def fill_from_trait(self, trait):
         self.T.data = trait.parameters['T']
@@ -268,10 +273,10 @@ class GammaEquationForm(EquationForm):
         super(GammaEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['tau'] = self.tau.data
-        datatype.parameters['n'] = self.n.data
-        datatype.parameters['factorial'] = self.factorial.data
-        datatype.parameters['a'] = self.a.data
+        datatype.parameters['tau'] = self.tau.value
+        datatype.parameters['n'] = self.n.value
+        datatype.parameters['factorial'] = self.factorial.value
+        datatype.parameters['a'] = self.a.value
 
     def fill_from_trait(self, trait):
         self.tau.data = trait.parameters['tau']
@@ -289,14 +294,14 @@ class DoubleExponentialEquationForm(EquationForm):
         super(DoubleExponentialEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['tau_1'] = self.tau_1.data
-        datatype.parameters['tau_2'] = self.tau_2.data
-        datatype.parameters['a'] = self.a.data
-        datatype.parameters['f_1'] = self.f_1.data
-        datatype.parameters['f_2'] = self.f_2.data
-        datatype.parameters['pi'] = self.pi.data
-        datatype.parameters['amp_1'] = self.amp_1.data
-        datatype.parameters['amp_2'] = self.amp_2.data
+        datatype.parameters['tau_1'] = self.tau_1.value
+        datatype.parameters['tau_2'] = self.tau_2.value
+        datatype.parameters['a'] = self.a.value
+        datatype.parameters['f_1'] = self.f_1.value
+        datatype.parameters['f_2'] = self.f_2.value
+        datatype.parameters['pi'] = self.pi.value
+        datatype.parameters['amp_1'] = self.amp_1.value
+        datatype.parameters['amp_2'] = self.amp_2.value
 
     def fill_from_trait(self, trait):
         self.tau_1.data = trait.parameters['tau_1']
@@ -318,10 +323,10 @@ class FirstOrderVolterraEquationForm(EquationForm):
         super(FirstOrderVolterraEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['tau_s'] = self.tau_s.data
-        datatype.parameters['tau_f'] = self.tau_f.data
-        datatype.parameters['k_1'] = self.k_1.data
-        datatype.parameters['V_0'] = self.V_0.data
+        datatype.parameters['tau_s'] = self.tau_s.value
+        datatype.parameters['tau_f'] = self.tau_f.value
+        datatype.parameters['k_1'] = self.k_1.value
+        datatype.parameters['V_0'] = self.V_0.value
 
     def fill_from_trait(self, trait):
         self.tau_s.data = trait.parameters['tau_s']
@@ -339,12 +344,12 @@ class MixtureOfGammasEquationForm(EquationForm):
         super(MixtureOfGammasEquationForm, self).__init__(prefix)
 
     def fill_trait(self, datatype):
-        datatype.parameters['a_1'] = self.a_1.data
-        datatype.parameters['a_2'] = self.a_2.data
-        datatype.parameters['l'] = self.l.data
-        datatype.parameters['c'] = self.c.data
-        datatype.parameters['gamma_a_1'] = self.gamma_a_1.data
-        datatype.parameters['gamma_a_2'] = self.gamma_a_2.data
+        datatype.parameters['a_1'] = self.a_1.value
+        datatype.parameters['a_2'] = self.a_2.value
+        datatype.parameters['l'] = self.l.value
+        datatype.parameters['c'] = self.c.value
+        datatype.parameters['gamma_a_1'] = self.gamma_a_1.value
+        datatype.parameters['gamma_a_2'] = self.gamma_a_2.value
 
     def fill_from_trait(self, trait):
         self.a_1.data = trait.parameters['a_1']

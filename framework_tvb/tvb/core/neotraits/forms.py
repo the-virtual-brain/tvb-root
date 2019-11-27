@@ -93,6 +93,8 @@ class Field(object):
 
     @property
     def value(self):
+        if str(self.data) == self.unvalidated_data:
+            return self.data
         return self.data or self.unvalidated_data
 
     def __repr__(self):
