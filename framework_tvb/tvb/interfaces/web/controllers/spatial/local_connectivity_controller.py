@@ -378,7 +378,7 @@ class LocalConnectivityController(SpatioTemporalController):
             all_series = self.get_series_json(ideal_case_series, average_case_series, worst_case_series,
                                               best_case_series, vertical_line)
 
-            return {'allSeries': all_series, 'prefix': self.EQUATION_FIELD, "message": None}
+            return {'allSeries': all_series, 'prefix': 'spatial', "message": None}
         except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
