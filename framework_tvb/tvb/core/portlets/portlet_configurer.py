@@ -33,7 +33,6 @@
 """
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.model.model_workflow import WorkflowStep, WorkflowStepView
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration, AdapterConfiguration
 from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration
@@ -173,16 +172,16 @@ class PortletConfigurer(object):
         if portlet_configuration.analyzers:
             for adapter_idx in range(len(portlet_interface[:-1])):
                 saved_configuration = portlet_configuration.analyzers[adapter_idx]
-                replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[adapter_idx].interface,
-                                                                        saved_configuration.static_param)
-                portlet_interface[adapter_idx].interface = replaced_defaults_dict
+                # replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[adapter_idx].interface,
+                #                                                         saved_configuration.static_param)
+                portlet_interface[adapter_idx].interface = {}
 
         # Check for visualization defaults
         if portlet_configuration.visualizer:
             saved_configuration = portlet_configuration.visualizer
-            replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[-1].interface,
-                                                                    saved_configuration.static_param)
-            portlet_interface[-1].interface = replaced_defaults_dict
+            # replaced_defaults_dict = InputTreeManager.fill_defaults(portlet_interface[-1].interface,
+            #                                                         saved_configuration.static_param)
+            portlet_interface[-1].interface = {}
 
 
     def _portlet_dynamic2workflow_step(self, value):
@@ -245,7 +244,7 @@ class PortletConfigurer(object):
         idx = 0
         for adapter_declaration in chain_adapters:
             adapter_instance = self.build_adapter_from_declaration(adapter_declaration)
-            alg_inputs = adapter_instance.flaten_input_interface()
+            alg_inputs = {}  # adapter_instance.flaten_input_interface()
             ###################################################################
 
             ### Get the overwrites defined in the portlet configuration #######

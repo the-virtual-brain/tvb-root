@@ -97,12 +97,12 @@ class BurstService(object):
         portlet_configurer = self._get_portlet_configurer(portlet_configuration.portlet_id)
         portlet_interface = portlet_configurer.get_configurable_interface()
 
-        for adapter_conf in portlet_interface:
-            interface = adapter_conf.interface
-            itree_mngr = InputTreeManager()
-            interface = itree_mngr.fill_input_tree_with_options(interface, project_id,
-                                                                adapter_conf.stored_adapter.fk_category)
-            adapter_conf.interface = itree_mngr.prepare_param_names(interface)
+        # for adapter_conf in portlet_interface:
+        #     interface = adapter_conf.interface
+        #     itree_mngr = InputTreeManager()
+        #     interface = itree_mngr.fill_input_tree_with_options(interface, project_id,
+        #                                                         adapter_conf.stored_adapter.fk_category)
+        #     adapter_conf.interface = itree_mngr.prepare_param_names(interface)
 
         portlet_configurer.update_default_values(portlet_interface, portlet_configuration)
         portlet_configurer.prefix_adapters_parameters(portlet_interface)
@@ -474,7 +474,7 @@ class BurstService(object):
         algorithm = dao.get_algorithm_by_id(visualization.fk_algorithm)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         adapter_instance.current_project_id = current_project_id
-        prepared_inputs = adapter_instance.prepare_ui_inputs(parameters_dict)
+        prepared_inputs = {}  # adapter_instance.prepare_ui_inputs(parameters_dict)
         if frame_width is not None:
             prepared_inputs[ABCDisplayer.PARAM_FIGURE_SIZE] = (frame_width, frame_height)
 

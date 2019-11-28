@@ -239,7 +239,8 @@ class Introspector(object):
 
                                 adapter_form = adapter_instance.get_form()
                                 adapter_instance.submit_form(adapter_form())
-                                adapter_form_field_names = adapter_instance.flaten_input_interface()
+                                # TODO: implement this for neoforms
+                                adapter_form_field_names = {}  # adapter_instance.flaten_input_interface()
                                 for input_entry in portlet_inputs.values():
                                     if input_entry[ATT_OVERWRITE] == adapter[ABCAdapter.KEY_NAME]:
                                         if input_entry[ABCAdapter.KEY_NAME] not in adapter_form_field_names:

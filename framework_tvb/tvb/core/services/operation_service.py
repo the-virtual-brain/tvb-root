@@ -328,10 +328,7 @@ class OperationService:
                     not 'RegionStimulusCreator' in adapter_instance.__class__.__name__ and \
                     not 'LocalConnectivityCreator' in adapter_instance.__class__.__name__ and \
                     not 'SurfaceStimulusCreator' in adapter_instance.__class__.__name__:
-                if adapter_instance.get_input_tree() is None:
-                    filtered_kwargs = adapter_instance.get_form().get_form_values()
-                else:
-                    filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+                filtered_kwargs = adapter_instance.get_form().get_form_values()
 
                 params = dict()
                 for k, value_ in filtered_kwargs.items():
