@@ -98,7 +98,6 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
     cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
     cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    # cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)

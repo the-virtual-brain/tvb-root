@@ -43,6 +43,7 @@ import numpy
 import six
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -50,7 +51,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.burst_service import BurstService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -760,7 +760,7 @@ class FlowController(BaseController):
             operation = self.flow_service.load_operation(int(first_op.id))
 
         try:
-            burst_service = BurstService()
+            burst_service = BurstService2()
             result = burst_service.stop_burst(operation.burst)
             if remove_after_stop:
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)

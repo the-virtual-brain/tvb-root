@@ -37,13 +37,13 @@ import cherrypy
 from time import sleep
 import pytest
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
@@ -57,7 +57,7 @@ class TestFlowController(BaseControllersTest):
         """
         self.init()
         self.flow_c = FlowController()
-        self.burst_c = BurstController()
+        self.burst_c = SimulatorController()
         self.operation_service = OperationService()
 
     def teardown_method(self):
