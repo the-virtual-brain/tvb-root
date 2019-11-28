@@ -45,6 +45,7 @@ from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
@@ -56,10 +57,8 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterForm
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_workflow import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model.model_burst import BurstConfiguration, RANGE_PARAMETER_1
-from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
@@ -193,35 +192,11 @@ class TestFactory(object):
         """
         Build and persist BurstConfiguration entity.
         """
-        burst = BurstConfiguration(project_id)
+        burst = BurstConfiguration2(project_id)
         if simulator_config is not None:
             burst.simulator_configuration = simulator_config
         burst.prepare_before_save()
         return dao.store_entity(burst)
-
-    @staticmethod
-    def create_workflow_step(module, classname, static_kwargs=None, dynamic_kwargs=None,
-                             step_index=0, base_step=0, tab_index=0, index_in_tab=0, is_view_step=False):
-        """
-        Build non-persisted WorkflowStep entity.
-        """
-        if static_kwargs is None:
-            static_kwargs = {}
-        if dynamic_kwargs is None:
-            dynamic_kwargs = {}
-        algorithm = dao.get_algorithm_by_module(module, classname)
-        second_step_configuration = wf_cfg(algorithm.id, static_kwargs, dynamic_kwargs)
-
-        static_params = second_step_configuration.static_params
-        dynamic_params = second_step_configuration.dynamic_params
-        for entry in dynamic_params:
-            dynamic_params[entry][wf_cfg.STEP_INDEX_KEY] += base_step
-
-        if is_view_step:
-            return WorkflowStepView(algorithm_id=algorithm.id, tab_index=tab_index, index_in_tab=index_in_tab,
-                                    static_param=static_params, dynamic_param=dynamic_params)
-        return WorkflowStep(algorithm_id=algorithm.id, step_index=step_index, tab_index=tab_index,
-                            index_in_tab=index_in_tab, static_param=static_params, dynamic_param=dynamic_params)
 
     @staticmethod
     def import_default_project(admin_user=None):

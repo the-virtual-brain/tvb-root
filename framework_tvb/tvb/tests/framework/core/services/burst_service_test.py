@@ -43,16 +43,13 @@ from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_burst import *
-from tvb.core.entities.model.model_workflow import *
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
-from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.portlets.portlet_configurer import ADAPTER_PREFIX_ROOT
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
@@ -76,7 +73,6 @@ class TestBurstService(BaseTestCase):
     burst_service = BurstService2()
     flow_service = FlowService()
     operation_service = OperationService()
-    workflow_service = WorkflowService()
     sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                    IntrospectionRegistry.SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
@@ -382,42 +378,6 @@ class TestBurstService(BaseTestCase):
         #Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config, error_expected=True)
 
-
-    def test_launch_burst_invalid_portlet_analyzer_data(self):
-        """
-        Test that burst is marked as error if invalid data is passed to the first step.
-        """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1').id
-        #Adapter tries to do an int(test1_val1) and int(test1_val2) so this should be valid
-        burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
-        kwargs_replica = {'test1_val1': '1', 'test1_val2': '0'}
-        burst_config.update_simulator_configuration(kwargs_replica)
-
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        #Portlet analyzer tries to do int(input) which should fail
-        declared_overwrites = {ADAPTER_PREFIX_ROOT + '0test_non_dt_input': 'asa'}
-        self.burst_service.update_portlet_configuration(portlet_configuration, declared_overwrites)
-        burst_config.tabs[0].portlets[0] = portlet_configuration
-
-        burst_id, _ = self.burst_service.launch_burst(burst_config, 0, algo_id, self.test_user.id)
-        burst_config = dao.get_burst_by_id(burst_id)
-        #Wait maximum x seconds for burst to finish
-        burst_config = self._wait_for_burst(burst_config, error_expected=True)
-
-        burst_wf = dao.get_workflows_for_burst(burst_config.id)[0]
-        wf_steps = dao.get_workflow_steps(burst_wf.id)
-        assert len(wf_steps) == 2,\
-                        "Should have exactly 2 wf steps. One for 'simulation' one for portlet analyze operation."
-        simulator_op = dao.get_operation_by_id(wf_steps[0].fk_operation)
-        assert STATUS_FINISHED == simulator_op.status,\
-                         "First operation should be simulator which should have 'finished' status."
-        portlet_analyze_op = dao.get_operation_by_id(wf_steps[1].fk_operation)
-        assert portlet_analyze_op.status == STATUS_ERROR,\
-                         "Second operation should be portlet analyze step which should have 'error' status."
-
-
     def test_launch_group_burst_happy_flow(self):
         """
         Happy flow of launching a burst with a range parameter. Expect to get both and operation
@@ -568,7 +528,6 @@ class TestBurstService(BaseTestCase):
         burst_config = TestFactory.store_burst(self.test_project.id)
 
         workflow_step_list = []
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
 
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
         first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class(
@@ -579,16 +538,7 @@ class TestBurstService(BaseTestCase):
                                                                       first_step_algorithm,
                                                                       first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)
-        view_step = TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2", "TestAdapter2",
-                                                     {"test2": 2}, {}, 0, 0, 0, 0, is_view_step=True)
-        view_step.fk_portlet = test_portlet.id
-        workflow_step_list.append(view_step)
 
-        workflows = self.workflow_service.create_and_store_workflow(self.test_project.id, burst_config.id, 0,
-                                                                    first_step_algorithm.id, operations)
-        self.operation_service.prepare_operations_for_workflowsteps(workflow_step_list, workflows, self.test_user.id,
-                                                                    burst_config.id, self.test_project.id, group,
-                                                                    operations)
         ### Now fire the workflow and also update and store the burst configuration ##
         self.operation_service.launch_operation(operations[0].id, False)
         loaded_burst, _ = self.burst_service.load_burst(burst_config.id)
@@ -610,10 +560,8 @@ class TestBurstService(BaseTestCase):
         datatypes = dao.get_datatypes_in_project(self.test_project.id)
         assert 0 == len(datatypes)
 
-        wf_steps = self.count_all_entities(WorkflowStep)
         datatype1_stored = self.count_all_entities(Datatype1)
         datatype2_stored = self.count_all_entities(Datatype2)
-        assert 0 == wf_steps, "Workflow steps were not deleted."
         assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
         assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
 
