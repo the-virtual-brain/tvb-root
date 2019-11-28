@@ -35,7 +35,6 @@ Service for serianlizing a Burst (Simulator) configuration.
 """
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_burst import *
 from tvb.core.services.flow_service import FlowService
 from tvb.simulator import models
 
@@ -69,7 +68,7 @@ class SerializationManager(object):
         """
         ret = {}
         for model_parameters in model_parameters_list:
-            for param_name, param_val in six.iteritems(model_parameters):
+            for param_name, param_val in model_parameters.items():
                 if param_name not in ret:
                     ret[param_name] = []
                 ret[param_name].append(param_val)
@@ -95,7 +94,7 @@ class SerializationManager(object):
         model_class = getattr(models, model_name)
         self.conf.model = model_class()
 
-        for param_name, param_vals in six.iteritems(model_parameters):
+        for param_name, param_vals in model_parameters.items():
             setattr(self.conf.model, param_name, format_param_vals(param_vals))
 
     def write_noise_parameters(self, noise_dispersions):

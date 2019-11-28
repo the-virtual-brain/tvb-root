@@ -41,7 +41,6 @@ from sqlalchemy import Integer, String, Column, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declared_attr
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.exportable import Exportable
 from tvb.core.neotraits.db import Base
@@ -86,11 +85,9 @@ class Workflow(Base, Exportable):
 
     id = Column(Integer, primary_key=True)
     fk_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
-    fk_burst = Column(Integer, ForeignKey('BURST_CONFIGURATIONS.id', ondelete="CASCADE"))
     status = Column(String)
 
     project = relationship(Project, backref=backref('WORKFLOWS', order_by=id, cascade="delete, all"))
-    burst = relationship(BurstConfiguration, backref=backref('WORKFLOWS', order_by=id, cascade="delete, all"))
 
 
     def __init__(self, project_id, burst_id, status='started'):

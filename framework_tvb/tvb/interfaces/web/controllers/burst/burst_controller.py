@@ -144,20 +144,6 @@ class BurstController(BurstBaseController):
         template_specification[common.KEY_SECTION] = 'burst'
         return self.fill_default_attributes(template_specification)
 
-
-    @expose_fragment('burst/burst_history')
-    def load_burst_history(self):
-        """
-        Load the available burst that are stored in the database at this time.
-        This is one alternative to 'chrome-back problem'.
-        """
-        session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        bursts = self.burst_service.get_available_bursts(common.get_current_project().id)
-        self.burst_service.populate_burst_disk_usage(bursts)
-        return {'burst_list': bursts,
-                'selectedBurst': session_burst.id}
-
-
     @cherrypy.expose
     @handle_error(redirect=False)
     def get_selected_burst(self):
@@ -312,101 +298,6 @@ class BurstController(BurstBaseController):
             self.workflow_service.store_workflow_step(old_portlet_config.visualizer)
             return "noRelaunch"
 
-
-    @expose_json
-    def rename_burst(self, burst_id, burst_name):
-        """
-        Rename the burst given by burst_id, setting it's new name to
-        burst_name.
-        """
-        validation_result = self._is_burst_name_ok(burst_name)
-        if validation_result is True:
-            self.burst_service.rename_burst(burst_id, burst_name)
-            return {'success': "Simulation successfully renamed!"}
-        else:
-            return {'error': validation_result}
-
-
-    @expose_json
-    def launch_burst(self, launch_mode, burst_name, **data):
-        """
-        Do the actual burst launch, using the configuration saved in current session.
-        :param launch_mode: new/branch/continue
-        :param burst_name: user-given burst name. It can be empty (case in which we will fill with simulation_x)
-        :param data: kwargs for simulation input parameters.
-        """
-        data = json.loads(data['simulator_parameters'])
-        simulation_length = data['simulation_length']
-        try:
-            simulation_length = total_ms(simulation_length)
-        except ValueError as e:
-            return {'error': e.message}
-        data['simulation_length']=str(simulation_length)
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-
-        ## Validate new burst-name
-        if launch_mode == LAUNCH_NEW and burst_name != 'none_undefined':
-            validation_result = self._is_burst_name_ok(burst_name)
-            if validation_result is True:
-                burst_config.name = burst_name
-            else:
-                return {'error': validation_result}
-
-        ## Fill all parameters 
-        user_id = common.get_logged_user().id
-        data[common.KEY_ADAPTER] = self.cached_simulator_algorithm.id
-        burst_config.update_simulator_configuration(data)
-        burst_config.fk_project = common.get_current_project().id
-
-        ## Do the asynchronous launch
-        try:
-            burst_id, burst_name = self.burst_service.launch_burst(burst_config, 0, self.cached_simulator_algorithm.id,
-                                                                   user_id, launch_mode)
-            return {'id': burst_id, 'name': burst_name}
-        except BurstServiceException as e:
-            self.logger.exception("Could not launch burst!")
-            return {'error': e.message}
-
-
-    @expose_json
-    def load_burst(self, burst_id):
-        """
-        Given a burst id return its running status, weather it was a operation group and the selected tab.
-        This is called when a burst is selected in the history,
-        when returning from a burst config page (model param or noise)
-        and when the status of running simulations is polled.
-        Besides returning these values it updates the session stored burst.
-
-        A burst configuration has 2 meanings.
-        It is a staging configuration for a new burst (stored in transients in the session).
-        It is the configuration used to launch a simulation and it's running status (stored in the db).
-        This method has to merge the two meanings.
-        If the requested burst_id is different from the one held in the session,
-        then the burst config is loaded from the db, discarding any session stored config.
-        If the id is the same then the session config is kept.
-        """
-        try:
-            burst_id = int(burst_id)
-            old_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            burst, group_gid = self.burst_service.load_burst(burst_id)
-
-            if old_burst and old_burst.id == burst_id:
-                # This function was called to reload the current burst.
-                # Merge session config into the db config. Overwrite all transient fields
-                burst.simulator_configuration = old_burst.simulator_configuration
-                burst.dynamic_ids = old_burst.dynamic_ids
-
-            burst.selected_tab = old_burst.selected_tab
-            common.add2session(common.KEY_BURST_CONFIG, burst)
-            return {'status': burst.status, 'group_gid': group_gid, 'selected_tab': burst.selected_tab}
-        except Exception:
-            ### Most probably Burst was removed. Delete it from session, so that client 
-            ### has a good chance to get a good response on refresh
-            self.logger.exception("Error loading burst")
-            common.remove_from_session(common.KEY_BURST_CONFIG)
-            raise
-
-
     @expose_json
     def get_history_status(self, **data):
         """
@@ -496,32 +387,6 @@ class BurstController(BurstBaseController):
                          'width': int(width), 'height': int(height)}
         return template_dict
 
-
-    @expose_json
-    def reset_burst(self):
-        """
-        Called when click on "New Burst" entry happens from UI.
-        This will generate an empty new Burst Configuration.
-        """
-        common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
-        new_burst = self.burst_service.new_burst_configuration(common.get_current_project().id)
-        common.add2session(common.KEY_BURST_CONFIG, new_burst)
-
-
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    def copy_burst(self, burst_id):
-        """
-        When currently selected entry is a valid Burst, create a clone of that Burst.
-        """
-        common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
-        base_burst = self.burst_service.load_burst(burst_id)[0]
-        if (base_burst is None) or (base_burst.id is None):
-            return self.reset_burst()
-        common.add2session(common.KEY_BURST_CONFIG, base_burst.clone())
-        return base_burst.name
-
-
     @expose_fragment("burst/base_portlets_iframe")
     def launch_visualization(self, index_in_tab, frame_width, frame_height):
         """
@@ -541,102 +406,6 @@ class BurstController(BurstBaseController):
             self.logger.exception("Could not launch Portlet Visualizer...")
 
         return self.fill_default_attributes(result)
-
-
-    @expose_fragment("flow/genericAdapterFormFields")
-    def configure_simulator_parameters(self):
-        """
-        Return the required input tree to generate the simulator interface for
-        the burst page in 'configuration mode', meaning with checkboxes next to
-        each input that are checked or not depending on if the user selected 
-        them so, and with the user filled defaults.
-        """
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        default_values, any_checked = burst_config.get_all_simulator_values()
-        simulator_input_tree = self.cached_simulator_input_tree
-        simulator_input_tree = InputTreeManager.fill_defaults(simulator_input_tree, default_values)
-        ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(self.cached_simulator_algorithm, simulator_input_tree, default_values)
-
-        template_vars = {}
-        self.fill_default_attributes(template_vars)
-        template_vars.update({
-            "inputList": simulator_input_tree,
-            common.KEY_PARAMETERS_CONFIG: True,
-            'none_checked': not any_checked,
-            'selectedParametersDictionary': burst_config.simulator_configuration
-        })
-        return template_vars
-
-
-    @expose_fragment("flow/genericAdapterFormFields")
-    def get_reduced_simulator_interface(self):
-        """
-        Get a simulator interface that only contains the inputs that are marked
-        as KEY_PARAMETER_CHECKED in the current session.
-        """
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        simulator_config = burst_config.simulator_configuration
-        ## Fill with stored defaults, and see if any parameter was checked by user ##
-        default_values, any_checked = burst_config.get_all_simulator_values()
-        simulator_input_tree = self.cached_simulator_input_tree
-        simulator_input_tree = InputTreeManager.fill_defaults(simulator_input_tree, default_values)
-        ## In case no values were checked just skip tree-cut part and show entire simulator tree ##
-        if any_checked:
-            simulator_input_tree = InputTreeManager.select_simulator_inputs(simulator_input_tree, simulator_config)
-
-        ### Add simulator tree to session to be available in filters
-        self.context.add_adapter_to_session(self.cached_simulator_algorithm, simulator_input_tree, default_values)
-
-        template_specification = {"inputList": simulator_input_tree,
-                                  common.KEY_PARAMETERS_CONFIG: False,
-                                  'draw_hidden_ranges': True}
-        return self.fill_default_attributes(template_specification)
-
-
-    @expose_json
-    def get_previous_selected_rangers(self):
-        """
-        Retrieve Rangers, if any previously selected in Burst.
-        """
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        first_range, second_range = '0', '0'
-        if burst_config is not None:
-            first_range = burst_config.get_simulation_parameter_value(RANGE_PARAMETER_1) or '0'
-            second_range = burst_config.get_simulation_parameter_value(RANGE_PARAMETER_2) or '0'
-        return [first_range, second_range]
-
-
-    @expose_json
-    def save_simulator_configuration(self, exclude_ranges, **data):
-        """
-        :param exclude_ranges: should be a boolean value. If it is True than the
-            ranges will be excluded from the simulation parameters.
-
-        Data is a dictionary with pairs in one of the forms:
-            { 'simulator_parameters' : { $name$ : { 'value' : $value$, 'is_disabled' : true/false } },
-              'burstName': $burst_name}
-        
-        The names for the checkboxes next to the parameter with name $name$ is always $name$_checked
-        Save this dictionary in an easy to process form from which you could
-        rebuild either only the selected entries, or all of the simulator tree
-        with the given default values.
-        """
-        exclude_ranges = string2bool(str(exclude_ranges))
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        if BURST_NAME in data:
-            burst_config.name = data[BURST_NAME]
-        data = json.loads(data['simulator_parameters'])
-        for entry in data:
-            if exclude_ranges and (entry.endswith("_checked") or
-                                   entry == RANGE_PARAMETER_1 or entry == RANGE_PARAMETER_2):
-                continue
-            burst_config.update_simulation_parameter(entry, data[entry])
-            checkbox_for_entry = entry + "_checked"
-            if checkbox_for_entry in data:
-                burst_config.update_simulation_parameter(entry, data[checkbox_for_entry], KEY_PARAMETER_CHECKED)
-
-
 
     @expose_page
     @context_selected
@@ -688,11 +457,6 @@ class BurstController(BurstBaseController):
         portlet_entity.index_in_tab = portlet_cfg.index_in_tab
         portlet_entity.td_gid = generate_guid()
         return portlet_entity
-
-
-    def _is_burst_name_ok(self, burst_name):
-        pass
-
 
     @cherrypy.expose
     @handle_error(redirect=False)

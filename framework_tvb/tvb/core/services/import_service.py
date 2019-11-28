@@ -49,8 +49,9 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_workflow import Workflow, WorkflowStep, WorkflowStepView
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
+from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration
 from tvb.core.services.exceptions import ProjectImportException
 from tvb.core.services.flow_service import FlowService
@@ -178,7 +179,7 @@ class ImportService(object):
 
         for old_burst_id in bursts_dict:
             burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
-            burst_entity = BurstConfiguration(project_entity.id)
+            burst_entity = BurstConfiguration2(project_entity.id)
             burst_entity.from_dict(burst_information.data)
             burst_entity = dao.store_entity(burst_entity)
             burst_ids_mapping[int(old_burst_id)] = burst_entity.id
@@ -557,7 +558,7 @@ class ImportService(object):
         """
 
         burst_information = BurstInformation.load_from_dict(json_burst)
-        burst_entity = BurstConfiguration(project_id)
+        burst_entity = BurstConfiguration2(project_id)
         burst_entity.from_dict(burst_information.data)
         burst_entity.prepare_after_load()
         burst_entity.reset_tabs()
