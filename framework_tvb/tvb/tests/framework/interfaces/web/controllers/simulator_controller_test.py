@@ -28,7 +28,11 @@
 #
 #
 from os import path
+
+import numpy
 from mock import patch
+from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
 from tvb.basic.profile import TvbProfile
@@ -47,10 +51,10 @@ from tvb.core.entities.model.simulator.burst_configuration import BurstConfigura
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import KEY_USER, KEY_PROJECT, KEY_IS_SIMULATOR_LOAD, KEY_IS_SIMULATOR_COPY, \
     KEY_LAST_LOADED_FORM_URL
@@ -58,7 +62,7 @@ from tvb.interfaces.web.controllers.simulator_controller import SimulatorControl
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic, EulerStochastic
 from tvb.simulator.models import Generic2dOscillator
-from tvb.simulator.monitors import TemporalAverage, MEG, Bold
+from tvb.simulator.monitors import TemporalAverage, MEG, Bold, SubSample, EEG, iEEG
 from tvb.simulator.noise import Multiplicative
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.factory import TestFactory
@@ -163,6 +167,27 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
         assert self.session_stored_simulator.stimulus is None, "Stimulus should not be set."
+
+    def test_set_stimulus(self):
+        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+
+        weight_array = numpy.zeros(connectivity.number_of_regions)
+        input_dict = {'connectivity': connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
+                      'temporal_a': '1.0', 'temporal_b': '2.0'}
+        region_stimulus_creator = RegionStimulusCreator()
+        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
+        region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
+
+        self.sess_mock['_region_stimuli'] = region_stimulus_index.gid
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_stimulus(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.stimulus.gid.hex == region_stimulus_index.gid, \
+            "Stimuli was not set correctly."
 
     def test_set_model(self):
         self.sess_mock['_model'] = 'Generic 2d Oscillator'
@@ -288,13 +313,31 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverage), 'Monitor class is incorrect.'
 
-    def test_set_monitor_params_empty(self):
+    def test_set_temporal_average_monitor_params(self):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
+        assert self.session_stored_simulator.monitors[0].period == 0.9765625, "period should be set to default value."
+        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
+            "Default for variables_of_interest is None"
+
     def test_set_monitor_params(self):
+        self.sess_mock['_period'] = '0.8'
+        self.sess_mock['_variables_of_interest'] = 'anything'
+
+        self.session_stored_simulator.monitors = [SubSample()]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_monitor_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
+        assert self.session_stored_simulator.monitors[0].variables_of_interest is None,\
+            "Variables of interest should be None."
+
+    def set_region_mapping(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
@@ -304,18 +347,53 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
         text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
-        region_mapping = TestFactory.import_region_mapping(text_file, surface.gid, connectivity.gid, self.test_user, self.test_project)
+        region_mapping = TestFactory.import_region_mapping(text_file, surface.gid, connectivity.gid, self.test_user,
+                                                               self.test_project)
+        return region_mapping
 
-        meg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
-        eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_file,
-                                                       SensorsImporterForm.options['MEG Sensors'])
+    def test_set_eeg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
 
-        self.sess_mock['_period'] = '0.9765625'
-        self.sess_mock['_variables_of_interest'] = ''
+        eeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
+        eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_file,
+                                                       SensorsImporterForm.options['EEG Sensors'])
+
+        self.sess_mock['_period'] = '0.75'
+        self.sess_mock['_variables_of_interest'] = '[0, 1]'
         self.sess_mock['_region_mapping'] = region_mapping.gid
         self.sess_mock['_projection'] = eeg_sensors.gid
         self.sess_mock['_sigma'] = 1.0
         self.sess_mock['_sensors'] = eeg_sensors.gid
+
+        self.session_stored_simulator.monitors = [EEG()]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_monitor_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
+        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
+            "Variables of interest where not set correctly."
+        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == eeg_sensors.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+            "Projection wasn't stored correctly."
+
+    def test_set_meg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
+
+        meg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
+        meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_file,
+                                                       SensorsImporterForm.options['MEG Sensors'])
+
+        self.sess_mock['_period'] = '0.75'
+        self.sess_mock['_variables_of_interest'] = '[0, 1]'
+        self.sess_mock['_region_mapping'] = region_mapping.gid
+        self.sess_mock['_projection'] = meg_sensors.gid
+        self.sess_mock['_sigma'] = 1.0
+        self.sess_mock['_sensors'] = meg_sensors.gid
 
         self.session_stored_simulator.monitors = [MEG()]
 
@@ -323,11 +401,47 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.monitors[0].period == 0.9765625, "Period was not set correctly."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None,\
-            "Variables of interest should have not been added."
+        assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
+        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
+            "Variables of interest where not set correctly."
+        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == meg_sensors.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+            "Projection wasn't stored correctly."
 
-    def test_set_monitor_params_bold(self):
+    def test_set_seeg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
+
+        seeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt')
+        seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_file,
+                                                       SensorsImporterForm.options['Internal Sensors'])
+
+        self.sess_mock['_period'] = '0.75'
+        self.sess_mock['_variables_of_interest'] = '[0, 1]'
+        self.sess_mock['_region_mapping'] = region_mapping.gid
+        self.sess_mock['_projection'] = seeg_sensors.gid
+        self.sess_mock['_sigma'] = 1.0
+        self.sess_mock['_sensors'] = seeg_sensors.gid
+
+        self.session_stored_simulator.monitors = [iEEG()]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_monitor_params(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
+        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
+            "Variables of interest where not set correctly."
+        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == seeg_sensors.gid, \
+            "Region Mapping wasn't set and stored correctly."
+        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+            "Projection wasn't stored correctly."
+
+    def test_set_bold_monitor_params(self):
         self.sess_mock['_period'] = '2000.0'
         self.sess_mock['_variables_of_interest'] = ''
         self.sess_mock['_equation'] = 'HRF kernel: Volterra Kernel'
@@ -355,12 +469,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_monitor_equation(**self.sess_mock._data)
 
-        form = get_form_for_equation(type(self.session_stored_simulator.monitors[0].equation))()
-
-        assert form.tau_s.data == 0.8, "tau_s value was not set correctly."
-        assert form.tau_f.data == 0.4, "tau_f value was not set correctly."
-        assert form.k_1.data == 5.6, "k_1 value was not set correctly."
-        assert form.V_0.data == 0.02, "V_0 value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters['tau_s'] == 0.8, "tau_s value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters['tau_f']== 0.4, "tau_f value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters['k_1'] == 5.6, "k_1 value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters['V_0'] == 0.02, "V_0 value was not set correctly."
 
     def test_set_simulation_length(self):
         burst_config = BurstConfiguration2(self.test_project.id)
@@ -573,3 +685,15 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert is_simulator_load, "Simulator Load Flag should be True!"
         assert not is_simulator_copy, "Simulator Copy Flag should be False!"
         assert last_loaded_form_url == '/burst/setup_pse', "Incorrect last form URL!"
+
+    def test_launch_simulation_with_default_parameters(self):
+        self.sess_mock['_input-simulation-name-id'] = 'HappySimulation'
+        launch_mode = 'new'
+
+        burst_config = BurstConfiguration2(self.test_project.id)
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.launch_simulation(launch_mode, **self.sess_mock._data)
+
