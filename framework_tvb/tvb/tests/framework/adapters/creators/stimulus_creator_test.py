@@ -34,7 +34,9 @@ import tvb_data
 import tvb_data.surfaceData
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -54,13 +56,23 @@ class TestStimulusCreator(TransactionalTestCase):
         TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
         self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
-
     def test_create_stimulus_region(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
-        input_dict = {'connectivity': self.connectivity.gid, 'weight': weight_array, 'temporal': 'Linear',
+        input_dict = {'connectivity': self.connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
                       'temporal_a': '1.0', 'temporal_b': '2.0'}
         region_stimulus_creator = RegionStimulusCreator()
         region_stimulus_index = region_stimulus_creator.launch(**input_dict)
+        assert region_stimulus_index.temporal_equation == 'Linear'
+        assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
+        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
+
+    def test_create_stimulus_region_with_operation(self):
+        weight_array = numpy.zeros(self.connectivity.number_of_regions)
+        input_dict = {'connectivity': self.connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
+                      'temporal_a': '1.0', 'temporal_b': '2.0'}
+        region_stimulus_creator = RegionStimulusCreator()
+        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
+        region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
         assert region_stimulus_index.temporal_equation == 'Linear'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
         assert region_stimulus_index.connectivity_gid == self.connectivity.gid
@@ -71,6 +83,17 @@ class TestStimulusCreator(TransactionalTestCase):
                       'temporal': 'Linear', 'temporal_a': '1.0', 'temporal_b': '0.0'}
         surface_stimulus_creator = SurfaceStimulusCreator()
         surface_stimulus_index = surface_stimulus_creator.launch(**input_dict)
+        assert surface_stimulus_index.spatial_equation == 'Gaussian'
+        assert surface_stimulus_index.temporal_equation == 'Linear'
+        assert surface_stimulus_index.surface_gid == self.surface.gid
+
+    def test_create_stimulus_surface_with_operation(self):
+        input_dict = {'surface': self.surface.gid, 'focal_points_triangles': [1, 2, 3],
+                      'spatial': 'Gaussian', 'spatial_amp': '1.0', 'spatial_sigma': '1.0', 'spatial_offset': '0.0',
+                      'temporal': 'Linear', 'temporal_a': '1.0', 'temporal_b': '0.0'}
+        surface_stimulus_creator = SurfaceStimulusCreator()
+        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
+        surface_stimulus_index = TestFactory.get_entity(self.test_project, StimuliSurfaceIndex)
         assert surface_stimulus_index.spatial_equation == 'Gaussian'
         assert surface_stimulus_index.temporal_equation == 'Linear'
         assert surface_stimulus_index.surface_gid == self.surface.gid
