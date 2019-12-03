@@ -247,7 +247,10 @@ class EegMonitor(ABCDisplayer):
             else:
                 initial_selections.append(timeseries.get_default_selection())
 
-            measures_sel_gids.append(timeseries.get_measure_points_selection_gid().hex)
+            if isinstance(timeseries.get_measure_points_selection_gid(), str):
+                measures_sel_gids.append(timeseries.get_measure_points_selection_gid())
+            else:
+                measures_sel_gids.append(timeseries.get_measure_points_selection_gid().hex)
             grouped_labels.append(timeseries.get_grouped_space_labels())
 
             state_vars[ts_name] = timeseries.labels_dimensions.load().get(timeseries.labels_ordering.load()[1], [])

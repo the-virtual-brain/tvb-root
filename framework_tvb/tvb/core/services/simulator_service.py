@@ -71,7 +71,7 @@ class SimulatorService(object):
             simulator_h5.store(simulator)
             simulator_h5.connectivity.store(simulator.connectivity.gid)
             if simulator.stimulus:
-                simulator_h5.stimulus.store(uuid.UUID(simulator.stimulus.gid))
+                simulator_h5.stimulus.store(simulator.stimulus.gid)
             if simulation_state_gid:
                 simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
 

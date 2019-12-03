@@ -196,6 +196,7 @@ class Simulator(HasTraits):
         if self.surface:
             self.surface.configure()
         if self.stimulus:
+            self.stimulus.connectivity = self.connectivity
             self.stimulus.configure()
         self.coupling.configure()
         self.model.configure()

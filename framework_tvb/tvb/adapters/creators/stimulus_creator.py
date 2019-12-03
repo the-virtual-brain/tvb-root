@@ -270,7 +270,7 @@ class RegionStimulusCreator(ABCSynchronous):
         stimuli_region = StimuliRegion()
         stimuli_region.connectivity = Connectivity()
         stimuli_region.connectivity.gid = uuid.UUID(kwargs[self.KEY_CONNECTIVITY])
-        stimuli_region.weight = numpy.fromstring(kwargs[self.KEY_WEIGHT][1:-1], dtype=numpy.float, sep=' ')
+        stimuli_region.weight = numpy.array(kwargs[self.KEY_WEIGHT])
         stimuli_region.temporal = get_ui_name_to_equation_dict().get(kwargs[self.KEY_TEMPORAL])()
         temporal_equation_form = get_form_for_equation(type(stimuli_region.temporal))(prefix=self.KEY_TEMPORAL)
         temporal_equation_form.fill_from_post(kwargs)

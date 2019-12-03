@@ -32,7 +32,7 @@ def get_monitor_to_form_dict():
     return monitor_class_to_form
 
 
-def get_ui_name_to_monitor_dict():
+def get_ui_name_to_monitor_dict(surface):
     ui_name_to_monitor = {
         'Raw recording': Raw,
         'Temporally sub-sample': SubSample,
@@ -42,9 +42,12 @@ def get_ui_name_to_monitor_dict():
         'EEG': EEG,
         'MEG': MEG,
         'Intracerebral / Stereo EEG': iEEG,
-        'BOLD': Bold,
-        'BOLD Region ROI (only with surface)': BoldRegionROI
+        'BOLD': Bold
     }
+
+    if surface:
+        ui_name_to_monitor['BOLD Region ROI'] = BoldRegionROI
+
     return ui_name_to_monitor
 
 

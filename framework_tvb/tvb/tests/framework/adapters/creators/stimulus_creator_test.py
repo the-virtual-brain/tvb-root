@@ -58,7 +58,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
     def test_create_stimulus_region(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
-        input_dict = {'connectivity': self.connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
+        input_dict = {'connectivity': self.connectivity.gid, 'weight': weight_array.tolist(), 'temporal': 'Linear',
                       'temporal_a': '1.0', 'temporal_b': '2.0'}
         region_stimulus_creator = RegionStimulusCreator()
         region_stimulus_index = region_stimulus_creator.launch(**input_dict)
@@ -68,7 +68,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
     def test_create_stimulus_region_with_operation(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
-        input_dict = {'connectivity': self.connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
+        input_dict = {'connectivity': self.connectivity.gid, 'weight': weight_array.tolist(), 'temporal': 'Linear',
                       'temporal_a': '1.0', 'temporal_b': '2.0'}
         region_stimulus_creator = RegionStimulusCreator()
         FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, **input_dict)

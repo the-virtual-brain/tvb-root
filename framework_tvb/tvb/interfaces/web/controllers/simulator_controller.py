@@ -32,8 +32,9 @@ from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG
+from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
 from tvb.simulator.noise import Additive
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
@@ -577,7 +578,7 @@ class SimulatorController(BurstBaseController):
                                                               is_noise_fragment=True)
             return rendering_rules.to_dict()
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -606,7 +607,7 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL)
 
         if isinstance(session_stored_simulator.integrator.noise, Additive):
-            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id)
+            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
             monitor_fragment.fill_from_trait(session_stored_simulator)
 
             rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -641,7 +642,7 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator.noise.b)
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -660,10 +661,13 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
+            if data['_monitor'] == 'Temporal average':
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
+            else:
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
             is_simulator_copy = False
             # TODO: handle multiple monitors
-            fragment = SimulatorMonitorFragment()
+            fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.surface)
             fragment.fill_from_post(data)
 
             session_stored_simulator.monitors = [fragment.monitor.value()]
@@ -672,10 +676,19 @@ class SimulatorController(BurstBaseController):
         form = get_form_for_monitor(type(monitor))('', common.get_current_project().id)
         form.fill_from_trait(monitor)
 
-        rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+        if isinstance(monitor, TemporalAverage):
+            form = SimulatorLengthFragment()
+            form.fill_from_trait(session_stored_simulator)
+            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
                                                           SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
                                                           is_simulator_load, self.last_loaded_form_url,
                                                           cherrypy.request.method)
+        else:
+            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
+                                                          is_simulator_load, self.last_loaded_form_url,
+                                                          cherrypy.request.method)
+
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -699,8 +712,9 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
 
         if isinstance(monitor, Bold):
-            next_form = get_form_for_equation(type(monitor.hrf_kernel))()
-            next_form.fill_from_trait(session_stored_simulator.monitors[0].hrf_kernel)
+            next_form = get_form_for_equation(type(monitor.equation))()
+            next_form.fill_from_trait(session_stored_simulator.monitors[0].equation)
+            monitor.hrf_kernel = monitor.equation
 
             rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
                                                               SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
