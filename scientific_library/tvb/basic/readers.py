@@ -40,6 +40,7 @@ try:
 except ImportError:
     H5PY_SUPPORT = False
 
+import importlib
 import os
 import numpy
 import zipfile
@@ -222,7 +223,7 @@ def try_get_absolute_path(relative_module, file_suffix):
     if not os.path.isabs(file_suffix):
 
         try:
-            module_import = __import__(relative_module, globals(), locals(), ["__init__"])
+            module_import = importlib.import_module(relative_module)
             result_full_path = os.path.join(os.path.dirname(module_import.__file__), file_suffix)
 
         except ImportError:

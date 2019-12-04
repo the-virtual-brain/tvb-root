@@ -34,7 +34,7 @@ DAO operations related to generic DataTypes are defined here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import importlib
 from sqlalchemy import func, or_, not_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
@@ -391,9 +391,8 @@ class DatatypeDAO(RootDAO):
         try:
             datatype_instance = self.session.query(DataType).filter_by(gid=gid).one()
             classname = datatype_instance.type
-            data_class = __import__(datatype_instance.module, globals(), locals(), [classname])
-            data_class = eval("data_class." + classname)
-            data_type = data_class
+            module = importlib.import_module(datatype_instance.module)
+            data_type = getattr(module, classname)
             result_dt = self.session.query(data_type).filter_by(gid=gid).one()
 
             result_dt.parent_operation.project

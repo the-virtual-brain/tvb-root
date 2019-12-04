@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import importlib
 import os
 import shutil
 import datetime
@@ -231,7 +232,7 @@ class Introspector(object):
                             module_name = adapter[ABCAdapter.KEY_TYPE].replace('.' + class_name, '')
                             try:
                                 # Check that module is properly declared
-                                module = __import__(module_name, globals(), fromlist=[class_name])
+                                module = importlib.import_module(module_name)
                                 if type(module) != ModuleType:
                                     is_valid = False
                                     self.logger.error("Wrong module %s in portlet %s" % (module_name, algo_identifier))

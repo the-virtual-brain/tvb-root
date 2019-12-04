@@ -34,7 +34,7 @@ Base DAO behavior.
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import importlib
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.logger.builder import get_logger
@@ -92,8 +92,8 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         """
         if isinstance(entity_type, str):
             classname = entity_type[entity_type.rfind(".") + 1:]
-            entity_class = __import__(entity_type[0: entity_type.rfind(".")], globals(), locals(), classname)
-            entity_class = eval("entity_class." + classname)
+            module = importlib.import_module(entity_type[0: entity_type.rfind(".")])
+            entity_class = getattr(module, classname)
             result = self.session.query(entity_class).filter(entity_class.__dict__[select_field] == filter_value).all()
         else:
             result = self.session.query(entity_type).filter(entity_type.__dict__[select_field] == filter_value).all()

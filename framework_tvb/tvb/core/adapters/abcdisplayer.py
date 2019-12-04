@@ -30,6 +30,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import importlib
 import json
 import os
 from threading import Lock
@@ -138,7 +139,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         :param parameters : dictionary with parameters for "template"
         :param pages : dictionary of pages to be used with <xi:include>
         """
-        module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
+        module_ref = importlib.import_module(self.VISUALIZERS_ROOT)
         relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
         jinja_separator = '/'
 
