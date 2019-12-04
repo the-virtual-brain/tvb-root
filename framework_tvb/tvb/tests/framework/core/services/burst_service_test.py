@@ -57,7 +57,7 @@ from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-
+import copy
 
 
 class TestBurstService(BaseTestCase):
