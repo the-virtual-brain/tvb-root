@@ -35,26 +35,80 @@
 
 import cherrypy
 import json
-from copy import deepcopy
-from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS
-from tvb.core.adapters.input_tree import InputTreeManager
-from tvb.core.entities.model.model_burst import PARAMS_MODEL_PATTERN
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation, \
+    GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.model_forms import get_model_to_form_dict
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.storage import dao
+from tvb.core.neotraits.forms import Form, SimpleSelectField, SimpleFloatField, FormField
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes import equations
+from tvb.datatypes.equations import Gaussian
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user, \
+    using_template
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters, EquationDisplayer
-
-
-MODEL_PARAM = 'model_param'
-MODEL_PARAM_EQUATION = 'model_param_equation'
-PARAM_SUFFIX = '_parameters'
-PARAMETERS = 'parameters'
+from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters
 
 ### SESSION KEY for ContextModelParameter entity.
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
+
+
+class SurfaceModelParametersForm(ABCAdapterForm):
+    NAME_EQATION_PARAMS_DIV = 'equation_params'
+    default_equation = Gaussian
+
+    def __init__(self, model_params, equation_choices, prefix=''):
+        super(SurfaceModelParametersForm, self).__init__(prefix)
+        self.model_param = SimpleSelectField(model_params, self, name='model_param', required=True,
+                                             label='Model parameter')
+        self.model_param.template = 'form_fields/select_field.html'
+        self.equation = SimpleSelectField(equation_choices, self, name='equation', required=True, label='Equation',
+                                          default=self.default_equation)
+        self.equation_params = FormField(get_form_for_equation(self.default_equation), self,
+                                         name=self.NAME_EQATION_PARAMS_DIV)
+
+    @staticmethod
+    def get_required_datatype():
+        return None
+
+    @staticmethod
+    def get_input_name():
+        return None
+
+    @staticmethod
+    def get_filters():
+        return None
+
+    def fill_from_trait(self, trait):
+        self.equation.data = type(trait)
+        self.equation_params.form = get_form_for_equation(type(trait))(self.NAME_EQATION_PARAMS_DIV)
+        self.equation_params.form.fill_from_trait(trait)
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
+                'equation_params_div': self.NAME_EQATION_PARAMS_DIV, 'legend': 'Selected parameter'}
+
+
+class EquationPlotForm(Form):
+    def __init__(self):
+        super(EquationPlotForm, self).__init__()
+        self.min_x = SimpleFloatField(self, name='min_x', label='Min distance(mm)',
+                                      doc="The minimum value of the x-axis for spatial equation plot.", default=0)
+        self.max_x = SimpleFloatField(self, name='max_x', label='Max distance(mm)',
+                                      doc="The maximum value of the x-axis for spatial equation plot.", default=100)
+
+    def fill_from_post(self, form_data):
+        if self.min_x.name in form_data:
+            self.min_x.fill_from_post(form_data)
+        if self.max_x.name in form_data:
+            self.max_x.fill_from_post(form_data)
+
+    @using_template('form_fields/form')
+    def __str__(self):
+        return {'form': self}
 
 
 class SurfaceModelParametersController(SpatioTemporalController):
@@ -62,78 +116,147 @@ class SurfaceModelParametersController(SpatioTemporalController):
     Control for defining parameters of a model in a visual manner.
     Here we focus on model-parameters spread over a brain surface.
     """
+    MODEL_PARAM_FIELD = 'set_model_parameter'
+    EQUATION_FIELD = 'set_equation'
+    EQUATION_PARAMS_FIELD = 'set_equation_param'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
-        self.plotted_equations_prefixes = ['model_param', 'min_x', 'max_x']
-
+        ui_name_to_equation_dict = get_ui_name_to_equation_dict()
+        self.equation_choices = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
+                                 SIGMOID_EQUATION: ui_name_to_equation_dict.get(SIGMOID_EQUATION)}
 
     def get_data_from_burst_configuration(self):
         """
         Returns the model and surface instances from the burst configuration.
         """
-        des = SerializationManager(common.get_from_session(common.KEY_BURST_CONFIG))
+        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
         ### Read from session current burst-configuration
         if des.conf is None:
             return None, None
-        if des.has_model_pse_ranges():
-            common.set_error_message("When configuring model parameters you are not allowed to specify range values.")
-            raise cherrypy.HTTPRedirect("/burst/")
+        # if des.has_model_pse_ranges():
+        #     common.set_error_message("When configuring model parameters you are not allowed to specify range values.")
+        #     raise cherrypy.HTTPRedirect("/burst/")
 
         try:
-            model, integrator = des.make_model_and_integrator()
+            model = des.conf.model
         except Exception:
             self.logger.exception("Some of the provided parameters have an invalid value.")
             common.set_error_message("Some of the provided parameters have an invalid value.")
             raise cherrypy.HTTPRedirect("/burst/")
 
-        surface = des.get_surface()
-        return model, surface
+        cortex = des.conf.surface
+        return model, cortex
 
+    def _prepare_model_params_dict(self, model):
+        model_form = get_model_to_form_dict().get(type(model))
+        model_params = model_form.get_params_configurable_in_phase_plane()
+        if len(model_params) == 0:
+            self.logger.warning("The list with configurable parameters for the current model is empty!")
+        model_params_dict = {}
+
+        for param in model_params:
+            model_params_dict.update({param: param})
+        return model_params_dict
+
+    def _fill_form_from_context(self, config_form, context):
+        if context.current_model_param in context.applied_equations:
+            current_equation = context.get_equation_for_parameter(context.current_model_param)
+            context.current_equation = current_equation
+            config_form.equation.data = type(current_equation)
+            config_form.equation_params.form = get_form_for_equation(type(current_equation))()
+            config_form.equation_params.form.fill_from_trait(current_equation)
+        else:
+            context.current_equation = SurfaceModelParametersForm.default_equation()
+            config_form.equation.data = type(context.current_equation)
+            config_form.equation_params.form.fill_from_trait(context.current_equation)
+
+    def _prepare_reload(self, context):
+        template_specification = {
+            'baseUrl': '/spatial/modelparameters/surface',
+            'equationsPrefixes': self.plotted_equation_prefixes
+        }
+        template_specification.update({'applied_equations': context.get_configure_info()})
+
+        config_form = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices)
+        config_form.model_param.data = context.current_model_param
+        self._fill_form_from_context(config_form, context)
+        template_specification.update({'form': config_form})
+
+        parameters_equation_plot_form = EquationPlotForm()
+        template_specification.update({'parametersEquationPlotForm': parameters_equation_plot_form})
+        return template_specification
 
     @expose_page
     def edit_model_parameters(self):
         """
         Main method, to initialize Model-Parameter visual-set.
         """
-        model, surface = self.get_data_from_burst_configuration()
-        context_model_parameters = SurfaceContextModelParameters(surface, model)
+        model, cortex = self.get_data_from_burst_configuration()
+        surface_gid = cortex.region_mapping_data.surface.gid
+        surface_index = dao.get_datatype_by_gid(surface_gid.hex)
+
+        self.model_params_dict = self._prepare_model_params_dict(model)
+        context_model_parameters = SurfaceContextModelParameters(surface_index, model,
+                                                                 SurfaceModelParametersForm.default_equation(),
+                                                                 list(self.model_params_dict.values())[0])
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
-        template_specification.update(self.display_surface(surface.gid))
-        model_params_data = self.get_surface_model_parameters_data()
-        model_params_data = self._add_entra_equation_entries(model_params_data)
-        template_specification.update(model_params_data)
+        template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data.gid))
+
+        dummy_form_for_initialization = SurfaceModelParametersForm({}, {})
+        self.plotted_equation_prefixes = {
+            self.MODEL_PARAM_FIELD: dummy_form_for_initialization.model_param.name,
+            self.EQUATION_FIELD: dummy_form_for_initialization.equation.name,
+            self.EQUATION_PARAMS_FIELD: dummy_form_for_initialization.equation_params.name[1:]
+        }
+        template_specification.update(self._prepare_reload(context_model_parameters))
         template_specification.update(
             submit_parameters_url='/spatial/modelparameters/surface/submit_model_parameters',
             mainContent='spatial/model_param_surface_main',
-            equationViewerUrl='/spatial/modelparameters/surface/get_equation_chart',
-            equationsPrefixes=json.dumps(self.plotted_equations_prefixes),
             submitSurfaceParametersBtn=True
         )
         return self.fill_default_attributes(template_specification)
 
+    @expose_fragment('spatial/model_param_surface_left')
+    def set_model_parameter(self, model_parameter):
+        context = common.get_from_session(KEY_CONTEXT_MPS)
+        context.current_model_param = model_parameter
+
+        template_specification = self._prepare_reload(context)
+        return self.fill_default_attributes(template_specification)
+
+    @cherrypy.expose
+    @using_template("form_fields/form_field")
+    @handle_error(redirect=False)
+    @check_user
+    def set_equation(self, equation):
+        eq_class = get_ui_name_to_equation_dict().get(equation)
+        context = common.get_from_session(KEY_CONTEXT_MPS)
+        context.current_equation = eq_class()
+
+        eq_params_form = get_form_for_equation(eq_class)(prefix=SurfaceModelParametersForm.NAME_EQATION_PARAMS_DIV)
+        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+
+    @cherrypy.expose
+    def set_equation_param(self, **param):
+        context = common.get_from_session(KEY_CONTEXT_MPS)
+        eq_params_form_class = get_form_for_equation(type(context.current_equation))
+        eq_params_form = eq_params_form_class(prefix=SurfaceModelParametersForm.NAME_EQATION_PARAMS_DIV)
+        eq_params_form.fill_from_post(param)
+        eq_params_form.fill_trait(context.current_equation)
 
     @expose_fragment('spatial/model_param_surface_left')
     def apply_equation(self, **kwargs):
-        from tvb.basic.traits.parameters_factory import collapse_params
-
         """
         Applies an equations for computing a model parameter.
         """
-        submitted_data = collapse_params(kwargs, ['model_param'])
-        model_param, equation = self._compute_equation(submitted_data)
         context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
-        context_model_parameters.apply_equation(model_param, equation)
-        common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
-        template_specification = self.get_surface_model_parameters_data(model_param)
-        template_specification = self._add_entra_equation_entries(template_specification,
-                                                                  kwargs['min_x'], kwargs['max_x'])
-        template_specification['equationViewerUrl'] = '/spatial/modelparameters/surface/get_equation_chart'
-        template_specification['equationsPrefixes'] = json.dumps(self.plotted_equations_prefixes)
+        context_model_parameters.apply_equation(context_model_parameters.current_model_param,
+                                                context_model_parameters.current_equation)
+        template_specification = self._prepare_reload(context_model_parameters)
         return self.fill_default_attributes(template_specification)
-
 
     @expose_fragment('spatial/model_param_surface_focal_points')
     def apply_focal_point(self, model_param, triangle_index):
@@ -148,9 +271,9 @@ class SurfaceModelParametersController(SpatioTemporalController):
         else:
             template_specification['error_msg'] = "You have no equation applied for this parameter."
         template_specification['focal_points'] = context_model_parameters.get_focal_points_for_parameter(model_param)
-        template_specification['focal_points_json'] = json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))
+        template_specification['focal_points_json'] = json.dumps(
+            context_model_parameters.get_focal_points_for_parameter(model_param))
         return template_specification
-
 
     @expose_fragment('spatial/model_param_surface_focal_points')
     def remove_focal_point(self, model_param, vertex_index):
@@ -163,7 +286,6 @@ class SurfaceModelParametersController(SpatioTemporalController):
         return {'focal_points': context_model_parameters.get_focal_points_for_parameter(model_param),
                 'focal_points_json': json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
 
-
     @expose_fragment('spatial/model_param_surface_focal_points')
     def get_focal_points(self, model_param):
         """
@@ -173,7 +295,6 @@ class SurfaceModelParametersController(SpatioTemporalController):
         context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
         return {'focal_points': context_model_parameters.get_focal_points_for_parameter(model_param),
                 'focal_points_json': json.dumps(context_model_parameters.get_focal_points_for_parameter(model_param))}
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -185,121 +306,19 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         if submit_action == "submit_action":
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
-            burst_configuration = common.get_from_session(common.KEY_BURST_CONFIG)
-            for original_param, modified_param in context_model_parameters.prepared_model_parameter_names.items():
-                full_name = PARAMS_MODEL_PATTERN % (context_model_parameters.model_name, original_param)
-                param_data = context_model_parameters.get_data_for_model_param(original_param, modified_param)
-                if isinstance(param_data, dict):
-                    equation = param_data[KEY_EQUATION]
-                    focal_points = param_data[KEY_FOCAL_POINTS]
-                    # if focal points or the equation are missing do not update this model parameter
-                    if not focal_points or not equation:
-                        continue
-                    param_data[KEY_EQUATION] = equation.to_json(equation)
-                    param_data[KEY_FOCAL_POINTS] = json.dumps(focal_points)
-                    param_data = json.dumps(param_data)
-                burst_configuration.update_simulation_parameter(full_name, param_data)
-            ### Update in session BURST configuration for burst-page.
-            common.add2session(common.KEY_BURST_CONFIG, burst_configuration.clone())
+            simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+
+            for param_name in self.model_params_dict.values():
+                param_data = context_model_parameters.get_data_for_model_param(param_name)
+                if param_data is None:
+                    continue
+                setattr(simulator.model, param_name, param_data)
+            ### Update in session the last loaded URL for burst-page.
+            common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_INTEGRATOR_URL)
 
         ### Clean from session drawing context
         common.remove_from_session(KEY_CONTEXT_MPS)
         raise cherrypy.HTTPRedirect("/burst/")
-
-
-    def _add_entra_equation_entries(self, input_list, min_x=0, max_x=100):
-        """
-        Add additional entries for the min and max of the plot.
-        """
-        plot_axis_parameters = []
-        min_x = {'name': 'min_x', 'label': 'Min distance(mm)', 'type': 'str', "disabled": "False", "default": min_x,
-                 "description": "The minimum value of the x-axis for spatial equation plot."}
-        max_x = {'name': 'max_x', 'label': 'Max distance(mm)', 'type': 'str', "disabled": "False", "default": max_x,
-                 "description": "The maximum value of the x-axis for spatial equation plot."}
-        plot_axis_parameters.append(min_x)
-        plot_axis_parameters.append(max_x)
-        input_list['parametersEquationPlotDict'] = plot_axis_parameters
-        return input_list
-
-
-    def get_surface_model_parameters_data(self, default_selected_model_param=None):
-        import tvb.basic.traits.traited_interface as interface
-
-        """
-        Returns a dictionary which contains all the data needed for drawing the
-        model parameters.
-        """
-        context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
-        if default_selected_model_param is None:
-            default_selected_model_param = list(context_model_parameters.prepared_model_parameter_names.values())[0]
-
-        equation_displayer = EquationDisplayer()
-        equation_displayer.trait.bound = interface.INTERFACE_ATTRIBUTES_ONLY
-        input_list = equation_displayer.interface[interface.INTERFACE_ATTRIBUTES]
-        input_list[0] = self._lock_midpoints(input_list[0])
-
-        options = []
-        for original_param, modified_param in context_model_parameters.prepared_model_parameter_names.items():
-            attributes = deepcopy(input_list)
-            self._fill_default_values(attributes, modified_param)
-            option = {'name': original_param, 'value': modified_param, 'attributes': attributes}
-            options.append(option)
-
-        input_list = [{'name': 'model_param', 'type': 'select', 'default': default_selected_model_param,
-                       'label': 'Model param', 'required': True, 'options': options}]
-        input_list = InputTreeManager.prepare_param_names(input_list)
-        return {common.KEY_PARAMETERS_CONFIG: False, 'inputList': input_list,
-                'applied_equations': context_model_parameters.get_configure_info()}
-
-
-    @staticmethod
-    def _fill_default_values(input_list, model_param):
-        """
-        If the user already applied an equation, for the given model parameter,
-        than the form should be filled with the provided data for that equation.
-        """
-        #TODO: try to use fill_defaults from abcadapter
-
-        context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
-        if model_param in context_model_parameters.applied_equations:
-            model_param_data = context_model_parameters.applied_equations[model_param]
-            if KEY_EQUATION in model_param_data:
-                equation = model_param_data[KEY_EQUATION]
-                equation_name = equation.__class__.__name__
-                equation_params = equation.parameters
-                for input_ in input_list:
-                    if input_['name'] == 'model_param_equation':
-                        input_['default'] = equation_name
-                        for option in input_['options']:
-                            if option['name'] == equation_name:
-                                for attr in option['attributes']:
-                                    if attr['name'] == 'parameters':
-                                        for attribute in attr['attributes']:
-                                            attribute['default'] = equation_params[attribute['name']]
-                                        return
-
-    @staticmethod
-    def _compute_equation(parameters):
-        from tvb.basic.traits.parameters_factory import get_traited_instance_for_name, collapse_params
-
-        """
-        This method will return an equation and the model parameter on
-        which should be applied the equation.
-        The equation is constructed based on the parameters collected from the UI.
-        """
-        model_param = parameters[MODEL_PARAM]
-        equation = parameters[MODEL_PARAM + PARAM_SUFFIX][MODEL_PARAM_EQUATION]
-        equation_params = parameters[MODEL_PARAM + PARAM_SUFFIX][MODEL_PARAM_EQUATION + PARAM_SUFFIX][equation]
-        equation_params = collapse_params(equation_params, [])
-        if PARAMETERS + PARAM_SUFFIX in equation_params:
-            equation_params = equation_params[PARAMETERS + PARAM_SUFFIX]
-        else:
-            equation_params = {}
-        for param in equation_params:
-            equation_params[param] = float(equation_params[param])
-        selected_equation = get_traited_instance_for_name(equation, equations.Equation, {PARAMETERS: equation_params})
-        return model_param, selected_equation
-
 
     def fill_default_attributes(self, template_dictionary):
         """
@@ -311,26 +330,27 @@ class SurfaceModelParametersController(SpatioTemporalController):
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
 
-
     @expose_fragment('spatial/equation_displayer')
     def get_equation_chart(self, **form_data):
-        from tvb.basic.traits.parameters_factory import collapse_params
-
         """
         Returns the html which contains the plot with the equation selected by the user for a certain model param.
         """
         try:
-            min_x, max_x, ui_message = self.get_x_axis_range(form_data['min_x'], form_data['max_x'])
-            form_data = collapse_params(form_data, self.plotted_equations_prefixes)
-            _, equation = self._compute_equation(form_data)
+            plot_form = EquationPlotForm()
+            if form_data:
+                plot_form.fill_from_post(form_data)
+
+            min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
+            context_mps = common.get_from_session(KEY_CONTEXT_MPS)
+
+            equation = context_mps.current_equation
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             all_series = self.get_series_json(series_data, "Spatial")
 
             ui_message = ''
             if display_ui_message:
                 ui_message = self.get_ui_message(["spatial"])
-
-            return {'allSeries': all_series, 'prefix': self.plotted_equations_prefixes[0], 'message': ui_message}
+            return {'allSeries': all_series, 'prefix': 'spatial', 'message': ui_message}
         except NameError as ex:
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': "Incorrect parameters for equation passed."}
@@ -339,5 +359,4 @@ class SurfaceModelParametersController(SpatioTemporalController):
             return {'allSeries': None, 'errorMsg': "Some of the parameters hold invalid characters."}
         except Exception as ex:
             self.logger.exception(ex)
-            return {'allSeries': None, 'errorMsg': ex.message}
-        
+            return {'allSeries': None, 'errorMsg': ex}

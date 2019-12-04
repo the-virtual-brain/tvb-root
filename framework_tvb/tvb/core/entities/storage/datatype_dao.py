@@ -34,7 +34,7 @@ DAO operations related to generic DataTypes are defined here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import importlib
 from sqlalchemy import func, or_, not_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
@@ -43,10 +43,10 @@ from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Links, MeasurePointsSelection, \
     StoredPSEFilter
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage.root_dao import RootDAO
 from tvb.core.neotraits.db import Base
 
@@ -294,8 +294,8 @@ class DatatypeDAO(RootDAO):
                         ).join(Algorithm).join(AlgorithmCategory
                         ).outerjoin((Links, and_(Links.fk_from_datatype == DataType.id,
                                                        Links.fk_to_project == project_id))
-                        ).outerjoin(BurstConfiguration,
-                                    DataType.fk_parent_burst == BurstConfiguration.id
+                        ).outerjoin(BurstConfiguration2,
+                                    DataType.fk_parent_burst == BurstConfiguration2.id
                         ).filter(DataType.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
@@ -319,8 +319,8 @@ class DatatypeDAO(RootDAO):
                                                   Links.fk_to_project == project_id))
                         ).outerjoin(links, and_(links.fk_from_datatype == DataType.fk_datatype_group,
                                                 links.fk_to_project == project_id)
-                        ).outerjoin(BurstConfiguration,
-                                    DataType.fk_parent_burst == BurstConfiguration.id
+                        ).outerjoin(BurstConfiguration2,
+                                    DataType.fk_parent_burst == BurstConfiguration2.id
                         ).filter(DataType.fk_datatype_group != None
                         ).filter(links.id == None)
 
@@ -366,7 +366,7 @@ class DatatypeDAO(RootDAO):
                    Operation.user_group.ilike('%' + filter_string + '%'),
                    AlgorithmCategory.displayname.ilike('%' + filter_string + '%'),
                    Algorithm.displayname.ilike('%' + filter_string + '%'),
-                   BurstConfiguration.name.ilike('%' + filter_string + '%'))
+                   BurstConfiguration2.name.ilike('%' + filter_string + '%'))
 
 
     def get_datatype_details(self, datatype_gid):
@@ -391,9 +391,8 @@ class DatatypeDAO(RootDAO):
         try:
             datatype_instance = self.session.query(DataType).filter_by(gid=gid).one()
             classname = datatype_instance.type
-            data_class = __import__(datatype_instance.module, globals(), locals(), [classname])
-            data_class = eval("data_class." + classname)
-            data_type = data_class
+            module = importlib.import_module(datatype_instance.module)
+            data_type = getattr(module, classname)
             result_dt = self.session.query(data_type).filter_by(gid=gid).one()
 
             result_dt.parent_operation.project

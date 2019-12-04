@@ -32,15 +32,13 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-import numpy
 from copy import deepcopy
-from tvb.basic.neotraits.api import HasTraits, Attr
-from tvb.core.adapters.abcadapter import KEY_EQUATION, KEY_FOCAL_POINTS, KEY_SURFACE_GID, ABCAdapter
-from tvb.datatypes.equations import SpatialApplicableEquation, Gaussian
 from tvb.basic.logger.builder import get_logger
-from tvb.simulator.models import Generic2dOscillator
+from tvb.core.neocom import h5
+from tvb.datatypes.surfaces import CorticalSurface
 
-
+KEY_EQUATION = "equation"
+KEY_FOCAL_POINTS = "focal_points"
 KEY_FOCAL_POINTS_TRIANGLES = "focal_points_triangles"
 
 
@@ -49,36 +47,15 @@ class SurfaceContextModelParameters(object):
     This class contains methods which allows you to edit the model
     parameters for each vertex of the given surface.
     """
-    def __init__(self, surface, default_model=None):
+
+    def __init__(self, surface_index, default_model, current_equation, current_model_param):
         self.logger = get_logger(self.__class__.__module__)
 
-        if default_model is not None:
-            self.default_model = default_model
-        else:
-            self.default_model = Generic2dOscillator()
-
-        self.model_name = self.default_model.__class__.__name__
-        self.model_parameter_names = self.default_model.ui_configurable_parameters[:]
-
-        if not self.model_parameter_names:
-            self.logger.warning("The 'ui_configurable_parameters' list of the current model is empty!")
-
-        self.prepared_model_parameter_names = self._prepare_parameter_names(self.model_parameter_names)
-        self.surface = surface
+        self.default_model = default_model
+        self.surface_index = surface_index
         self.applied_equations = {}
-
-
-    @staticmethod
-    def _prepare_parameter_names(parameter_names):
-        """
-        Used for removing the '_' character from the parameter_names.
-        """
-        #{$orig_param: $new_param}
-        result = {}
-        for param in parameter_names:
-            result[param] = param.replace("_", "")
-        return result
-
+        self.current_equation = current_equation
+        self.current_model_param = current_model_param
 
     def apply_equation(self, param_name, equation_instance):
         """
@@ -89,10 +66,7 @@ class SurfaceContextModelParameters(object):
             param_data[KEY_EQUATION] = equation_instance
         else:
             self.applied_equations[param_name] = {KEY_EQUATION: equation_instance, KEY_FOCAL_POINTS: [],
-                                                  KEY_SURFACE_GID: self.surface.gid, KEY_FOCAL_POINTS_TRIANGLES: [],
-                                                  ABCAdapter.KEY_DTYPE: equation_instance.__class__.__module__ + '.' +
-                                                                        equation_instance.__class__.__name__}
-
+                                                  KEY_FOCAL_POINTS_TRIANGLES: []}
 
     def apply_focal_point(self, model_param, triangle_index):
         """
@@ -101,14 +75,16 @@ class SurfaceContextModelParameters(object):
         Adds a focal point in which should be applied the equation for the given model parameter.
         """
         triangle_index = int(triangle_index)
+        surface_h5 = h5.h5_file_for_index(self.surface_index)
+
         if model_param in self.applied_equations:
             if triangle_index >= 0:
-                vertex_index = int(self.surface.triangles[triangle_index][0])
+                vertex_index = int(surface_h5.triangles[triangle_index][0])
                 model_equation = self.applied_equations[model_param]
                 if vertex_index not in model_equation[KEY_FOCAL_POINTS]:
                     model_equation[KEY_FOCAL_POINTS].append(vertex_index)
                     model_equation[KEY_FOCAL_POINTS_TRIANGLES].append(triangle_index)
-
+        surface_h5.close()
 
     def remove_focal_point(self, model_param, triangle_index):
         """
@@ -127,13 +103,11 @@ class SurfaceContextModelParameters(object):
                     model_equation[KEY_FOCAL_POINTS].remove(model_equation[KEY_FOCAL_POINTS][f_p_idx])
                     model_equation[KEY_FOCAL_POINTS_TRIANGLES].remove(triangle_index)
 
-
     def reset_equations_for_all_parameters(self):
         """
         Reset the equations for all the model parameters.
         """
         self.applied_equations = {}
-
 
     def reset_param_equation(self, model_param):
         """
@@ -141,7 +115,6 @@ class SurfaceContextModelParameters(object):
         """
         if model_param in self.applied_equations:
             self.applied_equations.pop(model_param)
-
 
     def get_equation_for_parameter(self, parameter_name):
         """
@@ -152,33 +125,40 @@ class SurfaceContextModelParameters(object):
         except KeyError:
             return None
 
-
     def get_focal_points_for_parameter(self, parameter_name):
         """
         :returns: the list of focal points for the equation applied in the given model param.
         """
         if parameter_name in self.applied_equations and KEY_FOCAL_POINTS in self.applied_equations[parameter_name]:
-            # todo did the above check intent to be for KEY_FOCAL_POINTS_TRIANGLES?
             return self.applied_equations[parameter_name][KEY_FOCAL_POINTS_TRIANGLES]
         return []
 
+    def _get_default_value_for_model_param(self, param_name):
+        default_attr = deepcopy(getattr(type(self.default_model), param_name))
+        return default_attr.default
 
-    def get_data_for_model_param(self, original_param_name, modified_param_name):
+    def get_data_for_model_param(self, param_name):
         """
-        :returns: a dictionary of form {"equation": $equation, "focal_points": $list_of_focal_points,
-                    "no_of_vertices": $surface_no_of_vertices} if the user specified any equation for computing
-                    the value of the given parameter, OR a string of form: "[$default_model_param_value]"
-                    if the user didn't specified an equation for the given param
+        Compute the equation configured for the current param_name.
+        If no equation was set for param_name, return the default array.
         """
-        if modified_param_name in self.applied_equations:
-            return self.applied_equations[modified_param_name]
+        surface_dt = CorticalSurface()
+        surface_h5 = h5.h5_file_for_index(self.surface_index)
+        surface_h5.load_into(surface_dt)
+        surface_h5.close()
+
+        if param_name in self.applied_equations:
+            temp = self.applied_equations[param_name]
+            equation = temp[KEY_EQUATION]
+            focal_points = temp[KEY_FOCAL_POINTS]
+            # if focal points or the equation are missing do not update this model parameter
+            if focal_points and equation:
+                res = surface_dt.compute_equation(focal_points, equation)
+                return res
+            self.logger.warn('Focal points or Equation are missing for %s. Defaults will be used.', param_name)
+            return self._get_default_value_for_model_param(param_name)
         else:
-            default_attr = deepcopy(getattr(self.default_model, original_param_name))
-            if isinstance(default_attr, numpy.ndarray):
-                default_attr = default_attr.tolist()
-                return str([default_attr[0]])
-            return str([default_attr])
-
+            return self._get_default_value_for_model_param(param_name)
 
     def get_configure_info(self):
         """
@@ -189,14 +169,14 @@ class SurfaceContextModelParameters(object):
             equation = self.applied_equations[param][KEY_EQUATION]
             keys = sorted(list(equation.parameters), key=lambda x: len(x))
             keys.reverse()
-            base_equation = equation.trait['equation'].interface['description']
+            base_equation = equation.equation
             for eq_param in keys:
                 while True:
                     stripped_eq = "".join(base_equation.split())
                     param_idx = stripped_eq.find('\\' + eq_param)
                     if param_idx < 0:
                         break
-                    #If parameter is precedeed by an alfanumerical character replace with multiplicative sign
+                    # If parameter is precedeed by an alfanumerical character replace with multiplicative sign
                     if param_idx > 0 and stripped_eq[param_idx - 1].isalnum():
                         base_equation = base_equation.replace('\\' + eq_param, '*' + str(equation.parameters[eq_param]))
                     else:
@@ -206,13 +186,3 @@ class SurfaceContextModelParameters(object):
             result[param] = {'equation_name': equation.__class__.__name__,
                              'equation_params': base_equation, 'focal_points': focal_points}
         return result
-
-
-
-class EquationDisplayer(HasTraits):
-    """
-    Class used for generating the UI related to equations.
-    """
-    model_param_equation = Attr(field_type=SpatialApplicableEquation, label='Equation', default=Gaussian())
-    
-    

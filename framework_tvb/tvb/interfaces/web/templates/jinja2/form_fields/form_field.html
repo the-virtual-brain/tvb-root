@@ -4,28 +4,29 @@
         <div class="extension">
             <div class="dropdown-pane">
                 <mark>{{ field.label }}</mark>
-                <div class="dropdown-pane-overlay">{{ field.doc.replace('\n', '<br/>' )}}</div>
+                <div class="dropdown-pane-overlay">{{ field.doc.replace('\n', '<br/>' ) }}</div>
             </div>
         </div>
     </nav>
 {% endmacro %}
 
-
-<fieldset>
-<dl>
-{% for field in form.fields %}
-    <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ')}}" {% endif %}>
-        <label for="{{ field.name }}">{{ field.label }}</label>
-{#        {{ generate_help_tooltip(field) }}#}
-    </dt>
-    <dd>
-        {{ field | safe }}
-        <p class="errorMessage">
-            {% for error in field.errors %}
-                <span> {{ error }} </span>
+<div id="{{ form.prefix }}">
+    <fieldset>
+        <dl>
+            {% for field in form.fields %}
+                <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+                    <label for="{{ field.name }}">{{ field.label }}</label>
+                    {#        {{ generate_help_tooltip(field) }}#}
+                </dt>
+                <dd>
+                    {{ field | safe }}
+                    <p class="errorMessage">
+                        {% for error in field.errors %}
+                            <span> {{ error }} </span>
+                        {% endfor %}
+                    </p>
+                </dd>
             {% endfor %}
-        </p>
-    </dd>
-{% endfor %}
-</dl>
-</fieldset>
+        </dl>
+    </fieldset>
+</div>

@@ -27,11 +27,9 @@
 		<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
 
 		<div id="div-simulator-parameters">
-			{% if burstConfig.id is none %}
-                <div class="adaptersDiv">
-				    {% include 'simulator_fragment.html' %}
-                </div>
-			{% endif %}
+            <div class="adaptersDiv">
+                {% include 'simulator_fragment.html' %}
+            </div>
 		</div>
 	</section>
 
@@ -114,4 +112,10 @@
 		</div>      
 	</section>
 </div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        _renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
+    });
+</script>
 

@@ -27,7 +27,7 @@
  */
 
 function MP_getSelectedParamName(){
-    var maybeSelect = $("[name='model_param']");
+    var maybeSelect = $("[name='_model_param']");
     if ( maybeSelect.prop('tagName') == "SELECT" ){
         return maybeSelect.val();
     }else{  // radio group
@@ -58,9 +58,9 @@ function MP_applyEquationForParameter() {
 function _MP_CallFocalPointsRPC(method, kwargs){
     var paramName = MP_getSelectedParamName();
     var url = '/spatial/modelparameters/surface/';
-        url += method + '?model_param=' + paramName;
+        url += method + '/' + paramName;
     for(var k in kwargs){
-        if(kwargs.hasOwnProperty(k)) { url += '&' + k + '=' + kwargs[k]; }
+        if(kwargs.hasOwnProperty(k)) { url += '/' + kwargs[k]; }
     }
     doAjaxCall({
         async:false, type:'POST', url:url,
@@ -129,4 +129,95 @@ function MP_onSubmit(ev){
         displayMessage('You have no focal points', 'errorMessage');
         ev.preventDefault();
     }
+}
+
+// Following methods are used for handling events on dynamic forms
+function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
+    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (response) {
+            var t = document.createRange().createContextualFragment(response);
+            $("#" + equationParamsDiv).empty().append(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
+            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
+            plotEquation(baseUrl)
+        }
+    })
+}
+
+function setModelParam(baseUrl, methodToCall, currentModelParam) {
+    let url = baseUrl + "/" + methodToCall + "/" + currentModelParam;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (data) {
+            $("#div_spatial_model_params").empty().append(data);
+            MP_displayFocalPoints();
+        }
+    })
+}
+
+function setParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+    let currentParam = fieldName + '=' + fieldValue;
+    let url = baseUrl + '/' + methodToCall + '?' + currentParam;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function () {
+            plotEquation(baseUrl)
+        }
+    })
+}
+
+function prepareUrlParam(paramName, paramValue) {
+    return paramName + '=' + paramValue;
+}
+
+function redrawPlotOnMinMaxChanges(baseUrl) {
+    $('input[name="' + '_min_x' + '"]').change(function () {
+        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    });
+    $('input[name="' + '_max_x' + '"]').change(function () {
+        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    });
+}
+
+function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false) {
+    let MODEL_PARAM_FIELD = 'set_model_parameter';
+    let EQUATION_FIELD = 'set_equation';
+    let EQUATION_PARAMS_FIELD = 'set_equation_param';
+
+    if (onlyEquationParams === false) {
+        $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
+            setModelParam(url, MODEL_PARAM_FIELD, this.value)
+        });
+
+        let equationSelectFields = document.getElementsByName(fieldsWithEvents[EQUATION_FIELD]);
+        for (let i=0; i<equationSelectFields.length; i++) {
+            equationSelectFields[i].onclick = function () {
+                changeEquationParamsForm(url, EQUATION_FIELD, this.value, 'equation_params',
+                    fieldsWithEvents)
+            };
+        }
+    }
+    $('input[name^="' + fieldsWithEvents[EQUATION_PARAMS_FIELD] + '"]').change(function () {
+        setParamAndRedrawChart(url, EQUATION_PARAMS_FIELD, this.name, this.value)
+    });
+}
+
+function plotEquation(baseUrl, params=null) {
+    let url = baseUrl + '/get_equation_chart';
+    if (params) {
+        url += '?' + params
+    }
+    doAjaxCall({
+        async: false,
+        type: 'GET',
+        url: url,
+        success: function (data) {
+            $("#" + 'equationDivId').empty().append(data);
+        }
+    });
 }

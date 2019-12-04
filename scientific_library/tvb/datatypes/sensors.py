@@ -175,6 +175,10 @@ class Sensors(HasTraits):
 
         return sensor_locations
 
+    @staticmethod
+    def build_sensors_subclass(sensors):
+        pass
+
 
 class SensorsEEG(Sensors):
     """
@@ -192,6 +196,22 @@ class SensorsEEG(Sensors):
     sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
     has_orientation = Attr(bool, default=False)
+
+    @staticmethod
+    def build_sensors_subclass(sensors):
+        sensors_eeg = SensorsEEG()
+
+        sensors_eeg.sensors_type = sensors.sensors_type
+        sensors_eeg.has_orientation = sensors.has_orientation
+
+        sensors_eeg.labels = sensors.labels
+        sensors_eeg.locations = sensors.locations
+        sensors_eeg.orientations = sensors.orientations
+        sensors_eeg.number_of_sensors = sensors.number_of_sensors
+
+        sensors_eeg.gid = sensors.gid
+
+        return sensors_eeg
 
 
 class SensorsMEG(Sensors):
@@ -224,6 +244,22 @@ class SensorsMEG(Sensors):
 
         return result
 
+    @staticmethod
+    def build_sensors_subclass(sensors):
+        sensors_meg = SensorsMEG()
+
+        sensors_meg.sensors_type = sensors.sensors_type
+        sensors_meg.orientations = sensors.orientations
+        sensors_meg.has_orientation = sensors.has_orientation
+
+        sensors_meg.labels = sensors.labels
+        sensors_meg.locations = sensors.locations
+        sensors_meg.number_of_sensors = sensors.number_of_sensors
+
+        sensors_meg.gid = sensors.gid
+
+        return sensors_meg
+
 
 class SensorsInternal(Sensors):
     """
@@ -234,3 +270,19 @@ class SensorsInternal(Sensors):
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2"):
         return super(SensorsInternal, cls).from_file(source_file)
+
+    @staticmethod
+    def build_sensors_subclass(sensors):
+        sensors_internal = SensorsInternal()
+
+        sensors_internal.sensors_type = sensors.sensors_type
+
+        sensors_internal.labels = sensors.labels
+        sensors_internal.orientations = sensors.orientations
+        sensors_internal.has_orientation = sensors.has_orientation
+        sensors_internal.locations = sensors.locations
+        sensors_internal.number_of_sensors = sensors.number_of_sensors
+
+        sensors_internal.gid = sensors.gid
+
+        return sensors_internal

@@ -48,7 +48,6 @@ class SimulatorH5(SimulatorConfigurationH5):
 
         self.type.store(self.get_full_class_name(type(datatype)))
 
-
     def load_into(self, datatype):
         # type: (Simulator) -> None
         datatype.conduction_speed = self.conduction_speed.load()

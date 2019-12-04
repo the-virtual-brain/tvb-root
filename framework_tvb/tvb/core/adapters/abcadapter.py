@@ -46,8 +46,7 @@ from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters import input_tree
-from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
@@ -63,10 +62,6 @@ from tvb.interfaces.web.controllers.decorators import using_template
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
-
-KEY_EQUATION = input_tree.KEY_EQUATION
-KEY_FOCAL_POINTS = input_tree.KEY_FOCAL_POINTS
-KEY_SURFACE_GID = input_tree.KEY_SURFACE_GID
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -177,31 +172,18 @@ class ABCAdapter(object):
     Root Abstract class for all TVB Adapters. 
     """
     # todo this constants copy is not nice
-    TYPE_SELECT = input_tree.TYPE_SELECT
-    TYPE_MULTIPLE = input_tree.TYPE_MULTIPLE
-    STATIC_ACCEPTED_TYPES = input_tree.STATIC_ACCEPTED_TYPES
-    KEY_TYPE = input_tree.KEY_TYPE
-    KEY_OPTIONS = input_tree.KEY_OPTIONS
-    KEY_ATTRIBUTES = input_tree.KEY_ATTRIBUTES
-    KEY_NAME = input_tree.KEY_NAME
-    KEY_DESCRIPTION = input_tree.KEY_DESCRIPTION
-    KEY_VALUE = input_tree.KEY_VALUE
-    KEY_LABEL = input_tree.KEY_LABEL
-    KEY_DEFAULT = input_tree.KEY_DEFAULT
-    KEY_DATATYPE = input_tree.KEY_DATATYPE
-    KEY_DTYPE = input_tree.KEY_DTYPE
-    KEY_DISABLED = input_tree.KEY_DISABLED
-    KEY_ALL = input_tree.KEY_ALL
-    KEY_CONDITION = input_tree.KEY_CONDITION
-    KEY_FILTERABLE = input_tree.KEY_FILTERABLE
-    KEY_REQUIRED = input_tree.KEY_REQUIRED
-    KEY_ID = input_tree.KEY_ID
-    KEY_UI_HIDE = input_tree.KEY_UI_HIDE
+    KEY_TYPE = constants.ATT_TYPE
+    KEY_OPTIONS = constants.ELEM_OPTIONS
+    KEY_ATTRIBUTES = constants.ATT_ATTRIBUTES
+    KEY_NAME = constants.ELEM_NAME
+    KEY_VALUE = constants.ATT_VALUE
+    KEY_DEFAULT = constants.ATT_DEFAULT
+    KEY_DATATYPE = "datatype"
+    KEY_DISABLED = "disabled"
+    KEY_FILTERABLE = "filterable"
 
     # TODO: move everything related to parameters PRE + POST into parameters_factory
-    KEYWORD_PARAMS = input_tree.KEYWORD_PARAMS
-    KEYWORD_SEPARATOR = input_tree.KEYWORD_SEPARATOR
-    KEYWORD_OPTION = input_tree.KEYWORD_OPTION
+    KEYWORD_PARAMS = "_parameters_"
 
     INTERFACE_ATTRIBUTES_ONLY = "attributes-only"
     INTERFACE_ATTRIBUTES = "attributes"
@@ -221,7 +203,6 @@ class ABCAdapter(object):
         self.operation_id = None
         self.user_id = None
         self.log = get_logger(self.__class__.__module__)
-        self.tree_manager = InputTreeManager()
         self.submitted_form = None
 
     @classmethod
@@ -529,44 +510,12 @@ class ABCAdapter(object):
     # METHODS for PROCESSING PARAMETERS start here #############################
 
     def review_operation_inputs(self, parameters):
+        # TODO: implement this for neoforms
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
         """
-        flat_interface = self.flaten_input_interface()
-        return self.tree_manager.review_operation_inputs(parameters, flat_interface)
-
-
-    def prepare_ui_inputs(self, kwargs, validation_required=True):
-        """
-        Prepare the inputs received from a HTTP Post in a form that will be
-        used by the Python adapter.
-        """
-        algorithm_inputs = self.get_input_tree()
-        algorithm_inputs = InputTreeManager.prepare_param_names(algorithm_inputs)
-        self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
-        return self.convert_ui_inputs(kwargs, validation_required=validation_required)
-
-
-    def convert_ui_inputs(self, kwargs, validation_required=True):
-        """
-        Convert HTTP POST parameters into Python parameters.
-        """
-        return self.tree_manager.convert_ui_inputs(self.flaten_input_interface(), kwargs, self.meta_data,
-                                                   validation_required)
-
-
-    def noise_configurable_parameters(self):
-        return [entry[self.KEY_NAME] for entry in self.flaten_input_interface() if 'configurableNoise' in entry]
-
-
-    def flaten_input_interface(self):
-        # TODO: temporary condition to pass introspection on neoforms
-        form = self.get_form_class()
-        if form:
-            return [form._get_original_field_name(form_field) for form_field in form.fields]
-        return self.tree_manager.flatten(self.get_input_tree())
-
+        return {}, None
 
 
 @add_metaclass(ABCMeta)

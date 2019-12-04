@@ -145,10 +145,10 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
 
 class SimulatorMonitorFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
 
-        self.monitor_choices = get_ui_name_to_monitor_dict()
+        self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
 
         self.monitor = SimpleSelectField(choices=self.monitor_choices, form=self, name='monitor', required=True,
                                          label=Simulator.monitors.label, doc=Simulator.monitors.doc)

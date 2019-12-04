@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import importlib
 import os
 import shutil
 import datetime
@@ -48,7 +49,6 @@ from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-from tvb.core.portlets.portlet_configurer import PortletConfigurer
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.user_service import UserService
@@ -202,6 +202,20 @@ class Introspector(object):
         self._update_old_portlets_from_db(portlets_list)
         self._add_new_valid_portlets(portlets_list)
 
+    @staticmethod
+    def _build_adapter_from_declaration(adapter_declaration):
+        """
+        Build and adapter from the declaration in the portlets xml.
+        """
+        adapter_import_path = adapter_declaration[ABCAdapter.KEY_TYPE]
+        class_name = adapter_import_path.split('.')[-1]
+        module_name = adapter_import_path.replace('.' + class_name, '')
+        algo = dao.get_algorithm_by_module(module_name, class_name)
+        if algo is not None:
+            return ABCAdapter.build_adapter(algo)
+        else:
+            return None
+
     def _prepare_valid_portlets_list(self, portlet_folder, portlets_list):
         for file_n in os.listdir(portlet_folder):
             try:
@@ -218,7 +232,7 @@ class Introspector(object):
                             module_name = adapter[ABCAdapter.KEY_TYPE].replace('.' + class_name, '')
                             try:
                                 # Check that module is properly declared
-                                module = __import__(module_name, globals(), fromlist=[class_name])
+                                module = importlib.import_module(module_name)
                                 if type(module) != ModuleType:
                                     is_valid = False
                                     self.logger.error("Wrong module %s in portlet %s" % (module_name, algo_identifier))
@@ -230,7 +244,7 @@ class Introspector(object):
                                     continue
                                 # Check inputs that refers to this adapter
                                 portlet_inputs = portlet_list[algo_identifier][ELEM_INPUTS]
-                                adapter_instance = PortletConfigurer.build_adapter_from_declaration(adapter)
+                                adapter_instance = self._build_adapter_from_declaration(adapter)
                                 if adapter_instance is None:
                                     is_valid = False
                                     self.logger.warning("No group having class=%s stored for portlet %s."
@@ -239,7 +253,8 @@ class Introspector(object):
 
                                 adapter_form = adapter_instance.get_form()
                                 adapter_instance.submit_form(adapter_form())
-                                adapter_form_field_names = adapter_instance.flaten_input_interface()
+                                # TODO: implement this for neoforms
+                                adapter_form_field_names = {}  # adapter_instance.flaten_input_interface()
                                 for input_entry in portlet_inputs.values():
                                     if input_entry[ATT_OVERWRITE] == adapter[ABCAdapter.KEY_NAME]:
                                         if input_entry[ABCAdapter.KEY_NAME] not in adapter_form_field_names:

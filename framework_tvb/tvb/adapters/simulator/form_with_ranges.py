@@ -1,10 +1,15 @@
+from abc import abstractmethod
 from tvb.basic.neotraits.api import NArray
-
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import Form
 
 
 class FormWithRanges(Form):
+    @staticmethod
+    @abstractmethod
+    def get_params_configurable_in_phase_plane():
+        """Return a list with all parameter names that can be configured in Phase Plane viewer for the current model"""
+
     def _get_parameters_for_pse(self):
         pass
 

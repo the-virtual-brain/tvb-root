@@ -108,6 +108,15 @@ class SurfaceH5(H5File):
         self.split_slices.store(self._split_slices)
         self.split_triangles.store(self._split_triangles)
 
+    def center(self):
+        """
+        Compute the center of the surface as the mean spot on all the three axes.
+        """
+        # is this different from return numpy.mean(self.vertices, axis=0) ?
+        return [float(numpy.mean(self.vertices[:, 0])),
+                float(numpy.mean(self.vertices[:, 1])),
+                float(numpy.mean(self.vertices[:, 2]))]
+
     def get_number_of_split_slices(self):
         return self._number_of_split_slices
 
@@ -316,7 +325,7 @@ class SurfaceH5(H5File):
         slice_number = int(slice_number)
         slice_triangles = self.triangles[
                           slice_number * SPLIT_PICK_MAX_TRIANGLE:
-                          min(self.number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
+                          min(self.number_of_triangles.load(), (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
                           ]
         result_normals = []
         for triang in slice_triangles:

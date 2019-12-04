@@ -44,9 +44,9 @@ from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
-from tvb.core.entities.transient.burst_export_entities import BurstInformation, WorkflowInformation
-from tvb.core.entities.transient.burst_export_entities import WorkflowStepInformation, WorkflowViewStepInformation
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
 
@@ -215,10 +215,10 @@ class ExportManager:
         bursts_count = dao.get_bursts_for_project(project.id, count=True)
         for start_idx in range(0, bursts_count, BURST_PAGE_SIZE):
             bursts = dao.get_bursts_for_project(project.id, page_start=start_idx, page_size=BURST_PAGE_SIZE)
-            for burst in bursts:
-                one_info = self._build_burst_export_dict(burst)
-                # Save data in dictionary form so we can just save it as a json later on
-                bursts_dict[burst.id] = one_info
+            # for burst in bursts:
+            #     one_info = self._build_burst_export_dict(burst)
+            #     # Save data in dictionary form so we can just save it as a json later on
+            #     bursts_dict[burst.id] = one_info
 
         datatype_burst_mapping = {}
         for dt in project_datatypes:
@@ -300,65 +300,6 @@ class ExportManager:
                                       KEY_DT_DATE: dt.create_date})
         return project_datatypes
 
-
-    @staticmethod
-    def _build_workflow_step_info(workflow):
-        """
-        For the input workflow, get all workflow steps and return a list with information
-        that can be then exported.
-        """
-        wf_steps = []
-        view_steps = []
-        for wf_step in dao.get_workflow_steps(workflow.id):
-
-            if wf_step.fk_operation is None or wf_step.fk_algorithm is None:
-                # Avoid exporting old form of View Steps.
-                LOG.warning("Skipping " + str(workflow) + " " + str(wf_step))
-                continue
-            # Get all basic information for this workflow step
-            wf_step_info = WorkflowStepInformation(wf_step.to_dict()[1])
-            # We need to store the gid for the operation since the id might be
-            # different in case of a project export / import
-            linked_operation = dao.get_operation_by_id(wf_step.fk_operation)
-            wf_step_info.set_operation(linked_operation)
-            # We also need to keep info about algorithm in the form of module
-            # and classname because that id might also be different in case
-            # of project export / import.
-            linked_algorithm = dao.get_algorithm_by_id(wf_step.fk_algorithm)
-            wf_step_info.set_algorithm(linked_algorithm)
-            wf_steps.append(wf_step_info)
-        for view_step in dao.get_visualization_steps(workflow.id):
-            # Get all basic information for this view step
-            view_step_info = WorkflowViewStepInformation(view_step.to_dict()[1])
-            # We need to store portlet identifier, since portlet id might be different
-            # in project we are importing into.
-            portlet = dao.get_portlet_by_id(view_step.fk_portlet)
-            view_step_info.set_portlet(portlet)
-            # We also need to keep info about algorithm in the form of module
-            # and classname because that id might also be different in case
-            # of project export / import.
-            linked_algorithm = dao.get_algorithm_by_id(view_step.fk_algorithm)
-            view_step_info.set_algorithm(linked_algorithm)
-            view_steps.append(view_step_info)
-        return wf_steps, view_steps
-
-
-    def _build_burst_export_dict(self, burst):
-        """
-        Compute needed export info and return dictionary
-        """
-        burst_info = BurstInformation(burst.to_dict()[1])
-        workflows = dao.get_workflows_for_burst(burst.id)
-        for workflow in workflows:
-            # Get information for each workflow for this burst
-            workflow_info = WorkflowInformation(workflow.to_dict()[1])
-            wf_steps, view_steps = self._build_workflow_step_info(workflow)
-            workflow_info.set_workflow_steps(wf_steps)
-            workflow_info.set_view_steps(view_steps)
-            burst_info.add_workflow(workflow_info)
-        return burst_info.to_dict()
-
-
     def _build_data_export_folder(self, data):
         """
         This method computes the folder where results of an export operation will be 
@@ -374,15 +315,23 @@ class ExportManager:
 
         return data_export_folder
 
-
-    def export_burst(self, burst_id):
-        """
-        :param burst_id: ID for existing burst
-        :return: JSON of burst representation.
-        """
+    def export_simulator_configuration(self, burst_id):
         burst = dao.get_burst_by_id(burst_id)
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        burst_info = self._build_burst_export_dict(burst)
-        return json.dumps(burst_info)
+        simulator_from_burst = dao.get_generic_entity(SimulatorIndex, burst.id, 'fk_parent_burst')[0]
+        simulator_h5 = h5.path_for_stored_index(simulator_from_burst)
+        simulator_config_folder = os.path.dirname(simulator_h5)
+
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d_%H-%M")
+        zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
+        tmp_export_folder = self._build_data_export_folder(simulator_from_burst)
+        result_path = os.path.join(tmp_export_folder, zip_file_name)
+
+        with TvbZip(result_path, "w") as zip_file:
+            for filename in os.listdir(simulator_config_folder):
+                zip_file.write(os.path.join(simulator_config_folder, filename), filename)
+
+        return result_path

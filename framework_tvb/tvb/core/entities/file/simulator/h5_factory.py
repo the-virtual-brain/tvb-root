@@ -1,5 +1,4 @@
 from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.equations import Equation
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import Integrator, HeunDeterministic, HeunStochastic, \
     EulerDeterministic, EulerStochastic, RungeKutta4thOrderDeterministic, Identity, VODE, VODEStochastic, Dopri5, \
@@ -8,15 +7,11 @@ from tvb.simulator.models import Model
 from tvb.simulator.monitors import Monitor, SubSample, GlobalAverage, TemporalAverage
 from tvb.simulator.noise import Additive, Multiplicative, Noise
 
-from tvb.core.services.exceptions import ServicesBaseException
-
 
 # TODO: rethink this solution
 def config_h5_factory(config_class):
     from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 
-    if issubclass(config_class, Equation):
-        return equation_h5_factory(config_class)
     if issubclass(config_class, Noise):
         return noise_h5_factory(config_class)
     if issubclass(config_class, Integrator):
@@ -30,37 +25,6 @@ def config_h5_factory(config_class):
     if config_class == Cortex:
         return CortexH5
     return None
-
-
-def equation_h5_factory(equation_class):
-    from tvb.datatypes.equations import DiscreteEquation, Linear, Gaussian, DoubleGaussian, Sigmoid, \
-        GeneralizedSigmoid, Sinusoid, Cosine, PulseTrain, Gamma, Alpha, DoubleExponential, FirstOrderVolterra, \
-        MixtureOfGammas
-    from tvb.core.entities.file.simulator.equation_h5 import DiscreteEquationH5, LinearH5, GaussianH5, DoubleGaussianH5, \
-        SigmoidH5, GeneralizedSigmoidH5, SinusoidH5, CosineH5, AlphaH5, PulseTrainH5, GammaH5, DoubleExponentialH5, \
-        FirstOrderVolterraH5, MixtureOfGammasH5
-
-    equation_class_to_h5 = {
-        DiscreteEquation: DiscreteEquationH5,
-        Linear: LinearH5,
-        Gaussian: GaussianH5,
-        DoubleGaussian: DoubleGaussianH5,
-        Sigmoid: SigmoidH5,
-        GeneralizedSigmoid: GeneralizedSigmoidH5,
-        Sinusoid: SinusoidH5,
-        Cosine: CosineH5,
-        Alpha: AlphaH5,
-        PulseTrain: PulseTrainH5,
-        Gamma: GammaH5,
-        DoubleExponential: DoubleExponentialH5,
-        FirstOrderVolterra: FirstOrderVolterraH5,
-        MixtureOfGammas: MixtureOfGammasH5
-    }
-
-    equation_h5_class = equation_class_to_h5.get(equation_class)
-    if equation_h5_class is None:
-        raise ServicesBaseException('No H5File defined for Equation of type %s' % equation_class.__name__)
-    return equation_h5_class
 
 
 def noise_h5_factory(noise_class):
