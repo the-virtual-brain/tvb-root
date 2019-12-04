@@ -148,6 +148,7 @@ class SimulatorService(object):
         if stimulus_gid:
             stimulus_index = dao.get_datatype_by_gid(stimulus_gid.hex)
             stimulus = h5.load_from_index(stimulus_index)
+            stimulus.connectivity = simulator_in.connectivity
             simulator_in.stimulus = stimulus
 
         return simulator_in, simulation_state_gid
