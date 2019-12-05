@@ -190,16 +190,7 @@ class Simulator(HasTraits):
             return True
         return False
 
-    def preconfigure(self):
-        """Configure just the basic fields, so that memory can be estimated."""
-        self.connectivity.configure()
-        if self.surface:
-            self.surface.configure()
-        if self.stimulus:
-            self.stimulus.configure()
-        self.coupling.configure()
-        self.model.configure()
-        self.integrator.configure()
+    def _configure_integrator_boundaries(self):
         if self.model.state_variable_boundaries is not None:
             indices = []
             boundaries = []
@@ -212,6 +203,18 @@ class Simulator(HasTraits):
         else:
             self.integrator.bounded_state_variable_indices = None
             self.integrator.state_variable_boundaries = None
+
+    def preconfigure(self):
+        """Configure just the basic fields, so that memory can be estimated."""
+        self.connectivity.configure()
+        if self.surface:
+            self.surface.configure()
+        if self.stimulus:
+            self.stimulus.configure()
+        self.coupling.configure()
+        self.model.configure()
+        self.integrator.configure()
+        self._configure_integrator_boundaries()
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
