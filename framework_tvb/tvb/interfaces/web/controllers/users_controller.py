@@ -42,7 +42,6 @@ import time
 import ssl
 import cherrypy
 import formencode
-from hashlib import md5
 from urllib.request import urlopen
 from formencode import validators
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
@@ -50,7 +49,7 @@ from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL,
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import UsernameException
-from tvb.core.utils import format_bytes_human
+from tvb.core.utils import format_bytes_human, hash_password
 import tvb.interfaces.web
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -128,12 +127,12 @@ class UserController(BaseController):
                 form = EditUserForm()
                 data = form.to_python(data)
                 if data.get(KEY_PASSWORD):
-                    user.password = md5(data[KEY_PASSWORD]).hexdigest()
+                    user.password = hash_password(data[KEY_PASSWORD])
                 if data.get(KEY_EMAIL):
                     user.email = data[KEY_EMAIL]
                 old_password = None
                 if data.get('old_password'):
-                    old_password = md5(data['old_password']).hexdigest()
+                    old_password = hash_password(data['old_password'])
                 self.user_service.edit_user(user, old_password)
                 if old_password:
                     common.set_info_message("Changes Submitted!")
@@ -272,7 +271,7 @@ class UserController(BaseController):
             except Exception as excep:
                 self.logger.exception(excep)
                 common.set_error_message("We are very sorry, but we could not create your user. Most probably is "
-                                         "because it was impossible to sent emails. Please try again later...")
+                                         "because it was impossible to send emails. Please try again later...")
         if redirect:
             raise cherrypy.HTTPRedirect('/user/usermanagement')
         else:
@@ -386,8 +385,8 @@ class UserController(BaseController):
         """
         form = RegisterForm()
         data = form.to_python(data)
-        data[KEY_PASSWORD] = md5(data[KEY_PASSWORD].encode('utf-8')).hexdigest()
-        data['password2'] = md5(data['password2'].encode('utf-8')).hexdigest()
+        data[KEY_PASSWORD] = hash_password(data[KEY_PASSWORD])
+        data['password2'] = hash_password(data['password2'])
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
 
 

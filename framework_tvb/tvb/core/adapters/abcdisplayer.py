@@ -30,6 +30,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import importlib
 import json
 import os
 from threading import Lock
@@ -117,7 +118,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         """
         Shortcut in case of visualization calls.
         """
-        self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
@@ -139,11 +139,11 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         :param parameters : dictionary with parameters for "template"
         :param pages : dictionary of pages to be used with <xi:include>
         """
-        module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
+        module_ref = importlib.import_module(self.VISUALIZERS_ROOT)
         relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
         jinja_separator = '/'
 
-        template = os.path.join(relative_path, template)
+        template = relative_path + jinja_separator + template
         if pages:
             for key, value in pages.items():
                 if value is not None:

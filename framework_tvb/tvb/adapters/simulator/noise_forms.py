@@ -35,20 +35,15 @@ class NoiseForm(FormWithRanges):
     def fill_from_trait(self, trait):
         # type: (Noise) -> None
         # super(NoiseForm, self).fill_from_trait(trait)
-        self.ntau.unvalidated_data = trait.ntau
-        self.noise_seed.unvalidated_data = trait.noise_seed
+        self.ntau.data = trait.ntau
+        self.noise_seed.data = trait.noise_seed
+        self.nsig.data = trait.nsig
 
 class AdditiveNoiseForm(NoiseForm):
 
     def __init__(self, prefix=''):
         super(AdditiveNoiseForm, self).__init__(prefix)
         self.nsig = ArrayField(Additive.nsig, self)
-
-    def fill_from_trait(self, trait):
-        # type: (Noise) -> None
-        # super(NoiseForm, self).fill_from_trait(trait)
-        self.ntau.unvalidated_data = trait.ntau
-        self.noise_seed.unvalidated_data = trait.noise_seed
 
     def get_range_parameters(self):
         ntau_range_param = RangeParameter(Noise.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))

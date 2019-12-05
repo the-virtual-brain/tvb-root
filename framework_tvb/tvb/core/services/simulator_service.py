@@ -31,8 +31,12 @@ import copy
 import json
 import uuid
 from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.simulator import h5_factory
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.sensors import SensorsEEG, SensorsInternal, SensorsMEG
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.monitors import EEG, Projection, MEG, iEEG
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -67,7 +71,7 @@ class SimulatorService(object):
             simulator_h5.store(simulator)
             simulator_h5.connectivity.store(simulator.connectivity.gid)
             if simulator.stimulus:
-                simulator_h5.stimulus.store(uuid.UUID(simulator.stimulus.gid))
+                simulator_h5.stimulus.store(simulator.stimulus.gid)
             if simulation_state_gid:
                 simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
 
@@ -83,6 +87,31 @@ class SimulatorService(object):
             connectivity_gid = simulator_in_h5.connectivity.load()
             stimulus_gid = simulator_in_h5.stimulus.load()
             simulation_state_gid = simulator_in_h5.simulation_state.load()
+
+        if isinstance(simulator_in.monitors[0], Projection):
+            with SimulatorH5(simulator_in_path) as simulator_in_h5:
+                monitor_h5_path = simulator_in_h5.get_reference_path(simulator_in.monitors[0].gid)
+
+            monitor_h5_class = h5_factory.monitor_h5_factory(type(simulator_in.monitors[0]))
+
+            with monitor_h5_class(monitor_h5_path) as monitor_h5:
+                sensors = monitor_h5.sensors.load()
+                region_mapping = monitor_h5.region_mapping.load()
+
+            sensors_index = ABCAdapter.load_entity_by_gid(sensors.hex)
+            sensors = h5.load_from_index(sensors_index)
+
+            if isinstance(simulator_in.monitors[0], EEG):
+                sensors = SensorsEEG.build_sensors_subclass(sensors)
+            elif isinstance(simulator_in.monitors[0], MEG):
+                sensors = SensorsMEG.build_sensors_subclass(sensors)
+            elif isinstance(simulator_in.monitors[0], iEEG):
+                sensors = SensorsInternal.build_sensors_subclass(sensors)
+
+            simulator_in.monitors[0].sensors = sensors
+            region_mapping_index = ABCAdapter.load_entity_by_gid(region_mapping.hex)
+            region_mapping = h5.load_from_index(region_mapping_index)
+            simulator_in.monitors[0].region_mapping = region_mapping
 
         conn_index = dao.get_datatype_by_gid(connectivity_gid.hex)
         conn = h5.load_from_index(conn_index)
@@ -119,6 +148,7 @@ class SimulatorService(object):
         if stimulus_gid:
             stimulus_index = dao.get_datatype_by_gid(stimulus_gid.hex)
             stimulus = h5.load_from_index(stimulus_index)
+            stimulus.connectivity = simulator_in.connectivity
             simulator_in.stimulus = stimulus
 
         return simulator_in, simulation_state_gid

@@ -40,7 +40,6 @@ from inspect import getmro
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection, \
     DataType
@@ -61,8 +60,7 @@ class FlowService:
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
-        self.input_tree_manager = InputTreeManager()
-    
+
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
         return dao.get_category_by_id(identifier)
@@ -102,7 +100,6 @@ class FlowService:
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-
     def prepare_adapter_form(self, adapter_instance, project_id):
         form = adapter_instance.get_form()(project_id=project_id)
         try:
@@ -114,14 +111,6 @@ class FlowService:
 
         return form
 
-    def prepare_adapter_tree_interface(self, adapter_instance, project_id, fk_category):
-        """
-        Having a  StoredAdapter, return the Tree Adapter Interface object, populated with datatypes from 'project_id'.
-        """
-        interface = adapter_instance.get_input_tree()
-        interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, fk_category)
-        interface = self.input_tree_manager.prepare_param_names(interface)
-        return interface
 
     def prepare_adapter(self, stored_adapter):
 

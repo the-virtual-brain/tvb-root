@@ -41,7 +41,7 @@ from sqlalchemy import create_engine
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
-from tvb.core.utils import get_matlab_executable
+from tvb.core.utils import get_matlab_executable, hash_password
 from tvb.core.services.exceptions import InvalidSettingsException
 
 
@@ -205,7 +205,7 @@ class SettingsService(object):
             data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.SVN_VERSION
             file_data = data
             if self.KEY_ADMIN_PWD in data:
-                data[self.KEY_ADMIN_PWD] = hashlib.md5(data[self.KEY_ADMIN_PWD].encode('utf-8')).hexdigest()
+                data[self.KEY_ADMIN_PWD] = hash_password(data[self.KEY_ADMIN_PWD])
             anything_changed = True
         else:
             file_data = TvbProfile.current.manager.stored_settings

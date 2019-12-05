@@ -43,7 +43,7 @@ import numpy
 import six
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
-from tvb.core.adapters.input_tree import InputTreeManager, MAXIMUM_DATA_TYPES_DISPLAYED, KEY_WARNING, WARNING_OVERFLOW
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -51,7 +51,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.burst_service import BurstService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -65,6 +64,11 @@ FILTER_TYPE = "type"
 FILTER_VALUES = "values"
 FILTER_OPERATIONS = "operations"
 KEY_CONTROLLS = "controlPage"
+
+MAXIMUM_DATA_TYPES_DISPLAYED = 50
+KEY_WARNING = "warning"
+WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
+                   "Use filters, to make the list small enough to fit in here!"
 
 
 class FlowController(BaseController):
@@ -377,6 +381,7 @@ class FlowController(BaseController):
 
     @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
+        # TODO: fix this use-case
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
@@ -402,31 +407,28 @@ class FlowController(BaseController):
                     raise
         # In order for the filter object not to "stack up" on multiple calls to
         # this method, create a deepCopy to work with
-        if ABCAdapter.KEY_CONDITION in current_node:
-            new_filter = copy.deepcopy(current_node[ABCAdapter.KEY_CONDITION])
+        if constants.ELEM_CONDITIONS in current_node:
+            new_filter = copy.deepcopy(current_node[constants.ELEM_CONDITIONS])
         else:
             new_filter = FilterChain()
         new_filter.fields.extend(filters[FILTER_FIELDS])
         new_filter.operations.extend(filters[FILTER_OPERATIONS])
         new_filter.values.extend(filters[FILTER_VALUES])
         # Get dataTypes that match the filters from DB then populate with values
-        values, total_count = InputTreeManager().populate_option_values_for_dtype(
-            common.get_current_project().id,
-            datatype, new_filter,
-            self.context.get_current_step())
+        values, total_count = [], 0
         # Create a dictionary that matches what the template expects
         parameters = {ABCAdapter.KEY_NAME: name,
                       ABCAdapter.KEY_FILTERABLE: availablefilter,
-                      ABCAdapter.KEY_TYPE: ABCAdapter.TYPE_SELECT,
+                      ABCAdapter.KEY_TYPE: constants.TYPE_SELECT,
                       ABCAdapter.KEY_OPTIONS: values,
                       ABCAdapter.KEY_DATATYPE: datatype}
 
         if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
             parameters[KEY_WARNING] = WARNING_OVERFLOW
 
-        if ABCAdapter.KEY_REQUIRED in current_node:
-            parameters[ABCAdapter.KEY_REQUIRED] = current_node[ABCAdapter.KEY_REQUIRED]
-            if len(values) > 0 and string2bool(str(parameters[ABCAdapter.KEY_REQUIRED])):
+        if constants.ATT_REQUIRED in current_node:
+            parameters[constants.ATT_REQUIRED] = current_node[constants.ATT_REQUIRED]
+            if len(values) > 0 and string2bool(str(parameters[constants.ATT_REQUIRED])):
                 parameters[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
         previous_selected = self.context.get_current_default(name)
         if previous_selected in [str(vv['value']) for vv in values]:
@@ -471,6 +473,12 @@ class FlowController(BaseController):
                 raise formencode.Invalid("Could not build a dict out of this form!", {}, None,
                                          error_dict=form.get_errors_dict())
             adapter_instance.submit_form(form)
+            if issubclass(type(adapter_instance), ABCDisplayer):
+                adapter_instance.current_project_id = project_id
+                adapter_instance.user_id = common.get_logged_user().id
+                result = adapter_instance.launch(**adapter_instance.get_form().get_form_values())
+                if isinstance(result, dict):
+                    return result
             result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, **dt_dict)
 
             # Store input data in session, for informing user of it.
@@ -514,10 +522,6 @@ class FlowController(BaseController):
                 self.context.clean_from_session()
 
             group = None
-            # Cache some values in session, for performance
-            previous_tree = self.context.get_current_input_tree()
-            previous_sub_step = self.context.get_current_substep()
-
             category = self.flow_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
             if group:
@@ -525,24 +529,9 @@ class FlowController(BaseController):
 
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
-            if adapter_instance.get_input_tree() is None:
-                adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-                template_specification = dict(submitLink=submit_url, form=adapter_form, title=title)
+            adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
+            template_specification = dict(submitLink=submit_url, form=adapter_form, title=title)
 
-            # TODO: to be removed when all forms are migrated
-            else:
-                if not session_reset and previous_tree is not None and previous_sub_step == stored_adapter.id:
-                    adapter_interface = previous_tree
-                else:
-                    adapter_interface = self.flow_service.prepare_adapter_tree_interface(adapter_instance, project_id, stored_adapter.fk_category)
-                    self.context.add_adapter_to_session(stored_adapter, adapter_interface)
-
-                current_defaults = self.context.get_current_default()
-                if current_defaults is not None:
-                    # Change default values in tree, according to selected input
-                    adapter_interface = InputTreeManager.fill_defaults(adapter_interface, current_defaults)
-
-                template_specification = dict(submitLink=submit_url, inputList=adapter_interface, title=title)
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
         except OperationException as oexc:
@@ -777,7 +766,7 @@ class FlowController(BaseController):
             operation = self.flow_service.load_operation(int(first_op.id))
 
         try:
-            burst_service = BurstService()
+            burst_service = BurstService2()
             result = burst_service.stop_burst(operation.burst)
             if remove_after_stop:
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)

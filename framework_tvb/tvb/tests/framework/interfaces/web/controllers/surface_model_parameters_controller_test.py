@@ -34,9 +34,9 @@
 
 import pytest
 import cherrypy
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
-from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import tvb.interfaces.web.controllers.common as common
 
@@ -48,7 +48,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     def transactional_setup_fixture(self, connectivity_factory, surface_factory):
         self.init()
         self.surface_m_p_c = SurfaceModelParametersController()
-        BurstController().index()
+        SimulatorController().index()
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
         _, self.connectivity = connectivity_factory
         _, self.surface = surface_factory
@@ -62,6 +62,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
+        self.clean_database()
         self.cleanup()
 
 

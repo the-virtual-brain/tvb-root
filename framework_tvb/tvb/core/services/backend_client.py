@@ -210,6 +210,7 @@ class StandAloneClient(object):
 
 
 class ClusterSchedulerClient(object):
+    # TODO: fix this with neoforms
     """
     Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing behind
     the cluster job scheduling process..
@@ -226,7 +227,7 @@ class ClusterSchedulerClient(object):
         # Load operation so we can estimate the execution time
         operation = dao.get_operation_by_id(operation_identifier)
         kwargs = parse_json_parameters(operation.parameters)
-        kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+        # kwargs = adapter_instance.prepare_ui_inputs(kwargs)
         time_estimate = int(adapter_instance.get_execution_time_approximation(**kwargs))
         hours = int(time_estimate / 3600)
         minutes = (int(time_estimate) % 3600) / 60

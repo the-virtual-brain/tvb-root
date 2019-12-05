@@ -32,11 +32,10 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import pytest
 import numpy
 from time import sleep
+from tvb.core.services.burst_service2 import BurstService2
 from tvb.tests.framework.core.base_testcase import BaseTestCase
-from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
@@ -44,21 +43,13 @@ from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_burst import *
-from tvb.core.entities.model.model_workflow import *
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-#from tvb.core.entities.model import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.burst_service import BurstService
 from tvb.core.services.flow_service import FlowService
-from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.exceptions import InvalidPortletConfiguration
-from tvb.core.portlets.xml_reader import KEY_DYNAMIC
-from tvb.core.portlets.portlet_configurer import ADAPTER_PREFIX_ROOT
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
@@ -66,7 +57,7 @@ from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-
+import copy
 
 
 class TestBurstService(BaseTestCase):
@@ -79,10 +70,9 @@ class TestBurstService(BaseTestCase):
     ## This should not be present in portlets.xml
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
-    burst_service = BurstService()
+    burst_service = BurstService2()
     flow_service = FlowService()
     operation_service = OperationService()
-    workflow_service = WorkflowService()
     sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                    IntrospectionRegistry.SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
@@ -107,115 +97,6 @@ class TestBurstService(BaseTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()
-
-    def test_new_portlet_configuration(self):
-        """
-        Test that the correct portlet configuration is generated for the test portlet.
-        """
-        # Passing an invalid portlet ID should fail and raise an InvalidPortletConfiguration exception.
-        with pytest.raises(InvalidPortletConfiguration):
-            self.burst_service.new_portlet_configuration(-1)
-
-        # Now the happy flow
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        analyzers = portlet_configuration.analyzers
-        assert len(
-            analyzers) == 1, "Portlet configuration not build properly. " \
-                             "Portlet's analyzers list has unexpected number of elements."
-        assert analyzers[0].dynamic_param == {'test_dt_input': {wf_cfg.DATATYPE_INDEX_KEY: 0,
-                                                                 wf_cfg.STEP_INDEX_KEY: 0}}, \
-            "Dynamic parameters not loaded properly"
-        visualizer = portlet_configuration.visualizer
-        assert visualizer.dynamic_param == {}, "Dynamic parameters not loaded properly"
-        assert visualizer.static_param == {'test2': '0'}, 'Static parameters not loaded properly'
-
-
-    def test_build_portlet_interface(self):
-        """
-        Test that the portlet interface is build properly, splitted by steps and prefixed.
-        """
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        actual_interface = self.burst_service.build_portlet_interface(portlet_configuration, self.test_project.id)
-        #The expected portlet steps and interface in correspondace to the xml declaration
-        #from tvb.tests.framework/core/portlets/test_portlet.xml
-        expected_steps = [{'ui_name': 'TestAdapterDatatypeInput'},
-                          {'ui_name': 'TestAdapter2'}]
-        expected_interface = [{ABCAdapter.KEY_DEFAULT: 'step_0[0]', ABCAdapter.KEY_DISABLED: True,
-                               KEY_DYNAMIC: True, ABCAdapter.KEY_NAME: ADAPTER_PREFIX_ROOT + '0test_dt_input'},
-                              {ABCAdapter.KEY_DEFAULT: '0', ABCAdapter.KEY_DISABLED: False,
-                               KEY_DYNAMIC: False, ABCAdapter.KEY_NAME: ADAPTER_PREFIX_ROOT + '1test2'}]
-        for idx, entry in enumerate(expected_steps):
-            step = actual_interface[idx]
-            for key in entry:
-                assert entry.get(key) == getattr(step, key)
-            for key in expected_interface[idx]:
-                assert expected_interface[idx].get(key, False) == step.interface[0].get(key, False)
-
-
-    def test_build_portlet_interface_invalid(self):
-        """
-        Test that a proper exception is raised in case an invalid portlet configuration is provided.
-        """
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        portlet_configuration.portlet_id = "this-is-invalid"
-        with pytest.raises(InvalidPortletConfiguration):
-            self.burst_service.build_portlet_interface(portlet_configuration, self.test_project.id)
-
-
-    def test_update_portlet_config(self):
-        """
-        Test if a portlet configuration parameters are updated accordingly with a set
-        of overwrites that would normally come from UI. Make sure to restart only if 
-        analyzer parameters change.
-        """
-
-
-        def __update_params(declared_overwrites, expected_result):
-            """
-            Do the update and check that we get indeed the expected_result.
-            :param declared_overwrites: a input dictionary in the form {'$$name$$' : '$$value$$'}. Make
-                sure $$name$$ has the prefix that is added in case of portlet parameters,
-                namely ADAPTER_PREFIX_ROOT + step_index + actual_name
-            :param expected_result: boolean which should represent if we need or not to restart. (Was a
-                visualizer parameter change or an analyzer one)
-            """
-            result = self.burst_service.update_portlet_configuration(portlet_configuration, declared_overwrites)
-            assert expected_result == result, "After update expected %s as 'need_restart' but got %s." \
-                                              "" % (expected_result, result)
-
-
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        previous_entry = portlet_configuration.analyzers[0].static_param['test_non_dt_input']
-        declared_overwrites = {ADAPTER_PREFIX_ROOT + '0test_non_dt_input': previous_entry}
-        __update_params(declared_overwrites, False)
-        declared_overwrites = {ADAPTER_PREFIX_ROOT + '1test2': 'new_value'}
-        __update_params(declared_overwrites, False)
-        declared_overwrites = {ADAPTER_PREFIX_ROOT + '0test_non_dt_input': '1'}
-        __update_params(declared_overwrites, True)
-
-
-    def test_update_portlet_config_invalid_data(self):
-        """
-        Trying an update on a portlet configuration with invalid data
-        should not change the configuration instance in any way.
-        """
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-
-        invalid_overwrites = {'this_is_not_a_valid_key': 'for_test_portlet_update'}
-        before_update = copy.deepcopy(portlet_configuration)
-        self.burst_service.update_portlet_configuration(portlet_configuration, invalid_overwrites)
-        assert set(dir(before_update)) == set(dir(portlet_configuration))
-        #An update with invalid input data should have no effect on the configuration, but attributes changed
-        for key in portlet_configuration.__dict__.keys():
-            if hasattr(getattr(portlet_configuration, key), '__call__'):
-                assert getattr(before_update, key) == getattr(portlet_configuration, key),\
-                                 "The value of attribute %s changed by a update with invalid data "\
-                                 "when it shouldn't have." % key
 
 
     def test_clone_burst_configuration(self):
@@ -279,52 +160,6 @@ class TestBurstService(BaseTestCase):
                          "Incorrect bursts retrieved for project %s." % second_project
         assert set(test_project_bursts) == set(returned_test_project_bursts),\
                          "Incorrect bursts retrieved for project %s." % self.test_project
-
-
-    def test_select_simulator_inputs(self):
-        """
-        Test that given a dictionary of selected inputs as it would arrive from UI, only
-        the selected simulator inputs are kept.
-        """
-        simulator_input_tree = self.flow_service.prepare_adapter(self.test_project.id, self.sim_algorithm)
-        child_parameter = ''
-        checked_parameters = {simulator_input_tree[0][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
-                                                                             KEY_SAVED_VALUE: 'new_value'},
-                              simulator_input_tree[1][ABCAdapter.KEY_NAME]: {KEY_PARAMETER_CHECKED: True,
-                                                                             KEY_SAVED_VALUE: 'new_value'}}
-        #Look for a entry from a subtree to add to the selected simulator inputs
-        for idx, entry in enumerate(simulator_input_tree):
-            found_it = False
-            if idx not in (0, 1) and entry.get(ABCAdapter.KEY_OPTIONS, False):
-                for option in entry[ABCAdapter.KEY_OPTIONS]:
-                    if option[ABCAdapter.KEY_VALUE] == entry[ABCAdapter.KEY_DEFAULT]:
-                        if option[ABCAdapter.KEY_ATTRIBUTES]:
-                            child_parameter = option[ABCAdapter.KEY_ATTRIBUTES][0][ABCAdapter.KEY_NAME]
-                            checked_parameters[entry[ABCAdapter.KEY_NAME]] = {KEY_PARAMETER_CHECKED: False,
-                                                                              KEY_SAVED_VALUE: entry[
-                                                                                  ABCAdapter.KEY_DEFAULT]}
-                            checked_parameters[child_parameter] = {KEY_PARAMETER_CHECKED: True,
-                                                                   KEY_SAVED_VALUE: 'new_value'}
-                            found_it = True
-                            break
-            if found_it:
-                break
-        assert child_parameter != '', "Could not find any sub-tree entry in simulator interface."
-        subtree = InputTreeManager.select_simulator_inputs(simulator_input_tree, checked_parameters)
-        #After the select method we expect only the checked parameters entries to remain with
-        #the new values updated accordingly.
-        expected_outputs = [{ABCAdapter.KEY_NAME: simulator_input_tree[0][ABCAdapter.KEY_NAME],
-                             ABCAdapter.KEY_DEFAULT: 'new_value'},
-                            {ABCAdapter.KEY_NAME: simulator_input_tree[1][ABCAdapter.KEY_NAME],
-                             ABCAdapter.KEY_DEFAULT: 'new_value'},
-                            {ABCAdapter.KEY_NAME: child_parameter,
-                             ABCAdapter.KEY_DEFAULT: 'new_value'}]
-        assert len(expected_outputs) == len(subtree),\
-                         "Some entries that should not have been displayed still are."
-        for idx, entry in enumerate(expected_outputs):
-            assert expected_outputs[idx][ABCAdapter.KEY_NAME] == subtree[idx][ABCAdapter.KEY_NAME]
-            assert expected_outputs[idx][ABCAdapter.KEY_DEFAULT] == subtree[idx][ABCAdapter.KEY_DEFAULT],\
-                             'Default value not update properly.'
 
 
     def test_rename_burst(self):
@@ -409,12 +244,12 @@ class TestBurstService(BaseTestCase):
         Try removing a started burst, which should result in it getting canceled.
         """
         burst_entity = self._prepare_and_launch_async_burst(length=20000)
-        assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
+        assert BurstConfiguration2.BURST_RUNNING == burst_entity.status,\
                          'A 20000 length simulation should still be started immediately after launch.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
         assert not got_deleted, "Burst should be cancelled before deleted."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
+        assert BurstConfiguration2.BURST_CANCELED == burst_entity.status,\
                          'Deleting a running burst should just cancel it first.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
         assert got_deleted, "Burst should be deleted if status is cancelled."
@@ -482,7 +317,7 @@ class TestBurstService(BaseTestCase):
         burst_config.update_simulator_configuration(kwargs_replica)
         burst_id, _ = self.burst_service.launch_burst(burst_config, 0, first_step_algo.id, self.test_user.id)
         burst_config = dao.get_burst_by_id(burst_id)
-        assert burst_config.status in (BurstConfiguration.BURST_FINISHED, BurstConfiguration.BURST_RUNNING),\
+        assert burst_config.status in (BurstConfiguration2.BURST_FINISHED, BurstConfiguration2.BURST_RUNNING),\
                         "Burst not launched successfully!"
         # Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config)
@@ -543,49 +378,13 @@ class TestBurstService(BaseTestCase):
         #Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config, error_expected=True)
 
-
-    def test_launch_burst_invalid_portlet_analyzer_data(self):
-        """
-        Test that burst is marked as error if invalid data is passed to the first step.
-        """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
-                                                                      'TestAdapter1').id
-        #Adapter tries to do an int(test1_val1) and int(test1_val2) so this should be valid
-        burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
-        kwargs_replica = {'test1_val1': '1', 'test1_val2': '0'}
-        burst_config.update_simulator_configuration(kwargs_replica)
-
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
-        portlet_configuration = self.burst_service.new_portlet_configuration(test_portlet.id)
-        #Portlet analyzer tries to do int(input) which should fail
-        declared_overwrites = {ADAPTER_PREFIX_ROOT + '0test_non_dt_input': 'asa'}
-        self.burst_service.update_portlet_configuration(portlet_configuration, declared_overwrites)
-        burst_config.tabs[0].portlets[0] = portlet_configuration
-
-        burst_id, _ = self.burst_service.launch_burst(burst_config, 0, algo_id, self.test_user.id)
-        burst_config = dao.get_burst_by_id(burst_id)
-        #Wait maximum x seconds for burst to finish
-        burst_config = self._wait_for_burst(burst_config, error_expected=True)
-
-        burst_wf = dao.get_workflows_for_burst(burst_config.id)[0]
-        wf_steps = dao.get_workflow_steps(burst_wf.id)
-        assert len(wf_steps) == 2,\
-                        "Should have exactly 2 wf steps. One for 'simulation' one for portlet analyze operation."
-        simulator_op = dao.get_operation_by_id(wf_steps[0].fk_operation)
-        assert STATUS_FINISHED == simulator_op.status,\
-                         "First operation should be simulator which should have 'finished' status."
-        portlet_analyze_op = dao.get_operation_by_id(wf_steps[1].fk_operation)
-        assert portlet_analyze_op.status == STATUS_ERROR,\
-                         "Second operation should be portlet analyze step which should have 'error' status."
-
-
     def test_launch_group_burst_happy_flow(self):
         """
         Happy flow of launching a burst with a range parameter. Expect to get both and operation
         group and a DataType group for the results of the simulations and for the metric steps.
         """
         burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=120)
-        if burst_config.status != BurstConfiguration.BURST_FINISHED:
+        if burst_config.status != BurstConfiguration2.BURST_FINISHED:
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Burst should have finished successfully.")
 
@@ -639,7 +438,6 @@ class TestBurstService(BaseTestCase):
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         # Add test_portlet to positions (0,0), (0,1) and (1,0)
         tab_config = {test_portlet.id: [(0, 0), (0, 1), (1, 0)]}
-        self._add_portlets_to_burst(burst_config, tab_config)
         burst_config.update_simulator_configuration(kwargs_replica)
         burst_id, _ = self.burst_service.launch_burst(burst_config, 0, algo_id, self.test_user.id)
         burst_config = dao.get_burst_by_id(burst_id)
@@ -668,7 +466,7 @@ class TestBurstService(BaseTestCase):
         :param timeout: the maximum number of seconds to wait after the burst
         """
         waited = 0
-        while burst_config.status == BurstConfiguration.BURST_RUNNING and waited <= timeout:
+        while burst_config.status == BurstConfiguration2.BURST_RUNNING and waited <= timeout:
             sleep(0.5)
             waited += 0.5
             burst_config = dao.get_burst_by_id(burst_config.id)
@@ -677,11 +475,11 @@ class TestBurstService(BaseTestCase):
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Timed out waiting for simulations to finish. We will cancel it")
 
-        if error_expected and burst_config.status != BurstConfiguration.BURST_ERROR:
+        if error_expected and burst_config.status != BurstConfiguration2.BURST_ERROR:
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Burst should have failed due to invalid input data.")
 
-        if (not error_expected) and burst_config.status != BurstConfiguration.BURST_FINISHED:
+        if (not error_expected) and burst_config.status != BurstConfiguration2.BURST_FINISHED:
             msg = "Burst status should have been FINISH. Instead got %s %s" % (burst_config.status,
                                                                                burst_config.error_message)
             self.burst_service.stop_burst(burst_config)
@@ -730,7 +528,6 @@ class TestBurstService(BaseTestCase):
         burst_config = TestFactory.store_burst(self.test_project.id)
 
         workflow_step_list = []
-        test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
 
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
         first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class(
@@ -741,16 +538,7 @@ class TestBurstService(BaseTestCase):
                                                                       first_step_algorithm,
                                                                       first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)
-        view_step = TestFactory.create_workflow_step("tvb.tests.framework.adapters.testadapter2", "TestAdapter2",
-                                                     {"test2": 2}, {}, 0, 0, 0, 0, is_view_step=True)
-        view_step.fk_portlet = test_portlet.id
-        workflow_step_list.append(view_step)
 
-        workflows = self.workflow_service.create_and_store_workflow(self.test_project.id, burst_config.id, 0,
-                                                                    first_step_algorithm.id, operations)
-        self.operation_service.prepare_operations_for_workflowsteps(workflow_step_list, workflows, self.test_user.id,
-                                                                    burst_config.id, self.test_project.id, group,
-                                                                    operations)
         ### Now fire the workflow and also update and store the burst configuration ##
         self.operation_service.launch_operation(operations[0].id, False)
         loaded_burst, _ = self.burst_service.load_burst(burst_config.id)
@@ -772,29 +560,10 @@ class TestBurstService(BaseTestCase):
         datatypes = dao.get_datatypes_in_project(self.test_project.id)
         assert 0 == len(datatypes)
 
-        wf_steps = self.count_all_entities(WorkflowStep)
         datatype1_stored = self.count_all_entities(Datatype1)
         datatype2_stored = self.count_all_entities(Datatype2)
-        assert 0 == wf_steps, "Workflow steps were not deleted."
         assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
         assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
-
-
-    def _add_portlets_to_burst(self, burst_config, portlet_dict):
-        """
-        Adds portlets to a burst config in certain tab position as received
-        from a properly syntaxed list of dictionaries.
-        :param burst_config: the burst configuration to which the portlet will be added
-        :param portlet_dict: a list of dictionaries in the form
-                { 'portlet_id' : [(tab_idx, idx_in_tab), (tab_idx1, idx_in_tab2), ...]
-        NOTE: This will overwrite any portlets that are added to the burst in any of the positions
-        received in parameter `portlet_dict`
-        """
-        for prt_id in portlet_dict:
-            positions = portlet_dict[prt_id]
-            for pos in positions:
-                burst_config.tabs[pos[0]].portlets[pos[1]] = self.burst_service.new_portlet_configuration(
-                    prt_id, pos[0], pos[1])
 
 
     def _prepare_simulation_params(self, length, is_range=False, no_ops=0):

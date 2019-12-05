@@ -34,6 +34,8 @@
 
 import os
 import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizer
@@ -52,15 +54,13 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
+        self.test_user = TestFactory.create_user("Cross_Corelation_Viewer_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Cross_Corelation_Viewer_Project")
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
-
 
     def transactional_teardown_method(self):
         """
@@ -68,15 +68,14 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def test_launch(self):
+    def test_launch(self, cross_correlation_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity)
-        ccorr = self.datatypeFactory.create_crosscorrelation(time_series)
+
+        cross_correlation = cross_correlation_factory()
         viewer = CrossCorrelationVisualizer()
-        result = viewer.launch(ccorr)
+        result = viewer.launch(cross_correlation)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert key in result

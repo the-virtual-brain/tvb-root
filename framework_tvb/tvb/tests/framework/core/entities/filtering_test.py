@@ -35,6 +35,7 @@
 from sqlalchemy import and_
 import pytest
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.storage.session_maker import SessionMaker
@@ -87,15 +88,15 @@ class TestFiltering(TransactionalTestCase):
         data_type = ValueWrapperIndex()
         data_type.data_name = "name_1"
         data_type.data_value = "value_1"
-        self.datatypes_factory.store_datatype(data_type)
+        dao.store_entity(data_type)
         data_type = ValueWrapperIndex()
         data_type.data_name = "name_2"
         data_type.data_value = "value_2"
-        self.datatypes_factory.store_datatype(data_type)
+        dao.store_entity(data_type)
         data_type = ValueWrapperIndex()
         data_type.data_name = "name_1"
         data_type.data_value = "value_3"
-        self.datatypes_factory.store_datatype(data_type)
+        dao.store_entity(data_type)
 
         test_filter_1 = FilterChain(fields=[FilterChain.datatype + '.data_name'],
                                     operations=['=='], values=['name_1'])

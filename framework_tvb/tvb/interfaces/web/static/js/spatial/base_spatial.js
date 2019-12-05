@@ -200,10 +200,10 @@ function _applyEvents(containerId, url, formDataId, axisDataId, fieldsPrefixes) 
  * Loads the interface found at the given url.
  */
 function BS_loadEntity() {
-    var selectedEntityGid = $("select[name='existentEntitiesSelect']").val();
+    var selectedEntityGid = $("select[name='_existentEntitiesSelect']").val();
     var myForm;
 
-    if (selectedEntityGid == undefined || selectedEntityGid == "None" || selectedEntityGid.trim().length == 0) {
+    if (selectedEntityGid == undefined || selectedEntityGid == "explicit-None-value" || selectedEntityGid.trim().length == 0) {
 		myForm = document.getElementById("reset-to-default");
     } else {
 		myForm = document.getElementById("load-existing-entity");

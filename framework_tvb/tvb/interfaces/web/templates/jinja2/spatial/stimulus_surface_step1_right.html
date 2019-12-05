@@ -1,18 +1,12 @@
 <section class="configure-stimulus-shape view-column col-1">
 	<h4><mark>Shape</mark> Stimulus</h4>
 
-	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
-
 	<div id="spatialEquationDivId"></div>
 
-	<form id="spatialEquationAxisParams">
-    	{{ gatf.generateDisplay(spatialPlotInputList, false, "") }}
-    </form>
+	{{ spatialPlotInputList | safe }}
 
 	<div id="temporalEquationDivId"></div>
 
-	<form id="temporalEquationAxisParams">
-    	{{ gatf.generateDisplay(temporalPlotInputList, false, "") }}
-    </form>
+    {{ temporalPlotInputList | safe }}
 
 </section>

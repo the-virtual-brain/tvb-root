@@ -650,6 +650,16 @@ class Surface(HasTraits):
                 float(numpy.mean(self.vertices[:, 1])),
                 float(numpy.mean(self.vertices[:, 2]))]
 
+    def compute_equation(self, focal_points, equation):
+        """
+        focal_points - a list of focal points. Used for specifying the vertices
+        from which the distance is calculated.
+        equation - the equation which should be evaluated
+        """
+        focal_points = numpy.array(focal_points, dtype=numpy.int32)
+        dist = self.geodesic_distance(focal_points)
+        return equation.evaluate(dist)
+
 
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""

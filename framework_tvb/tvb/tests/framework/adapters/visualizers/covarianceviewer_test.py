@@ -46,7 +46,6 @@ class TestCovarianceViewer(TransactionalTestCase):
     Unit-tests for Covariance Viewer.
     """
 
-
     def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
@@ -54,14 +53,13 @@ class TestCovarianceViewer(TransactionalTestCase):
         imports a CFF data-set
         """
 
-        self.test_user = TestFactory.create_user("UserCVV")
-        self.test_project = TestFactory.create_project(self.test_user)
+        self.test_user = TestFactory.create_user("Covariance_Viewer_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Covariance_Viewer_Project")
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity is not None
-
 
     def transactional_teardown_method(self):
         """
@@ -70,10 +68,11 @@ class TestCovarianceViewer(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
 
-    def test_launch(self, time_series_factory, covariance_factory):
+    def test_launch(self, covariance_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
+
         covariance = covariance_factory()
         viewer = CovarianceVisualizer()
         result = viewer.launch(covariance)

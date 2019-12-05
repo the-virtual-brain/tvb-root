@@ -34,11 +34,11 @@
 
 import json
 import cherrypy
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 from tvb.core.entities.model.model_burst import PARAM_INTEGRATOR, PARAM_MODEL
 from tvb.interfaces.web.controllers import common
-from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
 from tvb.simulator.integrators import EulerStochastic
@@ -56,7 +56,7 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
     #     self.init()
     #     self.noise_c = NoiseConfigurationController()
     #     _, self.connectivity = DatatypesFactory().create_connectivity()
-    #     BurstController().index()
+    #     SimulatorController().index()
     #
     #     stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
     #
@@ -77,12 +77,11 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
         """ Cleans the testing environment """
         self.cleanup()
 
-
     def test_submit_noise_configuration_happy(self, connectivity_factory):
         self.init()
         self.noise_c = NoiseConfigurationController()
         _, self.connectivity = connectivity_factory()
-        BurstController().index()
+        SimulatorController().index()
 
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
 

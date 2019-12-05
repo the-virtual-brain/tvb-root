@@ -48,10 +48,9 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.model_workflow import Workflow, WorkflowStep, WorkflowStepView
+from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
-from tvb.core.entities.transient.burst_configuration_entities import PortletConfiguration
+from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.services.exceptions import ProjectImportException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
@@ -60,7 +59,6 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.transient.burst_export_entities import BurstInformation
 from tvb.core.neocom import h5
 
 
@@ -176,14 +174,14 @@ class ImportService(object):
         """
         burst_ids_mapping = {}
 
-        for old_burst_id in bursts_dict:
-            burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
-            burst_entity = BurstConfiguration(project_entity.id)
-            burst_entity.from_dict(burst_information.data)
-            burst_entity = dao.store_entity(burst_entity)
-            burst_ids_mapping[int(old_burst_id)] = burst_entity.id
+        # for old_burst_id in bursts_dict:
+            # burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
+            # burst_entity = BurstConfiguration2(project_entity.id)
+            # burst_entity.from_dict(burst_information.data)
+            # burst_entity = dao.store_entity(burst_entity)
+            # burst_ids_mapping[int(old_burst_id)] = burst_entity.id
             # We don't need the data in dictionary form anymore, so update it with new BurstInformation object
-            bursts_dict[old_burst_id] = burst_information
+            # bursts_dict[old_burst_id] = burst_information
         return burst_ids_mapping
 
 
@@ -219,80 +217,6 @@ class ImportService(object):
             self.import_project_operations(project_entity, new_project_path)
             # Import images
             self._store_imported_images(project_entity)
-            # Now we can finally import workflow related entities
-            # self.import_workflows(project_entity, bursts_dict, burst_ids_mapping)
-
-
-    def import_workflows(self, project, bursts_dict, burst_ids_mapping):
-        """
-        Import the workflow entities for all bursts imported in the project.
-
-        :param project: the current
-
-        :param bursts_dict: a dictionary that holds all the required information in order to
-                            import the bursts from the new project
-
-        :param burst_ids_mapping: a dictionary of the form {old_burst_id : new_burst_id} so we
-                                  know what burst to link each workflow to
-        """
-        for burst_id in bursts_dict:
-            workflows_info = bursts_dict[burst_id].get_workflows()
-            for one_wf_info in workflows_info:
-                # Use the new burst id when creating the workflow
-                workflow_entity = Workflow(project.id, burst_ids_mapping[int(burst_id)])
-                workflow_entity.from_dict(one_wf_info.data)
-                workflow_entity = dao.store_entity(workflow_entity)
-                wf_steps_info = one_wf_info.get_workflow_steps()
-                view_steps_info = one_wf_info.get_view_steps()
-                self.import_workflow_steps(workflow_entity, wf_steps_info, view_steps_info)
-
-
-    def import_workflow_steps(self, workflow, wf_steps, view_steps):
-        """
-        Import all workflow steps for the given workflow. We create both wf_steps and view_steps
-        in the same method, since if a wf_step has to be omited for some reason, we also need to
-        omit that view step.
-        :param workflow: a model.Workflow entity from which we need to add workflow steps
-
-        :param wf_steps: a list of WorkflowStepInformation entities, from which we will rebuild 
-                         the workflow steps
-
-        :param view_steps: a list of WorkflowViewStepInformation entities, from which we will 
-                           rebuild the workflow view steps
-
-        """
-        for wf_step in wf_steps:
-            try:
-                algorithm = wf_step.get_algorithm()
-                if algorithm is None:
-                    # The algorithm is invalid for some reason. Just remove also the view step.
-                    position = wf_step.index()
-                    for entry in view_steps:
-                        if entry.index() == position:
-                            view_steps.remove(entry)
-                    continue
-                wf_step_entity = WorkflowStep(algorithm.id)
-                wf_step_entity.from_dict(wf_step.data)
-                wf_step_entity.fk_workflow = workflow.id
-                wf_step_entity.fk_operation = wf_step.get_operation_id()
-                dao.store_entity(wf_step_entity)
-            except Exception:
-                # only log exception and ignore this as it is not very important:
-                self.logger.exception("Could not restore WorkflowStep: %s" % wf_step.get_algorithm().name)
-
-        for view_step in view_steps:
-            try:
-                algorithm = view_step.get_algorithm()
-                if algorithm is None:
-                    continue
-                view_step_entity = WorkflowStepView(algorithm.id)
-                view_step_entity.from_dict(view_step.data)
-                view_step_entity.fk_workflow = workflow.id
-                view_step_entity.fk_portlet = view_step.get_portlet().id
-                dao.store_entity(view_step_entity)
-            except Exception:
-                # only log exception and ignore this as it is not very important:
-                self.logger.exception("Could not restore WorkflowViewStep " + view_step.get_algorithm().name)
 
 
     @staticmethod
@@ -556,46 +480,5 @@ class ImportService(object):
         :return: BurstConfiguration  filled from JSON
         """
 
-        burst_information = BurstInformation.load_from_dict(json_burst)
-        burst_entity = BurstConfiguration(project_id)
-        burst_entity.from_dict(burst_information.data)
-        burst_entity.prepare_after_load()
-        burst_entity.reset_tabs()
-
-        workflow_info = burst_information.get_workflows()[0]
-        workflow_entity = Workflow(project_id, None)
-        workflow_entity.from_dict(workflow_info.data)
-
-        view_steps = workflow_info.get_view_steps()
-        analyze_steps = workflow_info.get_workflow_steps()
-
-        for view_step in view_steps:
-            try:
-                algorithm = view_step.get_algorithm()
-                portlet = view_step.get_portlet()
-                view_step_entity = WorkflowStepView(algorithm.id, portlet_id=portlet.id)
-                view_step_entity.from_dict(view_step.data)
-                view_step_entity.workflow = workflow_entity
-
-                # For each visualize step, also load all of the analyze steps.
-                analyzers = []
-                for an_step in analyze_steps:
-                    if (an_step.data["tab_index"] != view_step_entity.tab_index
-                            or an_step.data["index_in_tab"] != view_step_entity.index_in_tab):
-                        continue
-                    algorithm = an_step.get_algorithm()
-                    wf_step_entity = WorkflowStep(algorithm.id)
-                    wf_step_entity.from_dict(an_step.data)
-                    wf_step_entity.workflow = workflow_entity
-                    analyzers.append(wf_step_entity)
-
-                portlet = PortletConfiguration(portlet.id)
-                portlet.set_visualizer(view_step_entity)
-                portlet.set_analyzers(analyzers)
-                burst_entity.set_portlet(view_step_entity.tab_index, view_step_entity.index_in_tab, portlet)
-
-            except Exception:
-                # only log exception and ignore this step from loading
-                self.logger.exception("Could not restore Workflow Step " + view_step.get_algorithm().name)
-
+        burst_entity = BurstConfiguration2(project_id)
         return burst_entity

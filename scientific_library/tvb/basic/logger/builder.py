@@ -39,7 +39,7 @@ Singleton logging builder.
 .. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
 
 """
-
+import importlib
 import os
 import weakref
 import logging
@@ -63,7 +63,7 @@ class LoggerBuilder(object):
         """
         if not isinstance(TvbProfile.current, MATLABLibraryProfile):
             config_file_name = TvbProfile.current.LOGGER_CONFIG_FILE_NAME
-            package = __import__(config_root, globals(), locals(), ['__init__'], 0)
+            package = importlib.import_module(config_root)
             package_path = package.__path__[0]
             # Specify logging configuration file for current package.
             logging.config.fileConfig(os.path.join(package_path, config_file_name), disable_existing_loggers=False)

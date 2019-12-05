@@ -35,6 +35,7 @@ import numpy
 import scipy.sparse
 import typing
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.datatypes import equations
 
 
 class Accessor(object, metaclass=abc.ABCMeta):
@@ -225,6 +226,45 @@ class DataSet(Accessor):
         meta = self.owner.storage_manager.get_metadata(self.field_name)
         return DataSetMetaData.from_dict(meta)
 
+
+class EquationScalar(Accessor):
+    """
+    An attribute in a h5 file that corresponds to a traited Equation.
+    """
+    KEY_TYPE = 'type'
+    KEY_PARAMETERS = 'parameters'
+
+    def __init__(self, trait_attribute, h5file, name=None):
+        # type: (Attr, H5File, str) -> None
+        """
+        :param trait_attribute: A traited Equation attribute
+        :param h5file: The parent H5file that contains this Accessor
+        :param name: The name of the dataset in the h5 file.
+                     It defaults to the name of the associated traited attribute.
+                     If the traited attribute is not a member of a HasTraits then
+                     it has no name and you have to provide this parameter
+        """
+        super(EquationScalar, self).__init__(trait_attribute, h5file, name)
+
+    def store(self, data):
+        # type: (Equation) -> None
+        data = self.trait_attribute._validate_set(None, data)
+
+        eq_meta_dict = {self.KEY_TYPE: str(type(data).__name__),
+                        self.KEY_PARAMETERS: data.parameters}
+
+        self.owner.storage_manager.set_metadata({self.field_name: json.dumps(eq_meta_dict)})
+
+    def load(self):
+        # type: () -> Equation
+        eq_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
+
+        eq_type = eq_meta_dict[self.KEY_TYPE]
+        eq_class = getattr(equations, eq_type)
+        eq_instance = eq_class()
+        parameters_dict = eq_meta_dict[self.KEY_PARAMETERS]
+        eq_instance.parameters = parameters_dict
+        return eq_instance
 
 
 class Reference(Uuid):

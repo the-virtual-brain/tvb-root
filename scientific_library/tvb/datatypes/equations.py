@@ -35,7 +35,6 @@ The Equation datatypes.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import json
 import numpy
 import numexpr
 from scipy.special import gamma as sp_gamma
@@ -106,73 +105,6 @@ class Equation(HasTraits):
         y = self.evaluate(var)
         result = list(zip(var.flat, y.flat))
         return result, False
-
-    @staticmethod
-    def build_equation_from_dict(equation_field_name, submitted_data_dict, alter_submitted_dictionary=False):
-        """
-        Builds from the given data dictionary the equation for the specified field name.
-        The dictionary should have the data collapsed.
-        """
-        # todo : this is a type deserialization use case. not yet supported by neotraits
-        raise NotImplemented
-        # if equation_field_name not in submitted_data_dict:
-        #     return None
-        #
-        # eq_param_str = equation_field_name + '_parameters'
-        # eq = submitted_data_dict.get(eq_param_str)
-        #
-        # equation_parameters = {}
-        # if eq:
-        #     if 'parameters' in eq:
-        #         equation_parameters = eq['parameters']
-        #     if 'parameters_parameters' in eq:
-        #         equation_parameters = eq['parameters_parameters']
-        #
-        # for k in equation_parameters:
-        #     equation_parameters[k] = float(equation_parameters[k])
-        #
-        # equation_type = submitted_data_dict[equation_field_name]
-        # equation = parameters_factory.get_traited_instance_for_name(equation_type, Equation,
-        #                                                             {'parameters': equation_parameters})
-        # if alter_submitted_dictionary:
-        #     del submitted_data_dict[eq_param_str]
-        #     submitted_data_dict[equation_field_name] = equation
-        #
-        # return equation
-
-    @staticmethod
-    def to_json(entity):
-        """
-        Returns the json representation of this equation.
-
-        The representation of an equation is a dictionary with the following form:
-        {'equation_type': '$equation_type', 'parameters': {'$param_name': '$param_value', ...}}
-        """
-        if entity is not None:
-            result = {'__mapped_module': entity.__class__.__module__,
-                      '__mapped_class': entity.__class__.__name__,
-                      'parameters': entity.parameters}
-            return json.dumps(result)
-        return None
-
-    @staticmethod
-    def from_json(string):
-        """
-        Retrieves an instance to an equation represented as JSON.
-
-        :param string: the JSON representation of the equation
-        :returns: a `tvb.datatypes.equations_data` equation instance
-        """
-        loaded_dict = json.loads(string)
-        if loaded_dict is None:
-            return None
-        modulename = loaded_dict['__mapped_module']
-        classname = loaded_dict['__mapped_class']
-        module_entity = __import__(modulename, globals(), locals(), [classname])
-        class_entity = getattr(module_entity, classname)
-        loaded_instance = class_entity()
-        loaded_instance.parameters = loaded_dict['parameters']
-        return loaded_instance
 
 
 class TemporalApplicableEquation(Equation):

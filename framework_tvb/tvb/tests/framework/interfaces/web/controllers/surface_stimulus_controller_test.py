@@ -35,23 +35,21 @@
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.common import get_from_session
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
-from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_CONTEXT
-from tvb.core.entities.transient.context_stimulus import SURFACE_PARAMETER
-
+from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import KEY_SURFACE_STIMULI
 
 
 class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def transactional_setup_method(self):
+        self.clean_database()
         self.init()
         self.surface_s_c = SurfaceStimulusController()
-
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-
+        self.clean_database()
 
     def test_step_1(self):
         self.surface_s_c.step_1_submit(1, 1)
@@ -66,8 +64,7 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     def test_step_2(self, surface_factory):
         _, surface = surface_factory
         self.surface_s_c.step_1_submit(1, 1)
-        context = get_from_session(KEY_SURFACE_CONTEXT)
-        context.equation_kwargs[SURFACE_PARAMETER] = surface.gid
+        context = get_from_session(KEY_SURFACE_STIMULI)
         result_dict = self.surface_s_c.step_2()
         expected_keys = ['urlVerticesPick', 'urlVertices', 'urlTrianglesPick', 'urlTriangles',
                          'urlNormalsPick', 'urlNormals', 'surfaceGID', 'mainContent', 
@@ -76,4 +73,3 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_2_submit'
         assert result_dict['mainContent'] == 'spatial/stimulus_surface_step2_main'
         assert result_dict['loadExistentEntityUrl'] == '/spatial/stimulus/surface/load_surface_stimulus'
-

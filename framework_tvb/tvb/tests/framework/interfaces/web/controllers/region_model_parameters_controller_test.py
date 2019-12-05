@@ -35,11 +35,11 @@
 import json
 import pytest
 import cherrypy
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
-from tvb.interfaces.web.controllers.burst.burst_controller import BurstController
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import Generic2dOscillator, Kuramoto
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
@@ -57,7 +57,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         """
         self.init()
         self.region_m_p_c = RegionsModelParametersController()
-        BurstController().index()
+        SimulatorController().index()
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
         _, self.connectivity = connectivity_factory
         new_params = {}

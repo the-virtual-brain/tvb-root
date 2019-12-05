@@ -33,7 +33,7 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import importlib
 import time
 
 STARTUP_TIC = time.time()
@@ -84,7 +84,7 @@ def init_cherrypy(arguments=None):
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     for module in arguments:
-        module_inst = __import__(str(module), globals(), locals(), ["__init__"])
+        module_inst = importlib.import_module(str(module))
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
         CONFIGUER["/static_" + str(module)] = {'tools.staticdir.on': True,
                                                'tools.staticdir.dir': '.',
@@ -98,7 +98,6 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
     cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
     cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    # cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)

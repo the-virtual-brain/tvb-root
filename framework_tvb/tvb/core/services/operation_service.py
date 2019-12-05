@@ -58,13 +58,11 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
-from tvb.core.entities.model.model_workflow import WorkflowStepView
 from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.burst_service2 import BurstService2
-from tvb.core.services.workflow_service import WorkflowService
 from tvb.core.services.backend_client import BACKEND_CLIENT
 
 try:
@@ -94,7 +92,6 @@ class OperationService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.workflow_service = WorkflowService()
         self.file_helper = FilesHelper()
 
 
@@ -258,60 +255,6 @@ class OperationService:
 
         return operations, group
 
-
-    def prepare_operations_for_workflowsteps(self, workflow_step_list, workflows, user_id, burst_id,
-                                             project_id, group, sim_operations):
-        """
-        Create and store Operation entities from a list of Workflow Steps.
-        Will be generated workflows x workflow_step_list Operations.
-        For every step in workflow_step_list one OperationGroup and one DataTypeGroup will be created 
-        (in case of PSE).
-        """
-
-        for step in workflow_step_list:
-            operation_group = None
-            if (group is not None) and not isinstance(step, WorkflowStepView):
-                operation_group = OperationGroup(project_id=project_id, ranges=group.range_references)
-                operation_group = dao.store_entity(operation_group)
-
-            operation = None
-            metadata = {DataTypeMetaData.KEY_BURST: burst_id}
-            algo_category = dao.get_algorithm_by_id(step.fk_algorithm)
-            if algo_category is not None:
-                algo_category = algo_category.algorithm_category
-
-            for wf_idx, workflow in enumerate(workflows):
-                cloned_w_step = step.clone()
-                cloned_w_step.fk_workflow = workflow.id
-                dynamic_params = cloned_w_step.dynamic_param
-                op_params = cloned_w_step.static_param
-                op_params.update(dynamic_params)
-                range_values = None
-                group_id = None
-                if operation_group is not None:
-                    group_id = operation_group.id
-                    range_values = sim_operations[wf_idx].range_values
-
-                if not isinstance(step, WorkflowStepView):
-                    ## For visualization steps, do not create operations, as those are not really needed.
-                    metadata, user_group = self._prepare_metadata(metadata, algo_category, operation_group, op_params)
-                    operation = Operation(user_id, project_id, step.fk_algorithm,
-                                                json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder),
-                                                meta=json.dumps(metadata),
-                                                op_group_id=group_id, range_values=range_values, user_group=user_group)
-                    operation.visible = step.step_visible
-                    operation = dao.store_entity(operation)
-                    cloned_w_step.fk_operation = operation.id
-
-                dao.store_entity(cloned_w_step)
-
-            if operation_group is not None and operation is not None:
-                datatype_group = DataTypeGroup(operation_group, operation_id=operation.id,
-                                                     fk_parent_burst=burst_id,
-                                                     state=metadata[DataTypeMetaData.KEY_STATE])
-                dao.store_entity(datatype_group)
-
-
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
         Public method.
@@ -324,11 +267,11 @@ class OperationService:
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
             #TODO: this currently keeps both ways to display forms
-            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
-                if adapter_instance.get_input_tree() is None:
-                    filtered_kwargs = adapter_instance.get_form().get_form_values()
-                else:
-                    filtered_kwargs = adapter_instance.prepare_ui_inputs(kwargs)
+            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__ and \
+                    not 'RegionStimulusCreator' in adapter_instance.__class__.__name__ and \
+                    not 'LocalConnectivityCreator' in adapter_instance.__class__.__name__ and \
+                    not 'SurfaceStimulusCreator' in adapter_instance.__class__.__name__:
+                filtered_kwargs = adapter_instance.get_form().get_form_values()
 
                 params = dict()
                 for k, value_ in filtered_kwargs.items():

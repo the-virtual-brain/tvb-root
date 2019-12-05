@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -26,24 +26,25 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
 
-"""
-.. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
-"""
+from sqlalchemy import Column, Integer, String, ForeignKey
+from tvb.core.entities.model.model_datatype import DataType
+import numpy
 
 
-class ContextLocalConnectivity():
-    """
-    Keep the required data to redo the whole page. We don't need to keep the kwargs since
-    we never return to that page in 'create mode', so the local connectivity entity and the
-    selected surface should suffice.
-    """
+class DummyDataTypeIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    def __init__(self):
-        self.selected_entity = None
-        self.selected_surface = None
-    
-    def reset(self):
-        self.selected_entity = None
-        self.selected_surface = None
+    row1 = Column(String)
+    row2 = Column(String)
+
+    def fill_from_has_traits(self, datatype):
+        # type: (HasTraits) -> None
+        super(DummyDataTypeIndex, self).fill_from_has_traits(datatype)
+        self.row1 = datatype.row1
+        self.row2 = datatype.row2
+
+    @staticmethod
+    def accepted_filters():
+        filters = DataType.accepted_filters()
+        return filters

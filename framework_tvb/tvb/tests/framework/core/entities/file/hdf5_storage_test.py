@@ -72,7 +72,7 @@ class TestHDF5Storage(object):
 
         self.test_2D_array = numpy.random.random((10, 10))
         self.test_3D_array = numpy.random.random((3, 3, 3))
-        self.test_string_array = numpy.array([["a", "b"], ["c", "d"]])
+        self.test_string_array = numpy.array([["a".encode('utf-8'), "b".encode('utf-8')], ["c".encode('utf-8'), "d".encode('utf-8')]])
 
     def teardown_method(self):
         """

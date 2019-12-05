@@ -32,13 +32,16 @@
 .. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
+from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, \
+    get_ui_name_to_equation_dict
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.equations import Equation
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, SimpleSelectField, FormField
 from tvb.core.neocom import h5
+from tvb.interfaces.web.controllers.decorators import using_template
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
@@ -61,17 +64,26 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
     def get_filters():
         return None
 
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'legend': 'Selected entity'}
 
-# TODO: work also on controller/template. Same for stimuli creators.
+
 class LocalConnectivityCreatorForm(ABCAdapterForm):
+    NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
         self.surface = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                            required=LocalConnectivity.surface.required,
                                            label=LocalConnectivity.surface.label, doc=LocalConnectivity.surface.doc)
-        self.equation = ScalarField(LocalConnectivity.equation, self)
+        self.spatial = SimpleSelectField(equation_choices, self, name='spatial', label='Spatial', required=True,
+                                         default=type(LocalConnectivity.equation.default))
+
+        self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
+                                        label='Equation parameters')
         self.cutoff = ScalarField(LocalConnectivity.cutoff, self)
+        self.display_name = ScalarField(Attr(str, label='Display name', required=False), self, name='display_name')
 
     @staticmethod
     def get_required_datatype():
@@ -88,11 +100,27 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
     def get_traited_datatype(self):
         return LocalConnectivity()
 
+    def fill_from_trait(self, trait):
+        self.surface.data = trait.surface.gid.hex
+        self.cutoff.data = trait.cutoff
+        self.spatial.data = type(trait.equation)
+        self.spatial_params.form = get_form_for_equation(type(trait.equation))(self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial_params.form.fill_from_trait(trait.equation)
+
+    @using_template('spatial/spatial_fragment')
+    def __str__(self):
+        return {'form': self, 'next_action': 'form_spatial_local_connectivity_data',
+                'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
+
 
 class LocalConnectivityCreator(ABCAsynchronous):
     """
     The purpose of this adapter is create a LocalConnectivity.
     """
+    KEY_SURFACE = 'surface'
+    KEY_EQUATION = 'equation'
+    KEY_CUTOFF = 'cutoff'
+    KEY_DISPLAY_NAME = 'display_name'
 
     def get_form_class(self):
         return LocalConnectivityCreatorForm
@@ -108,28 +136,30 @@ class LocalConnectivityCreator(ABCAsynchronous):
         Used for creating a `LocalConnectivity`
         """
         local_connectivity = LocalConnectivity()
-        local_connectivity.cutoff = float(kwargs['cutoff'])
-        surface_ht = h5.load_from_index(kwargs['surface'])
-        local_connectivity.surface = surface_ht
-        local_connectivity.equation = self.get_lconn_equation(kwargs)
+        local_connectivity.cutoff = float(kwargs[self.KEY_CUTOFF])
+        if not self.surface_index:
+            surface_gid = kwargs[self.KEY_SURFACE]
+            self.surface_index = self.load_entity_by_gid(surface_gid)
+        surface = h5.load_from_index(self.surface_index)
+        local_connectivity.surface = surface
+        local_connectivity.equation = get_ui_name_to_equation_dict().get(kwargs[self.KEY_EQUATION])()
+
+        equation_form = get_form_for_equation(type(local_connectivity.equation))(prefix=self.KEY_EQUATION)
+        equation_form.fill_from_post(kwargs)
+        equation_form.fill_trait(local_connectivity.equation)
         local_connectivity.compute_sparse_matrix()
 
         return h5.store_complete(local_connectivity, self.storage_path)
-
-    def get_lconn_equation(self, kwargs):
-        """
-        Get the equation for the local connectivity from a dictionary of arguments.
-        """
-        return Equation.build_equation_from_dict('equation', kwargs)
 
     def get_required_disk_size(self, **kwargs):
         """
         Returns the required disk size to be able to run the adapter. (in kB)
         """
-        if 'surface' in kwargs:
-            surface_index = kwargs['surface']
-            points_no = float(kwargs['cutoff']) / surface_index.edge_mean_length
-            disk_size_b = surface_index.number_of_vertices * points_no * points_no * 8
+        if self.KEY_SURFACE in kwargs:
+            surface_gid = kwargs[self.KEY_SURFACE]
+            self.surface_index = self.load_entity_by_gid(surface_gid)
+            points_no = float(kwargs[self.KEY_CUTOFF]) / self.surface_index.edge_mean_length
+            disk_size_b = self.surface_index.number_of_vertices * points_no * points_no * 8
             return self.array_size2kb(disk_size_b)
         return 0
 

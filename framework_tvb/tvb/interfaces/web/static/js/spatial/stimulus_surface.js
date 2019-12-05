@@ -251,3 +251,110 @@ function tick() {
        buttonStop.className = buttonStop.className + " action-idle";
    }
 }
+
+// Following methods are used for handling events on dynamic forms
+function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
+    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (response) {
+            var t = document.createRange().createContextualFragment(response);
+            $("#" + equationParamsDiv).empty().append(t);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
+            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
+            plotEquations(baseUrl)
+        }
+    })
+}
+
+function prepareUrlParam(paramName, paramValue) {
+    return paramName + '=' + paramValue;
+}
+
+function setSurfaceStimParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+    let current_param = prepareUrlParam(fieldName, fieldValue);
+    let url = baseUrl + '/' + methodToCall + '?' + current_param;
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function () {
+            plotEquations(baseUrl)
+        }
+    })
+}
+
+function redrawPlotOnMinMaxChanges(baseUrl) {
+    $('input[name="' + '_min_space_x' + '"]').change(function () {
+        plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId', prepareUrlParam(this.name, this.value));
+    });
+    $('input[name="' + '_max_space_x' + '"]').change(function () {
+        plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId', prepareUrlParam(this.name, this.value));
+    });
+    $('input[name="' + '_min_tmp_x' + '"]').change(function () {
+        plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId', prepareUrlParam(this.name, this.value));
+    });
+    $('input[name="' + '_max_tmp_x' + '"]').change(function () {
+        plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId', prepareUrlParam(this.name, this.value));
+    });
+}
+
+function setEventsOnFormFields(fields_with_events, url, only_equation_params = false) {
+    let SURFACE_FIELD = 'set_surface';
+    let SPATIAL_FIELD = 'set_spatial';
+    let TEMPORAL_FIELD = 'set_temporal';
+    let DISPLAY_NAME_FIELD = 'set_display_name';
+    let SPATIAL_PARAMS_FIELD = 'set_spatial_param';
+    let TEMPORAL_PARAMS_FIELD = 'set_temporal_param';
+
+    if (only_equation_params === false) {
+        $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
+            setSurfaceStimParamAndRedrawChart(url, SURFACE_FIELD, this.name, this.value)
+        });
+        $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
+            setSurfaceStimParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
+        });
+
+        //TODO: we want to have also select fields for this
+        let spatial_radio_fields = document.getElementsByName(fields_with_events[SPATIAL_FIELD]);
+        for (let i=0; i<spatial_radio_fields.length; i++) {
+            spatial_radio_fields[i].onclick = function () {
+                changeEquationParamsForm(url, SPATIAL_FIELD, this.value, 'spatial_params',
+                    fields_with_events)
+            };
+        }
+        let temporal_radio_fields = document.getElementsByName(fields_with_events[TEMPORAL_FIELD]);
+        for (let i=0; i<temporal_radio_fields.length; i++) {
+            temporal_radio_fields[i].onclick = function () {
+                changeEquationParamsForm(url, TEMPORAL_FIELD, this.value, 'temporal_params',
+                    fields_with_events)
+            };
+        }
+    }
+    $('input[name^="' + fields_with_events[SPATIAL_PARAMS_FIELD] + '"]').change(function () {
+        setSurfaceStimParamAndRedrawChart(url, SPATIAL_PARAMS_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fields_with_events[TEMPORAL_PARAMS_FIELD] + '"]').change(function () {
+        setSurfaceStimParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
+    });
+}
+
+function plotEquations(baseUrl) {
+    plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId');
+    plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId');
+}
+
+function plotEquation(baseUrl, methodToCall='get_equation_chart', equationDivId='equationDivId', params=null) {
+    let url = baseUrl + '/' + methodToCall;
+    if (params) {
+        url += '?' + params
+    }
+    doAjaxCall({
+        async: false,
+        type: 'GET',
+        url: url,
+        success: function (data) {
+            $("#" + equationDivId).empty().append(data);
+        }
+    });
+}

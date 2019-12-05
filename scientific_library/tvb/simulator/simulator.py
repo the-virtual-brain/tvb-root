@@ -207,11 +207,11 @@ class Simulator(HasTraits):
                 indices.append(self.model.state_variables.index(sv))
                 boundaries.append(sv_bounds)
             sort_inds = numpy.argsort(indices)
-            self.integrator.constraint_state_variable_indices = numpy.array(indices)[sort_inds]
-            self.integrator.constraint_state_variable_boundaries = numpy.array(boundaries)[sort_inds]
+            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
+            self.integrator.state_variable_boundaries = numpy.array(boundaries)[sort_inds]
         else:
-            self.integrator.constraint_state_variable_indices = None
-            self.integrator.constraint_state_variable_boundaries = None
+            self.integrator.bounded_state_variable_indices = None
+            self.integrator.state_variable_boundaries = None
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]

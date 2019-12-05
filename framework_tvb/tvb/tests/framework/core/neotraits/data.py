@@ -40,7 +40,7 @@ class BazDataType(HasTraits):
 class FooDatatype(HasTraits):
     array_float = NArray()
     array_int = NArray(dtype=int, shape=(Dim.any, Dim.any))
-    scalar_int = Attr(int)
+    scalar_int = Int()
     abaz = Attr(field_type=BazDataType)
     some_transient = NArray(shape=(Dim.any, Dim.any, Dim.any), required=False)
 

@@ -118,14 +118,6 @@ class LocalConnectivity(HasTraits):
         result.matrix = reader.read_array(matlab_data_name="LocalCoupling")
         return result
 
-    def get_min_max_values(self):
-        """
-        Retrieve the minimum and maximum values from the metadata.
-        :returns: (minimum_value, maximum_value)
-        """
-        metadata = self.get_metadata('matrix')
-        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
-
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance

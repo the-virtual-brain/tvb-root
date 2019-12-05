@@ -114,6 +114,10 @@ class Generic2dOscillatorModelForm(FormWithRanges):
         self.gamma = ArrayField(Generic2dOscillator.gamma, self)
         self.variables_of_interest = MultiSelectField(Generic2dOscillator.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['tau', 'a', 'b', 'c', 'I', 'd', 'e', 'f', 'g', 'alpha', 'beta', 'gamma']
+
 
 class KuramotoModelForm(FormWithRanges):
 
@@ -121,6 +125,10 @@ class KuramotoModelForm(FormWithRanges):
         super(KuramotoModelForm, self).__init__(prefix)
         self.omega = ArrayField(Kuramoto.omega, self)
         self.variables_of_interest = MultiSelectField(Kuramoto.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['omega']
 
 
 class SupHopfModelForm(FormWithRanges):
@@ -131,6 +139,10 @@ class SupHopfModelForm(FormWithRanges):
         self.omega = ArrayField(SupHopf.omega, self)
         self.variables_of_interest = MultiSelectField(SupHopf.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['a', 'omega']
+
 
 class HopfieldModelForm(FormWithRanges):
 
@@ -140,6 +152,10 @@ class HopfieldModelForm(FormWithRanges):
         self.tauT = ArrayField(Hopfield.tauT, self)
         self.dynamic = ArrayField(Hopfield.dynamic, self)
         self.variables_of_interest = MultiSelectField(Hopfield.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['taux', 'tauT', 'dynamic']
 
 
 class EpileptorModelForm(FormWithRanges):
@@ -166,6 +182,10 @@ class EpileptorModelForm(FormWithRanges):
         self.modification = ArrayField(Epileptor.modification, self)
         self.variables_of_interest = MultiSelectField(Epileptor.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ["Iext", "Iext2", "r", "x0", "slope"]
+
 
 class Epileptor2DModelForm(FormWithRanges):
 
@@ -184,6 +204,10 @@ class Epileptor2DModelForm(FormWithRanges):
         self.tt = ArrayField(Epileptor2D.tt, self)
         self.modification = ArrayField(Epileptor2D.modification, self)
         self.variables_of_interest = MultiSelectField(Epileptor2D.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ["r", "Iext", "x0"]
 
 
 class EpileptorCodim3ModelForm(FormWithRanges):
@@ -204,6 +228,11 @@ class EpileptorCodim3ModelForm(FormWithRanges):
         self.N = ArrayField(EpileptorCodim3.N, self)
         self.modification = ArrayField(EpileptorCodim3.modification, self)
         self.variables_of_interest = MultiSelectField(EpileptorCodim3.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['mu1_start', 'mu2_start', 'nu_start', 'mu1_stop', 'mu2_stop', 'nu_stop', 'b', 'R', 'c', 'dstar', 'N',
+                'Ks']
 
 
 class EpileptorCodim3SlowModModelForm(FormWithRanges):
@@ -232,6 +261,11 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
         self.N = ArrayField(EpileptorCodim3SlowMod.N, self)
         self.modification = ArrayField(EpileptorCodim3SlowMod.modification, self)
         self.variables_of_interest = ArrayField(EpileptorCodim3SlowMod.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['mu1_Ain', 'mu2_Ain', 'nu_Ain', 'mu1_Bin', 'mu2_Bin', 'nu_Bin', 'mu1_Aend', 'mu2_Aend', 'nu_Aend',
+                'mu1_Bend', 'mu2_Bend', 'nu_Bend', 'b', 'R', 'c', 'dstar', 'N']
 
 
 class EpileptorRestingStateModelForm(FormWithRanges):
@@ -268,6 +302,11 @@ class EpileptorRestingStateModelForm(FormWithRanges):
         self.p = ArrayField(EpileptorRestingState.p, self)
         self.variables_of_interest = MultiSelectField(EpileptorRestingState.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['Iext', 'Iext2', 'r', 'x0', 'slope', 'tau_rs', 'a_rs', 'b_rs', 'I_rs', 'd_rs', 'e_rs', 'f_rs',
+                'alpha_rs', 'beta_rs', 'gamma_rs']
+
 
 class JansenRitModelForm(FormWithRanges):
 
@@ -289,6 +328,10 @@ class JansenRitModelForm(FormWithRanges):
         self.p_max = ArrayField(JansenRit.p_max, self)
         self.mu = ArrayField(JansenRit.mu, self)
         self.variables_of_interest = ArrayField(JansenRit.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['A', 'B', 'a', 'b', 'v0', 'nu_max', 'r', 'J', 'a_1', 'a_2', 'a_3', 'a_4', 'p_min', 'p_max', 'mu']
 
 
 class ZetterbergJansenModelForm(FormWithRanges):
@@ -315,6 +358,11 @@ class ZetterbergJansenModelForm(FormWithRanges):
         self.Q = ArrayField(ZetterbergJansen.Q, self)
         self.variables_of_interest = MultiSelectField(ZetterbergJansen.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['He', 'Hi', 'ke', 'ki', 'e0', 'rho_2', 'rho_1', 'gamma_1', 'gamma_2', 'gamma_3', 'gamma_4', 'gamma_5',
+                'P', 'U', 'Q']
+
 
 class ReducedWongWangModelForm(FormWithRanges):
 
@@ -330,6 +378,10 @@ class ReducedWongWangModelForm(FormWithRanges):
         self.I_o = ArrayField(ReducedWongWang.I_o, self)
         self.sigma_noise = ArrayField(ReducedWongWang.sigma_noise, self)
         self.variables_of_interest = MultiSelectField(ReducedWongWang.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['a', 'b', 'd', 'gamma', 'tau_s', 'w', 'J_N', 'I_o']
 
 
 class ReducedWongWangExcInhModelForm(FormWithRanges):
@@ -356,6 +408,11 @@ class ReducedWongWangExcInhModelForm(FormWithRanges):
         self.lamda = ArrayField(ReducedWongWangExcInh.lamda, self)
         self.variables_of_interest = MultiSelectField(ReducedWongWangExcInh.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['a_e', 'b_e', 'd_e', 'gamma_e', 'tau_e', 'W_e', 'w_p', 'J_N', 'a_i', 'b_i', 'd_i', 'gamma_i', 'tau_i',
+                'W_i', 'J_i', 'I_o', 'G', 'lamda']
+
 
 class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
 
@@ -370,6 +427,10 @@ class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
         self.sigma = ArrayField(ReducedSetFitzHughNagumo.sigma, self)
         self.mu = ArrayField(ReducedSetFitzHughNagumo.mu, self)
         self.variables_of_interest = MultiSelectField(ReducedSetFitzHughNagumo.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['tau', 'a', 'b', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
 class ReducedSetHindmarshRoseModelForm(FormWithRanges):
@@ -389,6 +450,10 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
         self.sigma = ArrayField(ReducedSetHindmarshRose.sigma, self)
         self.mu = ArrayField(ReducedSetHindmarshRose.mu, self)
         self.variables_of_interest = MultiSelectField(ReducedSetHindmarshRose.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
 class ZerlautFirstOrderModelForm(FormWithRanges):
@@ -416,6 +481,11 @@ class ZerlautFirstOrderModelForm(FormWithRanges):
         self.external_input = ArrayField(ZerlautFirstOrder.external_input, self)
         self.variables_of_interest = MultiSelectField(ZerlautFirstOrder.variables_of_interest, self)
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b', 'tau_w', 'E_e', 'E_i', 'Q_e', 'Q_i', 'tau_e', 'tau_i', 'N_tot',
+                'p_connect', 'g', 'T', 'external_input']
+
 
 class ZerlautSecondOrderModelForm(ZerlautFirstOrderModelForm):
 
@@ -430,6 +500,10 @@ class LinearModelForm(FormWithRanges):
         super(LinearModelForm, self).__init__(prefix)
         self.gamma = ArrayField(Linear.gamma, self)
         self.variables_of_interest = MultiSelectField(Linear.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['gamma']
 
 
 class WilsonCowanModelForm(FormWithRanges):
@@ -459,6 +533,11 @@ class WilsonCowanModelForm(FormWithRanges):
         self.alpha_e = ArrayField(WilsonCowan.alpha_e, self)
         self.alpha_i = ArrayField(WilsonCowan.alpha_i, self)
         self.variables_of_interest = MultiSelectField(WilsonCowan.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['c_ee', 'c_ei', 'c_ie', 'c_ii', 'tau_e', 'tau_i', 'a_e', 'b_e', 'c_e', 'a_i', 'b_i', 'c_i', 'r_e',
+                'r_i', 'k_e', 'k_i', 'P', 'Q', 'theta_e', 'theta_i', 'alpha_e', 'alpha_i']
 
 
 class LarterBreakspearModelForm(FormWithRanges):
@@ -498,3 +577,9 @@ class LarterBreakspearModelForm(FormWithRanges):
         self.QZ_max = ArrayField(LarterBreakspear.QZ_max, self)
         self.t_scale = ArrayField(LarterBreakspear.t_scale, self)
         self.variables_of_interest = MultiSelectField(LarterBreakspear.variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['gCa', 'gK', 'gL', 'phi', 'gNa', 'TK', 'TCa', 'TNa', 'VCa', 'VK', 'VL', 'VNa', 'd_K', 'tau_K', 'd_Na',
+                'd_Ca', 'aei', 'aie', 'b', 'C', 'ane', 'ani', 'aee', 'Iext', 'rNMDA', 'VT', 'd_V', 'ZT', 'd_Z',
+                'QV_max', 'QZ_max', 't_scale']
