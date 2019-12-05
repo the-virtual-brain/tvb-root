@@ -208,7 +208,7 @@ class Simulator(HasTraits):
                 boundaries.append(sv_bounds)
             sort_inds = numpy.argsort(indices)
             self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
-            self.integrator.state_variable_boundaries = numpy.array(boundaries)[sort_inds]
+            self.integrator.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
         else:
             self.integrator.bounded_state_variable_indices = None
             self.integrator.state_variable_boundaries = None

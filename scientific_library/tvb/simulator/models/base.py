@@ -82,16 +82,19 @@ class Model(HasTraits):
         self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
-            for sv, bounds in self. state_variable_boundaries.items():
+            for sv, sv_bounds in self.state_variable_boundaries.items():
                 try:
                     # ...the boundaries correspond to model's state variables,
                     self.state_variables.index(sv)
                 except:
                     # TODO: Add the correct type of error and error message
                     raise
-                # and for every two sided constraint, the left boundary is lower than the right one
-                if bounds[0] is not None and bounds[1] is not None:
-                    assert bounds[0] <= bounds[1]
+                for i_bound, (sv_bound, inf, default) in enumerate(zip(sv_bounds,
+                                                                       [-numpy.inf, numpy.inf],
+                                                                       [numpy.finfo("single").min,
+                                                                        numpy.finfo("single").max])):
+                    if sv_bound is None or sv_bound == inf:
+                        sv_bounds[i_bound] = default
         elif self.state_variable_boundaries is not None:
             # TODO: Add here a warning or, even, error?
             self.state_variable_boundaries = None
