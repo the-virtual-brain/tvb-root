@@ -443,6 +443,10 @@ class SciPyODEBase(object):
         return self._ode.integrate(self._ode.t + self.dt).reshape(X.shape) + self.dt * stimulus
 
 
+# TODO: Find a solution for boundary application for intermediate steps of SciPy O/SDE solvers
+# Right now they would behave differently than the TVB ones.
+
+
 class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
