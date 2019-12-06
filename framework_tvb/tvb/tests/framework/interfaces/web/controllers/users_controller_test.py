@@ -63,7 +63,6 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.cleanup()
         self.clean_database()
 
-
     def test_index_valid_post(self):
         """
         Tests for a valid redirect on user login
