@@ -38,6 +38,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
 
@@ -396,6 +397,155 @@ class TraitField(Field):
             trait_attribute.default
         )
 
+    def from_trait(self, trait, f_name):
+        self.data = getattr(trait, f_name)
+
+
+class TraitUploadField(TraitField):
+    template = 'form_fields/upload_field.html'
+
+    def __init__(self, traited_attribute, required_type, form, name, disabled=False):
+        super(TraitUploadField, self).__init__(traited_attribute, form, name, disabled)
+        self.required_type = required_type
+        self.files_helper = FilesHelper()
+
+    def fill_from_post(self, post_data):
+        super(TraitUploadField, self).fill_from_post(post_data)
+
+        if self.data.file is None:
+            self.data = None
+            return
+
+        project = dao.get_project_by_id(self.owner.project_id)
+        temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
+
+        file_name = None
+        try:
+            uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
+            file_name = TEMPORARY_PREFIX + uq_name + '_' + self.data.filename
+            file_name = os.path.join(temporary_storage, file_name)
+
+            with open(file_name, 'wb') as file_obj:
+                file_obj.write(self.data.file.read())
+        except Exception as excep:
+            # TODO: is this handled properly?
+            self.files_helper.remove_files([file_name])
+            excep.message = 'Could not continue: Invalid input files'
+            raise excep
+
+        if file_name:
+            self.data = file_name
+            self.owner.temporary_files.append(file_name)
+
+
+class TraitDataTypeSelectField(TraitField):
+    template = 'form_fields/datatype_select_field.html'
+    missing_value = 'explicit-None-value'
+
+    def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
+                 dynamic_conditions=None, has_all_option=False):
+        super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
+        self.datatype_index = REGISTRY.get_index_for_datatype(trait_attribute.field_type)
+        self.conditions = conditions
+        self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
+        self.dynamic_conditions = dynamic_conditions
+        self.has_all_option = has_all_option
+
+    def from_trait(self, trait, f_name):
+        if hasattr(trait, f_name):
+            self.data = getattr(trait, f_name)
+
+    @property
+    def get_dynamic_filters(self):
+        return FilterChain().get_filters_for_type(self.datatype_index)
+
+    def _get_values_from_db(self):
+        all_conditions = FilterChain()
+        all_conditions += self.conditions
+        all_conditions += self.dynamic_conditions
+        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
+                                                               self.datatype_index,
+                                                               all_conditions)
+        return filtered_datatypes
+
+    def options(self):
+        if not self.owner.project_id:
+            raise ValueError('A project_id is required in order to query the DB')
+
+        filtered_datatypes = self._get_values_from_db()
+
+        if not self.required:
+            choice = None
+            yield Option(
+                id='{}_{}'.format(self.name, None),
+                value=self.missing_value,
+                label=str(choice).title(),
+                checked=self.data is None
+            )
+
+        for i, datatype in enumerate(filtered_datatypes):
+            yield Option(
+                id='{}_{}'.format(self.name, i),
+                value=datatype[2],
+                label=self._prepare_display_name(datatype),
+                checked=self.data == datatype[2]
+            )
+
+        if self.has_all_option:
+            if not self.owner.draw_ranges:
+                raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
+
+            all_values = ''
+            for fdt in filtered_datatypes:
+                all_values += str(fdt[2]) + ','
+
+            choice = "All"
+            yield Option(
+                id='{}_{}'.format(self.name, choice),
+                value=all_values[:-1],
+                label=choice,
+                checked=self.data is choice
+            )
+
+    def get_dt_from_db(self):
+        return dao.get_datatype_by_gid(self.data)
+
+    def _prepare_display_name(self, value):
+        """
+        Populate meta-data fields for data_list (list of DataTypes).
+
+        Private method, to be called recursively.
+        It will receive a list of Attributes, and it will populate 'options'
+        entry with data references from DB.
+        """
+        # Here we only populate with DB data, actual
+        # XML check will be done after select and submit.
+        entity_gid = value[2]
+        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
+        display_name = ''
+        if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
+            display_name = actual_entity[0].__class__.__name__
+        display_name += ' - ' + (value[3] or "None ")
+        if value[5]:
+            display_name += ' - From: ' + str(value[5])
+        else:
+            display_name += utils.date2string(value[4])
+        if value[6]:
+            display_name += ' - ' + str(value[6])
+        display_name += ' - ID:' + str(value[0])
+
+        return display_name
+
+    def _from_post(self):
+        if self.unvalidated_data == self.missing_value:
+            self.unvalidated_data = None
+
+        if self.required and not self.unvalidated_data:
+            raise ValueError('Field required')
+
+        # TODO: ensure is in choices
+        self.data = self.unvalidated_data
+
 
 class StrField(TraitField):
     template = 'form_fields/str_field.html'
@@ -656,7 +806,7 @@ class Form(object):
             if f_name is None:
                 # skipp attribute that does not seem to belong to a traited type
                 continue
-            field.data = getattr(trait, f_name)
+            field.from_trait(trait, f_name)
 
 
     def fill_trait(self, datatype):
