@@ -257,6 +257,8 @@ class FlowService:
 
         return self._group_adapters_by_category(filtered_adapters, categories_dict)
 
+    def get_filtered_adapters(self, datatype_gid, categories):
+        return self._get_launchable_algorithms(datatype_gid, categories)[1]
 
     def _get_launchable_algorithms(self, datatype_gid, categories):
 
