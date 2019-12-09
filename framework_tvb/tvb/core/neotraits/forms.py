@@ -52,6 +52,7 @@ jinja_env = None
 def prepare_prefixed_name_for_field(prefix, name):
     return '{}_{}'.format(prefix, name)
 
+
 class Field(object):
     template = None
 
@@ -73,7 +74,6 @@ class Field(object):
         # todo
         self.unvalidated_data = default
         self.errors = []
-
 
     def fill_from_post(self, post_data):
         """ deserialize form a post dictionary """
@@ -338,46 +338,6 @@ class DataTypeSelectField(Field):
         self.data = self.unvalidated_data
 
 
-TEMPORARY_PREFIX = ".tmp"
-
-
-class UploadField(Field):
-    template = 'form_fields/upload_field.html'
-
-    def __init__(self, required_type, form, name, disabled=False, required=False, label='', doc=''):
-        super(UploadField, self).__init__(form, name, disabled, required, label, doc)
-        self.required_type = required_type
-        self.files_helper = FilesHelper()
-
-    def fill_from_post(self, post_data):
-        super(UploadField, self).fill_from_post(post_data)
-
-        if self.data.file is None:
-            self.data = None
-            return
-
-        project = dao.get_project_by_id(self.owner.project_id)
-        temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
-
-        file_name = None
-        try:
-            uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
-            file_name = TEMPORARY_PREFIX + uq_name + '_' + self.data.filename
-            file_name = os.path.join(temporary_storage, file_name)
-
-            with open(file_name, 'wb') as file_obj:
-                file_obj.write(self.data.file.read())
-        except Exception as excep:
-            # TODO: is this handled properly?
-            self.files_helper.remove_files([file_name])
-            excep.message = 'Could not continue: Invalid input files'
-            raise excep
-
-        if file_name:
-            self.data = file_name
-            self.owner.temporary_files.append(file_name)
-
-
 class TraitField(Field):
     # mhtodo: while this is consistent with the h5 api, it has the same problem
     #         it couples the system to traited attr declarations
@@ -399,6 +359,9 @@ class TraitField(Field):
 
     def from_trait(self, trait, f_name):
         self.data = getattr(trait, f_name)
+
+
+TEMPORARY_PREFIX = ".tmp"
 
 
 class TraitUploadField(TraitField):
@@ -665,11 +628,10 @@ class SelectField(TraitField):
 
         allowed = self.trait_attribute.choices
         if not self.trait_attribute.required:
-            allowed = (None, ) + allowed
+            allowed = (None,) + allowed
 
         if self.data not in allowed:
-           raise ValueError('must be one of {}'.format(allowed))
-
+            raise ValueError('must be one of {}'.format(allowed))
 
 
 class MultiSelectField(TraitField):
@@ -702,7 +664,7 @@ class MultiSelectField(TraitField):
         else:
             selected = self.unvalidated_data
 
-        data = []   # don't mutate self.data until we know all values converted ok
+        data = []  # don't mutate self.data until we know all values converted ok
 
         for s in selected:
             converted_s = self.trait_attribute.element_type(s)
@@ -807,7 +769,6 @@ class Form(object):
                 # skipp attribute that does not seem to belong to a traited type
                 continue
             field.from_trait(trait, f_name)
-
 
     def fill_trait(self, datatype):
         """
