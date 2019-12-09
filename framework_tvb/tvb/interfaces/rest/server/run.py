@@ -4,8 +4,9 @@ from tvb.basic.profile import TvbProfile
 from flask import Flask
 from flask_restful import Api
 from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
 from tvb.interfaces.rest.server.resources.projects.project_resource import GetProjectsOfAUserResource, \
-    GetDataFromProject, GetOperationsFromProject
+    GetOperationsFromProjectResource, GetDataFromProjectResource
 from tvb.interfaces.rest.server.resources.users.user_resource import GetUsersResource
 from tvb.basic.logger.builder import get_logger
 from tvb.config.init.initializer import initialize
@@ -40,8 +41,9 @@ def initialize_flask():
 
     api.add_resource(GetUsersResource, '/users')
     api.add_resource(GetProjectsOfAUserResource, '/get_projects/<int:user_id>')
-    api.add_resource(GetDataFromProject, '/get_datatypes/<int:project_id>')
-    api.add_resource(GetOperationsFromProject, '/get_operations/<int:project_id>')
+    api.add_resource(GetDataFromProjectResource, '/get_project_datatypes/<int:project_id>')
+    api.add_resource(GetOperationsFromProjectResource, '/get_operations/<int:project_id>')
+    api.add_resource(GetDatatypeResource, '/get_datatypes/<string:guid>')
 
     app.run(debug=True, port=FLASK_PORT)
 
