@@ -37,11 +37,12 @@ from nibabel import trackvis
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
-from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -58,15 +59,26 @@ def chunk_iter(iterable, n):
         yield chunk
 
 
+class TrackImporterModel(ViewModel):
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select file to import'
+    )
+
+    region_volume = DataTypeGidAttr(
+        field_type=RegionVolumeMapping,
+        required=False,
+        label='Reference Volume Map'
+    )
+
+
 class TrackImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TrackImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.trk', self, name='data_file', required=True,
-                                     label='Please select file to import')
-        self.region_volume = DataTypeSelectField(RegionVolumeMappingIndex, self, name='region_volume',
-                                                 label='Reference Volume Map')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self, name='data_file')
+        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self, name='region_volume')
 
 
 class TrackZipImporterForm(TrackImporterForm):
@@ -74,8 +86,7 @@ class TrackZipImporterForm(TrackImporterForm):
     def __init__(self, prefix='', project_id=None):
         super(TrackZipImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.zip', self, name='data_file', required=True,
-                                     label='Please select file to import')
+        self.data_file.required_type = '.zip'
 
 
 class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):

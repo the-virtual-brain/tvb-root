@@ -36,12 +36,28 @@ import numpy
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
+
+
+class ZIPConnectivityImporterModel(ViewModel):
+    uploaded = UploadAttr(
+        field_type=str,
+        label='Connectivity file (zip)'
+    )
+
+    normalization = ChoicesAttr(
+        field_type=str,
+        required=False,
+        choices=tuple(NORMALIZATION_OPTIONS.values()),
+        label='Weights Normalization',
+        doc='Normalization mode for weights'
+    )
 
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
@@ -49,9 +65,8 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.uploaded = UploadField("application/zip", self, name='uploaded', label='Connectivity file (zip)')
-        self.normalization = SimpleSelectField(NORMALIZATION_OPTIONS, self, name='normalization',
-                                               label='Weights Normalization', doc='Normalization mode for weights')
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, "application/zip", self, name='uploaded')
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization')
 
 
 class ZIPConnectivityImporter(ABCUploader):

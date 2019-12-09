@@ -39,12 +39,12 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, Surface
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
@@ -61,25 +61,47 @@ def determine_projection_type(sensors_idx):
     return projection_matrix_type
 
 
+class ProjectionMatrixImporterModel(ViewModel):
+    projection_file = UploadAttr(
+        field_type=str,
+        label='Projection matrix file (.mat or .npy format)',
+        doc='Expected a file containing projection matrix (one vector of length '
+            'number of surface vertices nd values in the sensors range).'
+    )
+
+    dataset_name = Attr(
+        field_type=str,
+        required=False,
+        default=DEFAULT_DATASET_NAME,
+        label='Matlab dataset name',
+        doc='Name of the MATLAB dataset where data is stored. Required only for .mat files'
+    )
+
+    surface = DataTypeGidAttr(
+        field_type=Surface,
+        label='Brain Cortical Surface',
+        doc='The Brain Surface used by the uploaded projection matrix.'
+    )
+
+    sensors = DataTypeGidAttr(
+        field_type=Sensors,
+        label='Sensors',
+        doc='The Sensors used in for current projection.'
+    )
+
+
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
-        self.projection_file = UploadField('.mat, .npy', self, name='projection_file', required=True,
-                                           label='Projection matrix file (.mat or .npy format)',
-                                           doc='Expected a file containing projection matrix (one vector of length '
-                                               'number of surface vertices nd values in the sensors range).')
-        self.dataset_name = SimpleStrField(self, name='dataset_name', default=DEFAULT_DATASET_NAME,
-                                           label='Matlab dataset name',
-                                           doc='Name of the MATLAB dataset where data is stored. '
-                                               'Required only for .mat files')
+        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, '.mat, .npy', self,
+                                                name='projection_file')
+        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=['Cortical Surface'])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True,
-                                           conditions=surface_conditions, label='Brain Cortical Surface',
-                                           doc='The Brain Surface used by the uploaded projection matrix.')
-        self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label='Sensors',
-                                           doc='The Sensors used in for current projection.')
+        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self, name='surface',
+                                                conditions=surface_conditions)
+        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self, name='sensors')
 
 
 class ProjectionMatrixSurfaceEEGImporter(ABCUploader):

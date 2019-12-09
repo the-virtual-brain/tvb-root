@@ -33,13 +33,36 @@
 """
 
 from tvb.adapters.uploaders.obj.surface import ObjSurface
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.entities.storage import transactional
+from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, UploadAttr
 from tvb.datatypes.surfaces import make_surface, center_vertices
-from tvb.core.neotraits.forms import SimpleSelectField, UploadField, SimpleBoolField
+from tvb.core.neotraits.forms import BoolField, TraitUploadField, SelectField
 from tvb.core.neocom import h5
+
+
+class ObjSurfaceImporterModel(ViewModel):
+    surface_type = ChoicesAttr(
+        field_type=str,
+        label='Specify file type :',
+        choices=tuple(ALL_SURFACES_SELECTION.values()),
+        default=tuple(ALL_SURFACES_SELECTION.values())[0]
+    )
+
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select file to import'
+    )
+
+    should_center = Attr(
+        field_type=bool,
+        required=False,
+        default=False,
+        label='Center surface using vertex means along axes'
+    )
 
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
@@ -47,12 +70,9 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
 
-        self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
-                                              label='Specify file type :', default=list(ALL_SURFACES_SELECTION)[0])
-        self.data_file = UploadField('.obj', self, name='data_file', required=True,
-                                     label='Please select file to import')
-        self.should_center = SimpleBoolField(self, name='should_center', default=False,
-                                             label='Center surface using vertex means along axes')
+        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, self, name='surface_type')
+        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self, name='data_file')
+        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self, name='should_center')
 
 
 class ObjSurfaceImporter(ABCUploader):

@@ -35,28 +35,55 @@
 
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
-from tvb.core.neotraits.forms import UploadField, SimpleBoolField, SimpleSelectField
+from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, UploadAttr
+
+
+class GIFTISurfaceImporterModel(ViewModel):
+    surface_types = ALL_SURFACES_SELECTION.copy()
+    surface_types['Specified in the file metadata'] = OPTION_READ_METADATA
+
+    file_type = ChoicesAttr(
+        field_type=str,
+        label='Specify file type : ',
+        choices=tuple(surface_types.values()),
+        default=tuple(surface_types.values())[0]
+    )
+
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select a .gii (LH if cortex)'
+    )
+
+    data_file_part2 = UploadAttr(
+        field_type=str,
+        required=False,
+        label="Optionally select 2'nd .gii (RH if cortex)"
+    )
+
+    should_center = Attr(
+        field_type=bool,
+        required=False,
+        default=False,
+        label='Center surface using vertex means along axes'
+    )
 
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
-        surface_types = ALL_SURFACES_SELECTION.copy()
-        surface_types['Specified in the file metadata'] = OPTION_READ_METADATA
 
-        self.file_type = SimpleSelectField(surface_types, self, name='file_type', required=True,
-                                           label='Specify file type : ', default=list(surface_types)[0])
-        self.data_file = UploadField('.gii', self, name='data_file', required=True,
-                                     label='Please select a .gii (LH if cortex)')
-        self.data_file_part2 = UploadField('.gii', self, name='data_file_part2',
-                                           label="Optionally select 2'nd .gii (RH if cortex)")
-        self.should_center = SimpleBoolField(self, name='should_center', default=False,
-                                             label='Center surface using vertex means along axes')
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type')
+        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', self, name='data_file')
+        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', self,
+                                                name='data_file_part2')
+        self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, self, name='should_center')
 
 
 class GIFTISurfaceImporter(ABCUploader):

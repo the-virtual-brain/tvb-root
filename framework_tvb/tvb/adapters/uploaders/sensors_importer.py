@@ -37,24 +37,39 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
-class SensorsImporterForm(ABCUploaderForm):
-    options = {'EEG Sensors': SensorsEEG.sensors_type.default,
+class SensorsImporterModel(ViewModel):
+    OPTIONS = {'EEG Sensors': SensorsEEG.sensors_type.default,
                'MEG Sensors': SensorsMEG.sensors_type.default,
                'Internal Sensors': SensorsInternal.sensors_type.default}
+
+    sensors_file = UploadAttr(
+        field_type=str,
+        label='Please upload sensors file (txt or bz2 format)',
+        doc='Expected a text/bz2 file containing sensor measurements.'
+    )
+
+    sensors_type = ChoicesAttr(
+        field_type=str,
+        label='Sensors type: ',
+        choices=tuple(OPTIONS.values()),
+        default=tuple(OPTIONS.values())[0]
+    )
+
+
+class SensorsImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SensorsImporterForm, self).__init__(prefix, project_id)
 
-        self.sensors_file = UploadField('text/plain, .bz2', self, name='sensors_file', required=True,
-                                        label='Please upload sensors file (txt or bz2 format)',
-                                        doc='Expected a text/bz2 file containing sensor measurements.')
-        self.sensors_type = SimpleSelectField(self.options, self, name='sensors_type', required=True,
-                                              label='Sensors type: ', default=list(self.options)[0])
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, 'text/plain, .bz2', self,
+                                             name='sensors_file')
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type')
 
 
 class SensorsImporter(ABCUploader):

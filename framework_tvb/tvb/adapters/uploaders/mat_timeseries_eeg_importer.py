@@ -29,10 +29,17 @@
 #
 
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, Sensors
 from tvb.adapters.uploaders.mat_timeseries_importer import MatTimeSeriesImporterForm, TS_EEG, MatTimeSeriesImporter
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+
+
+class EEGMatTimeSeriesImporterModel(ViewModel):
+    eeg = DataTypeGidAttr(
+        field_type=Sensors,
+        label='EEG Sensors'
+    )
 
 
 class EEGMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
@@ -41,8 +48,8 @@ class EEGMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
         super(EEGMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[EEG_POLYMORPHIC_IDENTITY])
-        self.eeg = DataTypeSelectField(SensorsIndex, self, name='tstype_parameters', required=True,
-                                       conditions=eeg_conditions, label='EEG Sensors')
+        self.eeg = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.eeg, self, name='tstype_parameters',
+                                            conditions=eeg_conditions)
 
 
 class EEGMatTimeSeriesImporter(MatTimeSeriesImporter):

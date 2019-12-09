@@ -37,7 +37,8 @@ import shutil
 import zipfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import UploadField
+from tvb.core.neotraits.forms import TraitUploadField
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -45,13 +46,19 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
+class TVBImporterModel(ViewModel):
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select file to import (h5 or zip)'
+    )
+
+
 class TVBImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TVBImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.zip, .h5', self, name='data_file', required=True,
-                                     label='Please select file to import (h5 or zip)')
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, '.zip, .h5', self, name='data_file')
 
 
 class TVBImporter(ABCUploader):
@@ -69,7 +76,6 @@ class TVBImporter(ABCUploader):
     def get_output(self):
         return []
 
-
     def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
         """
         Overwrite method in order to return the correct number of stored datatypes.
@@ -77,7 +83,6 @@ class TVBImporter(ABCUploader):
         self.nr_of_datatypes = 0
         msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
         return msg, self.nr_of_datatypes
-
 
     def launch(self, data_file):
         """
