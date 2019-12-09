@@ -43,13 +43,33 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import CORTICAL, Surface
+
+
+class RegionMappingImporterModel(ViewModel):
+    mapping_file = UploadAttr(
+        field_type=str,
+        label='Please upload region mapping file (txt, zip or bz2 format)',
+        doc='Expected a text/zip/bz2 file containing region mapping values.'
+    )
+
+    surface = DataTypeGidAttr(
+        field_type=Surface,
+        label='Brain Surface',
+        doc='The Brain Surface used by uploaded region mapping.'
+    )
+
+    connectivity = DataTypeGidAttr(
+        field_type=Connectivity,
+        label='Connectivity',
+        required=True, doc='The Connectivity used by uploaded region mapping.'
+    )
 
 
 class RegionMappingImporterForm(ABCUploaderForm):
@@ -57,16 +77,13 @@ class RegionMappingImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(RegionMappingImporterForm, self).__init__(prefix, project_id)
 
-        self.mapping_file = UploadField('.txt, .zip, .bz2', self, name='mapping_file', required=True,
-                                        label='Please upload region mapping file (txt, zip or bz2 format)',
-                                        doc='Expected a text/zip/bz2 file containing region mapping values.')
+        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, '.txt, .zip, .bz2', self,
+                                             name='mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True,
-                                           conditions=surface_conditions, label='Brain Surface',
-                                           doc='The Brain Surface used by uploaded region mapping.')
-        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
-                                                required=True, doc='The Connectivity used by uploaded region mapping.')
+        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self, name='surface',
+                                                conditions=surface_conditions)
+        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self, name='connectivity')
 
 
 class RegionMappingImporter(ABCUploader):

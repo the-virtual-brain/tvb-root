@@ -57,7 +57,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits.forms import Form, DataTypeSelectField
+from tvb.core.neotraits.forms import Form, DataTypeSelectField, TraitDataTypeSelectField
 from tvb.interfaces.web.controllers.decorators import using_template
 
 ATT_METHOD = "python_method"
@@ -154,7 +154,7 @@ class ABCAdapterForm(Form):
         attrs_dict = {}
         for field in self.fields:
             field_name = self._get_original_field_name(field)
-            if isinstance(field, DataTypeSelectField):
+            if isinstance(field, DataTypeSelectField) or isinstance(field, TraitDataTypeSelectField):
                 field_data = field.get_dt_from_db()
             else:
                 field_data = field.data

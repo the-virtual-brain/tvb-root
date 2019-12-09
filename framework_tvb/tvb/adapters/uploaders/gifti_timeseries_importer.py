@@ -39,11 +39,25 @@ from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesSurfaceH5
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.surfaces import Surface
+
+
+class GIFTITimeSeriesImporterModel(ViewModel):
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select file to import (.gii)'
+    )
+
+    surface = DataTypeGidAttr(
+        field_type=Surface,
+        label='Brain Surface',
+        doc='The Brain Surface used to generate imported TimeSeries.'
+    )
 
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
@@ -51,13 +65,11 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.gii', self, name='data_file', required=True,
-                                     label='Please select file to import (.gii)')
+        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self, name='data_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True,
-                                           conditions=surface_conditions, label='Brain Surface',
-                                           doc='The Brain Surface used to generate imported TimeSeries.')
+        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
+                                                conditions=surface_conditions)
 
 
 class GIFTITimeSeriesImporter(ABCUploader):
@@ -113,7 +125,8 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_idx.labels_ordering = json.dumps(partial_time_series.labels_ordering)
             ts_idx.labels_dimensions = json.dumps(partial_time_series.labels_dimensions)
             ts_idx.data_ndim = len(ts_data_shape)
-            ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(ts_data_shape)
+            ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(
+                ts_data_shape)
 
             return [ts_idx]
 

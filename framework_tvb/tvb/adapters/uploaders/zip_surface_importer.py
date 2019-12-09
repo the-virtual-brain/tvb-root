@@ -36,25 +36,52 @@
 import numpy
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import UploadField, SimpleSelectField, SimpleBoolField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField, BoolField
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr
 from tvb.datatypes.surfaces import make_surface, center_vertices
+
+
+class ZIPSurfaceImporterModel(ViewModel):
+    uploaded = UploadAttr(
+        field_type=str,
+        label='Surface file (zip)'
+    )
+
+    surface_type = ChoicesAttr(
+        field_type=str,
+        choices=tuple(ALL_SURFACES_SELECTION.values()),
+        default=tuple(ALL_SURFACES_SELECTION.values())[0],
+        label='Surface type'
+    )
+
+    zero_based_triangles = Attr(
+        field_type=bool,
+        required=False,
+        default=True,
+        label='Zero based triangles'
+    )
+
+    should_center = Attr(
+        field_type=bool,
+        required=False,
+        label='Center surface using vertex means along axes'
+    )
 
 
 class ZIPSurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ZIPSurfaceImporterForm, self).__init__(prefix, project_id)
-        self.uploaded = UploadField('application/zip', self, name='uploaded', required=True, label='Surface file (zip)')
-        self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
-                                              label='Surface type', default=list(ALL_SURFACES_SELECTION)[0])
-        self.zero_based_triangles = SimpleBoolField(self, name='zero_based_triangles', default=True,
-                                                    label='Zero based triangles')
-        self.should_center = SimpleBoolField(self, name='should_center',
-                                             label='Center surface using vertex means along axes')
+        self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, 'application/zip', self, name='uploaded')
+        self.surface_type = SelectField(ZIPSurfaceImporterModel.surface_type, self, name='surface_type')
+        self.zero_based_triangles = BoolField(ZIPSurfaceImporterModel.zero_based_triangles, self,
+                                              name='zero_based_triangles')
+        self.should_center = BoolField(ZIPSurfaceImporterModel.should_center, self, name='should_center')
 
 
 class ZIPSurfaceImporter(ABCUploader):

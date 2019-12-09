@@ -36,6 +36,9 @@
 import os
 import numpy
 from tvb.basic.exceptions import ValidationException
+from tvb.basic.neotraits.api import Attr
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
 from tvb.datatypes.time_series import TimeSeriesVolume
@@ -45,15 +48,44 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.forms import UploadField, SimpleBoolField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+
+
+class NIFTIImporterModel(ViewModel):
+    data_file = UploadAttr(
+        field_type=str,
+        label='Please select file to import (gz or nii)'
+    )
+
+    apply_corrections = Attr(
+        field_type=bool,
+        required=False,
+        label='Apply auto Corrections',
+        doc='Check this when the NII mapping has values outside [-1..N-1]. '
+            'All outside range will be set -1 (background).'
+    )
+
+    mappings_file = UploadAttr(
+        field_type=str,
+        required=False,
+        label='Mapping File',
+        doc='Fill this for Region Mappings, when the indices in the NII do not match '
+            'the Connectivity [0..N-1] indices'
+    )
+
+    connectivity = DataTypeGidAttr(
+        field_type=Connectivity,
+        required=False,
+        label='Connectivity',
+        doc='Optional Connectivity if the NII file is a volume2regions mapping'
+    )
 
 
 class NIFTIImporterForm(ABCUploaderForm):
@@ -61,16 +93,10 @@ class NIFTIImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(NIFTIImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.nii, .gz, .zip', self, name='data_file', required=True,
-                                     label='Please select file to import (gz or nii)')
-        self.apply_corrections = SimpleBoolField(self, name='apply_corrections', label='Apply auto Corrections',
-                                                 doc='Check this when the NII mapping has values outside [-1..N-1]. '
-                                                     'All outside range will be set -1 (background).')
-        self.mappings_file = UploadField('.txt', self, name='mappings_file', label='Mapping File',
-                                         doc='Fill this for Region Mappings, when the indices in the NII do not match '
-                                             'the Connectivity [0..N-1] indices')
-        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', label='Connectivity',
-                                                doc='Optional Connectivity if the NII file is a volume2regions mapping')
+        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, '.nii, .gz, .zip', self, name='data_file')
+        self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, self, name='apply_corrections')
+        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self, name='mappings_file')
+        self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self, name='connectivity')
 
 
 class NIFTIImporter(ABCUploader):
