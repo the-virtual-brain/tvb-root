@@ -2,7 +2,6 @@ from flask import jsonify
 from flask_restful import Resource
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
-import json
 
 
 class GetProjectsOfAUserResource(Resource):
@@ -28,7 +27,7 @@ class GetProjectsOfAUserResource(Resource):
         return jsonify({'projects': final_dict})
 
 
-class GetDataFromProject(Resource):
+class GetDataFromProjectResource(Resource):
 
     def __init__(self):
         self.project_service = ProjectService()
@@ -40,7 +39,7 @@ class GetDataFromProject(Resource):
         return datatypes
 
 
-class GetOperationsFromProject(Resource):
+class GetOperationsFromProjectResource(Resource):
 
     def __init__(self):
         self.project_service = ProjectService()
