@@ -33,16 +33,38 @@
 """
 
 import uuid
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+
+
+class ConnectivityMeasureImporterModel(ViewModel):
+    data_file = UploadAttr(
+        field_type=str,
+        label='Connectivity measure file (.mat format)'
+    )
+
+    dataset_name = Attr(
+        field_type=str,
+        default='M',
+        label='Matlab dataset name',
+        doc='Name of the MATLAB dataset where data is stored'
+    )
+
+    connectivity = DataTypeGidAttr(
+        field_type=Connectivity,
+        label='Large Scale Connectivity',
+        doc='The Connectivity for which these measurements were made'
+    )
 
 
 class ConnectivityMeasureImporterForm(ABCUploaderForm):
@@ -50,14 +72,10 @@ class ConnectivityMeasureImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityMeasureImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.mat', self, name='data_file', required=True,
-                                     label='Connectivity measure file (.mat format)')
-        self.dataset_name = SimpleStrField(self, name='dataset_name', required=True, default='M',
-                                           label='Matlab dataset name',
-                                           doc='Name of the MATLAB dataset where data is stored')
-        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', required=True,
-                                                label='Large Scale Connectivity',
-                                                doc='The Connectivity for which these measurements were made')
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self, name='data_file')
+        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self, name='dataset_name')
+        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self,
+                                                     name='connectivity')
 
 
 class ConnectivityMeasureImporter(ABCUploader):
