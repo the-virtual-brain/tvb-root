@@ -132,9 +132,9 @@ class TestIntegrators(BaseTestCase):
     def test_scipy_dopri5(self):
         self._scipy_scheme_tester('Dopri5')
 
-    def test_bounds(self):
-        min_float = numpy.finfo("single").min
-        max_float = numpy.finfo("single").max
+    def test_boundaries(self):
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
         bounded_state_variable_indices = numpy.r_[0, 1, 2, 3]
         state_variable_boundaries = numpy.array([[0.0, 1.0], [min_float, 1.0],
                                                  [0.0, max_float], [min_float, max_float]], dtype=float)

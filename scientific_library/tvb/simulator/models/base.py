@@ -73,6 +73,20 @@ class Model(HasTraits):
         self.observe = namespace['observe']
         self.observe.code = code
 
+    def _setup_sv_boundaries(self):
+        for sv, sv_bounds in self.state_variable_boundaries.items():
+            try:
+                # ...the boundaries correspond to model's state variables,
+                self.state_variables.index(sv)
+            except IndexError:
+                raise ValueError("Non-existent state variable in bounds %s!" % str(sv_bounds))
+            infs = [-numpy.inf, numpy.inf]
+            minmax = [numpy.finfo("double").min, numpy.finfo("double").max]
+            for i_bound, (sv_bound, inf, default) in enumerate(zip(sv_bounds, infs, minmax)):
+                if sv_bound is None or sv_bound == inf:
+                    sv_bounds[i_bound] = default
+            self.state_variable_boundaries[sv] = sv_bounds.astype("float64")
+
     def configure(self):
         "Configure base model."
         for req_attr in 'nvar number_of_modes cvar'.split():
@@ -82,22 +96,10 @@ class Model(HasTraits):
         self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
-            for sv, sv_bounds in self.state_variable_boundaries.items():
-                try:
-                    # ...the boundaries correspond to model's state variables,
-                    self.state_variables.index(sv)
-                except:
-                    # TODO: Add the correct type of error and error message
-                    raise
-                for i_bound, (sv_bound, inf, default) in enumerate(zip(sv_bounds,
-                                                                       [-numpy.inf, numpy.inf],
-                                                                       [numpy.finfo("single").min,
-                                                                        numpy.finfo("single").max])):
-                    if sv_bound is None or sv_bound == inf:
-                        sv_bounds[i_bound] = default
+            self._setup_sv_boundaries()
         elif self.state_variable_boundaries is not None:
-            # TODO: Add here a warning or, even, error?
             self.state_variable_boundaries = None
+            Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
 
     @property
     def nvar(self):

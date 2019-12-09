@@ -99,18 +99,19 @@ class TestModels(BaseTestCase):
         assert (len(model.variables_of_interest), 10, model.number_of_modes) == obser.shape
         return state, obser
 
-    def test_model_bounds_config(self):
+    def test_sv_boundaries_setup(self):
         model = TestBoundsModel()
         model.configure()
-        min_float = numpy.finfo("single").min
-        max_float = numpy.finfo("single").max
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
+        min_positive = 1.0/numpy.finfo("single").max
         state_variable_boundaries = \
             {"x1": numpy.array([0.0, 1.0]),
              "x2": numpy.array([min_float, 1.0]),
              "x3": numpy.array([0.0, max_float]),
              "x4": numpy.array([min_float, max_float])}
         for sv, sv_bounds in state_variable_boundaries.items():
-            assert numpy.all(sv_bounds == model.state_variable_boundaries[sv])
+            assert numpy.allclose(sv_bounds, model.state_variable_boundaries[sv], min_positive)
 
     def test_wilson_cowan(self):
         """
