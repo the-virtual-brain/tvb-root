@@ -6,7 +6,7 @@ from flask_restful import Api
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
 from tvb.interfaces.rest.server.resources.projects.project_resource import GetProjectsOfAUserResource, \
-    GetOperationsFromProjectResource, GetDataFromProjectResource
+    GetOperationsFromProjectResource, GetDataFromProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.users.user_resource import GetUsersResource
 from tvb.basic.logger.builder import get_logger
 from tvb.config.init.initializer import initialize
@@ -44,6 +44,7 @@ def initialize_flask():
     api.add_resource(GetDataFromProjectResource, '/get_project_datatypes/<int:project_id>')
     api.add_resource(GetOperationsFromProjectResource, '/get_operations/<int:project_id>')
     api.add_resource(GetDatatypeResource, '/get_datatypes/<string:guid>')
+    api.add_resource(GetOperationsForDatatypeResource, '/get_operations_for_datatype/<string:guid>')
 
     app.run(debug=True, port=FLASK_PORT)
 

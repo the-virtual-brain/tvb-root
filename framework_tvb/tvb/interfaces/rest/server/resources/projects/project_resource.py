@@ -1,7 +1,12 @@
 from flask import jsonify
 from flask_restful import Resource
+from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
+import json
+
+from tvb.interfaces.rest.server.encoders.json_encoders import AlgorithmEncoder
 
 
 class GetProjectsOfAUserResource(Resource):
@@ -63,4 +68,20 @@ class GetOperationsFromProjectResource(Resource):
 
             final_dict[operation['gid']] = dict_user
         return jsonify(({'operations': final_dict}))
+
+
+class GetOperationsForDatatypeResource(Resource):
+
+    def __init__(self):
+        self.flow_service = FlowService()
+
+    def get(self, guid):
+        categories = dao.get_launchable_categories()
+        filtered_adapters = self.flow_service.get_filtered_adapters(guid, categories)
+        operations = dict()
+
+        for i in range(len(filtered_adapters)):
+            operations[str(i)] = json.dumps(filtered_adapters[i].__dict__, cls=AlgorithmEncoder)
+
+        return operations
 
