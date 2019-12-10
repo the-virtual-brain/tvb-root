@@ -46,18 +46,16 @@ from tvb.datatypes.time_series import TimeSeries
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, DataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-
 
 
 class FFTAdapterForm(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(FFTAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label=fft.FFT.time_series.label, doc=fft.FFT.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(fft.FFT.time_series, self, name='time_series',
+                                                    conditions=self.get_filters(), has_all_option=True)
         self.segment_length = ScalarField(fft.FFT.segment_length, self)
         self.window_function = ScalarField(fft.FFT.window_function, self)
         self.detrend = ScalarField(fft.FFT.detrend, self)
@@ -127,7 +125,6 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         self.log.debug("Using window_function  is %s" % self.algorithm.window_function)
         self.log.debug("Using detrend  is %s" % self.algorithm.detrend)
 
-
     def get_required_memory_size(self, time_series, segment_length=None, window_function=None, detrend=None):
         """
         Returns the required memory to be able to run the adapter.
@@ -141,7 +138,6 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
             self.memory_factor += 1
         return total_required_memory / self.memory_factor
 
-
     def get_required_disk_size(self, time_series, segment_length=None, window_function=None, detrend=None):
         """
         Returns the required disk size to be able to run the adapter (in kB).
@@ -149,7 +145,6 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         output_size = self.algorithm.result_size(self.input_shape, self.algorithm.segment_length,
                                                  self.input_time_series_index.sample_period)
         return self.array_size2kb(output_size)
-
 
     def launch(self, time_series, segment_length=None, window_function=None, detrend=None):
         """

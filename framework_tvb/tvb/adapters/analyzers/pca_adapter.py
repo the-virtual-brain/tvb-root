@@ -45,7 +45,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
@@ -55,9 +55,8 @@ class PCAAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PCAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=PCA.time_series.label, doc=PCA.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(PCA.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
     def get_required_datatype():
