@@ -37,17 +37,24 @@ A displayer for cross correlation.
 """
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.temporal_correlations import CrossCorrelation
+
+
+class CrossCorrelationVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        field_type=CrossCorrelation,
+        label='Cross correlation'
+    )
 
 
 class CrossCorrelationVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelationVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Cross correlation')
+        self.datatype = TraitDataTypeSelectField(CrossCorrelationVisualizerModel.datatype, self, name='datatype')
 
     @staticmethod
     def get_required_datatype():

@@ -40,8 +40,31 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.entities.storage import dao
 from tvb.adapters.datatypes.db.annotation import *
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+
+
+class ConnectivityAnnotationsViewModel(ViewModel):
+    connectivity_index = DataTypeGidAttr(
+        field_type=Connectivity,
+        required=False,
+        label='Large Scale Connectivity Matrix'
+    )
+
+    annotations_index = DataTypeGidAttr(
+        field_type=ConnectivityAnnotations,
+        label='Ontology Annotations'
+    )
+
+    region_mapping_index = DataTypeGidAttr(
+        field_type=RegionMapping,
+        required=False,
+        label='Region mapping',
+        doc='A region map to identify us the Cortical Surface to display,  as well as how the mapping '
+            'from Connectivity to Cortex is done '
+    )
 
 
 class ConnectivityAnnotationsViewForm(ABCAdapterForm):
@@ -49,16 +72,12 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityAnnotationsViewForm, self).__init__(prefix, project_id)
         # Used for filtering
-        self.connectivity_index = DataTypeSelectField(ConnectivityIndex, self, 'connectivity_index', required=False,
-                                                      label='Large Scale Connectivity Matrix')
-        self.annotations_index = DataTypeSelectField(ConnectivityAnnotationsIndex, self, 'annotations_index',
-                                                     required=True, label='Ontology Annotations',
-                                                     conditions=self.get_filters())
-        self.region_mapping_index = DataTypeSelectField(RegionMappingIndex, self, 'region_mapping_index',
-                                                        required=False, label='Region mapping',
-                                                        doc='A region map to identify us the Cortical Surface to '
-                                                            'display,  as well as how the mapping from Connectivity '
-                                                            'to Cortex is done ')
+        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index, self,
+                                                           'connectivity_index')
+        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index, self,
+                                                          'annotations_index', conditions=self.get_filters())
+        self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
+                                                             self, 'region_mapping_index')
 
     @staticmethod
     def get_required_datatype():

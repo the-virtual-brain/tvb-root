@@ -38,15 +38,23 @@ A displayer for covariance.
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import Covariance
+
+
+class CovarianceVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        field_type=Covariance,
+        label='Covariance'
+    )
 
 
 class CovarianceVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CovarianceVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Covariance')
+        self.datatype = TraitDataTypeSelectField(CovarianceVisualizerModel.datatype, self, name='datatype')
 
     @staticmethod
     def get_required_datatype():

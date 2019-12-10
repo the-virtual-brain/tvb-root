@@ -37,24 +37,44 @@ It displays the mixing matrix of siae n_features x n_components
 """
 
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleIntField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.mode_decompositions import IndependentComponents
 
 LOG = get_logger(__name__)
+
+
+class ICAModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        field_type=IndependentComponents,
+        label='Independent component analysis:'
+    )
+
+    i_svar = Attr(
+        field_type=int,
+        default=0,
+        label='Index of state variable (defaults to first state variable)'
+    )
+
+    i_mode = Attr(
+        field_type=int,
+        default=0,
+        label='Index of mode (defaults to first mode)'
+    )
 
 
 class ICAForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ICAForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Independent component analysis:', conditions=self.get_filters())
-        self.i_svar = SimpleIntField(self, name='i_svar', default=0,
-                                     label='Index of state variable (defaults to first state variable)')
-        self.i_mode = SimpleIntField(self, name='i_mode', default=0, label='Index of mode (defaults to first mode)')
+        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, self, name='datatype',
+                                                 conditions=self.get_filters())
+        self.i_svar = IntField(ICAModel.i_svar, self, name='i_svar')
+        self.i_mode = IntField(ICAModel.i_mode, self, name='i_mode')
 
     @staticmethod
     def get_required_datatype():

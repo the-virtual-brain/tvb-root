@@ -34,20 +34,33 @@ A tracts visualizer
 """
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.tracts import TractsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.surfaces import CorticalSurface, Surface
+from tvb.datatypes.tracts import Tracts
+
+
+class TractViewerModel(ViewModel):
+    tracts = DataTypeGidAttr(
+        field_type=Tracts,
+        label='White matter tracts'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        field_type=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Surface to be displayed semi-transparently, for visual purposes only.'
+    )
 
 
 class TractViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TractViewerForm, self).__init__(prefix, project_id)
-        self.tracts = DataTypeSelectField(self.get_required_datatype(), self, name='tracts', required=True,
-                                          label='White matter tracts')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Surface to be displayed semi-transparently, for visual purposes only.')
+        self.tracts = TraitDataTypeSelectField(TractViewerModel.tracts, self, name='tracts')
+        self.shell_surface = TraitDataTypeSelectField(TractViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_required_datatype():

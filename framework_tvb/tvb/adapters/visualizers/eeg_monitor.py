@@ -39,20 +39,41 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
+
+
+class EegMonitorModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        field_type=TimeSeries,
+        label='Input Data',
+        doc='Time series to display.'
+    )
+
+    data_2 = DataTypeGidAttr(
+        field_type=TimeSeries,
+        required=False,
+        label='Input Data 2',
+        doc='Time series to display.'
+    )
+
+    data_3 = DataTypeGidAttr(
+        field_type=TimeSeries,
+        required=False,
+        label='Input Data 3',
+        doc='Time series to display.'
+    )
 
 
 class EegMonitorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(EegMonitorForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Input Data', doc='Time series to display.')
-        self.data_2 = DataTypeSelectField(self.get_required_datatype(), self, name='data_2', label='Input Data 2',
-                                          doc='Time series to display.')
-        self.data_3 = DataTypeSelectField(self.get_required_datatype(), self, name='data_3', label='Input Data 3',
-                                          doc='Time series to display.')
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self, name='data_3')
 
     @staticmethod
     def get_required_datatype():

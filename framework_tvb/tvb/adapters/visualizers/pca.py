@@ -38,15 +38,23 @@ import json
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.mode_decompositions import PrincipalComponents
+
+
+class PCAModel(ViewModel):
+    pca = DataTypeGidAttr(
+        field_type=PrincipalComponents,
+        label='Principal component analysis:'
+    )
 
 
 class PCAForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PCAForm, self).__init__(prefix, project_id)
-        self.pca = DataTypeSelectField(self.get_required_datatype(), self, name='pca', required=True,
-                                       label='Principal component analysis:', conditions=self.get_filters())
+        self.pca = TraitDataTypeSelectField(PCAModel.pca, self, name='pca', conditions=self.get_filters())
 
     @staticmethod
     def get_input_name():

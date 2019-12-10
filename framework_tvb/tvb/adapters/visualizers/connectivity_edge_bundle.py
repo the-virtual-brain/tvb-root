@@ -40,16 +40,25 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+
+
+class ConnectivityEdgeBundleModel(ViewModel):
+    connectivity = DataTypeGidAttr(
+        field_type=Connectivity,
+        label="Connectivity to be displayed in a hierarchical edge bundle"
+    )
 
 
 class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityEdgeBundleForm, self).__init__(prefix)
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name="connectivity",
-                                                required=True, conditions=self.get_filters(), has_all_option=False,
-                                                label="Connectivity to be displayed in a hierarchical edge bundle")
+        self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, self,
+                                                     name="connectivity", conditions=self.get_filters(),
+                                                     has_all_option=False)
         self.project_id = project_id
 
     @staticmethod
