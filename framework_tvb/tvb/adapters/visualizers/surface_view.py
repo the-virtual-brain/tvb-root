@@ -44,9 +44,13 @@ from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import Surface
 
 LOG = get_logger(__name__)
 
@@ -122,22 +126,49 @@ class SurfaceURLGenerator(URLGenerator):
                                       parameter='region_mapping_gid=' + region_mapping_gid)
 
 
+class BaseSurfaceViewerModel(ViewModel):
+    region_map = DataTypeGidAttr(
+        field_type=RegionMapping,
+        required=False,
+        label='Region mapping',
+        doc='A region map'
+    )
+
+    connectivity_measure = DataTypeGidAttr(
+        field_type=ConnectivityMeasure,
+        required=False,
+        label='Connectivity measure',
+        doc='A connectivity measure'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        field_type=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Face surface to be displayed semi-transparently, for orientation only.'
+    )
+
+
 @add_metaclass(ABCMeta)
 class BaseSurfaceViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
-        self.region_map = DataTypeSelectField(RegionMappingIndex, self, name='region_map', label='Region mapping',
-                                              doc='A region map')
-        self.connectivity_measure = DataTypeSelectField(ConnectivityMeasureIndex, self, name='connectivity_measure',
-                                                        label='Connectivity measure', doc='A connectivity measure')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Face surface to be displayed semi-transparently, '
-                                                     'for orientation only.')
+        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
+                                                             name='connectivity_measure')
+        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_filters():
         return None
+
+
+class SurfaceViewerModel(ViewModel):
+    surface = DataTypeGidAttr(
+        field_type=Surface,
+        label='Brain surface'
+    )
 
 
 class SurfaceViewerForm(BaseSurfaceViewerForm):
@@ -149,8 +180,7 @@ class SurfaceViewerForm(BaseSurfaceViewerForm):
         # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
 
         super(SurfaceViewerForm, self).__init__(prefix, project_id)
-        self.surface = DataTypeSelectField(self.get_required_datatype(), self, name='surface',
-                                           required=True, label='Brain surface')
+        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self, name='surface')
 
     @staticmethod
     def get_required_datatype():
@@ -469,7 +499,7 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
         surface_index = None
 
         if not region_map:
-            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
+            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_gid')
             if region_maps:
                 region_map = region_maps[0]
 
@@ -480,7 +510,7 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
             surface_index = dao.get_datatype_by_gid(surface_gid)
 
             if rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
-                region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
+                region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_gid')
                 if region_maps:
                     region_map = region_maps[0]
 

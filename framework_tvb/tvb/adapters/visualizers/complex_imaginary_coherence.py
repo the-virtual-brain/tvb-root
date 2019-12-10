@@ -41,16 +41,25 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.spectral import ComplexCoherenceSpectrum
+
+
+class ImaginaryCoherenceDisplayModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        field_type=ComplexCoherenceSpectrum,
+        label='Complex Coherence Result',
+        doc='Imaginary Coherence Analysis to display'
+    )
 
 
 class ImaginaryCoherenceDisplayForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ImaginaryCoherenceDisplayForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, 'input_data', required=True,
-                                              label='Complex Coherence Result', conditions=self.get_filters(),
-                                              doc='Imaginary Coherence Analysis to display')
+        self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, self, 'input_data',
+                                                   conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():

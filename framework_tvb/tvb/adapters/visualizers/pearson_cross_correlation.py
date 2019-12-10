@@ -37,19 +37,27 @@
 import json
 import numpy
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+
+
+class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        field_type=CorrelationCoefficients,
+        label='Correlation Coefficients'
+    )
 
 
 class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PearsonCorrelationCoefficientVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Correlation Coefficients', conditions=self.get_filters())
+        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype, self,
+                                                 name='datatype', conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():

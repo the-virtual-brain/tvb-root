@@ -47,18 +47,33 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSer
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.utils import prepare_time_slice
+from tvb.datatypes.structural import StructuralMRI
+from tvb.datatypes.time_series import TimeSeries
+
+
+class TimeSeriesVolumeVisualiserModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        field_type=TimeSeries,
+        label='Time Series'
+    )
+
+    background = DataTypeGidAttr(
+        field_type=StructuralMRI,
+        required=False,
+        label='Background T1'
+    )
 
 
 class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TimeSeriesVolumeVisualiserForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series', conditions=self.get_filters())
-        self.background = DataTypeSelectField(StructuralMRIIndex, self, name='background', required=False,
-                                              label='Background T1')
+        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self,
+                                                    name='time_series', conditions=self.get_filters())
+        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self, name='background')
 
     @staticmethod
     def get_input_name():
@@ -143,7 +158,6 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         url_volume_data = self.build_url('get_volume_view', background_index.gid, '')
         return _MappedArrayVolumeBase.compute_background_params(min_value, max_value, url_volume_data)
-
 
     def get_voxel_time_series(self, entity_gid, **kwargs):
         """

@@ -39,19 +39,27 @@ import numpy
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import FourierSpectrum
 from tvb.datatypes.time_series import TimeSeries
+
+
+class FourierSpectrumModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        field_type=FourierSpectrum,
+        label='Fourier Result',
+        doc='Fourier Analysis to display'
+    )
 
 
 class FourierSpectrumForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(FourierSpectrumForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Fourier Result', doc='Fourier Analysis to display',
-                                              conditions=self.get_filters())
+        self.input_data = TraitDataTypeSelectField(FourierSpectrumModel.input_data, self, name='input_data',
+                                                   conditions=self.get_filters())
 
     @staticmethod
     def get_input_name():

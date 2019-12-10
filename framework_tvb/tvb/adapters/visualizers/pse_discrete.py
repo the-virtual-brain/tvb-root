@@ -41,17 +41,25 @@ from tvb.core.entities.transient.pse import ContextDiscretePSE
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 MAX_NUMBER_OF_POINT_TO_SUPPORT = 512
+
+
+class DiscretePSEAdapterModel(ViewModel):
+    datatype_group = DataTypeGidAttr(
+        field_type=DataTypeGroup,
+        label='Datatype Group'
+    )
 
 
 class DiscretePSEAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(DiscretePSEAdapterForm, self).__init__(prefix, project_id)
-        self.datatype_group = DataTypeSelectField(self.get_required_datatype(), self, name='datatype_group',
-                                                  required=True, label='Datatype Group', conditions=self.get_filters())
+        self.datatype_group = TraitDataTypeSelectField(DiscretePSEAdapterModel.datatype_group, self,
+                                                       name='datatype_group', conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():
@@ -77,7 +85,6 @@ class DiscretePSEAdapter(ABCDisplayer):
     """
     _ui_name = "Discrete Parameter Space Exploration"
     _ui_subsection = "pse"
-
 
     def get_form_class(self):
         return DiscretePSEAdapterForm

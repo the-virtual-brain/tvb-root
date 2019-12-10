@@ -33,20 +33,27 @@
 """
 
 import json
-
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.local_connectivity import LocalConnectivity
+
+
+class LocalConnectivityViewerModel(ViewModel):
+    local_conn = DataTypeGidAttr(
+        field_type=LocalConnectivity,
+        label='Local connectivity'
+    )
 
 
 class LocalConnectivityViewerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivityViewerForm, self).__init__(prefix, project_id)
-        self.local_conn = DataTypeSelectField(self.get_required_datatype(), self, name='local_conn', required=True,
-                                              label='Local connectivity', conditions=self.get_filters())
+        self.local_conn = TraitDataTypeSelectField(LocalConnectivityViewerModel.local_conn, self, name='local_conn',
+                                                   conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():
@@ -72,7 +79,8 @@ class LocalConnectivityViewer(ABCDisplayer):
         return LocalConnectivityViewerForm
 
     def _compute_surface_params(self, surface_h5):
-        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
+        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
+            surface_h5)
         url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
 
         return {
@@ -103,7 +111,6 @@ class LocalConnectivityViewer(ABCDisplayer):
         params['maxValue'] = max_value
         return self.build_display_result("local_connectivity/view", params,
                                          pages={"controlPage": "local_connectivity/controls"})
-
 
     def get_required_memory_size(self):
         return -1

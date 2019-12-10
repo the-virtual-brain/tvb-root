@@ -40,15 +40,24 @@ from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.spectral import CoherenceSpectrum
+
+
+class CrossCoherenceVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        field_type=CoherenceSpectrum,
+        label='Coherence spectrum:'
+    )
 
 
 class CrossCoherenceVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCoherenceVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype',
-                                            required=True, label='Coherence spectrum:', conditions=self.get_filters())
+        self.datatype = TraitDataTypeSelectField(CrossCoherenceVisualizerModel.datatype, self, name='datatype',
+                                                 conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():

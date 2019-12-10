@@ -41,17 +41,26 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.spectral import WaveletCoefficients
+
+
+class WaveletSpectrogramVisualizerModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        field_type=WaveletCoefficients,
+        label='Wavelet transform Result',
+        doc='Wavelet spectrogram to display'
+    )
 
 
 class WaveletSpectrogramVisualizerForm(ABCAdapterForm):
     # TODO: add all fields here
     def __init__(self, prefix='', project_id=None):
         super(WaveletSpectrogramVisualizerForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Wavelet transform Result', doc='Wavelet spectrogram to display',
-                                              conditions=self.get_filters())
+        self.input_data = TraitDataTypeSelectField(WaveletSpectrogramVisualizerModel.input_data, self,
+                                                   name='input_data', conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():

@@ -44,7 +44,8 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 
 class PseIsoModel(object):
@@ -151,12 +152,19 @@ class PseIsoModel(object):
         return result
 
 
+class IsoclinePSEAdapterModel(ViewModel):
+    datatype_group = DataTypeGidAttr(
+        field_type=DataTypeGroup,
+        label='Datatype Group'
+    )
+
+
 class IsoclinePSEAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(IsoclinePSEAdapterForm, self).__init__(prefix, project_id)
-        self.datatype_group = DataTypeSelectField(self.get_required_datatype(), self, name='datatype_group',
-                                                  required=True, label='Datatype Group', conditions=self.get_filters())
+        self.datatype_group = TraitDataTypeSelectField(IsoclinePSEAdapterModel.datatype_group, self,
+                                                       name='datatype_group', conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():
@@ -186,10 +194,8 @@ class IsoclinePSEAdapter(ABCDisplayer):
         self.interp_models = {}
         self.nan_indices = {}
 
-
     def get_form_class(self):
         return IsoclinePSEAdapterForm
-
 
     def get_required_memory_size(self, **kwargs):
         """

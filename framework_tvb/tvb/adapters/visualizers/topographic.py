@@ -43,8 +43,10 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
 
 
 class TopographyCalculations(object):
@@ -165,22 +167,41 @@ class TopographyCalculations(object):
         return points_positions - step
 
 
+class TopographicViewerModel(ViewModel):
+    data_0 = DataTypeGidAttr(
+        field_type=ConnectivityMeasure,
+        label='Connectivity Measures 1',
+        doc='Punctual values for each node in the connectivity matrix. This will '
+            'give the colors of the resulting topographic image.'
+    )
+
+    data_1 = DataTypeGidAttr(
+        field_type=ConnectivityMeasure,
+        required=False,
+        label='Connectivity Measures 2',
+        doc='Comparative values'
+    )
+
+    data_2 = DataTypeGidAttr(
+        field_type=ConnectivityMeasure,
+        required=False,
+        label='Connectivity Measures 3',
+        doc='Comparative values'
+    )
+
+
 class TopographicViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TopographicViewerForm, self).__init__(prefix, project_id)
-        self.data_0 = DataTypeSelectField(self.get_required_datatype(), self, name='data_0', required=True,
-                                          label='Connectivity Measures 1', conditions=self.get_filters(),
-                                          doc='Punctual values for each node in the connectivity matrix. This will '
-                                              'give the colors of the resulting topographic image.')
-        self.data_1 = DataTypeSelectField(self.get_required_datatype(), self, name='data_1',
-                                          label='Connectivity Measures 2', doc='Comparative values',
-                                          conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                 operations=["=="], values=[1]))
-        self.data_2 = DataTypeSelectField(self.get_required_datatype(), self, name='data_2',
-                                          label='Connectivity Measures 3', doc='Comparative values',
-                                          conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                 operations=["=="], values=[1]))
+        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
+                                               conditions=self.get_filters())
+        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
+                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                                                      operations=["=="], values=[1]))
+        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
+                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                                                      operations=["=="], values=[1]))
 
     @staticmethod
     def get_required_datatype():

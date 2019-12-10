@@ -44,22 +44,35 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.time_series import *
 from tvb.core.entities.storage import dao
-from tvb.datatypes.surfaces import CORTICAL, EEG_CAP
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
+from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 MAX_MEASURE_POINTS_LENGTH = 600
+
+
+class BrainViewerModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        field_type=TimeSeries,
+        label='Time Series (Region or Surface)'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        field_type=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Surface to be displayed semi-transparently as overlay, for visual navigation purposes only.'
+    )
 
 
 class BrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series (Region or Surface)', conditions=self.get_filters())
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Surface to be displayed semi-transparently as overlay, '
-                                                     'for visual navigation purposes only.')
+        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
+        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_required_datatype():
@@ -330,20 +343,38 @@ class BrainViewer(ABCSurfaceDisplayer):
         return activity_base_url, time_urls
 
 
+class DualBrainViewerModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        field_type=TimeSeries,
+        label='Time Series'
+    )
+
+    projection_surface = DataTypeGidAttr(
+        field_type=Surface,
+        required=False,
+        label='Projection Surface',
+        doc='A surface on which to project the results. When missing, the first EEGCap is taken. '
+            'This parameter is ignored when InternalSensors measures.'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        field_type=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Wrapping surface over the internal sensors, to be displayed '
+            'semi-transparently, for visual purposes only.'
+    )
+
+
 class DualBrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(DualBrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series', conditions=self.get_filters())
-        self.projection_surface = DataTypeSelectField(SurfaceIndex, self, name='projection_surface',
-                                                      label='Projection Surface',
-                                                      doc='A surface on which to project the results. When missing, '
-                                                          'the first EEGCap is taken. This parameter is ignored when '
-                                                          'InternalSensors measures.')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Wrapping surface over the internal sensors, to be displayed '
-                                                     'semi-transparently, for visual purposes only.')
+        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
+        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface, self,
+                                                           name='projection_surface')
+        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_required_datatype():

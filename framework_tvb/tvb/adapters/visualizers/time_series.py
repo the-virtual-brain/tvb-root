@@ -43,9 +43,18 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.time_series import TimeSeries
+
+
+class TimeSeriesModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        field_type=TimeSeries,
+        label="Time series to be displayed in a 2D form."
+    )
 
 
 class TimeSeriesForm(ABCAdapterForm):
@@ -53,9 +62,8 @@ class TimeSeriesForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(TimeSeriesForm, self).__init__(prefix, project_id, False)
 
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label="Time series to be displayed in a 2D form.",
-                                               conditions=self.get_filters())
+        self.time_series = TraitDataTypeSelectField(TimeSeriesModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():

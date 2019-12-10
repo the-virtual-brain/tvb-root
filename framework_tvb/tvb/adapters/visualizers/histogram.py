@@ -40,16 +40,25 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
+
+
+class HistogramViewerModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        field_type=ConnectivityMeasure,
+        label='Connectivity Measure',
+        doc='A BCT computed measure for a Connectivity'
+    )
 
 
 class HistogramViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(HistogramViewerForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Connectivity Measure', conditions=self.get_filters(),
-                                              doc='A BCT computed measure for a Connectivity')
+        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, self, name='input_data',
+                                                   conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():
@@ -84,13 +93,11 @@ class HistogramViewer(ABCDisplayer):
         params = self.prepare_parameters(input_data)
         return self.build_display_result("histogram/view", params, pages=dict(controlPage="histogram/controls"))
 
-
     def get_required_memory_size(self, input_data, figure_size):
         """
         Return the required memory to run this algorithm.
         """
         return numpy.prod(input_data.shape) * 2
-
 
     def generate_preview(self, input_data, figure_size):
         """
@@ -98,7 +105,6 @@ class HistogramViewer(ABCDisplayer):
         """
         params = self.prepare_parameters(input_data)
         return self.build_display_result("histogram/view", params)
-
 
     def prepare_parameters(self, input_data):
         """
