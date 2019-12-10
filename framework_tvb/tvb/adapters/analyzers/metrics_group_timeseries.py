@@ -50,7 +50,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, MultipleSelectField
+from tvb.core.neotraits.forms import ScalarField, MultipleSelectField, TraitDataTypeSelectField
 # Import metrics here, so that Traits will find them and return them as known subclasses
 import tvb.analyzers.metric_kuramoto_index
 import tvb.analyzers.metric_proxy_metastability
@@ -70,9 +70,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name="time_series",
-                                               required=True, label=BaseTimeseriesMetricAlgorithm.time_series.label,
-                                               doc = BaseTimeseriesMetricAlgorithm.time_series.doc)
+        self.time_series = TraitDataTypeSelectField(BaseTimeseriesMetricAlgorithm.time_series, self, name="time_series")
         self.start_point = ScalarField(BaseTimeseriesMetricAlgorithm.start_point, self)
         self.segment = ScalarField(BaseTimeseriesMetricAlgorithm.segment, self)
 

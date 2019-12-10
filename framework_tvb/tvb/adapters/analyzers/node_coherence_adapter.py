@@ -45,7 +45,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, DataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
@@ -55,10 +55,8 @@ class NodeCoherenceForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NodeCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=NodeCoherence.time_series.label,
-                                               doc=NodeCoherence.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(NodeCoherence.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
         self.nfft = ScalarField(NodeCoherence.nfft, self)
 
     @staticmethod

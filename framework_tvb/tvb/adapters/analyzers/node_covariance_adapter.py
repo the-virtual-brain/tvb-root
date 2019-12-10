@@ -47,7 +47,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
@@ -67,10 +67,8 @@ class NodeCovariance(HasTraits):
 class NodeCovarianceAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=NodeCovariance.time_series.label,
-                                               doc=NodeCovariance.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(NodeCovariance.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
     def get_required_datatype():

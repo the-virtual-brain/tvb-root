@@ -54,7 +54,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -95,10 +95,8 @@ class FcdCalculator(HasTraits):
 class FCDAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=FcdCalculator.time_series.label,
-                                               doc=FcdCalculator.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(FcdCalculator.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
         self.sw = ScalarField(FcdCalculator.sw, self)
         self.sp = ScalarField(FcdCalculator.sp, self)
 

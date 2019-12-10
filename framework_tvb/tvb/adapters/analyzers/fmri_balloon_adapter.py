@@ -44,7 +44,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
 
@@ -55,10 +55,8 @@ class BalloonModelAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=BalloonModel.time_series.label,
-                                               doc=BalloonModel.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(BalloonModel.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
         self.dt = ScalarField(BalloonModel.dt, self)
         self.neural_input_transformation = ScalarField(BalloonModel.neural_input_transformation, self)
         self.bold_model = ScalarField(BalloonModel.bold_model, self)

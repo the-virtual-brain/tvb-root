@@ -52,7 +52,7 @@ from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.temporal_correlations import CrossCorrelation
@@ -76,10 +76,8 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=CrossCorrelate.time_series.label,
-                                               doc=CrossCorrelate.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(CrossCorrelate.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
     def get_required_datatype():
@@ -262,10 +260,9 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=CorrelationCoefficient.time_series.label,
-                                               doc=CorrelationCoefficient.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(CorrelationCoefficient.time_series, self,
+                                                    name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
         self.t_start = ScalarField(CorrelationCoefficient.t_start, self)
         self.t_end = ScalarField(CorrelationCoefficient.t_end, self)
 

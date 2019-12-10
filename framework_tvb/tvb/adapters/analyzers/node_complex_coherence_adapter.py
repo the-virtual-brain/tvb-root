@@ -45,7 +45,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
@@ -55,9 +55,8 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=NodeComplexCoherence.time_series.label,
-                                               doc=NodeComplexCoherence.time_series.doc, conditions=self.get_filters())
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherence.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters())
 
     @staticmethod
     def get_required_datatype():
