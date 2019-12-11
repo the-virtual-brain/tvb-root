@@ -31,12 +31,14 @@
 import importlib
 import typing
 import os.path
+import uuid
 from datetime import datetime
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal
+from tvb.core.neotraits.view_model import DataTypeGidAttr, UploadAttr
 from tvb.core.utils import date2string, string2date
 
 
@@ -203,3 +205,32 @@ class H5File(object):
 
     def __repr__(self):
         return '<{}("{}")>'.format(type(self).__name__, self.path)
+
+
+class ViewModelH5(H5File):
+
+    def __init__(self, path, view_model):
+        super(ViewModelH5, self).__init__(path)
+        self.view_model = view_model
+        attrs = view_model.declarative_attrs
+        self._generate_accessors(attrs)
+
+    def _generate_accessors(self, view_model_fields):
+        for attr_name in view_model_fields:
+            attr = getattr(self.view_model, attr_name)
+            if not issubclass(type(attr), Attr):
+                raise ValueError('expected a Attr, got a {}'.format(type(attr)))
+
+            if isinstance(attr, DataTypeGidAttr):
+                # TODO: use Uuid once we keep directly gid on VMs
+                ref = Reference(attr, self)
+                setattr(self, attr.field_name, ref)
+            elif isinstance(attr, Attr):
+                if attr.field_type is uuid.UUID:
+                    ref = Uuid(attr, self)
+                else:
+                    ref = Scalar(attr, self)
+                setattr(self, attr.field_name, ref)
+            elif isinstance(attr, UploadAttr):
+                ref = Scalar(attr, self)
+                setattr(self, attr.field_name, ref)
