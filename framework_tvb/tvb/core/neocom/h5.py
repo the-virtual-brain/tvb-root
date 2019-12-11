@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import inspect
 import uuid
 import typing
 from tvb.basic.neotraits.api import HasTraits
@@ -34,6 +35,7 @@ from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
+from tvb.core.neotraits._h5core import ViewModelH5
 from tvb.core.neotraits.h5 import H5File
 
 REGISTRY = Registry()
@@ -133,3 +135,11 @@ def store_to_dir(base_dir, datatype, recursive=False):
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
     loader.store(datatype)
+
+
+def h5_file_for_view_model(view_model, path):
+    # TODO: how to get the path with operation id folder?
+    if not inspect.isclass(view_model):
+        view_model = type(view_model)
+    h5_class = type(view_model.__name__ + "H5", (ViewModelH5,), {})
+    return h5_class(path, view_model)
