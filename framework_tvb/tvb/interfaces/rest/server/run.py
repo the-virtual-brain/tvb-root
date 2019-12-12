@@ -4,7 +4,8 @@ from flask import Flask
 from flask_restful import Api
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
-from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource
+from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
+    GetOperationResultsResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsOfAUserResource, \
     GetOperationsFromProjectResource, GetDataFromProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
@@ -52,6 +53,7 @@ def initialize_flask():
     api.add_resource(GetOperationsForDatatypeResource, '/get_operations_for_datatype/<string:guid>')
     api.add_resource(FireSimulationResource, '/test_simulation/<int:project_id>')
     api.add_resource(GetOperationStatusResource, '/operation_status/<int:operation_id>')
+    api.add_resource(GetOperationResultsResource, '/operation_results/<int:operation_id>')
 
     app.run(debug=True, port=FLASK_PORT)
 

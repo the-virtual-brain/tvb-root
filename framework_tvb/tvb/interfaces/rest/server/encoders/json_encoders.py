@@ -14,9 +14,9 @@ class DatatypeEncoder(JSONEncoder):
         Logger = get_logger(obj.__class__.__module__)
 
         if isinstance(obj, UUID):
-            return {'gid': obj.hex}
+            return obj.hex
         elif isinstance(obj, type(Logger)):
-            return {'logger': obj.name}
+            return obj.name
         elif isinstance(obj, numpy.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
