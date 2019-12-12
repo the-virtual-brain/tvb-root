@@ -30,10 +30,13 @@
 import copy
 import json
 import os
+import shutil
+import threading
 import uuid
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator import h5_factory
+from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import SensorsEEG, SensorsInternal, SensorsMEG
 from tvb.datatypes.surfaces import CorticalSurface
@@ -208,8 +211,6 @@ class SimulatorService(object):
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.serialize_simulator(session_stored_simulator, simulator_index.gid, simulation_state_gid, storage_path)
 
-            # MOISE O SPLITUIT MAREA
-
             wf_errs = 0
             try:
                 OperationService().launch_operation(operation.id, True)
@@ -228,27 +229,43 @@ class SimulatorService(object):
             if burst_config:
                 BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
 
-    def prepare_simulation_on_server(self, burst_config, user_id, project, simulator_algo, zip_folder_path):
+    def prepare_simulation_on_server(self, burst_config, user_id, project, zip_folder_path):
+        from tvb.config.init.introspector_registry import IntrospectionRegistry
+        simulator_algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                         IntrospectionRegistry.SIMULATOR_CLASS)
+
+        thread = threading.Thread(target=self.async_launch_simulation_on_server,
+                                  kwargs={'burst_config': burst_config,
+                                          'user_id': user_id,
+                                          'project': project,
+                                          'simulator_algo': simulator_algo,
+                                          'zip_folder_path': zip_folder_path})
+        thread.start()
+
+    def async_launch_simulation_on_server(self, burst_config, user_id, project, simulator_algo, zip_folder_path):
         simulator_h5_name = [f for f in os.listdir(zip_folder_path) if 'Simulator' in f][0]
 
         try:
-            simulator_in = h5.load(os.path.join(zip_folder_path, simulator_h5_name))
             simulator_index = SimulatorIndex()
-            simulator_index.fill_from_has_traits(simulator_in)
+            simulator_index.gid = simulator_h5_name[10:-3]
             metadata = {}
             if burst_config:
                 simulator_index.fk_parent_burst = burst_config.id
                 metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
+               # dao.store_entity(simulator_index) when the client side of this operation will we done, we will uncomment this line as simulator should be stored here, not in the client
             simulator_id = simulator_algo.id
             algo_category = simulator_algo.algorithm_category
             operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
                                              algo_category, None, metadata)
             simulator_index.fk_from_operation = operation.id
             storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
-            # TODO move all from zip_folder_path into storage_operation_path
+
+            for file in os.listdir(zip_folder_path):
+                os.replace(os.path.join(zip_folder_path, file), os.path.join(storage_operation_path, file))
             wf_errs = 0
             try:
                 OperationService().launch_operation(operation.id, True)
+                shutil.rmtree(os.path.join(zip_folder_path, '..'))
                 return operation
             except Exception as excep:
                 self.logger.error(excep)
