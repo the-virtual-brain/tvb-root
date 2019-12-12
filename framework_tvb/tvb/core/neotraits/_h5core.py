@@ -211,8 +211,8 @@ class ViewModelH5(H5File):
 
     def __init__(self, path, view_model):
         super(ViewModelH5, self).__init__(path)
-        self.view_model = view_model
-        attrs = view_model.declarative_attrs
+        self.view_model = type(view_model)
+        attrs = self.view_model.declarative_attrs
         self._generate_accessors(attrs)
 
     def _generate_accessors(self, view_model_fields):
