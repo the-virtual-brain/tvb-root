@@ -1,6 +1,7 @@
 from flask import jsonify
 from flask_restful import Resource
 from tvb.core.services.user_service import UserService
+import json
 
 
 class GetUsersResource(Resource):
