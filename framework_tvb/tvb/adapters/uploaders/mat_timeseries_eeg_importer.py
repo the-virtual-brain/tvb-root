@@ -37,7 +37,7 @@ from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 class EEGMatTimeSeriesImporterModel(ViewModel):
     eeg = DataTypeGidAttr(
-        field_type=Sensors,
+        linked_datatype=Sensors,
         label='EEG Sensors'
     )
 

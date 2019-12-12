@@ -256,7 +256,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
 class BaseVolumeVisualizerModel(ViewModel):
     background = DataTypeGidAttr(
-        field_type=StructuralMRI,
+        linked_datatype=StructuralMRI,
         required=False,
         label='Background T1'
     )
@@ -272,13 +272,13 @@ class BaseVolumeVisualizerForm(ABCAdapterForm):
 
 class VolumeVisualizerModel(BaseVolumeVisualizerModel):
     measure = DataTypeGidAttr(
-        field_type=DataTypeMatrix,
+        linked_datatype=DataTypeMatrix,
         label='Measure',
         doc='A measure to view on anatomy'
     )
 
     region_mapping_volume = DataTypeGidAttr(
-        field_type=RegionVolumeMapping,
+        linked_datatype=RegionVolumeMapping,
         required=False,
         label='Region mapping'
     )
@@ -332,13 +332,13 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
 
 class ConnectivityMeasureVolumeVisualizerModel(BaseVolumeVisualizerModel):
     connectivity_measure = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         label='Connectivity measure',
         doc='A connectivity measure'
     )
 
     region_mapping_volume = DataTypeGidAttr(
-        field_type=RegionVolumeMapping,
+        linked_datatype=RegionVolumeMapping,
         required=False,
         label='Region mapping'
     )
@@ -385,12 +385,12 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
 
 class RegionVolumeMappingVisualiserModel(BaseVolumeVisualizerModel):
     region_mapping_volume = DataTypeGidAttr(
-        field_type=RegionVolumeMapping,
+        linked_datatype=RegionVolumeMapping,
         label='Region mapping'
     )
 
     connectivity_measure = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Connectivity measure',
         doc='A connectivity measure'

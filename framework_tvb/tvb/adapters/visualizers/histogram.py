@@ -47,7 +47,7 @@ from tvb.datatypes.graph import ConnectivityMeasure
 
 class HistogramViewerModel(ViewModel):
     input_data = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         label='Connectivity Measure',
         doc='A BCT computed measure for a Connectivity'
     )

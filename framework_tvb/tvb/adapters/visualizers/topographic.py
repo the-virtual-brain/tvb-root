@@ -169,21 +169,21 @@ class TopographyCalculations(object):
 
 class TopographicViewerModel(ViewModel):
     data_0 = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         label='Connectivity Measures 1',
         doc='Punctual values for each node in the connectivity matrix. This will '
             'give the colors of the resulting topographic image.'
     )
 
     data_1 = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Connectivity Measures 2',
         doc='Comparative values'
     )
 
     data_2 = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Connectivity Measures 3',
         doc='Comparative values'

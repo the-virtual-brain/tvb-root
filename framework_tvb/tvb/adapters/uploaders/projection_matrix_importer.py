@@ -78,13 +78,13 @@ class ProjectionMatrixImporterModel(ViewModel):
     )
 
     surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         label='Brain Cortical Surface',
         doc='The Brain Surface used by the uploaded projection matrix.'
     )
 
     sensors = DataTypeGidAttr(
-        field_type=Sensors,
+        linked_datatype=Sensors,
         label='Sensors',
         doc='The Sensors used in for current projection.'
     )

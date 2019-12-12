@@ -1,3 +1,4 @@
+import uuid
 from tvb.basic.neotraits.api import HasTraits, Attr
 
 
@@ -18,8 +19,14 @@ class UploadAttr(Attr):
 
 class DataTypeGidAttr(Attr):
     """
-    # TODO: keep a link between datatype type and gid, plus take filters
+    Keep a GID but also link the type of DataType it should point to
     """
+
+    def __init__(self, linked_datatype, field_type=uuid.UUID, filters=None, default=None, doc='', label='', required=True,
+                 final=False, choices=None):
+        super(DataTypeGidAttr, self).__init__(field_type, default, doc, label, required, final, choices)
+        self.linked_datatype = linked_datatype
+        self.filters = filters
 
 
 class ChoicesAttr(Attr):

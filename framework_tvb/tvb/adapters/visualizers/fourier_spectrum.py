@@ -48,7 +48,7 @@ from tvb.datatypes.time_series import TimeSeries
 
 class FourierSpectrumModel(ViewModel):
     input_data = DataTypeGidAttr(
-        field_type=FourierSpectrum,
+        linked_datatype=FourierSpectrum,
         label='Fourier Result',
         doc='Fourier Analysis to display'
     )

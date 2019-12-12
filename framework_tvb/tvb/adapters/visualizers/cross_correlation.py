@@ -45,7 +45,7 @@ from tvb.datatypes.temporal_correlations import CrossCorrelation
 
 class CrossCorrelationVisualizerModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=CrossCorrelation,
+        linked_datatype=CrossCorrelation,
         label='Cross correlation'
     )
 

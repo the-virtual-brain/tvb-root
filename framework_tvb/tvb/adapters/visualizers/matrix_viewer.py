@@ -146,7 +146,7 @@ class MappedArraySVGVisualizerMixin(ABCSpaceDisplayer):
 
 class MatrixVisualizerModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=DataTypeMatrix,
+        linked_datatype=DataTypeMatrix,
         label='Array data type'
     )
 

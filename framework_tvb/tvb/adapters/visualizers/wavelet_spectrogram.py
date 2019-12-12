@@ -49,7 +49,7 @@ from tvb.datatypes.spectral import WaveletCoefficients
 
 class WaveletSpectrogramVisualizerModel(ViewModel):
     input_data = DataTypeGidAttr(
-        field_type=WaveletCoefficients,
+        linked_datatype=WaveletCoefficients,
         label='Wavelet transform Result',
         doc='Wavelet spectrogram to display'
     )

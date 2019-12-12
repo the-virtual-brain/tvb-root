@@ -45,7 +45,7 @@ from tvb.datatypes.mode_decompositions import PrincipalComponents
 
 class PCAModel(ViewModel):
     pca = DataTypeGidAttr(
-        field_type=PrincipalComponents,
+        linked_datatype=PrincipalComponents,
         label='Principal component analysis:'
     )
 

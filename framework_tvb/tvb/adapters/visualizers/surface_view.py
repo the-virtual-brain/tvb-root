@@ -128,21 +128,21 @@ class SurfaceURLGenerator(URLGenerator):
 
 class BaseSurfaceViewerModel(ViewModel):
     region_map = DataTypeGidAttr(
-        field_type=RegionMapping,
+        linked_datatype=RegionMapping,
         required=False,
         label='Region mapping',
         doc='A region map'
     )
 
     connectivity_measure = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Connectivity measure',
         doc='A connectivity measure'
     )
 
     shell_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Shell Surface',
         doc='Face surface to be displayed semi-transparently, for orientation only.'
@@ -166,7 +166,7 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
 class SurfaceViewerModel(ViewModel):
     surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         label='Brain surface'
     )
 

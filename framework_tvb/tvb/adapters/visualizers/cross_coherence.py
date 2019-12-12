@@ -47,7 +47,7 @@ from tvb.datatypes.spectral import CoherenceSpectrum
 
 class CrossCoherenceVisualizerModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=CoherenceSpectrum,
+        linked_datatype=CoherenceSpectrum,
         label='Coherence spectrum:'
     )
 

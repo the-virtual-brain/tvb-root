@@ -48,18 +48,18 @@ from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 class ConnectivityAnnotationsViewModel(ViewModel):
     connectivity_index = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         required=False,
         label='Large Scale Connectivity Matrix'
     )
 
     annotations_index = DataTypeGidAttr(
-        field_type=ConnectivityAnnotations,
+        linked_datatype=ConnectivityAnnotations,
         label='Ontology Annotations'
     )
 
     region_mapping_index = DataTypeGidAttr(
-        field_type=RegionMapping,
+        linked_datatype=RegionMapping,
         required=False,
         label='Region mapping',
         doc='A region map to identify us the Cortical Surface to display,  as well as how the mapping '

@@ -54,7 +54,7 @@ class GIFTITimeSeriesImporterModel(ViewModel):
     )
 
     surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         label='Brain Surface',
         doc='The Brain Surface used to generate imported TimeSeries.'
     )

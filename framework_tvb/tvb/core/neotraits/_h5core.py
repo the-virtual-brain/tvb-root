@@ -222,8 +222,7 @@ class ViewModelH5(H5File):
                 raise ValueError('expected a Attr, got a {}'.format(type(attr)))
 
             if isinstance(attr, DataTypeGidAttr):
-                # TODO: use Uuid once we keep directly gid on VMs
-                ref = Reference(attr, self)
+                ref = Uuid(attr, self)
                 setattr(self, attr.field_name, ref)
             elif isinstance(attr, Attr):
                 if attr.field_type is uuid.UUID:

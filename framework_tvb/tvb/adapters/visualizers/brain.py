@@ -54,12 +54,12 @@ MAX_MEASURE_POINTS_LENGTH = 600
 
 class BrainViewerModel(ViewModel):
     time_series = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         label='Time Series (Region or Surface)'
     )
 
     shell_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Shell Surface',
         doc='Surface to be displayed semi-transparently as overlay, for visual navigation purposes only.'
@@ -345,12 +345,12 @@ class BrainViewer(ABCSurfaceDisplayer):
 
 class DualBrainViewerModel(ViewModel):
     time_series = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         label='Time Series'
     )
 
     projection_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Projection Surface',
         doc='A surface on which to project the results. When missing, the first EEGCap is taken. '
@@ -358,7 +358,7 @@ class DualBrainViewerModel(ViewModel):
     )
 
     shell_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Shell Surface',
         doc='Wrapping surface over the internal sensors, to be displayed '

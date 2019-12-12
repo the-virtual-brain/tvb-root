@@ -43,12 +43,12 @@ from tvb.datatypes.tracts import Tracts
 
 class TractViewerModel(ViewModel):
     tracts = DataTypeGidAttr(
-        field_type=Tracts,
+        linked_datatype=Tracts,
         label='White matter tracts'
     )
 
     shell_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Shell Surface',
         doc='Surface to be displayed semi-transparently, for visual purposes only.'

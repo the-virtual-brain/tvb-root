@@ -60,13 +60,13 @@ class RegionMappingImporterModel(ViewModel):
     )
 
     surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         label='Brain Surface',
         doc='The Brain Surface used by uploaded region mapping.'
     )
 
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Connectivity',
         required=True, doc='The Connectivity used by uploaded region mapping.'
     )

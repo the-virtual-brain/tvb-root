@@ -115,7 +115,7 @@ class MatTimeSeriesImporterForm(ABCUploaderForm):
 
 class RegionMatTimeSeriesImporterModel(ViewModel):
     region = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Connectivity'
     )
 

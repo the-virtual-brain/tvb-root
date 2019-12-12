@@ -61,7 +61,7 @@ class ConnectivityMeasureImporterModel(ViewModel):
     )
 
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Large Scale Connectivity',
         doc='The Connectivity for which these measurements were made'
     )

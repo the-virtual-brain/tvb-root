@@ -47,7 +47,7 @@ from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=CorrelationCoefficients,
+        linked_datatype=CorrelationCoefficients,
         label='Correlation Coefficients'
     )
 

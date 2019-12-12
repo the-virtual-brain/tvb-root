@@ -154,7 +154,7 @@ class PseIsoModel(object):
 
 class IsoclinePSEAdapterModel(ViewModel):
     datatype_group = DataTypeGidAttr(
-        field_type=DataTypeGroup,
+        linked_datatype=DataTypeGroup,
         label='Datatype Group'
     )
 

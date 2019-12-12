@@ -47,20 +47,20 @@ from tvb.datatypes.time_series import TimeSeries
 
 class EegMonitorModel(ViewModel):
     input_data = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         label='Input Data',
         doc='Time series to display.'
     )
 
     data_2 = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         required=False,
         label='Input Data 2',
         doc='Time series to display.'
     )
 
     data_3 = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         required=False,
         label='Input Data 3',
         doc='Time series to display.'
