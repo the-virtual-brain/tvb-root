@@ -48,7 +48,7 @@ from tvb.datatypes.spectral import ComplexCoherenceSpectrum
 
 class ImaginaryCoherenceDisplayModel(ViewModel):
     input_data = DataTypeGidAttr(
-        field_type=ComplexCoherenceSpectrum,
+        linked_datatype=ComplexCoherenceSpectrum,
         label='Complex Coherence Result',
         doc='Imaginary Coherence Analysis to display'
     )

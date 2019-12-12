@@ -44,7 +44,7 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 
 class LocalConnectivityViewerModel(ViewModel):
     local_conn = DataTypeGidAttr(
-        field_type=LocalConnectivity,
+        linked_datatype=LocalConnectivity,
         label='Local connectivity'
     )
 

@@ -51,7 +51,7 @@ class BRCOImporterModel(ViewModel):
     )
 
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Target Large Scale Connectivity',
         doc='The Connectivity for which these annotations were made'
     )

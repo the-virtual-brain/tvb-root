@@ -52,7 +52,7 @@ from tvb.datatypes.time_series import TimeSeries
 
 class TimeSeriesModel(ViewModel):
     time_series = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         label="Time series to be displayed in a 2D form."
     )
 

@@ -56,12 +56,12 @@ from tvb.datatypes.time_series import TimeSeries
 
 class TimeSeriesVolumeVisualiserModel(ViewModel):
     time_series = DataTypeGidAttr(
-        field_type=TimeSeries,
+        linked_datatype=TimeSeries,
         label='Time Series'
     )
 
     background = DataTypeGidAttr(
-        field_type=StructuralMRI,
+        linked_datatype=StructuralMRI,
         required=False,
         label='Background T1'
     )

@@ -81,7 +81,7 @@ class NIFTIImporterModel(ViewModel):
     )
 
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         required=False,
         label='Connectivity',
         doc='Optional Connectivity if the NII file is a volume2regions mapping'

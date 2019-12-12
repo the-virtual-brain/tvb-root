@@ -50,7 +50,7 @@ LOG = get_logger(__name__)
 
 class ICAModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=IndependentComponents,
+        linked_datatype=IndependentComponents,
         label='Independent component analysis:'
     )
 

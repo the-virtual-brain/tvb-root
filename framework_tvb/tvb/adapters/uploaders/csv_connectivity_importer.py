@@ -138,7 +138,7 @@ class CSVConnectivityImporterModel(ViewModel):
     )
 
     input_data = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Reference Connectivity Matrix (for node labels, 3d positions etc.)'
     )
 

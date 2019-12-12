@@ -45,7 +45,7 @@ from tvb.datatypes.graph import Covariance
 
 class CovarianceVisualizerModel(ViewModel):
     datatype = DataTypeGidAttr(
-        field_type=Covariance,
+        linked_datatype=Covariance,
         label='Covariance'
     )
 

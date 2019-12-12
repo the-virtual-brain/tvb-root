@@ -59,12 +59,12 @@ from tvb.datatypes.surfaces import Surface
 
 class ConnectivityViewerModel(ViewModel):
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label='Connectivity Matrix'
     )
 
     surface_data = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Brain Surface',
         doc='The Brain Surface is used to give you an idea of the connectivity '
@@ -83,7 +83,7 @@ class ConnectivityViewerModel(ViewModel):
     )
 
     colors = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Node Colors',
         doc='A ConnectivityMeasure DataType that establishes a colormap for the nodes displayed '
@@ -91,7 +91,7 @@ class ConnectivityViewerModel(ViewModel):
     )
 
     rays = DataTypeGidAttr(
-        field_type=ConnectivityMeasure,
+        linked_datatype=ConnectivityMeasure,
         required=False,
         label='Shapes Dimensions',
         doc='A ConnectivityMeasure datatype used to establish the size of the spheres representing each node. '

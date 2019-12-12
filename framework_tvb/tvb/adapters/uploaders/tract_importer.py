@@ -66,7 +66,7 @@ class TrackImporterModel(ViewModel):
     )
 
     region_volume = DataTypeGidAttr(
-        field_type=RegionVolumeMapping,
+        linked_datatype=RegionVolumeMapping,
         required=False,
         label='Reference Volume Map'
     )

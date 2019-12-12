@@ -47,7 +47,7 @@ from tvb.datatypes.connectivity import Connectivity
 
 class ConnectivityEdgeBundleModel(ViewModel):
     connectivity = DataTypeGidAttr(
-        field_type=Connectivity,
+        linked_datatype=Connectivity,
         label="Connectivity to be displayed in a hierarchical edge bundle"
     )
 

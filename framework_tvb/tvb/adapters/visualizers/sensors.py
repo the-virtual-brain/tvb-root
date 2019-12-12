@@ -92,13 +92,13 @@ def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapt
 
 class SensorsViewerModel(ViewModel):
     sensors = DataTypeGidAttr(
-        field_type=Sensors,
+        linked_datatype=Sensors,
         label='Sensors',
         doc='Internals sensors to view'
     )
 
     projection_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Projection Surface',
         doc='A surface on which to project the results. When missing, '
@@ -107,7 +107,7 @@ class SensorsViewerModel(ViewModel):
     )
 
     shell_surface = DataTypeGidAttr(
-        field_type=Surface,
+        linked_datatype=Surface,
         required=False,
         label='Shell Surface',
         doc='Wrapping surface over the internal sensors, to be displayed '

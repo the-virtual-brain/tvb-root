@@ -49,7 +49,7 @@ MAX_NUMBER_OF_POINT_TO_SUPPORT = 512
 
 class DiscretePSEAdapterModel(ViewModel):
     datatype_group = DataTypeGidAttr(
-        field_type=DataTypeGroup,
+        linked_datatype=DataTypeGroup,
         label='Datatype Group'
     )
 
