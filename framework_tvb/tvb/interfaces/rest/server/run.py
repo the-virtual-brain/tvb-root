@@ -1,14 +1,14 @@
 import os
 import sys
-from tvb.basic.profile import TvbProfile
 from flask import Flask
 from flask_restful import Api
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
-from tvb.interfaces.rest.server.resources.projects.project_resource import GetProjectsOfAUserResource, \
+from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource
+from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsOfAUserResource, \
     GetOperationsFromProjectResource, GetDataFromProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
-from tvb.interfaces.rest.server.resources.users.user_resource import GetUsersResource
+from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
 from tvb.basic.logger.builder import get_logger
 from tvb.config.init.initializer import initialize
 from tvb.basic.profile import TvbProfile
@@ -51,6 +51,7 @@ def initialize_flask():
     api.add_resource(GetDatatypeResource, '/get_datatypes/<string:guid>')
     api.add_resource(GetOperationsForDatatypeResource, '/get_operations_for_datatype/<string:guid>')
     api.add_resource(FireSimulationResource, '/test_simulation/<int:project_id>')
+    api.add_resource(GetOperationStatusResource, '/operation_status/<int:operation_id>')
 
     app.run(debug=True, port=FLASK_PORT)
 

@@ -18,7 +18,7 @@ class FireSimulationResource(Resource):
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 
-    def get(self, project_id):
+    def post(self, project_id):
         # check if the post request has the file part
         if 'file' not in request.files:
             resp = jsonify({'message': 'No file part in the request!'})
