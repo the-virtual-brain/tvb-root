@@ -7,9 +7,11 @@ from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
 from tvb.interfaces.rest.server.resources.projects.project_resource import GetProjectsOfAUserResource, \
     GetOperationsFromProjectResource, GetDataFromProjectResource, GetOperationsForDatatypeResource
+from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.users.user_resource import GetUsersResource
 from tvb.basic.logger.builder import get_logger
 from tvb.config.init.initializer import initialize
+from tvb.basic.profile import TvbProfile
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -18,6 +20,9 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 
 FLASK_PORT = 9090
 
+UPLOAD_FOLDER = TvbProfile.current.TVB_TEMP_FOLDER
+
+app = Flask(__name__)
 
 def initialize_tvb(arguments):
 
@@ -45,6 +50,7 @@ def initialize_flask():
     api.add_resource(GetOperationsFromProjectResource, '/get_operations/<int:project_id>')
     api.add_resource(GetDatatypeResource, '/get_datatypes/<string:guid>')
     api.add_resource(GetOperationsForDatatypeResource, '/get_operations_for_datatype/<string:guid>')
+    api.add_resource(FireSimulationResource, '/test_simulation/<int:project_id>')
 
     app.run(debug=True, port=FLASK_PORT)
 

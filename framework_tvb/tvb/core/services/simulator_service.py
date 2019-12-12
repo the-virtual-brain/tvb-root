@@ -29,6 +29,7 @@
 #
 import copy
 import json
+import os
 import uuid
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -207,6 +208,8 @@ class SimulatorService(object):
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.serialize_simulator(session_stored_simulator, simulator_index.gid, simulation_state_gid, storage_path)
 
+            # MOISE O SPLITUIT MAREA
+
             wf_errs = 0
             try:
                 OperationService().launch_operation(operation.id, True)
@@ -220,6 +223,38 @@ class SimulatorService(object):
             self.logger.debug("Finished launching workflow. The operation was launched successfully, " +
                               str(wf_errs) + " had error on pre-launch steps")
 
+        except Exception as excep:
+            self.logger.error(excep)
+            if burst_config:
+                BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
+
+    def prepare_simulation_on_server(self, burst_config, user_id, project, simulator_algo, zip_folder_path):
+        simulator_h5_name = [f for f in os.listdir(zip_folder_path) if 'Simulator' in f][0]
+
+        try:
+            simulator_in = h5.load(os.path.join(zip_folder_path, simulator_h5_name))
+            simulator_index = SimulatorIndex()
+            simulator_index.fill_from_has_traits(simulator_in)
+            metadata = {}
+            if burst_config:
+                simulator_index.fk_parent_burst = burst_config.id
+                metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
+            simulator_id = simulator_algo.id
+            algo_category = simulator_algo.algorithm_category
+            operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
+                                             algo_category, None, metadata)
+            simulator_index.fk_from_operation = operation.id
+            storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
+            # TODO move all from zip_folder_path into storage_operation_path
+            wf_errs = 0
+            try:
+                OperationService().launch_operation(operation.id, True)
+                return operation
+            except Exception as excep:
+                self.logger.error(excep)
+                wf_errs += 1
+                if burst_config:
+                    BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
         except Exception as excep:
             self.logger.error(excep)
             if burst_config:
