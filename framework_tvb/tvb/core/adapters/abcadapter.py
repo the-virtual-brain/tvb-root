@@ -131,6 +131,10 @@ class ABCAdapterForm(Form):
     def get_input_name():
         raise NotImplementedError
 
+    @staticmethod
+    def get_view_model():
+        raise NotImplementedError
+
     def get_traited_datatype(self):
         """
         This is used to fill in defaults for GET requests.
@@ -265,6 +269,9 @@ class ABCAdapter(object):
     def get_form_class(self):
         return None
 
+    def get_view_model_class(self):
+        return self.get_form_class().get_view_model()
+
     @abstractmethod
     def get_output(self):
         """
@@ -304,11 +311,13 @@ class ABCAdapter(object):
 
 
     @abstractmethod
-    def launch(self):
+    def launch(self, view_model):
         """
          To be implemented in each Adapter.
          Will contain the logic of the Adapter.
+         Takes a ViewModel with data, dependency direction is: Adapter -> Form -> ViewModel
          Any returned DataType will be stored in DB, by the Framework.
+        :param view_model: the data model corresponding to the current adapter
         """
 
 
@@ -334,7 +343,7 @@ class ABCAdapter(object):
             self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
 
     @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Method to wrap LAUNCH.
         Will prepare data, and store results on return. 
@@ -375,7 +384,7 @@ class ABCAdapter(object):
         dao.store_entity(operation)
 
         self._prepare_generic_attributes(uid)
-        result = self.launch(**kwargs)
+        result = self.launch(view_model)
 
         if not isinstance(result, (list, tuple)):
             result = [result, ]

@@ -105,6 +105,10 @@ class NetworkxConnectivityImporterForm(ABCUploaderForm):
         self.key_node_region = StrField(NetworkxImporterModel.key_node_region, self, name='key_node_region')
         self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, self, name='key_node_hemisphere')
 
+    @staticmethod
+    def get_view_model():
+        return NetworkxImporterModel
+
 
 class NetworkxConnectivityImporter(ABCUploader):
     """
@@ -121,10 +125,11 @@ class NetworkxConnectivityImporter(ABCUploader):
         return [ConnectivityIndex]
 
     @transactional
-    def launch(self, data_file, **kwargs):
+    def launch(self, view_model):
+        # type: (NetworkxImporterModel) -> [ConnectivityIndex]
         try:
-            parser = NetworkxParser(**kwargs)
-            net = pandas.read_pickle(data_file)
+            parser = NetworkxParser(view_model)
+            net = pandas.read_pickle(view_model.data_file)
             connectivity = parser.parse(net)
             return h5.store_complete(connectivity, self.storage_path)
         except ParseException as excep:

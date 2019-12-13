@@ -71,6 +71,10 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
         self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
                                                 conditions=surface_conditions)
 
+    @staticmethod
+    def get_view_model():
+        return GIFTITimeSeriesImporterModel
+
 
 class GIFTITimeSeriesImporter(ABCUploader):
     """
@@ -87,16 +91,17 @@ class GIFTITimeSeriesImporter(ABCUploader):
     def get_output(self):
         return [TimeSeriesSurfaceIndex]
 
-    def launch(self, data_file, surface=None):
+    def launch(self, view_model):
+        # type: (GIFTITimeSeriesImporterModel) -> [TimeSeriesSurfaceIndex]
         """
         Execute import operations:
         """
-        if surface is None:
+        if view_model.surface is None:
             raise LaunchException("No surface selected. Please initiate upload again and select a brain surface.")
 
         parser = GIFTIParser(self.storage_path, self.operation_id)
         try:
-            partial_time_series, gifti_data_arrays = parser.parse(data_file)
+            partial_time_series, gifti_data_arrays = parser.parse(view_model.data_file)
 
             ts_idx = TimeSeriesSurfaceIndex()
             ts_h5_path = h5.path_for(self.storage_path, TimeSeriesSurfaceH5, ts_idx.gid)
@@ -110,6 +115,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_h5.gid.store(uuid.UUID(ts_idx.gid))
 
             ts_data_shape = ts_h5.read_data_shape()
+            surface = self.load_entity_by_gid(view_model.surface.hex)
             if surface.number_of_vertices != ts_data_shape[1]:
                 msg = "Imported time series doesn't have values for all surface vertices. Surface has %d vertices " \
                       "while time series has %d values." % (surface.number_of_vertices, ts_data_shape[1])

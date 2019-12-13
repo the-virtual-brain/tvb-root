@@ -74,6 +74,10 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
         self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self, name='data_file')
         self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self, name='should_center')
 
+    @staticmethod
+    def get_view_model():
+        return ObjSurfaceImporterModel
+
 
 class ObjSurfaceImporter(ABCUploader):
     """
@@ -90,21 +94,22 @@ class ObjSurfaceImporter(ABCUploader):
         return [SurfaceIndex]
 
     @transactional
-    def launch(self, surface_type, data_file, should_center=False):
+    def launch(self, view_model):
+        # type: (ObjSurfaceImporterModel) -> [SurfaceIndex]
         """
         Execute import operations:
         """
         try:
-            surface = make_surface(surface_type)
+            surface = make_surface(view_model.surface_type)
             if surface is None:
-                raise ParseException("Could not determine surface type! %s" % surface_type)
+                raise ParseException("Could not determine surface type! %s" % view_model.surface_type)
 
             surface.zero_based_triangles = True
 
-            with open(data_file) as f:
+            with open(view_model.data_file) as f:
                 obj = ObjSurface(f)
 
-            if should_center:
+            if view_model.should_center:
                 vertices = center_vertices(obj.vertices)
             else:
                 vertices = obj.vertices
