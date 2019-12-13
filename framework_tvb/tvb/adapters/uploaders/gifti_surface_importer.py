@@ -85,6 +85,10 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
                                                 name='data_file_part2')
         self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, self, name='should_center')
 
+    @staticmethod
+    def get_view_model():
+        return GIFTISurfaceImporterModel
+
 
 class GIFTISurfaceImporter(ABCUploader):
     """
@@ -101,13 +105,15 @@ class GIFTISurfaceImporter(ABCUploader):
     def get_output(self):
         return [SurfaceIndex]
 
-    def launch(self, file_type, data_file, data_file_part2, should_center=False):
+    def launch(self, view_model):
+        # type: (GIFTISurfaceImporterModel) -> [SurfaceIndex]
         """
         Execute import operations:
         """
         parser = GIFTIParser(self.storage_path, self.operation_id)
         try:
-            surface = parser.parse(data_file, data_file_part2, file_type, should_center=should_center)
+            surface = parser.parse(view_model.data_file, view_model.data_file_part2, view_model.file_type,
+                                   should_center=view_model.should_center)
             surface.compute_triangle_normals()
             surface.compute_vertex_normals()
             validation_result = surface.validate()

@@ -53,7 +53,7 @@ TS_REGION = "Region"
 TS_EEG = "EEG"
 
 
-class MatTimeSeriesImporterModel(ViewModel):
+class RegionMatTimeSeriesImporterModel(ViewModel):
     data_file = UploadAttr(
         field_type=str,
         label='Please select file to import'
@@ -99,35 +99,32 @@ class MatTimeSeriesImporterModel(ViewModel):
         label='starting time (ms)'
     )
 
-
-class MatTimeSeriesImporterForm(ABCUploaderForm):
-
-    def __init__(self, prefix='', project_id=None):
-        super(MatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        self.data_file = TraitUploadField(MatTimeSeriesImporterModel.data_file, '.mat', self, name='data_file')
-        self.dataset_name = StrField(MatTimeSeriesImporterModel.dataset_name, self, name='dataset_name')
-        self.structure_path = StrField(MatTimeSeriesImporterModel.structure_path, self, name='structure_path')
-        self.transpose = BoolField(MatTimeSeriesImporterModel.transpose, self, name='transpose')
-        self.slice = StrField(MatTimeSeriesImporterModel.slice, self, name='slice')
-        self.sampling_rate = IntField(MatTimeSeriesImporterModel.sampling_rate, self, name='sampling_rate')
-        self.start_time = IntField(MatTimeSeriesImporterModel.start_time, self, name='start_time')
-
-
-class RegionMatTimeSeriesImporterModel(ViewModel):
-    region = DataTypeGidAttr(
+    datatype = DataTypeGidAttr(
         linked_datatype=Connectivity,
         label='Connectivity'
     )
 
 
-class RegionMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
+class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(RegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        self.region = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.region, self, name='tstype_parameters')
+        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', self, name='data_file')
+        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, self, name='dataset_name')
+        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, self, name='structure_path')
+        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, self, name='transpose')
+        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, self, name='slice')
+        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, self, name='sampling_rate')
+        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, self, name='start_time')
+        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, self,
+                                                 name='tstype_parameters')
+
+    @staticmethod
+    def get_view_model():
+        return RegionMatTimeSeriesImporterModel
 
 
-class MatTimeSeriesImporter(ABCUploader):
+class RegionTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
@@ -137,7 +134,7 @@ class MatTimeSeriesImporter(ABCUploader):
     tstype = TS_REGION
 
     def get_form_class(self):
-        return RegionMatTimeSeriesImporterForm
+        return RegionMatTimeSeriesImporterModel
 
     def get_output(self):
         return [TimeSeriesRegionIndex, TimeSeriesEEGIndex]
@@ -173,20 +170,21 @@ class MatTimeSeriesImporter(ABCUploader):
     ts_builder = {TS_REGION: create_region_ts, TS_EEG: create_eeg_ts}
 
     @transactional
-    def launch(self, data_file, dataset_name, structure_path='',
-               transpose=False, slice=None, sampling_rate=1000,
-               start_time=0, tstype_parameters=None):
-        try:
-            data = read_nested_mat_file(data_file, dataset_name, structure_path)
+    def launch(self, view_model):
+        # type: (RegionMatTimeSeriesImporterModel) -> [TimeSeriesRegionIndex, TimeSeriesEEGIndex]
 
-            if transpose:
+        try:
+            data = read_nested_mat_file(view_model.data_file, view_model.dataset_name, view_model.structure_path)
+
+            if view_model.transpose:
                 data = data.T
             if slice:
                 data = data[parse_slice(slice)]
 
-            ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, tstype_parameters)
+            datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
+            ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, datatype_index)
 
-            ts.start_time = start_time
+            ts.start_time = view_model.start_time
             ts.sample_period_unit = 's'
 
             ts_h5.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)

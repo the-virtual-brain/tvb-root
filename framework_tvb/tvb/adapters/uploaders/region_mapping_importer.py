@@ -85,6 +85,10 @@ class RegionMappingImporterForm(ABCUploaderForm):
                                                 conditions=surface_conditions)
         self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self, name='connectivity')
 
+    @staticmethod
+    def get_view_model():
+        return RegionMappingImporterModel
+
 
 class RegionMappingImporter(ABCUploader):
     """
@@ -102,12 +106,10 @@ class RegionMappingImporter(ABCUploader):
     def get_output(self):
         return [RegionMappingIndex]
 
-    def launch(self, mapping_file, surface, connectivity):
+    def launch(self, view_model):
+        # type: (RegionMappingImporterModel) -> [RegionMappingIndex]
         """
         Creates region mapping from uploaded data.
-
-        :param mapping_file: an archive containing data for mapping surface to connectivity
-
         :raises LaunchException: when
                     * a parameter is None or missing
                     * archive has more than one file
@@ -116,19 +118,19 @@ class RegionMappingImporter(ABCUploader):
                     * imported file has negative values
                     * imported file has regions which are not in connectivity
         """
-        if mapping_file is None:
+        if view_model.mapping_file is None:
             raise LaunchException("Please select mappings file which contains data to import")
-        if surface is None:
+        if view_model.surface is None:
             raise LaunchException("No surface selected. Please initiate upload again and select a brain surface.")
-        if connectivity is None:
+        if view_model.connectivity is None:
             raise LaunchException("No connectivity selected. Please initiate upload again and select one.")
 
         self.logger.debug("Reading mappings from uploaded file")
 
-        if zipfile.is_zipfile(mapping_file):
+        if zipfile.is_zipfile(view_model.mapping_file):
             tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=TvbProfile.current.TVB_TEMP_FOLDER)
             try:
-                files = FilesHelper().unpack_zip(mapping_file, tmp_folder)
+                files = FilesHelper().unpack_zip(view_model.mapping_file, tmp_folder)
                 if len(files) > 1:
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
@@ -136,30 +138,33 @@ class RegionMappingImporter(ABCUploader):
                 if os.path.exists(tmp_folder):
                     shutil.rmtree(tmp_folder)
         else:
-            array_data = self.read_list_data(mapping_file, dtype=numpy.int32)
+            array_data = self.read_list_data(view_model.mapping_file, dtype=numpy.int32)
 
         # Now we do some checks before building final RegionMapping
         if array_data is None or len(array_data) == 0:
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        if len(array_data) != surface.number_of_vertices:
+        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        if len(array_data) != surface_index.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
-                  "Imported: %d values while surface has: %d vertices." % (len(array_data), surface.number_of_vertices)
+                  "Imported: %d values while surface has: %d vertices." % (
+                  len(array_data), surface_index.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        if array_data.max() >= connectivity.number_of_regions:
+        connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+        if array_data.max() >= connectivity_index.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
-                  "regions defined (0 based)." % (array_data.max(), connectivity.number_of_regions)
+                  "regions defined (0 based)." % (array_data.max(), connectivity_index.number_of_regions)
             raise LaunchException(msg)
 
         self.logger.debug("Creating RegionMapping instance")
 
-        connectivity_ht = h5.load_from_index(connectivity)
-        surface_ht = h5.load_from_index(surface)
+        connectivity_ht = h5.load_from_index(connectivity_index)
+        surface_ht = h5.load_from_index(surface_index)
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
         return h5.store_complete(region_mapping, self.storage_path)

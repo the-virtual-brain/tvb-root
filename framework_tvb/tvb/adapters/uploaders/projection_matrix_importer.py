@@ -103,6 +103,10 @@ class ProjectionMatrixImporterForm(ABCUploaderForm):
                                                 conditions=surface_conditions)
         self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self, name='sensors')
 
+    @staticmethod
+    def get_view_model():
+        return ProjectionMatrixImporterModel
+
 
 class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     """
@@ -119,7 +123,8 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     def get_output(self):
         return [ProjectionMatrixIndex]
 
-    def launch(self, projection_file, surface, sensors, dataset_name=DEFAULT_DATASET_NAME):
+    def launch(self, view_model):
+        # type: (ProjectionMatrixImporterModel) -> [ProjectionMatrixIndex]
         """
         Creates ProjectionMatrix entity from uploaded data.
 
@@ -128,22 +133,23 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                     * the dataset is invalid
                     * number of sensors is different from the one in dataset
         """
-        if projection_file is None:
+        if view_model.projection_file is None:
             raise LaunchException("Please select MATLAB file which contains data to import")
 
         if sensors is None:
             raise LaunchException("No sensors selected. Please initiate upload again and select one.")
 
-        if surface is None:
+        if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        expected_shape = surface.number_of_vertices
+        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        expected_shape = surface_index.number_of_vertices
 
         self.logger.debug("Reading projection matrix from uploaded file...")
-        if projection_file.endswith(".mat"):
-            projection_data = self.read_matlab_data(projection_file, dataset_name)
+        if view_model.projection_file.endswith(".mat"):
+            projection_data = self.read_matlab_data(view_model.projection_file, view_model.dataset_name)
         else:
-            projection_data = self.read_list_data(projection_file)
+            projection_data = self.read_list_data(view_model.projection_file)
 
         if projection_data is None or len(projection_data) == 0:
             raise LaunchException("Invalid (empty) dataset...")
@@ -157,7 +163,7 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                                                                                            expected_shape))
 
         projection_matrix_type = determine_projection_type(sensors)
-        surface_ht = h5.load_from_index(surface, CorticalSurface)
+        surface_ht = h5.load_from_index(surface_index, CorticalSurface)
         sensors_ht = h5.load_from_index(sensors)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,

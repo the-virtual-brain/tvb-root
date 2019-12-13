@@ -31,30 +31,35 @@
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, Sensors
-from tvb.adapters.uploaders.mat_timeseries_importer import MatTimeSeriesImporterForm, TS_EEG, MatTimeSeriesImporter
+from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
+    RegionTimeSeriesImporter
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
 class EEGMatTimeSeriesImporterModel(ViewModel):
-    eeg = DataTypeGidAttr(
+    datatype = DataTypeGidAttr(
         linked_datatype=Sensors,
         label='EEG Sensors'
     )
 
 
-class EEGMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
+class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
     def __init__(self, prefix='', project_id=None):
-        super(EEGMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+        super(EEGRegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[EEG_POLYMORPHIC_IDENTITY])
-        self.eeg = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.eeg, self, name='tstype_parameters',
-                                            conditions=eeg_conditions)
+        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self, name='tstype_parameters',
+                                                 conditions=eeg_conditions)
+
+    @staticmethod
+    def get_view_model():
+        return EEGMatTimeSeriesImporterModel
 
 
-class EEGMatTimeSeriesImporter(MatTimeSeriesImporter):
+class EEGRegionTimeSeriesImporter(RegionTimeSeriesImporter):
     _ui_name = "Timeseries EEG MAT"
     tstype = TS_EEG
 
     def get_form_class(self):
-        return EEGMatTimeSeriesImporterForm
+        return EEGRegionMatTimeSeriesImporterForm

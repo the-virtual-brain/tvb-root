@@ -71,6 +71,10 @@ class SensorsImporterForm(ABCUploaderForm):
                                              name='sensors_file')
         self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type')
 
+    @staticmethod
+    def get_view_model():
+        return SensorsImporterModel
+
 
 class SensorsImporter(ABCUploader):
     """
@@ -88,13 +92,10 @@ class SensorsImporter(ABCUploader):
     def get_output(self):
         return [SensorsIndex]
 
-    def launch(self, sensors_file, sensors_type):
+    def launch(self, view_model):
+        # type: (SensorsImporterModel) -> [SensorsIndex]
         """
         Creates required sensors from the uploaded file.
-
-        :param sensors_file: the file containing sensor data
-        :param sensors_type: a string from "EEG Sensors", "MEG sensors", "Internal Sensors"
-
         :returns: a list of sensors instances of the specified type
 
         :raises LaunchException: when
@@ -102,33 +103,33 @@ class SensorsImporter(ABCUploader):
                     * sensors_type is invalid (not one of the mentioned options)
                     * sensors_type is "MEG sensors" and no orientation is specified
         """
-        if sensors_file is None:
+        if view_model.sensors_file is None:
             raise LaunchException("Please select sensors file which contains data to import")
 
         self.logger.debug("Create sensors instance")
-        if sensors_type == SensorsEEG.sensors_type.default:
+        if view_model.sensors_type == SensorsEEG.sensors_type.default:
             sensors_inst = SensorsEEG()
-        elif sensors_type == SensorsMEG.sensors_type.default:
+        elif view_model.sensors_type == SensorsMEG.sensors_type.default:
             sensors_inst = SensorsMEG()
-        elif sensors_type == SensorsInternal.sensors_type.default:
+        elif view_model.sensors_type == SensorsInternal.sensors_type.default:
             sensors_inst = SensorsInternal()
         else:
-            exception_str = "Could not determine sensors type (selected option %s)" % sensors_type
+            exception_str = "Could not determine sensors type (selected option %s)" % view_model.sensors_type
             raise LaunchException(exception_str)
 
-        locations = self.read_list_data(sensors_file, usecols=[1, 2, 3])
+        locations = self.read_list_data(view_model.sensors_file, usecols=[1, 2, 3])
 
         # NOTE: TVB has the nose pointing -y and left ear pointing +x
         # If the sensors are in CTF coordinates : nose pointing +x left ear +y
         # to rotate the sensors by -90 along z uncomment below
         # locations = numpy.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]).dot(locations.T).T
         sensors_inst.locations = locations
-        sensors_inst.labels = self.read_list_data(sensors_file, dtype=MEMORY_STRING, usecols=[0])
+        sensors_inst.labels = self.read_list_data(view_model.sensors_file, dtype=MEMORY_STRING, usecols=[0])
         sensors_inst.number_of_sensors = sensors_inst.labels.size
 
         if isinstance(sensors_inst, SensorsMEG):
             try:
-                sensors_inst.orientations = self.read_list_data(sensors_file, usecols=[4, 5, 6])
+                sensors_inst.orientations = self.read_list_data(view_model.sensors_file, usecols=[4, 5, 6])
                 sensors_inst.has_orientation = True
             except IndexError:
                 raise LaunchException("Uploaded file does not contains sensors orientation.")

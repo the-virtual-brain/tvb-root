@@ -65,6 +65,10 @@ class BRCOImporterForm(ABCUploaderForm):
         self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self, name='data_file')
         self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self, name='connectivity')
 
+    @staticmethod
+    def get_view_model():
+        return BRCOImporterModel
+
 
 class BRCOImporter(ABCUploader):
     """
@@ -81,11 +85,12 @@ class BRCOImporter(ABCUploader):
         return [ConnectivityAnnotationsIndex]
 
     @transactional
-    def launch(self, data_file, connectivity):
+    def launch(self, view_model):
         try:
-            conn = h5.load_from_index(connectivity)
+            connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+            conn = h5.load_from_index(connectivity_index)
 
-            parser = XMLParser(data_file, conn.region_labels)
+            parser = XMLParser(view_model.data_file, conn.region_labels)
             annotations = parser.read_annotation_terms()
 
             result_ht = ConnectivityAnnotations()

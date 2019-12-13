@@ -156,6 +156,10 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
                                             name='tracts_delimiter')
         self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self, name='input_data')
 
+    @staticmethod
+    def get_view_model():
+        return CSVConnectivityImporterModel
+
 
 class CSVConnectivityImporter(ABCUploader):
     """
@@ -187,20 +191,18 @@ class CSVConnectivityImporter(ABCUploader):
             self.logger.debug("Read Connectivity file of size %d" % len(result_conn))
             return numpy.array(result_conn)
 
-    def launch(self, weights, weights_delimiter, tracts, tracts_delimiter, input_data):
+    def launch(self, view_model):
+        # type: (CSVConnectivityImporterModel) -> ConnectivityIndex
         """
         Execute import operations: process the weights and tracts csv files, then use
         the reference connectivity passed as input_data for the rest of the attributes.
 
-        :param weights: csv file containing the weights measures
-        :param tracts:  csv file containing the tracts measures
-        :param input_data: a reference connectivity with the additional attributes
-
         :raises LaunchException: when the number of nodes in CSV files doesn't match the one in the connectivity
         """
-        weights_matrix = self._read_csv_file(weights, weights_delimiter)
-        tract_matrix = self._read_csv_file(tracts, tracts_delimiter)
-        FilesHelper.remove_files([weights, tracts])
+        weights_matrix = self._read_csv_file(view_model.weights, view_model.weights_delimiter)
+        tract_matrix = self._read_csv_file(view_model.tracts, view_model.tracts_delimiter)
+        FilesHelper.remove_files([view_model.weights, view_model.tracts])
+        input_data = self.load_entity_by_gid(view_model.input_data.hex)
         if weights_matrix.shape[0] != input_data.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))

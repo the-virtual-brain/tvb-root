@@ -98,6 +98,10 @@ class NIFTIImporterForm(ABCUploaderForm):
         self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self, name='mappings_file')
         self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self, name='connectivity')
 
+    @staticmethod
+    def get_view_model():
+        return NIFTIImporterModel
+
 
 class NIFTIImporter(ABCUploader):
     """
@@ -219,17 +223,20 @@ class NIFTIImporter(ABCUploader):
         return data
 
     @transactional
-    def launch(self, data_file, apply_corrections=False, mappings_file=None, connectivity=None):
+    def launch(self, view_model):
+        # type: (NIFTIImporterModel) -> [VolumeIndex, StructuralMRIIndex, TimeSeriesVolumeIndex, RegionVolumeMappingIndex]
         """
         Execute import operations:
         """
         try:
-            self.parser = NIFTIParser(data_file)
+            self.parser = NIFTIParser(view_model.data_file)
             volume_idx, volume_ht = self._create_volume()
-            title = "NIFTI Import - " + os.path.split(data_file)[1]
+            title = "NIFTI Import - " + os.path.split(view_model.data_file)[1]
 
-            if connectivity:
-                rm = self._create_region_map(volume_ht, connectivity, apply_corrections, mappings_file, title)
+            connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+            if connectivity_index:
+                rm = self._create_region_map(volume_ht, connectivity_index, view_model.apply_corrections,
+                                             view_model.mappings_file, view_model.title)
                 return [volume_idx, rm]
 
             if self.parser.has_time_dimension:

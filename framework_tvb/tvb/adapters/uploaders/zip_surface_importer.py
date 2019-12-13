@@ -83,6 +83,10 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
                                               name='zero_based_triangles')
         self.should_center = BoolField(ZIPSurfaceImporterModel.should_center, self, name='should_center')
 
+    @staticmethod
+    def get_view_model():
+        return ZIPSurfaceImporterModel
+
 
 class ZIPSurfaceImporter(ABCUploader):
     """
@@ -112,42 +116,37 @@ class ZIPSurfaceImporter(ABCUploader):
         exception_str = "Could not determine surface type (selected option %s)" % surface_type
         raise LaunchException(exception_str)
 
-    def launch(self, uploaded, surface_type, zero_based_triangles=False, should_center=False):
+    def launch(self, view_model):
+        # type: (ZIPSurfaceImporterModel) -> [SurfaceIndex]
         """
-        Execute import operations: unpack ZIP and build Surface object as result.
-
-        :param uploaded: an archive containing the Surface data to be imported
-        :param surface_type: a string from the following:
-        "Skin Air", "Skull Skin", "Brain Skull", "Cortical Surface", "EEG Cap", "Face"
-
-        :returns: a subclass of `Surface` DataType
+        Execute import operations: unpack ZIP and build Surface object as result
         :raises LaunchException: when
                 * `uploaded` is missing
                 * `surface_type` is invalid
         :raises RuntimeError: when triangles contain an invalid vertex index
         """
-        if uploaded is None:
+        if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        self.logger.debug("Start to import surface: '%s' from file: %s" % (surface_type, uploaded))
+        self.logger.debug("Start to import surface: '%s' from file: %s" % (view_model.surface_type, view_model.uploaded))
         try:
-            zip_surface = ZipSurfaceParser(uploaded)
+            zip_surface = ZipSurfaceParser(view_model.uploaded)
         except IOError:
-            exception_str = "Did not find the specified ZIP at %s" % uploaded
+            exception_str = "Did not find the specified ZIP at %s" % view_model.uploaded
             raise LaunchException(exception_str)
 
         # Detect and instantiate correct surface type
         self.logger.debug("Create surface instance")
-        surface = self._make_surface(surface_type)
-        surface.zero_based_triangles = zero_based_triangles
-        if should_center:
+        surface = self._make_surface(view_model.surface_type)
+        surface.zero_based_triangles = view_model.zero_based_triangles
+        if view_model.should_center:
             vertices = center_vertices(zip_surface.vertices)
         else:
             vertices = zip_surface.vertices
         surface.vertices = vertices
         if len(zip_surface.normals) != 0:
             surface.vertex_normals = zip_surface.normals
-        if zero_based_triangles:
+        if view_model.zero_based_triangles:
             surface.triangles = zip_surface.triangles
         else:
             surface.triangles = zip_surface.triangles - 1
@@ -161,7 +160,7 @@ class ZIPSurfaceImporter(ABCUploader):
         # Now check if the triangles of the surface are valid
         triangles_min_vertex = numpy.amin(surface.triangles)
         if triangles_min_vertex < 0:
-            if triangles_min_vertex == -1 and not zero_based_triangles:
+            if triangles_min_vertex == -1 and not view_model.zero_based_triangles:
                 raise LaunchException("Triangles contain a negative vertex index. Maybe you have a ZERO based surface.")
             else:
                 raise LaunchException("Your triangles contain a negative vertex index: %d" % triangles_min_vertex)
@@ -169,7 +168,7 @@ class ZIPSurfaceImporter(ABCUploader):
         no_of_vertices = len(surface.vertices)
         triangles_max_vertex = numpy.amax(surface.triangles)
         if triangles_max_vertex >= no_of_vertices:
-            if triangles_max_vertex == no_of_vertices and zero_based_triangles:
+            if triangles_max_vertex == no_of_vertices and view_model.zero_based_triangles:
                 raise LaunchException("Your triangles contain an invalid vertex index: %d. "
                                       "Maybe your surface is NOT ZERO Based." % triangles_max_vertex)
             else:
