@@ -78,7 +78,7 @@ class TestModels():
         self.n_nodes = 100
 
     def test_RWW_opencl(self):
-        from tvb.simulator.models import ReducedWongWang
+        from tvb.simulator.models.wong_wang import ReducedWongWang
         from tvb.simulator._opencl.models import CLRWW
 
         self.validate(ReducedWongWang(),CLRWW(),1)

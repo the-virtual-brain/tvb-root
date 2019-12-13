@@ -41,7 +41,7 @@ from tvb.basic.neotraits.api import List
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import Identity
-from tvb.simulator.models import Model
+from tvb.simulator.models.base import Model
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
 
