@@ -1,28 +1,10 @@
 import datetime
 import json
 from json import JSONEncoder
-from uuid import UUID
-
-import numpy
 from sqlalchemy.orm.state import InstanceState
-from tvb.basic.logger.builder import get_logger
 
 
-class DatatypeEncoder(JSONEncoder):
-
-    def default(self, obj):
-        Logger = get_logger(obj.__class__.__module__)
-
-        if isinstance(obj, UUID):
-            return obj.hex
-        elif isinstance(obj, type(Logger)):
-            return obj.name
-        elif isinstance(obj, numpy.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
-
-
-class AlgorithmEncoder(JSONEncoder):
+class CustomEncoder(JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, (InstanceState, datetime.datetime)):

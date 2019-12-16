@@ -3,7 +3,7 @@ import json
 from flask import jsonify
 from flask_restful import Resource
 from tvb.core.entities.storage import dao
-from tvb.interfaces.rest.server.encoders.json_encoders import AlgorithmEncoder
+from tvb.interfaces.rest.server.encoders.json_encoders import CustomEncoder
 
 
 class GetOperationStatusResource(Resource):
@@ -23,6 +23,6 @@ class GetOperationResultsResource(Resource):
         results = dict()
 
         for i in range(len(operation_results)):
-            results[str(i)] = json.dumps(operation_results[i].__dict__, cls=AlgorithmEncoder)
+            results[str(i)] = json.dumps(operation_results[i].__dict__, cls=CustomEncoder)
 
         return results
