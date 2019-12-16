@@ -36,7 +36,7 @@ import numpy
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, Str
+from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
@@ -50,8 +50,7 @@ class ZIPConnectivityImporterModel(ViewModel):
         label='Connectivity file (zip)'
     )
 
-    normalization = ChoicesAttr(
-        field_type=str,
+    normalization = Str(
         required=False,
         choices=tuple(NORMALIZATION_OPTIONS.values()),
         label='Weights Normalization',

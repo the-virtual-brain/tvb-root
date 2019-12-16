@@ -39,7 +39,7 @@ from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
-from tvb.core.neotraits.view_model import ViewModel, Str, ChoicesAttr
+from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
@@ -53,8 +53,7 @@ class SensorsImporterModel(ViewModel):
         doc='Expected a text/bz2 file containing sensor measurements.'
     )
 
-    sensors_type = ChoicesAttr(
-        field_type=str,
+    sensors_type = Str(
         label='Sensors type: ',
         choices=tuple(OPTIONS.values()),
         default=tuple(OPTIONS.values())[0]
