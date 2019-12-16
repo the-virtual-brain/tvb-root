@@ -63,6 +63,10 @@ class WaveletSpectrogramVisualizerForm(ABCAdapterForm):
                                                    name='input_data', conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return WaveletSpectrogramVisualizerModel
+
+    @staticmethod
     def get_required_datatype():
         return WaveletCoefficientsIndex
 
@@ -85,22 +89,25 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     def get_form_class(self):
         return WaveletSpectrogramVisualizerForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (WaveletSpectrogramVisualizerModel) -> int
         """
          Return the required memory to run this algorithm.
          """
-        input_data = kwargs['input_data']
-        input_h5_class, input_h5_path = self._load_h5_of_gid(input_data.gid)
+        input_h5_class, input_h5_path = self._load_h5_of_gid(view_model.input_data)
         with input_h5_class(input_h5_path) as input_h5:
             shape = input_h5.data.shape
         return shape[0] * shape[1] * 8
 
-    def generate_preview(self, input_data, **kwargs):
-        return self.launch(input_data)
+    def generate_preview(self, view_model):
+        # type: (WaveletSpectrogramVisualizerModel) -> dict
+        return self.launch(view_model)
 
-    def launch(self, input_data, **kwarg):
+    def launch(self, view_model):
+        # type: (WaveletSpectrogramVisualizerModel) -> dict
 
-        with h5.h5_file_for_index(input_data) as input_h5:
+        input_index = self.load_entity_by_gid(view_model.input_data.hex)
+        with h5.h5_file_for_index(input_index) as input_h5:
             shape = input_h5.array_data.shape
             input_sample_period = input_h5.sample_period.load()
             input_frequencies = input_h5.frequencies.load()
@@ -113,7 +120,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
             data_matrix = input_h5.power[slices]
             data_matrix = data_matrix.sum(axis=3)
 
-        ts_index = self.load_entity_by_gid(input_data.source_gid)
+        ts_index = self.load_entity_by_gid(input_index.source_gid)
         assert isinstance(ts_index, TimeSeriesIndex)
 
         wavelet_sample_period = ts_index.sample_period * max((1, int(input_sample_period / ts_index.sample_period)))

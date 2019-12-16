@@ -63,6 +63,10 @@ class TractViewerForm(ABCAdapterForm):
         self.shell_surface = TraitDataTypeSelectField(TractViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
+    def get_view_model():
+        return TractViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return TractsIndex
 
@@ -86,18 +90,19 @@ class TractViewer(ABCSpaceDisplayer):
         return TractViewerForm
 
     # TODO: migrate to neotraits
-    def launch(self, tracts, shell_surface=None):
+    def launch(self, view_model):
+        # type: (TractViewerModel) -> dict
         from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
 
-        url_track_starts, url_track_vertices = tracts.get_urls_for_rendering()
+        url_track_starts, url_track_vertices = view_model.tracts.get_urls_for_rendering()
 
-        if tracts.region_volume_map is None:
+        if view_model.tracts.region_volume_map is None:
             raise Exception('only tracts with an associated region volume map are supported at this moment')
 
-        connectivity = tracts.region_volume_map.connectivity
+        connectivity = view_model.tracts.region_volume_map.connectivity
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=prepare_shell_surface_urls(self.current_project_id, shell_surface,
+                      shelfObject=prepare_shell_surface_urls(self.current_project_id, view_model.shell_surface,
                                                              preferred_type=CorticalSurface),
 
                       urlTrackStarts=url_track_starts,
@@ -108,5 +113,6 @@ class TractViewer(ABCSpaceDisplayer):
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})
 
-    def get_required_memory_size(self):
+    def get_required_memory_size(self, view_model):
+        # type: (TractViewerModel) -> int
         return -1

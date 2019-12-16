@@ -73,6 +73,10 @@ class ConnectivityEdgeBundleForm(ABCAdapterForm):
     def get_filters():
         return None
 
+    @staticmethod
+    def get_view_model():
+        return ConnectivityEdgeBundleModel
+
 
 class ConnectivityEdgeBundle(ABCDisplayer):
     _ui_name = "Connectivity Edge Bundle View"
@@ -85,9 +89,10 @@ class ConnectivityEdgeBundle(ABCDisplayer):
         """Return required memory."""
         return -1
 
-    def launch(self, connectivity):
+    def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
+        connectivity = self.load_entity_by_gid(view_model.connectivity.hex)
         connectivity_dt = h5.load_from_index(connectivity)
 
         pars = {"labels": json.dumps(connectivity_dt.region_labels.tolist()),

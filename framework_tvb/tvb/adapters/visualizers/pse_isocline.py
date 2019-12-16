@@ -167,6 +167,10 @@ class IsoclinePSEAdapterForm(ABCAdapterForm):
                                                        name='datatype_group', conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return IsoclinePSEAdapterModel
+
+    @staticmethod
     def get_required_datatype():
         return DataTypeGroup
 
@@ -197,7 +201,8 @@ class IsoclinePSEAdapter(ABCDisplayer):
     def get_form_class(self):
         return IsoclinePSEAdapterForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (IsoclinePSEAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -205,12 +210,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
         return -1
 
     # TODO: migrate to neotraits
-    def burst_preview(self, datatype_group_gid):
+    def burst_preview(self, view_model):
+        # type: (IsoclinePSEAdapterModel) -> dict
         """
         Generate the preview for the burst page.
         """
-        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        return self.launch(datatype_group=datatype_group)
+        return self.launch(view_model)
 
     def get_metric_matrix(self, datatype_group, selected_metric=None):
         self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
@@ -261,14 +266,15 @@ class IsoclinePSEAdapter(ABCDisplayer):
                                                     datatype_invalid=datatype.invalid)
         return node_info_dict
 
-    def launch(self, datatype_group, **kwargs):
-        params = self.get_metric_matrix(datatype_group)
+    def launch(self, view_model):
+        datatype_group_index = self.load_entity_by_gid(view_model.datatype_group.hex)
+        params = self.get_metric_matrix(datatype_group_index)
         params["title"] = self._ui_name
         params["canvasName"] = "Interpolated values for PSE metric: "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name
-        params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
-        params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
+        params["url_base"] = "/burst/explore/get_metric_matrix/" + view_model.datatype_group
+        params["node_info_url"] = "/burst/explore/get_node_matrix/" + view_model.datatype_group
         params["available_metrics"] = list(self.model.metrics)
         return self.build_display_result('pse_isocline/view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

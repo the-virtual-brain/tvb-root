@@ -166,6 +166,10 @@ class MatrixVisualizerForm(ABCAdapterForm):
         self.slice = StrField(MatrixVisualizerModel.slice, self, name='slice')
 
     @staticmethod
+    def get_view_model():
+        return MatrixVisualizerModel
+
+    @staticmethod
     def get_input_name():
         return '_datatype'
 
@@ -185,12 +189,14 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return MatrixVisualizerForm
 
-    def launch(self, datatype, slice=''):
-        with h5.h5_file_for_index(datatype) as h5_file:
+    def launch(self, view_model):
+        # type: (MatrixVisualizerModel) -> dict
+        datatype_index = self.load_entity_by_gid(view_model.datatype)
+        with h5.h5_file_for_index(datatype_index) as h5_file:
             matrix = h5_file.array_data.load()
 
         matrix2d, _, _ = compute_2d_view(matrix, slice)
-        title = datatype.display_name + " matrix plot"
+        title = datatype_index.display_name + " matrix plot"
 
         pars = self.compute_params(matrix, title, slice)
         return self.build_display_result("matrix/svg_view", pars)

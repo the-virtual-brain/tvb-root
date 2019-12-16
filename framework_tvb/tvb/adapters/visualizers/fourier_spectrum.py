@@ -62,6 +62,10 @@ class FourierSpectrumForm(ABCAdapterForm):
                                                    conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return FourierSpectrumModel
+
+    @staticmethod
     def get_input_name():
         return "_input_data"
 
@@ -89,25 +93,31 @@ class FourierSpectrumDisplay(ABCDisplayer):
     def get_form_class(self):
         return FourierSpectrumForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (FourierSpectrumModel) -> dict
         """
         Return the required memory to run this algorithm.
         """
-        return numpy.prod(kwargs['input_data'].read_data_shape()) * 8
+        fs_input_index = self.load_entity_by_gid(view_model.input_data.hex)
+        return numpy.prod(fs_input_index.read_data_shape()) * 8
 
-    def generate_preview(self, **kwargs):
-        return self.launch(**kwargs)
+    def generate_preview(self, view_model):
+        # type: (FourierSpectrumModel) -> dict
+        return self.launch(view_model)
 
-    def launch(self, input_data, **kwargs):
+    def launch(self, view_model):
+        # type: (FourierSpectrumModel) -> dict
+
         self.log.debug("Plot started...")
         # these partial loads are dangerous for TS and FS instances, but efficient
+        fs_input_index = self.load_entity_by_gid(view_model.input_data.hex)
         fourier_spectrum = FourierSpectrum()
-        with h5.h5_file_for_index(input_data) as input_h5:
+        with h5.h5_file_for_index(fs_input_index) as input_h5:
             shape = list(input_h5.array_data.shape)
             fourier_spectrum.segment_length = input_h5.segment_length.load()
             fourier_spectrum.windowing_function = input_h5.windowing_function.load()
 
-        ts_index = self.load_entity_by_gid(input_data.source_gid)
+        ts_index = self.load_entity_by_gid(fs_input_index.source_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         if len(state_list) == 0:
             state_list = list(range(shape[1]))
@@ -118,7 +128,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
                       plotName=ts_index.title,
-                      url_base=self.build_h5_url(input_data.gid, "get_fourier_data", parameter=""),
+                      url_base=self.build_h5_url(view_model.input_data, "get_fourier_data", parameter=""),
                       xAxisName="Frequency [kHz]",
                       yAxisName="Power",
                       available_scales=available_scales,

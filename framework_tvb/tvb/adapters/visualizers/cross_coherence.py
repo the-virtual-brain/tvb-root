@@ -60,6 +60,10 @@ class CrossCoherenceVisualizerForm(ABCAdapterForm):
                                                  conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return CrossCoherenceVisualizerModel
+
+    @staticmethod
     def get_required_datatype():
         return CoherenceSpectrumIndex
 
@@ -79,10 +83,11 @@ class CrossCoherenceVisualizer(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return CrossCoherenceVisualizerForm
 
-    def launch(self, datatype):
+    def launch(self, view_model):
+        # type: (CrossCoherenceVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(datatype.gid)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype)
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             # get data from coher datatype h5, convert to json
             frequency = ABCDisplayer.dump_with_precision(datatype_h5.frequency.load().flat)

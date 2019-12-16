@@ -80,6 +80,10 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
                                                              self, 'region_mapping_index')
 
     @staticmethod
+    def get_view_model():
+        return ConnectivityAnnotationsViewModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityAnnotationsIndex
 
@@ -111,20 +115,22 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
     def get_form_class(self):
         return ConnectivityAnnotationsViewForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (ConnectivityAnnotationsViewModel) -> int
         return -1
 
-    def launch(self, annotations_index, region_mapping_index=None, **kwarg):
+    def launch(self, view_model):
+        # type: (ConnectivityAnnotationsViewModel) -> dict
 
-        if region_mapping_index is None:
-            region_map = dao.get_generic_entity(RegionMappingIndex, annotations_index.connectivity_gid,
+        if view_model.region_mapping_index is None:
+            region_map = dao.get_generic_entity(RegionMappingIndex, view_model.annotations_index.connectivity_gid,
                                                 'connectivity_gid')
             if len(region_map) < 1:
                 raise LaunchException(
                     "Can not launch this viewer unless we have at least a RegionMapping for the current Connectivity!")
             region_mapping_index = region_map[0]
 
-        boundary_url = region_mapping_index.surface.get_url_for_region_boundaries(region_map)
+        boundary_url = view_model.region_mapping_index.surface.get_url_for_region_boundaries(region_map)
         url_vertices_pick, url_normals_pick, url_triangles_pick = region_map.surface.get_urls_for_pick_rendering()
         url_vertices, url_normals, _, url_triangles, url_region_map = \
             region_map.surface.get_urls_for_rendering(True, region_map)
