@@ -46,14 +46,14 @@ def initialize_flask():
     api = Api(app)
 
     api.add_resource(GetUsersResource, '/users')
-    api.add_resource(GetProjectsOfAUserResource, '/get_projects/<int:user_id>')
-    api.add_resource(GetDataFromProjectResource, '/get_project_datatypes/<int:project_id>')
-    api.add_resource(GetOperationsFromProjectResource, '/get_operations/<int:project_id>')
-    api.add_resource(GetDatatypeResource, '/get_datatypes/<string:guid>')
-    api.add_resource(GetOperationsForDatatypeResource, '/get_operations_for_datatype/<string:guid>')
-    api.add_resource(FireSimulationResource, '/test_simulation/<int:project_id>')
-    api.add_resource(GetOperationStatusResource, '/operation_status/<int:operation_id>')
-    api.add_resource(GetOperationResultsResource, '/operation_results/<int:operation_id>')
+    api.add_resource(GetProjectsOfAUserResource, '/projects/<int:user_id>')
+    api.add_resource(GetDataFromProjectResource, '/project/datatypes/<int:project_id>')
+    api.add_resource(GetOperationsFromProjectResource, '/operations/<int:project_id>')
+    api.add_resource(GetDatatypeResource, '/datatypes/<string:guid>')
+    api.add_resource(GetOperationsForDatatypeResource, '/operations/datatype/<string:guid>')
+    api.add_resource(FireSimulationResource, '/simulation/<int:project_id>')
+    api.add_resource(GetOperationStatusResource, '/operation/status/<int:operation_id>')
+    api.add_resource(GetOperationResultsResource, '/operation/results/<int:operation_id>')
 
     app.run(debug=True, port=FLASK_PORT)
 
