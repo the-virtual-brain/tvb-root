@@ -78,8 +78,6 @@ class Field(object):
     def fill_from_post(self, post_data):
         """ deserialize form a post dictionary """
         self.unvalidated_data = post_data.get(self.name)
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
         try:
             self._from_post()
         except ValueError as ex:
@@ -557,6 +555,8 @@ class FloatField(TraitField):
     def _from_post(self):
         super(FloatField, self)._from_post()
         # TODO: Throws exception if attr is optional and has no value
+        if self.unvalidated_data and len(self.unvalidated_data) == 0:
+            self.unvalidated_data = None
         if self.unvalidated_data:
             self.data = float(self.unvalidated_data)
         else:
