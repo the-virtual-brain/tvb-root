@@ -40,13 +40,12 @@ from tvb.core.entities.storage import transactional
 from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 
 
 class BRCOImporterModel(ViewModel):
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Connectivity Annotations'
     )
 

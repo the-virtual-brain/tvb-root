@@ -31,13 +31,12 @@
 from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
 from tvb.basic.neotraits.api import Attr
 from tvb.core.neotraits.h5 import ViewModelH5
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr
+from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.datatypes.spectral import FourierSpectrum
 
 
 class DummyImporterViewModel(ViewModel):
-    uploaded = UploadAttr(
-        field_type=str,
+    uploaded = Str(
         label='File to upload'
     )
 

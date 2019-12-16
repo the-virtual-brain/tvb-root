@@ -40,12 +40,11 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import TraitUploadField, StrField
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr
+from tvb.core.neotraits.view_model import ViewModel, Str
 
 
 class NetworkxImporterModel(ViewModel):
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Please select file to import'
     )
 

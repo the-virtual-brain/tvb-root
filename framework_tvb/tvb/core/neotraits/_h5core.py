@@ -38,7 +38,7 @@ from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal
-from tvb.core.neotraits.view_model import DataTypeGidAttr, UploadAttr
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
 
 
@@ -224,12 +224,9 @@ class ViewModelH5(H5File):
             if isinstance(attr, DataTypeGidAttr):
                 ref = Uuid(attr, self)
                 setattr(self, attr.field_name, ref)
-            elif isinstance(attr, Attr):
+            elif issubclass(type(attr), Attr):
                 if attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
                 else:
                     ref = Scalar(attr, self)
-                setattr(self, attr.field_name, ref)
-            elif isinstance(attr, UploadAttr):
-                ref = Scalar(attr, self)
                 setattr(self, attr.field_name, ref)

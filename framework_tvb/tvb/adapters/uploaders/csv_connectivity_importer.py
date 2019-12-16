@@ -35,7 +35,7 @@
 import csv
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, ChoicesAttr, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -113,8 +113,7 @@ DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 
 
 
 class CSVConnectivityImporterModel(ViewModel):
-    weights = UploadAttr(
-        field_type=str,
+    weights = Str(
         label='Weights file (csv)'
     )
 
@@ -125,8 +124,7 @@ class CSVConnectivityImporterModel(ViewModel):
         label='Field delimiter : '
     )
 
-    tracts = UploadAttr(
-        field_type=str,
+    tracts = Str(
         label='Tracts file (csv)'
     )
 
