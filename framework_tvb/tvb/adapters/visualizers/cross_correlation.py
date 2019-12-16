@@ -57,6 +57,10 @@ class CrossCorrelationVisualizerForm(ABCAdapterForm):
         self.datatype = TraitDataTypeSelectField(CrossCorrelationVisualizerModel.datatype, self, name='datatype')
 
     @staticmethod
+    def get_view_model():
+        return CrossCorrelationVisualizerModel
+
+    @staticmethod
     def get_required_datatype():
         return CrossCorrelationIndex
 
@@ -76,9 +80,11 @@ class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return CrossCorrelationVisualizerForm
 
-    def launch(self, datatype):
+    def launch(self, view_model):
+        # type: (CrossCorrelationVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
-        labels, matrix = self._extract_labels_and_data_matrix(datatype)
+        time_series_index = self.load_entity_by_gid(view_model.datatype.hex)
+        labels, matrix = self._extract_labels_and_data_matrix(time_series_index)
         matrix = matrix.mean(axis=0)[:, :, 0, 0]
         pars = self.compute_params(matrix, 'Correlation matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

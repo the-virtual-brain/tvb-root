@@ -56,6 +56,10 @@ class LocalConnectivityViewerForm(ABCAdapterForm):
                                                    conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return LocalConnectivityViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return LocalConnectivityIndex
 
@@ -93,11 +97,11 @@ class LocalConnectivityViewer(ABCDisplayer):
             'brainCenter': json.dumps(surface_h5.center())
         }
 
-    def launch(self, local_conn):
+    def launch(self, view_model):
         params = dict(title="Local Connectivity Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=False)
 
-        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(local_conn.gid)
+        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(view_model.local_conn)
         with local_conn_h5_class(local_conn_h5_path) as local_conn_h5:
             surface_gid = local_conn_h5.surface.load().hex
             min_value, max_value = local_conn_h5.get_min_max_values()
@@ -106,7 +110,7 @@ class LocalConnectivityViewer(ABCDisplayer):
         with surface_h5_class(surface_h5_path) as surface_h5:
             params.update(self._compute_surface_params(surface_h5))
 
-        params['local_connectivity_gid'] = local_conn.gid
+        params['local_connectivity_gid'] = view_model.local_conn
         params['minValue'] = min_value
         params['maxValue'] = max_value
         return self.build_display_result("local_connectivity/view", params,

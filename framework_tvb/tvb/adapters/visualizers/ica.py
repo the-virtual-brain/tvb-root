@@ -77,6 +77,10 @@ class ICAForm(ABCAdapterForm):
         self.i_mode = IntField(ICAModel.i_mode, self, name='i_mode')
 
     @staticmethod
+    def get_view_model():
+        return ICAModel
+
+    @staticmethod
     def get_required_datatype():
         return IndependentComponentsIndex
 
@@ -95,17 +99,18 @@ class ICA(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return ICAForm
 
-    def launch(self, datatype, i_svar=0, i_mode=0):
+    def launch(self, view_model):
+        # type: (ICAModel) -> dict
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        h5_class, h5_path = self._load_h5_of_gid(datatype.gid)
+        h5_class, h5_path = self._load_h5_of_gid(view_model.datatype)
         with h5_class(h5_path) as h5_file:
             unmixing_matrix = h5_file.unmixing_matrix.load()
             prewhitening_matrix = h5_file.prewhitening_matrix.load()
 
-        unmixing_matrix = unmixing_matrix[..., i_svar, i_mode]
-        prewhitening_matrix = prewhitening_matrix[..., i_svar, i_mode]
+        unmixing_matrix = unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
+        prewhitening_matrix = prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
         Cinv = unmixing_matrix.dot(prewhitening_matrix)
-        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (i_svar))
+        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (view_model.i_svar))
         return self.build_display_result("matrix/svg_view", pars)

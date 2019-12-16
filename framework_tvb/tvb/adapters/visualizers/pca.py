@@ -57,6 +57,10 @@ class PCAForm(ABCAdapterForm):
         self.pca = TraitDataTypeSelectField(PCAModel.pca, self, name='pca', conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return PCAModel
+
+    @staticmethod
     def get_input_name():
         return '_pca'
 
@@ -75,13 +79,15 @@ class PCA(ABCSpaceDisplayer):
     def get_form_class(self):
         return PCAForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (PCAModel) -> int
         """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
-    def launch(self, pca):
+    def launch(self, view_model):
+        # type: (PCAModel) -> dict
         """Construct data for visualization and launch it."""
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(pca.gid)
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.pca)
         with ts_h5_class(ts_h5_path) as ts_h5:
             source_gid = ts_h5.source.load()
 
@@ -89,8 +95,8 @@ class PCA(ABCSpaceDisplayer):
         with source_h5_class(source_h5_path) as source_h5:
             labels_data = self.get_space_labels(source_h5)
 
-        fractions_update_url = self.build_h5_url(pca.gid, 'read_fractions_data')
-        weights_update_url = self.build_h5_url(pca.gid, 'read_weights_data')
+        fractions_update_url = self.build_h5_url(view_model.pca, 'read_fractions_data')
+        weights_update_url = self.build_h5_url(view_model.pca, 'read_weights_data')
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))

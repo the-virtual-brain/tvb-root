@@ -58,6 +58,17 @@ from tvb.datatypes.surfaces import Surface
 
 
 class ConnectivityViewerModel(ViewModel):
+    """
+    Attributes meaning:
+        connectivity: GID towards the `Connectivity` object which will be displayed
+        surface_data: if provided, it is displayed as a shadow to give an idea of the connectivity position
+                      relative to the full brain cortical surface
+        colors: used to establish a colormap for the nodes displayed in 2D Connectivity viewers
+        rays: used to establish the size of the spheres representing each node in 3D Nodes viewer
+        step: a threshold applied to the 2D Connectivity Viewers to differentiate 2 types of nodes the ones
+              with a value greater that this will be displayed as red discs, instead of yellow
+    """
+
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         label='Connectivity Matrix'
@@ -129,6 +140,10 @@ class ConnectivityViewerForm(ABCAdapterForm):
                                              conditions=rays_conditions)
 
     @staticmethod
+    def get_view_model():
+        return ConnectivityViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityIndex
 
@@ -152,48 +167,48 @@ class ConnectivityViewer(ABCSpaceDisplayer):
     def get_form_class(self):
         return ConnectivityViewerForm
 
-    def get_required_memory_size(self, input_data, surface_data, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (ConnectivityViewerModel) -> int
         """
         Return the required memory to run this algorithm.
         """
-        if surface_data is not None:
+        surface_index = self.load_entity_by_gid(view_model.surface_data.hex)
+        if surface_index is not None:
             # Nr of triangles * sizeOf(uint16) + (nr of vertices + nr of normals) * sizeOf(float)
-            return surface_data.number_of_vertices * 6 * 4 + surface_data.number_of_vertices * 6 * 8
+            return surface_index.number_of_vertices * 6 * 4 + surface_index.number_of_vertices * 6 * 8
             # If no surface pass, assume enough memory should be available.
         return -1
 
-    def launch(self, input_data, surface_data=None, colors=None, rays=None, step=None):
-        """
-        Given the input connectivity data and the surface data, 
-        build the HTML response to be displayed.
-
-        :param input_data: index towards the `Connectivity` object which will be displayed
-        :type input_data: `ConnectivityIndex`
-        :param surface_data: if provided, it is displayed as a shadow to give an idea of the connectivity \
-                             position relative to the full brain cortical surface
-        :type surface_data: `SurfaceIndex`
-        :param colors: used to establish a colormap for the nodes displayed in 2D Connectivity viewers
-        :type colors:  `ConnectivityMeasureIndex`
-        :param rays: used to establish the size of the spheres representing each node in 3D Nodes viewer
-        :type rays:  `ConnectivityMeasureIndex`
-        :param step: a threshold applied to the 2D Connectivity Viewers to differentiate 2 types of nodes \
-                     the ones with a value greater that this will be displayed as red discs, instead of yellow
-        :type step:  float
-        """
-        connectivity = h5.load_from_index(input_data)
+    def _load_input_data(self, view_model):
+        connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+        connectivity = h5.load_from_index(connectivity_index)
         assert isinstance(connectivity, Connectivity)
-        if colors:
-            colors_dt = h5.load_from_index(colors)
+
+        if view_model.colors:
+            colors_index = self.load_entity_by_gid(view_model.colors.hex)
+            colors_dt = h5.load_from_index(colors_index)
         else:
             colors_dt = None
-        if rays:
-            rays_dt = h5.load_from_index(rays)
+        if view_model.rays:
+            rays_index = self.load_entity_by_gid(view_model.rays.hex)
+            rays_dt = h5.load_from_index(rays_index)
         else:
             rays_dt = None
 
+        return connectivity, colors_dt, rays_dt
+
+    def launch(self, view_model):
+        # type: (ConnectivityViewerModel) -> dict
+        """
+        Given the input connectivity data and the surface data, 
+        build the HTML response to be displayed.
+        """
+        connectivity, colors, rays = self._load_input_data(view_model)
+
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
-        if surface_data is not None:
-            surface_h5 = h5.h5_file_for_index(surface_data)
+        if view_model.surface_data is not None:
+            surface_index = self.load_entity_by_gid(view_model.surface_data.hex)
+            surface_h5 = h5.h5_file_for_index(surface_index)
             url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
@@ -203,35 +218,27 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         global_params["urlNormals"] = json.dumps(url_normals)
         global_params['isSingleMode'] = False
 
-        result_params, result_pages = Connectivity2DViewer().compute_parameters(connectivity, colors_dt, rays_dt, step)
+        result_params, result_pages = Connectivity2DViewer().compute_parameters(connectivity, colors, rays,
+                                                                                view_model.step)
         result_params.update(global_params)
         result_pages.update(global_pages)
-        _params, _pages = Connectivity3DViewer().compute_parameters(connectivity, colors_dt, rays_dt)
+        _params, _pages = Connectivity3DViewer().compute_parameters(connectivity, colors, rays)
         result_params.update(_params)
         result_pages.update(_pages)
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
-    def generate_preview(self, input_data, figure_size=None, surface_data=None,
-                         colors=None, rays=None, step=None, **kwargs):
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (ConnectivityViewerModel, int) -> dict
         """
         Generate the preview for the BURST cockpit.
 
         see `launch_`
         """
-        connectivity = h5.load_from_index(input_data)
-        assert isinstance(connectivity, Connectivity)
-        if colors:
-            colors_dt = h5.load_from_index(colors)
-        else:
-            colors_dt = None
-        if rays:
-            rays_dt = h5.load_from_index(rays)
-        else:
-            rays_dt = None
+        connectivity, colors, rays = self._load_input_data(view_model)
 
         parameters, _ = Connectivity2DViewer().compute_preview_parameters(connectivity, figure_size[0],
-                                                                          figure_size[1], colors_dt, rays_dt, step)
+                                                                          figure_size[1], colors, rays, view_model.step)
         return self.build_display_result("connectivity/portlet_preview", parameters)
 
     @staticmethod

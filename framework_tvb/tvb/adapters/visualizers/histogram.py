@@ -61,6 +61,10 @@ class HistogramViewerForm(ABCAdapterForm):
                                                    conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return HistogramViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityMeasureIndex
 
@@ -83,27 +87,30 @@ class HistogramViewer(ABCDisplayer):
         return HistogramViewerForm
 
     # TODO: migrate to neotraits
-    def launch(self, input_data):
+    def launch(self, view_model):
+        # type: (HistogramViewerModel) -> dict
         """
         Prepare input data for display.
 
         :param input_data: A BCT computed measure for a Connectivity
         :type input_data: `ConnectivityMeasureIndex`
         """
-        params = self.prepare_parameters(input_data)
+        params = self.prepare_parameters(view_model.input_data)
         return self.build_display_result("histogram/view", params, pages=dict(controlPage="histogram/controls"))
 
-    def get_required_memory_size(self, input_data, figure_size):
+    def get_required_memory_size(self, view_model):
+        # type: (HistogramViewerModel) -> numpy.ndarray
         """
         Return the required memory to run this algorithm.
         """
+        input_data = self.load_entity_by_gid(view_model.input_data.hex)
         return numpy.prod(input_data.shape) * 2
 
-    def generate_preview(self, input_data, figure_size):
+    def generate_preview(self, view_model, figure_size):
         """
         The preview for the burst page.
         """
-        params = self.prepare_parameters(input_data)
+        params = self.prepare_parameters(view_model.input_data)
         return self.build_display_result("histogram/view", params)
 
     def prepare_parameters(self, input_data):

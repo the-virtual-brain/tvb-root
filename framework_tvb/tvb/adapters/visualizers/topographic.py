@@ -204,6 +204,10 @@ class TopographicViewerForm(ABCAdapterForm):
                                                                       operations=["=="], values=[1]))
 
     @staticmethod
+    def get_view_model():
+        return TopographicViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityMeasureIndex
 
@@ -227,23 +231,27 @@ class TopographicViewer(ABCDisplayer):
     def get_form_class(self):
         return TopographicViewerForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TopographicViewerModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         return -1
 
-    def generate_preview(self, data_0, data_1=None, data_2=None, figure_size=None):
-        return self.launch(data_0, data_1, data_2)
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (TopographicViewerModel, list) -> dict
+        return self.launch(view_model)
 
-    def launch(self, data_0, data_1=None, data_2=None):
+    def launch(self, view_model):
+        # type: (TopographicViewerModel) -> dict
 
         connectivities_idx = []
         measures_ht = []
-        for measure in [data_0, data_1, data_2]:
+        for measure in [view_model.data_0, view_model.data_1, view_model.data_2]:
             if measure is not None:
-                measures_ht.append(h5.load_from_index(measure))
-                conn_index = self.load_entity_by_gid(measure.connectivity_gid)
+                measure_index = self.load_entity_by_gid(measure.hex)
+                measures_ht.append(h5.load_from_index(measure_index))
+                conn_index = self.load_entity_by_gid(measure_index.connectivity_gid)
                 connectivities_idx.append(conn_index)
 
         with h5.h5_file_for_index(connectivities_idx[0]) as conn_h5:

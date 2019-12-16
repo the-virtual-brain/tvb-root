@@ -64,7 +64,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     """
     _ui_subsection = "volume"
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (BaseVolumeVisualizerModel) -> int
         return -1
 
     @staticmethod
@@ -323,8 +324,19 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
     def get_form_class(self):
         return VolumeVisualizerForm
 
-    def launch(self, measure, region_mapping_volume=None, data_slice='', background=None):
-        params = self.compute_params(region_mapping_volume, measure, data_slice, background=background)
+    def launch(self, view_model):
+        # type: (VolumeVisualizerModel) -> dict
+        measure_index = self.load_entity_by_gid(view_model.measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, measure_index, view_model.data_slice,
+                                     background=background_volume_index)
         params['title'] = "Mapped array on region volume Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
@@ -355,6 +367,10 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
             ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, self, name='region_mapping_volume')
 
     @staticmethod
+    def get_view_model():
+        return ConnectivityMeasureVolumeVisualizerModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityMeasureIndex
 
@@ -373,8 +389,19 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
     def get_form_class(self):
         return ConnectivityMeasureVolumeVisualizerForm
 
-    def launch(self, connectivity_measure, region_mapping_volume=None, background=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
+    def launch(self, view_model):
+        # type: (ConnectivityMeasureVolumeVisualizerModel) -> dict
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, connectivity_measure_index,
+                                     background=background_volume_index)
         params['title'] = "Connectivity Measure in Volume Visualizer"
         # the view will display slicing information if this key is present.
         # compute_params works with generic mapped arrays and it will return slicing info
@@ -411,6 +438,10 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
                                                              conditions=cm_conditions)
 
     @staticmethod
+    def get_view_model():
+        return RegionVolumeMappingVisualiserModel
+
+    @staticmethod
     def get_filters():
         return None
 
@@ -429,8 +460,19 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
     def get_form_class(self):
         return RegionVolumeMappingVisualiserForm
 
-    def launch(self, region_mapping_volume, connectivity_measure=None, background=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
+    def launch(self, view_model):
+        # type: (RegionVolumeMappingVisualiserModel) -> dict
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, connectivity_measure_index,
+                                     background=background_volume_index)
         params['title'] = "Volume to Regions Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
@@ -441,6 +483,10 @@ class MriVolumeVisualizerForm(BaseVolumeVisualizerForm):
     def __init__(self, prefix='', project_id=None):
         super(MriVolumeVisualizerForm, self).__init__(prefix, project_id)
         self.background.required = True
+
+    @staticmethod
+    def get_view_model():
+        return VolumeVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -462,17 +508,20 @@ class MriVolumeVisualizer(ABCDisplayer):
     def get_form_class(self):
         return MriVolumeVisualizerForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (VolumeVisualizerModel) -> int
         return -1
 
-    def launch(self, background=None):
-        background_class, background_path = self._load_h5_of_gid(background.gid)
+    def launch(self, view_model):
+        # type: (VolumeVisualizerModel) -> dict
+
+        background_class, background_path = self._load_h5_of_gid(view_model.background)
         background_h5 = background_class(background_path)
         volume_shape = background_h5.array_data.shape
         volume_shape = (1,) + volume_shape
 
         min_value, max_value = background_h5.get_min_max_values()
-        url_volume_data = self.build_url('/get_volume_view/', background.gid, '')
+        url_volume_data = self.build_url('/get_volume_view/', view_model.background.hex, '')
 
         volume_gid = background_h5.volume.load()
         volume_class, volume_path = self._load_h5_of_gid(volume_gid.hex)

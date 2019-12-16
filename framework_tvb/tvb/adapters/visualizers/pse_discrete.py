@@ -62,6 +62,10 @@ class DiscretePSEAdapterForm(ABCAdapterForm):
                                                        name='datatype_group', conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return DiscretePSEAdapterModel
+
+    @staticmethod
     def get_required_datatype():
         return DataTypeGroup
 
@@ -89,7 +93,8 @@ class DiscretePSEAdapter(ABCDisplayer):
     def get_form_class(self):
         return DiscretePSEAdapterForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (DiscretePSEAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -97,11 +102,12 @@ class DiscretePSEAdapter(ABCDisplayer):
         return -1
 
     # TODO: migrate to neotraits
-    def launch(self, datatype_group):
+    def launch(self, view_model):
+        # type: (DiscretePSEAdapterModel) -> dict
         """
         Launch the visualizer.
         """
-        pse_context = self.prepare_parameters(datatype_group.gid, '')
+        pse_context = self.prepare_parameters(view_model.datatype_group, '')
         pse_context.prepare_individual_jsons()
 
         return self.build_display_result('pse_discrete/view', pse_context,

@@ -126,6 +126,10 @@ class SensorsViewerForm(ABCAdapterForm):
         self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
+    def get_view_model():
+        return SensorsViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return SensorsIndex
 
@@ -149,21 +153,31 @@ class SensorsViewer(ABCDisplayer):
     def get_form_class(self):
         return SensorsViewerForm
 
-    def launch(self, sensors, projection_surface=None, shell_surface=None):
+    def launch(self, view_model):
+        # type: (SensorsViewerModel) -> dict
         """
         Prepare visualizer parameters.
 
         We support viewing all sensor types through a single viewer, so that a user doesn't need to
         go back to the data-page, for loading a different type of sensor.
         """
-        if sensors.sensors_type == SensorsInternal.sensors_type.default:
-            return self._params_internal_sensors(sensors, shell_surface)
+        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        shell_surface_index = None
+        projection_surface_index = None
 
-        if sensors.sensors_type == SensorsEEG.sensors_type.default:
-            return self._params_eeg_sensors(sensors, projection_surface, shell_surface)
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+        if projection_surface_index:
+            projection_surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
 
-        if sensors.sensors_type == SensorsMEG.sensors_type.default:
-            return self._params_meg_sensors(sensors, projection_surface, shell_surface)
+        if sensors_index.sensors_type == SensorsInternal.sensors_type.default:
+            return self._params_internal_sensors(sensors_index, shell_surface_index)
+
+        if sensors_index.sensors_type == SensorsEEG.sensors_type.default:
+            return self._params_eeg_sensors(sensors_index, projection_surface_index, shell_surface_index)
+
+        if sensors_index.sensors_type == SensorsMEG.sensors_type.default:
+            return self._params_meg_sensors(sensors_index, projection_surface_index, shell_surface_index)
 
         raise LaunchException("Unknown sensors type!")
 

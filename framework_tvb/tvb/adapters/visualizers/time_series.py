@@ -66,6 +66,10 @@ class TimeSeriesForm(ABCAdapterForm):
                                                     conditions=self.get_filters())
 
     @staticmethod
+    def get_view_model():
+        return TimeSeriesModel
+
+    @staticmethod
     def get_required_datatype():
         return TimeSeriesIndex
 
@@ -161,17 +165,18 @@ class TimeSeries(ABCSpaceDisplayer):
     def get_form_class(self):
         return TimeSeriesForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TimeSeriesModel) -> int
         """Return required memory."""
         return -1
 
-    def launch(self, time_series, preview=False, figsize=None):
-        """Construct data for visualization and launch it."""
-        h5_file = h5.h5_file_for_index(time_series)
+    def _launch(self, view_model, figsize, preview=False):
+        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        h5_file = h5.h5_file_for_index(time_series_index)
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())
         ts = h5_file.storage_manager.get_data('time')
-        state_variables = h5_file.labels_dimensions.load().get(time_series.labels_ordering[1], [])
+        state_variables = h5_file.labels_dimensions.load().get(time_series_index.labels_ordering[1], [])
         labels = self.get_space_labels(h5_file)
 
         # Assume that the first dimension is the time since that is the case so far
@@ -184,9 +189,9 @@ class TimeSeries(ABCSpaceDisplayer):
             for n in range(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
                 labels.append("Node-" + str(n))
 
-        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series.gid),
+        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series_index.gid),
                 'labels': labels, 'labels_json': json.dumps(labels),
-                'ts_title': time_series.title, 'preview': preview, 'figsize': figsize,
+                'ts_title': time_series_index.title, 'preview': preview, 'figsize': figsize,
                 'shape': repr(shape), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
                 'labelsStateVar': state_variables, 'labelsModes': list(range(shape[3]))
@@ -196,5 +201,11 @@ class TimeSeries(ABCSpaceDisplayer):
 
         return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))
 
-    def generate_preview(self, time_series, figure_size):
-        return self.launch(time_series, preview=True, figsize=figure_size)
+    def launch(self, view_model):
+        # type: (TimeSeriesModel) -> dict
+        """Construct data for visualization and launch it."""
+        return self._launch(view_model, None)
+
+    def generate_preview(self, view_model, figure_size):
+        # type: (TimeSeriesModel, list) -> dict
+        return self._launch(view_model, figsize=figure_size, preview=True)

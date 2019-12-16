@@ -76,6 +76,10 @@ class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
         self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self, name='background')
 
     @staticmethod
+    def get_view_model():
+        return TimeSeriesVolumeVisualiserModel
+
+    @staticmethod
     def get_input_name():
         return '_time_series'
 
@@ -95,16 +99,18 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
     def get_form_class(self):
         return TimeSeriesVolumeVisualiserForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TimeSeriesVolumeVisualiserModel) -> int
         """Return required memory."""
         return -1
 
-    def launch(self, time_series, background=None):
+    def launch(self, view_model):
+        # type: (TimeSeriesVolumeVisualiserModel) -> dict
 
-        url_volume_data = self.build_url('get_volume_view', time_series.gid, '')
-        url_timeseries_data = self.build_url('get_voxel_time_series', time_series.gid, '')
+        url_volume_data = self.build_url('get_volume_view', view_model.time_series.hex, '')
+        url_timeseries_data = self.build_url('get_voxel_time_series', view_model.time_series.hex, '')
 
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(time_series.gid)
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.time_series.hex)
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
 
@@ -123,6 +129,10 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             volume_shape.extend(rmv_h5.array_data.shape)
             rmv_h5.close()
 
+        background_index = None
+        if view_model.background:
+            background_index = self.load_entity_by_gid(view_model.background.hex)
+
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),
                       labelsStateVar=ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], []),
@@ -137,7 +147,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
                       voxelUnit=volume_h5.voxel_unit.load(),
                       voxelSize=json.dumps(volume_h5.voxel_size.load().tolist()))
 
-        params.update(self.ensure_background(background))
+        params.update(self.ensure_background(background_index))
 
         volume_h5.close()
         ts_h5.close()
