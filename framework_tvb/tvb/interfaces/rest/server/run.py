@@ -3,11 +3,11 @@ import sys
 from flask import Flask
 from flask_restful import Api
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.interfaces.rest.server.resources.datatype.datatype_resource import GetDatatypeResource
+from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource
-from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsOfAUserResource, \
-    GetOperationsFromProjectResource, GetDataFromProjectResource, GetOperationsForDatatypeResource
+from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsListResource, \
+    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
 from tvb.basic.logger.builder import get_logger
@@ -46,10 +46,10 @@ def initialize_flask():
     api = Api(app)
 
     api.add_resource(GetUsersResource, '/users')
-    api.add_resource(GetProjectsOfAUserResource, '/projects/<int:user_id>')
-    api.add_resource(GetDataFromProjectResource, '/project/datatypes/<int:project_id>')
-    api.add_resource(GetOperationsFromProjectResource, '/operations/<int:project_id>')
-    api.add_resource(GetDatatypeResource, '/datatypes/<string:guid>')
+    api.add_resource(GetProjectsListResource, '/projects/<int:user_id>')
+    api.add_resource(GetDataInProjectResource, '/project/datatypes/<int:project_id>')
+    api.add_resource(GetOperationsInProjectResource, '/operations/<int:project_id>')
+    api.add_resource(RetrieveDatatypeResource, '/datatypes/<string:guid>')
     api.add_resource(GetOperationsForDatatypeResource, '/operations/datatype/<string:guid>')
     api.add_resource(FireSimulationResource, '/simulation/<int:project_id>')
     api.add_resource(GetOperationStatusResource, '/operation/status/<int:operation_id>')

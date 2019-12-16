@@ -5,11 +5,10 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 import json
+from tvb.interfaces.rest.server.encoders.json_encoders import CustomEncoder
 
-from tvb.interfaces.rest.server.encoders.json_encoders import AlgorithmEncoder
 
-
-class GetProjectsOfAUserResource(Resource):
+class GetProjectsListResource(Resource):
 
     def __init__(self):
         self.project_service = ProjectService()
@@ -32,7 +31,7 @@ class GetProjectsOfAUserResource(Resource):
         return jsonify({'projects': final_dict})
 
 
-class GetDataFromProjectResource(Resource):
+class GetDataInProjectResource(Resource):
 
     def __init__(self):
         self.project_service = ProjectService()
@@ -44,7 +43,7 @@ class GetDataFromProjectResource(Resource):
         return datatypes
 
 
-class GetOperationsFromProjectResource(Resource):
+class GetOperationsInProjectResource(Resource):
 
     def __init__(self):
         self.project_service = ProjectService()
@@ -81,7 +80,7 @@ class GetOperationsForDatatypeResource(Resource):
         operations = dict()
 
         for i in range(len(filtered_adapters)):
-            operations[str(i)] = json.dumps(filtered_adapters[i].__dict__, cls=AlgorithmEncoder)
+            operations[str(i)] = json.dumps(filtered_adapters[i].__dict__, cls=CustomEncoder)
 
         return operations
 
