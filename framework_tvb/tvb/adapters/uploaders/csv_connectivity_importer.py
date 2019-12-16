@@ -35,7 +35,7 @@
 import csv
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neotraits.view_model import ViewModel, Str, ChoicesAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -117,8 +117,7 @@ class CSVConnectivityImporterModel(ViewModel):
         label='Weights file (csv)'
     )
 
-    weights_delimiter = ChoicesAttr(
-        field_type=str,
+    weights_delimiter = Str(
         choices=tuple(DELIMITER_OPTIONS.values()),
         default=tuple(DELIMITER_OPTIONS.values())[0],
         label='Field delimiter : '
@@ -128,8 +127,7 @@ class CSVConnectivityImporterModel(ViewModel):
         label='Tracts file (csv)'
     )
 
-    tracts_delimiter = ChoicesAttr(
-        field_type=str,
+    tracts_delimiter = Str(
         choices=tuple(DELIMITER_OPTIONS.values()),
         default=tuple(DELIMITER_OPTIONS.values())[0],
         label='Field delimiter : '

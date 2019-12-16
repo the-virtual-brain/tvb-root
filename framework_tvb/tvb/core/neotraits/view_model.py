@@ -29,12 +29,6 @@ class DataTypeGidAttr(Attr):
         self.filters = filters
 
 
-class ChoicesAttr(Attr):
-    """
-    # TODO: allow UI names for choices
-    """
-
-
 class EquationAttr(Attr):
     """
     # TODO: there are places where we need eq params as a nested form. Figure out a proper model

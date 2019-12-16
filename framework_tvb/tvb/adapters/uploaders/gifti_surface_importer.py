@@ -41,15 +41,14 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, Str
+from tvb.core.neotraits.view_model import ViewModel, Str
 
 
 class GIFTISurfaceImporterModel(ViewModel):
     surface_types = ALL_SURFACES_SELECTION.copy()
     surface_types['Specified in the file metadata'] = OPTION_READ_METADATA
 
-    file_type = ChoicesAttr(
-        field_type=str,
+    file_type = Str(
         label='Specify file type : ',
         choices=tuple(surface_types.values()),
         default=tuple(surface_types.values())[0]
