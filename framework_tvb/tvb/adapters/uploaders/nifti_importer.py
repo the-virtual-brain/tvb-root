@@ -37,7 +37,7 @@ import os
 import numpy
 from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
@@ -59,8 +59,7 @@ from tvb.core.neocom import h5
 
 
 class NIFTIImporterModel(ViewModel):
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Please select file to import (gz or nii)'
     )
 
@@ -72,8 +71,7 @@ class NIFTIImporterModel(ViewModel):
             'All outside range will be set -1 (background).'
     )
 
-    mappings_file = UploadAttr(
-        field_type=str,
+    mappings_file = Str(
         required=False,
         label='Mapping File',
         doc='Fill this for Region Mappings, when the indices in the NII do not match '

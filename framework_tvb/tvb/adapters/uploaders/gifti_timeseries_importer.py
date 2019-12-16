@@ -43,13 +43,12 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.surfaces import Surface
 
 
 class GIFTITimeSeriesImporterModel(ViewModel):
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Please select file to import (.gii)'
     )
 

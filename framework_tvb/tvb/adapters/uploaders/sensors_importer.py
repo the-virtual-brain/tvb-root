@@ -39,7 +39,7 @@ from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, ChoicesAttr
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
@@ -48,8 +48,7 @@ class SensorsImporterModel(ViewModel):
                'MEG Sensors': SensorsMEG.sensors_type.default,
                'Internal Sensors': SensorsInternal.sensors_type.default}
 
-    sensors_file = UploadAttr(
-        field_type=str,
+    sensors_file = Str(
         label='Please upload sensors file (txt or bz2 format)',
         doc='Expected a text/bz2 file containing sensor measurements.'
     )

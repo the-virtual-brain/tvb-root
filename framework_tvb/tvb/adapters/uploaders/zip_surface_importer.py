@@ -42,13 +42,12 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField, BoolField
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, ChoicesAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, ChoicesAttr
 from tvb.datatypes.surfaces import make_surface, center_vertices
 
 
 class ZIPSurfaceImporterModel(ViewModel):
-    uploaded = UploadAttr(
-        field_type=str,
+    uploaded = Str(
         label='Surface file (zip)'
     )
 

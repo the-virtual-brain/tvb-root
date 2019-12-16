@@ -41,7 +41,7 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, UploadAttr
+from tvb.core.neotraits.view_model import ViewModel, ChoicesAttr, Str
 
 
 class GIFTISurfaceImporterModel(ViewModel):
@@ -55,13 +55,11 @@ class GIFTISurfaceImporterModel(ViewModel):
         default=tuple(surface_types.values())[0]
     )
 
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Please select a .gii (LH if cortex)'
     )
 
-    data_file_part2 = UploadAttr(
-        field_type=str,
+    data_file_part2 = Str(
         required=False,
         label="Optionally select 2'nd .gii (RH if cortex)"
     )

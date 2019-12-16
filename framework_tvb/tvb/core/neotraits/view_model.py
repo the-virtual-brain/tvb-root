@@ -11,10 +11,10 @@ class ViewModel(HasTraits):
     """
 
 
-class UploadAttr(Attr):
-    """
-    # TODO: take also the extension type
-    """
+class Str(Attr):
+    def __init__(self, field_type=str, default=None, doc='', label='', required=True,
+                 final=False, choices=None):
+        super(Str, self).__init__(field_type, default, doc, label, required, final, choices)
 
 
 class DataTypeGidAttr(Attr):

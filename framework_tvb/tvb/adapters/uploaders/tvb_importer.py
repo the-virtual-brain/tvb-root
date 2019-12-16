@@ -38,7 +38,7 @@ import zipfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import TraitUploadField
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr
+from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -47,8 +47,7 @@ from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
 class TVBImporterModel(ViewModel):
-    data_file = UploadAttr(
-        field_type=str,
+    data_file = Str(
         label='Please select file to import (h5 or zip)'
     )
 

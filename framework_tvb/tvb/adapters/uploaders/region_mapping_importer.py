@@ -46,15 +46,14 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, UploadAttr, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CORTICAL, Surface
 
 
 class RegionMappingImporterModel(ViewModel):
-    mapping_file = UploadAttr(
-        field_type=str,
+    mapping_file = Str(
         label='Please upload region mapping file (txt, zip or bz2 format)',
         doc='Expected a text/zip/bz2 file containing region mapping values.'
     )
