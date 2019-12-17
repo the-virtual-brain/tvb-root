@@ -44,21 +44,46 @@ import json
 from collections import OrderedDict
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits._attr import List
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, MultipleSelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, MultipleSelectField, TraitDataTypeSelectField, MultiSelectField
 # Import metrics here, so that Traits will find them and return them as known subclasses
 import tvb.analyzers.metric_kuramoto_index
 import tvb.analyzers.metric_proxy_metastability
 import tvb.analyzers.metric_variance_global
 import tvb.analyzers.metric_variance_of_node_variance
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 LOG = get_logger(__name__)
 ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
+
+algo_names = list(ALGORITHMS)
+algo_names.sort()
+choices = OrderedDict()
+for name in algo_names:
+    choices[name] = name
+
+
+class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="The TimeSeries for which the metric(s) will be computed."
+    )
+
+    algorithms = List(
+        of=str,
+        choices=tuple(choices.values()),
+        label='Selected metrics to be applied',
+        doc='The selected algorithms will all be applied on the input TimeSeries'
+    )
 
 
 class TimeseriesMetricsAdapterForm(ABCAdapterForm):
@@ -70,19 +95,14 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BaseTimeseriesMetricAlgorithm.time_series, self, name="time_series")
-        self.start_point = ScalarField(BaseTimeseriesMetricAlgorithm.start_point, self)
-        self.segment = ScalarField(BaseTimeseriesMetricAlgorithm.segment, self)
+        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self, name="time_series")
+        self.start_point = ScalarField(TimeseriesMetricsAdapterModel.start_point, self)
+        self.segment = ScalarField(TimeseriesMetricsAdapterModel.segment, self)
+        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self, name="algorithms")
 
-        algo_names = list(ALGORITHMS)
-        algo_names.sort()
-        choices = OrderedDict()
-        for name in algo_names:
-            choices[name] = name
-
-        self.algorithms = MultipleSelectField(choices, self, name="algorithms", include_none=False,
-                                              label='Selected metrics to be applied',
-                                              doc='The selected algorithms will all be applied on the input TimeSeries')
+    @staticmethod
+    def get_view_model():
+        return TimeseriesMetricsAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -113,28 +133,34 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
     def get_output(self):
         return [DatatypeMeasureIndex]
 
-    def configure(self, time_series, **kwargs):
+    def configure(self, view_model):
+        # type: (TimeseriesMetricsAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_shape = (time_series.data_length_1d, time_series.data_length_2d,
-                            time_series.data_length_3d, time_series.data_length_4d)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_shape = (self.input_time_series_index.data_length_1d,
+                            self.input_time_series_index.data_length_2d,
+                            self.input_time_series_index.data_length_3d,
+                            self.input_time_series_index.data_length_4d)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TimeseriesMetricsAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         input_size = numpy.prod(self.input_shape) * 8.0
         return input_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (TimeseriesMetricsAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         return 0
 
-    def launch(self, time_series, algorithms=None, start_point=None, segment=None):
-        # type: (TimeSeriesIndex, list, float, int) -> DatatypeMeasureIndex
+    def launch(self, view_model):
+        # type: (TimeseriesMetricsAdapterModel) -> [DatatypeMeasureIndex]
         """ 
         Launch algorithm and build results.
 
@@ -144,24 +170,26 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
                             (KuramotoIndex, GlobalVariance, VarianceNodeVariance)
         :rtype: `DatatypeMeasureIndex`
         """
+        algorithms = view_model.algorithms
         if algorithms is None:
             algorithms = list(ALGORITHMS)
 
         LOG.debug("time_series shape is %s" % str(self.input_shape))
-        dt_timeseries = h5.load_from_index(time_series)
+        dt_timeseries = h5.load_from_index(self.input_time_series_index)
 
         metrics_results = {}
         for algorithm_name in algorithms:
 
             algorithm = ALGORITHMS[algorithm_name](time_series=dt_timeseries)
-            if segment is not None:
-                algorithm.segment = segment
-            if start_point is not None:
-                algorithm.start_point = start_point
+            if view_model.segment is not None:
+                algorithm.segment = view_model.segment
+            if view_model.start_point is not None:
+                algorithm.start_point = view_model.start_point
 
             # Validate that current algorithm's filter is valid.
             algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
-            if algorithm_filter is not None and not algorithm_filter.get_python_filter_equivalent(time_series):
+            if algorithm_filter is not None \
+                    and not algorithm_filter.get_python_filter_equivalent(self.input_time_series_index):
                 LOG.warning('Measure algorithm will not be computed because of incompatibility on input. '
                             'Filters failed on algo: ' + str(algorithm_name))
                 continue
@@ -176,7 +204,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
                 metrics_results[algorithm_name] = unstored_result
 
         result = DatatypeMeasureIndex()
-        result.source_gid = time_series.gid
+        result.source_gid = self.input_time_series_index.gid
         result.metrics = json.dumps(metrics_results)
 
         result_path = h5.path_for(self.storage_path, DatatypeMeasureH5, result.gid)
