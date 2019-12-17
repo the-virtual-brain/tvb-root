@@ -39,6 +39,7 @@ import uuid
 import numpy
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
@@ -51,12 +52,26 @@ from tvb.core.neocom import h5
 LOG = get_logger(__name__)
 
 
+class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
+
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The timeseries for which the CrossCoherence and ComplexCoherence is to be computed."""
+    )
+
+
 class NodeComplexCoherenceForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeComplexCoherence.time_series, self, name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self, name=self.get_input_name(),
                                                     conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return NodeComplexCoherenceModel
 
     @staticmethod
     def get_required_datatype():
@@ -87,7 +102,8 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
     def get_output(self):
         return [ComplexCoherenceSpectrumIndex]
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -102,7 +118,8 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
 
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
@@ -115,11 +132,12 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
                                             self.algorithm.average_segments)
         return self.array_size2kb(result)
 
-    def configure(self, time_series):
+    def configure(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> None
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -129,7 +147,8 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         self.algorithm = NodeComplexCoherence()
         self.memory_factor = 1
 
-    def launch(self, time_series):
+    def launch(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> [ComplexCoherenceSpectrumIndex]
         """
         Launch algorithm and build results.
 
@@ -137,7 +156,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         """
         # ------- Prepare a ComplexCoherenceSpectrum object for result -------##
         complex_coherence_spectrum_index = ComplexCoherenceSpectrumIndex()
-        time_series_h5 = h5.h5_file_for_index(time_series)
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         dest_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_index.gid)
         spectra_h5 = ComplexCoherenceSpectrumH5(dest_path)

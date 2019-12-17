@@ -39,6 +39,7 @@ import uuid
 import numpy
 from tvb.analyzers.ica import FastICA
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
@@ -51,14 +52,27 @@ from tvb.core.neocom import h5
 LOG = get_logger(__name__)
 
 
+class ICAAdapterModel(ViewModel, FastICA):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="The timeseries to which the ICA is to be applied."
+    )
+
+
 class ICAAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ICAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FastICA.time_series, self, name='time_series',
+        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.n_components = ScalarField(FastICA.n_components, self)
+        self.n_components = ScalarField(ICAAdapterModel.n_components, self)
         self.project_id = project_id
+
+    @staticmethod
+    def get_view_model():
+        return ICAAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -89,29 +103,31 @@ class ICAAdapter(ABCAsynchronous):
     def get_output(self):
         return [IndependentComponentsIndex]
 
-    def configure(self, time_series, n_components=None):
+    def configure(self, view_model):
+        # type: (ICAAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
         LOG.debug("Time series shape is %s" % str(self.input_shape))
-        LOG.debug("Provided number of components is %s" % n_components)
+        LOG.debug("Provided number of components is %s" % view_model.n_components)
         # -------------------- Fill Algorithm for Analysis -------------------##
 
         algorithm = FastICA()
-        if n_components is not None:
-            algorithm.n_components = n_components
+        if view_model.n_components is not None:
+            algorithm.n_components = view_model.n_components
         else:
             # It will only work for Simulator results.
             algorithm.n_components = self.input_time_series_index.data_length_3d
         self.algorithm = algorithm
 
-    def get_required_memory_size(self, time_series, n_components=None):
+    def get_required_memory_size(self, view_model):
+        # type: (ICAAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -120,22 +136,24 @@ class ICAAdapter(ABCAsynchronous):
         output_size = self.algorithm.result_size(self.input_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, time_series, n_components=None):
+    def get_required_disk_size(self, view_model):
+        # type: (ICAAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
         return self.array_size2kb(self.algorithm.result_size(used_shape))
 
-    def launch(self, time_series, n_components=None):
+    def launch(self, view_model):
+        # type: (ICAAdapterModel) -> [IndependentComponentsIndex]
         """ 
         Launch algorithm and build results. 
         """
         # --------- Prepare a IndependentComponents object for result ----------##
         ica_index = IndependentComponentsIndex()
-        ica_index.source_gid = time_series.gid
+        ica_index.source_gid = view_model.time_series.hex
 
-        time_series_h5 = h5.h5_file_for_index(time_series)
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
