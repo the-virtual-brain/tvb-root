@@ -107,7 +107,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         return []
 
 
-    def generate_preview(self, **kwargs):
+    def generate_preview(self, view_model):
         """
         Should be implemented by all visualizers that can be used by portlets.
         """
@@ -125,7 +125,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         return self.launch(view_model=view_model, **kwargs), 0
 
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Visualizers should no occupy any additional disk space.
         """
