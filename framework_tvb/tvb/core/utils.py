@@ -304,7 +304,7 @@ class TVBJSONEncoder(json.JSONEncoder):
             return obj.to_json()
         # TODO: Review this quick fix.
         # TVB-2565 numpy int serialization
-        if isinstance(obj, (numpy.int32, numpy.int64)):
+        if numpy.issubdtype(obj, numpy.integer):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
 
