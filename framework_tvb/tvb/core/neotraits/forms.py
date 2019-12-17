@@ -654,7 +654,7 @@ class MultiSelectField(TraitField):
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice).title(),
-                checked=choice in self.data
+                checked=self.data is not None and choice in self.data
             )
 
     def _from_post(self):
