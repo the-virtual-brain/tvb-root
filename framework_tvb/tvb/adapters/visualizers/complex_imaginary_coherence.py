@@ -93,7 +93,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data)
+        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
             required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
         return required_memory
@@ -109,11 +109,11 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         self.log.debug("Plot started...")
 
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data)
+        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
-            source_gid = input_data_h5.source
+            source_gid = input_data_h5.source.load()
 
-        source_index = self.load_entity_by_gid(source_gid)
+        source_index = self.load_entity_by_gid(source_gid.hex)
 
         params = dict(plotName=source_index.type,
                       xAxisName="Frequency [kHz]",
@@ -123,7 +123,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
                       spectrum_list=input_data_h5_class.spectrum_types,
                       xscale="Linear",
                       spectrum=input_data_h5_class.spectrum_types[0],
-                      url_base=self.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
+                      url_base=self.build_h5_url(view_model.input_data.hex, 'get_spectrum_data', parameter=""),
                       # TODO investigate the static xmin and xmax values
                       xmin=0.02,
                       xmax=0.8)

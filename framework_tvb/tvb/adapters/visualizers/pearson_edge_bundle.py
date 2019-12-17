@@ -51,7 +51,7 @@ class PearsonEdgeBundle(ABCDisplayer):
     def get_required_memory_size(self, view_model):
         # type: (PearsonCorrelationCoefficientVisualizerModel) -> numpy.ndarray
         """Return required memory."""
-        datatype_index = self.load_entity_by_gid(view_model.datatype)
+        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
         input_size = (datatype_index.data_length_1d, datatype_index.data_length_2d,
                       datatype_index.data_length_3d, datatype_index.data_length_4d)
         return numpy.prod(input_size) * 8.0
@@ -60,7 +60,7 @@ class PearsonEdgeBundle(ABCDisplayer):
         # type: (PearsonCorrelationCoefficientVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
@@ -76,7 +76,7 @@ class PearsonEdgeBundle(ABCDisplayer):
         pars = dict(matrix_labels=json.dumps(labels),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Pearson Edge Bundle',
-                    url_base=URLGenerator.build_h5_url(view_model.datatype, 'get_correlation_data', flatten="True",
+                    url_base=URLGenerator.build_h5_url(view_model.datatype.hex, 'get_correlation_data', flatten="True",
                                                        parameter=''),
                     state_variable=0,
                     mode=mode_list[0],

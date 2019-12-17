@@ -191,12 +191,12 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin):
 
     def launch(self, view_model):
         # type: (MatrixVisualizerModel) -> dict
-        datatype_index = self.load_entity_by_gid(view_model.datatype)
+        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
         with h5.h5_file_for_index(datatype_index) as h5_file:
             matrix = h5_file.array_data.load()
 
-        matrix2d, _, _ = compute_2d_view(matrix, slice)
+        matrix2d, _, _ = compute_2d_view(matrix, view_model.slice)
         title = datatype_index.display_name + " matrix plot"
 
-        pars = self.compute_params(matrix, title, slice)
+        pars = self.compute_params(matrix, title, view_model.slice)
         return self.build_display_result("matrix/svg_view", pars)

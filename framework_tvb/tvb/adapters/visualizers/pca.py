@@ -87,7 +87,7 @@ class PCA(ABCSpaceDisplayer):
     def launch(self, view_model):
         # type: (PCAModel) -> dict
         """Construct data for visualization and launch it."""
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.pca)
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.pca.hex)
         with ts_h5_class(ts_h5_path) as ts_h5:
             source_gid = ts_h5.source.load()
 
@@ -95,8 +95,8 @@ class PCA(ABCSpaceDisplayer):
         with source_h5_class(source_h5_path) as source_h5:
             labels_data = self.get_space_labels(source_h5)
 
-        fractions_update_url = self.build_h5_url(view_model.pca, 'read_fractions_data')
-        weights_update_url = self.build_h5_url(view_model.pca, 'read_weights_data')
+        fractions_update_url = self.build_h5_url(view_model.pca.hex, 'read_fractions_data')
+        weights_update_url = self.build_h5_url(view_model.pca.hex, 'read_weights_data')
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))

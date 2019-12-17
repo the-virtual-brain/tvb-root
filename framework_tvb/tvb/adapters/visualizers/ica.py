@@ -104,7 +104,7 @@ class ICA(MappedArraySVGVisualizerMixin):
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        h5_class, h5_path = self._load_h5_of_gid(view_model.datatype)
+        h5_class, h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with h5_class(h5_path) as h5_file:
             unmixing_matrix = h5_file.unmixing_matrix.load()
             prewhitening_matrix = h5_file.prewhitening_matrix.load()
