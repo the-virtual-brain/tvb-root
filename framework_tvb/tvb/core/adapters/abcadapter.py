@@ -279,7 +279,7 @@ class ABCAdapter(object):
         """
 
 
-    def configure(self, **kwargs):
+    def configure(self, view_model):
         """
         To be implemented in each Adapter that requires any specific configurations
         before the actual launch.
@@ -287,7 +287,7 @@ class ABCAdapter(object):
 
 
     @abstractmethod
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter.
@@ -295,14 +295,14 @@ class ABCAdapter(object):
 
 
     @abstractmethod
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter in kilo-Bytes.
         """
 
 
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
@@ -354,7 +354,7 @@ class ABCAdapter(object):
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        self.configure(**kwargs)
+        self.configure(view_model)
 
         # Compare the amount of memory the current algorithms states it needs,
         # with the average between the RAM available on the OS and the free memory at the current moment.
@@ -362,7 +362,7 @@ class ABCAdapter(object):
         total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
         total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
         memory_reference = (total_free_memory + total_existent_memory) / 2
-        adapter_required_memory = self.get_required_memory_size(**kwargs)
+        adapter_required_memory = self.get_required_memory_size(view_model)
 
         if adapter_required_memory > memory_reference:
             msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
@@ -370,7 +370,7 @@ class ABCAdapter(object):
 
         # Compare the expected size of the operation results with the HDD space currently available for the user
         # TVB defines a quota per user.
-        required_disk_space = self.get_required_disk_size(**kwargs)
+        required_disk_space = self.get_required_disk_size(view_model)
         if available_disk_space < 0:
             msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
             raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
