@@ -101,7 +101,7 @@ class LocalConnectivityViewer(ABCDisplayer):
         params = dict(title="Local Connectivity Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=False)
 
-        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(view_model.local_conn)
+        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(view_model.local_conn.hex)
         with local_conn_h5_class(local_conn_h5_path) as local_conn_h5:
             surface_gid = local_conn_h5.surface.load().hex
             min_value, max_value = local_conn_h5.get_min_max_values()

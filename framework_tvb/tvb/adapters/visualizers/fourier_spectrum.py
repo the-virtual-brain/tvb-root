@@ -128,7 +128,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
                       plotName=ts_index.title,
-                      url_base=self.build_h5_url(view_model.input_data, "get_fourier_data", parameter=""),
+                      url_base=self.build_h5_url(view_model.input_data.hex, "get_fourier_data", parameter=""),
                       xAxisName="Frequency [kHz]",
                       yAxisName="Power",
                       available_scales=available_scales,

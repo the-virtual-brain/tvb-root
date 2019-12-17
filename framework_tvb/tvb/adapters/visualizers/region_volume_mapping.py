@@ -302,6 +302,10 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
         self.data_slice = StrField(VolumeVisualizerModel.data_slice, self, name='data_slice')
 
     @staticmethod
+    def get_view_model():
+        return VolumeVisualizerModel
+
+    @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=[">="], values=[2])
 
@@ -515,7 +519,7 @@ class MriVolumeVisualizer(ABCDisplayer):
     def launch(self, view_model):
         # type: (VolumeVisualizerModel) -> dict
 
-        background_class, background_path = self._load_h5_of_gid(view_model.background)
+        background_class, background_path = self._load_h5_of_gid(view_model.background.hex)
         background_h5 = background_class(background_path)
         volume_shape = background_h5.array_data.shape
         volume_shape = (1,) + volume_shape

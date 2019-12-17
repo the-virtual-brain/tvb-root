@@ -98,7 +98,7 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
