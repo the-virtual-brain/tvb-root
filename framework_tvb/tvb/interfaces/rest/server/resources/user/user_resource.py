@@ -1,24 +1,10 @@
-from flask import jsonify
-from flask_restful import Resource
 from tvb.core.services.user_service import UserService
-import json
+from tvb.interfaces.rest.server.dto.dtos import UserDto
+
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 
-class GetUsersResource(Resource):
-
+class GetUsersResource(RestResource):
     def get(self):
         users, _ = UserService.retrieve_all_users('dummy')
-        final_dict = dict()
-        for user in users:
-            dict_user = dict(
-                username=user.username,
-                password=user.password,
-                email=user.email,
-                validated=user.validated,
-                role=user.role
-            )
-
-            final_dict[user.username] = dict_user
-        return jsonify({'users': final_dict})
-
-    
+        return [UserDto(user) for user in users]

@@ -1,7 +1,11 @@
 import os
 import sys
+
 from flask import Flask
 from flask_restful import Api
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
@@ -10,9 +14,6 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetPro
     GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
-from tvb.basic.logger.builder import get_logger
-from tvb.config.init.initializer import initialize
-from tvb.basic.profile import TvbProfile
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -20,13 +21,12 @@ LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 FLASK_PORT = 9090
+BASE_PATH = "/api"
 
 UPLOAD_FOLDER = TvbProfile.current.TVB_TEMP_FOLDER
 
-app = Flask(__name__)
 
 def initialize_tvb(arguments):
-
     if not os.path.exists(TvbProfile.current.TVB_STORAGE):
         try:
             os.makedirs(TvbProfile.current.TVB_STORAGE)
@@ -39,21 +39,25 @@ def initialize_tvb(arguments):
         sys.exit()
 
 
+def build_path(path):
+    return BASE_PATH + path
+
+
 def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
     # creating an API object
     api = Api(app)
 
-    api.add_resource(GetUsersResource, '/users')
-    api.add_resource(GetProjectsListResource, '/projects/<int:user_id>')
-    api.add_resource(GetDataInProjectResource, '/project/datatypes/<int:project_id>')
-    api.add_resource(GetOperationsInProjectResource, '/operations/<int:project_id>')
-    api.add_resource(RetrieveDatatypeResource, '/datatypes/<string:guid>')
-    api.add_resource(GetOperationsForDatatypeResource, '/operations/datatype/<string:guid>')
-    api.add_resource(FireSimulationResource, '/simulation/<int:project_id>')
-    api.add_resource(GetOperationStatusResource, '/operation/status/<int:operation_id>')
-    api.add_resource(GetOperationResultsResource, '/operation/results/<int:operation_id>')
+    api.add_resource(GetUsersResource, build_path('/users'))
+    api.add_resource(GetProjectsListResource, build_path('/projects/<int:user_id>'))
+    api.add_resource(GetDataInProjectResource, build_path('/datatypes/project/<int:project_id>'))
+    api.add_resource(RetrieveDatatypeResource, build_path('/datatypes/<string:guid>'))
+    api.add_resource(FireSimulationResource, build_path('/simulation/<int:project_id>'))
+    api.add_resource(GetOperationsInProjectResource, build_path('/operations/<int:project_id>'))
+    api.add_resource(GetOperationsForDatatypeResource, build_path('/operations/datatype/<string:guid>'))
+    api.add_resource(GetOperationStatusResource, build_path('/operations/<int:operation_id>/status'))
+    api.add_resource(GetOperationResultsResource, build_path('/operations/<int:operation_id>/results'))
 
     app.run(debug=True, port=FLASK_PORT)
 

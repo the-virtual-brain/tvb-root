@@ -1,7 +1,6 @@
 import os
 import tempfile
-from flask import request, jsonify
-from flask_restful import Resource
+from flask import request
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.project_service import ProjectService
@@ -9,10 +8,16 @@ from tvb.core.services.simulator_service import SimulatorService
 from werkzeug.utils import secure_filename
 from tvb.basic.profile import TvbProfile
 
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+
 UPLOAD_FOLDER = TvbProfile.current.TVB_TEMP_FOLDER
 
 
-class FireSimulationResource(Resource):
+def _allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
+
+
+class FireSimulationResource(RestResource):
 
     def __init__(self):
         self.simulator_service = SimulatorService()
@@ -21,18 +26,12 @@ class FireSimulationResource(Resource):
     def post(self, project_id):
         # check if the post request has the file part
         if 'file' not in request.files:
-            resp = jsonify({'message': 'No file part in the request!'})
-            resp.status_code = 400
-            return resp
+            return {'message': 'No file part in the request!'}, 400
         file = request.files['file']
         if file.filename == '':
-            resp = jsonify({'message': 'No file selected for uploading!'})
-            resp.status_code = 400
-            return resp
-        if not (file and self.allowed_file(file.filename)):
-            resp = jsonify({'message': 'Only ZIP files are allowed!'})
-            resp.status_code = 400
-            return resp
+            return {'message': 'No file selected for uploading!'}, 400
+        if not (file and _allowed_file(file.filename)):
+            return {'message': 'Only ZIP files are allowed!'}, 400
 
         filename = secure_filename(file.filename)
         temp_name = tempfile.mkdtemp(dir=UPLOAD_FOLDER)
@@ -48,13 +47,6 @@ class FireSimulationResource(Resource):
                                                                 zip_folder_path=zip_path[:-4])
         except BurstServiceException as e:
             self.logger.exception('Could not launch burst!')
-            resp = jsonify({'message': 'Some unexpected error happened!'})
-            resp.status_code = 500
-            return resp
+            return {'message': 'Some unexpected error happened!'}, 500
 
-        resp = jsonify({'message': 'File succesfully uploaded!'})
-        resp.status_code = 201
-        return resp
-
-    def allowed_file(self, filename):
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
+        return {'message': 'File succesfully uploaded!'}, 201
