@@ -52,6 +52,7 @@ from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
@@ -628,7 +629,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
         simulator_service = SimulatorService()
-        simulator_service.serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.copy_simulator_configuration(str(burst[0].id))
@@ -671,7 +672,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
         simulator_service = SimulatorService()
-        simulator_service.serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.load_burst_read_only(str(burst[0].id))

@@ -193,7 +193,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         Main method, to initialize Model-Parameter visual-set.
         """
         model, cortex = self.get_data_from_burst_configuration()
-        surface_gid = cortex.region_mapping_data.surface.gid
+        surface_gid = cortex.surface_gid
         surface_index = dao.get_datatype_by_gid(surface_gid.hex)
 
         self.model_params_dict = self._prepare_model_params_dict(model)
@@ -203,7 +203,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
-        template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data.gid))
+        template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
         dummy_form_for_initialization = SurfaceModelParametersForm({}, {})
         self.plotted_equation_prefixes = {

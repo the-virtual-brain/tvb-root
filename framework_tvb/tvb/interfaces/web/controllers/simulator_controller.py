@@ -30,9 +30,9 @@
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
 from tvb.simulator.noise import Additive
@@ -40,7 +40,7 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameter import SimulatorRangeParameters
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm, SimulatorAdapterModel, CortexViewModel
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
@@ -267,7 +267,7 @@ class SimulatorController(BurstBaseController):
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
-            session_stored_simulator = Simulator()
+            session_stored_simulator = SimulatorAdapterModel()
             common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
 
         form.fill_from_trait(session_stored_simulator)
@@ -288,16 +288,9 @@ class SimulatorController(BurstBaseController):
             is_simulator_copy = False
             form.fill_from_post(data)
 
-            connectivity_index_gid = form.connectivity.value
-            conduction_speed = form.conduction_speed.value
+            session_stored_simulator.connectivity = uuid.UUID(form.connectivity.value)
+            session_stored_simulator.conduction_speed = form.conduction_speed.value
             coupling = form.coupling.value
-
-            connectivity_index = ABCAdapter.load_entity_by_gid(connectivity_index_gid)
-            connectivity = h5.load_from_index(connectivity_index)
-
-            # TODO: handle this cases in a better manner
-            session_stored_simulator.connectivity = connectivity
-            session_stored_simulator.conduction_speed = conduction_speed
             session_stored_simulator.coupling = coupling()
 
         next_form = get_form_for_coupling(type(session_stored_simulator.coupling))()
@@ -363,7 +356,8 @@ class SimulatorController(BurstBaseController):
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_CORTEX_URL)
                 surface_index = ABCAdapter.load_entity_by_gid(surface_index_gid)
-                session_stored_simulator.surface = Cortex()
+                session_stored_simulator.surface = CortexViewModel()
+                session_stored_simulator.surface.surface_gid = uuid.UUID(surface_index_gid)
 
         if session_stored_simulator.surface is None:
             stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, False)
@@ -401,17 +395,11 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.surface.coupling_strength = rm_fragment.coupling_strength.data
 
             lc_gid = rm_fragment.lc.value
-            if lc_gid == 'None':
-                lc_index = ABCAdapter.load_entity_by_gid(lc_gid)
-                lc = h5.load_from_index(lc_index)
-                session_stored_simulator.surface.local_connectivity = lc
+            if lc_gid:
+                session_stored_simulator.surface.local_connectivity = uuid.UUID(lc_gid)
 
             rm_gid = rm_fragment.rm.value
-            rm_index = ABCAdapter.load_entity_by_gid(rm_gid)
-            rm = h5.load_from_index(rm_index)
-            session_stored_simulator.surface.region_mapping_data = rm
-            session_stored_simulator.surface.region_mapping_data.surface = CorticalSurface()
-            session_stored_simulator.surface.region_mapping_data.surface.gid = uuid.UUID(rm_index.surface_gid)
+            session_stored_simulator.surface.region_mapping_data = uuid.UUID(rm_gid)
 
         stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, True)
         stimuli_fragment.fill_from_trait(session_stored_simulator)
@@ -438,10 +426,8 @@ class SimulatorController(BurstBaseController):
                                                          session_stored_simulator.is_surface_simulation)
             stimuli_fragment.fill_from_post(data)
             stimulus_gid = stimuli_fragment.stimulus.value
-            if stimulus_gid is not None:
-                stimulus_index = ABCAdapter.load_entity_by_gid(stimulus_gid)
-                stimulus = h5.load_from_index(stimulus_index)
-                session_stored_simulator.stimulus = stimulus
+            if stimulus_gid:
+                session_stored_simulator.stimulus = stimulus_gid
 
         model_fragment = SimulatorModelFragment('', common.get_current_project().id)
         model_fragment.fill_from_trait(session_stored_simulator)
@@ -578,7 +564,7 @@ class SimulatorController(BurstBaseController):
                                                               is_noise_fragment=True)
             return rendering_rules.to_dict()
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -607,7 +593,7 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL)
 
         if isinstance(session_stored_simulator.integrator.noise, Additive):
-            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
+            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
             monitor_fragment.fill_from_trait(session_stored_simulator)
 
             rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -642,7 +628,7 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator.noise.b)
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.surface)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -667,7 +653,7 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
             is_simulator_copy = False
             # TODO: handle multiple monitors
-            fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.surface)
+            fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.is_surface_simulation)
             fragment.fill_from_post(data)
 
             session_stored_simulator.monitors = [fragment.monitor.value()]
@@ -829,8 +815,9 @@ class SimulatorController(BurstBaseController):
     @check_user
     def setup_pse(self, **data):
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
-                                                          SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
+        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
+                                                          SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
+                                                          last_form_url=SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -850,7 +837,8 @@ class SimulatorController(BurstBaseController):
         next_form = SimulatorPSEParamRangeFragment(param1, param2, project_id=project_id)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.LAUNCH_PSE_URL,
-                                                          SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
+                                                          SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
+                                                          last_form_url=SimulatorWizzardURLs.LAUNCH_PSE_URL)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -987,7 +975,7 @@ class SimulatorController(BurstBaseController):
             project = common.get_current_project()
             storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
 
-            simulator, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
+            simulator = SimulatorSerializer().deserialize_simulator(simulator_gid, storage_path)
 
             session_stored_simulator = simulator
             common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
@@ -1020,7 +1008,7 @@ class SimulatorController(BurstBaseController):
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
 
-        simulator, _ = self.simulator_service.deserialize_simulator(simulator_gid, storage_path)
+        simulator = SimulatorSerializer().deserialize_simulator(simulator_gid, storage_path)
 
         session_stored_simulator = simulator
         common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)

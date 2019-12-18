@@ -43,10 +43,11 @@ import zipfile
 import sys
 from copy import copy
 from cgi import FieldStorage
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.exceptions import TVBException
 from tvb.basic.neotraits.api import Range
-#from tvb.basic.neotraits.map_as_json import MapAsJson
+# from tvb.basic.neotraits.map_as_json import MapAsJson
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
@@ -66,6 +67,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 try:
     from cherrypy._cpreqbody import Part
@@ -82,7 +84,6 @@ UIKEY_SUBJECT = "RESERVEDsubject"
 UIKEY_USERGROUP = "RESERVEDusergroup"
 
 
-
 class OperationService:
     """
     Class responsible for preparing an operation launch. 
@@ -91,11 +92,9 @@ class OperationService:
     """
     ATT_UID = "uid"
 
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
-
 
     ##########################################################################################
     ######## Methods related to launching operations start here ##############################
@@ -130,7 +129,6 @@ class OperationService:
         else:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
-
     @staticmethod
     def _prepare_metadata(initial_metadata, algo_category, operation_group, submit_data):
         """
@@ -153,7 +151,6 @@ class OperationService:
 
         return metadata, user_group
 
-
     @staticmethod
     def _read_set(values):
         """ Parse a committed UI possible list of values, into a set converted into string."""
@@ -166,7 +163,6 @@ class OperationService:
                     values_str = values_str + " " + str(val)
             values = values_str
         return str(values).strip()
-
 
     def group_operation_launch(self, user_id, project, algorithm_id, category_id, existing_dt_group=None, **kwargs):
         """
@@ -196,12 +192,14 @@ class OperationService:
 
         parent_burst = dao.get_generic_entity(BurstConfiguration2, time_series_index.fk_parent_burst, 'id')[0]
         metric_operation_group_id = parent_burst.metric_operation_group_id
-        metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id, op_params,
+        metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
+                                     op_params,
                                      meta_str, op_group_id=metric_operation_group_id, range_values=range_values)
         metric_operation.visible = False
         operation = dao.store_entity(metric_operation)
 
-        metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id, 'fk_operation_group')[0]
+        metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id, 'fk_operation_group')[
+            0]
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
 
@@ -248,7 +246,7 @@ class OperationService:
                 burst_id = metadata[DataTypeMetaData.KEY_BURST]
             if existing_dt_group is None:
                 datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
-                                                     state=metadata[DataTypeMetaData.KEY_STATE])
+                                               state=metadata[DataTypeMetaData.KEY_STATE])
                 dao.store_entity(datatype_group)
             else:
                 # Reset count
@@ -268,11 +266,14 @@ class OperationService:
         storage_path = self.file_helper.get_project_folder(operation.project, str(operation.id))
         input_gid = json.loads(operation.parameters)['gid']
         # TODO: review location, storage_path, op params deserialization
-        view_model_class = adapter_instance.get_view_model_class()
-        view_model = view_model_class()
-        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
-        h5_file = ViewModelH5(h5_path, view_model)
-        h5_file.load_into(view_model)
+        if isinstance(adapter_instance, SimulatorAdapter):
+            view_model = SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
+        else:
+            view_model_class = adapter_instance.get_view_model_class()
+            view_model = view_model_class()
+            h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
+            h5_file = ViewModelH5(h5_path, view_model)
+            h5_file.load_into(view_model)
         return view_model
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
@@ -287,11 +288,11 @@ class OperationService:
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
 
-            operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
+            operation = dao.get_operation_by_id(operation.id)  # Load Lazy fields
 
             disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
             pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
-            user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)    # From kB to Bytes
+            user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = self.load_view_model(adapter_instance, operation)
@@ -330,7 +331,6 @@ class OperationService:
             self.launch_operation(next_op.id)
         return result_msg
 
-
     def _send_to_cluster(self, operations, adapter_instance, current_username="unknown"):
         """ Initiate operation on cluster"""
         for operation in operations:
@@ -340,7 +340,6 @@ class OperationService:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
         return operations
-
 
     def launch_operation(self, operation_id, send_to_cluster=False, adapter_instance=None):
         """
@@ -363,7 +362,6 @@ class OperationService:
             else:
                 self.initiate_prelaunch(operation, adapter_instance, **parsed_params)
 
-
     def _handle_exception(self, exception, temp_files, message, operation=None):
         """
         Common way to treat exceptions:
@@ -376,8 +374,8 @@ class OperationService:
             BurstService2().persist_operation_state(operation, STATUS_ERROR, str(exception))
         self._remove_files(temp_files)
         exception.message = message
-        raise exception.with_traceback(sys.exc_info()[2])  # when rethrowing in python this is required to preserve the stack trace
-
+        raise exception.with_traceback(
+            sys.exc_info()[2])  # when rethrowing in python this is required to preserve the stack trace
 
     def _remove_files(self, file_list):
         """
@@ -395,11 +393,9 @@ class OperationService:
             except OSError:
                 self.logger.exception("Could not cleanup file!")
 
-
     @staticmethod
     def _range_name(range_no):
         return PARAM_RANGE_PREFIX + str(range_no)
-
 
     def _prepare_group(self, project_id, existing_dt_group, kwargs):
         """
@@ -438,7 +434,6 @@ class OperationService:
 
         return available_args, group
 
-
     def get_range_values(self, kwargs, ranger_name):
         """
         For the ranger given by ranger_name look in kwargs and return
@@ -466,14 +461,13 @@ class OperationService:
             lo_val = float(range_data[constants.ATT_MINVALUE])
             hi_val = float(range_data[constants.ATT_MAXVALUE])
             step = float(range_data[constants.ATT_STEP])
-            range_values = list(Range(lo=lo_val, hi=hi_val, step=step).to_array()) #, mode=Range.MODE_INCLUDE_BOTH))
+            range_values = list(Range(lo=lo_val, hi=hi_val, step=step).to_array())  # , mode=Range.MODE_INCLUDE_BOTH))
 
         else:
             for possible_value in range_data:
                 if range_data[possible_value]:
                     range_values.append(possible_value)
         return range_values
-
 
     @staticmethod
     def __expand_arguments(arguments_list, range_values, range_title):
@@ -496,7 +490,6 @@ class OperationService:
                 result.append((kw_new, range_new))
         return result
 
-
     ##########################################################################################
     ######## Methods related to stopping and restarting operations start here ################
     ##########################################################################################
@@ -506,6 +499,3 @@ class OperationService:
         Stop the operation given by the operation id.
         """
         return BACKEND_CLIENT.stop_operation(int(operation_id))
-
-
-

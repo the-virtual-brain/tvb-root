@@ -40,19 +40,75 @@ Few supplementary steps are done here:
 
 """
 import numpy
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.patterns import SpatioTemporalPattern
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, Attr
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
+
+
+class CortexViewModel(ViewModel, Cortex):
+
+    surface_gid = DataTypeGidAttr(
+        linked_datatype=CorticalSurface
+    )
+
+    local_connectivity = DataTypeGidAttr(
+        linked_datatype=LocalConnectivity,
+        required=Cortex.local_connectivity.required,
+        label=Cortex.local_connectivity.label,
+        doc=Cortex.local_connectivity.doc
+    )
+
+    region_mapping_data = DataTypeGidAttr(
+        linked_datatype=RegionMapping,
+        label=Cortex.region_mapping_data.label,
+        doc=Cortex.region_mapping_data.doc
+    )
+
+
+class SimulatorAdapterModel(ViewModel, Simulator):
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        required=Simulator.connectivity.required,
+        label=Simulator.connectivity.label,
+        doc=Simulator.connectivity.doc
+    )
+
+    surface = Attr(
+        field_type=CortexViewModel,
+        label=Simulator.surface.label,
+        default=Simulator.surface.default,
+        required=Simulator.surface.required,
+        doc=Simulator.surface.doc
+    )
+
+    stimulus = DataTypeGidAttr(
+        linked_datatype=SpatioTemporalPattern,
+        label=Simulator.stimulus.label,
+        default=Simulator.stimulus.default,
+        required=Simulator.stimulus.required,
+        doc=Simulator.stimulus.doc
+    )
+
+    history_gid = DataTypeGidAttr(
+        linked_datatype=SimulationHistory,
+        required=False
+    )
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
@@ -74,9 +130,13 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if hasattr(trait, 'connectivity'):
-            self.connectivity.data = trait.connectivity.gid.hex
+            self.connectivity.data = trait.connectivity.hex
         self.coupling.data = trait.coupling.__class__
         self.conduction_speed.data = trait.conduction_speed
+
+    @staticmethod
+    def get_view_model():
+        return SimulatorAdapterModel
 
     @staticmethod
     def get_input_name():
@@ -123,13 +183,62 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         return [TimeSeriesIndex, SimulationHistoryIndex]
 
-    def configure(self, simulator_gid):
+    def _prepare_simulator_from_view_model(self, view_model):
+        simulator = Simulator()
+        simulator.gid = view_model.gid
+
+        conn_index = self.load_entity_by_gid(view_model.connectivity.hex)
+        conn = h5.load_from_index(conn_index)
+        simulator.connectivity = conn
+
+        simulator.conduction_speed = view_model.conduction_speed
+        simulator.coupling = view_model.coupling
+
+        if view_model.surface:
+            simulator.surface = Cortex()
+            rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
+            rm = h5.load_from_index(rm_index)
+
+            rm_surface_index = self.load_entity_by_gid(rm_index.surface_gid)
+            rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
+            rm.surface = rm_surface
+            rm.connectivity = conn
+
+            simulator.surface.region_mapping_data = rm
+            if simulator.surface.local_connectivity:
+                lc_index = self.load_entity_by_gid(view_model.surface.local_connectivity.hex)
+                lc = h5.load_from_index(lc_index)
+                assert lc_index.surface_gid == rm_index.surface_gid
+                lc.surface = rm_surface
+                simulator.surface.local_connectivity = lc
+
+        if view_model.stimulus:
+            stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
+            stimulus = h5.load_from_index(stimulus_index)
+            simulator.stimulus = stimulus
+
+        simulator.model = view_model.model
+        simulator.integrator = view_model.integrator
+        simulator.initial_conditions = view_model.initial_conditions
+        simulator.monitors = view_model.monitors
+        simulator.simulation_length = view_model.simulation_length
+
+        # TODO: why not load history here?
+        # if view_model.history:
+        #     history_index = dao.get_datatype_by_gid(view_model.history.hex)
+        #     history = h5.load_from_index(history_index)
+        #     assert isinstance(history, SimulationHistory)
+        #     history.fill_into(self.algorithm)
+        return simulator
+
+    def configure(self, view_model):
+        # type: (SimulatorAdapterModel) -> None
         """
         Make preparations for the adapter launch.
         """
         self.log.debug("%s: Configuring simulator adapter..." % str(self))
-        self.algorithm, history_gid = SimulatorService().deserialize_simulator(simulator_gid, self.storage_path)
-        self.branch_simulation_state_gid = history_gid
+        self.algorithm = self._prepare_simulator_from_view_model(view_model)
+        self.branch_simulation_state_gid = view_model.history_gid
 
         # for monitor in self.algorithm.monitors:
         #     if issubclass(monitor, Projection):
@@ -142,19 +251,22 @@ class SimulatorAdapter(ABCAsynchronous):
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         return self.algorithm.memory_requirement()
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
         return self.algorithm.storage_requirement() / 2 ** 10
 
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
@@ -214,7 +326,8 @@ class SimulatorAdapter(ABCAsynchronous):
 
         return region_map, region_volume_map
 
-    def launch(self, simulator_gid):
+    def launch(self, view_model):
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         """
         Called from the GUI to launch a simulation.
           *: string class name of chosen model, etc...
