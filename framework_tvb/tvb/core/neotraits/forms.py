@@ -30,6 +30,7 @@
 
 import os
 import json
+import uuid
 from collections import namedtuple
 from datetime import datetime
 import numpy
@@ -41,6 +42,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 
 # This setting is injected.
 # The pattern might be confusing, but it is an interesting alternative to
@@ -408,7 +410,12 @@ class TraitDataTypeSelectField(TraitField):
     def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
                  dynamic_conditions=None, has_all_option=False):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
-        self.datatype_index = REGISTRY.get_index_for_datatype(trait_attribute.field_type)
+        if issubclass(type(trait_attribute), DataTypeGidAttr):
+            type_to_query = trait_attribute.linked_datatype
+        else:
+            type_to_query = trait_attribute.field_type
+
+        self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.dynamic_conditions = dynamic_conditions
@@ -507,7 +514,14 @@ class TraitDataTypeSelectField(TraitField):
             raise ValueError('Field required')
 
         # TODO: ensure is in choices
-        self.data = self.unvalidated_data
+        try:
+            if self.unvalidated_data is None:
+                self.data = None
+            else:
+                self.data = uuid.UUID(self.unvalidated_data)
+        except ValueError:
+            raise ValueError('The chosen entity does not have a proper GID')
+
 
 
 class StrField(TraitField):
@@ -792,7 +806,7 @@ class Form(object):
                 # as field.data is clearly tainted set it to None so that field.unvalidated_data
                 # will render and the user can fix the typo's
                 field.data = None
-                field.errors.append(ex.message)
+                field.errors.append(ex)
                 raise
 
     def fill_from_post(self, form_data):

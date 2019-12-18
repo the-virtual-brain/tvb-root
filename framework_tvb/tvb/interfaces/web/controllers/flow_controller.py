@@ -466,20 +466,21 @@ class FlowController(BaseController):
         try:
             form = adapter_instance.get_form()(project_id=project_id)
             form.fill_from_post(data)
-            dt_dict = None
+            view_model = None
             if form.validate():
-                dt_dict = form.get_dict()
-            if dt_dict is None:
-                raise formencode.Invalid("Could not build a dict out of this form!", {}, None,
-                                         error_dict=form.get_errors_dict())
+                try:
+                    view_model = form.get_view_model()()
+                    form.fill_trait(view_model)
+                except NotImplemented:
+                    raise formencode.Invalid("Could not find a model for this form!", {}, None, error_dict=form.get_errors_dict())
             adapter_instance.submit_form(form)
             if issubclass(type(adapter_instance), ABCDisplayer):
                 adapter_instance.current_project_id = project_id
                 adapter_instance.user_id = common.get_logged_user().id
-                result = adapter_instance.launch(**adapter_instance.get_form().get_form_values())
+                result = adapter_instance.launch(view_model)
                 if isinstance(result, dict):
                     return result
-            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, **dt_dict)
+            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, view_model=view_model)
 
             # Store input data in session, for informing user of it.
             step = self.flow_service.get_category_by_id(step_key)
