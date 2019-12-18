@@ -534,7 +534,7 @@ class TestBurstService(BaseTestCase):
             "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}
-        operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id,
+        operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project,
                                                                       first_step_algorithm,
                                                                       first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)

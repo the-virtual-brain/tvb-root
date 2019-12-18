@@ -187,7 +187,7 @@ class FlowController(BaseController):
         range_param_name = data.pop('range_param_name')
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
-        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project().id,
+        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project(),
                                                   int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
@@ -907,7 +907,7 @@ class FlowController(BaseController):
         parameters[range1name] = json.dumps(range1_dict)  # this is for the x axis parameter
         parameters[range2name] = json.dumps(range2_dict)  # this is for the y axis parameter
 
-        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project().id,
+        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project(),
                                                   operation_obj.algorithm.id, operation_obj.algorithm.fk_category,
                                                   datatype_group_ob, **parameters)
 
