@@ -62,8 +62,11 @@ from tvb.core.entities.model.simulator.burst_configuration import BurstConfigura
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.interfaces.web.controllers import common
 
 try:
     from cherrypy._cpreqbody import Part
@@ -99,7 +102,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def initiate_operation(self, current_user, project_id, adapter_instance, visible=True, **kwargs):
+    def initiate_operation(self, current_user, project_id, adapter_instance, visible=True, model_view=None, **kwargs):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -116,7 +119,7 @@ class OperationService:
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         operations = self.prepare_operations(current_user.id, project_id, algo, algo_category,
-                                             {}, visible, **kwargs)[0]
+                                             {}, visible, view_model=model_view, **kwargs)[0]
 
         if isinstance(adapter_instance, ABCSynchronous):
             if len(operations) > 1:
@@ -206,7 +209,7 @@ class OperationService:
         return operation
 
     def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
-                           visible=True, existing_dt_group=None, **kwargs):
+                           visible=True, existing_dt_group=None, view_model=None, **kwargs):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a 
         range of values create an operation group and multiple operations for each possible
@@ -234,7 +237,7 @@ class OperationService:
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
             operation = Operation(user_id, project_id, algorithm.id,
-                                  json.dumps(one_set_of_args), meta_str,
+                                  json.dumps({'gid': view_model.gid.hex}), meta_str,
                                   op_group_id=group_id, user_group=user_group, range_values=range_values)
             operation.visible = visible_operation
             operations.append(operation)
@@ -253,7 +256,25 @@ class OperationService:
                 existing_dt_group.count_results = None
                 dao.store_entity(existing_dt_group)
 
+        for operation in operations:
+            storage_path = FilesHelper().get_project_folder(common.get_current_project(), str(operation.id))
+            h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid)
+            h5_file = ViewModelH5(h5_path, view_model)
+            h5_file.store(view_model)
+            h5_file.close()
+
         return operations, group
+
+    def load_view_model(self, adapter_instance, operation):
+        storage_path = self.file_helper.get_project_folder(operation.project, str(operation.id))
+        input_gid = json.loads(operation.parameters)['gid']
+        # TODO: review location, storage_path, op params deserialization
+        view_model_class = adapter_instance.get_view_model_class()
+        view_model = view_model_class()
+        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
+        h5_file = ViewModelH5(h5_path, view_model)
+        h5_file.load_into(view_model)
+        return view_model
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
@@ -266,21 +287,6 @@ class OperationService:
             unique_id = None
             if self.ATT_UID in kwargs:
                 unique_id = kwargs[self.ATT_UID]
-            #TODO: this currently keeps both ways to display forms
-            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__ and \
-                    not 'RegionStimulusCreator' in adapter_instance.__class__.__name__ and \
-                    not 'LocalConnectivityCreator' in adapter_instance.__class__.__name__ and \
-                    not 'SurfaceStimulusCreator' in adapter_instance.__class__.__name__:
-                filtered_kwargs = adapter_instance.get_form().get_form_values()
-
-                params = dict()
-                for k, value_ in filtered_kwargs.items():
-                    params[str(k)] = value_
-                self.logger.debug("Launching operation " + str(operation.id) + " with " + str(filtered_kwargs))
-            else:
-                params = kwargs
-                self.logger.debug("Launching operation " + str(operation.id) + " with " + str(kwargs))
-
 
             operation = dao.get_operation_by_id(operation.id)   # Load Lazy fields
 
@@ -289,7 +295,8 @@ class OperationService:
             user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)    # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, **params)
+            view_model = self.load_view_model(adapter_instance, operation)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.parameters = json.dumps(kwargs)

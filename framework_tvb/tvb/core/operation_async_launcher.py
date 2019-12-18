@@ -72,20 +72,13 @@ def do_operation_launch(operation_id):
         stored_adapter = curent_operation.algorithm
         log.debug("Importing Algorithm: " + str(stored_adapter.classname) +
                   " for Operation:" + str(curent_operation.id))
-        params = parse_json_parameters(curent_operation.parameters)
         adapter_instance = ABCAdapter.build_adapter(stored_adapter)
-        # These should go once we have a common place for it
-        if not isinstance(adapter_instance, SimulatorAdapter) and not isinstance(adapter_instance, LocalConnectivityCreator):
-            adapter_form = adapter_instance.get_form()(project_id=curent_operation.fk_launched_in)
-            adapter_form.fill_from_post(params)
-            adapter_instance.submit_form(adapter_form)
-
         # Un-comment bellow for profiling an operation:
         # import cherrypy.lib.profiler as profiler
         # p = profiler.Profiler("/Users/lia.domide/TVB/profiler/")
         # p.run(OperationService().initiate_prelaunch, curent_operation, adapter_instance, {}, **PARAMS)
 
-        OperationService().initiate_prelaunch(curent_operation, adapter_instance, **params)
+        OperationService().initiate_prelaunch(curent_operation, adapter_instance)
         if curent_operation.fk_operation_group:
             parent_burst = dao.get_generic_entity(BurstConfiguration2, curent_operation.fk_operation_group,
                                                   'operation_group_id')[0]

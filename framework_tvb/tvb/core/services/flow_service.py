@@ -165,7 +165,7 @@ class FlowService:
             dao.remove_entity(Links, link.id)
     
 
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, **data):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
         """
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
         Current Project and a given set of UI Input Data.
@@ -175,7 +175,7 @@ class FlowService:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
 
-            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, visible, **data)
+            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, visible, model_view=view_model, **data)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 
