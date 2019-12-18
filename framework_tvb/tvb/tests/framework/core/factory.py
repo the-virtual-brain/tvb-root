@@ -171,7 +171,7 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 

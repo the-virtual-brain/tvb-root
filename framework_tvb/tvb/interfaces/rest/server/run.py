@@ -10,7 +10,7 @@ from tvb.interfaces.rest.server.resources.datatype.datatype_resource import Retr
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsListResource, \
-    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
+    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
 from tvb.interfaces.rest.server.rest_api import RestApi
@@ -55,6 +55,7 @@ def initialize_flask():
     api.add_resource(RetrieveDatatypeResource, build_path('/datatypes/<string:guid>'))
     api.add_resource(FireSimulationResource, build_path('/simulation/<int:project_id>'))
     api.add_resource(GetOperationsInProjectResource, build_path('/operations/<int:project_id>'))
+    api.add_resource(LaunchOperationResource, build_path('/operations/<int:project_id>/<int:algorithm_id>'))
     api.add_resource(GetOperationsForDatatypeResource, build_path('/operations/datatype/<string:guid>'))
     api.add_resource(GetOperationStatusResource, build_path('/operations/<int:operation_id>/status'))
     api.add_resource(GetOperationResultsResource, build_path('/operations/<int:operation_id>/results'))

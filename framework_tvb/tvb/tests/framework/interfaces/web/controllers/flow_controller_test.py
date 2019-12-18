@@ -228,7 +228,7 @@ class TestFlowController(BaseControllersTest):
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations

@@ -133,7 +133,7 @@ class RegionTimeSeriesImporter(ABCUploader):
     tstype = TS_REGION
 
     def get_form_class(self):
-        return RegionMatTimeSeriesImporterModel
+        return RegionMatTimeSeriesImporterForm
 
     def get_output(self):
         return [TimeSeriesRegionIndex, TimeSeriesEEGIndex]

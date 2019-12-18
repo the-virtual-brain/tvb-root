@@ -21,7 +21,7 @@ def rest_jsonify(func):
             data = result[0]
             status = result[1]
         if data is None:
-            data = ''
+            data = {}
         return current_app.response_class(dumps(data, default=lambda o: _convert(o), sort_keys=False),
                                           mimetype=current_app.config['JSONIFY_MIMETYPE'],
                                           status=status)

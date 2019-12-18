@@ -66,7 +66,6 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service2 import BurstService2
 from tvb.core.services.backend_client import BACKEND_CLIENT
-from tvb.interfaces.web.controllers import common
 
 try:
     from cherrypy._cpreqbody import Part
@@ -102,7 +101,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def initiate_operation(self, current_user, project_id, adapter_instance, visible=True, model_view=None, **kwargs):
+    def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None, **kwargs):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -118,7 +117,7 @@ class OperationService:
         algo = adapter_instance.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
-        operations = self.prepare_operations(current_user.id, project_id, algo, algo_category,
+        operations = self.prepare_operations(current_user.id, project, algo, algo_category,
                                              {}, visible, view_model=model_view, **kwargs)[0]
 
         if isinstance(adapter_instance, ABCSynchronous):
@@ -169,13 +168,13 @@ class OperationService:
         return str(values).strip()
 
 
-    def group_operation_launch(self, user_id, project_id, algorithm_id, category_id, existing_dt_group=None, **kwargs):
+    def group_operation_launch(self, user_id, project, algorithm_id, category_id, existing_dt_group=None, **kwargs):
         """
         Create and prepare the launch of a group of operations.
         """
         category = dao.get_category_by_id(category_id)
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        ops, _ = self.prepare_operations(user_id, project_id, algorithm, category, {},
+        ops, _ = self.prepare_operations(user_id, project, algorithm, category, {},
                                          existing_dt_group=existing_dt_group, **kwargs)
         for operation in ops:
             self.launch_operation(operation.id, True)
@@ -208,7 +207,7 @@ class OperationService:
 
         return operation
 
-    def prepare_operations(self, user_id, project_id, algorithm, category, metadata,
+    def prepare_operations(self, user_id, project, algorithm, category, metadata,
                            visible=True, existing_dt_group=None, view_model=None, **kwargs):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a 
@@ -218,7 +217,7 @@ class OperationService:
         """
         operations = []
 
-        available_args, group = self._prepare_group(project_id, existing_dt_group, kwargs)
+        available_args, group = self._prepare_group(project.id, existing_dt_group, kwargs)
         if len(available_args) > TvbProfile.current.MAX_RANGE_NUMBER:
             raise LaunchException("Too big range specified. You should limit the"
                                   " resulting operations to %d" % TvbProfile.current.MAX_RANGE_NUMBER)
@@ -229,14 +228,14 @@ class OperationService:
             group_id = group.id
         metadata, user_group = self._prepare_metadata(metadata, category, group, kwargs)
 
-        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project.id) + "," +
                           str(metadata) + ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
 
         visible_operation = visible and category.display is False
         meta_str = json.dumps(metadata)
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
-            operation = Operation(user_id, project_id, algorithm.id,
+            operation = Operation(user_id, project.id, algorithm.id,
                                   json.dumps({'gid': view_model.gid.hex}), meta_str,
                                   op_group_id=group_id, user_group=user_group, range_values=range_values)
             operation.visible = visible_operation
@@ -257,7 +256,7 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            storage_path = FilesHelper().get_project_folder(common.get_current_project(), str(operation.id))
+            storage_path = FilesHelper().get_project_folder(project, str(operation.id))
             h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid)
             h5_file = ViewModelH5(h5_path, view_model)
             h5_file.store(view_model)
