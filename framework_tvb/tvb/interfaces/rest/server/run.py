@@ -2,7 +2,6 @@ import os
 import sys
 
 from flask import Flask
-from flask_restful import Api
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
@@ -14,6 +13,7 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetPro
     GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
+from tvb.interfaces.rest.server.rest_api import RestApi
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -47,7 +47,7 @@ def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
     # creating an API object
-    api = Api(app)
+    api = RestApi(app)
 
     api.add_resource(GetUsersResource, build_path('/users'))
     api.add_resource(GetProjectsListResource, build_path('/projects/<int:user_id>'))
