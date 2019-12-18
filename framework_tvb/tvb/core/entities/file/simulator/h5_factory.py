@@ -49,7 +49,7 @@ def config_h5_factory(config_class):
         return model_h5_factory(config_class)
     if issubclass(config_class, Monitor):
         return monitor_h5_factory(config_class)
-    if config_class == Cortex:
+    if issubclass(config_class, Cortex):
         return CortexH5
     return None
 

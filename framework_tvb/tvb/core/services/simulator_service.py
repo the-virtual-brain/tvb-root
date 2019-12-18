@@ -32,20 +32,9 @@ import json
 import os
 import shutil
 import threading
-import uuid
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.simulator import h5_factory
 from tvb.core.services.flow_service import FlowService
-from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.sensors import SensorsEEG, SensorsInternal, SensorsMEG
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.simulator.monitors import EEG, Projection, MEG, iEEG
-from tvb.simulator.simulator import Simulator
-from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
@@ -53,7 +42,7 @@ from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.neocom import h5
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 
 class SimulatorService(object):
@@ -66,101 +55,10 @@ class SimulatorService(object):
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
 
-    @staticmethod
-    def serialize_simulator(simulator, simulator_gid, simulation_state_gid, storage_path):
-        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
-
-        with SimulatorH5(simulator_path) as simulator_h5:
-            simulator_h5.gid.store(uuid.UUID(simulator_gid))
-            simulator_h5.store(simulator)
-            simulator_h5.connectivity.store(simulator.connectivity.gid)
-            if simulator.stimulus:
-                simulator_h5.stimulus.store(simulator.stimulus.gid)
-            if simulation_state_gid:
-                simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
-
-        return simulator_gid
-
-    @staticmethod
-    def deserialize_simulator(simulator_gid, storage_path):
-        simulator_in_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
-        simulator_in = Simulator()
-
-        with SimulatorH5(simulator_in_path) as simulator_in_h5:
-            simulator_in_h5.load_into(simulator_in)
-            connectivity_gid = simulator_in_h5.connectivity.load()
-            stimulus_gid = simulator_in_h5.stimulus.load()
-            simulation_state_gid = simulator_in_h5.simulation_state.load()
-
-        if isinstance(simulator_in.monitors[0], Projection):
-            with SimulatorH5(simulator_in_path) as simulator_in_h5:
-                monitor_h5_path = simulator_in_h5.get_reference_path(simulator_in.monitors[0].gid)
-
-            monitor_h5_class = h5_factory.monitor_h5_factory(type(simulator_in.monitors[0]))
-
-            with monitor_h5_class(monitor_h5_path) as monitor_h5:
-                sensors = monitor_h5.sensors.load()
-                region_mapping = monitor_h5.region_mapping.load()
-
-            sensors_index = ABCAdapter.load_entity_by_gid(sensors.hex)
-            sensors = h5.load_from_index(sensors_index)
-
-            if isinstance(simulator_in.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
-
-            simulator_in.monitors[0].sensors = sensors
-            region_mapping_index = ABCAdapter.load_entity_by_gid(region_mapping.hex)
-            region_mapping = h5.load_from_index(region_mapping_index)
-            simulator_in.monitors[0].region_mapping = region_mapping
-
-        conn_index = dao.get_datatype_by_gid(connectivity_gid.hex)
-        conn = h5.load_from_index(conn_index)
-
-        simulator_in.connectivity = conn
-
-        if simulator_in.surface:
-            cortex_path = h5.path_for(storage_path, CortexH5, simulator_in.surface.gid)
-            with CortexH5(cortex_path) as cortex_h5:
-                local_conn_gid = cortex_h5.local_connectivity.load()
-                region_mapping_gid = cortex_h5.region_mapping_data.load()
-
-            region_mapping_index = dao.get_datatype_by_gid(region_mapping_gid.hex)
-            region_mapping_path = h5.path_for_stored_index(region_mapping_index)
-            region_mapping = RegionMapping()
-            with RegionMappingH5(region_mapping_path) as region_mapping_h5:
-                region_mapping_h5.load_into(region_mapping)
-                region_mapping.gid = region_mapping_h5.gid.load()
-                surf_gid = region_mapping_h5.surface.load()
-
-            surf_index = dao.get_datatype_by_gid(surf_gid.hex)
-            surf_h5 = h5.h5_file_for_index(surf_index)
-            surf = CorticalSurface()
-            surf_h5.load_into(surf)
-            surf_h5.close()
-            region_mapping.surface = surf
-            simulator_in.surface.region_mapping_data = region_mapping
-
-            if local_conn_gid:
-                local_conn_index = dao.get_datatype_by_gid(local_conn_gid.hex)
-                local_conn = h5.load_from_index(local_conn_index)
-                simulator_in.surface.local_connectivity = local_conn
-
-        if stimulus_gid:
-            stimulus_index = dao.get_datatype_by_gid(stimulus_gid.hex)
-            stimulus = h5.load_from_index(stimulus_index)
-            stimulus.connectivity = simulator_in.connectivity
-            simulator_in.stimulus = stimulus
-
-        return simulator_in, simulation_state_gid
-
     @transactional
     def _prepare_operation(self, project_id, user_id, simulator_id, simulator_index, algo_category, op_group, metadata,
                            ranges=None):
-        operation_parameters = json.dumps({'simulator_gid': simulator_index.gid})
+        operation_parameters = json.dumps({'gid': simulator_index.gid})
         metadata, user_group = self.operation_service._prepare_metadata(metadata, algo_category, op_group, {})
         meta_str = json.dumps(metadata)
 
@@ -209,7 +107,8 @@ class SimulatorService(object):
             dao.store_entity(simulator_index)
 
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-            self.serialize_simulator(session_stored_simulator, simulator_index.gid, simulation_state_gid, storage_path)
+            SimulatorSerializer().serialize_simulator(session_stored_simulator, simulator_index.gid,
+                                                      simulation_state_gid, storage_path)
 
             wf_errs = 0
             try:
@@ -307,7 +206,7 @@ class SimulatorService(object):
                     dao.store_entity(simulator_index)
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-                    self.serialize_simulator(simulator, simulator_index.gid, None, storage_path)
+                    SimulatorSerializer().serialize_simulator(simulator, simulator_index.gid, None, storage_path)
                     operations.append(operation)
 
             first_operation = operations[0]
