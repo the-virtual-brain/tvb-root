@@ -853,6 +853,11 @@ class ProjectService:
         return dao.get_datatypegroup_by_op_group_id(operation_group_id)
 
     @staticmethod
+    def get_datatypes_in_project(project_id, only_visible=False):
+        return dao.get_data_in_project(project_id, only_visible)
+
+
+    @staticmethod
     def set_datatype_visibility(datatype_gid, is_visible):
         """
         Sets the dataType visibility. If the given dataType is a dataType group or it is part of a
