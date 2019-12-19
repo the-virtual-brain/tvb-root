@@ -1,7 +1,6 @@
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.server.dto.dtos import UserDto, ProjectDto
-
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 
