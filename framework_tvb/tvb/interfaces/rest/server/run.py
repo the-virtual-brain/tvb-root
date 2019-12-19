@@ -8,9 +8,9 @@ from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
-    GetOperationResultsResource
+    GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsListResource, \
-    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource, LaunchOperationResource
+    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
 from tvb.interfaces.rest.server.rest_api import RestApi
@@ -22,8 +22,6 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 
 FLASK_PORT = 9090
 BASE_PATH = "/api"
-
-UPLOAD_FOLDER = TvbProfile.current.TVB_TEMP_FOLDER
 
 
 def initialize_tvb(arguments):
