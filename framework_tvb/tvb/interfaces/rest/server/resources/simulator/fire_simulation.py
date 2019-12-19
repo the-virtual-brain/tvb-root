@@ -12,6 +12,9 @@ from werkzeug.utils import secure_filename
 
 
 class FireSimulationResource(RestResource):
+    """
+    Start a simulation using a project id and a zip archive with the simulator data serialized
+    """
 
     def __init__(self):
         self.simulator_service = SimulatorService()
@@ -37,4 +40,4 @@ class FireSimulationResource(RestResource):
         self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id, project=project,
                                                             zip_folder_path=zip_path[:-4])
 
-        return {'message': 'File succesfully uploaded!'}, 201
+        return {'message': 'Simulation started'}, 201

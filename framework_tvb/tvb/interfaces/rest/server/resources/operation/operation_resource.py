@@ -17,12 +17,21 @@ from werkzeug.utils import secure_filename
 
 
 class GetOperationStatusResource(RestResource):
+    """
+    :return status of an operation
+    """
+
     def get(self, operation_id):
         operation = dao.get_operation_by_id(operation_id)
         return {"status": operation.status}
 
 
 class GetOperationResultsResource(RestResource):
+    """
+    :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
+    None, if the operation is still running, has failed or simply has no results.
+    """
+
     def get(self, operation_id):
         data_types = dao.get_results_for_operation(operation_id)
 
