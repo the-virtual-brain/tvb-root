@@ -11,7 +11,7 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.server.dto.dtos import DataTypeDto
-from tvb.interfaces.rest.server.resources.exceptions import BaseRestException
+from tvb.interfaces.rest.server.resources.exceptions import BadRequestException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from werkzeug.utils import secure_filename
 
@@ -51,10 +51,10 @@ class LaunchOperationResource(RestResource):
     def post(self, project_id, algorithm_id):
         # Check if there is any h5 file in the form data
         if 'file' not in request.files:
-            raise BaseRestException('No file part in the request!', 400)
+            raise BadRequestException('No file part in the request!')
         file = request.files['file']
         if not file.filename.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-            raise BaseRestException('Only h5 files are allowed!', 400)
+            raise BadRequestException('Only h5 files are allowed!')
 
         # Save current view_model h5 file in a temporary directory
         filename = secure_filename(file.filename)
@@ -69,6 +69,6 @@ class LaunchOperationResource(RestResource):
         view_model = adapter_instance.get_view_model_class()()
         view_model_h5 = ViewModelH5(h5_path, view_model)
         view_model_h5.load_into(view_model)
-        # TODO: take logged user
+        # TODO: use logged user
         self.flow_service.fire_operation(adapter_instance, self.user_service.get_user_by_id(1), project_id,
                                          view_model=view_model)
