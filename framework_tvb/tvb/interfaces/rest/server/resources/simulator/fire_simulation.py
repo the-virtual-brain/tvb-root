@@ -6,7 +6,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.interfaces.rest.server.resources.exceptions import BaseRestException
+from tvb.interfaces.rest.server.resources.exceptions import BadRequestException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from werkzeug.utils import secure_filename
 
@@ -23,10 +23,10 @@ class FireSimulationResource(RestResource):
     def post(self, project_id):
         # check if the post request has the file part
         if 'file' not in request.files:
-            raise BaseRestException('No file part in the request!', 400)
+            raise BadRequestException('No file part in the request!')
         file = request.files['file']
         if not file.filename.endswith(FilesHelper.TVB_ZIP_FILE_EXTENSION):
-            raise BaseRestException('Only ZIP files are allowed!', 400)
+            raise BadRequestException('Only ZIP files are allowed!')
 
         filename = secure_filename(file.filename)
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
