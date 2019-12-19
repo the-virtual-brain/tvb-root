@@ -1,7 +1,5 @@
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
-
-from tvb.interfaces.rest.server.dto.dtos import OperationDto
+from tvb.interfaces.rest.server.dto.dtos import  OperationDto, DataTypeDto
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 
@@ -15,9 +13,8 @@ class GetDataInProjectResource(RestResource):
 
     def get(self, project_id):
         project = self.project_service.find_project(project_id)
-        datatypes = self.project_service.get_project_structure(project, None, DataTypeMetaData.KEY_STATE,
-                                                               DataTypeMetaData.KEY_SUBJECT, None)
-        return datatypes
+        datatypes = self.project_service.get_datatypes_in_project(project_id)
+        return [DataTypeDto(datatype) for datatype in datatypes]
 
 
 class GetOperationsInProjectResource(RestResource):
