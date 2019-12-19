@@ -52,8 +52,6 @@ class DAO(DatatypeDAO, OperationDAO, CaseDAO, BurstDAO, WorkflowDAO):
     Empty class, build only for inheriting from all DAO classes.
     """
     pass
-    
-    
+
+
 dao = DAO()
-
-

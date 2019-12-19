@@ -49,7 +49,6 @@ from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import hash_password
 
-
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
 SUBJECT_VALIDATE = '[TVB] Account validated'
@@ -243,6 +242,13 @@ class UserService:
         user_list = dao.get_all_users(username, start_idx, USERS_PAGE_SIZE)
         pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
+
+    @staticmethod
+    def fetch_all_users():
+        """
+        Return all users from the database without pagination
+        """
+        return dao.get_all_users(page_size=None, page_start=None)
 
     def edit_user(self, edited_user, old_password=None):
         """

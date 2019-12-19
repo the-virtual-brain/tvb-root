@@ -6,13 +6,14 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource
+from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
+    GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
-from tvb.interfaces.rest.server.resources.project.project_resource import GetProjectsListResource, \
-    GetOperationsInProjectResource, GetDataInProjectResource, GetOperationsForDatatypeResource
+from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
+    GetDataInProjectResource
 from tvb.interfaces.rest.server.resources.simulator.fire_simulation import FireSimulationResource
-from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource
+from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -48,13 +49,13 @@ def initialize_flask():
     api = RestApi(app)
 
     api.add_resource(GetUsersResource, build_path('/users'))
-    api.add_resource(GetProjectsListResource, build_path('/projects/<int:user_id>'))
-    api.add_resource(GetDataInProjectResource, build_path('/datatypes/project/<int:project_id>'))
-    api.add_resource(RetrieveDatatypeResource, build_path('/datatypes/<string:guid>'))
+    api.add_resource(GetProjectsListResource, build_path('/users/<int:user_id>/projects'))
+    api.add_resource(GetDataInProjectResource, build_path('/projects/<int:project_id>/data'))
+    api.add_resource(GetOperationsInProjectResource, build_path('/projects/<int:project_id>/operations'))
+    api.add_resource(RetrieveDatatypeResource, build_path('/datatype/<string:guid>'))
+    api.add_resource(GetOperationsForDatatypeResource, build_path('/datatype/<string:datatype_gid>/operations'))
     api.add_resource(FireSimulationResource, build_path('/simulation/<int:project_id>'))
-    api.add_resource(GetOperationsInProjectResource, build_path('/operations/<int:project_id>'))
     api.add_resource(LaunchOperationResource, build_path('/operations/<int:project_id>/<int:algorithm_id>'))
-    api.add_resource(GetOperationsForDatatypeResource, build_path('/operations/datatype/<string:guid>'))
     api.add_resource(GetOperationStatusResource, build_path('/operations/<int:operation_id>/status'))
     api.add_resource(GetOperationResultsResource, build_path('/operations/<int:operation_id>/results'))
 
