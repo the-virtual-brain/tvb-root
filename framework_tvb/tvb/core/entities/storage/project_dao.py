@@ -177,9 +177,14 @@ class CaseDAO(RootDAO):
     def get_project_by_gid(self, project_gid):
         """Retrieve PROJECT entity for a given identifier.
            THROW SqlException when not found."""
-        prj = self.session.query(Project).filter_by(gid=project_gid).one()
+        prj = self.get_project_lazy_by_gid(project_gid)
         prj.administrator
         return prj
+
+    def get_project_lazy_by_gid(self, project_gid):
+        """Retrieve PROJECT entity for a given identifier.
+           THROW SqlException when not found."""
+        return self.session.query(Project).filter_by(gid=project_gid).one()
 
     def delete_project(self, project_id):
         """Remove PROJECT entity by ID."""

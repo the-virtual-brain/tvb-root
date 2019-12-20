@@ -12,8 +12,8 @@ class RetrieveDatatypeResource(RestResource):
     Given a guid, this function will download the H5 full data
     """
 
-    def get(self, guid):
-        index = ABCAdapter.load_entity_by_gid(guid)
+    def get(self, datatype_gid):
+        index = ABCAdapter.load_entity_by_gid(datatype_gid)
         h5_file = h5_file_for_index(index)
         last_index = h5_file.path.rfind('\\')
         file_name = h5_file.path[last_index+1:]

@@ -303,7 +303,14 @@ class UserService:
         """
         Retrieves a user by its id.
         """
-        return dao.get_user_by_id(user_id)
+        return dao.get_user_by_id(user_id)\
+
+    @staticmethod
+    def get_user_by_name(username):
+        """
+        Retrieves a user by its username.
+        """
+        return dao.get_user_by_name(username)
 
     @staticmethod
     def compute_user_generated_disk_size(user_id):

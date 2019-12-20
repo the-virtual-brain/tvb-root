@@ -8,6 +8,7 @@ class UserDto:
 
 class ProjectDto:
     def __init__(self, project):
+        self.gid = project.gid
         self.name = project.name
         self.description = project.description
         self.gid = project.gid
@@ -16,7 +17,6 @@ class ProjectDto:
 
 class OperationDto:
     def __init__(self, operation):
-        self.id = operation['id']
         self.user_id = operation['user'].id
         self.algorithm_id = operation['algorithm'].id
         self.group = operation['group']
@@ -38,7 +38,6 @@ class AlgorithmDto:
 
 class DataTypeDto:
     def __init__(self, datatype):
-        self.id = datatype.id
         self.gid = datatype.gid
         self.name = datatype.display_name
         self.type = datatype.display_type

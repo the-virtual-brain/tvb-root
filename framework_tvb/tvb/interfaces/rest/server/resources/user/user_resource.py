@@ -22,6 +22,7 @@ class GetProjectsListResource(RestResource):
     def __init__(self):
         self.project_service = ProjectService()
 
-    def get(self, user_id):
-        projects, _ = self.project_service.retrieve_all_user_projects(user_id=user_id)
+    def get(self, username):
+        user = UserService.get_user_by_name(username)
+        projects = self.project_service.retrieve_all_user_projects(user_id=user.id)
         return [ProjectDto(project) for project in projects]

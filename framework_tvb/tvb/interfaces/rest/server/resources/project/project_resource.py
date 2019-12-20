@@ -11,9 +11,9 @@ class GetDataInProjectResource(RestResource):
     def __init__(self):
         self.project_service = ProjectService()
 
-    def get(self, project_id):
-        project = self.project_service.find_project(project_id)
-        datatypes = self.project_service.get_datatypes_in_project(project_id)
+    def get(self, project_gid):
+        project = self.project_service.find_project_lazy_by_gid(project_gid)
+        datatypes = self.project_service.get_datatypes_in_project(project.id)
         return [DataTypeDto(datatype) for datatype in datatypes]
 
 
@@ -25,6 +25,7 @@ class GetOperationsInProjectResource(RestResource):
     def __init__(self):
         self.project_service = ProjectService()
 
-    def get(self, project_id):
-        _, _, operations, _ = self.project_service.retrieve_project_full(project_id)
+    def get(self, project_gid):
+        project = self.project_service.find_project_lazy_by_gid(project_gid)
+        _, _, operations, _ = self.project_service.retrieve_project_full(project.id)
         return [OperationDto(operation) for operation in operations]
