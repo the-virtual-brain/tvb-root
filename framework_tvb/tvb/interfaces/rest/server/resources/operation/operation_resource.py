@@ -1,6 +1,5 @@
 import os
 import tempfile
-
 from flask import request
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
