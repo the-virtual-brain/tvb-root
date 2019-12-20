@@ -1,11 +1,13 @@
 import requests
+from tvb.interfaces.rest.client.main_api import MainApi
 
-BASE_PATH = "http://127.0.0.1:9090/api/"
 
-
-class UserApi:
+class UserApi(MainApi):
 
     def get_users(self):
-        response = requests.get(BASE_PATH + 'users')
+        response = requests.get(self.server_url + "/users")
         return response.content
 
+    def get_projects_list(self, username):
+        response = requests.get(self.server_url + "/users/" + username + "/projects")
+        return response.content
