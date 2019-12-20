@@ -356,14 +356,17 @@ class TestFactory(object):
 
         form = ZIPConnectivityImporterForm()
         form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_normalization': 'region',
                              '_project_id': {1},
                              '_Data_Subject': subject
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
 class ExtremeTestFactory(object):
