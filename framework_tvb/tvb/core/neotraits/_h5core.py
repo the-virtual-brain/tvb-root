@@ -33,13 +33,16 @@ import typing
 import os.path
 import uuid
 from datetime import datetime
+import scipy.sparse
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr, List
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, EquationScalar, \
+    SparseMatrix
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
+from tvb.datatypes.equations import Equation
 
 
 class H5File(object):
@@ -223,11 +226,17 @@ class ViewModelH5(H5File):
 
             if isinstance(attr, DataTypeGidAttr):
                 ref = Uuid(attr, self)
-            if isinstance(attr, List):
+            elif isinstance(attr, NArray):
+                ref = DataSet(attr, self)
+            elif isinstance(attr, List):
                 ref = Json(attr, self)
             elif issubclass(type(attr), Attr):
-                if attr.field_type is uuid.UUID:
+                if attr.field_type is scipy.sparse.spmatrix:
+                    ref = SparseMatrix(attr, self)
+                elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
+                elif issubclass(attr.field_type, Equation):
+                    ref = EquationScalar(attr, self)
                 else:
                     ref = Scalar(attr, self)
             setattr(self, attr.field_name, ref)
