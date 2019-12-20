@@ -151,6 +151,16 @@ class ProjectService:
             self.logger.exception("Given Project ID was not found in DB!")
             raise ProjectServiceException(str(excep))
 
+    def find_project_lazy_by_gid(self, project_gid):
+        """
+        Simply retrieve Project entity from Database by gid.
+        """
+        try:
+            return dao.get_project_lazy_by_gid(project_gid)
+        except Exception as excep:
+            self.logger.exception("Given Project GID was not found in DB!")
+            raise ProjectServiceException(str(excep))
+
     @staticmethod
     def count_filtered_operations(project_id, filters=None):
         """Pass to DAO counters for filtered operations"""
@@ -340,7 +350,12 @@ class ProjectService:
     @staticmethod
     def load_operation_by_gid(operation_gid):
         """ Retrieve loaded Operation from DB"""
-        return dao.get_operation_by_gid(operation_gid)
+        return dao.get_operation_by_gid(operation_gid)\
+
+    @staticmethod
+    def load_operation_lazy_by_gid(operation_gid):
+        """ Retrieve lazy Operation from DB"""
+        return dao.get_operation_lazy_by_gid(operation_gid)
 
     @staticmethod
     def get_operation_group_by_id(operation_group_id):

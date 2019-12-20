@@ -20,7 +20,7 @@ class FireSimulationResource(RestResource):
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 
-    def post(self, project_id):
+    def post(self, project_gid):
         # check if the post request has the file part
         if 'file' not in request.files:
             raise BadRequestException('No file part in the request!')
@@ -34,7 +34,7 @@ class FireSimulationResource(RestResource):
         zip_path = os.path.join(destination_folder, filename)
         file.save(zip_path)
         FilesHelper().unpack_zip(zip_path, destination_folder)
-        project = self.project_service.find_project(project_id)
+        project = self.project_service.find_project_lazy_by_gid(project_gid)
         user_id = project.fk_admin
 
         self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id, project=project,
