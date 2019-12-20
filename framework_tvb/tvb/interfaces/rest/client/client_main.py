@@ -1,19 +1,21 @@
+import tempfile
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
-from tvb.interfaces.rest.client.simulator.simulator_api import SimulatorApi
+from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
 
 
 class MainClient:
 
     def __init__(self, server_url):
-        self.server_url = server_url
+        self.temp_folder = tempfile.gettempdir()
         self.user_api = UserApi(server_url)
         self.project_api = ProjectApi(server_url)
         self.datatype_api = DataTypeApi(server_url)
-        self.simulator_api = SimulatorApi(server_url)
+        self.simulation_api = SimulationApi(server_url)
         self.operation_api = OperationApi(server_url)
+
 
     def get_users(self):
         return self.user_api.get_users()
@@ -34,7 +36,8 @@ class MainClient:
         return self.datatype_api.get_operations_for_datatype(datatype_gid)
 
     def fire_simulation(self, project_gid, session_stored_simulator, burst_config):
-        return self.simulator_api.fire_simulation(project_gid, session_stored_simulator, burst_config)
+        return self.simulation_api.fire_simulation(project_gid, session_stored_simulator,
+                                                   burst_config, self.temp_folder)
 
     #TODO: ADD launch_operation
 
