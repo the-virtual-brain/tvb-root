@@ -607,9 +607,14 @@ class SelectField(TraitField):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
+    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
-        if not trait_attribute.choices:
+        if choices:
+            self.choices = choices
+        else:
+            # TODO: prepare dict here
+            self.choices = trait_attribute.choices
+        if not self.choices:
             raise ValueError('no choices for field')
 
     def options(self):
@@ -623,34 +628,39 @@ class SelectField(TraitField):
                 checked=self.data is None
             )
 
-        for i, choice in enumerate(self.trait_attribute.choices):
+        for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice).title(),
-                checked=self.data == choice
+                checked=self.data == self.choices.get(choice)
             )
 
-    def _from_post(self):
-        # encode None as a string
-        if self.unvalidated_data == self.missing_value:
-            self.unvalidated_data = None
+    # def _from_post(self):
+    #     # encode None as a string
+    #     if self.unvalidated_data == self.missing_value:
+    #         self.unvalidated_data = None
+    #
+    #     if self.required and not self.unvalidated_data:
+    #         raise ValueError('Field required')
+    #
+    #     if self.unvalidated_data is not None:
+    #         # todo muliple values
+    #         self.data = self.trait_attribute.field_type(self.unvalidated_data)
+    #     else:
+    #         self.data = None
+    #
+    #     allowed = self.trait_attribute.choices
+    #     if not self.trait_attribute.required:
+    #         allowed = (None,) + allowed
+    #
+    #     if self.data not in allowed:
+    #         raise ValueError('must be one of {}'.format(allowed))
 
-        if self.required and not self.unvalidated_data:
-            raise ValueError('Field required')
+    def fill_from_post(self, post_data):
+        super(SimpleSelectField, self).fill_from_post(post_data)
+        self.data = self.choices.get(self.data)
 
-        if self.unvalidated_data is not None:
-            # todo muliple values
-            self.data = self.trait_attribute.field_type(self.unvalidated_data)
-        else:
-            self.data = None
-
-        allowed = self.trait_attribute.choices
-        if not self.trait_attribute.required:
-            allowed = (None,) + allowed
-
-        if self.data not in allowed:
-            raise ValueError('must be one of {}'.format(allowed))
 
 
 class MultiSelectField(TraitField):
