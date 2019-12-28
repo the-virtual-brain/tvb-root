@@ -51,4 +51,4 @@ from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
 from .wilson_cowan import WilsonCowan
 from .wong_wang import ReducedWongWang
 from .wong_wang_exc_inh import ReducedWongWangExcInh
-from .zerlaut import ZerlautFirstOrder, ZerlautSecondOrder
+from .zerlaut import ZerlautAdaptationFirstOrder, ZerlautAdaptationSecondOrder
