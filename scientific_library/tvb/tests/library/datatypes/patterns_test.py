@@ -93,7 +93,6 @@ class TestPatterns(BaseTestCase):
         dt.surface = srf
         dt.spatial = equations.DiscreteEquation()
         dt.temporal = equations.Gaussian()
-        dt.focal_points_surface = numpy.array([0, 1, 2])
         dt.focal_points_triangles = numpy.array([0, 1, 2])
         dt.configure()
         dt.configure_space()

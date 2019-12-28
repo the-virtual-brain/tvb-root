@@ -36,7 +36,7 @@ Test for tvb.simulator.models module
 """
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
 import numpy
@@ -62,12 +62,20 @@ class TestBoundsModel(Model):
         doc="""default state variables to be monitored""")
 
     state_variables = ['x1', 'x2', 'x3', 'x4', 'x5']
+
+    state_variable_range = Final(
+        default={
+            "x1": numpy.array([-1.0, 2.0]),
+            "x2": numpy.array([-1.0, 2.0]),
+            "x3": numpy.array([-1.0, 2.0]),
+            "x4": numpy.array([-1.0, 2.0]),
+            "x5": numpy.array([-1.0, 2.0])
+        })
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state, node_coupling, local_coupling=0.0):
-
-        return 0.0*state
+        return 0.0 * state
 
 
 class TestModels(BaseTestCase):
@@ -104,7 +112,7 @@ class TestModels(BaseTestCase):
         model.configure()
         min_float = numpy.finfo("double").min
         max_float = numpy.finfo("double").max
-        min_positive = 1.0/numpy.finfo("single").max
+        min_positive = 1.0 / numpy.finfo("single").max
         state_variable_boundaries = \
             {"x1": numpy.array([0.0, 1.0]),
              "x2": numpy.array([min_float, 1.0]),
