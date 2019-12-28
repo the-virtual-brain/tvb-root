@@ -39,7 +39,7 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import numpy
+
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
@@ -297,45 +297,6 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()
-        # self.log.info("%s: Adapter simulation finished!!" % str(self))
+        self.log.debug("%s: Adapter simulation finished!!" % str(self))
         results.extend(result_indexes.values())
         return results
-
-    def _validate_model_parameters(self, model_instance, connectivity, surface):
-        """
-        Checks if the size of the model parameters is set correctly.
-        """
-        ui_configurable_params = model_instance.ui_configurable_parameters
-        for param in ui_configurable_params:
-            param_value = eval('model_instance.' + param)
-            if isinstance(param_value, numpy.ndarray):
-                if len(param_value) == 1 or connectivity is None:
-                    continue
-                if surface is not None:
-                    if (len(param_value) != surface.number_of_vertices
-                            and len(param_value) != connectivity.number_of_regions):
-                        msg = str(surface.number_of_vertices) + ' or ' + str(connectivity.number_of_regions)
-                        msg = self._get_exception_message(param, msg, len(param_value))
-                        self.log.error(msg)
-                        raise LaunchException(msg)
-                elif len(param_value) != connectivity.number_of_regions:
-                    msg = self._get_exception_message(param, connectivity.number_of_regions, len(param_value))
-                    self.log.error(msg)
-                    raise LaunchException(msg)
-
-    @staticmethod
-    def _get_exception_message(param_name, expected_size, actual_size):
-        """
-        Creates the message that will be displayed to the user when the size of a model parameter is incorrect.
-        """
-        msg = "The length of the parameter '" + param_name + "' is not correct."
-        msg += " It is expected to be an array of length " + str(expected_size) + "."
-        msg += " It is an array of length " + str(actual_size) + "."
-        return msg
-
-    @staticmethod
-    def _is_surface_simulation(surface, surface_parameters):
-        """
-        Is this a surface simulation?
-        """
-        return surface is not None and surface_parameters is not None
