@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,7 +47,7 @@ from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.burst_service2 import BurstService2
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.neocom import h5
 
@@ -215,7 +215,7 @@ class SimulatorService(object):
                 self.logger.error(excep)
                 wf_errs += 1
                 if burst_config:
-                    BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
+                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflow. The operation was launched successfully, " +
                               str(wf_errs) + " had error on pre-launch steps")
@@ -223,7 +223,7 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
             if burst_config:
-                BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
+                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
     def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
                                      session_stored_simulator):
@@ -274,11 +274,11 @@ class SimulatorService(object):
                 except Exception as excep:
                     self.logger.error(excep)
                     wf_errs += 1
-                    BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
+                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
 
         except Exception as excep:
             self.logger.error(excep)
-            BurstService2().mark_burst_finished(burst_config, error_message=str(excep))
+            BurstService().mark_burst_finished(burst_config, error_message=str(excep))

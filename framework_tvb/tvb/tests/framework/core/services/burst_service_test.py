@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,7 @@
 
 import numpy
 from time import sleep
-from tvb.core.services.burst_service2 import BurstService2
+from tvb.core.services.burst_service import BurstService
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.datatypes.connectivity import Connectivity
@@ -54,7 +54,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.datatypes import datatypes_factory
+# from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import copy
@@ -70,7 +70,7 @@ class TestBurstService(BaseTestCase):
     ## This should not be present in portlets.xml
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
-    burst_service = BurstService2()
+    burst_service = BurstService()
     flow_service = FlowService()
     operation_service = OperationService()
     sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,

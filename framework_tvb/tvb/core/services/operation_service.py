@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -62,7 +62,7 @@ from tvb.core.entities.model.simulator.burst_configuration import BurstConfigura
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.burst_service2 import BurstService2
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
 
 try:
@@ -367,7 +367,7 @@ class OperationService:
         """
         self.logger.exception(message)
         if operation is not None:
-            BurstService2().persist_operation_state(operation, STATUS_ERROR, str(exception))
+            BurstService().persist_operation_state(operation, STATUS_ERROR, str(exception))
         self._remove_files(temp_files)
         exception.message = message
         raise exception.with_traceback(sys.exc_info()[2])  # when rethrowing in python this is required to preserve the stack trace

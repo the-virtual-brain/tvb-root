@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -52,7 +52,7 @@ from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
-from tvb.core.services.burst_service2 import BurstService2
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.services.simulator_service import SimulatorService
@@ -214,7 +214,7 @@ class SimulatorController(BurstBaseController):
         BurstBaseController.__init__(self)
         self.last_loaded_form_url = SimulatorWizzardURLs.SET_CONNECTIVITY_URL
         self.range_parameters = SimulatorRangeParameters()
-        self.burst_service2 = BurstService2()
+        self.burst_service2 = BurstService()
         self.simulator_service = SimulatorService()
         self.files_helper = FilesHelper()
         self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(

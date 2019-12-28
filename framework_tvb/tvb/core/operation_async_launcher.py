@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,7 +53,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.utils import parse_json_parameters
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.burst_service2 import BurstService2
+from tvb.core.services.burst_service import BurstService
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[2], True)
@@ -64,7 +64,7 @@ def do_operation_launch(operation_id):
     Event attached to the local queue for executing an operation, when we will have resources available.
     """
     log = get_logger('tvb.core.operation_async_launcher')
-    burst_service = BurstService2()
+    burst_service = BurstService()
 
     try:
         log.debug("Loading operation with id=%s" % operation_id)
