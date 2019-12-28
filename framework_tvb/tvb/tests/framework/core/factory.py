@@ -171,7 +171,7 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -356,14 +356,17 @@ class TestFactory(object):
 
         form = ZIPConnectivityImporterForm()
         form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_normalization': 'region',
                              '_project_id': {1},
                              '_Data_Subject': subject
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
 class ExtremeTestFactory(object):

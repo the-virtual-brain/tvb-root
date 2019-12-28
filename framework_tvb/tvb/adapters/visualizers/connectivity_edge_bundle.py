@@ -40,16 +40,25 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+
+
+class ConnectivityEdgeBundleModel(ViewModel):
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label="Connectivity to be displayed in a hierarchical edge bundle"
+    )
 
 
 class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityEdgeBundleForm, self).__init__(prefix)
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name="connectivity",
-                                                required=True, conditions=self.get_filters(), has_all_option=False,
-                                                label="Connectivity to be displayed in a hierarchical edge bundle")
+        self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, self,
+                                                     name="connectivity", conditions=self.get_filters(),
+                                                     has_all_option=False)
         self.project_id = project_id
 
     @staticmethod
@@ -64,6 +73,10 @@ class ConnectivityEdgeBundleForm(ABCAdapterForm):
     def get_filters():
         return None
 
+    @staticmethod
+    def get_view_model():
+        return ConnectivityEdgeBundleModel
+
 
 class ConnectivityEdgeBundle(ABCDisplayer):
     _ui_name = "Connectivity Edge Bundle View"
@@ -76,9 +89,10 @@ class ConnectivityEdgeBundle(ABCDisplayer):
         """Return required memory."""
         return -1
 
-    def launch(self, connectivity):
+    def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
+        connectivity = self.load_entity_by_gid(view_model.connectivity.hex)
         connectivity_dt = h5.load_from_index(connectivity)
 
         pars = {"labels": json.dumps(connectivity_dt.region_labels.tolist()),

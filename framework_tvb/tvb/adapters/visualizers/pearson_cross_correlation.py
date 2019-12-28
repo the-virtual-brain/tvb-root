@@ -37,19 +37,31 @@
 import json
 import numpy
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+
+
+class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=CorrelationCoefficients,
+        label='Correlation Coefficients'
+    )
 
 
 class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PearsonCorrelationCoefficientVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Correlation Coefficients', conditions=self.get_filters())
+        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype, self,
+                                                 name='datatype', conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return PearsonCorrelationCoefficientVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -75,17 +87,18 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
     def get_form_class(self):
         return PearsonCorrelationCoefficientVisualizerForm
 
-    def get_required_memory_size(self, datatype):
+    def get_required_memory_size(self, view_model):
+        # type: (PearsonCorrelationCoefficientVisualizerModel) -> numpy.ndarray
         """Return required memory."""
-
-        input_size = (datatype.data_length_1d, datatype.data_length_2d,
-                      datatype.data_length_3d, datatype.data_length_4d)
+        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
+        input_size = (datatype_index.data_length_1d, datatype_index.data_length_2d,
+                      datatype_index.data_length_3d, datatype_index.data_length_4d)
         return numpy.prod(input_size) * 8.0
 
-    def launch(self, datatype):
+    def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(datatype.gid)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
@@ -101,7 +114,7 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
         pars = dict(matrix_labels=json.dumps([labels, labels]),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Cross Corelation Matrix plot',
-                    url_base=URLGenerator.build_h5_url(datatype.gid, 'get_correlation_data', parameter=''),
+                    url_base=URLGenerator.build_h5_url(view_model.datatype, 'get_correlation_data', parameter=''),
                     state_variable=state_list[0],
                     mode=mode_list[0],
                     state_list=state_list,

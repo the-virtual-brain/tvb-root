@@ -58,9 +58,9 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
-        if trait.surface and hasattr(trait.surface, 'region_mapping_data') and hasattr(
-                trait.surface.region_mapping_data, 'surface'):
-            self.surface.data = trait.surface.region_mapping_data.surface.gid.hex
+        if trait.surface:
+            if hasattr(trait.surface, 'surface_gid'):
+                self.surface.data = trait.surface.surface_gid.hex
         else:
             self.surface.data = None
 
@@ -84,11 +84,11 @@ class SimulatorRMFragment(ABCAdapterForm):
         # type: (Simulator) -> None
         self.coupling_strength.data = trait.surface.coupling_strength
         if hasattr(trait.surface, 'region_mapping_data'):
-            self.rm.data = trait.surface.region_mapping_data.gid.hex
+            self.rm.data = trait.surface.region_mapping_data.hex
         else:
             self.rm.data = None
         if trait.surface.local_connectivity:
-            self.lc.data = trait.surface.local_connectivity.gid.hex
+            self.lc.data = trait.surface.local_connectivity.hex
         else:
             self.lc.data = None
 
@@ -106,7 +106,7 @@ class SimulatorStimulusFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if hasattr(trait, 'stimulus') and trait.stimulus is not None:
-            self.stimulus.data = trait.stimulus.gid.hex
+            self.stimulus.data = trait.stimulus.hex
         else:
             self.stimulus.data = None
 

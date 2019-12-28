@@ -38,13 +38,15 @@ import numpy
 from six import add_metaclass
 from abc import ABCMeta
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.arguments_serialisation import parse_slice, slice_str
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import DataTypeMatrix
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleStrField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 
 # TODO: rewrite, necessary to read whole matrix?
@@ -142,13 +144,30 @@ class MappedArraySVGVisualizerMixin(ABCSpaceDisplayer):
         return [labels, labels], matrix
 
 
+class MatrixVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=DataTypeMatrix,
+        label='Array data type'
+    )
+
+    slice = Attr(
+        field_type=str,
+        required=False,
+        label='slice indices in numpy syntax'
+    )
+
+
 class MatrixVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(MatrixVisualizerForm, self).__init__(prefix, project_id, False)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Array data type', conditions=self.get_filters())
-        self.slice = SimpleStrField(self, name='slice', label='slice indices in numpy syntax')
+        self.datatype = TraitDataTypeSelectField(MatrixVisualizerModel.datatype, self, name='datatype',
+                                                 conditions=self.get_filters())
+        self.slice = StrField(MatrixVisualizerModel.slice, self, name='slice')
+
+    @staticmethod
+    def get_view_model():
+        return MatrixVisualizerModel
 
     @staticmethod
     def get_input_name():
@@ -170,12 +189,14 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return MatrixVisualizerForm
 
-    def launch(self, datatype, slice=''):
-        with h5.h5_file_for_index(datatype) as h5_file:
+    def launch(self, view_model):
+        # type: (MatrixVisualizerModel) -> dict
+        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
+        with h5.h5_file_for_index(datatype_index) as h5_file:
             matrix = h5_file.array_data.load()
 
-        matrix2d, _, _ = compute_2d_view(matrix, slice)
-        title = datatype.display_name + " matrix plot"
+        matrix2d, _, _ = compute_2d_view(matrix, view_model.slice)
+        title = datatype_index.display_name + " matrix plot"
 
-        pars = self.compute_params(matrix, title, slice)
+        pars = self.compute_params(matrix, title, view_model.slice)
         return self.build_display_result("matrix/svg_view", pars)

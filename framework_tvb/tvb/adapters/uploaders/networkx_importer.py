@@ -33,40 +33,80 @@
 """
 import pandas
 from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.forms import UploadField, SimpleStrField
+from tvb.core.neotraits.forms import TraitUploadField, StrField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, Str
 
 
-class NetworkxCFFCommonImporterForm(ABCUploaderForm):
+class NetworkxImporterModel(ViewModel):
+    data_file = Str(
+        label='Please select file to import'
+    )
 
-    def __init__(self, prefix='', project_id=None, label_prefix=''):
-        super(NetworkxCFFCommonImporterForm, self).__init__(prefix, project_id)
-        self.key_edge_weight = SimpleStrField(self, name='key_edge_weight', default=NetworkxParser.KEY_EDGE_WEIGHT[0],
-                                              label=label_prefix + 'Key Edge Weight')
-        self.key_edge_tract = SimpleStrField(self, name='key_edge_tract', default=NetworkxParser.KEY_EDGE_TRACT[0],
-                                             label=label_prefix + 'Key Edge Tract')
-        self.key_node_coordinates = SimpleStrField(self, name='key_node_coordinates',
-                                                   default=NetworkxParser.KEY_NODE_COORDINATES[0],
-                                                   label=label_prefix + 'Key Node Coordinates')
-        self.key_node_label = SimpleStrField(self, name='key_node_label', default=NetworkxParser.KEY_NODE_LABEL[0],
-                                             label=label_prefix + 'Key Node Label')
-        self.key_node_region = SimpleStrField(self, name='key_node_region', default=NetworkxParser.KEY_NODE_REGION[0],
-                                              label=label_prefix + 'Key Node Region')
-        self.key_node_hemisphere = SimpleStrField(self, name='key_node_hemisphere',
-                                                  default=NetworkxParser.KEY_NODE_HEMISPHERE[0],
-                                                  label=label_prefix + 'Key Node Hemisphere')
+    key_edge_weight = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_EDGE_WEIGHT[0],
+        label='Key Edge Weight'
+    )
+
+    key_edge_tract = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_EDGE_TRACT[0],
+        label='Key Edge Tract'
+    )
+
+    key_node_coordinates = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_NODE_COORDINATES[0],
+        label='Key Node Coordinates'
+    )
+
+    key_node_label = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_NODE_LABEL[0],
+        label='Key Node Label'
+    )
+
+    key_node_region = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_NODE_REGION[0],
+        label='Key Node Region'
+    )
+
+    key_node_hemisphere = Attr(
+        field_type=str,
+        required=False,
+        default=NetworkxParser.KEY_NODE_HEMISPHERE[0],
+        label='Key Node Hemisphere'
+    )
 
 
-class NetworkxConnectivityImporterForm(NetworkxCFFCommonImporterForm):
+class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
-        self.data_file = UploadField('.gpickle', self, name='data_file', required=True,
-                                     label='Please select file to import')
+        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self, name='data_file')
+        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self, name='key_edge_weight')
+        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, self, name='key_edge_tract')
+        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, self,
+                                             name='key_node_coordinates')
+        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, self, name='key_node_label')
+        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, self, name='key_node_region')
+        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, self, name='key_node_hemisphere')
+
+    @staticmethod
+    def get_view_model():
+        return NetworkxImporterModel
 
 
 class NetworkxConnectivityImporter(ABCUploader):
@@ -84,10 +124,11 @@ class NetworkxConnectivityImporter(ABCUploader):
         return [ConnectivityIndex]
 
     @transactional
-    def launch(self, data_file, **kwargs):
+    def launch(self, view_model):
+        # type: (NetworkxImporterModel) -> [ConnectivityIndex]
         try:
-            parser = NetworkxParser(**kwargs)
-            net = pandas.read_pickle(data_file)
+            parser = NetworkxParser(view_model)
+            net = pandas.read_pickle(view_model.data_file)
             connectivity = parser.parse(net)
             return h5.store_complete(connectivity, self.storage_path)
         except ParseException as excep:

@@ -214,7 +214,10 @@ class DynamicModelController(BurstBaseController):
             dynamic = self.get_cached_dynamic(dynamic_gid)
             model = dynamic.model
             for name, value in params.items():
-                setattr(model, name, numpy.array([float(value)]))
+                param_type = float
+                if getattr(model, name).dtype == 'int':
+                    param_type = int
+                setattr(model, name, numpy.array([param_type(value)]))
             model.configure()
             return dynamic.phase_plane.compute_phase_plane()
 

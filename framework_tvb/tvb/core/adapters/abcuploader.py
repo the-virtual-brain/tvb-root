@@ -69,7 +69,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
     """
     LOGGER = get_logger(__name__)
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
@@ -81,10 +81,10 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: subject})
         self.generic_attributes.subject = subject
 
-        return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, **kwargs)
+        return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         As it is an upload algorithm and we do not have information about data, we can not approximate this.
@@ -92,7 +92,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         return -1
 
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         As it is an upload algorithm and we do not have information about data, we can not approximate this.
         """

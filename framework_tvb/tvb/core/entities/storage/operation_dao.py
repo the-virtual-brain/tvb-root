@@ -94,6 +94,14 @@ class OperationDAO(RootDAO):
             self.logger.exception("When fetching gid %s" % operation_gid)
             return None
 
+    def get_operation_lazy_by_gid(self, operation_gid):
+        """Retrieve OPERATION entity for a given gid."""
+        try:
+            return self.session.query(Operation).filter_by(gid=operation_gid).one()
+        except SQLAlchemyError:
+            self.logger.exception("When fetching gid %s" % operation_gid)
+            return None
+
 
     def get_all_operations_for_uploaders(self, project_id):
         """

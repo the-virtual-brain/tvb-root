@@ -40,8 +40,31 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.entities.storage import dao
 from tvb.adapters.datatypes.db.annotation import *
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+
+
+class ConnectivityAnnotationsViewModel(ViewModel):
+    connectivity_index = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        required=False,
+        label='Large Scale Connectivity Matrix'
+    )
+
+    annotations_index = DataTypeGidAttr(
+        linked_datatype=ConnectivityAnnotations,
+        label='Ontology Annotations'
+    )
+
+    region_mapping_index = DataTypeGidAttr(
+        linked_datatype=RegionMapping,
+        required=False,
+        label='Region mapping',
+        doc='A region map to identify us the Cortical Surface to display,  as well as how the mapping '
+            'from Connectivity to Cortex is done '
+    )
 
 
 class ConnectivityAnnotationsViewForm(ABCAdapterForm):
@@ -49,16 +72,16 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityAnnotationsViewForm, self).__init__(prefix, project_id)
         # Used for filtering
-        self.connectivity_index = DataTypeSelectField(ConnectivityIndex, self, 'connectivity_index', required=False,
-                                                      label='Large Scale Connectivity Matrix')
-        self.annotations_index = DataTypeSelectField(ConnectivityAnnotationsIndex, self, 'annotations_index',
-                                                     required=True, label='Ontology Annotations',
-                                                     conditions=self.get_filters())
-        self.region_mapping_index = DataTypeSelectField(RegionMappingIndex, self, 'region_mapping_index',
-                                                        required=False, label='Region mapping',
-                                                        doc='A region map to identify us the Cortical Surface to '
-                                                            'display,  as well as how the mapping from Connectivity '
-                                                            'to Cortex is done ')
+        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index, self,
+                                                           'connectivity_index')
+        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index, self,
+                                                          'annotations_index', conditions=self.get_filters())
+        self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
+                                                             self, 'region_mapping_index')
+
+    @staticmethod
+    def get_view_model():
+        return ConnectivityAnnotationsViewModel
 
     @staticmethod
     def get_required_datatype():
@@ -92,20 +115,22 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
     def get_form_class(self):
         return ConnectivityAnnotationsViewForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (ConnectivityAnnotationsViewModel) -> int
         return -1
 
-    def launch(self, annotations_index, region_mapping_index=None, **kwarg):
+    def launch(self, view_model):
+        # type: (ConnectivityAnnotationsViewModel) -> dict
 
-        if region_mapping_index is None:
-            region_map = dao.get_generic_entity(RegionMappingIndex, annotations_index.connectivity_gid,
+        if view_model.region_mapping_index is None:
+            region_map = dao.get_generic_entity(RegionMappingIndex, view_model.annotations_index.connectivity_gid,
                                                 'connectivity_gid')
             if len(region_map) < 1:
                 raise LaunchException(
                     "Can not launch this viewer unless we have at least a RegionMapping for the current Connectivity!")
             region_mapping_index = region_map[0]
 
-        boundary_url = region_mapping_index.surface.get_url_for_region_boundaries(region_map)
+        boundary_url = view_model.region_mapping_index.surface.get_url_for_region_boundaries(region_map)
         url_vertices_pick, url_normals_pick, url_triangles_pick = region_map.surface.get_urls_for_pick_rendering()
         url_vertices, url_normals, _, url_triangles, url_region_map = \
             region_map.surface.get_urls_for_rendering(True, region_map)

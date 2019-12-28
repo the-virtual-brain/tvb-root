@@ -190,6 +190,20 @@ class Simulator(HasTraits):
             return True
         return False
 
+    def _configure_integrator_boundaries(self):
+        if self.model.state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in self.model.state_variable_boundaries.items():
+                indices.append(self.model.state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = numpy.argsort(indices)
+            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
+            self.integrator.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
+        else:
+            self.integrator.bounded_state_variable_indices = None
+            self.integrator.state_variable_boundaries = None
+
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
         self.connectivity.configure()
@@ -200,18 +214,7 @@ class Simulator(HasTraits):
         self.coupling.configure()
         self.model.configure()
         self.integrator.configure()
-        if self.model.state_variable_boundaries is not None:
-            indices = []
-            boundaries = []
-            for sv, sv_bounds in self.model.state_variable_boundaries.items():
-                indices.append(self.model.state_variables.index(sv))
-                boundaries.append(sv_bounds)
-            sort_inds = numpy.argsort(indices)
-            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
-            self.integrator.state_variable_boundaries = numpy.array(boundaries)[sort_inds]
-        else:
-            self.integrator.bounded_state_variable_indices = None
-            self.integrator.state_variable_boundaries = None
+        self._configure_integrator_boundaries()
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]

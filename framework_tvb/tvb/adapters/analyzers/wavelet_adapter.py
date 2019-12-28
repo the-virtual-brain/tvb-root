@@ -48,7 +48,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, Form, SimpleFloatField
+from tvb.core.neotraits.forms import ScalarField, FormField, Form, SimpleFloatField, \
+    TraitDataTypeSelectField
 from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neocom import h5
 
@@ -71,10 +72,9 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ContinuousWaveletTransformAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=ContinuousWaveletTransform.time_series.label,
-                                               doc=ContinuousWaveletTransform.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(ContinuousWaveletTransform.time_series, self,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
         self.mother = ScalarField(ContinuousWaveletTransform.mother, self)
         self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self)
         self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self)

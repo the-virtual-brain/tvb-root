@@ -38,31 +38,81 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 import uuid
 import numpy
 from tvb.analyzers.fmri_balloon import BalloonModel
+from tvb.basic.neotraits.api import Float, Attr
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
 
 
+class BalloonModelAdapterModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The timeseries that represents the input neural activity"""
+    )
+
+    dt = Float(
+        label=":math:`dt`",
+        default=0.002,
+        required=True,
+        doc="""The integration time step size for the balloon model (s).
+            If none is provided, by default, the TimeSeries sample period is used."""
+    )
+
+    neural_input_transformation = Attr(
+        field_type=str,
+        label="Neural input transformation",
+        choices=("none", "abs_diff", "sum"),
+        default="none",
+        doc=""" This represents the operation to perform on the state-variable(s) of
+            the model used to generate the input TimeSeries. ``none`` takes the
+            first state-variable as neural input; `` abs_diff`` is the absolute
+            value of the derivative (first order difference) of the first state variable; 
+            ``sum``: sum all the state-variables of the input TimeSeries."""
+    )
+
+    bold_model = Attr(
+        field_type=str,
+        label="Select BOLD model equations",
+        choices=("linear", "nonlinear"),
+        default="nonlinear",
+        doc="""Select the set of equations for the BOLD model."""
+    )
+
+    RBM = Attr(
+        field_type=bool,
+        label="Revised BOLD Model",
+        default=True,
+        required=True,
+        doc="""Select classical vs revised BOLD model (CBM or RBM).
+            Coefficients  k1, k2 and k3 will be derived accordingly."""
+    )
+
+
 class BalloonModelAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=BalloonModel.time_series.label,
-                                               doc=BalloonModel.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
-        self.dt = ScalarField(BalloonModel.dt, self)
-        self.neural_input_transformation = ScalarField(BalloonModel.neural_input_transformation, self)
-        self.bold_model = ScalarField(BalloonModel.bold_model, self)
-        self.RBM = ScalarField(BalloonModel.RBM, self)
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
+        self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
+        self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self)
+        self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self)
+
+    @staticmethod
+    def get_view_model():
+        return BalloonModelAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -95,12 +145,13 @@ class BalloonModelAdapter(ABCAsynchronous):
     def get_output(self):
         return [TimeSeriesRegionIndex]
 
-    def configure(self, time_series, dt=None, bold_model=None, RBM=None, neural_input_transformation=None):
+    def configure(self, view_model):
+        # type: (BalloonModelAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -110,21 +161,22 @@ class BalloonModelAdapter(ABCAsynchronous):
         # -------------------- Fill Algorithm for Analysis -------------------##
         algorithm = BalloonModel()
 
-        if dt is not None:
-            algorithm.dt = dt
+        if view_model.dt is not None:
+            algorithm.dt = view_model.dt
         else:
-            algorithm.dt = time_series.sample_period / 1000.
+            algorithm.dt = self.input_time_series_index.sample_period / 1000.
 
-        if bold_model is not None:
-            algorithm.bold_model = bold_model
-        if RBM is not None:
-            algorithm.RBM = RBM
-        if neural_input_transformation is not None:
-            algorithm.neural_input_transformation = neural_input_transformation
+        if view_model.bold_model is not None:
+            algorithm.bold_model = view_model.bold_model
+        if view_model.RBM is not None:
+            algorithm.RBM = view_model.RBM
+        if view_model.neural_input_transformation is not None:
+            algorithm.neural_input_transformation = view_model.neural_input_transformation
 
         self.algorithm = algorithm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (BalloonModelAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -133,14 +185,16 @@ class BalloonModelAdapter(ABCAsynchronous):
         output_size = self.algorithm.result_size(used_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (BalloonModelAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter.(in kB)
         """
         used_shape = (self.input_shape[0], self.input_shape[1], self.input_shape[2], self.input_shape[3])
         return self.array_size2kb(self.algorithm.result_size(used_shape))
 
-    def launch(self, time_series, dt=None, bold_model=None, RBM=None, neural_input_transformation=None):
+    def launch(self, view_model):
+        # type: (BalloonModelAdapterModel) -> [TimeSeriesRegionIndex]
         """
         Launch algorithm and build results.
 
@@ -148,7 +202,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         :returns: the simulated BOLD signal
         :rtype: `TimeSeries`
         """
-        input_time_series_h5 = h5.h5_file_for_index(time_series)
+        input_time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         time_line = input_time_series_h5.read_time_page(0, self.input_shape[0])
 
         bold_signal_index = TimeSeriesRegionIndex()

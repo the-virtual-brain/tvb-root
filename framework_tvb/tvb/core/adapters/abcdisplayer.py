@@ -107,14 +107,14 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         return []
 
 
-    def generate_preview(self, **kwargs):
+    def generate_preview(self, view_model):
         """
         Should be implemented by all visualizers that can be used by portlets.
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
 
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Shortcut in case of visualization calls.
         """
@@ -122,10 +122,10 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         self.user_id = operation.fk_launched_by
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
 
-        return self.launch(**kwargs), 0
+        return self.launch(view_model=view_model, **kwargs), 0
 
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Visualizers should no occupy any additional disk space.
         """
@@ -211,7 +211,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    # TODO review usages
+    # TODO review usages, can be replaced by load_from_index?
     def _load_h5_of_gid(self, entity_gid):
         entity_index = self.load_entity_by_gid(entity_gid)
         entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))

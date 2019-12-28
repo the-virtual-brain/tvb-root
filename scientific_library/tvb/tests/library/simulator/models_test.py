@@ -36,8 +36,38 @@ Test for tvb.simulator.models module
 """
 
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator import models
+from tvb.simulator.models.base import Model
 import numpy
+
+
+class TestBoundsModel(Model):
+    # Used for phase-plane axis ranges and to bound random initial() conditions.
+    state_variable_boundaries = Final(
+        label="State Variable boundaries [lo, hi]",
+        default={"x1": numpy.array([0.0, 1.0]),
+                 "x2": numpy.array([None, 1.0]),
+                 "x3": numpy.array([0.0, None]),
+                 "x4": numpy.array([-numpy.inf, numpy.inf])
+                 },
+        doc="""The values for each state-variable should be set to encompass
+            the boundaries of the dynamic range of that state-variable. Set None for one-sided boundaries""")
+
+    variables_of_interest = List(
+        of=str,
+        label="Variables watched by Monitors",
+        choices=('x1', 'x2', 'x3', 'x4', 'x5'),
+        default=('x1', 'x2', 'x3', 'x4', 'x5'),
+        doc="""default state variables to be monitored""")
+
+    state_variables = ['x1', 'x2', 'x3', 'x4', 'x5']
+    _nvar = 5
+    cvar = numpy.array([0], dtype=numpy.int32)
+
+    def dfun(self, state, node_coupling, local_coupling=0.0):
+
+        return 0.0*state
 
 
 class TestModels(BaseTestCase):
@@ -68,6 +98,20 @@ class TestModels(BaseTestCase):
         obser = model.observe(state)
         assert (len(model.variables_of_interest), 10, model.number_of_modes) == obser.shape
         return state, obser
+
+    def test_sv_boundaries_setup(self):
+        model = TestBoundsModel()
+        model.configure()
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
+        min_positive = 1.0/numpy.finfo("single").max
+        state_variable_boundaries = \
+            {"x1": numpy.array([0.0, 1.0]),
+             "x2": numpy.array([min_float, 1.0]),
+             "x3": numpy.array([0.0, max_float]),
+             "x4": numpy.array([min_float, max_float])}
+        for sv, sv_bounds in state_variable_boundaries.items():
+            assert numpy.allclose(sv_bounds, model.state_variable_boundaries[sv], min_positive)
 
     def test_wilson_cowan(self):
         """

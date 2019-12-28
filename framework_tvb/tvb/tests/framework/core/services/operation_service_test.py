@@ -139,7 +139,7 @@ class TestOperationService(BaseTestCase):
         output_type = output[0].__name__
         data = {"test1_val1": 5, "test1_val2": 5}
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        res = self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                         tmp_folder, **data)
 
         group = dao.get_algorithm_by_module(module, class_name)
@@ -163,13 +163,13 @@ class TestOperationService(BaseTestCase):
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
         self._assert_no_dt2()
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         datatype = self._assert_stored_dt2()
 
         # Now free some space and relaunch
         ProjectService().remove_datatype(self.test_project.id, datatype.gid)
         self._assert_no_dt2()
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
     def test_launch_two_ops_hdd_with_space(self):
@@ -181,14 +181,14 @@ class TestOperationService(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         datatype = self._assert_stored_dt2()
 
         #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
         #plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(**data))
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         self._assert_stored_dt2(2)
 
     def test_launch_two_ops_hdd_full_space(self):
@@ -201,7 +201,7 @@ class TestOperationService(BaseTestCase):
 
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(**data)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
 
         datatype = self._assert_stored_dt2()
         #Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
@@ -210,7 +210,7 @@ class TestOperationService(BaseTestCase):
                                             float(adapter.get_required_disk_size(**data) - 1)
 
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user,self.test_project.id, adapter, tmp_folder, **data)
+            self.operation_service.initiate_operation(self.test_user,self.test_project, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
     def test_launch_operation_hdd_with_space(self):
@@ -222,7 +222,7 @@ class TestOperationService(BaseTestCase):
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
     def test_launch_operation_hdd_with_space_started_ops(self, test_adapter_factory):
@@ -242,7 +242,7 @@ class TestOperationService(BaseTestCase):
         data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         self._assert_stored_dt2()
 
     def test_launch_operation_hdd_full_space(self, test_adapter_factory):
@@ -258,7 +258,7 @@ class TestOperationService(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user, self.test_project.id, adapter, tmp_folder, **data)
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
     def test_launch_operation_hdd_full_space_started_ops(self, test_adapter_factory):
@@ -278,7 +278,7 @@ class TestOperationService(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(**data) + space_taken_by_started - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user,self.test_project.id, adapter, tmp_folder, **data)
+            self.operation_service.initiate_operation(self.test_user,self.test_project, adapter, tmp_folder, **data)
         self._assert_no_dt2()
 
     def test_stop_operation(self, test_adapter_factory):
@@ -290,7 +290,7 @@ class TestOperationService(BaseTestCase):
         data = {"test": 5}
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
@@ -306,7 +306,7 @@ class TestOperationService(BaseTestCase):
         data = {"test1_val1": 5, 'test1_val2': 5}
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)

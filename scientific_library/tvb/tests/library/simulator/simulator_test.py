@@ -178,3 +178,19 @@ class TestSimulator(BaseTestCase):
         result = test_simulator.run_simulation(simulation_length=2)
 
         assert len(test_simulator.monitors) == len(result)
+
+    def test_integrator_boundaries_config(self):
+        from . models_test import TestBoundsModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestBoundsModel()
+        test_simulator.model.configure()
+        test_simulator.integrator.configure()
+        test_simulator._configure_integrator_boundaries()
+        assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
+        state_variable_boundaries = numpy.array([[0.0, 1.0], [min_float, 1.0],
+                                                 [0.0, max_float], [min_float, max_float]]).astype("float64")
+        assert numpy.allclose(state_variable_boundaries,
+                              test_simulator.integrator.state_variable_boundaries,
+                              1.0/numpy.finfo("single").max)

@@ -443,6 +443,10 @@ class SciPyODEBase(object):
         return self._ode.integrate(self._ode.t + self.dt).reshape(X.shape) + self.dt * stimulus
 
 
+# TODO: Find a solution for boundary application for intermediate steps of SciPy O/SDE solvers
+# Right now they would behave differently than the TVB ones.
+
+
 class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -464,17 +468,21 @@ class SciPySDE(SciPyODEBase):
             self.clamp_state(X_next)
         return X_next
 
+
 class VODE(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "vode"
     _ui_name = "Variable-order Adams / BDF"
+
 
 class VODEStochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "vode"
     _ui_name = "Stochastic variable-order Adams / BDF"
 
+
 class Dopri5(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "dopri5"
     _ui_name = "Dormand-Prince, order (4, 5)"
+
 
 class Dopri5Stochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "dopri5"
