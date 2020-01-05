@@ -35,11 +35,9 @@
 import pytest
 import json
 import numpy
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.utils import string2array
 from tvb.core.entities.model import model_burst, model_operation
 from tvb.core.entities.storage import dao
@@ -48,12 +46,13 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
+from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
 from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.datatype2 import Datatype2
+from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
 
 
 class TestOperationService(BaseTestCase):

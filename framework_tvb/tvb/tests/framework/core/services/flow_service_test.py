@@ -40,16 +40,15 @@ from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-#from tvb.datatypes.arrays import MappedArray
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCAsynchronous
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter, ABCAsynchronous
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
 TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
@@ -59,7 +58,7 @@ CATEGORY1 = 1
 CATEGORY2 = 2
 
 
-class InvalidTestAdapter():
+class InvalidTestAdapter(object):
     """ Invalid adapter used for testing purposes. """
 
     def __init__(self):

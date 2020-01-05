@@ -34,22 +34,20 @@ Testing linking datatypes between projects.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import pytest
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neocom import h5
-from tvb.datatypes.surfaces import CORTICAL
-
-from tvb.tests.framework.core.factory import TestFactory
-
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.entities.file.files_helper import TvbZip, FilesHelper
+from tvb.core.neocom import h5
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.datatypes.surfaces import CORTICAL
+from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.datatypes.test_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping as demo_data
