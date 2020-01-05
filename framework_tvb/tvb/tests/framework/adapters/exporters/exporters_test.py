@@ -35,17 +35,18 @@ import pytest
 import os.path
 import shutil
 import zipfile
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
-from tvb.core.neocom import h5
-from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BurstConfiguration2
 from contextlib import closing
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.neocom import h5
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
-from tvb.basic.profile import TvbProfile
+from tvb.simulator.simulator import Simulator
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -145,7 +146,7 @@ class TestExporters(TransactionalTestCase):
         # Test with no exporter 
         datatype = dummy_datatype_index_factory()
         with pytest.raises(ExportException):
-            self.export_manager.export_data( datatype, None, self.test_project)
+            self.export_manager.export_data(datatype, None, self.test_project)
 
         # test with wrong exporter
         with pytest.raises(ExportException):
@@ -187,7 +188,7 @@ class TestExporters(TransactionalTestCase):
         simulator_index.fk_from_operation = operation.id
         simulator_index = dao.store_entity(simulator_index)
 
-        burst_configuration = BurstConfiguration2(self.project.id, simulator_index.id)
+        burst_configuration = BurstConfiguration(self.project.id, simulator_index.id)
         burst_configuration = dao.store_entity(burst_configuration)
         simulator_index.fk_parent_burst = burst_configuration.id
         simulator_index = dao.store_entity(simulator_index)

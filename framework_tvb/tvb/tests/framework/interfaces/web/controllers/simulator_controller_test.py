@@ -28,26 +28,24 @@
 #
 #
 from os import path
-
-import numpy
 from mock import patch
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
 from tvb.basic.profile import TvbProfile
+import numpy
 import tvb_data
 import tvb_data.surfaceData
 import tvb_data.regionMapping
 import tvb_data.sensors
-import cherrypy
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 from cherrypy.test import helper
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -57,8 +55,7 @@ from tvb.core.services.simulator_service import SimulatorService
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.interfaces.web.controllers.common import KEY_USER, KEY_PROJECT, KEY_IS_SIMULATOR_LOAD, KEY_IS_SIMULATOR_COPY, \
-    KEY_LAST_LOADED_FORM_URL
+from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic, EulerStochastic
@@ -476,7 +473,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.monitors[0].equation.parameters['V_0'] == 0.02, "V_0 value was not set correctly."
 
     def test_set_simulation_length(self):
-        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config = BurstConfiguration(self.test_project.id)
 
         self.sess_mock['_simulation_length'] = '1000.0'
 
@@ -488,7 +485,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
 
     def test_set_simulation_length_with_burst_config_name(self):
-        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config = BurstConfiguration(self.test_project.id)
         burst_config.name = "Test Burst Config"
         self.sess_mock['_simulation_length'] = '1000.0'
 
@@ -500,9 +497,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
 
     def test_load_burst_history(self):
-        burst_config1 = BurstConfiguration2(self.test_project.id)
-        burst_config2 = BurstConfiguration2(self.test_project.id)
-        burst_config3 = BurstConfiguration2(self.test_project.id)
+        burst_config1 = BurstConfiguration(self.test_project.id)
+        burst_config2 = BurstConfiguration(self.test_project.id)
+        burst_config3 = BurstConfiguration(self.test_project.id)
 
         dao.store_entity(burst_config1)
         dao.store_entity(burst_config2)
@@ -537,7 +534,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Page should be set to the first fragment."
 
     def test_get_history_status(self):
-        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config = BurstConfiguration(self.test_project.id)
         burst_config.start_time = datetime.now()
         dao.store_entity(burst_config)
         burst = dao.get_bursts_for_project(self.test_project.id)
@@ -555,7 +552,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert int(result[4][2:-4]) >= 0, "Running time should be greater than or equal to 0."
 
     def test_rename_burst(self):
-        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config = BurstConfiguration(self.test_project.id)
         burst_config.name = 'Test Burst Configuration'
         new_name = "Test Burst Configuration 2"
         dao.store_entity(burst_config)
@@ -577,7 +574,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         simulator_index = SimulatorIndex()
         simulator_index.fill_from_has_traits(self.session_stored_simulator)
 
-        burst_config = BurstConfiguration2(self.test_project.id, simulator_index.id)
+        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_config = dao.store_entity(burst_config)
 
         simulator_index.fk_from_operation = op.id
@@ -607,7 +604,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         simulator_index = SimulatorIndex()
         simulator_index.fill_from_has_traits(self.session_stored_simulator)
 
-        burst_config = BurstConfiguration2(self.test_project.id, simulator_index.id)
+        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_config = dao.store_entity(burst_config)
 
         simulator_index.fk_from_operation = burst_config.id
@@ -650,7 +647,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         simulator_index = SimulatorIndex()
         simulator_index.fill_from_has_traits(self.session_stored_simulator)
 
-        burst_config = BurstConfiguration2(self.test_project.id, simulator_index.id)
+        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_config = dao.store_entity(burst_config)
 
         simulator_index.fk_from_operation = burst_config.id
@@ -691,7 +688,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         self.sess_mock['_input-simulation-name-id'] = 'HappySimulation'
         launch_mode = 'new'
 
-        burst_config = BurstConfiguration2(self.test_project.id)
+        burst_config = BurstConfiguration(self.test_project.id)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)

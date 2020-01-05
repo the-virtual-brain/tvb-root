@@ -43,15 +43,12 @@ The results of the computation will be stored by the adapter itself.
 """
 
 import sys
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreator
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import has_finished
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.utils import parse_json_parameters
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
 
@@ -80,7 +77,7 @@ def do_operation_launch(operation_id):
 
         OperationService().initiate_prelaunch(curent_operation, adapter_instance)
         if curent_operation.fk_operation_group:
-            parent_burst = dao.get_generic_entity(BurstConfiguration2, curent_operation.fk_operation_group,
+            parent_burst = dao.get_generic_entity(BurstConfiguration, curent_operation.fk_operation_group,
                                                   'operation_group_id')[0]
             operations_in_group = dao.get_operations_in_group(curent_operation.fk_operation_group)
             if parent_burst.metric_operation_group_id:

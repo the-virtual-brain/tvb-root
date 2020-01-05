@@ -49,7 +49,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import OperationGroup
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService
@@ -241,7 +241,7 @@ class SimulatorController(BurstBaseController):
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         if not burst_config:
-            burst_config = BurstConfiguration2(project.id)
+            burst_config = BurstConfiguration(project.id)
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
 
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
@@ -1033,7 +1033,7 @@ class SimulatorController(BurstBaseController):
 
         self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
         project = common.get_current_project()
-        common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration2(project.id))
+        common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(project.id))
 
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,

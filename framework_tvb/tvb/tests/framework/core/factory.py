@@ -45,7 +45,7 @@ from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
@@ -192,7 +192,7 @@ class TestFactory(object):
         """
         Build and persist BurstConfiguration entity.
         """
-        burst = BurstConfiguration2(project_id)
+        burst = BurstConfiguration(project_id)
         if simulator_config is not None:
             burst.simulator_configuration = simulator_config
         burst.prepare_before_save()

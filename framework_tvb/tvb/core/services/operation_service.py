@@ -44,22 +44,20 @@ import sys
 from copy import copy
 from cgi import FieldStorage
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.exceptions import TVBException
 from tvb.basic.neotraits.api import Range
-# from tvb.basic.neotraits.map_as_json import MapAsJson
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
 from tvb.core import utils
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -190,7 +188,7 @@ class OperationService:
         metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, op_params)
         meta_str = json.dumps(metadata)
 
-        parent_burst = dao.get_generic_entity(BurstConfiguration2, time_series_index.fk_parent_burst, 'id')[0]
+        parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'id')[0]
         metric_operation_group_id = parent_burst.metric_operation_group_id
         metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
                                      op_params,
