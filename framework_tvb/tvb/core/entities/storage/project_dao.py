@@ -249,6 +249,7 @@ class CaseDAO(RootDAO):
             if page_start is not None and page_size is not None:
                 query = query.offset(max(page_start, 0)).limit(max(page_size, 0))
             result = query.all()
+            [project.administrator.username for project in result]
         return result
 
     def get_project_for_operation(self, operation_id):

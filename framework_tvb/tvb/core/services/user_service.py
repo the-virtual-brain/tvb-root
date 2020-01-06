@@ -303,7 +303,7 @@ class UserService:
         """
         Retrieves a user by its id.
         """
-        return dao.get_user_by_id(user_id)\
+        return dao.get_user_by_id(user_id)
 
     @staticmethod
     def get_user_by_name(username):

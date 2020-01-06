@@ -350,7 +350,7 @@ class ProjectService:
     @staticmethod
     def load_operation_by_gid(operation_gid):
         """ Retrieve loaded Operation from DB"""
-        return dao.get_operation_by_gid(operation_gid)\
+        return dao.get_operation_by_gid(operation_gid)
 
     @staticmethod
     def load_operation_lazy_by_gid(operation_gid):
