@@ -92,7 +92,8 @@ class Attr(_Attr):
             raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
         if self.choices is not None:
             if value not in self.choices:
-                raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
+                if value is None and self.required:
+                    raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
 
     # subclass api
 
