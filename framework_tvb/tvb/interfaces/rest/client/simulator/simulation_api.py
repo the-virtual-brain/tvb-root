@@ -23,4 +23,9 @@ class SimulationApi(MainApi):
 
         # TODO: HANDLE BURST_CONFIG SENDING
         file_obj = open(zip_folder_path, 'rb')
-        response = requests.post(self.server_url + '/simulation/' + project_gid, files={"archive": ("SimulationData.zip", file_obj)})
+        response = requests.post(self.server_url + '/simulation/' + project_gid, files={"file": ("SimulationData.zip", file_obj)})
+        # TODO: Removal should be done after server completed the async operation ->
+        #  PermissionError: [WinError 32] The process cannot access the file because it is being used by another process
+        # os.remove(zip_folder_path)
+
+        return response.content

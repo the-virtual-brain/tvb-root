@@ -16,12 +16,11 @@ class MainClient:
         self.simulation_api = SimulationApi(server_url)
         self.operation_api = OperationApi(server_url)
 
-
     def get_users(self):
         return self.user_api.get_users()
 
-    def get_project_list(self, user_id):
-        return self.user_api.get_projects_list(user_id)
+    def get_project_list(self, username):
+        return self.user_api.get_projects_list(username)
 
     def get_data_in_project(self, project_gid):
         return self.project_api.get_data_in_project(project_gid)
@@ -39,11 +38,12 @@ class MainClient:
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator,
                                                    burst_config, self.temp_folder)
 
-    #TODO: ADD launch_operation
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname):
+        return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
+                                                   self.temp_folder)
 
     def get_operation_status(self, operation_gid):
         return self.operation_api.get_operation_status(operation_gid)
 
     def get_operation_results(self, operation_gid):
         return self.operation_api.get_operations_results(operation_gid)
-

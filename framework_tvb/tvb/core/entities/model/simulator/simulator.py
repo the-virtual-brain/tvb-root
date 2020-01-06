@@ -33,6 +33,7 @@ from tvb.core.entities.model.model_datatype import DataType
 # TODO TVB-2568 remove this class and move content of
 #  tvb.core.entities.model.simmulator.burst_configuration into tvb.core.entities.model.model_burst
 
+
 class SimulatorIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 

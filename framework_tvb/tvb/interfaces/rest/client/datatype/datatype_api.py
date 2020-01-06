@@ -17,7 +17,6 @@ class DataTypeApi(MainApi):
             with open(file_path, 'wb') as local_file:
                 for chunk in response.iter_content(chunk_size=128):
                     local_file.write(chunk)
-
             return True
         return False
 

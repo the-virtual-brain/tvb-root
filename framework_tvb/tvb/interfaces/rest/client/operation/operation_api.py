@@ -12,4 +12,7 @@ class OperationApi(MainApi):
         response = requests.get(self.server_url + "/operations/" + operation_gid + "/results")
         return response.content
 
-    #TODO: ADD CLIENT SIDE OF LAUNCH_OPERATION
+    # TODO: ADD CLIENT SIDE OF LAUNCH_OPERATION
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, temp_folder):
+        return None
+
