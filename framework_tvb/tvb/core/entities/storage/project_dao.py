@@ -125,10 +125,10 @@ class CaseDAO(RootDAO):
 
         if name_hint:
             try:
-                ### In case of multiple users: first try to find exact match for the given username
+                # In case of multiple users: first try to find exact match for the given username
                 user = self.session.query(User).filter_by(email=email).filter_by(username=name_hint).one()
             except SQLAlchemyError:
-                ### Ignore
+                # Ignore
                 pass
 
         if user is None:
@@ -177,7 +177,7 @@ class CaseDAO(RootDAO):
     def get_project_by_gid(self, project_gid):
         """Retrieve PROJECT entity for a given identifier.
            THROW SqlException when not found."""
-        prj = self.get_project_lazy_by_gid(project_gid)
+        prj = self.session.query(Project).filter_by(gid=project_gid).one()
         prj.administrator
         return prj
 
