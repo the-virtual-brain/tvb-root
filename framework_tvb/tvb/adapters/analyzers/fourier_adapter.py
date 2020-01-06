@@ -47,7 +47,7 @@ from tvb.datatypes.time_series import TimeSeries
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, SelectField
 from tvb.core.neocom import h5
 
 
@@ -73,7 +73,8 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
         self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
         self.segment_length = ScalarField(FFTAdapterModel.segment_length, self)
-        self.window_function = ScalarField(FFTAdapterModel.window_function, self)
+        self.window_function = SelectField(FFTAdapterModel.window_function, self,
+                                           choices=fft.SUPPORTED_WINDOWING_FUNCTIONS)
         self.detrend = ScalarField(FFTAdapterModel.detrend, self)
 
     @staticmethod

@@ -48,7 +48,6 @@ from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
@@ -246,7 +245,7 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
+        form.fill_from_post({'_file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
                              '_data_file': Part(path, HeaderMap({}), ''),
                              '_data_file_part2': Part('', HeaderMap({}), ''),
                              '_should_center': 'False',
@@ -356,7 +355,7 @@ class TestFactory(object):
 
         form = ZIPConnectivityImporterForm()
         form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_normalization': 'region',
+                             '_normalization': None,
                              '_project_id': {1},
                              '_Data_Subject': subject
                              })

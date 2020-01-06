@@ -612,10 +612,15 @@ class SelectField(TraitField):
         if choices:
             self.choices = choices
         else:
-            # TODO: prepare dict here
-            self.choices = trait_attribute.choices
+            self.choices = {choice: choice for choice in trait_attribute.choices}
         if not self.choices:
             raise ValueError('no choices for field')
+
+    @property
+    def value(self):
+        if self.data is None and not self.trait_attribute.required:
+            return self.data
+        return super(SelectField, self).value
 
     def options(self):
         """ to be used from template, assumes self.data is set """
@@ -658,9 +663,8 @@ class SelectField(TraitField):
     #         raise ValueError('must be one of {}'.format(allowed))
 
     def fill_from_post(self, post_data):
-        super(SimpleSelectField, self).fill_from_post(post_data)
+        super(SelectField, self).fill_from_post(post_data)
         self.data = self.choices.get(self.data)
-
 
 
 class MultiSelectField(TraitField):

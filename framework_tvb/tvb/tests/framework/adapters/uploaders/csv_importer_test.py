@@ -41,7 +41,8 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterForm
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterForm, \
+    DELIMITER_OPTIONS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
@@ -99,8 +100,8 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         form = CSVConnectivityImporterForm()
         form.fill_from_post({'_weights': Part(weights_tmp, HeaderMap({}), ''),
                              '_tracts': Part(tracts_tmp, HeaderMap({}), ''),
-                             '_weights_delimiter': 'comma',
-                             '_tracts_delimiter': 'comma',
+                             '_weights_delimiter': list(DELIMITER_OPTIONS.keys())[0],
+                             '_tracts_delimiter': list(DELIMITER_OPTIONS.keys())[0],
                              '_Data_Subject': subject,
                              '_input_data': reference_connectivity_gid
                             })

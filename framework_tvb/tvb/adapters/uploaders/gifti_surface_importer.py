@@ -45,8 +45,9 @@ from tvb.core.neotraits.view_model import ViewModel, Str
 
 
 class GIFTISurfaceImporterModel(ViewModel):
+    KEY_OPTION_READ_METADATA = 'Specified in the file metadata'
     surface_types = ALL_SURFACES_SELECTION.copy()
-    surface_types['Specified in the file metadata'] = OPTION_READ_METADATA
+    surface_types[KEY_OPTION_READ_METADATA] = OPTION_READ_METADATA
 
     file_type = Str(
         label='Specify file type : ',
@@ -76,7 +77,8 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
 
-        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type')
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type',
+                                     choices=GIFTISurfaceImporterModel.surface_types)
         self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', self, name='data_file')
         self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', self,
                                                 name='data_file_part2')

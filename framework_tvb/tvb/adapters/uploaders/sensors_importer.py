@@ -67,7 +67,8 @@ class SensorsImporterForm(ABCUploaderForm):
 
         self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, 'text/plain, .bz2', self,
                                              name='sensors_file')
-        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type')
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type',
+                                        choices=SensorsImporterModel.OPTIONS)
 
     @staticmethod
     def get_view_model():
