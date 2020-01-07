@@ -30,6 +30,7 @@
 
 import requests
 import json
+from tvb.core.neotraits._h5core import ViewModelH5
 from tvb.interfaces.rest.client.main_api import MainApi
 
 
@@ -45,7 +46,16 @@ class OperationApi(MainApi):
         content = response.content
         return json.loads(content.decode('utf-8'))
 
-    # TODO: ADD CLIENT SIDE OF LAUNCH_OPERATION
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, temp_folder):
-        return None
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder):
+        h5_file_path = temp_folder + '/ViewModel.h5'
 
+        h5_file = ViewModelH5(h5_file_path, view_model)
+        h5_file.store(view_model)
+        h5_file.close()
+
+        file_obj = open(h5_file_path, 'rb')
+        response = requests.post(self.server_url + "/operations/" + project_gid + "/algorithm/" +
+                                 algorithm_module + "/" + algorithm_classname,
+                                 files={"file": ("ViewModel.h5", file_obj)})
+        content = response.content
+        return json.loads(content.decode('utf-8'))

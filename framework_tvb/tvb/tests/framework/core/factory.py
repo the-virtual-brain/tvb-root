@@ -333,11 +333,13 @@ class TestFactory(object):
                              })
         form.sensors_file.data = zip_path
         form.sensors_type.data = sensors_type
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
 
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
         assert 1 == len(data_types), "Project should contain only one data type = Sensors."

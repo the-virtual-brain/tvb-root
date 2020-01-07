@@ -68,9 +68,9 @@ class MainClient:
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator,
                                                    burst_config, self.temp_folder)
 
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname):
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model):
         return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
-                                                   self.temp_folder)
+                                                   view_model, self.temp_folder)
 
     def get_operation_status(self, operation_gid):
         return self.operation_api.get_operation_status(operation_gid)
