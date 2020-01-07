@@ -259,6 +259,9 @@ class EquationScalar(Accessor):
         # type: () -> Equation
         eq_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
 
+        if eq_meta_dict is None:
+            return eq_meta_dict
+
         eq_type = eq_meta_dict[self.KEY_TYPE]
         eq_class = getattr(equations, eq_type)
         eq_instance = eq_class()

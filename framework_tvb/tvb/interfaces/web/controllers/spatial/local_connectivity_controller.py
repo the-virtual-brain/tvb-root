@@ -101,6 +101,7 @@ class LocalConnectivityController(SpatioTemporalController):
             configure_lcon_form.surface.data = current_surface_in_form[2]
             current_lconn.surface = uuid.UUID(configure_lcon_form.surface.value)
         configure_lcon_form.fill_from_trait(current_lconn)
+        current_lconn.equation = configure_lcon_form.spatial.value()
         configure_lcon_form.display_name.data = common.get_from_session(KEY_LCONN_NAME)
 
         template_specification = dict(title="Surface - Local Connectivity")
@@ -228,8 +229,13 @@ class LocalConnectivityController(SpatioTemporalController):
         common.add2session(KEY_LCONN, existent_lconn)
         common.add2session(KEY_LCONN_NAME, lconn_index.user_tag_1)
 
-        msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
+        if existent_lconn.equation:
+            msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
+        else:
+            msg = "There is no equation specified for this local connectivity. "
+            msg += "The default equation is displayed into the spatial field."
         common.set_message(msg)
+
         if int(from_step) == 1:
             return self.step_1()
         if int(from_step) == 2:
@@ -267,7 +273,7 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid.hex)
+        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
 
         surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.surface_gid)

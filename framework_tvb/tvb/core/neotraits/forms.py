@@ -607,7 +607,7 @@ class SelectField(TraitField):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None):
+    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
         if choices:
             self.choices = choices
@@ -615,6 +615,7 @@ class SelectField(TraitField):
             self.choices = {choice: choice for choice in trait_attribute.choices}
         if not self.choices:
             raise ValueError('no choices for field')
+        self.display_none_choice = display_none_choice
 
     @property
     def value(self):
@@ -624,14 +625,15 @@ class SelectField(TraitField):
 
     def options(self):
         """ to be used from template, assumes self.data is set """
-        if not self.trait_attribute.required:
-            choice = None
-            yield Option(
-                id='{}_{}'.format(self.name, None),
-                value=self.missing_value,
-                label=str(choice).title(),
-                checked=self.data is None
-            )
+        if self.display_none_choice:
+            if not self.trait_attribute.required:
+                choice = None
+                yield Option(
+                    id='{}_{}'.format(self.name, None),
+                    value=self.missing_value,
+                    label=str(choice).title(),
+                    checked=self.data is None
+                )
 
         for i, choice in enumerate(self.choices):
             yield Option(

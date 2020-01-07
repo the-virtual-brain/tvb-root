@@ -85,7 +85,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
-                                   choices=equation_choices)
+                                   choices=equation_choices, display_none_choice=False)
 
         self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
                                         label='Equation parameters')
@@ -114,9 +114,13 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
         self.cutoff.data = trait.cutoff
-        self.spatial.data = type(trait.equation)
-        self.spatial_params.form = get_form_for_equation(type(trait.equation))(self.NAME_EQUATION_PARAMS_DIV)
-        self.spatial_params.form.fill_from_trait(trait.equation)
+        if trait.equation:
+            lc_equation = trait.equation
+        else:
+            lc_equation = LocalConnectivity.equation.default
+        self.spatial.data = type(lc_equation)
+        self.spatial_params.form = get_form_for_equation(type(lc_equation))(self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial_params.form.fill_from_trait(lc_equation)
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):

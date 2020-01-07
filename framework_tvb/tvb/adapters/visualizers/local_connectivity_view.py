@@ -110,7 +110,7 @@ class LocalConnectivityViewer(ABCDisplayer):
         with surface_h5_class(surface_h5_path) as surface_h5:
             params.update(self._compute_surface_params(surface_h5))
 
-        params['local_connectivity_gid'] = view_model.local_conn
+        params['local_connectivity_gid'] = view_model.local_conn.hex
         params['minValue'] = min_value
         params['maxValue'] = max_value
         return self.build_display_result("local_connectivity/view", params,
