@@ -482,7 +482,7 @@ class NArray(Attr):
         if self.ndim is not None and value.ndim != self.ndim:
             raise TraitValueError("can't be set to an array with ndim {}".format(value.ndim), attr=self)
 
-        if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
+        if not numpy.can_cast(value.dtype, self.dtype, 'same_kind'):
             raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
 
 
