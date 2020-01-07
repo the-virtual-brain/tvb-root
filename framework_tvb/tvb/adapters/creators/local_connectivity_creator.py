@@ -33,16 +33,16 @@
 """
 
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
-from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, \
     TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.interfaces.web.controllers.decorators import using_template
 
 
@@ -77,20 +77,28 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
         label=LocalConnectivity.surface.label
     )
 
+    display_name = Str(
+        label='Display name',
+        required=False
+    )
+
 
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
     def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name())
+        filter_for_cortical = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                                          values=[CORTICAL])
+        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
+                                                conditions=filter_for_cortical)
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
                                    choices=equation_choices, display_none_choice=False)
 
         self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
                                         label='Equation parameters')
         self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
-        self.display_name = ScalarField(Attr(str, label='Display name', required=False), self, name='display_name')
+        self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
 
     @staticmethod
     def get_view_model():
@@ -109,11 +117,13 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         return None
 
     def get_traited_datatype(self):
-        return LocalConnectivity()
+        return LocalConnectivityCreatorModel()
 
     def fill_from_trait(self, trait):
+        # type: (LocalConnectivityCreatorModel) -> None
         self.surface.data = trait.surface.hex
         self.cutoff.data = trait.cutoff
+        self.display_name.data = trait.display_name
         if trait.equation:
             lc_equation = trait.equation
         else:
@@ -155,10 +165,11 @@ class LocalConnectivityCreator(ABCAsynchronous):
         local_connectivity.cutoff = view_model.cutoff
         if not self.surface_index:
             self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
-        surface = h5.load_from_index(self.surface_index)
+        surface = h5.load_from_index(self.surface_index, dt_class=CorticalSurface)
         local_connectivity.surface = surface
         local_connectivity.equation = view_model.equation
         local_connectivity.compute_sparse_matrix()
+        self.generic_attributes.user_tag_1 = view_model.display_name
 
         return h5.store_complete(local_connectivity, self.storage_path)
 

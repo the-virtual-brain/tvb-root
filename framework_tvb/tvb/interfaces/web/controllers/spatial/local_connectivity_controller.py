@@ -54,8 +54,8 @@ NO_OF_CUTOFF_POINTS = 20
 LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 
+# We keep a LocalConnectivityCreatorModel in session at this key
 KEY_LCONN = "local-conn"
-KEY_LCONN_NAME = "local-conn-name"
 
 
 class LocalConnectivityController(SpatioTemporalController):
@@ -88,7 +88,6 @@ class LocalConnectivityController(SpatioTemporalController):
         if int(do_reset) == 1:
             new_lconn = LocalConnectivityCreatorModel()
             common.add2session(KEY_LCONN, new_lconn)
-            common.add2session(KEY_LCONN_NAME, None)
         current_lconn = common.get_from_session(KEY_LCONN)
         project_id = common.get_current_project().id
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
@@ -102,7 +101,6 @@ class LocalConnectivityController(SpatioTemporalController):
             current_lconn.surface = uuid.UUID(configure_lcon_form.surface.value)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
-        configure_lcon_form.display_name.data = common.get_from_session(KEY_LCONN_NAME)
 
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
@@ -166,7 +164,8 @@ class LocalConnectivityController(SpatioTemporalController):
         display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations).display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
-            common.add2session(KEY_LCONN_NAME, display_name_form_field.value)
+            lconn = common.get_from_session(KEY_LCONN)
+            lconn.display_name = display_name_form_field.value
 
     @expose_page
     def step_2(self, **kwargs):
@@ -227,7 +226,7 @@ class LocalConnectivityController(SpatioTemporalController):
         existent_lconn.surface = uuid.UUID(lconn_index.surface_gid)
 
         common.add2session(KEY_LCONN, existent_lconn)
-        common.add2session(KEY_LCONN_NAME, lconn_index.user_tag_1)
+        existent_lconn.display_name = lconn_index.user_tag_1
 
         if existent_lconn.equation:
             msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
