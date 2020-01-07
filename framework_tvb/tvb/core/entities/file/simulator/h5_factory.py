@@ -83,12 +83,12 @@ def model_h5_factory(model_class):
     from tvb.simulator.models import Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, Hopfield, \
         JansenRit, ZetterbergJansen, EpileptorRestingState, LarterBreakspear, Generic2dOscillator, \
         ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, WilsonCowan, ReducedWongWang, ReducedWongWangExcInh, \
-        ZerlautFirstOrder, ZerlautSecondOrder, SupHopf, Linear, Kuramoto
+        ZerlautAdaptationFirstOrder, ZerlautAdaptationSecondOrder, SupHopf, Linear, Kuramoto
     from tvb.core.entities.file.simulator.model_h5 import EpileptorH5, Epileptor2DH5, EpileptorCodim3H5, \
         EpileptorCodim3SlowModH5, HopfieldH5, JansenRitH5, ZetterbergJansenH5, EpileptorRestingStateH5, \
         LarterBreakspearH5, LinearH5, Generic2dOscillatorH5, KuramotoH5, ReducedSetFitzHughNagumoH5, \
-        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, ZerlautFirstOrderH5, \
-        ZerlautSecondOrderH5, SupHopfH5
+        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, ZerlautAdaptationFirstOrderH5, \
+        ZerlautAdaptationSecondOrderH5, SupHopfH5
     model_class_to_h5 = {
         Epileptor: EpileptorH5,
         Epileptor2D: Epileptor2DH5,
@@ -107,8 +107,8 @@ def model_h5_factory(model_class):
         WilsonCowan: WilsonCowanH5,
         ReducedWongWang: ReducedWongWangH5,
         ReducedWongWangExcInh: ReducedWongWangExcInhH5,
-        ZerlautFirstOrder: ZerlautFirstOrderH5,
-        ZerlautSecondOrder: ZerlautSecondOrderH5,
+        ZerlautAdaptationFirstOrder: ZerlautAdaptationFirstOrderH5,
+        ZerlautAdaptationSecondOrder: ZerlautAdaptationSecondOrderH5,
         SupHopf: SupHopfH5
     }
 
