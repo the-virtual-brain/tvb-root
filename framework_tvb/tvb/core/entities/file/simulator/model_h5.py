@@ -462,38 +462,47 @@ class ReducedWongWangExcInhH5(SimulatorConfigurationH5):
         self.variables_of_interest = Json(ReducedWongWangExcInh.variables_of_interest, self)
 
 
-class ZerlautFirstOrderH5(SimulatorConfigurationH5):
+class ZerlautAdaptationFirstOrderH5(SimulatorConfigurationH5):
 
     def __init__(self, path):
-        super(ZerlautFirstOrderH5, self).__init__(path)
-        self.g_L = DataSet(ZerlautFirstOrder.g_L, self)
-        self.E_L_e = DataSet(ZerlautFirstOrder.E_L_e, self)
-        self.E_L_i = DataSet(ZerlautFirstOrder.E_L_i, self)
-        self.C_m = DataSet(ZerlautFirstOrder.C_m, self)
-        self.b = DataSet(ZerlautFirstOrder.b, self)
-        self.tau_w = DataSet(ZerlautFirstOrder.tau_w, self)
-        self.E_e = DataSet(ZerlautFirstOrder.E_e, self)
-        self.E_i = DataSet(ZerlautFirstOrder.E_i, self)
-        self.Q_e = DataSet(ZerlautFirstOrder.Q_e, self)
-        self.Q_i = DataSet(ZerlautFirstOrder.Q_i, self)
-        self.tau_e = DataSet(ZerlautFirstOrder.tau_e, self)
-        self.tau_i = DataSet(ZerlautFirstOrder.tau_i, self)
-        self.N_tot = DataSet(ZerlautFirstOrder.N_tot, self)
-        self.p_connect = DataSet(ZerlautFirstOrder.p_connect, self)
-        self.g = DataSet(ZerlautFirstOrder.g, self)
-        self.T = DataSet(ZerlautFirstOrder.T, self)
-        self.P_e = DataSet(ZerlautFirstOrder.P_e, self)
-        self.P_i = DataSet(ZerlautFirstOrder.P_i, self)
-        self.external_input = DataSet(ZerlautFirstOrder.external_input, self)
-        self.state_variable_range = JsonFinal(ZerlautFirstOrder.state_variable_range, self,
+        super(ZerlautAdaptationFirstOrderH5, self).__init__(path)
+        self.g_L = DataSet(ZerlautAdaptationFirstOrder.g_L, self)
+        self.E_L_e = DataSet(ZerlautAdaptationFirstOrder.E_L_e, self)
+        self.E_L_i = DataSet(ZerlautAdaptationFirstOrder.E_L_i, self)
+        self.C_m = DataSet(ZerlautAdaptationFirstOrder.C_m, self)
+        self.a_e = DataSet(ZerlautAdaptationFirstOrder.a_e, self)
+        self.a_i = DataSet(ZerlautAdaptationFirstOrder.a_i, self)
+        self.b_e = DataSet(ZerlautAdaptationFirstOrder.b_e, self)
+        self.b_i = DataSet(ZerlautAdaptationFirstOrder.b_i, self)
+        self.tau_w_e = DataSet(ZerlautAdaptationFirstOrder.tau_w_e, self)
+        self.tau_w_i = DataSet(ZerlautAdaptationFirstOrder.tau_w_i, self)
+        self.E_e = DataSet(ZerlautAdaptationFirstOrder.E_e, self)
+        self.E_i = DataSet(ZerlautAdaptationFirstOrder.E_i, self)
+        self.Q_e = DataSet(ZerlautAdaptationFirstOrder.Q_e, self)
+        self.Q_i = DataSet(ZerlautAdaptationFirstOrder.Q_i, self)
+        self.tau_e = DataSet(ZerlautAdaptationFirstOrder.tau_e, self)
+        self.tau_i = DataSet(ZerlautAdaptationFirstOrder.tau_i, self)
+        self.N_tot = DataSet(ZerlautAdaptationFirstOrder.N_tot, self)
+        self.p_connect = DataSet(ZerlautAdaptationFirstOrder.p_connect, self)
+        self.g = DataSet(ZerlautAdaptationFirstOrder.g, self)
+        self.K_ext_e = DataSet(ZerlautAdaptationFirstOrder.K_ext_e, self)
+        self.K_ext_i = DataSet(ZerlautAdaptationFirstOrder.K_ext_i, self)
+        self.T = DataSet(ZerlautAdaptationFirstOrder.T, self)
+        self.P_e = DataSet(ZerlautAdaptationFirstOrder.P_e, self)
+        self.P_i = DataSet(ZerlautAdaptationFirstOrder.P_i, self)
+        self.external_input_ex_ex = DataSet(ZerlautAdaptationFirstOrder.external_input_ex_ex, self)
+        self.external_input_ex_in = DataSet(ZerlautAdaptationFirstOrder.external_input_ex_in, self)
+        self.external_input_in_ex = DataSet(ZerlautAdaptationFirstOrder.external_input_in_ex, self)
+        self.external_input_in_in = DataSet(ZerlautAdaptationFirstOrder.external_input_in_in, self)
+        self.state_variable_range = JsonFinal(ZerlautAdaptationFirstOrder.state_variable_range, self,
                                               json_encoder=StateVariablesEncoder, json_decoder=StateVariablesDecoder)
-        self.variables_of_interest = Json(ZerlautFirstOrder.variables_of_interest, self)
+        self.variables_of_interest = Json(ZerlautAdaptationFirstOrder.variables_of_interest, self)
 
 
-class ZerlautSecondOrderH5(ZerlautFirstOrderH5):
+class ZerlautAdaptationSecondOrderH5(ZerlautAdaptationFirstOrderH5):
 
     def __init__(self, path):
-        super(ZerlautSecondOrderH5, self).__init__(path)
-        self.state_variable_range = JsonFinal(ZerlautSecondOrder.state_variable_range, self,
+        super(ZerlautAdaptationSecondOrderH5, self).__init__(path)
+        self.state_variable_range = JsonFinal(ZerlautAdaptationSecondOrder.state_variable_range, self,
                                               json_encoder=StateVariablesEncoder, json_decoder=StateVariablesDecoder)
-        self.variables_of_interest = Json(ZerlautSecondOrder.variables_of_interest, self)
+        self.variables_of_interest = Json(ZerlautAdaptationSecondOrder.variables_of_interest, self)

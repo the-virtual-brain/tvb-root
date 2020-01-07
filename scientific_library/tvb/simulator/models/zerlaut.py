@@ -66,11 +66,17 @@ class ZerlautAdaptationFirstOrder(Model):
     +--------------+------------+------------+
     | C_m          |   200.0    |   pF       |
     +--------------+------------+------------+
-    | b            |   60.0     |   nS       |
+    | b_e          |   60.0     |   nS       |
     +--------------+------------+------------+
-    | a            |   4.0      |   nS       |
+    | b_i          |   0.0      |   nS       |
     +--------------+------------+------------+
-    | tau_w        |   500.0    |   ms       |
+    | a_e          |   4.0      |   nS       |
+    +--------------+------------+------------+
+    | a_i          |   0.0      |   nS       |
+    +--------------+------------+------------+
+    | tau_w_e      |   500.0    |   ms       |
+    +--------------+------------+------------+
+    | tau_w_i      |   0.0      |   ms       |
     +--------------+------------+------------+
     | T            |   20.0      |   ms       |
     +--------------+------------+------------+
@@ -158,37 +164,37 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""membrane capacitance [pF]""")
 
     b_e = NArray(
-        label=":math:`Excitatory b`",
+        label=":math:`b_e`",
         default=numpy.array([60.0]),
         domain=Range(lo=0.0, hi=150.0, step=1.0),
         doc="""Excitatory adaptation current increment [pA]""")
 
     a_e = NArray(
-        label=":math:`Excitatory a`",
+        label=":math:`a_e`",
         default=numpy.array([4.0]),
         domain=Range(lo=0.0, hi=20.0, step=0.1),
         doc="""Excitatory adaptation conductance [nS]""")
 
     b_i = NArray(
-        label=":math:`Inhibitory b`",
+        label=":math:`b_i`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=100.0, step=0.1),
         doc="""Inhibitory adaptation current increment [pA]""")
 
     a_i = NArray(
-        label=":math:`Inhibitory a`",
+        label=":math:`a_i`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=20.0, step=0.1),
         doc="""Inhibitory adaptation conductance [nS]""")
 
     tau_w_e = NArray(
-        label=":math:`tau_w_e`",
+        label=":math:`tau_we`",
         default=numpy.array([500.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of excitatory neurons [ms]""")
 
     tau_w_i = NArray(
-        label=":math:`tau_w_e`",
+        label=":math:`tau_wi`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of inhibitory neurons [ms]""")
@@ -312,9 +318,9 @@ class ZerlautAdaptationFirstOrder(Model):
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"E": numpy.array([250.e-3, 0.0]),  # actually the 100Hz should be replaced by 1/T_refrac
-                 "I": numpy.array([250.e-3, 0.0]),
-                 "W_e": numpy.array([200.0, 0.0]),
+        default={"E": numpy.array([1e-3, 250.e-3]),  # actually the 100Hz should be replaced by 1/T_refrac
+                 "I": numpy.array([1e-3, 250.e-3]),
+                 "W_e": numpy.array([0.0, 200.0]),
                  "W_i": numpy.array([0.0, 0.0]),
                  },
         doc="""The values for each state-variable should be set to encompass
@@ -594,12 +600,12 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     #  Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"E": numpy.array([250.e-3, 0.0]),  # actually the 100Hz should be replaced by 1/T_refrac
-                 "I": numpy.array([250.e-3, 0.0]),
+        default={"E": numpy.array([1e-3, 250.e-3]),  # actually the 100Hz should be replaced by 1/T_refrac
+                 "I": numpy.array([1e-3, 250.e-3]),
                  "C_ee": numpy.array([0.5e-3, 0.0e-3]),  # variance is positive or null
                  "C_ei": numpy.array([0.5e-3, -0.5e-3]),  # the co-variance is in [-c_ee*c_ii,c_ee*c_ii]
                  "C_ii": numpy.array([0.5e-3, 0.0e-3]),  # variance is positive or null
-                 "W_e": numpy.array([200.0, 0.0]),
+                 "W_e": numpy.array([0.0, 200.0]),
                  "W_i": numpy.array([0.0, 0.0]),
                  },
         doc="""The values for each state-variable should be set to encompass

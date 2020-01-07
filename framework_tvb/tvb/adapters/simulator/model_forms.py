@@ -50,8 +50,8 @@ def get_model_to_form_dict():
         ReducedWongWangExcInh: ReducedWongWangExcInhModelForm,
         ReducedSetFitzHughNagumo: ReducedSetFitzHughNagumoModelForm,
         ReducedSetHindmarshRose: ReducedSetHindmarshRoseModelForm,
-        ZerlautFirstOrder: ZerlautFirstOrderModelForm,
-        ZerlautSecondOrder: ZerlautSecondOrderModelForm,
+        ZerlautAdaptationFirstOrder: ZerlautAdaptationFirstOrderModelForm,
+        ZerlautAdaptationSecondOrder: ZerlautAdaptationSecondOrderModelForm,
         Linear: LinearModelForm,
         WilsonCowan: WilsonCowanModelForm,
         LarterBreakspear: LarterBreakspearModelForm
@@ -77,8 +77,8 @@ def get_ui_name_to_model():
         'Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations': ReducedWongWangExcInh,
         'Stefanescu-Jirsa 2D': ReducedSetFitzHughNagumo,
         'Stefanescu-Jirsa 3D': ReducedSetHindmarshRose,
-        'Zerlaut adaptation first order': ZerlautFirstOrder,
-        'Zerlaut adaptation second order': ZerlautSecondOrder,
+        'Zerlaut adaptation first order': ZerlautAdaptationFirstOrder,
+        'Zerlaut adaptation second order': ZerlautAdaptationSecondOrder,
         'Linear model': Linear,
         'Wilson-Cowan': WilsonCowan,
         'Larter-Breakspear': LarterBreakspear
@@ -456,42 +456,53 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
         return ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
-class ZerlautFirstOrderModelForm(FormWithRanges):
+class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
-        super(ZerlautFirstOrderModelForm, self).__init__(prefix)
-        self.g_L = ArrayField(ZerlautFirstOrder.g_L, self)
-        self.E_L_e = ArrayField(ZerlautFirstOrder.E_L_e, self)
-        self.E_L_i = ArrayField(ZerlautFirstOrder.E_L_i, self)
-        self.C_m = ArrayField(ZerlautFirstOrder.C_m, self)
-        self.b = ArrayField(ZerlautFirstOrder.b, self)
-        self.tau_w = ArrayField(ZerlautFirstOrder.tau_w, self)
-        self.E_e = ArrayField(ZerlautFirstOrder.E_e, self)
-        self.E_i = ArrayField(ZerlautFirstOrder.E_i, self)
-        self.Q_e = ArrayField(ZerlautFirstOrder.Q_e, self)
-        self.Q_i = ArrayField(ZerlautFirstOrder.Q_i, self)
-        self.tau_e = ArrayField(ZerlautFirstOrder.tau_e, self)
-        self.tau_i = ArrayField(ZerlautFirstOrder.tau_i, self)
-        self.N_tot = ArrayField(ZerlautFirstOrder.N_tot, self)
-        self.p_connect = ArrayField(ZerlautFirstOrder.p_connect, self)
-        self.g = ArrayField(ZerlautFirstOrder.g, self)
-        self.T = ArrayField(ZerlautFirstOrder.T, self)
-        self.P_e = ArrayField(ZerlautFirstOrder.P_e, self)
-        self.P_i = ArrayField(ZerlautFirstOrder.P_i, self)
-        self.external_input = ArrayField(ZerlautFirstOrder.external_input, self)
-        self.variables_of_interest = MultiSelectField(ZerlautFirstOrder.variables_of_interest, self)
+        super(ZerlautAdaptationFirstOrderModelForm, self).__init__(prefix)
+        self.g_L = ArrayField(ZerlautAdaptationFirstOrder.g_L, self)
+        self.E_L_e = ArrayField(ZerlautAdaptationFirstOrder.E_L_e, self)
+        self.E_L_i = ArrayField(ZerlautAdaptationFirstOrder.E_L_i, self)
+        self.C_m = ArrayField(ZerlautAdaptationFirstOrder.C_m, self)
+        self.b_e = ArrayField(ZerlautAdaptationFirstOrder.b_e, self)
+        self.b_i = ArrayField(ZerlautAdaptationFirstOrder.b_i, self)
+        self.a_e = ArrayField(ZerlautAdaptationFirstOrder.a_e, self)
+        self.a_i = ArrayField(ZerlautAdaptationFirstOrder.a_i, self)
+        self.tau_w_e = ArrayField(ZerlautAdaptationFirstOrder.tau_w_e, self)
+        self.tau_w_i = ArrayField(ZerlautAdaptationFirstOrder.tau_w_i, self)
+        self.E_e = ArrayField(ZerlautAdaptationFirstOrder.E_e, self)
+        self.E_i = ArrayField(ZerlautAdaptationFirstOrder.E_i, self)
+        self.Q_e = ArrayField(ZerlautAdaptationFirstOrder.Q_e, self)
+        self.Q_i = ArrayField(ZerlautAdaptationFirstOrder.Q_i, self)
+        self.tau_e = ArrayField(ZerlautAdaptationFirstOrder.tau_e, self)
+        self.tau_i = ArrayField(ZerlautAdaptationFirstOrder.tau_i, self)
+        self.N_tot = ArrayField(ZerlautAdaptationFirstOrder.N_tot, self)
+        self.p_connect = ArrayField(ZerlautAdaptationFirstOrder.p_connect, self)
+        self.g = ArrayField(ZerlautAdaptationFirstOrder.g, self)
+        self.K_ext_e = ArrayField(ZerlautAdaptationFirstOrder.K_ext_e, self)
+        self.K_ext_i = ArrayField(ZerlautAdaptationFirstOrder.K_ext_i, self)
+        self.T = ArrayField(ZerlautAdaptationFirstOrder.T, self)
+        self.P_e = ArrayField(ZerlautAdaptationFirstOrder.P_e, self)
+        self.P_i = ArrayField(ZerlautAdaptationFirstOrder.P_i, self)
+        self.external_input_ex_ex = ArrayField(ZerlautAdaptationFirstOrder.external_input_ex_ex, self)
+        self.external_input_ex_in = ArrayField(ZerlautAdaptationFirstOrder.external_input_ex_in, self)
+        self.external_input_in_ex = ArrayField(ZerlautAdaptationFirstOrder.external_input_in_ex, self)
+        self.external_input_in_in = ArrayField(ZerlautAdaptationFirstOrder.external_input_in_in, self)
+        self.variables_of_interest = MultiSelectField(ZerlautAdaptationFirstOrder.variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b', 'tau_w', 'E_e', 'E_i', 'Q_e', 'Q_i', 'tau_e', 'tau_i', 'N_tot',
-                'p_connect', 'g', 'T', 'external_input']
+        return ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b_e', 'b_i', 'a_e', 'a_i', 'tau_w_e', 'tau_w_i', 'E_e', 'E_i', 'Q_e',
+                'Q_i', 'tau_e', 'tau_i', 'N_tot', 'p_connect', 'g', 'K_ext_e', 'K_ext_i', 'T', 'external_input_ex_ex',
+                'external_input_ex_in', 'external_input_in_ex', 'external_input_in_in']
 
 
-class ZerlautSecondOrderModelForm(ZerlautFirstOrderModelForm):
+
+class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
 
     def __init__(self, prefix=''):
-        super(ZerlautSecondOrderModelForm, self).__init__(prefix)
-        self.variables_of_interest = MultiSelectField(ZerlautSecondOrder.variables_of_interest, self)
+        super(ZerlautAdaptationSecondOrderModelForm, self).__init__(prefix)
+        self.variables_of_interest = MultiSelectField(ZerlautAdaptationSecondOrder.variables_of_interest, self)
 
 
 class LinearModelForm(FormWithRanges):
