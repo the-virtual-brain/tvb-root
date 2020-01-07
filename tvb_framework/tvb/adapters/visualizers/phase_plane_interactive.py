@@ -124,14 +124,13 @@ class PhasePlane(_PhaseSpace):
         return numpy.random.normal(0, d, shape), numpy.random.normal(0, d, shape)
 
 
-    def _get_mesh_grid(self, svx_ind, svy_ind, noise=None):
+    def _get_mesh_grid(self, x_range, y_range, noise=None):
         """
         Generate the phase-plane gridding based on the given
         state-variable indices and their range values.
         """
-        svr = self.model.state_variable_range
-        xlo, xhi = svr[self.model.state_variables[svx_ind]]
-        ylo, yhi = svr[self.model.state_variables[svy_ind]]
+        xlo, xhi = x_range
+        ylo, yhi = y_range
 
         xg = numpy.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS * 1j)]
         yg = numpy.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS * 1j)]
@@ -180,6 +179,8 @@ class PhasePlaneD3(PhasePlane):
             self.svy_ind = 1  # y-axis: 2nd state variable
         else:
             self.svy_ind = 0
+        self.x_range = None
+        self.y_range = None
         # Set up a vector containing the default state-variable values
         svr = self.model.state_variable_range
         sv_mean = numpy.array([svr[key].mean() for key in self.model.state_variables])
@@ -202,9 +203,8 @@ class PhasePlaneD3(PhasePlane):
         self.mode = int(mode)
         self.svx_ind = self.model.state_variables.index(svx)
         self.svy_ind = self.model.state_variables.index(svy)
-        svr = self.model.state_variable_range
-        svr[svx][:] = x_range  # todo is it ok to update the model?
-        svr[svy][:] = y_range
+        self.x_range = x_range
+        self.y_range = y_range
 
         for name, val in six.iteritems(state_vars):
             k = self.model.state_variables.index(name)
@@ -216,7 +216,7 @@ class PhasePlaneD3(PhasePlane):
         """
         :return: A json representation of the phase plane.
         """
-        x, y = self._get_mesh_grid(self.svx_ind, self.svy_ind, noise=self._jitter)
+        x, y = self._get_mesh_grid(self.x_range, self.y_range, noise=self._jitter)
 
         u, v = self._calc_phase_plane(self.default_sv, self.svx_ind, self.svy_ind, x, y)
         u = u[..., self.mode]  # project on active mode
