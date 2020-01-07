@@ -29,6 +29,7 @@
 #
 
 import requests
+import json
 from tvb.interfaces.rest.client.main_api import MainApi
 
 
@@ -36,8 +37,10 @@ class UserApi(MainApi):
 
     def get_users(self):
         response = requests.get(self.server_url + "/users")
-        return response.content
+        content = response.content
+        return json.loads(content.decode('utf-8'))
 
     def get_projects_list(self, username):
         response = requests.get(self.server_url + "/users/" + username + "/projects")
-        return response.content
+        content = response.content
+        return json.loads(content.decode('utf-8'))

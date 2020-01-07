@@ -28,4 +28,3 @@ class TestRestService(TransactionalTestCase):
         session_stored_simulator.connectivity = UUID(connectivity.gid)
 
         simulation_api.fire_simulation(self.test_project.gid, session_stored_simulator, None, self.temp_folder)
-

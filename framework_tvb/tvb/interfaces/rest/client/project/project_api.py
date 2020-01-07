@@ -29,6 +29,7 @@
 #
 
 import requests
+import json
 from tvb.interfaces.rest.client.main_api import MainApi
 
 
@@ -36,9 +37,10 @@ class ProjectApi(MainApi):
 
     def get_data_in_project(self, project_gid):
         response = requests.get(self.server_url + '/projects/' + project_gid + "/data")
-        return response.content
+        content = response.content
+        return json.loads(content.decode('utf-8'))
 
     def get_operations_in_project(self, project_gid):
         response = requests.get(self.server_url + '/projects/' + project_gid + "/operations")
-        return response.content
-
+        content = response.content
+        return json.loads(content.decode('utf-8'))

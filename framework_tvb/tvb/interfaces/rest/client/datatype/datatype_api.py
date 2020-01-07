@@ -29,6 +29,7 @@
 #
 
 import requests
+import json
 from tvb.interfaces.rest.client.main_api import MainApi
 
 
@@ -52,4 +53,5 @@ class DataTypeApi(MainApi):
 
     def get_operations_for_datatype(self, datatype_gid):
         response = requests.get(self.server_url + "/datatypes/" + datatype_gid + "/operations")
-        return response.content
+        content = response.content
+        return json.loads(content.decode('utf-8'))
