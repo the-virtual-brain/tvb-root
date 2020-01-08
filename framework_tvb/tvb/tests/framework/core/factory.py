@@ -225,10 +225,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.mapping_file.data = import_file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         # Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_dict())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
 
@@ -252,10 +254,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe',
                             })
         form.data_file.data = path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         surface = CorticalSurface
         data_types = FlowService().get_available_datatypes(project.id,
@@ -280,10 +284,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -304,10 +310,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."

@@ -34,6 +34,8 @@
 
 import tvb_data.surfaceData
 import os
+
+from tvb.basic.neotraits.ex import TraitValueError
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -94,15 +96,15 @@ class TestRegionMappingImporter(TransactionalTestCase):
         try:
             TestFactory.import_region_mapping(self.test_user, self. test_project, self.TXT_FILE, None, self.connectivity.gid)
             raise AssertionError("Import should fail in case Surface is missing")
-        except OperationException:
-            # Expected exception
+        except TraitValueError:
+            # Expected error
             pass
 
         try:
             TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, self.surface.gid, None)
             raise AssertionError("Import should fail in case Connectivity is missing")
-        except OperationException:
-            # Expected exception
+        except TraitValueError:
+            # Expected error
             pass
 
     def test_import_from_txt(self):

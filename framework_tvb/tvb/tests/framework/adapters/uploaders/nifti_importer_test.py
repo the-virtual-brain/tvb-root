@@ -95,11 +95,13 @@ class TestNIFTIImporter(TransactionalTestCase):
                             })
         form.data_file.data = import_file_path
         form.mappings_file.data = self.TXT_FILE
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
         assert 1, count == "Project should contain only one data type."

@@ -108,9 +108,10 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
         form.weights.data = weights_tmp
         form.tracts.data = tracts_tmp
+        view_model = form.get_view_model()()
         importer.submit_form(form)
 
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
     def test_happy_flow_import(self):
         """
@@ -122,7 +123,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['=='])
-        reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
+        reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, None)
 
         dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
 
@@ -150,7 +151,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
     def test_bad_reference(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])
         bad_reference_connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
