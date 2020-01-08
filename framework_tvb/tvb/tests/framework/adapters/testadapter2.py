@@ -37,7 +37,7 @@ Created on Jul 21, 2011
 from time import sleep
 import tvb.core.adapters.abcadapter as abcadapter
 from tvb.core.neotraits.forms import SimpleIntField
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestAdapter2Form(abcadapter.ABCAdapterForm):

@@ -26,22 +26,25 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
 
-from tvb.core.neotraits.h5 import H5File, Scalar
-from tvb.tests.framework.datatypes.test_datatype import DummyDataType
+from sqlalchemy import Column, Integer, String, ForeignKey
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 
 
-class DummyDataTypeH5(H5File):
-    def __init__(self, path):
-        super(DummyDataTypeH5, self).__init__(path)
-        self.row1 = Scalar(DummyDataType.row1, self)
-        self.row2 = Scalar(DummyDataType.row2, self)
+class DummyDataTypeIndex(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (DummyDataType, bool, bool) -> None
-        super(DummyDataTypeH5, self).store(datatype, scalars_only, store_references)
+    row1 = Column(String)
+    row2 = Column(String)
 
-    def load_into(self, datatype):
+    def fill_from_has_traits(self, datatype):
         # type: (DummyDataType) -> None
-        super(DummyDataTypeH5, self).load_into(datatype)
+        super(DummyDataTypeIndex, self).fill_from_has_traits(datatype)
+        self.row1 = datatype.row1
+        self.row2 = datatype.row2
+
+    @staticmethod
+    def accepted_filters():
+        filters = DataType.accepted_filters()
+        return filters

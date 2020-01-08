@@ -46,8 +46,8 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.test_datatype2_index import DummyDataType2Index
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping as demo_data

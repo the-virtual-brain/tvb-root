@@ -38,8 +38,8 @@ import tvb.core.adapters.abcadapter as abcadapter
 from tvb.basic.neotraits.api import Attr
 from tvb.core.neotraits.forms import SimpleIntField, TraitDataTypeSelectField
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.test_datatype import DummyDataType
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestAdapter1Form(abcadapter.ABCAdapterForm):

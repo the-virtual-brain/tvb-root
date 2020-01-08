@@ -27,22 +27,18 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 
-from sqlalchemy import Column, Integer, String, ForeignKey
-from tvb.basic.neotraits.api import HasTraits
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
 from tvb.core.entities.model.model_datatype import DataType
 
 
-class DummyDataTypeIndex(DataType):
+class DummyDataType2Index(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    row1 = Column(String)
-    row2 = Column(String)
+    row1 = Column(String, default="test-spatial")
+    row2 = Column(String, default="test-temporal")
 
-    def fill_from_has_traits(self, datatype):
-        # type: (HasTraits) -> None
-        super(DummyDataTypeIndex, self).fill_from_has_traits(datatype)
-        self.row1 = datatype.row1
-        self.row2 = datatype.row2
+    number1 = Column(Integer, default=1)
+    number2 = Column(Float, default=0.1)
 
     @staticmethod
     def accepted_filters():

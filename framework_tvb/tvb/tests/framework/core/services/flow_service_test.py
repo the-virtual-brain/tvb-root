@@ -48,7 +48,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
 TEST_ADAPTER_VALID_CLASS = "TestAdapter1"

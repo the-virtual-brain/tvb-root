@@ -54,10 +54,10 @@ from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
-from tvb.tests.framework.datatypes.test_datatype import DummyDataType
-from tvb.tests.framework.datatypes.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
-from tvb.tests.framework.datatypes.test_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 
 
 def pytest_addoption(parser):

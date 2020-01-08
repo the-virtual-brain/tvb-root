@@ -42,9 +42,10 @@ from functools import wraps
 from types import FunctionType
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.tests.framework.datatypes.test_datatype import DummyDataType
-from tvb.tests.framework.datatypes.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 def init_test_env():
@@ -73,6 +74,7 @@ def init_test_env():
 
     # Add Dummy DataType
     REGISTRY.register_datatype(DummyDataType, DummyDataTypeH5, DummyDataTypeIndex)
+    REGISTRY.register_datatype(None, None, DummyDataType2Index)
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.

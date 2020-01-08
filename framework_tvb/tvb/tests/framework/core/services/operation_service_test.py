@@ -52,7 +52,7 @@ from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayA
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.datatypes.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestOperationService(BaseTestCase):
