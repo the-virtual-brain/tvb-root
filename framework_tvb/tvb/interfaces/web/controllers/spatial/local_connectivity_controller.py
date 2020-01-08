@@ -41,8 +41,10 @@ from tvb.adapters.creators.local_connectivity_creator import LocalConnectivitySe
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
     get_ui_name_to_equation_dict, get_form_for_equation
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
@@ -85,20 +87,23 @@ class LocalConnectivityController(SpatioTemporalController):
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
                use the same js function for this. TODO: do this in a smarter way
         """
+        project_id = common.get_current_project().id
+
         if int(do_reset) == 1:
             new_lconn = LocalConnectivityCreatorModel()
+            default_surface_index = dao.try_load_last_surface_of_type(project_id, CORTICAL)
+            if default_surface_index:
+                new_lconn.surface = uuid.UUID(default_surface_index.gid)
+            else:
+                # TODO: ok to keep a default gid here?
+                new_lconn.surface = uuid.uuid4()
             common.add2session(KEY_LCONN, new_lconn)
+
         current_lconn = common.get_from_session(KEY_LCONN)
-        project_id = common.get_current_project().id
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
         configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
 
-        # TODO: find a nicer way
-        if not hasattr(current_lconn, 'surface') or not current_lconn.surface:
-            current_surface_in_form = configure_lcon_form.surface._get_values_from_db()[0]
-            configure_lcon_form.surface.data = current_surface_in_form[2]
-            current_lconn.surface = uuid.UUID(configure_lcon_form.surface.value)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -324,8 +329,6 @@ class LocalConnectivityController(SpatioTemporalController):
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
-            # form_data = local_connectivity_creator.prepare_ui_inputs(form_data, validation_required=False)
-            # equation = local_connectivity_creator.get_lconn_equation(form_data)
             equation = current_lconn.equation
             # What we want
             ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
