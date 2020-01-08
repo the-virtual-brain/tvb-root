@@ -452,6 +452,8 @@ class NArray(Attr):
                        Represents the expected domain of the values in the array.
         """
 
+        if numpy.issubdtype(dtype, numpy.integer):
+            dtype = numpy.int64
         self.dtype = numpy.dtype(dtype)
 
         super(NArray, self).__init__(
@@ -482,7 +484,7 @@ class NArray(Attr):
         if self.ndim is not None and value.ndim != self.ndim:
             raise TraitValueError("can't be set to an array with ndim {}".format(value.ndim), attr=self)
 
-        if not numpy.can_cast(value.dtype, self.dtype, 'same_kind'):
+        if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
             raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
 
 
