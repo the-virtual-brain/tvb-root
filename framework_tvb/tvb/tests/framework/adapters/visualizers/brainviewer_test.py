@@ -38,7 +38,7 @@ from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
+from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex, TimeSeries
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -90,10 +90,15 @@ class TestBrainViewer(TransactionalTestCase):
 
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
+        time_series_index = time_series_region_index_factory(conn, rm)
+        time_series = h5.load_from_index(time_series_index)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(time_series=time_series, shell_surface=self.face_surface)
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = time_series.gid
+        surface = h5.load_from_index(self.face_surface)
+        view_model.shell_surface = surface.gid
+        result = viewer.launch(view_model=view_model)
 
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None
