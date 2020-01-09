@@ -71,15 +71,18 @@ class TestAdapters(TransactionalTestCase):
     def test_pca_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         pca_adapter = PCAAdapter()
+        view_model = pca_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
         pca_adapter.storage_path = storage_folder
-        pca_adapter.configure(ts_index)
+        pca_adapter.configure(view_model)
 
         disk = pca_adapter.get_required_disk_size(ts_index)
         mem = pca_adapter.get_required_memory_size(ts_index)
 
-        pca_idx = pca_adapter.launch(ts_index)
+        pca_idx = pca_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, PrincipalComponentsH5, pca_idx.gid)
         assert os.path.exists(result_h5)
@@ -87,15 +90,18 @@ class TestAdapters(TransactionalTestCase):
     def test_ica_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         ica_adapter = ICAAdapter()
         ica_adapter.storage_path = storage_folder
-        ica_adapter.configure(ts_index)
+        view_model = ica_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        ica_adapter.configure(view_model)
 
         disk = ica_adapter.get_required_disk_size(ts_index)
         mem = ica_adapter.get_required_memory_size(ts_index)
 
-        ica_idx = ica_adapter.launch(ts_index)
+        ica_idx = ica_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, IndependentComponentsH5, ica_idx.gid)
         assert os.path.exists(result_h5)
@@ -103,15 +109,18 @@ class TestAdapters(TransactionalTestCase):
     def test_metrics_adapter_launch(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         metrics_adapter = TimeseriesMetricsAdapter()
         metrics_adapter.storage_path = storage_folder
-        metrics_adapter.configure(ts_index)
+        view_model = metrics_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        metrics_adapter.configure(view_model)
 
-        disk = metrics_adapter.get_required_disk_size()
-        mem = metrics_adapter.get_required_memory_size()
+        disk = metrics_adapter.get_required_disk_size(ts_index)
+        mem = metrics_adapter.get_required_memory_size(ts_index)
 
-        datatype_measure_index = metrics_adapter.launch(ts_index)
+        datatype_measure_index = metrics_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, DatatypeMeasureH5, datatype_measure_index.gid)
         assert os.path.exists(result_h5)
@@ -119,15 +128,18 @@ class TestAdapters(TransactionalTestCase):
     def test_cross_correlation_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         cross_correlation_adapter = CrossCorrelateAdapter()
         cross_correlation_adapter.storage_path = storage_folder
-        cross_correlation_adapter.configure(ts_index)
+        view_model = cross_correlation_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        cross_correlation_adapter.configure(view_model)
 
-        disk = cross_correlation_adapter.get_required_disk_size()
-        mem = cross_correlation_adapter.get_required_memory_size()
+        disk = cross_correlation_adapter.get_required_disk_size(ts_index)
+        mem = cross_correlation_adapter.get_required_memory_size(ts_index)
 
-        cross_correlation_idx = cross_correlation_adapter.launch(ts_index)
+        cross_correlation_idx = cross_correlation_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CrossCorrelationH5, cross_correlation_idx.gid)
         assert os.path.exists(result_h5)
@@ -135,18 +147,19 @@ class TestAdapters(TransactionalTestCase):
     def test_pearson_correlation_coefficient_adapter(self, tmpdir, time_series_index_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
-        ts_index =time_series_index_factory()
-        t_start = 0.9765625
-        t_end = 1000.0
+        ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         pearson_correlation_coefficient_adapter = PearsonCorrelationCoefficientAdapter()
         pearson_correlation_coefficient_adapter.storage_path = storage_folder
-        pearson_correlation_coefficient_adapter.configure(ts_index, t_start, t_end)
+        view_model = pearson_correlation_coefficient_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        pearson_correlation_coefficient_adapter.configure(view_model)
 
-        disk = pearson_correlation_coefficient_adapter.get_required_disk_size()
-        mem = pearson_correlation_coefficient_adapter.get_required_memory_size()
+        disk = pearson_correlation_coefficient_adapter.get_required_disk_size(ts_index)
+        mem = pearson_correlation_coefficient_adapter.get_required_memory_size(ts_index)
 
-        correlation_coefficients_idx = pearson_correlation_coefficient_adapter.launch(ts_index, t_start, t_end)
+        correlation_coefficients_idx = pearson_correlation_coefficient_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CorrelationCoefficientsH5, correlation_coefficients_idx.gid)
         assert os.path.exists(result_h5)
@@ -155,15 +168,18 @@ class TestAdapters(TransactionalTestCase):
         # algorithm returns complex values instead of float
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         node_coherence_adapter = NodeCoherenceAdapter()
         node_coherence_adapter.storage_path = storage_folder
-        node_coherence_adapter.configure(ts_index)
+        view_model = node_coherence_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        node_coherence_adapter.configure(view_model)
 
-        disk = node_coherence_adapter.get_required_disk_size()
-        mem = node_coherence_adapter.get_required_memory_size()
+        disk = node_coherence_adapter.get_required_disk_size(ts_index)
+        mem = node_coherence_adapter.get_required_memory_size(ts_index)
 
-        coherence_spectrum_idx = node_coherence_adapter.launch(ts_index)
+        coherence_spectrum_idx = node_coherence_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CoherenceSpectrumH5, coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
@@ -171,15 +187,18 @@ class TestAdapters(TransactionalTestCase):
     def test_node_complex_coherence_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         node_complex_coherence_adapter = NodeComplexCoherenceAdapter()
         node_complex_coherence_adapter.storage_path = storage_folder
-        node_complex_coherence_adapter.configure(ts_index)
+        view_model = node_complex_coherence_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        node_complex_coherence_adapter.configure(view_model)
 
-        disk = node_complex_coherence_adapter.get_required_disk_size()
-        mem = node_complex_coherence_adapter.get_required_memory_size()
+        disk = node_complex_coherence_adapter.get_required_disk_size(ts_index)
+        mem = node_complex_coherence_adapter.get_required_memory_size(ts_index)
 
-        complex_coherence_spectrum_idx = node_complex_coherence_adapter.launch(ts_index)
+        complex_coherence_spectrum_idx = node_complex_coherence_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
@@ -191,17 +210,20 @@ class TestAdapters(TransactionalTestCase):
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
         ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
-        sw = 0.5
-        sp = 0.2
+        ts = h5.load_from_index(ts_index)
 
         fcd_adapter = FunctionalConnectivityDynamicsAdapter()
         fcd_adapter.storage_path = storage_folder
-        fcd_adapter.configure(ts_index, sw, sp)
+        view_model = fcd_adapter.get_view_model_class()()
+        view_model.sw = 0.5
+        view_model.sp = 0.2
+        view_model.time_series = ts.gid
+        fcd_adapter.configure(view_model)
 
-        disk = fcd_adapter.get_required_disk_size()
-        mem = fcd_adapter.get_required_memory_size()
+        disk = fcd_adapter.get_required_disk_size(ts_index)
+        mem = fcd_adapter.get_required_memory_size(ts_index)
 
-        fcd_idx = fcd_adapter.launch(ts_index, sw, sp)
+        fcd_idx = fcd_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, FcdH5, fcd_idx[0].gid)
         assert os.path.exists(result_h5)
@@ -214,13 +236,16 @@ class TestAdapters(TransactionalTestCase):
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
         ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
+        ts = h5.load_from_index(ts_index)
 
         fmri_balloon_adapter = BalloonModelAdapter()
         fmri_balloon_adapter.storage_path = storage_folder
-        fmri_balloon_adapter.configure(ts_index)
+        view_model = fmri_balloon_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        fmri_balloon_adapter.configure(view_model)
 
-        disk = fmri_balloon_adapter.get_required_disk_size()
-        mem = fmri_balloon_adapter.get_required_memory_size()
+        disk = fmri_balloon_adapter.get_required_disk_size(ts_index)
+        mem = fmri_balloon_adapter.get_required_memory_size(ts_index)
 
         ts_index = fmri_balloon_adapter.launch(ts_index)
 
@@ -230,15 +255,18 @@ class TestAdapters(TransactionalTestCase):
     def test_node_covariance_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
         ts_index = time_series_index_factory()
+        ts = h5.load_from_index(ts_index)
 
         node_covariance_adapter = NodeCovarianceAdapter()
         node_covariance_adapter.storage_path = storage_folder
-        node_covariance_adapter.configure(ts_index)
+        view_model = node_covariance_adapter.get_view_model_class()()
+        view_model.time_series = ts.gid
+        node_covariance_adapter.configure(view_model)
 
-        disk = node_covariance_adapter.get_required_disk_size()
-        mem = node_covariance_adapter.get_required_memory_size()
+        disk = node_covariance_adapter.get_required_disk_size(ts_index)
+        mem = node_covariance_adapter.get_required_memory_size(ts_index)
 
-        covariance_idx = node_covariance_adapter.launch(ts_index)
+        covariance_idx = node_covariance_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CovarianceH5, covariance_idx.gid)
         assert os.path.exists(result_h5)
