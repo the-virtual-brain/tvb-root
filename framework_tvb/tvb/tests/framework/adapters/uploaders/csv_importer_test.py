@@ -109,6 +109,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         form.weights.data = weights_tmp
         form.tracts.data = tracts_tmp
         view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
@@ -123,7 +124,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['=='])
-        reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, None)
+        reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
 
         dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
 

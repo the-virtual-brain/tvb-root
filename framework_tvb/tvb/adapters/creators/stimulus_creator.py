@@ -169,7 +169,7 @@ class SurfaceStimulusCreator(ABCSynchronous):
         """
         Used for creating a `StimuliSurface` instance
         """
-        stimuli_surface = self.prepare_stimuli_surface_from_view_model(view_model)
+        stimuli_surface = self.prepare_stimuli_surface_from_view_model(view_model, view_model.surface)
         stimuli_surface_index = StimuliSurfaceIndex()
         stimuli_surface_index.fill_from_has_traits(stimuli_surface)
 

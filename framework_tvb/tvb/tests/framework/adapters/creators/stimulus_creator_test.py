@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import json
 import os
 import numpy
@@ -35,65 +36,113 @@ import tvb_data.surfaceData
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
+from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
+# TODO: THESE TESTS WORK BUT WHEN RUNNING THEM, THEY CREATE H5 FILES IN THE SAME FOLDER AS
+#  THIS FILE AND THEY REMAIN THERE
 class TestStimulusCreator(TransactionalTestCase):
+
     def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user('Stim_User')
         self.test_project = TestFactory.create_project(self.test_user, "Stim_Project")
+
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        self.connectivity = h5.load_from_index(connectivity_index)
+
         cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
-        self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
+        surface_index = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
+        self.surface = h5.load_from_index(surface_index)
+
+    def transactional_teardown_method(self):
+        """
+        Remove project folders and clean up database.
+        """
+        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_create_stimulus_region(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
-        input_dict = {'connectivity': self.connectivity.gid, 'weight': weight_array.tolist(), 'temporal': 'Linear',
-                      'temporal_a': '1.0', 'temporal_b': '2.0'}
         region_stimulus_creator = RegionStimulusCreator()
-        region_stimulus_index = region_stimulus_creator.launch(**input_dict)
-        assert region_stimulus_index.temporal_equation == 'Linear'
+
+        view_model = region_stimulus_creator.get_view_model_class()()
+        view_model.connectivity = self.connectivity.gid
+        view_model.weight = weight_array
+        view_model.temporal = TemporalApplicableEquation()
+        view_model.temporal.parameters['a'] = 1.0
+        view_model.temporal.parameters['b'] = 2.0
+
+        region_stimulus_index = region_stimulus_creator.launch(view_model)
+
+        assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
+        assert region_stimulus_index.connectivity_gid == self.connectivity.gid.hex
 
     def test_create_stimulus_region_with_operation(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
-        input_dict = {'connectivity': self.connectivity.gid, 'weight': weight_array.tolist(), 'temporal': 'Linear',
-                      'temporal_a': '1.0', 'temporal_b': '2.0'}
         region_stimulus_creator = RegionStimulusCreator()
-        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
+
+        view_model = region_stimulus_creator.get_view_model_class()()
+        view_model.connectivity = self.connectivity.gid
+        view_model.weight = weight_array
+        view_model.temporal = TemporalApplicableEquation()
+        view_model.temporal.parameters['a'] = 1.0
+        view_model.temporal.parameters['b'] = 2.0
+
+        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
-        assert region_stimulus_index.temporal_equation == 'Linear'
+
+        assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
+        assert region_stimulus_index.connectivity_gid == self.connectivity.gid.hex
 
     def test_create_stimulus_surface(self):
-        input_dict = {'surface': self.surface.gid, 'focal_points_triangles': [1, 2, 3],
-                      'spatial': 'Gaussian', 'spatial_amp': '1.0', 'spatial_sigma': '1.0', 'spatial_offset': '0.0',
-                      'temporal': 'Linear', 'temporal_a': '1.0', 'temporal_b': '0.0'}
         surface_stimulus_creator = SurfaceStimulusCreator()
-        surface_stimulus_index = surface_stimulus_creator.launch(**input_dict)
-        assert surface_stimulus_index.spatial_equation == 'Gaussian'
-        assert surface_stimulus_index.temporal_equation == 'Linear'
-        assert surface_stimulus_index.surface_gid == self.surface.gid
+
+        view_model = surface_stimulus_creator.get_view_model_class()()
+        view_model.surface = self.surface.gid
+        view_model.focal_points_triangles = numpy.array([1, 2, 3])
+        view_model.spatial = FiniteSupportEquation()
+        view_model.spatial_amp = 1.0
+        view_model.spatial_sigma = 1.0
+        view_model.spatial_offset = 0.0
+        view_model.temporal = TemporalApplicableEquation()
+        view_model.temporal.parameters['a'] = 1.0
+        view_model.temporal.parameters['b'] = 0.0
+
+        surface_stimulus_index = surface_stimulus_creator.launch(view_model)
+
+        assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
+        assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
+        assert surface_stimulus_index.surface_gid == self.surface.gid.hex
 
     def test_create_stimulus_surface_with_operation(self):
-        input_dict = {'surface': self.surface.gid, 'focal_points_triangles': [1, 2, 3],
-                      'spatial': 'Gaussian', 'spatial_amp': '1.0', 'spatial_sigma': '1.0', 'spatial_offset': '0.0',
-                      'temporal': 'Linear', 'temporal_a': '1.0', 'temporal_b': '0.0'}
         surface_stimulus_creator = SurfaceStimulusCreator()
-        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
+
+        view_model = surface_stimulus_creator.get_view_model_class()()
+        view_model.surface = self.surface.gid
+        view_model.focal_points_triangles = numpy.array([1, 2, 3])
+        view_model.spatial = FiniteSupportEquation()
+        view_model.spatial_amp = 1.0
+        view_model.spatial_sigma = 1.0
+        view_model.spatial_offset = 0.0
+        view_model.temporal = TemporalApplicableEquation()
+        view_model.temporal.parameters['a'] = 1.0
+        view_model.temporal.parameters['b'] = 0.0
+
+        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id, view_model=view_model)
         surface_stimulus_index = TestFactory.get_entity(self.test_project, StimuliSurfaceIndex)
-        assert surface_stimulus_index.spatial_equation == 'Gaussian'
-        assert surface_stimulus_index.temporal_equation == 'Linear'
-        assert surface_stimulus_index.surface_gid == self.surface.gid
+
+        assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
+        assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
+        assert surface_stimulus_index.surface_gid == self.surface.gid.hex

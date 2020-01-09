@@ -163,7 +163,6 @@ class FlowService:
         link = dao.get_link(dt_id, project_id)
         if link is not None:
             dao.remove_entity(Links, link.id)
-    
 
     def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
         """

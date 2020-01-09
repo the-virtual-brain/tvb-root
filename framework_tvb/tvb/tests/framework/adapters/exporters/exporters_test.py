@@ -176,7 +176,6 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-
     def test_export_simulator_configuration(self, operation_factory):
         """
         Test export of a simulator configuration
@@ -188,7 +187,7 @@ class TestExporters(TransactionalTestCase):
         simulator_index.fk_from_operation = operation.id
         simulator_index = dao.store_entity(simulator_index)
 
-        burst_configuration = BurstConfiguration(self.project.id, simulator_index.id)
+        burst_configuration = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_configuration = dao.store_entity(burst_configuration)
         simulator_index.fk_parent_burst = burst_configuration.id
         simulator_index = dao.store_entity(simulator_index)
