@@ -32,12 +32,10 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import tvb_data
+from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -56,26 +54,23 @@ class TestCovarianceViewer(TransactionalTestCase):
         self.test_user = TestFactory.create_user("Covariance_Viewer_User")
         self.test_project = TestFactory.create_project(self.test_user, "Covariance_Viewer_Project")
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
     def test_launch(self, covariance_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
 
-        covariance = covariance_factory()
+        covariance_index = covariance_factory()
+        covariance = h5.load_from_index(covariance_index)
         viewer = CovarianceVisualizer()
-        result = viewer.launch(covariance)
+        view_model = viewer.get_view_model_class()()
+        view_model.datatype = covariance.gid
+        result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert (key in result)

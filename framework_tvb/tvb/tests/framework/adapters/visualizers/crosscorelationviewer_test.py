@@ -32,14 +32,10 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import tvb_data
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizer
-from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -57,11 +53,6 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         self.test_user = TestFactory.create_user("Cross_Corelation_Viewer_User")
         self.test_project = TestFactory.create_project(self.test_user, "Cross_Corelation_Viewer_Project")
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
@@ -73,9 +64,12 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
 
-        cross_correlation = cross_correlation_factory()
+        cross_correlation_index = cross_correlation_factory()
+        cross_correlation = h5.load_from_index(cross_correlation_index)
         viewer = CrossCorrelationVisualizer()
-        result = viewer.launch(cross_correlation)
+        view_model = viewer.get_view_model_class()()
+        view_model.datatype = cross_correlation.gid
+        result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert key in result

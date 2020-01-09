@@ -159,7 +159,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         :returns: `ContextDiscretePSE`
         :raises Exception: when `datatype_group_id` is invalid (not in database)
         """
-        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
+        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid.hex)
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. "
                             "It might have been remove or the specified id is not the correct one.")

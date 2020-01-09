@@ -32,10 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import numpy
-import tvb_data
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -59,11 +55,6 @@ class TestICA(TransactionalTestCase):
         self.test_user = TestFactory.create_user("Cross_Corelation_Viewer_User")
         self.test_project = TestFactory.create_project(self.test_user, "Cross_Corelation_Viewer_Project")
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
-
     def transactional_teardown_method(self):
         """
                 Clean-up tests data
@@ -74,10 +65,12 @@ class TestICA(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-        ica = ica_factory()
+        ica_index = ica_factory()
+        ica = h5.load_from_index(ica_index)
         viewer = ICA()
-        result = viewer.launch(ica)
+        view_model = viewer.get_view_model_class()()
+        view_model.datatype = ica.gid
+        result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert key in result
-

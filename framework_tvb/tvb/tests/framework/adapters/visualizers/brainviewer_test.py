@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping as demo_data
@@ -98,7 +99,7 @@ class TestBrainViewer(TransactionalTestCase):
         view_model.time_series = time_series.gid
         surface = h5.load_from_index(self.face_surface)
         view_model.shell_surface = surface.gid
-        result = viewer.launch(view_model=view_model)
+        result = viewer.launch(view_model)
 
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None
@@ -110,8 +111,12 @@ class TestBrainViewer(TransactionalTestCase):
         """
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
-        assert BrainViewer().get_required_memory_size(time_series) > 0
+        time_series_index = time_series_region_index_factory(conn, rm)
+        time_series = h5.load_from_index(time_series_index)
+        viewer = BrainViewer()
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = time_series.gid
+        assert viewer.get_required_memory_size(view_model) > 0
 
     def test_generate_preview(self, time_series_region_index_factory):
         """
@@ -131,11 +136,15 @@ class TestBrainViewer(TransactionalTestCase):
         """
         conn = h5.load_from_index(self.connectivity)
         rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
-        #time_series.configure()
+        time_series_index = time_series_region_index_factory(conn, rm)
+        time_series = h5.load_from_index(time_series_index)
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(time_series, shell_surface=self.face_surface)
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = time_series.gid
+        surface = h5.load_from_index(self.face_surface)
+        view_model.shell_surface = surface.gid
+        result = viewer.launch(view_model)
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None
         assert result['extended_view']

@@ -273,8 +273,8 @@ class IsoclinePSEAdapter(ABCDisplayer):
         params["canvasName"] = "Interpolated values for PSE metric: "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name
-        params["url_base"] = "/burst/explore/get_metric_matrix/" + view_model.datatype_group
-        params["node_info_url"] = "/burst/explore/get_node_matrix/" + view_model.datatype_group
+        params["url_base"] = "/burst/explore/get_metric_matrix/" + view_model.datatype_group.hex
+        params["node_info_url"] = "/burst/explore/get_node_matrix/" + view_model.datatype_group.hex
         params["available_metrics"] = list(self.model.metrics)
         return self.build_display_result('pse_isocline/view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))
