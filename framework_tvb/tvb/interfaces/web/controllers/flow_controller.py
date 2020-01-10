@@ -471,7 +471,7 @@ class FlowController(BaseController):
                 try:
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
-                except NotImplemented:
+                except NotImplementedError:
                     raise formencode.Invalid("Could not find a model for this form!", {}, None, error_dict=form.get_errors_dict())
             adapter_instance.submit_form(form)
             if issubclass(type(adapter_instance), ABCDisplayer):

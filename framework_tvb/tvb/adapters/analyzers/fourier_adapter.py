@@ -73,8 +73,7 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
         self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
         self.segment_length = ScalarField(FFTAdapterModel.segment_length, self)
-        self.window_function = SelectField(FFTAdapterModel.window_function, self,
-                                           choices=fft.SUPPORTED_WINDOWING_FUNCTIONS)
+        self.window_function = SelectField(FFTAdapterModel.window_function, self)
         self.detrend = ScalarField(FFTAdapterModel.detrend, self)
 
     @staticmethod
