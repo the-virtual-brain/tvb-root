@@ -34,7 +34,10 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.rest.server.dto.dtos import AlgorithmDto
+from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+
+INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: %s'
 
 
 class RetrieveDatatypeResource(RestResource):
@@ -44,9 +47,11 @@ class RetrieveDatatypeResource(RestResource):
 
     def get(self, datatype_gid):
         index = ABCAdapter.load_entity_by_gid(datatype_gid)
+        if index is None:
+            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE % datatype_gid)
         h5_file = h5_file_for_index(index)
         last_index = h5_file.path.rfind('\\')
-        file_name = h5_file.path[last_index+1:]
+        file_name = h5_file.path[last_index + 1:]
         return send_file(h5_file.path, as_attachment=True, attachment_filename=file_name)
 
 

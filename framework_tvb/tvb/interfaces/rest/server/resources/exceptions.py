@@ -29,7 +29,6 @@
 #
 
 from abc import abstractmethod
-
 from tvb.basic.exceptions import TVBException
 
 
@@ -57,3 +56,11 @@ class BadRequestException(BaseRestException):
 
     def get_default_message(self):
         return "Bad request error"
+
+
+class InvalidIdentifierException(BaseRestException):
+    def __init__(self, message=None, payload=None):
+        super(InvalidIdentifierException, self).__init__(message, code=404, payload=payload)
+
+    def get_default_message(self):
+        return "No data found for the given identifier"

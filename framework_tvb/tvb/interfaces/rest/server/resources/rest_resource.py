@@ -27,11 +27,22 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from flask import request
 from flask_restful import Resource
-
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify
+from tvb.interfaces.rest.server.resources.exceptions import BadRequestException
 
 
 class RestResource(Resource):
     method_decorators = [rest_jsonify]
+
+    @staticmethod
+    def extract_file_from_request(file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+        if 'file' not in request.files:
+            raise BadRequestException('No file part in the request!')
+        file = request.files['file']
+        if not file.filename.endswith(file_extension):
+            raise BadRequestException('Only %s files are allowed!', file_extension)
+
+        return file

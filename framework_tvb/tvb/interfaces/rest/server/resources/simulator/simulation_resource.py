@@ -29,16 +29,14 @@
 #
 
 import os
-import tempfile
-
-from flask import request
-from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.interfaces.rest.server.resources.exceptions import BadRequestException
+from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from werkzeug.utils import secure_filename
+from tvb.interfaces.rest.server.resources.util import save_temporary_file
 
 
 class FireSimulationResource(RestResource):
@@ -51,20 +49,16 @@ class FireSimulationResource(RestResource):
         self.project_service = ProjectService()
 
     def post(self, project_gid):
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            raise BadRequestException('No file part in the request!')
-        file = request.files['file']
-        if not file.filename.endswith(FilesHelper.TVB_ZIP_FILE_EXTENSION):
-            raise BadRequestException('Only ZIP files are allowed!')
+        # TODO: inform user about operation gid to monitor
+        file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
+        zip_path = save_temporary_file(file)
 
-        filename = secure_filename(file.filename)
-        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
-        destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
-        zip_path = os.path.join(destination_folder, filename)
-        file.save(zip_path)
-        FilesHelper().unpack_zip(zip_path, destination_folder)
-        project = self.project_service.find_project_lazy_by_gid(project_gid)
+        try:
+            project = self.project_service.find_project_lazy_by_gid(project_gid)
+        except ProjectServiceException:
+            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
+
+        FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
         user_id = project.fk_admin
 
         self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id, project=project,

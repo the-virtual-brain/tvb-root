@@ -28,31 +28,17 @@
 #
 #
 
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.server.dto.dtos import UserDto, ProjectDto
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+import os
+import tempfile
+from tvb.basic.profile import TvbProfile
+from werkzeug.utils import secure_filename
 
 
-class GetUsersResource(RestResource):
-    """
-    :return a list of system's users
-    """
+def save_temporary_file(file):
+    filename = secure_filename(file.filename)
+    temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+    destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+    full_path = os.path.join(destination_folder, filename)
+    file.save(full_path)
 
-    def get(self):
-        users = UserService.fetch_all_users()
-        return [UserDto(user) for user in users]
-
-
-class GetProjectsListResource(RestResource):
-    """
-    :return a list of user's projects
-    """
-
-    def get(self, username):
-        user = UserService.get_user_by_name(username)
-        if user is None:
-            raise InvalidIdentifierException('No user registered with username: %s' % username)
-        projects = ProjectService.retrieve_all_user_projects(user_id=user.id)
-        return [ProjectDto(project) for project in projects]
+    return full_path

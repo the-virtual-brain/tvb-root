@@ -28,20 +28,21 @@
 #
 #
 
-import os
-import tempfile
-from flask import request
-from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.server.dto.dtos import DataTypeDto
-from tvb.interfaces.rest.server.resources.exceptions import BadRequestException
+from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from werkzeug.utils import secure_filename
+from tvb.interfaces.rest.server.resources.util import save_temporary_file
+
+INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
 
 class GetOperationStatusResource(RestResource):
@@ -51,6 +52,9 @@ class GetOperationStatusResource(RestResource):
 
     def get(self, operation_gid):
         operation = ProjectService.load_operation_by_gid(operation_gid)
+        if operation is None:
+            raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
+
         return {"status": operation.status}
 
 
@@ -62,10 +66,13 @@ class GetOperationResultsResource(RestResource):
 
     def get(self, operation_gid):
         operation = ProjectService.load_operation_lazy_by_gid(operation_gid)
-        data_types = ProjectService.get_results_for_operation(operation.id)
+        if operation is None:
+            raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
 
+        data_types = ProjectService.get_results_for_operation(operation.id)
         if data_types is None:
             return []
+
         return [DataTypeDto(datatype) for datatype in data_types]
 
 
@@ -73,28 +80,26 @@ class LaunchOperationResource(RestResource):
     """ A generic method of launching Analyzers  """
 
     def __init__(self):
-        self.flow_service = FlowService()
+        self.operation_service = OperationService()
         self.project_service = ProjectService()
         self.user_service = UserService()
+        self.files_helper = FilesHelper()
 
     def post(self, project_gid, algorithm_module, algorithm_classname):
-        # Check if there is any h5 file in the form data
-        if 'file' not in request.files:
-            raise BadRequestException('No file part in the request!')
-        file = request.files['file']
-        if not file.filename.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-            raise BadRequestException('Only h5 files are allowed!')
+        # TODO: inform user about operation gid for later monitoring
+        file = self.extract_file_from_request()
+        h5_path = save_temporary_file(file)
 
-        # Save current view_model h5 file in a temporary directory
-        filename = secure_filename(file.filename)
-        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
-        destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
-        h5_path = os.path.join(destination_folder, filename)
-        file.save(h5_path)
+        try:
+            project = self.project_service.find_project_lazy_by_gid(project_gid)
+        except ProjectServiceException:
+            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
+
+        algorithm = FlowService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
+        if algorithm is None:
+            raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
 
         # Prepare and fire operation
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
-        project = self.project_service.find_project_lazy_by_gid(project_gid)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         view_model = adapter_instance.get_view_model_class()()
         view_model_h5 = ViewModelH5(h5_path, view_model)

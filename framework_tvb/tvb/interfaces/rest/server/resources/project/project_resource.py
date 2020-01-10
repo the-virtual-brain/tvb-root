@@ -27,22 +27,29 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
-from tvb.interfaces.rest.server.dto.dtos import  OperationDto, DataTypeDto
+from tvb.interfaces.rest.server.dto.dtos import OperationDto, DataTypeDto
+from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+
+INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
 
 
 class GetDataInProjectResource(RestResource):
     """
-    "return a list of DataType instances (subclasses) associated with the current project
+    :return a list of DataType instances (subclasses) associated with the current project
     """
 
     def __init__(self):
         self.project_service = ProjectService()
 
     def get(self, project_gid):
-        project = self.project_service.find_project_lazy_by_gid(project_gid)
+        try:
+            project = self.project_service.find_project_lazy_by_gid(project_gid)
+        except ProjectServiceException:
+            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
+
         datatypes = self.project_service.get_datatypes_in_project(project.id)
         return [DataTypeDto(datatype) for datatype in datatypes]
 
@@ -56,6 +63,9 @@ class GetOperationsInProjectResource(RestResource):
         self.project_service = ProjectService()
 
     def get(self, project_gid):
-        project = self.project_service.find_project_lazy_by_gid(project_gid)
+        try:
+            project = self.project_service.find_project_lazy_by_gid(project_gid)
+        except ProjectServiceException:
+            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
         _, _, operations, _ = self.project_service.retrieve_project_full(project.id)
         return [OperationDto(operation) for operation in operations]

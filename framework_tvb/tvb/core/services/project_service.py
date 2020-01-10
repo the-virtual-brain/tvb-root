@@ -283,7 +283,8 @@ class ProjectService:
         self.logger.debug("Displaying " + str(len(available_projects)) + " projects in UI for user " + str(user_id))
         return available_projects, pages_no
 
-    def retrieve_all_user_projects(self, user_id):
+    @staticmethod
+    def retrieve_all_user_projects(user_id):
         """
         Return a list with all projects visible for current user, without pagination.
         """
