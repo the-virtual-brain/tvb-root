@@ -378,7 +378,7 @@ class PhasePlaneInteractive(HasTraits):
         offset = 0.0
         self.param_sliders = dict()
         # import pdb; pdb.set_trace()
-        for param_name in type(self.model).own_declarative_attrs:
+        for param_name in type(self.model).declarative_attrs:
             if self.exclude_sliders is not None and param_name in self.exclude_sliders:
                 continue
             param_def = getattr(type(self.model), param_name)
