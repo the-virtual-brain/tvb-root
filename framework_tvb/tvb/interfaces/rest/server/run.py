@@ -76,19 +76,21 @@ def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
     # creating an API object
-    api = RestApi(app)
+    api = RestApi(app, title="Rest services for TVB", doc="/doc/")
 
-    api.add_resource(GetUsersResource, build_path('/users'))
-    api.add_resource(GetProjectsListResource, build_path('/users/<string:username>/projects'))
-    api.add_resource(GetDataInProjectResource, build_path('/projects/<string:project_gid>/data'))
-    api.add_resource(GetOperationsInProjectResource, build_path('/projects/<string:project_gid>/operations'))
-    api.add_resource(RetrieveDatatypeResource, build_path('/datatypes/<string:datatype_gid>'))
-    api.add_resource(GetOperationsForDatatypeResource, build_path('/datatypes/<string:datatype_gid>/operations'))
-    api.add_resource(FireSimulationResource, build_path('/simulation/<string:project_gid>'))
-    api.add_resource(LaunchOperationResource, build_path('/operations/<string:project_gid>/algorithm'
-                                                         '/<string:algorithm_module>/<string:algorithm_classname>'))
-    api.add_resource(GetOperationStatusResource, build_path('/operations/<string:operation_gid>/status'))
-    api.add_resource(GetOperationResultsResource, build_path('/operations/<string:operation_gid>/results'))
+    name_space = api.namespace('api', description="TVB-REST APIs")
+
+    name_space.add_resource(GetUsersResource, '/users')
+    name_space.add_resource(GetProjectsListResource, '/users/<string:username>/projects')
+    name_space.add_resource(GetDataInProjectResource, '/projects/<string:project_gid>/data')
+    name_space.add_resource(GetOperationsInProjectResource, '/projects/<string:project_gid>/operations')
+    name_space.add_resource(RetrieveDatatypeResource, '/datatypes/<string:datatype_gid>')
+    name_space.add_resource(GetOperationsForDatatypeResource, '/datatypes/<string:datatype_gid>/operations')
+    name_space.add_resource(FireSimulationResource, '/simulation/<string:project_gid>')
+    name_space.add_resource(LaunchOperationResource, '/operations/<string:project_gid>/algorithm'
+                                                         '/<string:algorithm_module>/<string:algorithm_classname>')
+    name_space.add_resource(GetOperationStatusResource, '/operations/<string:operation_gid>/status')
+    name_space.add_resource(GetOperationResultsResource, '/operations/<string:operation_gid>/results')
 
     app.run(debug=True, port=FLASK_PORT)
 
