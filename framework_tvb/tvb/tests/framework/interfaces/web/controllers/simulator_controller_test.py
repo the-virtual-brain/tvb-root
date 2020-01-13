@@ -27,12 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 from os import path
 from mock import patch
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm, SensorsImporterModel
 from tvb.basic.profile import TvbProfile
 import numpy
 import tvb_data
@@ -52,8 +54,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid
+from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
@@ -62,7 +63,6 @@ from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, D
 from tvb.simulator.models import Generic2dOscillator
 from tvb.simulator.monitors import TemporalAverage, MEG, Bold, SubSample, EEG, iEEG
 from tvb.simulator.noise import Multiplicative
-from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
@@ -74,7 +74,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
         TvbProfile.current.web.RENDER_HTML = False
-        self.session_stored_simulator = Simulator()
+        self.session_stored_simulator = SimulatorAdapterModel()
 
         self.sess_mock = RamSession()
         self.sess_mock[KEY_USER] = self.test_user
@@ -95,7 +95,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.connectivity.gid.hex == connectivity.gid, "Connectivity was not set correctly."
+        assert self.session_stored_simulator.connectivity.hex == connectivity.gid, "Connectivity was not set correctly."
         assert self.session_stored_simulator.conduction_speed == 3.0, "Conduction speed was not set correctly."
         assert isinstance(self.session_stored_simulator.coupling, Sigmoidal), "Coupling was not set correctly."
 
@@ -140,9 +140,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
         text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
-        region_mapping = TestFactory.import_region_mapping(text_file, surface.gid, connectivity.gid, self.test_user, self.test_project)
+        region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
+                                                           connectivity.gid)
 
-        self.session_stored_simulator.surface = Cortex()
+        self.session_stored_simulator.surface = CortexViewModel()
 
         self.sess_mock['_region_mapping'] = region_mapping.gid
         self.sess_mock['_local_connectivity'] = 'explicit-None-value'
@@ -152,11 +153,11 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_cortex(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.surface.region_mapping_data.gid.hex == region_mapping.gid,\
+        assert self.session_stored_simulator.surface.region_mapping_data.hex == region_mapping.gid, \
             'Region mapping was not set correctly'
-        assert self.session_stored_simulator.surface.local_connectivity is None,\
+        assert self.session_stored_simulator.surface.local_connectivity is None, \
             'Default value should have been set to local connectivity.'
-        assert self.session_stored_simulator.surface.coupling_strength == [1.0],\
+        assert self.session_stored_simulator.surface.coupling_strength == [1.0], \
             "coupling_strength was not set correctly."
 
     def test_set_stimulus_none(self):
@@ -169,22 +170,29 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_stimulus(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-
+        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = h5.load_from_index(connectivity_index)
         weight_array = numpy.zeros(connectivity.number_of_regions)
-        input_dict = {'connectivity': connectivity.gid, 'weight': str(weight_array), 'temporal': 'Linear',
-                      'temporal_a': '1.0', 'temporal_b': '2.0'}
-        region_stimulus_creator = RegionStimulusCreator()
-        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, **input_dict)
-        region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
-        self.sess_mock['_region_stimuli'] = region_stimulus_index.gid
+        region_stimulus_creator = RegionStimulusCreator()
+        view_model = region_stimulus_creator.get_view_model_class()()
+        view_model.connectivity = connectivity.gid
+        view_model.weight = weight_array
+        view_model.temporal = TemporalApplicableEquation()
+        view_model.temporal.parameters['a'] = 1.0
+        view_model.temporal.parameters['b'] = 2.0
+
+        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, view_model=view_model)
+        region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
+        region_stimulus = h5.load_from_index(region_stimulus_index)
+
+        self.sess_mock['_region_stimuli'] = region_stimulus.gid
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.stimulus.gid.hex == region_stimulus_index.gid, \
+        assert self.session_stored_simulator.stimulus.hex == region_stimulus_index.gid, \
             "Stimuli was not set correctly."
 
     def test_set_model(self):
@@ -237,7 +245,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_integrator(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.integrator, HeunDeterministic), "Integrator was not set correctly."
+        assert isinstance(self.session_stored_simulator.integrator,
+                          HeunDeterministic), "Integrator was not set correctly."
 
     def test_set_integrator_params(self):
         self.sess_mock['_dt'] = '0.01220703125'
@@ -293,13 +302,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_noise_equation_params(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.integrator.noise.b.parameters['low'] == 0.1,\
+        assert self.session_stored_simulator.integrator.noise.b.parameters['low'] == 0.1, \
             "low value was not set correctly"
-        assert self.session_stored_simulator.integrator.noise.b.parameters['high'] == 1.0,\
+        assert self.session_stored_simulator.integrator.noise.b.parameters['high'] == 1.0, \
             "high value was not set correctly"
-        assert self.session_stored_simulator.integrator.noise.b.parameters['midpoint'] == 1.0,\
+        assert self.session_stored_simulator.integrator.noise.b.parameters['midpoint'] == 1.0, \
             "midpoint value was not set correctly"
-        assert self.session_stored_simulator.integrator.noise.b.parameters['sigma'] == 0.3,\
+        assert self.session_stored_simulator.integrator.noise.b.parameters['sigma'] == 0.3, \
             "sigma value was not set correctly"
 
     def test_set_monitors(self):
@@ -312,7 +321,6 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverage), 'Monitor class is incorrect.'
 
     def test_set_temporal_average_monitor_params(self):
-
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
@@ -332,7 +340,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None,\
+        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
             "Variables of interest should be None."
 
     def set_region_mapping(self):
@@ -345,8 +353,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
         text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
-        region_mapping = TestFactory.import_region_mapping(text_file, surface.gid, connectivity.gid, self.test_user,
-                                                               self.test_project)
+        region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
+                                                           connectivity.gid)
         return region_mapping
 
     def test_set_eeg_monitor_params(self):
@@ -354,13 +362,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         eeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
         eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_file,
-                                                       SensorsImporterForm.options['EEG Sensors'])
+                                                 SensorsImporterModel.OPTIONS['EEG Sensors'])
 
         self.sess_mock['_period'] = '0.75'
         self.sess_mock['_variables_of_interest'] = '[0, 1]'
         self.sess_mock['_region_mapping'] = region_mapping.gid
         self.sess_mock['_projection'] = eeg_sensors.gid
-        self.sess_mock['_sigma'] = 1.0
+        self.sess_mock['_sigma'] = "1.0"
         self.sess_mock['_sensors'] = eeg_sensors.gid
 
         self.session_stored_simulator.monitors = [EEG()]
@@ -384,7 +392,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         meg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
         meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_file,
-                                                       SensorsImporterForm.options['MEG Sensors'])
+                                                 SensorsImporterModel.OPTIONS['MEG Sensors'])
 
         self.sess_mock['_period'] = '0.75'
         self.sess_mock['_variables_of_interest'] = '[0, 1]'
@@ -414,13 +422,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         seeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt')
         seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_file,
-                                                       SensorsImporterForm.options['Internal Sensors'])
+                                                  SensorsImporterModel.OPTIONS['Internal Sensors'])
 
         self.sess_mock['_period'] = '0.75'
         self.sess_mock['_variables_of_interest'] = '[0, 1]'
         self.sess_mock['_region_mapping'] = region_mapping.gid
         self.sess_mock['_projection'] = seeg_sensors.gid
-        self.sess_mock['_sigma'] = 1.0
+        self.sess_mock['_sigma'] = "1.0"
         self.sess_mock['_sensors'] = seeg_sensors.gid
 
         self.session_stored_simulator.monitors = [iEEG()]
@@ -451,7 +459,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None,\
+        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
             "Variables of interest should have not been added."
 
     def test_set_monitor_equation(self):
@@ -467,10 +475,14 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_monitor_equation(**self.sess_mock._data)
 
-        assert self.session_stored_simulator.monitors[0].equation.parameters['tau_s'] == 0.8, "tau_s value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters['tau_f']== 0.4, "tau_f value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters['k_1'] == 5.6, "k_1 value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters['V_0'] == 0.02, "V_0 value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters[
+                   'tau_s'] == 0.8, "tau_s value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters[
+                   'tau_f'] == 0.4, "tau_f value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters[
+                   'k_1'] == 5.6, "k_1 value was not set correctly."
+        assert self.session_stored_simulator.monitors[0].equation.parameters[
+                   'V_0'] == 0.02, "V_0 value was not set correctly."
 
     def test_set_simulation_length(self):
         burst_config = BurstConfiguration(self.test_project.id)
@@ -524,13 +536,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             rendering_rules = self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
-        assert rendering_rules['renderer'].is_first_fragment is False,\
+        assert rendering_rules['renderer'].is_first_fragment is False, \
             "Page should have advanced past the first fragment."
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             rendering_rules = self.simulator_controller.reset_simulator_configuration()
 
-        assert rendering_rules['renderer'].is_first_fragment is True,\
+        assert rendering_rules['renderer'].is_first_fragment is True, \
             "Page should be set to the first fragment."
 
     def test_get_history_status(self):
@@ -565,7 +577,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             result = self.simulator_controller.rename_burst(str(burst[0].id), new_name)
 
-        assert result == '{"success": "Simulation successfully renamed!"}',\
+        assert result == '{"success": "Simulation successfully renamed!"}', \
             "Some error happened at renaming, probably because of invalid new name."
         assert dao.get_bursts_for_project(self.test_project.id)[0].name == new_name, "Name wasn't actually changed."
 
@@ -626,7 +638,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
         simulator_service = SimulatorService()
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None,
+                                                  storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.copy_simulator_configuration(str(burst[0].id))
@@ -669,7 +682,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
         simulator_service = SimulatorService()
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None, storage_path)
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None,
+                                                  storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.load_burst_read_only(str(burst[0].id))
@@ -694,4 +708,3 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.launch_simulation(launch_mode, **self.sess_mock._data)
-
