@@ -73,10 +73,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
-        if DataTypeMetaData.KEY_SUBJECT in kwargs:
-            subject = kwargs.pop(DataTypeMetaData.KEY_SUBJECT)
-        else:
-            subject = DataTypeMetaData.DEFAULT_SUBJECT
+        subject = view_model.subject
 
         self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: subject})
         self.generic_attributes.subject = subject
