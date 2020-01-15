@@ -88,7 +88,7 @@ def initialize_flask():
     name_space.add_resource(GetOperationsForDatatypeResource, '/datatypes/<string:datatype_gid>/operations')
     name_space.add_resource(FireSimulationResource, '/simulation/<string:project_gid>')
     name_space.add_resource(LaunchOperationResource, '/operations/<string:project_gid>/algorithm'
-                                                         '/<string:algorithm_module>/<string:algorithm_classname>')
+                                                     '/<string:algorithm_module>/<string:algorithm_classname>')
     name_space.add_resource(GetOperationStatusResource, '/operations/<string:operation_gid>/status')
     name_space.add_resource(GetOperationResultsResource, '/operations/<string:operation_gid>/results')
 
