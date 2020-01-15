@@ -42,7 +42,7 @@ from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
 from tvb.datatypes.surfaces import CorticalSurface, Surface
@@ -136,14 +136,17 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.projection_file is None:
             raise LaunchException("Please select MATLAB file which contains data to import")
 
-        if sensors is None:
+        if view_model.sensors is None:
             raise LaunchException("No sensors selected. Please initiate upload again and select one.")
 
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
         surface_index = self.load_entity_by_gid(view_model.surface.hex)
-        expected_shape = surface_index.number_of_vertices
+        expected_surface_shape = surface_index.number_of_vertices
+
+        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        expected_sensors_shape = sensors_index.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")
         if view_model.projection_file.endswith(".mat"):
@@ -154,17 +157,17 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if projection_data is None or len(projection_data) == 0:
             raise LaunchException("Invalid (empty) dataset...")
 
-        if projection_data.shape[0] != sensors.number_of_sensors:
+        if projection_data.shape[0] != expected_sensors_shape:
             raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (projection_data.shape[0],
-                                                                                           sensors.number_of_sensors))
+                                                                                           expected_sensors_shape))
 
-        if projection_data.shape[1] != expected_shape:
+        if projection_data.shape[1] != expected_surface_shape:
             raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (projection_data.shape[1],
-                                                                                           expected_shape))
+                                                                                           expected_surface_shape))
 
-        projection_matrix_type = determine_projection_type(sensors)
+        projection_matrix_type = determine_projection_type(sensors_index)
         surface_ht = h5.load_from_index(surface_index, CorticalSurface)
-        sensors_ht = h5.load_from_index(sensors)
+        sensors_ht = h5.load_from_index(sensors_index)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,
                                              projection_data=projection_data)

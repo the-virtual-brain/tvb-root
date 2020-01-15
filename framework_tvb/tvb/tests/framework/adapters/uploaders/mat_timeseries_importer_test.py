@@ -73,7 +73,7 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
                               '_slice': '',
                               '_start_time': '0',
                               '_Data_Subject': 'QL',
-                              '_tstype_parameters': self.connectivity.gid
+                              '_datatype': self.connectivity
                             })
         form.data_file.data = self.bold_path
         view_model = form.get_view_model()()

@@ -129,6 +129,7 @@ class TestProjectionMatrix(TransactionalTestCase):
                              })
         form.projection_file.data = file_path
         view_model = form.get_view_model()()
+        view_model.subject = 'John Doe'
         form.fill_trait(view_model)
         self.importer.submit_form(form)
 

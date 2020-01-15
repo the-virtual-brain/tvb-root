@@ -71,6 +71,11 @@ class TestNIFTIImporter(TransactionalTestCase):
         self.test_user = TestFactory.create_user('Nifti_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Nifti_Importer_Project")
 
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        self.connectivity = h5.load_from_index(connectivity_index)
+
     def transactional_teardown_method(self):
         """
         Clean-up tests data
@@ -89,13 +94,14 @@ class TestNIFTIImporter(TransactionalTestCase):
         form = NIFTIImporterForm()
         form.fill_from_post({'_data_file': Part(import_file_path, HeaderMap({}), ''),
                              '_apply_corrections': 'True',
-                             '_connectivity': connectivity,
+                             '_connectivity': connectivity.gid.hex if connectivity else None,
                              '_mappings_file': Part(self.TXT_FILE, HeaderMap({}), ''),
                              '_Data_Subject': 'bla bla'
                             })
         form.data_file.data = import_file_path
         form.mappings_file.data = self.TXT_FILE
         view_model = form.get_view_model()()
+        view_model.data_subject = 'bla bla'
         form.fill_trait(view_model)
         importer.submit_form(form)
 
@@ -114,7 +120,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        time_series_index = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolumeIndex)
+        time_series_index = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolumeIndex, self.connectivity)
 
         # Since self.assertAlmostEquals is not available on all machine
         # We compare floats as following
@@ -138,7 +144,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        structural_mri_index = self._import(self.NII_FILE)
+        structural_mri_index = self._import(self.NII_FILE, connectivity=self.connectivity)
         assert "T1" == structural_mri_index.weighting
 
         structural_mri = h5.load_from_index(structural_mri_index)
@@ -162,17 +168,15 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        structure = self._import(self.GZ_NII_FILE)
+        structure = self._import(self.GZ_NII_FILE, connectivity=self.connectivity)
         assert "T1" == structure.weighting
 
     def test_import_region_mapping(self):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         to_link_conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        mapping_index = self._import(self.GZ_NII_FILE, RegionVolumeMappingIndex, to_link_conn.gid)
+        mapping_index = self._import(self.GZ_NII_FILE, RegionVolumeMappingIndex, self.connectivity)
 
         mapping = h5.load_from_index(mapping_index)
 

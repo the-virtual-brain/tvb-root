@@ -371,6 +371,7 @@ class TestFactory(object):
                              })
         form.uploaded.data = zip_path
         view_model = form.get_view_model()()
+        view_model.data_subject = subject
         form.fill_trait(view_model)
         importer.submit_form(form)
 

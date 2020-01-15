@@ -109,6 +109,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         form.weights.data = weights_tmp
         form.tracts.data = tracts_tmp
         view_model = form.get_view_model()()
+        view_model.data_subject = subject
         form.fill_trait(view_model)
         importer.submit_form(form)
 

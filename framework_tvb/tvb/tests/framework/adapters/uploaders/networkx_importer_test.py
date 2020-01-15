@@ -78,11 +78,14 @@ class TestNetworkxImporter(TransactionalTestCase):
                              '_key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE[0],
                              '_Data_Subject': 'John Doe'
                             })
+        view_model = form.get_view_model()()
+        view_model.data_subject = 'John Doe'
         form.data_file.data = self.upload_file
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
         count_after = self.count_all_entities(ConnectivityIndex)
         assert 1 == count_after
