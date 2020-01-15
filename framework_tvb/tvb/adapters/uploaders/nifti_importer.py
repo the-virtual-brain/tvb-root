@@ -37,7 +37,8 @@ import os
 import numpy
 from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI
@@ -58,7 +59,7 @@ from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
 
 
-class NIFTIImporterModel(ViewModel):
+class NIFTIImporterModel(UploaderViewModel):
     data_file = Str(
         label='Please select file to import (gz or nii)'
     )

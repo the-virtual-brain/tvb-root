@@ -35,6 +35,7 @@ import json
 import uuid
 import numpy
 from tvb.basic.neotraits.api import Attr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
@@ -53,7 +54,7 @@ TS_REGION = "Region"
 TS_EEG = "EEG"
 
 
-class RegionMatTimeSeriesImporterModel(ViewModel):
+class RegionMatTimeSeriesImporterModel(UploaderViewModel):
     data_file = Str(
         label='Please select file to import'
     )

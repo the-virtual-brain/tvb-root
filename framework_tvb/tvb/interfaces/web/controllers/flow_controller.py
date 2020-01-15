@@ -43,6 +43,7 @@ import numpy
 import six
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -470,6 +471,10 @@ class FlowController(BaseController):
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
+
+                    if isinstance(view_model, UploaderViewModel):
+                        view_model.data_subject = form.subject_field.value
+
                     form.fill_trait(view_model)
                 except NotImplementedError:
                     raise formencode.Invalid("Could not find a model for this form!", {}, None, error_dict=form.get_errors_dict())

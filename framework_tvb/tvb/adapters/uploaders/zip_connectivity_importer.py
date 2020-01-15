@@ -36,7 +36,8 @@ import numpy
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
@@ -45,7 +46,7 @@ from tvb.core.neocom import h5
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
 
 
-class ZIPConnectivityImporterModel(ViewModel):
+class ZIPConnectivityImporterModel(UploaderViewModel):
     uploaded = Str(
         label='Connectivity file (zip)'
     )

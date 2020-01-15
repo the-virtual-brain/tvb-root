@@ -35,7 +35,8 @@
 import csv
 import numpy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -112,7 +113,7 @@ class CSVConnectivityParser(object):
 DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 'colon': ':'}
 
 
-class CSVConnectivityImporterModel(ViewModel):
+class CSVConnectivityImporterModel(UploaderViewModel):
     weights = Str(
         label='Weights file (csv)'
     )

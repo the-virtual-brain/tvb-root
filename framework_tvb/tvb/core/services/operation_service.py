@@ -114,8 +114,6 @@ class OperationService:
         algo = adapter_instance.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
-        kwargs['Data_Subject'] = adapter_instance.submitted_form.subject_field.value
-
         operations = self.prepare_operations(current_user.id, project, algo, algo_category,
                                              {}, visible, view_model=model_view, **kwargs)[0]
 
@@ -296,7 +294,6 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = self.load_view_model(adapter_instance, operation)
-            view_model.subject = kwargs['Data_Subject']
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)

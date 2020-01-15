@@ -29,14 +29,15 @@
 #
 
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, Sensors
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
     RegionTimeSeriesImporter
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
-class EEGMatTimeSeriesImporterModel(ViewModel):
+class EEGMatTimeSeriesImporterModel(UploaderViewModel):
     datatype = DataTypeGidAttr(
         linked_datatype=Sensors,
         label='EEG Sensors'

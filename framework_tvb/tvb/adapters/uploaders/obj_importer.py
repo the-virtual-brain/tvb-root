@@ -38,13 +38,14 @@ from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import make_surface, center_vertices
 from tvb.core.neotraits.forms import BoolField, TraitUploadField, SelectField
 from tvb.core.neocom import h5
 
 
-class ObjSurfaceImporterModel(ViewModel):
+class ObjSurfaceImporterModel(UploaderViewModel):
     surface_type = Str(
         label='Specify file type :',
         choices=tuple(ALL_SURFACES_SELECTION.values()),

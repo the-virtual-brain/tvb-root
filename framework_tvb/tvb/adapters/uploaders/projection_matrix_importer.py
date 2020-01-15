@@ -41,6 +41,7 @@ from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
@@ -61,7 +62,7 @@ def determine_projection_type(sensors_idx):
     return projection_matrix_type
 
 
-class ProjectionMatrixImporterModel(ViewModel):
+class ProjectionMatrixImporterModel(UploaderViewModel):
     projection_file = Str(
         label='Projection matrix file (.mat or .npy format)',
         doc='Expected a file containing projection matrix (one vector of length '

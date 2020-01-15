@@ -43,11 +43,12 @@ from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 
 
-class ConnectivityMeasureImporterModel(ViewModel):
+class ConnectivityMeasureImporterModel(UploaderViewModel):
     data_file = Str(
         label='Connectivity measure file (.mat format)'
     )

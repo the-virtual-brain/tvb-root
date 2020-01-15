@@ -73,10 +73,9 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
-        subject = view_model.subject
 
-        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: subject})
-        self.generic_attributes.subject = subject
+        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: view_model.data_subject})
+        self.generic_attributes.subject = view_model.data_subject
 
         return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 

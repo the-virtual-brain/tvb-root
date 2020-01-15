@@ -39,7 +39,8 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
 from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
@@ -59,7 +60,7 @@ def chunk_iter(iterable, n):
         yield chunk
 
 
-class TrackImporterModel(ViewModel):
+class TrackImporterModel(UploaderViewModel):
     data_file = Str(
         label='Please select file to import'
     )

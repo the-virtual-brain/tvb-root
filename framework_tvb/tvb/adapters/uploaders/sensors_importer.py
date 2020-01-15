@@ -39,11 +39,12 @@ from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
-from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
-class SensorsImporterModel(ViewModel):
+class SensorsImporterModel(UploaderViewModel):
     OPTIONS = {'EEG Sensors': SensorsEEG.sensors_type.default,
                'MEG Sensors': SensorsMEG.sensors_type.default,
                'Internal Sensors': SensorsInternal.sensors_type.default}
