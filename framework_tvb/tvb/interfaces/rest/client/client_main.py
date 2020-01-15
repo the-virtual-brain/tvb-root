@@ -77,10 +77,3 @@ class MainClient:
 
     def get_operation_results(self, operation_gid):
         return self.operation_api.get_operations_results(operation_gid)
-
-
-if __name__ == '__main__':
-    client = MainClient("http://127.0.0.1:9090/api")
-    client.get_users()
-    print(client.get_users())
-    print(client.get_project_list("admin"))
