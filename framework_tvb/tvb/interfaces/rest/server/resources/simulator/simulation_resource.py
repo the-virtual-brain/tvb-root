@@ -44,7 +44,8 @@ class FireSimulationResource(RestResource):
     Start a simulation using a project id and a zip archive with the simulator data serialized
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 

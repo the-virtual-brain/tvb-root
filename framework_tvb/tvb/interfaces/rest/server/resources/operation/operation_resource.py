@@ -79,7 +79,8 @@ class GetOperationResultsResource(RestResource):
 class LaunchOperationResource(RestResource):
     """ A generic method of launching Analyzers  """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.operation_service = OperationService()
         self.project_service = ProjectService()
         self.user_service = UserService()

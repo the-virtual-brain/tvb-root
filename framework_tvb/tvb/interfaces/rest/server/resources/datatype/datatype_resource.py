@@ -60,7 +60,8 @@ class GetOperationsForDatatypeResource(RestResource):
     :return the available operations for that datatype, as a list of Algorithm instances
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.flow_service = FlowService()
 
     def get(self, datatype_gid):

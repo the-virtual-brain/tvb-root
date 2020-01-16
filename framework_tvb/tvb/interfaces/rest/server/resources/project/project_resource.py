@@ -41,7 +41,8 @@ class GetDataInProjectResource(RestResource):
     :return a list of DataType instances (subclasses) associated with the current project
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
     def get(self, project_gid):
@@ -59,7 +60,8 @@ class GetOperationsInProjectResource(RestResource):
     :return a list of project's Operation entities
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
     def get(self, project_gid):
