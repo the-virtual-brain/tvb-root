@@ -40,9 +40,6 @@ from tvb.interfaces.rest.server.resources.util import save_temporary_file
 
 
 class FireSimulationResource(RestResource):
-    """
-    Start a simulation using a project id and a zip archive with the simulator data serialized
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,6 +47,9 @@ class FireSimulationResource(RestResource):
         self.project_service = ProjectService()
 
     def post(self, project_gid):
+        """
+        :start a simulation using a project id and a zip archive with the simulator data serialized
+        """
         # TODO: inform user about operation gid to monitor
         file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
         zip_path = save_temporary_file(file)

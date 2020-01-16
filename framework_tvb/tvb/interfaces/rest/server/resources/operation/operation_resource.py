@@ -46,11 +46,11 @@ INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
 
 class GetOperationStatusResource(RestResource):
-    """
-    :return status of an operation
-    """
 
     def get(self, operation_gid):
+        """
+        :return status of an operation
+        """
         operation = ProjectService.load_operation_by_gid(operation_gid)
         if operation is None:
             raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
@@ -59,12 +59,12 @@ class GetOperationStatusResource(RestResource):
 
 
 class GetOperationResultsResource(RestResource):
-    """
-    :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
-    None, if the operation is still running, has failed or simply has no results.
-    """
 
     def get(self, operation_gid):
+        """
+        :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
+        None, if the operation is still running, has failed or simply has no results.
+        """
         operation = ProjectService.load_operation_lazy_by_gid(operation_gid)
         if operation is None:
             raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
@@ -77,7 +77,6 @@ class GetOperationResultsResource(RestResource):
 
 
 class LaunchOperationResource(RestResource):
-    """ A generic method of launching Analyzers  """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,6 +86,9 @@ class LaunchOperationResource(RestResource):
         self.files_helper = FilesHelper()
 
     def post(self, project_gid, algorithm_module, algorithm_classname):
+        """
+        :generic method of launching Analyzers
+        """
         # TODO: inform user about operation gid for later monitoring
         file = self.extract_file_from_request()
         h5_path = save_temporary_file(file)

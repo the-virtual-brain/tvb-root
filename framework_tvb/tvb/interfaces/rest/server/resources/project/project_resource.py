@@ -37,15 +37,15 @@ INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
 
 
 class GetDataInProjectResource(RestResource):
-    """
-    :return a list of DataType instances (subclasses) associated with the current project
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
     def get(self, project_gid):
+        """
+        :return a list of DataType instances (subclasses) associated with the current project
+        """
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except ProjectServiceException:
@@ -56,15 +56,15 @@ class GetDataInProjectResource(RestResource):
 
 
 class GetOperationsInProjectResource(RestResource):
-    """
-    :return a list of project's Operation entities
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
     def get(self, project_gid):
+        """
+        :return a list of project's Operation entities
+        """
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except ProjectServiceException:
