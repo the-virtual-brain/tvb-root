@@ -76,19 +76,31 @@ def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
     # creating an API object
-    api = RestApi(app)
+    api = RestApi(app, title="Rest services for TVB", doc="/doc/")
 
-    api.add_resource(GetUsersResource, build_path('/users'))
-    api.add_resource(GetProjectsListResource, build_path('/users/<string:username>/projects'))
-    api.add_resource(GetDataInProjectResource, build_path('/projects/<string:project_gid>/data'))
-    api.add_resource(GetOperationsInProjectResource, build_path('/projects/<string:project_gid>/operations'))
-    api.add_resource(RetrieveDatatypeResource, build_path('/datatypes/<string:datatype_gid>'))
-    api.add_resource(GetOperationsForDatatypeResource, build_path('/datatypes/<string:datatype_gid>/operations'))
-    api.add_resource(FireSimulationResource, build_path('/simulation/<string:project_gid>'))
-    api.add_resource(LaunchOperationResource, build_path('/operations/<string:project_gid>/algorithm'
-                                                         '/<string:algorithm_module>/<string:algorithm_classname>'))
-    api.add_resource(GetOperationStatusResource, build_path('/operations/<string:operation_gid>/status'))
-    api.add_resource(GetOperationResultsResource, build_path('/operations/<string:operation_gid>/results'))
+    name_space_users = api.namespace('api/users', description="TVB-REST APIs for users management")
+    name_space_projects = api.namespace('api/projects', description="TVB-REST APIs for projects management")
+    name_space_datatypes = api.namespace('api/datatypes', description="TVB-REST APIs for datatypes management")
+    name_space_operations = api.namespace('api/operations', description="TVB-REST APIs for operations management")
+    name_space_simulation = api.namespace('api/simulation', description="TVB-REST APIs for simulation management")
+
+    name_space_users.add_resource(GetUsersResource, '/')
+    name_space_users.add_resource(GetProjectsListResource, '/<string:username>/projects')
+    name_space_projects.add_resource(GetDataInProjectResource, '/<string:project_gid>/data')
+    name_space_projects.add_resource(GetOperationsInProjectResource, '/<string:project_gid>/operations')
+    name_space_datatypes.add_resource(RetrieveDatatypeResource, '/<string:datatype_gid>')
+    name_space_datatypes.add_resource(GetOperationsForDatatypeResource, '/<string:datatype_gid>/operations')
+    name_space_simulation.add_resource(FireSimulationResource, '/<string:project_gid>')
+    name_space_operations.add_resource(LaunchOperationResource, '/<string:project_gid>/algorithm'
+                                                                '/<string:algorithm_module>/<string:algorithm_classname>')
+    name_space_operations.add_resource(GetOperationStatusResource, '/<string:operation_gid>/status')
+    name_space_operations.add_resource(GetOperationResultsResource, '/<string:operation_gid>/results')
+
+    api.add_namespace(name_space_users)
+    api.add_namespace(name_space_projects)
+    api.add_namespace(name_space_datatypes)
+    api.add_namespace(name_space_operations)
+    api.add_namespace(name_space_simulation)
 
     app.run(debug=True, port=FLASK_PORT)
 

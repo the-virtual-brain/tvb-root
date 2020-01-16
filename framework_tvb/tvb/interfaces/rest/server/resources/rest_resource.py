@@ -28,7 +28,7 @@
 #
 #
 from flask import request
-from flask_restful import Resource
+from flask_restplus import Resource
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify
 from tvb.interfaces.rest.server.resources.exceptions import BadRequestException

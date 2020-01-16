@@ -28,7 +28,7 @@
 #
 #
 
-from flask_restful import Api
+from flask_restplus import Api
 from tvb.basic.exceptions import TVBException
 
 

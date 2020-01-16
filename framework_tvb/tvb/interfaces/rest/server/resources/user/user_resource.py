@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.server.dto.dtos import UserDto, ProjectDto
@@ -36,21 +35,21 @@ from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 
 class GetUsersResource(RestResource):
-    """
-    :return a list of system's users
-    """
 
     def get(self):
+        """
+        :return a list of system's users
+        """
         users = UserService.fetch_all_users()
         return [UserDto(user) for user in users]
 
 
 class GetProjectsListResource(RestResource):
-    """
-    :return a list of user's projects
-    """
 
     def get(self, username):
+        """
+        :return a list of user's projects
+        """
         user = UserService.get_user_by_name(username)
         if user is None:
             raise InvalidIdentifierException('No user registered with username: %s' % username)

@@ -41,11 +41,11 @@ INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: %s'
 
 
 class RetrieveDatatypeResource(RestResource):
-    """
-    Given a guid, this function will download the H5 full data
-    """
 
     def get(self, datatype_gid):
+        """
+        :given a guid, this function will download the H5 full data
+        """
         index = ABCAdapter.load_entity_by_gid(datatype_gid)
         if index is None:
             raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE % datatype_gid)
@@ -56,14 +56,15 @@ class RetrieveDatatypeResource(RestResource):
 
 
 class GetOperationsForDatatypeResource(RestResource):
-    """
-    :return the available operations for that datatype, as a list of Algorithm instances
-    """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.flow_service = FlowService()
 
     def get(self, datatype_gid):
+        """
+        :return the available operations for that datatype, as a list of Algorithm instances
+        """
         categories = dao.get_launchable_categories()
         filtered_adapters = self.flow_service.get_filtered_adapters(datatype_gid, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]

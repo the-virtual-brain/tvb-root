@@ -45,7 +45,7 @@ VERSION = "2.0a1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy","flask", "formencode", "Jinja2",
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "flask", "flask-restplus", "formencode", "Jinja2",
                             "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
 
