@@ -92,6 +92,8 @@ def initialize_flask():
     name_space.add_resource(GetOperationStatusResource, '/operations/<string:operation_gid>/status')
     name_space.add_resource(GetOperationResultsResource, '/operations/<string:operation_gid>/results')
 
+    api.add_namespace(name_space)
+
     app.run(debug=True, port=FLASK_PORT)
 
 
