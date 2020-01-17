@@ -43,7 +43,6 @@ import numpy
 import six
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -82,7 +81,6 @@ class FlowController(BaseController):
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
 
-
     @expose_page
     @settings
     @context_selected
@@ -119,7 +117,6 @@ class FlowController(BaseController):
             self.logger.warning(message)
             raise cherrypy.HTTPRedirect('/tvb')
 
-
     @expose_page
     @settings
     @context_selected
@@ -131,7 +128,6 @@ class FlowController(BaseController):
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
         return self.fill_default_attributes(template_specification)
-
 
     @staticmethod
     def _compute_back_link(back_indicator, project):
@@ -148,7 +144,6 @@ class FlowController(BaseController):
         else:
             back_page_link = '/project/editstructure/' + str(project.id)
         return back_page_link
-
 
     @expose_page
     @settings
@@ -171,7 +166,6 @@ class FlowController(BaseController):
         self.fill_default_attributes(template_specification, algorithms[0].group_name)
         return template_specification
 
-
     @expose_page
     @settings
     @context_selected
@@ -192,7 +186,6 @@ class FlowController(BaseController):
                                                   int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
-
 
     @expose_page
     @settings
@@ -244,7 +237,6 @@ class FlowController(BaseController):
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
         self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
-
 
     @expose_fragment("flow/reduce_dimension_select")
     def gettemplatefordimensionselect(self, entity_gid=None, select_name="", reset_session='False',
@@ -351,7 +343,6 @@ class FlowController(BaseController):
 
         return template_params
 
-
     @staticmethod
     def _compute_current_dimension(array_shape, selected_items, selected_functions):
         """
@@ -370,7 +361,6 @@ class FlowController(BaseController):
                     current_dim -= 1
         return array_shape, current_dim
 
-
     @staticmethod
     def accepted__aggregation_functions():
         """
@@ -378,7 +368,6 @@ class FlowController(BaseController):
         applied on arrays.
         """
         return {"sum": "Sum", "average": "Average"}
-
 
     @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
@@ -439,7 +428,6 @@ class FlowController(BaseController):
                                   "parentDivId": parent_div, common.KEY_SESSION_TREE: tree_session_key}
         return self.fill_default_attributes(template_specification)
 
-
     def _get_node(self, input_tree, name):
         """
         Given a input tree and a variable name, check to see if any default filters exist.
@@ -458,7 +446,6 @@ class FlowController(BaseController):
                     return in_options
         return None
 
-
     def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""
         errors = None
@@ -471,10 +458,6 @@ class FlowController(BaseController):
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
-
-                    if isinstance(view_model, UploaderViewModel):
-                        view_model.data_subject = form.subject_field.value
-
                     form.fill_trait(view_model)
                 except NotImplementedError:
                     raise formencode.Invalid("Could not find a model for this form!", {}, None, error_dict=form.get_errors_dict())
@@ -519,7 +502,6 @@ class FlowController(BaseController):
         template_specification[common.KEY_OPERATION_ID] = adapter_instance.operation_id
         return template_specification
 
-
     def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True,
                                  is_burst=True):
         """ Get Input HTML Interface template or a given adapter """
@@ -546,7 +528,6 @@ class FlowController(BaseController):
             common.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
         return None
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -560,7 +541,6 @@ class FlowController(BaseController):
         except Exception as excep:
             self.logger.error("Could not retrieve file from path:" + str(coded_path))
             self.logger.exception(excep)
-
 
     def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
 
@@ -581,7 +561,6 @@ class FlowController(BaseController):
                 result = result()
         return result
 
-
     @expose_json
     def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
         algorithm = self.flow_service.get_algorithm_by_identifier(algo_id)
@@ -594,7 +573,6 @@ class FlowController(BaseController):
         if kwargs:
             return method(entity_gid, **kwargs)
         return method(entity_gid)
-
 
     @expose_json
     def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
@@ -616,7 +594,6 @@ class FlowController(BaseController):
         entity_h5.close()
         return self._prepare_result(result, flatten)
 
-
     @expose_json
     def read_datatype_attribute(self, entity_gid, dataset_name, flatten=False, datatype_kwargs='null', **kwargs):
         """
@@ -635,8 +612,6 @@ class FlowController(BaseController):
         result = self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
         return self._prepare_result(result, flatten)
 
-
-
     def _prepare_result(self, result, flatten):
         if isinstance(result, numpy.ndarray):
             # for ndarrays honor the flatten kwarg and convert to lists as ndarrs are not json-able
@@ -646,11 +621,9 @@ class FlowController(BaseController):
         else:
             return result
 
-
     @expose_numpy_array
     def read_binary_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
         return self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
-
 
     @expose_fragment("flow/genericAdapterFormFields")
     def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):
@@ -664,7 +637,6 @@ class FlowController(BaseController):
         template_specification[common.KEY_PARENT_DIV] = parent_div
         return self.fill_default_attributes(template_specification)
 
-
     @expose_fragment("flow/full_adapter_interface")
     def getadapterinterface(self, project_id, algorithm_id, back_page=None):
         """
@@ -674,7 +646,6 @@ class FlowController(BaseController):
         template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
-
 
     def get_adapter_template(self, project_id, algorithm_id, is_upload=False, back_page=None):
         """
@@ -699,7 +670,6 @@ class FlowController(BaseController):
         template_specification[common.KEY_DISPLAY_MENU] = not is_upload
         return template_specification
 
-
     @cherrypy.expose
     @handle_error(redirect=True)
     @context_selected
@@ -712,7 +682,6 @@ class FlowController(BaseController):
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -732,7 +701,6 @@ class FlowController(BaseController):
         operation.burst.prepare_after_load()
         common.add2session(common.KEY_BURST_CONFIG, operation.burst)
         raise cherrypy.HTTPRedirect("/burst/")
-
 
     @expose_json
     def stop_operation(self, operation_id, is_group, remove_after_stop=False):
@@ -755,7 +723,6 @@ class FlowController(BaseController):
                     ProjectService().remove_operation(operation.id)
                 result = result or tmp_res
         return result
-
 
     @expose_json
     def stop_burst_operation(self, operation_id, is_group, remove_after_stop=False):
@@ -785,7 +752,6 @@ class FlowController(BaseController):
             self.logger.exception(ex)
             return False
 
-
     def fill_default_attributes(self, template_dictionary, title='-'):
         """
         Overwrite base controller to add required parameters for adapter templates.
@@ -801,7 +767,6 @@ class FlowController(BaseController):
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-
 
     ##### Below this point are operations that might be moved to different #####
     ##### controller                                                       #####
@@ -822,12 +787,10 @@ class FlowController(BaseController):
 
         return names, sel_values
 
-
     @expose_fragment('visualizers/commons/channel_selector_opts')
     def get_available_selections(self, **data):
         sel_names, sel_values = self._get_available_selections(data['datatype_gid'])
         return dict(namedSelections=list(zip(sel_names, sel_values)))
-
 
     @expose_json
     def store_measure_points_selection(self, ui_name, **data):
@@ -846,11 +809,9 @@ class FlowController(BaseController):
             error_msg = self.NEW_SELECTION_NAME + " or empty name are not  valid as selection names."
             return [False, error_msg]
 
-
     @expose_fragment("visualizers/pse_discrete/inserting_new_threshold_spec_bar")
     def create_row_of_specs(self, count):
         return dict(id_increment_count=count)
-
 
     @expose_json
     def store_pse_filter(self, config_name, **data):
@@ -873,7 +834,6 @@ class FlowController(BaseController):
 
         self.get_pse_filters()
         return [True, 'Selected Text stored, and selection updated']
-
 
     @expose_fragment("visualizers/commons/channel_selector_opts")
     def get_pse_filters(self):

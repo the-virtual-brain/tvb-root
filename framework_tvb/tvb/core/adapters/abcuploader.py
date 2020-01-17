@@ -39,15 +39,15 @@ from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 
 
 class ABCUploaderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
-        self.subject_field = SimpleStrField(self, name=DataTypeMetaData.KEY_SUBJECT, required=True, label='Subject',
-                                            default=DataTypeMetaData.DEFAULT_SUBJECT)
+        self.subject_field = StrField(UploaderViewModel.data_subject, self, name='data_subject')
         self.temporary_files = []
 
     @staticmethod

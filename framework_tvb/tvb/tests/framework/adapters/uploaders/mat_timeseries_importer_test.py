@@ -86,5 +86,3 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
         tsr = TestFactory.get_entity(self.test_project, TimeSeriesRegionIndex)
 
         assert (661, 1, 68, 1) == (tsr.data_length_1d, tsr.data_length_2d, tsr.data_length_3d, tsr.data_length_4d)
-
-
