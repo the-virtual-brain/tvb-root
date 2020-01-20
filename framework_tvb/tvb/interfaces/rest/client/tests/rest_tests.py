@@ -15,6 +15,7 @@ import tvb_data.sensors as demo_data
 
 
 class TestRestService(TransactionalTestCase):
+    # Following tests are intended as examples and work when the server is started
 
     def transactional_setup_method(self):
         self.base_url = "http://127.0.0.1:9090/api"

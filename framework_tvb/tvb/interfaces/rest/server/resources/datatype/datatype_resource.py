@@ -65,6 +65,7 @@ class GetOperationsForDatatypeResource(RestResource):
         """
         :return the available operations for that datatype, as a list of Algorithm instances
         """
+        # TODO: determine invalid gid in this case
         categories = dao.get_launchable_categories()
         filtered_adapters = self.flow_service.get_filtered_adapters(datatype_gid, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]

@@ -47,7 +47,7 @@ class ABCUploaderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
-        self.subject_field = StrField(UploaderViewModel.data_subject, self, name='data_subject')
+        self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
         self.temporary_files = []
 
     @staticmethod
