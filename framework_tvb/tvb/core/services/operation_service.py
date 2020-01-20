@@ -55,7 +55,8 @@ from tvb.core import utils
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, BurstConfiguration
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
+    BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.storage import dao
@@ -203,6 +204,29 @@ class OperationService:
 
         return operation
 
+    def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
+                          ranges=None):
+        operation_parameters = json.dumps({'gid': view_model_gid})
+        metadata, user_group = self._prepare_metadata(metadata, category, op_group, {})
+        meta_str = json.dumps(metadata)
+
+        op_group_id = None
+        if op_group:
+            op_group_id = op_group.id
+
+        operation = Operation(user_id, project_id, algorithm_id, operation_parameters, op_group_id=op_group_id,
+                              meta=meta_str, range_values=ranges)
+
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
+                          str(metadata) + ",algorithmId=" + str(algorithm_id) + ", ops_group= " + str(
+            op_group_id) + ")")
+
+        # visible_operation = visible and category.display is False
+        operation = dao.store_entity(operation)
+        # operation.visible = visible_operation
+
+        return operation
+
     def prepare_operations(self, user_id, project, algorithm, category, metadata,
                            visible=True, existing_dt_group=None, view_model=None, **kwargs):
         """
@@ -211,6 +235,7 @@ class OperationService:
         instance from the range.
         :param metadata: Initial MetaData with potential Burst identification inside.
         """
+        # TODO: fix group operations
         operations = []
 
         available_args, group = self._prepare_group(project.id, existing_dt_group, kwargs)

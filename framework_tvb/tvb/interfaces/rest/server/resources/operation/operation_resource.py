@@ -28,6 +28,7 @@
 #
 #
 
+import shutil
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
@@ -102,11 +103,17 @@ class LaunchOperationResource(RestResource):
         if algorithm is None:
             raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
 
-        # Prepare and fire operation
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         view_model = adapter_instance.get_view_model_class()()
         view_model_h5 = ViewModelH5(h5_path, view_model)
-        view_model_h5.load_into(view_model)
+        view_model_gid = view_model_h5.gid.load()
+
         # TODO: use logged user
-        self.flow_service.fire_operation(adapter_instance, self.user_service.get_user_by_id(1), project.id,
-                                         view_model=view_model)
+        first_user = self.user_service.get_user_by_id(1)
+        operation = self.operation_service.prepare_operation(first_user.id, project.id, algorithm.id,
+                                                             algorithm.algorithm_category, view_model_gid.hex, None, {})
+        storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+
+        shutil.move(h5_path, storage_path)
+        OperationService().launch_operation(operation.id, True)
+        return operation.gid
