@@ -29,23 +29,23 @@
 #
 
 import requests
-import json
-from tvb.core.neotraits._h5core import ViewModelH5
+from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
+from tvb.interfaces.rest.commons.dtos import DataTypeDto
 
 
 class OperationApi(MainApi):
-
+    @handle_response
     def get_operation_status(self, operation_gid):
-        response = requests.get(self.server_url + "/operations/" + operation_gid + "/status")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return requests.get(self.server_url + "/operations/" + operation_gid + "/status")
 
+    @handle_response
     def get_operations_results(self, operation_gid):
         response = requests.get(self.server_url + "/operations/" + operation_gid + "/results")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return response, DataTypeDto
 
+    @handle_response
     def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder):
         h5_file_path = temp_folder + '/ViewModel.h5'
 
@@ -54,8 +54,6 @@ class OperationApi(MainApi):
         h5_file.close()
 
         file_obj = open(h5_file_path, 'rb')
-        response = requests.post(self.server_url + "/operations/" + project_gid + "/algorithm/" +
-                                 algorithm_module + "/" + algorithm_classname,
-                                 files={"file": ("ViewModel.h5", file_obj)})
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return requests.post(self.server_url + "/operations/" + project_gid + "/algorithm/" +
+                             algorithm_module + "/" + algorithm_classname,
+                             files={"file": ("ViewModel.h5", file_obj)})

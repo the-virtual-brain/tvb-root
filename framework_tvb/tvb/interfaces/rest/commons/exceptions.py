@@ -29,6 +29,7 @@
 #
 
 from abc import abstractmethod
+
 from tvb.basic.exceptions import TVBException
 
 

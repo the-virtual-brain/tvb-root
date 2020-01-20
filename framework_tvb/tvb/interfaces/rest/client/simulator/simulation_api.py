@@ -28,19 +28,21 @@
 #
 #
 
-import requests
-import json
-import tempfile
 import os
+import tempfile
+
+import requests
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 
 
 class SimulationApi(MainApi):
 
+    @handle_response
     def fire_simulation(self, project_gid, session_stored_simulator, burst_config, temp_folder):
         simulator_index = SimulatorIndex()
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
@@ -54,7 +56,5 @@ class SimulationApi(MainApi):
 
         # TODO: HANDLE BURST_CONFIG SENDING
         file_obj = open(zip_folder_path, 'rb')
-        response = requests.post(self.server_url + '/simulation/' + project_gid, files={"file": ("SimulationData.zip", file_obj)})
-
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return requests.post(self.server_url + '/simulation/' + project_gid,
+                             files={"file": ("SimulationData.zip", file_obj)})

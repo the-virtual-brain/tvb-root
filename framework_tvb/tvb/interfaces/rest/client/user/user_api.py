@@ -29,18 +29,19 @@
 #
 
 import requests
-import json
+
+from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
+from tvb.interfaces.rest.commons.dtos import UserDto, ProjectDto
 
 
 class UserApi(MainApi):
-
+    @handle_response
     def get_users(self):
         response = requests.get(self.server_url + "/users")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return response, UserDto
 
+    @handle_response
     def get_projects_list(self, username):
         response = requests.get(self.server_url + "/users/" + username + "/projects")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return response, ProjectDto

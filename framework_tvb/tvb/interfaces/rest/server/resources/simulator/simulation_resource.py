@@ -29,11 +29,12 @@
 #
 
 import os
+
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -65,4 +66,4 @@ class FireSimulationResource(RestResource):
         self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id, project=project,
                                                             zip_folder_path=zip_path[:-4])
 
-        return {'message': 'Simulation started'}, 201
+        return 'Simulation started', 201

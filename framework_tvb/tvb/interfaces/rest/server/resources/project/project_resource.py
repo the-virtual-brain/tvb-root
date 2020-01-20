@@ -29,8 +29,8 @@
 #
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
-from tvb.interfaces.rest.server.dto.dtos import OperationDto, DataTypeDto
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.dtos import OperationDto, DataTypeDto
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'

@@ -27,47 +27,32 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
+from functools import wraps
 
-class UserDto:
-    def __init__(self, user):
-        self.username = user.username
-        self.email = user.email
-        self.validated = user.validated
-        self.role = user.role
+from tvb.interfaces.rest.commons.exceptions import BaseRestException
 
 
-class ProjectDto:
-    def __init__(self, project):
-        self.gid = project.gid
-        self.name = project.name
-        self.description = project.description
-        self.gid = project.gid
-        self.version = project.version
+def handle_response(func):
+    @wraps(func)
+    def decorator(*a, **b):
+        result = func(*a, **b)
+        response = result
+        classz = None
 
+        if isinstance(result, tuple):
+            response = result[0]
+            classz = result[1]
 
-class OperationDto:
-    def __init__(self, operation):
-        self.user_id = operation['user'].id
-        self.algorithm_id = operation['algorithm'].id
-        self.group = operation['group']
-        self.gid = operation['gid']
-        self.create_date = operation['create']
-        self.start_date = operation['start']
-        self.completion_date = operation['complete']
-        self.status = operation['status']
-        self.visible = operation['visible']
+        content = response.content
+        successful_call = response.ok
 
+        if successful_call:
+            if classz is not None:
+                return json.loads(content.decode('utf-8'), object_hook=lambda d: classz(**d))
+            return json.loads(content.decode('utf-8'))
 
-class AlgorithmDto:
-    def __init__(self, algorithm):
-        self.module = algorithm.module
-        self.classname = algorithm.classname
-        self.displayname = algorithm.displayname
-        self.description = algorithm.description
+        decoded_dict = json.loads(content.decode('utf-8'))
+        raise BaseRestException(decoded_dict['message'], decoded_dict['code'])
 
-
-class DataTypeDto:
-    def __init__(self, datatype):
-        self.gid = datatype.gid
-        self.name = datatype.display_name
-        self.type = datatype.display_type
+    return decorator

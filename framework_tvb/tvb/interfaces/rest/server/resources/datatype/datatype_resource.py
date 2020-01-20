@@ -33,8 +33,8 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
-from tvb.interfaces.rest.server.dto.dtos import AlgorithmDto
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.dtos import AlgorithmDto
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: %s'

@@ -29,18 +29,18 @@
 #
 
 import requests
-import json
+from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
+from tvb.interfaces.rest.commons.dtos import DataTypeDto, OperationDto
 
 
 class ProjectApi(MainApi):
-
+    @handle_response
     def get_data_in_project(self, project_gid):
         response = requests.get(self.server_url + '/projects/' + project_gid + "/data")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return response, DataTypeDto
 
+    @handle_response
     def get_operations_in_project(self, project_gid):
         response = requests.get(self.server_url + '/projects/' + project_gid + "/operations")
-        content = response.content
-        return json.loads(content.decode('utf-8'))
+        return response, OperationDto

@@ -36,8 +36,8 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.server.dto.dtos import DataTypeDto
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.dtos import DataTypeDto
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -55,7 +55,7 @@ class GetOperationStatusResource(RestResource):
         if operation is None:
             raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
 
-        return {"status": operation.status}
+        return operation.status
 
 
 class GetOperationResultsResource(RestResource):
