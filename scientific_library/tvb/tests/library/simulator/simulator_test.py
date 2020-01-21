@@ -42,6 +42,7 @@ import pytest
 import numpy
 import itertools
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.models import ModelsEnum
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
 from tvb.datatypes.connectivity import Connectivity
@@ -50,7 +51,7 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
 
-MODEL_CLASSES = models.Model.get_known_subclasses().values()
+MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
 
 
@@ -98,7 +99,7 @@ class Simulator(object):
 
         return results
 
-    def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
+    def configure(self, dt=2 ** -3, model=ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), speed=4.0,
                   coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
                   default_connectivity=True):

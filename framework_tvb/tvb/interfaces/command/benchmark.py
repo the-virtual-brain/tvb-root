@@ -38,9 +38,9 @@ from datetime import datetime
 from os import path
 from tvb.simulator.coupling import HyperbolicTangent
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.simulator.models import *
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.interfaces.command.lab import *
+from tvb.simulator.models import ModelsEnum
 
 
 def _fire_simulation(project_id, **kwargs):
@@ -144,8 +144,8 @@ def main():
 
     g2d_epi = Bench(
         model_kws=[
-            {"model": Generic2dOscillator()},
-            {"model": Epileptor()},
+            {"model": ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()()},
+            {"model": ModelsEnum.EPILEPTOR.get_class()()},
         ],
         connectivities=connectivities,
         conductions=[30.0, 3.0],
@@ -155,7 +155,7 @@ def main():
 
     larter = Bench(
         model_kws=[
-            {"model": LarterBreakspear(), "coupling": HyperbolicTangent()},
+            {"model": ModelsEnum.LARTER_BREAKSPEAR.get_class()(), "coupling": HyperbolicTangent()},
         ],
         connectivities=connectivities,
         conductions=[10.0],

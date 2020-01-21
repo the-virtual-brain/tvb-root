@@ -36,7 +36,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, MODEL_PARAMETERS, SerializationManager
 from tvb.simulator.integrators import HeunStochastic
-from tvb.simulator.models import Hopfield, Generic2dOscillator
+from tvb.simulator.models import ModelsEnum
 from tvb.tests.framework.core.factory import TestFactory
 from os import path
 import tvb_data
@@ -51,7 +51,7 @@ class TestSerializationManager(TransactionalTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        sim_conf = Simulator(model=Hopfield(), integrator=HeunStochastic())
+        sim_conf = Simulator(model=ModelsEnum.HOPFIELD.get_class()(), integrator=HeunStochastic())
 
         self.s_manager = SerializationManager(sim_conf)
         self.empty_manager = SerializationManager(None)
@@ -75,7 +75,7 @@ class TestSerializationManager(TransactionalTestCase):
 
     def test_write_model_parameters_one_dynamic(self, connectivity_factory):
         connectivity = connectivity_factory()
-        m_name = Generic2dOscillator.__name__
+        m_name = ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__
         m_parms = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
                    'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
 
@@ -83,7 +83,7 @@ class TestSerializationManager(TransactionalTestCase):
 
         sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert isinstance(sc.model, Generic2dOscillator)
+        assert isinstance(sc.model, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class())
 
         # a modified parameter
         expected = [1.75]  # we expect same value arrays to contract to 1 element
@@ -96,7 +96,7 @@ class TestSerializationManager(TransactionalTestCase):
 
     def test_write_model_parameters_two_dynamics(self, connectivity_factory):
         connectivity = connectivity_factory()
-        m_name = Generic2dOscillator.__name__
+        m_name = ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__
         m_parms_1 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -10.0, 'beta': 1.0, 'c': 0.0,
                      'd': 0.02, 'e': 3.0, 'f': 1.0, 'g': 0.0, 'gamma': 1.0, 'tau': 1.47}
         m_parms_2 = {'I': 0.0, 'a': 1.75, 'alpha': 1.0, 'b': -5.0, 'beta': 1.0, 'c': 0.0,
@@ -109,7 +109,7 @@ class TestSerializationManager(TransactionalTestCase):
 
         sc = self.s_manager.conf
         # Default model in these tests is Hopfield. Test if the model was changed to Generic2dOscillator
-        assert isinstance(sc.model, Generic2dOscillator)
+        assert isinstance(sc.model, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class())
 
         expected = [1.75]  # array contracted to one value
         actual = sc.model.a
