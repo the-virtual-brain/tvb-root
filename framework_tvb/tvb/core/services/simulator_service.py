@@ -32,8 +32,8 @@ import json
 import os
 import shutil
 import threading
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
@@ -41,6 +41,7 @@ from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
@@ -129,21 +130,12 @@ class SimulatorService(object):
                 BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
     def prepare_simulation_on_server(self, burst_config, user_id, project, zip_folder_path):
+        # TODO: Review this
         from tvb.config.init.introspector_registry import IntrospectionRegistry
         simulator_algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                          IntrospectionRegistry.SIMULATOR_CLASS)
 
-        thread = threading.Thread(target=self.async_launch_simulation_on_server,
-                                  kwargs={'burst_config': burst_config,
-                                          'user_id': user_id,
-                                          'project': project,
-                                          'simulator_algo': simulator_algo,
-                                          'zip_folder_path': zip_folder_path})
-        thread.start()
-
-    def async_launch_simulation_on_server(self, burst_config, user_id, project, simulator_algo, zip_folder_path):
         simulator_h5_name = [f for f in os.listdir(zip_folder_path) if 'Simulator' in f][0]
-
         try:
             simulator_index = SimulatorIndex()
             simulator_index.gid = simulator_h5_name[10:-3]
@@ -151,14 +143,29 @@ class SimulatorService(object):
             if burst_config:
                 simulator_index.fk_parent_burst = burst_config.id
                 metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
-               # dao.store_entity(simulator_index) when the client side of this operation will we done, we will uncomment this line as simulator should be stored here, not in the client
+            # dao.store_entity(simulator_index) when the client side of this operation will we done, we will uncomment this line as simulator should be stored here, not in the client
             simulator_id = simulator_algo.id
             algo_category = simulator_algo.algorithm_category
             operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
-                                             algo_category, None, metadata)
+                                                algo_category, None, metadata)
             simulator_index.fk_from_operation = operation.id
             storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
 
+            thread = threading.Thread(target=self.async_launch_simulation_on_server,
+                                      kwargs={'operation': operation,
+                                              'burst_config': burst_config,
+                                              'zip_folder_path': zip_folder_path,
+                                              'storage_operation_path': storage_operation_path})
+            thread.start()
+
+            return operation
+        except Exception as excep:
+            self.logger.error(excep)
+            if burst_config:
+                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+
+    def async_launch_simulation_on_server(self, operation, burst_config, zip_folder_path, storage_operation_path):
+        try:
             for file in os.listdir(zip_folder_path):
                 os.replace(os.path.join(zip_folder_path, file), os.path.join(storage_operation_path, file))
             wf_errs = 0

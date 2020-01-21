@@ -51,7 +51,6 @@ class FireSimulationResource(RestResource):
         """
         :start a simulation using a project id and a zip archive with the simulator data serialized
         """
-        # TODO: inform user about operation gid to monitor
         file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
         zip_path = save_temporary_file(file)
 
@@ -63,7 +62,8 @@ class FireSimulationResource(RestResource):
         FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
         user_id = project.fk_admin
 
-        self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id, project=project,
-                                                            zip_folder_path=zip_path[:-4])
+        operation = self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id,
+                                                                        project=project,
+                                                                        zip_folder_path=zip_path[:-4])
 
-        return 'Simulation started', 201
+        return operation.gid, 201
