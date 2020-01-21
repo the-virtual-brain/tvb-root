@@ -374,16 +374,11 @@ class OperationService:
             if adapter_instance is None:
                 algorithm = operation.algorithm
                 adapter_instance = ABCAdapter.build_adapter(algorithm)
-            parsed_params = utils.parse_json_parameters(operation.parameters)
-            if not 'SimulatorAdapter' in adapter_instance.__class__.__name__:
-                adapter_form = adapter_instance.get_form()()
-                adapter_form.fill_from_post(parsed_params)
-                adapter_instance.submit_form(adapter_form)
 
             if send_to_cluster:
                 self._send_to_cluster([operation], adapter_instance, operation.user.username)
             else:
-                self.initiate_prelaunch(operation, adapter_instance, **parsed_params)
+                self.initiate_prelaunch(operation, adapter_instance)
 
     def _handle_exception(self, exception, temp_files, message, operation=None):
         """

@@ -32,9 +32,9 @@ import os
 import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory

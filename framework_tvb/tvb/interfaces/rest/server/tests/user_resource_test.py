@@ -29,7 +29,7 @@
 #
 
 import pytest
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory

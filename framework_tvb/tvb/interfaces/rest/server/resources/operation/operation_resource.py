@@ -115,5 +115,5 @@ class LaunchOperationResource(RestResource):
         storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
         shutil.move(h5_path, storage_path)
-        OperationService().launch_operation(operation.id, True)
+        OperationService().launch_operation(operation.id, False)
         return operation.gid

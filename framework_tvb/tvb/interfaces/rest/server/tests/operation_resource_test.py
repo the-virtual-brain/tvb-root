@@ -29,15 +29,22 @@
 #
 
 import os
+from io import BytesIO
+import flask
 import pytest
 import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.exceptions import TVBException
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.core.neocom import h5
+from tvb.core.neotraits._h5core import ViewModelH5
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory, OperationPossibleStatus
+from werkzeug.datastructures import FileStorage
 
 
 class TestOperationResource(TransactionalTestCase):
@@ -61,9 +68,8 @@ class TestOperationResource(TransactionalTestCase):
         operations = self.operations_resource.get(test_project_with_data.gid)
 
         result = self.status_resource.get(operations[0].gid)
-        status_key = "status"
-        assert type(result) is dict
-        assert status_key in result
+        assert type(result) is str
+        assert result in OperationPossibleStatus
 
     def test_server_get_operation_results_inexistent_gid(self):
         operation_gid = "inexistent-gid"
@@ -94,14 +100,70 @@ class TestOperationResource(TransactionalTestCase):
         assert type(result) is list
         assert len(result) == 0
 
-    # def test_server_launch_operation_inexistent_gid(self):
-    #     project_gid = "inexistent-gid"
-    #     with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid, '', '')
-    #
-    # def test_server_launch_operation_inexistent_algorithm(self):
-    #     inexistent_algorithm = "inexistent-algorithm"
-    #     test_user = TestFactory.create_user('Rest_User')
-    #     test_project = TestFactory.create_project(test_user, 'Rest_Project')
-    #
-    #     with pytest.raises(InvalidIdentifierException): self.launch_resource.post(test_project.gid,
-    #                                                                               inexistent_algorithm, '')
+    def test_server_launch_operation_no_file(self, mocker):
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {}
+
+        with pytest.raises(BadRequestException): self.launch_resource.post('', '', '')
+
+    def test_server_launch_operation_wrong_file_extension(self, mocker):
+        dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {'file': dummy_file}
+
+        with pytest.raises(BadRequestException): self.launch_resource.post('', '', '')
+
+    def test_server_launch_operation_inexistent_gid(self, mocker):
+        project_gid = "inexistent-gid"
+        dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {'file': dummy_file}
+
+        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid, '', '')
+
+    def test_server_launch_operation_inexistent_algorithm(self, mocker):
+        inexistent_algorithm = "inexistent-algorithm"
+        test_user = TestFactory.create_user('Rest_User')
+        test_project = TestFactory.create_project(test_user, 'Rest_Project')
+
+        dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {'file': dummy_file}
+
+        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(test_project.gid,
+                                                                                  inexistent_algorithm, '')
+
+    def test_server_launch_operation(self, mocker):
+        algorithm_module = "tvb.adapters.uploaders.zip_connectivity_importer"
+        algorithm_class = "ZIPConnectivityImporter"
+        test_user = TestFactory.create_user('Rest_User')
+        test_project = TestFactory.create_project(test_user, 'Rest_Project')
+
+        importer_model = ZIPConnectivityImporterModel()
+        importer_model.uploaded = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity',
+                                               'connectivity_96.zip')
+
+        view_model_h5_path = h5.path_for('', ViewModelH5, importer_model.gid)
+
+        view_model_h5 = ViewModelH5(view_model_h5_path, importer_model)
+        view_model_h5.store(importer_model)
+        view_model_h5.close()
+
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        fp = open(view_model_h5_path, 'rb')
+        request_mock.files = {'file': FileStorage(fp, view_model_h5_path)}
+
+        operation_gid = self.launch_resource.post(test_project.gid, algorithm_module, algorithm_class)
+        fp.close()
+
+        assert type(operation_gid) is str
+        assert len(operation_gid) > 0
+
+        result = self.results_resource.get(operation_gid)
+        assert type(result) is list
+        assert result[0].type == ConnectivityIndex().display_type

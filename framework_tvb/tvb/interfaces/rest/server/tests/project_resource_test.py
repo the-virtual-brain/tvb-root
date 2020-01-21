@@ -31,7 +31,7 @@
 import os
 import pytest
 import tvb_data
-from tvb.interfaces.rest.server.resources.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
