@@ -70,8 +70,8 @@ class ModelsEnum(Enum):
     WILSON_COWAN = "WilsonCowan"
     REDUCED_WONG_WANG = "ReducedWongWang"
     REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
-    ZERLAUT_FIRST_ORDER = "ZerlautFirstOrder"
-    ZERLAUT_SECOND_ORDER = "ZerlautSecondOrder"
+    ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
+    ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
 
     def get_class(self):
         return _get_imported_model(self.value)
