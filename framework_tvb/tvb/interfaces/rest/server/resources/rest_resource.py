@@ -43,6 +43,6 @@ class RestResource(Resource):
             raise BadRequestException('No file part in the request!')
         file = flask.request.files['file']
         if not file.filename.endswith(file_extension):
-            raise BadRequestException('Only %s files are allowed!', file_extension)
+            raise BadRequestException('Only %s files are allowed!' % file_extension)
 
         return file

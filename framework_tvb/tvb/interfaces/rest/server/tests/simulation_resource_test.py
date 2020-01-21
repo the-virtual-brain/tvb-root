@@ -28,10 +28,40 @@
 #
 #
 
+from io import BytesIO
+import flask
+import pytest
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
+from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from werkzeug.datastructures import FileStorage
 
 
 class TestSimulationResource(TransactionalTestCase):
 
-    def test(self):
-        assert 1
+    def transactional_setup_method(self):
+        self.simulation_resource = FireSimulationResource()
+
+    def test_server_fire_simulation_inexistent_gid(self, mocker):
+        project_gid = "inexistent-gid"
+        dummy_file = FileStorage(BytesIO(b"test"), 'test.zip')
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {'file': dummy_file}
+
+        with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid)
+
+    def test_server_fire_simulation_no_file(self, mocker):
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {}
+
+        with pytest.raises(BadRequestException): self.simulation_resource.post('')
+
+    def test_server_fire_simulation_bad_extension(self, mocker):
+        dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
+        # Mock flask.request.files to return a dictionary
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.files = {'file': dummy_file}
+
+        with pytest.raises(BadRequestException): self.simulation_resource.post('')
