@@ -38,6 +38,7 @@ from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_di
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
+from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
@@ -102,7 +103,7 @@ class _InputTreeFragment(ABCAdapterForm):
 
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
-
+    LOGGER = get_logger(__name__)
     def __init__(self):
         BurstBaseController.__init__(self)
         self.available_models = get_ui_name_to_model()
@@ -256,6 +257,9 @@ class DynamicModelController(BurstBaseController):
         for name in model_form_class.get_params_configurable_in_phase_plane():
             attr = getattr(type(model), name)
             ranger = attr.domain
+            if ranger is None:
+                DynamicModelController.LOGGER.warn("Param %s doesn't have a domain specified" % (name))
+                continue
             default = float(attr.default)
 
             ret.append({
