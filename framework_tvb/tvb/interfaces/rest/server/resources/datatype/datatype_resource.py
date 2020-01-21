@@ -28,7 +28,7 @@
 #
 #
 
-from flask import send_file
+import flask
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
@@ -52,7 +52,7 @@ class RetrieveDatatypeResource(RestResource):
         h5_file = h5_file_for_index(index)
         last_index = h5_file.path.rfind('\\')
         file_name = h5_file.path[last_index + 1:]
-        return send_file(h5_file.path, as_attachment=True, attachment_filename=file_name)
+        return flask.send_file(h5_file.path, as_attachment=True, attachment_filename=file_name)
 
 
 class GetOperationsForDatatypeResource(RestResource):

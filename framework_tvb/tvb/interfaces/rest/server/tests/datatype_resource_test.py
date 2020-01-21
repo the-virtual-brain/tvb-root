@@ -51,7 +51,7 @@ class TestDatatypeResource(TransactionalTestCase):
         datatype_gid = "inexistent-gid"
         with pytest.raises(InvalidIdentifierException): self.retrieve_resource.get(datatype_gid)
 
-    def test_server_retrieve_datatype(self):
+    def test_server_retrieve_datatype(self, mocker):
         test_user = TestFactory.create_user('Rest_User')
         test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
@@ -61,7 +61,17 @@ class TestDatatypeResource(TransactionalTestCase):
         assert type(datatypes_in_project) is list
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
-        # TODO: finalize test and download file
+
+        def send_file_dummy(path, as_attachment, attachment_filename):
+            return (path, as_attachment, attachment_filename)
+
+        # Mock flask.send_file to behave like send_file_dummy
+        mocker.patch('flask.send_file', send_file_dummy)
+        result = self.retrieve_resource.get(datatypes_in_project[0].gid)
+
+        assert type(result) is tuple
+        assert result[1] is True
+        assert result[0] == result[2]
 
     def test_server_get_operations_for_datatype(self):
         test_user = TestFactory.create_user('Rest_User')
