@@ -29,6 +29,7 @@
 #
 
 import pytest
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -38,16 +39,13 @@ from tvb.tests.framework.core.factory import TestFactory
 class TestUserResource(TransactionalTestCase):
 
     def transactional_setup_method(self):
+        self.username = 'Rest_User'
+        self.test_user = TestFactory.create_user(self.username)
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
         self.users_resource = GetUsersResource()
         self.projects_list_resource = GetProjectsListResource()
 
-    def test_get_users_default(self):
-        result = self.users_resource.get()
-        assert type(result) is list
-        assert len(result) == 1
-
     def test_get_users(self):
-        TestFactory.create_user('Rest_User')
         result = self.users_resource.get()
         assert type(result) is list
         assert len(result) == 2
@@ -56,17 +54,10 @@ class TestUserResource(TransactionalTestCase):
         invalid_username = 'invalid-username'
         with pytest.raises(InvalidIdentifierException): self.projects_list_resource.get(invalid_username)
 
-    def test_get_projects_empty(self):
-        username = 'Rest_User'
-        TestFactory.create_user(username)
-        result = self.projects_list_resource.get(username)
-        assert type(result) is list
-        assert len(result) == 0
-
     def test_get_projects(self):
-        username = 'Rest_User'
-        user = TestFactory.create_user(username)
-        TestFactory.create_project(user, 'Rest Project')
-        result = self.projects_list_resource.get(username)
+        result = self.projects_list_resource.get(self.username)
         assert type(result) is list
         assert len(result) == 1
+
+    def transactional_teardown_method(self):
+        FilesHelper().remove_project_structure(self.test_project.name)

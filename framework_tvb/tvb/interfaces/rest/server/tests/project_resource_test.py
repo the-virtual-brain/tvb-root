@@ -31,6 +31,7 @@
 import os
 import pytest
 import tvb_data
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
@@ -81,3 +82,7 @@ class TestProjectResource(TransactionalTestCase):
         result = self.operations_resource.get(project_gid)
         assert type(result) is list
         assert len(result) > 0
+
+    def transactional_teardown_method(self):
+        FilesHelper().remove_project_structure(self.test_project_with_data.name)
+        FilesHelper().remove_project_structure(self.test_project_without_data.name)

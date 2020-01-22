@@ -32,6 +32,7 @@ import os
 import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
@@ -43,6 +44,8 @@ from tvb.tests.framework.core.factory import TestFactory
 class TestDatatypeResource(TransactionalTestCase):
 
     def transactional_setup_method(self):
+        self.test_user = TestFactory.create_user('Rest_User')
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
         self.retrieve_resource = RetrieveDatatypeResource()
         self.get_operations_resource = GetOperationsForDatatypeResource()
         self.get_data_in_project_resource = GetDataInProjectResource()
@@ -52,12 +55,10 @@ class TestDatatypeResource(TransactionalTestCase):
         with pytest.raises(InvalidIdentifierException): self.retrieve_resource.get(datatype_gid)
 
     def test_server_retrieve_datatype(self, mocker):
-        test_user = TestFactory.create_user('Rest_User')
-        test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        TestFactory.import_zip_connectivity(test_user, test_project_with_data, zip_path)
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        datatypes_in_project = self.get_data_in_project_resource.get(test_project_with_data.gid)
+        datatypes_in_project = self.get_data_in_project_resource.get(self.test_project.gid)
         assert type(datatypes_in_project) is list
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
@@ -74,12 +75,10 @@ class TestDatatypeResource(TransactionalTestCase):
         assert result[0] == result[2]
 
     def test_server_get_operations_for_datatype(self):
-        test_user = TestFactory.create_user('Rest_User')
-        test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        TestFactory.import_zip_connectivity(test_user, test_project_with_data, zip_path)
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        datatypes_in_project = self.get_data_in_project_resource.get(test_project_with_data.gid)
+        datatypes_in_project = self.get_data_in_project_resource.get(self.test_project.gid)
         assert type(datatypes_in_project) is list
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
@@ -87,3 +86,6 @@ class TestDatatypeResource(TransactionalTestCase):
         result = self.get_operations_resource.get(datatypes_in_project[0].gid)
         assert type(result) is list
         assert len(result) > 3
+
+    def transactional_teardown_method(self):
+        FilesHelper().remove_project_structure(self.test_project.name)

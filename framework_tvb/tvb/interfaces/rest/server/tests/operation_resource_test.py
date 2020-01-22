@@ -36,8 +36,9 @@ import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.exceptions import TVBException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5core import ViewModelH5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
@@ -50,22 +51,23 @@ from werkzeug.datastructures import FileStorage
 class TestOperationResource(TransactionalTestCase):
 
     def transactional_setup_method(self):
+        self.test_user = TestFactory.create_user('Rest_User')
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
         self.operations_resource = GetOperationsInProjectResource()
         self.status_resource = GetOperationStatusResource()
         self.results_resource = GetOperationResultsResource()
         self.launch_resource = LaunchOperationResource()
+        self.files_helper = FilesHelper()
 
     def test_server_get_operation_status_inexistent_gid(self):
         operation_gid = "inexistent-gid"
         with pytest.raises(InvalidIdentifierException): self.status_resource.get(operation_gid)
 
     def test_server_get_operation_status(self):
-        test_user = TestFactory.create_user('Rest_User')
-        test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        TestFactory.import_zip_connectivity(test_user, test_project_with_data, zip_path)
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(test_project_with_data.gid)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.status_resource.get(operations[0].gid)
         assert type(result) is str
@@ -76,25 +78,21 @@ class TestOperationResource(TransactionalTestCase):
         with pytest.raises(InvalidIdentifierException): self.results_resource.get(operation_gid)
 
     def test_server_get_operation_results(self):
-        test_user = TestFactory.create_user('Rest_User')
-        test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        TestFactory.import_zip_connectivity(test_user, test_project_with_data, zip_path)
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(test_project_with_data.gid)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list
         assert len(result) == 1
 
     def test_server_get_operation_results_failed_operation(self):
-        test_user = TestFactory.create_user('Rest_User')
-        test_project_with_data = TestFactory.create_project(test_user, 'Rest_Project')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_90.zip')
         with pytest.raises(TVBException):
-            TestFactory.import_zip_connectivity(test_user, test_project_with_data, zip_path)
+            TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(test_project_with_data.gid)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list
@@ -126,28 +124,25 @@ class TestOperationResource(TransactionalTestCase):
 
     def test_server_launch_operation_inexistent_algorithm(self, mocker):
         inexistent_algorithm = "inexistent-algorithm"
-        test_user = TestFactory.create_user('Rest_User')
-        test_project = TestFactory.create_project(test_user, 'Rest_Project')
 
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
         request_mock.files = {'file': dummy_file}
 
-        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(test_project.gid,
+        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(self.test_project.gid,
                                                                                   inexistent_algorithm, '')
 
     def test_server_launch_operation(self, mocker):
         algorithm_module = "tvb.adapters.uploaders.zip_connectivity_importer"
         algorithm_class = "ZIPConnectivityImporter"
-        test_user = TestFactory.create_user('Rest_User')
-        test_project = TestFactory.create_project(test_user, 'Rest_Project')
 
         importer_model = ZIPConnectivityImporterModel()
         importer_model.uploaded = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity',
                                                'connectivity_96.zip')
 
-        view_model_h5_path = h5.path_for('', ViewModelH5, importer_model.gid)
+        input_folder = self.files_helper.get_project_folder(self.test_project)
+        view_model_h5_path = h5.path_for(input_folder, ViewModelH5, importer_model.gid)
 
         view_model_h5 = ViewModelH5(view_model_h5_path, importer_model)
         view_model_h5.store(importer_model)
@@ -156,9 +151,9 @@ class TestOperationResource(TransactionalTestCase):
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
         fp = open(view_model_h5_path, 'rb')
-        request_mock.files = {'file': FileStorage(fp, view_model_h5_path)}
+        request_mock.files = {'file': FileStorage(fp, os.path.basename(view_model_h5_path))}
 
-        operation_gid = self.launch_resource.post(test_project.gid, algorithm_module, algorithm_class)
+        operation_gid, status = self.launch_resource.post(self.test_project.gid, algorithm_module, algorithm_class)
         fp.close()
 
         assert type(operation_gid) is str
@@ -167,3 +162,6 @@ class TestOperationResource(TransactionalTestCase):
         result = self.results_resource.get(operation_gid)
         assert type(result) is list
         assert result[0].type == ConnectivityIndex().display_type
+
+    def transactional_teardown_method(self):
+        self.files_helper.remove_project_structure(self.test_project.name)
