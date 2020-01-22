@@ -29,21 +29,26 @@
 #
 
 import os
-
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
+from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom._h5loader import DirLoader
 from tvb.core.services.exceptions import ProjectServiceException
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
+from tvb.simulator.simulator import Simulator
 
 
 class FireSimulationResource(RestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.logger = get_logger(self.__class__.__module__)
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 
@@ -62,8 +67,23 @@ class FireSimulationResource(RestResource):
         FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
         user_id = project.fk_admin
 
-        operation = self.simulator_service.prepare_simulation_on_server(burst_config=None, user_id=user_id,
-                                                                        project=project,
-                                                                        zip_folder_path=zip_path[:-4])
+        folder_path = zip_path[:-len(FilesHelper.TVB_ZIP_FILE_EXTENSION)]
+        simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
+                                                                              SimulatorAdapter.__name__)
+        try:
+            simulator_h5_name = DirLoader(folder_path, None).find_file_for_has_traits_type(Simulator)
+            simulator_file = os.path.join(folder_path, simulator_h5_name)
+        except IOError:
+            raise InvalidInputException('No Simulator h5 file found in the archive')
+
+        try:
+            operation = self.simulator_service.prepare_simulation_on_server(user_id=user_id,
+                                                                            project=project,
+                                                                            algorithm=simulator_algorithm,
+                                                                            zip_folder_path=folder_path,
+                                                                            simulator_file=simulator_file)
+        except Exception as excep:
+            self.logger.error(excep, exc_info=True)
+            raise ServiceException(str(excep))
 
         return operation.gid, 201

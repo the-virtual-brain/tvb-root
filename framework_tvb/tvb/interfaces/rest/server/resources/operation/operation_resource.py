@@ -29,6 +29,7 @@
 #
 
 import shutil
+from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
@@ -38,7 +39,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -81,6 +82,7 @@ class LaunchOperationResource(RestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.logger = get_logger(self.__class__.__module__)
         self.operation_service = OperationService()
         self.project_service = ProjectService()
         self.user_service = UserService()
@@ -90,7 +92,6 @@ class LaunchOperationResource(RestResource):
         """
         :generic method of launching Analyzers
         """
-        # TODO: inform user about operation gid for later monitoring
         file = self.extract_file_from_request()
         h5_path = save_temporary_file(file)
 
@@ -103,17 +104,23 @@ class LaunchOperationResource(RestResource):
         if algorithm is None:
             raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
 
-        adapter_instance = ABCAdapter.build_adapter(algorithm)
-        view_model = adapter_instance.get_view_model_class()()
-        view_model_h5 = ViewModelH5(h5_path, view_model)
-        view_model_gid = view_model_h5.gid.load()
+        try:
+            adapter_instance = ABCAdapter.build_adapter(algorithm)
+            view_model = adapter_instance.get_view_model_class()()
+            with ViewModelH5(h5_path, view_model) as view_model_h5:
+                view_model_gid = view_model_h5.gid.load()
 
-        # TODO: use logged user
-        first_user = self.user_service.get_user_by_id(1)
-        operation = self.operation_service.prepare_operation(first_user.id, project.id, algorithm.id,
-                                                             algorithm.algorithm_category, view_model_gid.hex, None, {})
-        storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+            # TODO: use logged user
+            user_id = project.fk_admin
+            operation = self.operation_service.prepare_operation(user_id, project.id, algorithm.id,
+                                                                 algorithm.algorithm_category, view_model_gid.hex, None,
+                                                                 {})
+            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
-        shutil.move(h5_path, storage_path)
-        OperationService().launch_operation(operation.id, False)
-        return operation.gid
+            shutil.move(h5_path, storage_path)
+            OperationService().launch_operation(operation.id, False)
+        except Exception as excep:
+            self.logger.error(excep, exc_info=True)
+            raise ServiceException(str(excep))
+
+        return operation.gid, 201

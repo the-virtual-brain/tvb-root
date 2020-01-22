@@ -31,17 +31,15 @@ import copy
 import json
 import os
 import shutil
-import threading
-
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
@@ -129,59 +127,35 @@ class SimulatorService(object):
             if burst_config:
                 BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
-    def prepare_simulation_on_server(self, burst_config, user_id, project, zip_folder_path):
-        # TODO: Review this
-        from tvb.config.init.introspector_registry import IntrospectionRegistry
-        simulator_algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                         IntrospectionRegistry.SIMULATOR_CLASS)
+    def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
+        with SimulatorH5(simulator_file) as simulator_h5:
+            simulator_gid = simulator_h5.gid.load()
 
-        simulator_h5_name = [f for f in os.listdir(zip_folder_path) if 'Simulator' in f][0]
-        try:
-            simulator_index = SimulatorIndex()
-            simulator_index.gid = simulator_h5_name[10:-3]
-            metadata = {}
-            if burst_config:
-                simulator_index.fk_parent_burst = burst_config.id
-                metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
-            # dao.store_entity(simulator_index) when the client side of this operation will we done, we will uncomment this line as simulator should be stored here, not in the client
-            simulator_id = simulator_algo.id
-            algo_category = simulator_algo.algorithm_category
-            operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
-                                                algo_category, None, metadata)
-            simulator_index.fk_from_operation = operation.id
-            storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
+        simulator_index = SimulatorIndex()
+        simulator_index.gid = simulator_gid.hex
 
-            thread = threading.Thread(target=self.async_launch_simulation_on_server,
-                                      kwargs={'operation': operation,
-                                              'burst_config': burst_config,
-                                              'zip_folder_path': zip_folder_path,
-                                              'storage_operation_path': storage_operation_path})
-            thread.start()
+        metadata = {}
+        simulator_id = algorithm.id
+        algo_category = algorithm.algorithm_category
+        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
+                                            algo_category, None, metadata)
+        storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
+        self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
 
-            return operation
-        except Exception as excep:
-            self.logger.error(excep)
-            if burst_config:
-                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+        return operation
 
-    def async_launch_simulation_on_server(self, operation, burst_config, zip_folder_path, storage_operation_path):
+    def async_launch_simulation_on_server(self, operation, zip_folder_path, storage_operation_path):
         try:
             for file in os.listdir(zip_folder_path):
-                os.replace(os.path.join(zip_folder_path, file), os.path.join(storage_operation_path, file))
-            wf_errs = 0
+                shutil.move(os.path.join(zip_folder_path, file), storage_operation_path)
             try:
                 OperationService().launch_operation(operation.id, True)
-                shutil.rmtree(os.path.join(zip_folder_path, '..'))
+                shutil.rmtree(zip_folder_path)
                 return operation
             except Exception as excep:
                 self.logger.error(excep)
-                wf_errs += 1
-                if burst_config:
-                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
         except Exception as excep:
             self.logger.error(excep)
-            if burst_config:
-                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
 
     def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
                                      session_stored_simulator):

@@ -205,7 +205,7 @@ class OperationService:
         return operation
 
     def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
-                          ranges=None):
+                          ranges=None, visible=True):
         operation_parameters = json.dumps({'gid': view_model_gid})
         metadata, user_group = self._prepare_metadata(metadata, category, op_group, {})
         meta_str = json.dumps(metadata)
@@ -221,9 +221,9 @@ class OperationService:
                           str(metadata) + ",algorithmId=" + str(algorithm_id) + ", ops_group= " + str(
             op_group_id) + ")")
 
-        # visible_operation = visible and category.display is False
+        visible_operation = visible and category.display is False
         operation = dao.store_entity(operation)
-        # operation.visible = visible_operation
+        operation.visible = visible_operation
 
         return operation
 
