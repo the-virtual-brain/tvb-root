@@ -61,7 +61,7 @@ class BadRequestException(BaseRestException):
 
 class InvalidIdentifierException(BaseRestException):
     def __init__(self, message=None, payload=None):
-        super(InvalidIdentifierException, self).__init__(message, code=400, payload=payload)
+        super(InvalidIdentifierException, self).__init__(message, code=404, payload=payload)
 
     def get_default_message(self):
         return "No data found for the given identifier"
