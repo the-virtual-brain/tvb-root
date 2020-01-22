@@ -36,7 +36,7 @@ from tvb.basic.exceptions import TVBException
 class BaseRestException(TVBException):
     def __init__(self, message=None, code=None, payload=None):
         Exception.__init__(self)
-        self.message = message if message is not None else self.get_default_message()
+        self.message = message if message is not None and message.strip() else self.get_default_message()
         self.code = code
         self.payload = payload
 
@@ -53,7 +53,7 @@ class BaseRestException(TVBException):
 
 class BadRequestException(BaseRestException):
     def __init__(self, message, payload=None):
-        super().__init__(message, code=400, payload=payload)
+        super(BadRequestException, self).__init__(message, code=400, payload=payload)
 
     def get_default_message(self):
         return "Bad request error"
@@ -65,3 +65,11 @@ class InvalidIdentifierException(BaseRestException):
 
     def get_default_message(self):
         return "No data found for the given identifier"
+
+
+class ClientException(BaseRestException):
+    def __init__(self, message, code):
+        super(ClientException, self).__init__(message, code)
+
+    def get_default_message(self):
+        return "There was an error on client request"

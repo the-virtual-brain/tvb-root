@@ -30,7 +30,7 @@
 import json
 from functools import wraps
 
-from tvb.interfaces.rest.commons.exceptions import BaseRestException
+from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
 def handle_response(func):
@@ -53,6 +53,6 @@ def handle_response(func):
             return json.loads(content.decode('utf-8'))
 
         decoded_dict = json.loads(content.decode('utf-8'))
-        raise BaseRestException(decoded_dict['message'], decoded_dict['code'])
+        raise ClientException(decoded_dict['message'], decoded_dict['code'])
 
     return decorator
