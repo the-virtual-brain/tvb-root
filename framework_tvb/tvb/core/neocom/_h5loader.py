@@ -40,6 +40,8 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
 
+H5_EXTENSION = '.h5'
+
 H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
 
 
@@ -91,7 +93,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + '.h5'):
+            if fname.endswith(gid.hex + H5_EXTENSION):
                 return fname
         raise IOError('could not locate h5 with gid {}'.format(gid))
 
@@ -147,12 +149,23 @@ class DirLoader(object):
         datatype_cls = self.registry.get_datatype_for_h5file(h5_file_class)
         return self.path_for_has_traits(datatype_cls, gid)
 
+    def _get_has_traits_classname(self, has_traits_class):
+        return has_traits_class.__name__
+
     def path_for_has_traits(self, has_traits_class, gid):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(has_traits_class.__name__, gid)
+        fname = get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
+
+    def find_file_for_has_traits_type(self, has_traits_class):
+
+        filename_prefix = self._get_has_traits_classname(has_traits_class)
+        for fname in os.listdir(self.base_dir):
+            if fname.startswith(filename_prefix) and fname.endswith(H5_EXTENSION):
+                return fname
+        raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
 
 class TVBLoader(object):
