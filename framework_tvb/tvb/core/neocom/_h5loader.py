@@ -31,6 +31,7 @@
 import os
 import uuid
 import typing
+from uuid import UUID
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -38,6 +39,13 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
+
+H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
+
+
+def get_h5_filename(class_name, gid):
+    # type: (str, UUID) -> str
+    return H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
 
 
 class Loader(object):
@@ -63,7 +71,6 @@ class Loader(object):
 
         with h5file_cls(destination) as f:
             f.store(datatype)
-
 
 
 class DirLoader(object):
@@ -144,7 +151,7 @@ class DirLoader(object):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = '{}_{}.h5'.format(has_traits_class.__name__, gid.hex)
+        fname = get_h5_filename(has_traits_class.__name__, gid)
         return os.path.join(self.base_dir, fname)
 
 
@@ -162,14 +169,14 @@ class TVBLoader(object):
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = '{}_{}.h5'.format(h5_file_class.file_name_base(), gid.hex)
+        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 
     def path_for(self, operation_dir, h5_file_class, gid):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = '{}_{}.h5'.format(h5_file_class.file_name_base(), gid.hex)
+        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
         return os.path.join(operation_dir, fname)
 
     def load_from_index(self, dt_index, dt_class=None):
