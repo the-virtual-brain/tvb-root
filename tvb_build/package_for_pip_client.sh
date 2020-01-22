@@ -5,38 +5,29 @@ cd ..
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("framework_tvb" "scientific_library" "externals/tvb_gdist")
-if [[ "$1" != "" ]]; then
-    echo "Received param: " "$1"
-    folders2pack=("$1")
+echo "============================="
+echo " Packing tvb-rest-client "
+echo "============================="
+
+cd framework_tvb
+python setup_client.py sdist
+python setup_client.py bdist_wheel
+
+if [ -d "../dist/" ]; then
+  mv dist/* ../dist/
+else
+  mv dist/* ../../dist/
 fi
 
+rm -R dist
+rm -R build
 
-for pipPackage in "${folders2pack[@]}"; do
+if [ -d "../dist/" ]; then
+  cd ..
+else
+  cd ../..
+fi
 
-    echo "============================="
-    echo " Packing: " $pipPackage
-    echo "============================="
-
-    cd $pipPackage
-    python setup_client.py sdist
-    python setup_client.py bdist_wheel
-
-    if [ -d "../dist/" ]; then
-        mv dist/* ../dist/
-    else
-        mv dist/* ../../dist/
-    fi
-
-    rm -R dist
-    rm -R build
-
-    if [ -d "../dist/" ]; then
-        cd ..
-    else
-        cd ../..
-    fi
-done
 
 ## After manual check, do the actual deploy on Pypi
 # twine upload dist/*
