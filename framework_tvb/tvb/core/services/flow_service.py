@@ -256,13 +256,12 @@ class FlowService:
 
         return self._group_adapters_by_category(filtered_adapters, categories_dict)
 
-    def get_filtered_adapters(self, datatype_gid, categories):
-        return self._get_launchable_algorithms(datatype_gid, categories)[1]
-
     def _get_launchable_algorithms(self, datatype_gid, categories):
-
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
-        data_class = datatype_instance.__class__
+        return self.get_launchable_algorithms_for_datatype(datatype_instance, categories)
+
+    def get_launchable_algorithms_for_datatype(self, datatype, categories):
+        data_class = datatype.__class__
         all_compatible_classes = [data_class.__name__]
         for one_class in getmro(data_class):
             # from tvb.basic.traits.types_mapped import MappedType
@@ -277,10 +276,10 @@ class FlowService:
         filtered_adapters = []
         for stored_adapter in launchable_adapters:
             filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
-            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_instance):
+            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                 filtered_adapters.append(stored_adapter)
 
-        return datatype_instance, filtered_adapters
+        return datatype, filtered_adapters
 
 
     def _group_adapters_by_category(self, stored_adapters, categories):

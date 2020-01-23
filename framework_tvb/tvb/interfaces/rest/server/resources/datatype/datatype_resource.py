@@ -37,7 +37,7 @@ from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
-INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: %s'
+INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
 class RetrieveDatatypeResource(RestResource):
@@ -48,7 +48,7 @@ class RetrieveDatatypeResource(RestResource):
         """
         index = ABCAdapter.load_entity_by_gid(datatype_gid)
         if index is None:
-            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE % datatype_gid)
+            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE.format(datatype_gid))
         h5_file = h5_file_for_index(index)
         last_index = h5_file.path.rfind('\\')
         file_name = h5_file.path[last_index + 1:]
@@ -65,7 +65,9 @@ class GetOperationsForDatatypeResource(RestResource):
         """
         :return the available operations for that datatype, as a list of Algorithm instances
         """
-        # TODO: determine invalid gid in this case
         categories = dao.get_launchable_categories()
-        filtered_adapters = self.flow_service.get_filtered_adapters(datatype_gid, categories)
+        datatype = dao.get_datatype_by_gid(datatype_gid)
+        if datatype is None:
+            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE.format(datatype_gid))
+        _, filtered_adapters = self.flow_service.get_launchable_algorithms_for_datatype(datatype, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]
