@@ -86,7 +86,8 @@ def initialize_flask():
     # Projects namespace
     name_space_projects = api.namespace(build_path('/projects'), description="TVB-REST APIs for projects management")
     name_space_projects.add_resource(GetDataInProjectResource, '/<string:project_gid>/data')
-    name_space_projects.add_resource(GetOperationsInProjectResource, '/<string:project_gid>/operations')
+    name_space_projects.add_resource(GetOperationsInProjectResource, '/<string:project_gid>/operations/'
+                                                                     '<int:page_number>')
 
     # Datatypes namepsace
     name_space_datatypes = api.namespace(build_path('/datatypes'), description="TVB-REST APIs for datatypes management")

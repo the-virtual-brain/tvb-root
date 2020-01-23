@@ -61,7 +61,7 @@ class GetOperationsInProjectResource(RestResource):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
-    def get(self, project_gid):
+    def get(self, project_gid, page_number):
         """
         :return a list of project's Operation entities
         """
@@ -69,5 +69,5 @@ class GetOperationsInProjectResource(RestResource):
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except ProjectServiceException:
             raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
-        _, _, operations, _ = self.project_service.retrieve_project_full(project.id)
+        _, _, operations, _ = self.project_service.retrieve_project_full(project.id, current_page=page_number)
         return [OperationDto(operation) for operation in operations]
