@@ -35,6 +35,7 @@ Launches the web server and configure the controllers for UI.
 """
 import importlib
 import time
+from subprocess import Popen, PIPE
 
 STARTUP_TIC = time.time()
 
@@ -71,7 +72,6 @@ from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import S
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
-
 
 LOGGER = get_logger('tvb.interfaces.web.run')
 CONFIG_EXISTS = not TvbProfile.is_first_run()
@@ -122,6 +122,15 @@ def init_cherrypy(arguments=None):
     cherrypy.engine.start()
 
 
+def expose_rest_api():
+    if CONFIG_EXISTS:
+        env = os.environ.copy()
+        env['PYTHONPATH'] = os.pathsep.join(sys.path)
+
+        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run']
+        Popen(run_params, stdout=PIPE, stderr=PIPE, env=env)
+
+
 def start_tvb(arguments, browser=True):
     """
     Fire CherryPy server and listen on a free port
@@ -153,6 +162,8 @@ def start_tvb(arguments, browser=True):
     #### Fire a browser page at the end.
     if browser:
         run_browser()
+
+    expose_rest_api()
 
     ## Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",
