@@ -124,11 +124,15 @@ def init_cherrypy(arguments=None):
 
 def expose_rest_api():
     if CONFIG_EXISTS:
-        env = os.environ.copy()
-        env['PYTHONPATH'] = os.pathsep.join(sys.path)
-
-        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run']
-        Popen(run_params, stdout=PIPE, stderr=PIPE, env=env)
+        LOGGER.info("Starting Flask server with REST API...")
+        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
+                      TvbProfile.CURRENT_PROFILE_NAME]
+        flask_process = Popen(run_params, stderr=PIPE)
+        stdout, stderr = flask_process.communicate()
+        if flask_process.returncode != 0:
+            LOGGER.warn("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
+        else:
+            LOGGER.info("Finished starting Flask server with REST API...")
 
 
 def start_tvb(arguments, browser=True):
