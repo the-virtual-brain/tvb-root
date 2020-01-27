@@ -118,7 +118,7 @@ class LaunchOperationResource(RestResource):
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
             shutil.move(h5_path, storage_path)
-            OperationService().launch_operation(operation.id, False)
+            OperationService().launch_operation(operation.id, True)
         except Exception as excep:
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
