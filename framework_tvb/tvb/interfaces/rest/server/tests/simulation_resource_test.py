@@ -34,7 +34,9 @@ from io import BytesIO
 import flask
 import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.model.model_operation import Operation
 from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.simulator.simulator import Simulator
@@ -92,6 +94,12 @@ class TestSimulationResource(TransactionalTestCase):
         request_mock = mocker.patch.object(flask, 'request')
         fp = open(zip_filename, 'rb')
         request_mock.files = {'file': FileStorage(fp, os.path.basename(zip_filename))}
+
+        def launch_sim(self, user_id, project, algorithm, zip_folder_path, simulator_file):
+            return Operation('', '', '', {})
+
+        # Mock simulation launch
+        mocker.patch.object(SimulatorService, 'prepare_simulation_on_server', launch_sim)
 
         operation_gid, status = self.simulation_resource.post(self.test_project.gid)
         fp.close()

@@ -30,15 +30,17 @@
 
 import os
 from io import BytesIO
+from uuid import UUID
 import flask
 import pytest
 import tvb_data
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
+from tvb.analyzers.fft import SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
@@ -67,7 +69,7 @@ class TestOperationResource(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        operations = self.operations_resource.get(self.test_project.gid, 1)
 
         result = self.status_resource.get(operations[0].gid)
         assert type(result) is str
@@ -81,7 +83,7 @@ class TestOperationResource(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        operations = self.operations_resource.get(self.test_project.gid, 1)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list
@@ -92,7 +94,7 @@ class TestOperationResource(TransactionalTestCase):
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        operations = self.operations_resource.get(self.test_project.gid, 1)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list
@@ -133,19 +135,21 @@ class TestOperationResource(TransactionalTestCase):
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(self.test_project.gid,
                                                                                   inexistent_algorithm, '')
 
-    def test_server_launch_operation(self, mocker):
-        algorithm_module = "tvb.adapters.uploaders.zip_connectivity_importer"
-        algorithm_class = "ZIPConnectivityImporter"
+    def test_server_launch_operation(self, mocker, time_series_index_factory):
+        algorithm_module = "tvb.adapters.analyzers.fourier_adapter"
+        algorithm_class = "FourierAdapter"
 
-        importer_model = ZIPConnectivityImporterModel()
-        importer_model.uploaded = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity',
-                                               'connectivity_96.zip')
+        input_ts_index = time_series_index_factory()
+
+        fft_model = FFTAdapterModel()
+        fft_model.time_series = UUID(input_ts_index.gid)
+        fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
 
         input_folder = self.files_helper.get_project_folder(self.test_project)
-        view_model_h5_path = h5.path_for(input_folder, ViewModelH5, importer_model.gid)
+        view_model_h5_path = h5.path_for(input_folder, ViewModelH5, fft_model.gid)
 
-        view_model_h5 = ViewModelH5(view_model_h5_path, importer_model)
-        view_model_h5.store(importer_model)
+        view_model_h5 = ViewModelH5(view_model_h5_path, fft_model)
+        view_model_h5.store(fft_model)
         view_model_h5.close()
 
         # Mock flask.request.files to return a dictionary
@@ -153,15 +157,14 @@ class TestOperationResource(TransactionalTestCase):
         fp = open(view_model_h5_path, 'rb')
         request_mock.files = {'file': FileStorage(fp, os.path.basename(view_model_h5_path))}
 
+        # Mock launch_operation() call
+        mocker.patch.object(OperationService, 'launch_operation')
+
         operation_gid, status = self.launch_resource.post(self.test_project.gid, algorithm_module, algorithm_class)
         fp.close()
 
         assert type(operation_gid) is str
         assert len(operation_gid) > 0
-
-        result = self.results_resource.get(operation_gid)
-        assert type(result) is list
-        assert result[0].type == ConnectivityIndex().display_type
 
     def transactional_teardown_method(self):
         self.files_helper.remove_project_structure(self.test_project.name)
