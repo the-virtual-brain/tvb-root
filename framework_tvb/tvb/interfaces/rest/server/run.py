@@ -36,7 +36,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.interfaces.rest import BASE_PATH
+from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder, Strings
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
@@ -68,8 +68,8 @@ def initialize_tvb(arguments):
         sys.exit()
 
 
-def build_path(path):
-    return BASE_PATH + path
+def build_path(namespace):
+    return Strings.BASE_PATH.value + namespace.value
 
 
 def initialize_flask():
@@ -79,33 +79,47 @@ def initialize_flask():
     api = RestApi(app, title="Rest services for TVB", doc="/doc/")
 
     # Users namespace
-    name_space_users = api.namespace(build_path('/users'), description="TVB-REST APIs for users management")
+    name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
     name_space_users.add_resource(GetUsersResource, '/')
-    name_space_users.add_resource(GetProjectsListResource, '/<string:username>/projects')
+    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url(
+        values={LinkPlaceholder.USERNAME.value: "<string:username>"}))
 
     # Projects namespace
-    name_space_projects = api.namespace(build_path('/projects'), description="TVB-REST APIs for projects management")
-    name_space_projects.add_resource(GetDataInProjectResource, '/<string:project_gid>/data')
-    name_space_projects.add_resource(GetOperationsInProjectResource, '/<string:project_gid>/operations/'
-                                                                     '<int:page_number>')
+    name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),
+                                        description="TVB-REST APIs for projects management")
+    name_space_projects.add_resource(GetDataInProjectResource, RestLink.DATA_IN_PROJECT.compute_url(
+        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+    name_space_projects.add_resource(GetOperationsInProjectResource, RestLink.OPERATIONS_IN_PROJECT.compute_url(
+        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
 
     # Datatypes namepsace
-    name_space_datatypes = api.namespace(build_path('/datatypes'), description="TVB-REST APIs for datatypes management")
-    name_space_datatypes.add_resource(RetrieveDatatypeResource, '/<string:datatype_gid>')
-    name_space_datatypes.add_resource(GetOperationsForDatatypeResource, '/<string:datatype_gid>/operations')
+    name_space_datatypes = api.namespace(build_path(RestNamespace.DATATYPES),
+                                         description="TVB-REST APIs for datatypes management")
+    name_space_datatypes.add_resource(RetrieveDatatypeResource, RestLink.GET_DATATYPE.compute_url(
+        values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
+    name_space_datatypes.add_resource(GetOperationsForDatatypeResource, RestLink.DATATYPE_OPERATIONS.compute_url(
+        values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
 
     # Operations namespace
-    name_space_operations = api.namespace(build_path('/operations'),
+    name_space_operations = api.namespace(build_path(RestNamespace.OPERATIONS),
                                           description="TVB-REST APIs for operations management")
-    name_space_operations.add_resource(LaunchOperationResource, '/<string:project_gid>/algorithm'
-                                                                '/<string:algorithm_module>/<string:algorithm_classname>')
-    name_space_operations.add_resource(GetOperationStatusResource, '/<string:operation_gid>/status')
-    name_space_operations.add_resource(GetOperationResultsResource, '/<string:operation_gid>/results')
+    name_space_operations.add_resource(LaunchOperationResource, RestLink.LAUNCH_OPERATION.compute_url(values={
+        LinkPlaceholder.PROJECT_GID.value: '<string:project_gid>',
+        LinkPlaceholder.ALG_MODULE.value: '<string:algorithm_module>',
+        LinkPlaceholder.ALG_CLASSNAME.value: '<string:algorithm_classname>'
+    }))
+    name_space_operations.add_resource(GetOperationStatusResource, RestLink.OPERATION_STATUS.compute_url(values={
+        LinkPlaceholder.OPERATION_GID.value: '<string:operation_gid>'
+    }))
+    name_space_operations.add_resource(GetOperationResultsResource, RestLink.OPERATION_RESULTS.compute_url(values={
+        LinkPlaceholder.OPERATION_GID.value: '<string:operation_gid>'
+    }))
 
     # Simulation namespace
-    name_space_simulation = api.namespace(build_path('/simulation'),
+    name_space_simulation = api.namespace(build_path(RestNamespace.SIMULATION),
                                           description="TVB-REST APIs for simulation management")
-    name_space_simulation.add_resource(FireSimulationResource, '/<string:project_gid>')
+    name_space_simulation.add_resource(FireSimulationResource, RestLink.FIRE_SIMULATION.compute_url(
+        values={LinkPlaceholder.PROJECT_GID.value: '<string:project_gid>'}))
 
     api.add_namespace(name_space_users)
     api.add_namespace(name_space_projects)

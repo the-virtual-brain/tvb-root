@@ -38,12 +38,13 @@ from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
+from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
 
 
 class SimulationApi(MainApi):
 
     @handle_response
-    def fire_simulation(self, project_gid, session_stored_simulator, burst_config, temp_folder):
+    def fire_simulation(self, project_gid, session_stored_simulator, temp_folder):
         simulator_index = SimulatorIndex()
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
         destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
@@ -54,7 +55,7 @@ class SimulationApi(MainApi):
         zip_folder_path = temp_folder + '/SimulationData.zip'
         FilesHelper().zip_folder(zip_folder_path, destination_folder)
 
-        # TODO: HANDLE BURST_CONFIG SENDING
         file_obj = open(zip_folder_path, 'rb')
-        return requests.post(self.server_url + '/simulation/' + project_gid,
-                             files={"file": ("SimulationData.zip", file_obj)})
+        return requests.post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {
+            LinkPlaceholder.PROJECT_GID.value: project_gid
+        })), files={"file": ("SimulationData.zip", file_obj)})

@@ -27,10 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from flask import request
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
+from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.dtos import OperationDto, DataTypeDto
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
@@ -61,7 +63,7 @@ class GetOperationsInProjectResource(RestResource):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
-    def get(self, project_gid, page_number):
+    def get(self, project_gid):
         """
         :return a list of project's Operation entities
         """
@@ -69,5 +71,13 @@ class GetOperationsInProjectResource(RestResource):
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except ProjectServiceException:
             raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
-        _, _, operations, _ = self.project_service.retrieve_project_full(project.id, current_page=page_number)
+
+        page_number = request.args.get(Strings.PAGE_NUMBER.value)
+        if page_number is None:
+            page_number = 1
+        try:
+            page_number = int(page_number)
+        except ValueError:
+            raise InvalidInputException(message="Invalid page number")
+        _, _, operations, _ = self.project_service.retrieve_project_full(project.id, current_page=int(page_number))
         return [OperationDto(operation) for operation in operations]

@@ -27,10 +27,13 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.interfaces.rest import BASE_PATH
+from tvb.interfaces.rest.commons import Strings
 
 
 class MainApi:
 
     def __init__(self, server_url):
-        self.server_url = server_url + "/" + BASE_PATH
+        self.server_url = server_url + "/" + Strings.BASE_PATH.value
+
+    def build_request_url(self, url):
+        return self.server_url + url

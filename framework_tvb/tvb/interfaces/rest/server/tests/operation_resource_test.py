@@ -31,6 +31,7 @@
 import os
 from io import BytesIO
 from uuid import UUID
+
 import flask
 import pytest
 import tvb_data
@@ -69,7 +70,7 @@ class TestOperationResource(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid, 1)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.status_resource.get(operations[0].gid)
         assert type(result) is str
@@ -83,7 +84,7 @@ class TestOperationResource(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid, 1)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list
@@ -94,7 +95,7 @@ class TestOperationResource(TransactionalTestCase):
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid, 1)
+        operations = self.operations_resource.get(self.test_project.gid)
 
         result = self.results_resource.get(operations[0].gid)
         assert type(result) is list

@@ -55,8 +55,8 @@ class MainClient:
     def get_data_in_project(self, project_gid):
         return self.project_api.get_data_in_project(project_gid)
 
-    def get_operations_in_project(self, project_gid):
-        return self.project_api.get_operations_in_project(project_gid)
+    def get_operations_in_project(self, project_gid, page_number):
+        return self.project_api.get_operations_in_project(project_gid, page_number)
 
     def retrieve_datatype(self, datatype_gid, download_folder):
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
@@ -77,3 +77,8 @@ class MainClient:
 
     def get_operation_results(self, operation_gid):
         return self.operation_api.get_operations_results(operation_gid)
+
+
+if __name__ == '__main__':
+    client = MainClient("http://localhost:9090")
+    client.get_operations_in_project("2cc58a73-25c1-11e5-a7af-14109fe3bf71", 2)

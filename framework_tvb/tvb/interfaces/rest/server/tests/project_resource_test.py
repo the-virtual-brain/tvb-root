@@ -29,6 +29,7 @@
 #
 
 import os
+
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -69,17 +70,17 @@ class TestProjectResource(TransactionalTestCase):
 
     def test_server_get_operations_in_project_inexistent_gid(self):
         project_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid, 1)
+        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid)
 
     def test_server_get_operations_in_project_empty(self):
         project_gid = self.test_project_without_data.gid
-        result = self.operations_resource.get(project_gid, 1)
+        result = self.operations_resource.get(project_gid)
         assert type(result) is list
         assert len(result) == 0
 
     def test_get_operations_in_project(self):
         project_gid = self.test_project_with_data.gid
-        result = self.operations_resource.get(project_gid, 1)
+        result = self.operations_resource.get(project_gid)
         assert type(result) is list
         assert len(result) > 0
 
