@@ -41,7 +41,6 @@ from tvb.core import utils
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(TvbProfile.TEST_SQLITE_PROFILE)
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_project import UserPreferences

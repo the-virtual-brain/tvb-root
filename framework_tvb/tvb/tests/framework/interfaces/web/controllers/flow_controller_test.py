@@ -44,8 +44,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(TvbProfile.TEST_SQLITE_PROFILE)
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
