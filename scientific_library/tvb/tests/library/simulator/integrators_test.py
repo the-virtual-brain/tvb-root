@@ -121,6 +121,8 @@ class TestIntegrators(BaseTestCase):
             cls = getattr(integrators, name_)
             obj = cls()
             assert dt == obj.dt
+            if hasattr(obj, 'noise'):
+                obj.noise.configure_white(dt=dt)
             self._test_scheme(obj)
 
     def test_scipy_vode(self):
