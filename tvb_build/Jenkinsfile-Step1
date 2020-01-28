@@ -72,14 +72,4 @@ pipeline {
             }
         }
     }
-    post {
-        changed {
-            mail to: 'lia.domide@codemart.ro',
-            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
-            body: """
-                Result: ${currentBuild.result}
-                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
-                Check console output at ${env.BUILD_URL}"""
-        }
-    }
 }
