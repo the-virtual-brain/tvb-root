@@ -67,11 +67,6 @@ class GetOperationsInProjectResource(RestResource):
         """
         :return a list of project's Operation entities
         """
-        try:
-            project = self.project_service.find_project_lazy_by_gid(project_gid)
-        except ProjectServiceException:
-            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
-
         page_number = request.args.get(Strings.PAGE_NUMBER.value)
         if page_number is None:
             page_number = 1
@@ -79,5 +74,11 @@ class GetOperationsInProjectResource(RestResource):
             page_number = int(page_number)
         except ValueError:
             raise InvalidInputException(message="Invalid page number")
+
+        try:
+            project = self.project_service.find_project_lazy_by_gid(project_gid)
+        except ProjectServiceException:
+            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
+
         _, _, operations, _ = self.project_service.retrieve_project_full(project.id, current_page=int(page_number))
         return [OperationDto(operation) for operation in operations]
