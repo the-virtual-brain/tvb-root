@@ -2,7 +2,7 @@ FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y install texlive-base texlive-formats-extra
-RUN apt-get -y install octave postgresql
+RUN apt-get -y update && apt-get -y install octave postgresql
 
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
