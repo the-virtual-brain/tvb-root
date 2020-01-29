@@ -46,6 +46,7 @@ RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
+    cd tvb_build; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
