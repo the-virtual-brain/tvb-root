@@ -49,29 +49,6 @@ pipeline {
                 archiveArtifacts artifacts: 'dist/*'
             }
         }
-        stage ('Compute coverage') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
-            steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    rm -rf TEST_OUT
-                    mkdir TEST_OUT
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../scientific_library
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_lib.xml --junitxml=../TEST_OUT/results_lib.xml
-                    cd ../framework_tvb
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_frw.xml --junitxml=../TEST_OUT/results_frw.xml
-                    exit 0
-                '''
-                 junit 'TEST_OUT/results_*.xml'
-                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUT/coverage_*.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
-            }
-        }
     }
     post {
         changed {
