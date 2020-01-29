@@ -51,8 +51,46 @@ from .history import SparseHistory
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 
 
-# TODO with refactor, this becomes more of a builder, since iterator will account for
-# most of the runtime associated with a simulation.
+class SimIter:
+    "SimIter performs time stepping for a simulator."
+
+    def __init__(self, sim, simlen, rng_state):
+        self.calls = 1
+        if simlen is not None:
+            self.simulation_length = float(simlen)
+
+        # intialization
+        sim._guesstimate_runtime()
+        sim._calculate_storage_requirement()
+        sim._handle_random_state(random_state)
+        n_reg = self.connectivity.number_of_regions
+        local_coupling = self._prepare_local_coupling()
+        stimulus = self._prepare_stimulus()
+        state = self.current_state
+
+        # integration loop
+        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        self.steps = range(self.current_step + 1, self.current_step + n_steps + 1):
+
+    def update(self, simlen, rng_state):
+        self.calls += 1
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        output = None
+        while output is None:
+            # needs implementing by hsitory + coupling?
+            node_coupling = self._loop_compute_node_coupling(step)
+            self._loop_update_stimulus(step, stimulus)
+            state = self.integrator.scheme(state, self.model.dfun,
+                                           node_coupling, local_coupling, stimulus)
+            self._loop_update_history(step, n_reg, state)
+            output = self._loop_monitor_output(step, state)
+        self.current_state = state
+        self.current_step = self.current_step + n_steps
+
 class Simulator(HasTraits):
     """A Simulator assembles components required to perform simulations."""
 
@@ -365,42 +403,24 @@ class Simulator(HasTraits):
 
     def __call__(self, simulation_length=None, random_state=None):
         """
-        Return an iterator which steps through simulation time, generating monitor outputs.
+        Return an iterator which steps through simulation time, generating
+        monitor outputs.
 
-        See the run method for a convenient way to collect all output in one call.
+        See the run method for a convenient way to collect all output in one
+        call.
 
         :param simulation_length: Length of the simulation to perform in ms.
-        :param random_state:  State of NumPy RNG to use for stochastic integration.
+        :param random_state:  State of NumPy RNG to use for stochastic
+                              integration.
         :return: Iterator over monitor outputs.
         """
+        # non-sense impl to maintain compatibility
+        if not hasattr(self, '_iter'):
+            self._iter = SimIter(self, simulation_length, random_state)
+        else:
+            self._iter.update(simulation_length, random_state)
+        return self._iter
 
-        self.calls += 1
-        if simulation_length is not None:
-            self.simulation_length = float(simulation_length)
-
-        # intialization
-        self._guesstimate_runtime()
-        self._calculate_storage_requirement()
-        self._handle_random_state(random_state)
-        n_reg = self.connectivity.number_of_regions
-        local_coupling = self._prepare_local_coupling()
-        stimulus = self._prepare_stimulus()
-        state = self.current_state
-
-        # integration loop
-        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
-            self._loop_update_stimulus(step, stimulus)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
-            output = self._loop_monitor_output(step, state)
-            if output is not None:
-                yield output
-
-        self.current_state = state
-        self.current_step = self.current_step + n_steps
 
     def _configure_history(self, initial_conditions):
         """
