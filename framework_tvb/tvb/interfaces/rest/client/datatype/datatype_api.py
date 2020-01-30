@@ -37,10 +37,10 @@ from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 
 class DataTypeApi(MainApi):
 
-    def retrieve_datatype(self, datatype_gid, download_folder):
+    def retrieve_datatype(self, datatype_gid, download_folder, token):
         response = requests.get(self.build_request_url(
             RestLink.GET_DATATYPE.compute_url(True,
-                                              {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})))
+                                              {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})), headers=self.get_headers(token))
         content_disposition = response.headers['Content-Disposition']
         start_index = content_disposition.index("filename=") + 9
         end_index = len(content_disposition)
@@ -56,9 +56,9 @@ class DataTypeApi(MainApi):
         return False
 
     @handle_response
-    def get_operations_for_datatype(self, datatype_gid):
+    def get_operations_for_datatype(self, datatype_gid, token):
         response = requests.get(
             self.build_request_url(RestLink.DATATYPE_OPERATIONS.compute_url(True, {
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
-            })))
+            })), self.get_headers(token))
         return response, AlgorithmDto

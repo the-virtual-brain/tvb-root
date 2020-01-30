@@ -46,39 +46,46 @@ class MainClient:
         self.simulation_api = SimulationApi(server_url)
         self.operation_api = OperationApi(server_url)
 
-    def get_users(self):
-        return self.user_api.get_users()
+    def login(self, username, password):
+        return self.user_api.authenticate(username, password)
 
-    def get_project_list(self, username):
-        return self.user_api.get_projects_list(username)
+    def get_users(self, token):
+        return self.user_api.get_users(token)
 
-    def get_data_in_project(self, project_gid):
-        return self.project_api.get_data_in_project(project_gid)
+    def get_project_list(self, username, token):
+        return self.user_api.get_projects_list(username, token)
 
-    def get_operations_in_project(self, project_gid, page_number):
-        return self.project_api.get_operations_in_project(project_gid, page_number)
+    def get_data_in_project(self, project_gid, token):
+        return self.project_api.get_data_in_project(project_gid, token)
 
-    def retrieve_datatype(self, datatype_gid, download_folder):
-        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
+    def get_operations_in_project(self, project_gid, page_number, token):
+        return self.project_api.get_operations_in_project(project_gid, token, page_number)
 
-    def get_operations_for_datatype(self, datatype_gid):
-        return self.datatype_api.get_operations_for_datatype(datatype_gid)
+    def retrieve_datatype(self, datatype_gid, download_folder, token):
+        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder, token)
 
-    def fire_simulation(self, project_gid, session_stored_simulator, burst_config):
+    def get_operations_for_datatype(self, datatype_gid, token):
+        return self.datatype_api.get_operations_for_datatype(datatype_gid, token)
+
+    def fire_simulation(self, project_gid, session_stored_simulator, burst_config, token):
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator,
-                                                   burst_config, self.temp_folder)
+                                                   burst_config, self.temp_folder, token)
 
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model):
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, token):
         return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
-                                                   view_model, self.temp_folder)
+                                                   view_model, self.temp_folder, token)
 
-    def get_operation_status(self, operation_gid):
-        return self.operation_api.get_operation_status(operation_gid)
+    def get_operation_status(self, operation_gid, token):
+        return self.operation_api.get_operation_status(operation_gid, token)
 
-    def get_operation_results(self, operation_gid):
-        return self.operation_api.get_operations_results(operation_gid)
+    def get_operation_results(self, operation_gid, token):
+        return self.operation_api.get_operations_results(operation_gid, token)
 
 
 if __name__ == '__main__':
     client = MainClient("http://localhost:9090")
-    client.get_operations_in_project("2cc58a73-25c1-11e5-a7af-14109fe3bf71", 2)
+    data = client.login('tvb', '1234')
+    print(data)
+    users = client.get_users(data['token'])
+    print(users)
+

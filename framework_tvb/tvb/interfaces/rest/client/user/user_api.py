@@ -29,7 +29,6 @@
 #
 
 import requests
-
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder
@@ -37,14 +36,21 @@ from tvb.interfaces.rest.commons.dtos import UserDto, ProjectDto
 
 
 class UserApi(MainApi):
+
     @handle_response
-    def get_users(self):
-        response = requests.get(self.build_request_url(RestNamespace.USERS.value))
+    def authenticate(self, username, password):
+        response = requests.post(self.build_request_url(RestNamespace.USERS.value + RestLink.AUTHENTICATE.value),
+                                 auth=(username, password))
+        return response
+
+    @handle_response
+    def get_users(self, token):
+        response = requests.get(self.build_request_url(RestNamespace.USERS.value), headers=self.get_headers(token))
         return response, UserDto
 
     @handle_response
-    def get_projects_list(self, username):
+    def get_projects_list(self, username, token):
         response = requests.get(self.build_request_url(RestLink.PROJECTS_LIST.compute_url(True, {
             LinkPlaceholder.USERNAME.value: username
-        })))
+        })), headers=self.get_headers(token))
         return response, ProjectDto

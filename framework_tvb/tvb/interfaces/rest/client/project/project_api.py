@@ -38,19 +38,19 @@ from tvb.interfaces.rest.commons.exceptions import ClientException
 
 class ProjectApi(MainApi):
     @handle_response
-    def get_data_in_project(self, project_gid):
+    def get_data_in_project(self, project_gid, token):
         response = requests.get(self.build_request_url(RestLink.DATA_IN_PROJECT.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
-        })))
+        })), headers=self.get_headers(token))
         return response, DataTypeDto
 
     @handle_response
-    def get_operations_in_project(self, project_gid, page_number=1):
+    def get_operations_in_project(self, project_gid, token, page_number=1):
         try:
             page_number = int(page_number)
         except ValueError:
             raise ClientException(message="Invalid page number", code=400)
         response = requests.get(self.build_request_url(RestLink.OPERATIONS_IN_PROJECT.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
-        })), params={Strings.PAGE_NUMBER.value: page_number})
+        })), params={Strings.PAGE_NUMBER.value: page_number}, headers=self.get_headers(token))
         return response, OperationDto

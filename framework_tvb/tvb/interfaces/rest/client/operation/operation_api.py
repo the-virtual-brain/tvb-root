@@ -38,21 +38,21 @@ from tvb.interfaces.rest.commons.dtos import DataTypeDto
 
 class OperationApi(MainApi):
     @handle_response
-    def get_operation_status(self, operation_gid):
+    def get_operation_status(self, operation_gid, token):
         return requests.get(self.build_request_url(RestLink.OPERATION_STATUS.compute_url(True, {
             LinkPlaceholder.OPERATION_GID.value: operation_gid
-        })))
+        })), headers=self.get_headers(token))
 
     @handle_response
-    def get_operations_results(self, operation_gid):
+    def get_operations_results(self, operation_gid, token):
         response = requests.get(
             self.build_request_url(RestLink.OPERATION_RESULTS.compute_url(True, {
                 LinkPlaceholder.OPERATION_GID.value: operation_gid
-            })))
+            })), headers=self.get_headers(token))
         return response, DataTypeDto
 
     @handle_response
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder):
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder, token):
         h5_file_path = temp_folder + '/ViewModel.h5'
 
         h5_file = ViewModelH5(h5_file_path, view_model)
@@ -64,4 +64,4 @@ class OperationApi(MainApi):
             LinkPlaceholder.PROJECT_GID.value: project_gid,
             LinkPlaceholder.ALG_MODULE.value: algorithm_module,
             LinkPlaceholder.ALG_CLASSNAME.value: algorithm_classname
-        })), files={"file": ("ViewModel.h5", file_obj)})
+        })), files={"file": ("ViewModel.h5", file_obj)}, headers=self.get_headers(token))

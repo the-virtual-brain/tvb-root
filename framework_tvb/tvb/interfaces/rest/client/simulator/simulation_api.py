@@ -44,7 +44,7 @@ from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
 class SimulationApi(MainApi):
 
     @handle_response
-    def fire_simulation(self, project_gid, session_stored_simulator, temp_folder):
+    def fire_simulation(self, project_gid, session_stored_simulator, temp_folder, token):
         simulator_index = SimulatorIndex()
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
         destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
@@ -58,4 +58,4 @@ class SimulationApi(MainApi):
         file_obj = open(zip_folder_path, 'rb')
         return requests.post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
-        })), files={"file": ("SimulationData.zip", file_obj)})
+        })), files={"file": ("SimulationData.zip", file_obj)}, token=token)

@@ -37,3 +37,8 @@ class MainApi:
 
     def build_request_url(self, url):
         return self.server_url + url
+
+    @staticmethod
+    def get_headers(token):
+        return {'x-access-token': token}
+
