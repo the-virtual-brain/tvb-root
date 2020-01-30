@@ -27,10 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from datetime import datetime, date
 from functools import wraps
 from flask import current_app, request, jsonify
 from flask.json import dumps
+from flask.json import JSONEncoder
 import jwt
 from jwt import DecodeError
 
@@ -79,3 +80,27 @@ def token_required(func):
         return func(*a, **b)
 
     return deco
+
+
+class CustomFlaskEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return {
+                '__type__': 'datetime',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+                'hour': o.hour,
+                'minute': o.minute,
+                'second': o.second,
+                'microsecond': o.microsecond,
+                'tzinfo': o.tzinfo,
+            }
+        if isinstance(o, date):
+            return {
+                '__type__': 'date',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+            }
+        return super().default(o)

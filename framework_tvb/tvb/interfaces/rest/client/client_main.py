@@ -29,14 +29,19 @@
 #
 
 import tempfile
+
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
+from tvb.interfaces.rest.commons.dtos import OperationDto
 
 
-class MainClient:
+class TVBClient:
+    """
+    TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
+    """
 
     def __init__(self, server_url):
         self.temp_folder = tempfile.gettempdir()
@@ -47,45 +52,88 @@ class MainClient:
         self.operation_api = OperationApi(server_url)
 
     def login(self, username, password):
+        """
+        Authentificate to the REST server and get token to be able to access all the other operations
+        """
         return self.user_api.authenticate(username, password)
 
     def get_users(self, token):
+        """
+        Retrieve users list
+        """
         return self.user_api.get_users(token)
 
     def get_project_list(self, username, token):
+        """
+        Given a username, this function will return all projects for the given user.
+        """
         return self.user_api.get_projects_list(username, token)
 
     def get_data_in_project(self, project_gid, token):
+        """
+        Given a project_gid, this function will return a list of DataTypeDTO instances associated with the current project.
+        """
         return self.project_api.get_data_in_project(project_gid, token)
 
     def get_operations_in_project(self, project_gid, page_number, token):
-        return self.project_api.get_operations_in_project(project_gid, token, page_number)
+        """
+        Given a project_gid and a page number (default page size is 20), this function will return the list of OperationDTO entities
+        """
+        response = self.project_api.get_operations_in_project(project_gid, token, page_number)
+        operations = [OperationDto(**operation) for operation in response["operations"]]
+        pages = response["pages"]
+        return operations, pages
 
     def retrieve_datatype(self, datatype_gid, download_folder, token):
+        """
+        Given a guid, this function will download locally the H5 full data from the server to the given folder.
+        """
+
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder, token)
 
+    def load_datatype(self, datatype_path, token):
+        """
+        TODO: TO BE IMPLEMENTED
+        Given a local H5 file location, where previously a valid H5 file has been downloaded from TVB server, load in
+        memory a HasTraits subclass instance (e.g. Connectivity, TimeSeriesRegion).
+        """
+        return self.datatype_api.load_datatype(datatype_path, token)
+
     def get_operations_for_datatype(self, datatype_gid, token):
+        """
+        Given a guid, this function will return the available operations for that datatype, as a list of AlgorithmDTO instances
+        """
         return self.datatype_api.get_operations_for_datatype(datatype_gid, token)
 
-    def fire_simulation(self, project_gid, session_stored_simulator, burst_config, token):
-        return self.simulation_api.fire_simulation(project_gid, session_stored_simulator,
-                                                   burst_config, self.temp_folder, token)
+    def fire_simulation(self, project_gid, session_stored_simulator, token):
+        """
+        Given a project to execute the operation, and a configuration for the Simulator’s inputs, this will launch the
+        simulation and return its gid
+        """
+        return self.simulation_api.fire_simulation(project_gid, session_stored_simulator, self.temp_folder, token)
 
     def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, token):
+        """
+        This is a more generic method of launching Analyzers. Given a project id, algorithm module, algorithm classname
+        and a view model instance, this function will serialize the view model and will launch the analyzer.
+        """
         return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
                                                    view_model, self.temp_folder, token)
 
     def get_operation_status(self, operation_gid, token):
+        """
+        Given an operation gid, this function returns the status of that operation in TVB. The status of operations can be:
+        STATUS_FINISHED = "5-FINISHED"
+        STATUS_PENDING = "4-PENDING"
+        STATUS_STARTED = "3-STARTED"
+        STATUS_CANCELED = "2-CANCELED"
+        STATUS_ERROR = "1-ERROR"
+        """
         return self.operation_api.get_operation_status(operation_gid, token)
 
     def get_operation_results(self, operation_gid, token):
+        """
+        Given an operation gid, this function returns a list of DataType instances (subclasses), representing the results of that
+        operation if it has finished and an empty list, if the operation is still running, has failed or simply has no results.
+        """
         return self.operation_api.get_operations_results(operation_gid, token)
-
-
-if __name__ == '__main__':
-    client = MainClient("http://localhost:9090")
-    data = client.login('tvb', '1234')
-    print(data)
-    users = client.get_users(data['token'])
-    print(users)
-

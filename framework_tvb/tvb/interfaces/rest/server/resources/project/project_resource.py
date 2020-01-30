@@ -83,5 +83,5 @@ class GetOperationsInProjectResource(RestResource):
         except ProjectServiceException:
             raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
 
-        _, _, operations, _ = self.project_service.retrieve_project_full(project.id, current_page=int(page_number))
-        return [OperationDto(operation) for operation in operations]
+        _, _, operations, pages = self.project_service.retrieve_project_full(project.id, current_page=int(page_number))
+        return {"operations": [OperationDto(operation) for operation in operations], "pages": pages}
