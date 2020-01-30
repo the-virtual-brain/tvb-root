@@ -30,7 +30,6 @@
 
 import os
 import sys
-
 from flask import Flask
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -44,7 +43,8 @@ from tvb.interfaces.rest.server.resources.operation.operation_resource import Ge
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
     GetDataInProjectResource
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
+from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource, \
+    AuthenticateResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -53,6 +53,7 @@ LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 FLASK_PORT = 9090
+SECRET_KEY = 'super-secret'
 
 
 def initialize_tvb(arguments):
@@ -75,11 +76,14 @@ def build_path(namespace):
 def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
+    # adding secret key
+    app.config['SECRET_KEY'] = SECRET_KEY
     # creating an API object
     api = RestApi(app, title="Rest services for TVB", doc="/doc/")
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
+    name_space_users.add_resource(AuthenticateResource, RestLink.AUTHENTICATE.value)
     name_space_users.add_resource(GetUsersResource, '/')
     name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url(
         values={LinkPlaceholder.USERNAME.value: "<string:username>"}))

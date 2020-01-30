@@ -25,6 +25,7 @@ class LinkPlaceholder(Enum):
 
 class RestLink(Enum):
     # USERS
+    AUTHENTICATE = "/login"
     PROJECTS_LIST = "/{" + LinkPlaceholder.USERNAME.value + "}/projects"
 
     # PROJECTS

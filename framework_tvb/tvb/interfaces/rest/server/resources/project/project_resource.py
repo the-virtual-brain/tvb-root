@@ -33,12 +33,14 @@ from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.dtos import OperationDto, DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException
+from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, token_required
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
 
 
 class GetDataInProjectResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -58,6 +60,7 @@ class GetDataInProjectResource(RestResource):
 
 
 class GetOperationsInProjectResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

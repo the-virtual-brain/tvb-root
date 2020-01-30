@@ -31,11 +31,9 @@ import flask
 from flask_restplus import Resource
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException
-from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify
 
 
 class RestResource(Resource):
-    method_decorators = [rest_jsonify]
 
     @staticmethod
     def extract_file_from_request(file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):

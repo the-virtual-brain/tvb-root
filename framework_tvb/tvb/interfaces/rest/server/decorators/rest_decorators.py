@@ -29,9 +29,10 @@
 #
 
 from functools import wraps
-
-from flask import current_app
+from flask import current_app, request, jsonify
 from flask.json import dumps
+import jwt
+from jwt import DecodeError
 
 
 def _convert(obj):
@@ -55,5 +56,26 @@ def rest_jsonify(func):
         return current_app.response_class(dumps(data, default=lambda o: _convert(o), sort_keys=False),
                                           mimetype=current_app.config['JSONIFY_MIMETYPE'],
                                           status=status)
+
+    return deco
+
+
+def token_required(func):
+    @wraps(func)
+    def deco(*a, **b):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+
+        try:
+            jwt.decode(token, 'super-secret')
+        except DecodeError:
+            return jsonify({'message': 'Token is invalid!'}), 401
+
+        return func(*a, **b)
 
     return deco

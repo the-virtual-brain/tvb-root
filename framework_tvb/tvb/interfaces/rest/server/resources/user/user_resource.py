@@ -31,10 +31,42 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import UserDto, ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.server.decorators.rest_decorators import token_required, rest_jsonify
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from flask import make_response, jsonify, request
+import jwt
+import datetime
+
+
+class AuthenticateResource(RestResource):
+
+    @staticmethod
+    def post():
+        """
+        :return: a JWT token in case the username and password are correct
+        """
+        auth = request.authorization
+
+        if not auth or not auth.username or not auth.password:
+            return make_response('Could not verify', 401, {'WWWW-Authenticate': 'Basic realm="Username or password '
+                                                                                'where not sent!"'})
+
+        user = UserService.get_user_by_name(auth.username)
+
+        if not user:
+            return make_response('Could not verify', 401, {'WWWW-Authenticate': 'Basic realm="Username does not '
+                                                                                'exist!"'})
+
+        if UserService.check_login(auth.username, auth.password):
+            token = jwt.encode({'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, 'super-secret')
+
+            return jsonify({'token': token.decode('UTF-8')})
+
+        return make_response('Could not verify', 401, {'WWWW-Authenticate': 'Basic realm="Incorrect password!"'})
 
 
 class GetUsersResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def get(self):
         """
@@ -45,6 +77,7 @@ class GetUsersResource(RestResource):
 
 
 class GetProjectsListResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def get(self, username):
         """

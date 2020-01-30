@@ -35,14 +35,17 @@ from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, token_required
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
 class RetrieveDatatypeResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
-    def get(self, datatype_gid):
+    @staticmethod
+    def get(datatype_gid):
         """
         :given a guid, this function will download the H5 full data
         """
@@ -56,6 +59,7 @@ class RetrieveDatatypeResource(RestResource):
 
 
 class GetOperationsForDatatypeResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

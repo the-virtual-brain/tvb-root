@@ -40,6 +40,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
+from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, token_required
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -48,6 +49,7 @@ INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
 
 class GetOperationStatusResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def get(self, operation_gid):
         """
@@ -61,8 +63,10 @@ class GetOperationStatusResource(RestResource):
 
 
 class GetOperationResultsResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
-    def get(self, operation_gid):
+    @staticmethod
+    def get(operation_gid):
         """
         :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
         None, if the operation is still running, has failed or simply has no results.
@@ -79,6 +83,7 @@ class GetOperationResultsResource(RestResource):
 
 
 class LaunchOperationResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
