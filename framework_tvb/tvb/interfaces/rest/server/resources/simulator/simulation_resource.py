@@ -69,7 +69,8 @@ class FireSimulationResource(RestResource):
         FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
         user_id = project.fk_admin
 
-        folder_path = zip_path[:-len(FilesHelper.TVB_ZIP_FILE_EXTENSION)]
+        # folder_path = zip_path[:-len(FilesHelper.TVB_ZIP_FILE_EXTENSION)]
+        folder_path = os.path.dirname(zip_path)
         simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
                                                                               SimulatorAdapter.__name__)
         try:
