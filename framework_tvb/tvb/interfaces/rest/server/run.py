@@ -130,7 +130,7 @@ def initialize_flask():
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
 
-    app.run(debug=True, port=FLASK_PORT)
+    app.run(host="0.0.0.0", debug=True, port=FLASK_PORT)
 
 
 if __name__ == '__main__':
