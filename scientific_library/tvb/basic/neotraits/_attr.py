@@ -451,6 +451,8 @@ class NArray(Attr):
                        Represents the expected domain of the values in the array.
         """
 
+        if numpy.issubdtype(dtype, numpy.integer):
+            dtype = numpy.int64
         self.dtype = numpy.dtype(dtype)
 
         super(NArray, self).__init__(
