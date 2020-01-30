@@ -37,6 +37,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder, Strings
+from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
@@ -75,6 +76,8 @@ def build_path(namespace):
 def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
+    app.json_encoder = CustomFlaskEncoder
+
     # creating an API object
     api = RestApi(app, title="Rest services for TVB", doc="/doc/")
 

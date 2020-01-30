@@ -27,11 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from datetime import datetime, date
 from functools import wraps
 
 from flask import current_app
 from flask.json import dumps
+from flask.json import JSONEncoder
 
 
 def _convert(obj):
@@ -57,3 +58,27 @@ def rest_jsonify(func):
                                           status=status)
 
     return deco
+
+
+class CustomFlaskEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return {
+                '__type__': 'datetime',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+                'hour': o.hour,
+                'minute': o.minute,
+                'second': o.second,
+                'microsecond': o.microsecond,
+                'tzinfo': o.tzinfo,
+            }
+        if isinstance(o, date):
+            return {
+                '__type__': 'date',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+            }
+        return super().default(o)

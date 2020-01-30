@@ -34,9 +34,10 @@ from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
+from tvb.interfaces.rest.commons.dtos import OperationDto
 
 
-class MainClient:
+class TVBClient:
 
     def __init__(self, server_url):
         self.temp_folder = tempfile.gettempdir()
@@ -56,7 +57,10 @@ class MainClient:
         return self.project_api.get_data_in_project(project_gid)
 
     def get_operations_in_project(self, project_gid, page_number):
-        return self.project_api.get_operations_in_project(project_gid, page_number)
+        response = self.project_api.get_operations_in_project(project_gid, page_number)
+        operations = [OperationDto(**operation) for operation in response["operations"]]
+        pages = response["pages"]
+        return operations, pages
 
     def retrieve_datatype(self, datatype_gid, download_folder):
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
@@ -77,8 +81,3 @@ class MainClient:
 
     def get_operation_results(self, operation_gid):
         return self.operation_api.get_operations_results(operation_gid)
-
-
-if __name__ == '__main__':
-    client = MainClient("http://localhost:9090")
-    client.get_operations_in_project("2cc58a73-25c1-11e5-a7af-14109fe3bf71", 2)

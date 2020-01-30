@@ -27,21 +27,32 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from datetime import datetime
+
+from tvb.interfaces.rest.commons.decoders import CustomDecoder
 
 
-class UserDto:
-    def __init__(self, user=None, **kwargs):
+class BaseDto:
+    def update(self, kwargs):
+        for key, value in kwargs.items():
+            kwargs[key] = CustomDecoder.date_hook(value)
         self.__dict__.update(kwargs)
+
+
+class UserDto(BaseDto):
+    def __init__(self, user=None, **kwargs):
+        self.update(kwargs)
         if user is not None:
             self.username = user.username
             self.email = user.email
             self.validated = user.validated
             self.role = user.role
+            self.date = datetime.now()
 
 
-class ProjectDto:
+class ProjectDto(BaseDto):
     def __init__(self, project=None, **kwargs):
-        self.__dict__.update(kwargs)
+        self.update(kwargs)
         if project is not None:
             self.gid = project.gid
             self.name = project.name
@@ -50,9 +61,9 @@ class ProjectDto:
             self.version = project.version
 
 
-class OperationDto:
+class OperationDto(BaseDto):
     def __init__(self, operation=None, **kwargs):
-        self.__dict__.update(kwargs)
+        self.update(kwargs)
         if operation is not None:
             self.user_id = operation['user'].id
             self.algorithm_id = operation['algorithm'].id
@@ -65,9 +76,9 @@ class OperationDto:
             self.visible = operation['visible']
 
 
-class AlgorithmDto:
+class AlgorithmDto(BaseDto):
     def __init__(self, algorithm=None, **kwargs):
-        self.__dict__.update(kwargs)
+        self.update(kwargs)
         if algorithm is not None:
             self.module = algorithm.module
             self.classname = algorithm.classname
@@ -75,9 +86,9 @@ class AlgorithmDto:
             self.description = algorithm.description
 
 
-class DataTypeDto:
+class DataTypeDto(BaseDto):
     def __init__(self, datatype=None, **kwargs):
-        self.__dict__.update(kwargs)
+        self.update(kwargs)
         if datatype is not None:
             self.gid = datatype.gid
             self.name = datatype.display_name
