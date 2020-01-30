@@ -27,12 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 
 import requests
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
+from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
 class DataTypeApi(MainApi):
@@ -48,12 +50,14 @@ class DataTypeApi(MainApi):
 
         file_path = download_folder + '/' + file_name
 
-        if response.status_code == 200:
+        if response.ok:
             with open(file_path, 'wb') as local_file:
                 for chunk in response.iter_content(chunk_size=128):
                     local_file.write(chunk)
-            return True
-        return False
+            return file_path
+
+        error_response = json.loads(response.content.decode('utf-8'))
+        raise ClientException(error_response['message'], error_response['code'])
 
     @handle_response
     def get_operations_for_datatype(self, datatype_gid, token):
@@ -62,3 +66,7 @@ class DataTypeApi(MainApi):
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
             })), self.get_headers(token))
         return response, AlgorithmDto
+
+    def load_datatype(self, datatype_path):
+        # TODO: TO BE IMPLEMENTED
+        pass

@@ -29,7 +29,6 @@
 #
 
 import tempfile
-
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi

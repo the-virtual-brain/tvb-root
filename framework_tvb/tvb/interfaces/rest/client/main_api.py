@@ -31,8 +31,14 @@ from tvb.interfaces.rest.commons import Strings
 
 
 class MainApi:
+    """
+    Base API class which will be inherited by all the API specific subclasses
+    """
 
     def __init__(self, server_url):
+        """
+        Rest server url, where all rest calls will be made
+        """
         self.server_url = server_url + "/" + Strings.BASE_PATH.value
 
     def build_request_url(self, url):

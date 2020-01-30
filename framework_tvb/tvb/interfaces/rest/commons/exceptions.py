@@ -85,6 +85,7 @@ class ServiceException(BaseRestException):
     def get_default_message(self):
         return self.message_prefix
 
+
 class ClientException(BaseRestException):
     def __init__(self, message, code):
         super(ClientException, self).__init__(message, code)
