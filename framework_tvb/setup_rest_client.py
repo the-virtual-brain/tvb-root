@@ -29,45 +29,44 @@
 #
 
 """
-Install TVB Framework package for developers.
-
-Execute:
-    python setup.py install/develop
-
+This is used to package the tvb-rest-client separately.
 """
 
 import os
 import shutil
 import setuptools
+from setuptools.command.egg_info import manifest_maker
+
+manifest_maker.template = 'MANIFEST_rest_client.in'
 
 VERSION = "2.0a1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "flask", "flask-restplus", "formencode", "Jinja2",
-                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
+TVB_INSTALL_REQUIREMENTS = ["requests", "allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
 
-# Packaging tvb-framework with REST server inside
-with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
+# Packaging tvb-rest-client
+with open(os.path.join(os.path.dirname(__file__), 'README_rest_client.rst')) as fd:
     DESCRIPTION = fd.read()
 
-setuptools.setup(name="tvb-framework",
+setuptools.setup(name="tvb-rest-client",
                  version=VERSION,
                  packages=setuptools.find_packages(
-                     exclude=['tvb.interfaces.rest.client', 'tvb.interfaces.rest.client.*']),
+                     exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
+                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
                                  'test': ["pytest", "pytest-benchmark"]},
-                 description='A package for performing whole brain simulations',
+                 description='A helper package for preparing and sending requests towards the TVB REST API',
                  long_description=DESCRIPTION,
                  license="GPL v3",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-framework',
-                 keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
+                 keywords='tvb rest client brain simulator neuroscience human animal neuronal dynamics models delay')
 
 # Clean after install
-shutil.rmtree('tvb_framework.egg-info', True)
+shutil.rmtree('tvb_rest_client.egg-info', True)
