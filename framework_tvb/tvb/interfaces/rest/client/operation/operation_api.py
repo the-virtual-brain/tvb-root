@@ -28,7 +28,9 @@
 #
 #
 
+import os
 import requests
+from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
@@ -53,7 +55,7 @@ class OperationApi(MainApi):
 
     @handle_response
     def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder, token):
-        h5_file_path = temp_folder + '/ViewModel.h5'
+        h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid)
 
         h5_file = ViewModelH5(h5_file_path, view_model)
         h5_file.store(view_model)
@@ -64,4 +66,4 @@ class OperationApi(MainApi):
             LinkPlaceholder.PROJECT_GID.value: project_gid,
             LinkPlaceholder.ALG_MODULE.value: algorithm_module,
             LinkPlaceholder.ALG_CLASSNAME.value: algorithm_classname
-        })), files={"file": ("ViewModel.h5", file_obj)}, headers=self.get_headers(token))
+        })), files={"file": (os.path.basename(h5_file_path), file_obj)}, headers=self.get_headers(token))

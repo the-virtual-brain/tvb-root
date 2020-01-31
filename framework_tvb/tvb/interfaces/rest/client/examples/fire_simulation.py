@@ -32,9 +32,12 @@ import time
 import uuid
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR
+from tvb.datatypes.connectivity import Connectivity
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
@@ -93,8 +96,8 @@ if __name__ == '__main__':
 
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
-        file_path = tvb_client.retrieve_datatype(time_series_gid, tvb_client.temp_folder)
-        logger.info("The time series file location is: {}".format(file_path))
+        time_series_path = tvb_client.retrieve_datatype(time_series_gid, tvb_client.temp_folder)
+        logger.info("The time series file location is: {}".format(time_series_path))
 
         logger.info("Requesting algorithms to run on time series...")
         algos = tvb_client.get_operations_for_datatype(time_series_gid)
@@ -104,6 +107,7 @@ if __name__ == '__main__':
         logger.info("Launch Fourier Analyzer...")
         fourier_model = FFTAdapterModel()
         fourier_model.time_series = uuid.UUID(time_series_gid)
+        fourier_model.window_function = 'hamming'
 
         algo_dto = None
         for algo in algos:
@@ -112,3 +116,24 @@ if __name__ == '__main__':
 
         operation_gid = tvb_client.launch_operation(project_gid, algo_dto.module, algo_dto.classname, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
+
+        logger.info("Download the connectivity file...")
+        connectivity_path = tvb_client.retrieve_datatype(connectivity_gid, tvb_client.temp_folder)
+        logger.info("The connectivity file location is: {}".format(connectivity_path))
+
+        logger.info("Loading a Connectivity datatype in memory...")
+        connectivity = Connectivity()
+        with ConnectivityH5(connectivity_path) as connectivity_h5:
+            connectivity_h5.load_into(connectivity)
+        logger.info("Info on current Connectivity: {}".format(connectivity.summary_info()))
+
+        logger.info("Loading a chuck from the time series H5 file...")
+        with TimeSeriesH5(time_series_path) as time_series_h5:
+            data_shape = time_series_h5.read_data_shape()
+            chunk = time_series_h5.read_data_slice(
+                tuple([slice(20), slice(data_shape[1]), slice(data_shape[2]), slice(data_shape[3])]))
+
+        assert chunk.shape[0] == 20
+        assert chunk.shape[1] == data_shape[1]
+        assert chunk.shape[2] == data_shape[2]
+        assert chunk.shape[3] == data_shape[3]
