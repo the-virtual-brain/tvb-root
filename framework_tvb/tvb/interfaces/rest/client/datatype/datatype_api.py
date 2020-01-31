@@ -27,9 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+import cgi
 import json
 import os
-
 import requests
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
@@ -45,10 +46,8 @@ class DataTypeApi(MainApi):
             RestLink.GET_DATATYPE.compute_url(True,
                                               {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})))
         content_disposition = response.headers['Content-Disposition']
-        start_index = content_disposition.index("filename=") + 9
-        end_index = len(content_disposition)
-        file_name = content_disposition[start_index:end_index]
-
+        value, params = cgi.parse_header(content_disposition)
+        file_name = params['filename']
         file_path = os.path.join(download_folder, os.path.basename(file_name))
 
         if response.ok:
