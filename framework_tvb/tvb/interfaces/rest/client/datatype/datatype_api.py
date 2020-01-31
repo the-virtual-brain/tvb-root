@@ -28,6 +28,7 @@
 #
 #
 import json
+import os
 
 import requests
 from tvb.interfaces.rest.client.client_decorators import handle_response
@@ -48,7 +49,7 @@ class DataTypeApi(MainApi):
         end_index = len(content_disposition)
         file_name = content_disposition[start_index:end_index]
 
-        file_path = download_folder + '/' + file_name
+        file_path = os.path.join(download_folder, os.path.basename(file_name))
 
         if response.ok:
             with open(file_path, 'wb') as local_file:

@@ -58,7 +58,6 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.neotraits.forms import Form, DataTypeSelectField, TraitDataTypeSelectField
-from tvb.interfaces.web.controllers.decorators import using_template
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
@@ -118,6 +117,9 @@ def nan_allowed():
 
 
 class ABCAdapterForm(Form):
+    # TODO: remove dependency from web
+    from tvb.interfaces.web.controllers.decorators import using_template
+
     @staticmethod
     def get_required_datatype():
         raise NotImplementedError
