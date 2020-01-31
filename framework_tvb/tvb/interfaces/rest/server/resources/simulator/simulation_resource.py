@@ -66,11 +66,12 @@ class FireSimulationResource(RestResource):
         except ProjectServiceException:
             raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
 
-        FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
+        result = FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
+        if len(result) == 0:
+            raise InvalidInputException("Empty zip archive")
         user_id = project.fk_admin
 
-        # folder_path = zip_path[:-len(FilesHelper.TVB_ZIP_FILE_EXTENSION)]
-        folder_path = os.path.dirname(zip_path)
+        folder_path = os.path.dirname(result[0])
         simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
                                                                               SimulatorAdapter.__name__)
         try:
