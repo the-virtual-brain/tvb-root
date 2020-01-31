@@ -29,6 +29,7 @@
 #
 
 import flask
+from flask_restplus import Resource
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
@@ -40,7 +41,7 @@ from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
-class RetrieveDatatypeResource(RestResource):
+class RetrieveDatatypeResource(Resource):
 
     def get(self, datatype_gid):
         """

@@ -47,7 +47,6 @@ class UserDto(BaseDto):
             self.email = user.email
             self.validated = user.validated
             self.role = user.role
-            self.date = datetime.now()
 
 
 class ProjectDto(BaseDto):
