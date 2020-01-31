@@ -23,7 +23,7 @@ If the TVB REST server you want to access runs at another address, change the pa
 
 .. code-block:: python
 
-    from tvb.interfaces.rest.client.client_main import TVBClient
+    from tvb.interfaces.rest.client.tvb_client import TVBClient
     main_client = TVBClient("http://localhost:9090")
 ..
 
