@@ -39,7 +39,6 @@ import json
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -92,11 +91,11 @@ class ConnectivityEdgeBundle(ABCDisplayer):
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
-        connectivity = self.load_entity_by_gid(view_model.connectivity.hex)
-        connectivity_dt = h5.load_from_index(connectivity)
+        connectivity = self.load_traited_by_gid(view_model.connectivity)
 
-        pars = {"labels": json.dumps(connectivity_dt.region_labels.tolist()),
-                "url_base": ABCDisplayer.paths2url(connectivity.gid, attribute_name="weights", flatten="True")
+        pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
+                "url_base": ABCDisplayer.paths2url(view_model.connectivity.hex,
+                                                   attribute_name="weights", flatten="True")
                 }
 
         return self.build_display_result("connectivity_edge_bundle/view", pars)

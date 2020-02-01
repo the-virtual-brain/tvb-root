@@ -106,7 +106,7 @@ class HistogramViewer(ABCDisplayer):
         input_data = self.load_entity_by_gid(view_model.input_data.hex)
         return numpy.prod(input_data.shape) * 2
 
-    def generate_preview(self, view_model, figure_size):
+    def generate_preview(self, view_model, figure_size=None):
         """
         The preview for the burst page.
         """

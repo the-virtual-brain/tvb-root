@@ -87,8 +87,7 @@ class BRCOImporter(ABCUploader):
     @transactional
     def launch(self, view_model):
         try:
-            connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
-            conn = h5.load_from_index(connectivity_index)
+            conn = self.load_traited_by_gid(view_model.connectivity)
 
             parser = XMLParser(view_model.data_file, conn.region_labels)
             annotations = parser.read_annotation_terms()

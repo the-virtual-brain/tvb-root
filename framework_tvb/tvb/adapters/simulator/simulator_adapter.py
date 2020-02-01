@@ -35,11 +35,11 @@ Few supplementary steps are done here:
    * from submitted Monitor/Model... names, build transient entities
    * after UI parameters submit, compose transient Cortex entity to be passed to the Simulator.
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import numpy
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
@@ -187,8 +187,7 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator = Simulator()
         simulator.gid = view_model.gid
 
-        conn_index = self.load_entity_by_gid(view_model.connectivity.hex)
-        conn = h5.load_from_index(conn_index)
+        conn = self.load_traited_by_gid(view_model.connectivity)
         simulator.connectivity = conn
 
         simulator.conduction_speed = view_model.conduction_speed
@@ -206,9 +205,8 @@ class SimulatorAdapter(ABCAsynchronous):
 
             simulator.surface.region_mapping_data = rm
             if simulator.surface.local_connectivity:
-                lc_index = self.load_entity_by_gid(view_model.surface.local_connectivity.hex)
-                lc = h5.load_from_index(lc_index)
-                assert lc_index.surface_gid == rm_index.surface_gid
+                lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
+                assert lc.surface.gid == rm_index.surface_gid
                 lc.surface = rm_surface
                 simulator.surface.local_connectivity = lc
 

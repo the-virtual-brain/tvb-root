@@ -98,8 +98,8 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
             required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
         return required_memory
 
-    def generate_preview(self, view_model):
-        # type: (ImaginaryCoherenceDisplayModel) -> dict
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (ImaginaryCoherenceDisplayModel, (int,int)) -> dict
         return self.launch(view_model)
 
     def launch(self, view_model):

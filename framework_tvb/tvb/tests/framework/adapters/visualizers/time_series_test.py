@@ -35,7 +35,7 @@
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.visualizers.time_series import TimeSeries
+from tvb.adapters.visualizers.time_series import TimeSeriesDisplay
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -65,7 +65,7 @@ class TestTimeSeries(TransactionalTestCase):
         """
         time_series_index = time_series_index_factory()
         time_series = h5.load_from_index(time_series_index)
-        viewer = TimeSeries()
+        viewer = TimeSeriesDisplay()
         view_model = viewer.get_view_model_class()()
         view_model.time_series = time_series.gid
         result = viewer.launch(view_model)

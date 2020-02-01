@@ -448,7 +448,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 
-    def get_required_memory_size(self):
+    def get_required_memory_size(self, view_model):
         return -1
 
 

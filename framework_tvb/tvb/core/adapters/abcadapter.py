@@ -37,6 +37,7 @@ Root classes for adding custom functionality to the code.
 
 import os
 import json
+import uuid
 import psutil
 import numpy
 import importlib
@@ -46,6 +47,7 @@ from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import HasTraits
 from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
@@ -190,15 +192,8 @@ class ABCAdapter(object):
     KEY_DISABLED = "disabled"
     KEY_FILTERABLE = "filterable"
 
-    # TODO: move everything related to parameters PRE + POST into parameters_factory
-    KEYWORD_PARAMS = "_parameters_"
-
-    INTERFACE_ATTRIBUTES_ONLY = "attributes-only"
-    INTERFACE_ATTRIBUTES = "attributes"
-
     # model.Algorithm instance that will be set for each adapter created by in build_adapter method
     stored_adapter = None
-
 
     def __init__(self):
         # It will be populate with key from DataTypeMetaData
@@ -254,12 +249,6 @@ class ABCAdapter(object):
         """
         return True
 
-    def get_input_tree(self):
-        """
-        Describes inputs and outputs of the launch method.
-        """
-        return None
-
     def submit_form(self, form):
         self.submitted_form = form
 
@@ -282,13 +271,11 @@ class ABCAdapter(object):
         Describes inputs and outputs of the launch method.
         """
 
-
     def configure(self, view_model):
         """
         To be implemented in each Adapter that requires any specific configurations
         before the actual launch.
         """
-
 
     @abstractmethod
     def get_required_memory_size(self, view_model):
@@ -297,7 +284,6 @@ class ABCAdapter(object):
         for launching the adapter.
         """
 
-
     @abstractmethod
     def get_required_disk_size(self, view_model):
         """
@@ -305,14 +291,12 @@ class ABCAdapter(object):
         for launching the adapter in kilo-Bytes.
         """
 
-
     def get_execution_time_approximation(self, view_model):
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
         """
         return -1
-
 
     @abstractmethod
     def launch(self, view_model):
@@ -323,7 +307,6 @@ class ABCAdapter(object):
          Any returned DataType will be stored in DB, by the Framework.
         :param view_model: the data model corresponding to the current adapter
         """
-
 
     def add_operation_additional_info(self, message):
         """
@@ -395,7 +378,6 @@ class ABCAdapter(object):
         self.__check_integrity(result)
         return self._capture_operation_results(result)
 
-
     def _capture_operation_results(self, result):
         """
         After an operation was finished, make sure the results are stored
@@ -413,7 +395,7 @@ class ABCAdapter(object):
             burst_reference = self.meta_data[DataTypeMetaData.KEY_BURST]
 
         count_stored = 0
-        group_type = None   # In case of a group, the first not-none type is sufficient to memorize here
+        group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:
             if res is None:
                 continue
@@ -443,7 +425,6 @@ class ABCAdapter(object):
 
         return 'Operation ' + str(self.operation_id) + ' has finished.', count_stored
 
-
     def __check_integrity(self, result):
         """
         Check that the returned parameters for LAUNCH operation
@@ -456,7 +437,6 @@ class ABCAdapter(object):
                 msg = "Unexpected output DataType %s"
                 raise InvalidParameterException(msg % type(result_entity))
 
-
     def __is_data_in_supported_types(self, data):
 
         if data is None:
@@ -467,14 +447,12 @@ class ABCAdapter(object):
         # Data can't be mapped on any supported type !!
         return False
 
-
     def _is_group_launch(self):
         """
         Return true if this adapter is launched from a group of operations
         """
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
-
 
     @staticmethod
     def load_entity_by_gid(data_gid):
@@ -483,6 +461,14 @@ class ABCAdapter(object):
         """
         return load_entity_by_gid(data_gid)
 
+    @staticmethod
+    def load_traited_by_gid(data_gid):
+        # type: (uuid.UUID) -> HasTraits
+        """
+        Load a generic HasTraits instance, specified by GID.
+        """
+        index = load_entity_by_gid(data_gid.hex)
+        return h5.load_from_index(index)
 
     @staticmethod
     def build_adapter_from_class(adapter_class):
@@ -501,7 +487,6 @@ class ABCAdapter(object):
             LOGGER.exception(excep)
             raise IntrospectionException(str(excep))
 
-
     @staticmethod
     def build_adapter(stored_adapter):
         """
@@ -518,9 +503,6 @@ class ABCAdapter(object):
             msg = "Could not load Adapter Instance for Stored row %s" % stored_adapter
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
-
-
-    # METHODS for PROCESSING PARAMETERS start here #############################
 
     def review_operation_inputs(self, parameters):
         # TODO: implement this for neoforms
@@ -550,5 +532,3 @@ class ABCSynchronous(ABCAdapter):
     """
     Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
     """
-
-
