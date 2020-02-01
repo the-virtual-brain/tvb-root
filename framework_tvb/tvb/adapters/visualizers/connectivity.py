@@ -46,8 +46,6 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -180,18 +178,15 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         return -1
 
     def _load_input_data(self, view_model):
-        connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
-        connectivity = h5.load_from_index(connectivity_index)
+        connectivity = self.load_traited_by_gid(view_model.connectivity)
         assert isinstance(connectivity, Connectivity)
 
         if view_model.colors:
-            colors_index = self.load_entity_by_gid(view_model.colors.hex)
-            colors_dt = h5.load_from_index(colors_index)
+            colors_dt = self.load_traited_by_gid(view_model.colors)
         else:
             colors_dt = None
         if view_model.rays:
-            rays_index = self.load_entity_by_gid(view_model.rays.hex)
-            rays_dt = h5.load_from_index(rays_index)
+            rays_dt = self.load_traited_by_gid(view_model.rays)
         else:
             rays_dt = None
 
@@ -207,8 +202,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            surface_index = self.load_entity_by_gid(view_model.surface_data.hex)
-            surface_h5 = h5.h5_file_for_index(surface_index)
+            surface_h5 = self.load_traited_by_gid(view_model.surface_data)
             url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
@@ -229,7 +223,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
     def generate_preview(self, view_model, figure_size=None):
-        # type: (ConnectivityViewerModel, int) -> dict
+        # type: (ConnectivityViewerModel, (int,int)) -> dict
         """
         Generate the preview for the BURST cockpit.
 

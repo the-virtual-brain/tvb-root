@@ -49,8 +49,7 @@ class SimulatorSerializer(object):
                 sensors_gid = monitor_h5.sensors.load()
                 region_mapping_gid = monitor_h5.region_mapping.load()
 
-            sensors_index = ABCAdapter.load_entity_by_gid(sensors_gid.hex)
-            sensors = h5.load_from_index(sensors_index)
+            sensors = ABCAdapter.load_traited_by_gid(sensors_gid)
 
             if isinstance(simulator_in.monitors[0], EEG):
                 sensors = SensorsEEG.build_sensors_subclass(sensors)
@@ -60,8 +59,7 @@ class SimulatorSerializer(object):
                 sensors = SensorsInternal.build_sensors_subclass(sensors)
 
             simulator_in.monitors[0].sensors = sensors
-            region_mapping_index = ABCAdapter.load_entity_by_gid(region_mapping_gid.hex)
-            region_mapping = h5.load_from_index(region_mapping_index)
+            region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
             simulator_in.monitors[0].region_mapping = region_mapping
 
         if simulator_in.surface:

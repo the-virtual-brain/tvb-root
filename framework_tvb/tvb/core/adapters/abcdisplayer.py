@@ -39,6 +39,7 @@ from six import add_metaclass
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel
 
 LOCK_CREATE_FIGURE = Lock()
 
@@ -64,7 +65,6 @@ class URLGenerator(object):
 
         return url
 
-
     @staticmethod
     def build_h5_url(entity_gid, method_name, flatten=False, datatype_kwargs=None, parameter=None):
         json_kwargs = json.dumps(datatype_kwargs)
@@ -76,7 +76,6 @@ class URLGenerator(object):
             url += "?" + str(parameter)
 
         return url
-
 
     @staticmethod
     def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
@@ -102,17 +101,15 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     VISUALIZERS_ROOT = ''
     VISUALIZERS_URL_PREFIX = ''
 
-
     def get_output(self):
         return []
 
-
-    def generate_preview(self, view_model):
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (ViewModel, (int,int)) -> dict
         """
         Should be implemented by all visualizers that can be used by portlets.
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
-
 
     def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
@@ -121,16 +118,13 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
-
-        return self.launch(view_model=view_model, **kwargs), 0
-
+        return self.launch(view_model=view_model), 0
 
     def get_required_disk_size(self, view_model):
         """
         Visualizers should no occupy any additional disk space.
         """
         return 0
-
 
     def build_display_result(self, template, parameters, pages=None):
         """
@@ -153,7 +147,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         parameters[self.KEY_IS_ADAPTER] = True
 
         return parameters
-
 
     @staticmethod
     def get_one_dimensional_list(list_of_elements, expected_size, error_msg):
@@ -184,12 +177,11 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
 
         return url
 
-    def build_h5_url(self, entity_gid, method_name, parameter=None):
+    @staticmethod
+    def build_h5_url(entity_gid, method_name, parameter=None):
         url = '/flow/read_from_h5_file/' + entity_gid + '/' + method_name
-
         if parameter is not None:
             url += "?" + str(parameter)
-
         return url
 
     @staticmethod

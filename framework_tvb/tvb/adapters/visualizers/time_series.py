@@ -127,8 +127,8 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         if isinstance(ts_h5, TimeSeriesRegionH5):
             connectivity_gid = ts_h5.connectivity.load()
-            conn_idx = self.load_entity_by_gid(connectivity_gid.hex)
-            conn = h5.load_from_index(conn_idx)
+            conn = self.load_traited_by_gid(connectivity_gid)
+            assert isinstance(conn, Connectivity)
             return self._connectivity_grouped_space_labels(conn)
 
         ts_h5.get_grouped_space_labels()
@@ -156,7 +156,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
         return ts_h5.get_space_labels()
 
 
-class TimeSeries(ABCSpaceDisplayer):
+class TimeSeriesDisplay(ABCSpaceDisplayer):
     _ui_name = "Time Series Visualizer (SVG/d3)"
     _ui_subsection = "timeseries"
 
@@ -176,7 +176,7 @@ class TimeSeries(ABCSpaceDisplayer):
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())
         ts = h5_file.storage_manager.get_data('time')
-        state_variables = h5_file.labels_dimensions.load().get(time_series_index.labels_ordering[1], [])
+        state_variables = time_series_index.get_labels_for_dimension(1)
         labels = self.get_space_labels(h5_file)
 
         # Assume that the first dimension is the time since that is the case so far
@@ -206,6 +206,6 @@ class TimeSeries(ABCSpaceDisplayer):
         """Construct data for visualization and launch it."""
         return self._launch(view_model, None)
 
-    def generate_preview(self, view_model, figure_size):
-        # type: (TimeSeriesModel, list) -> dict
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (TimeSeriesModel, (int, int)) -> dict
         return self._launch(view_model, figsize=figure_size, preview=True)
