@@ -41,9 +41,9 @@ manifest_maker.template = 'MANIFEST_rest_client.in'
 
 VERSION = "2.0a1"
 
-TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
+TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
-TVB_INSTALL_REQUIREMENTS = ["requests", "allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "requests", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
 
 # Packaging tvb-rest-client
