@@ -70,7 +70,7 @@ class CaseDAO(RootDAO):
         try:
             user = self.session.query(User).filter_by(username=name).one()
         except SQLAlchemyError:
-            self.logger.exception("Could not retrieve user for name " + str(name))
+            self.logger.debug("Could not retrieve user for name " + str(name))
         return user
 
     def get_system_user(self):
