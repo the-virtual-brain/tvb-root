@@ -174,7 +174,8 @@ class FlowService:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
 
-            result = OperationService().initiate_operation(current_user, project, adapter_instance, visible, model_view=view_model, **data)
+            result = OperationService().initiate_operation(current_user, project, adapter_instance, visible,
+                                                           model_view=view_model, **data)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 

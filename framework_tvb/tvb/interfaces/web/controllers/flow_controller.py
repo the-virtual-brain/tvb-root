@@ -460,31 +460,34 @@ class FlowController(BaseController):
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
-                    raise formencode.Invalid("Could not find a model for this form!", {}, None, error_dict=form.get_errors_dict())
+                    raise formencode.Invalid("Could not find a model for this form!", {}, None,
+                                             error_dict=form.get_errors_dict())
+            else:
+                raise formencode.Invalid("Could not fill algorithm from the given inputs!", {}, None,
+                                         error_dict=form.get_errors_dict())
+
             adapter_instance.submit_form(form)
+
             if issubclass(type(adapter_instance), ABCDisplayer):
                 adapter_instance.current_project_id = project_id
                 adapter_instance.user_id = common.get_logged_user().id
                 result = adapter_instance.launch(view_model)
                 if isinstance(result, dict):
                     return result
-            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(), project_id, view_model=view_model)
+                else:
+                    common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
+                return {}
 
+            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(),
+                                                      project_id, view_model=view_model)
             # Store input data in session, for informing user of it.
             step = self.flow_service.get_category_by_id(step_key)
             if not step.rawinput:
                 self.context.add_adapter_to_session(None, None, copy.deepcopy(data))
+            if isinstance(result, list):
+                result = "Launched %s operations." % len(result)
+            common.set_important_message(str(result))
 
-            if isinstance(adapter_instance, ABCDisplayer):
-                if isinstance(result, dict):
-                    result[common.KEY_OPERATION_ID] = adapter_instance.operation_id
-                    return result
-                else:
-                    common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
-            else:
-                if isinstance(result, list):
-                    result = "Launched %s operations." % len(result)
-                common.set_important_message(str(result))
         except formencode.Invalid as excep:
             errors = excep.unpack_errors()
             common.set_error_message("Invalid form inputs")
