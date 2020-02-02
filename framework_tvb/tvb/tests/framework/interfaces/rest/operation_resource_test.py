@@ -31,7 +31,6 @@
 import os
 from io import BytesIO
 from uuid import UUID
-
 import flask
 import pytest
 import tvb_data

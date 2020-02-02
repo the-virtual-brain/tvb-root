@@ -29,7 +29,6 @@
 #
 
 import os
-
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
