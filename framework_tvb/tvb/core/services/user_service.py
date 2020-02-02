@@ -244,11 +244,11 @@ class UserService:
         return user_list, pages_no
 
     @staticmethod
-    def fetch_all_users():
+    def fetch_all_users(page_start=0, page_size=USERS_PAGE_SIZE):
         """
         Return all users from the database without pagination
         """
-        return dao.get_all_users(page_size=None, page_start=None)
+        return dao.get_all_users(page_size=page_size, page_start=page_start)
 
     def edit_user(self, edited_user, old_password=None):
         """

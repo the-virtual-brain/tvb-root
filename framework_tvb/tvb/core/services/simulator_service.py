@@ -27,6 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 import copy
 import json
 import os
