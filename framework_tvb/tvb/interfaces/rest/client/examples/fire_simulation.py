@@ -32,12 +32,11 @@ import time
 import uuid
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR
-from tvb.datatypes.connectivity import Connectivity
+from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
@@ -121,13 +120,11 @@ if __name__ == '__main__':
         connectivity_path = tvb_client.retrieve_datatype(connectivity_gid, tvb_client.temp_folder)
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
-        logger.info("Loading a Connectivity datatype in memory...")
-        connectivity = Connectivity()
-        with ConnectivityH5(connectivity_path) as connectivity_h5:
-            connectivity_h5.load_into(connectivity)
+        logger.info("Loading an entire Connectivity datatype in memory...")
+        connectivity = h5.load(connectivity_path)
         logger.info("Info on current Connectivity: {}".format(connectivity.summary_info()))
 
-        logger.info("Loading a chuck from the time series H5 file...")
+        logger.info("Loading a chuck from the time series H5 file, as this can be very large...")
         with TimeSeriesH5(time_series_path) as time_series_h5:
             data_shape = time_series_h5.read_data_shape()
             chunk = time_series_h5.read_data_slice(
