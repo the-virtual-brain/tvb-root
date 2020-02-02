@@ -284,11 +284,11 @@ class ProjectService:
         return available_projects, pages_no
 
     @staticmethod
-    def retrieve_all_user_projects(user_id):
+    def retrieve_all_user_projects(user_id, page_start=0, page_size= PROJECTS_PAGE_SIZE):
         """
         Return a list with all projects visible for current user, without pagination.
         """
-        return dao.get_projects_for_user(user_id, page_start=None, page_size=None)
+        return dao.get_projects_for_user(user_id, page_start=page_start, page_size=page_size)
 
     @staticmethod
     def get_linkable_projects_for_user(user_id, data_id):

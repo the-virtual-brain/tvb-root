@@ -40,12 +40,9 @@ from sqlalchemy import func as func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import case as case_, desc
-
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.model.model_operation import Operation, ResultFigure, Algorithm, AlgorithmCategory, \
-    OperationGroup, STATUS_FINISHED, STATUS_STARTED, STATUS_ERROR, STATUS_CANCELED, STATUS_PENDING, \
-    OperationProcessIdentifier
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
 class OperationDAO(RootDAO):
@@ -194,7 +191,8 @@ class OperationDAO(RootDAO):
         return expected_hdd_size or 0
 
 
-    def get_filtered_operations(self, project_id, filter_chain, page_start=0, page_size=20, is_count=False):
+    def get_filtered_operations(self, project_id, filter_chain, page_start=0,
+                                page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """
         :param project_id: current project ID
         :param filter_chain: instance of FilterChain
