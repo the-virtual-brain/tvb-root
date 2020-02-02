@@ -33,7 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
 class BurstDAO(RootDAO):
@@ -41,7 +41,7 @@ class BurstDAO(RootDAO):
     DAO layer for Burst entities.
     """
 
-    def get_bursts_for_project(self, project_id, page_start=0, page_size=None, count=False):
+    def get_bursts_for_project(self, project_id, page_start=0, page_size=DEFAULT_PAGE_SIZE, count=False):
         """Get latest 50 BurstConfiguration entities for the current project"""
         try:
             bursts = self.session.query(BurstConfiguration

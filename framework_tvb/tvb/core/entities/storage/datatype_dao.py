@@ -46,7 +46,7 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 from tvb.core.neotraits.db import Base
 
 
@@ -214,7 +214,7 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_all_datatypes(self, page_start=0, page_size=20):
+    def get_all_datatypes(self, page_start=0, page_size=DEFAULT_PAGE_SIZE):
         """
         Return a list with all of the datatypes currently available in TVB. Is used by 
         the file storage update manager to upgrade from version to the next.

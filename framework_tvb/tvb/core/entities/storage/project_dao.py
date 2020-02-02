@@ -43,7 +43,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_datatype import DataType, Links
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, Project, User_to_Project
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
 class CaseDAO(RootDAO):
@@ -93,7 +93,7 @@ class CaseDAO(RootDAO):
         admins = self.session.query(User).filter_by(role=ROLE_ADMINISTRATOR).all()
         return admins
 
-    def get_all_users(self, different_name=' ', page_start=0, page_size=20, is_count=False):
+    def get_all_users(self, different_name=' ', page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """Retrieve all USERS in DB, except current user and system user."""
         try:
             sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
@@ -103,10 +103,7 @@ class CaseDAO(RootDAO):
             if is_count:
                 result = query.count()
             else:
-                query = query.order_by(User.username)
-                if page_start is not None and page_size is not None:
-                    query = query.offset(max(page_start, 0)).limit(max(page_size, 0))
-                result = query.all()
+                result = query.order_by(User.username).offset(max(page_start, 0)).limit(max(page_size, 0)).all()
             return result
         except NoResultFound:
             self.logger.warning("No users found. Maybe database is empty.")
@@ -219,7 +216,7 @@ class CaseDAO(RootDAO):
             number = self.session.query(Project).filter_by(name=name).count()
         return number
 
-    def get_all_projects(self, page_start=0, page_size=20, is_count=False):
+    def get_all_projects(self, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """
         Retrieve all Project entities currently in the system.
         WARNING: use this wisely, as it might easily overflow the system.
@@ -231,7 +228,7 @@ class CaseDAO(RootDAO):
             result = query.offset(max(page_start, 0)).limit(max(page_size, 0)).all()
         return result
 
-    def get_projects_for_user(self, user_id, page_start=0, page_size=20, is_count=False):
+    def get_projects_for_user(self, user_id, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """
         Return all projects a given user can access (administrator or not).
         """
@@ -242,13 +239,11 @@ class CaseDAO(RootDAO):
                                                                    User_to_Project.fk_user == user_id))
                                                              ).filter(
             or_(User.id == user_id, User_to_Project.fk_user == user_id)
-            ).order_by(desc(Project.id))
+        ).order_by(desc(Project.id))
         if is_count:
             result = query.count()
         else:
-            if page_start is not None and page_size is not None:
-                query = query.offset(max(page_start, 0)).limit(max(page_size, 0))
-            result = query.all()
+            result = query.offset(max(page_start, 0)).limit(max(page_size, 0)).all()
             [project.administrator.username for project in result]
         return result
 
