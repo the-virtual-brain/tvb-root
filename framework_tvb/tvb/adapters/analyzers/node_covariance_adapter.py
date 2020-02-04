@@ -44,14 +44,11 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.graph import Covariance
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
-
-LOG = get_logger(__name__)
 
 
 class NodeCovariance(HasTraits):
@@ -77,7 +74,8 @@ class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
 class NodeCovarianceAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self, name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self,
+                                                    name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
@@ -176,8 +174,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         covariance_h5.close()
         return covariance_index
 
-    @staticmethod
-    def _compute_node_covariance(small_ts, input_ts_h5):
+    def _compute_node_covariance(self, small_ts, input_ts_h5):
         """
         Compute the temporal covariance between nodes in a TimeSeries dataType.
         A nodes x nodes matrix is returned for each (state-variable, mode).
@@ -186,7 +183,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
 
         # (nodes, nodes, state-variables, modes)
         result_shape = (data_shape[2], data_shape[2], data_shape[1], data_shape[3])
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -197,8 +194,8 @@ class NodeCovarianceAdapter(ABCAsynchronous):
                 data = data - data.mean(axis=0)[numpy.newaxis, 0]
                 result[:, :, var, mode] = numpy.cov(data.T)
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         covariance = Covariance(source=small_ts, array_data=result)
         return covariance

@@ -43,7 +43,6 @@ from scipy import linalg
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import SpectralEmbedding
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
@@ -60,8 +59,6 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
-
-LOG = get_logger(__name__)
 
 
 class FcdCalculator(HasTraits):
@@ -190,7 +187,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("time_series shape is %s" % str(self.input_shape))
+        self.log.debug("time_series shape is %s" % str(self.input_shape))
         self.actual_sp = float(view_model.sp) / self.input_time_series_index.sample_period
         self.actual_sw = float(view_model.sw) / self.input_time_series_index.sample_period
         actual_ts_length = self.input_shape[0]
@@ -292,8 +289,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         return result
 
     def _compute_fcd_matrix(self, ts_h5):
-        LOG.debug("timeseries_h5.data")
-        LOG.debug(narray_describe(ts_h5.data[:]))
+        self.log.debug("timeseries_h5.data")
+        self.log.debug(narray_describe(ts_h5.data[:]))
 
         input_shape = ts_h5.data.shape
         result_shape = self._result_shape(input_shape)
@@ -321,8 +318,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                         fcd[j, i, var, mode] = fcd[i, j, var, mode]
                         j += 1
 
-        LOG.debug("FCD")
-        LOG.debug(narray_describe(fcd))
+        self.log.debug("FCD")
+        self.log.debug(narray_describe(fcd))
 
         num_eig = 3  # number of the eigenvector that will be extracted
 

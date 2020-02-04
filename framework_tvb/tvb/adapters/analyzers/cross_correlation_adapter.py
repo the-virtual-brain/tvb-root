@@ -42,7 +42,6 @@ import numpy
 from scipy.signal.signaltools import correlate
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
-from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
@@ -58,8 +57,6 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.graph import CorrelationCoefficients
-
-LOG = get_logger(__name__)
 
 
 class CrossCorrelate(HasTraits):
@@ -86,7 +83,8 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self, name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self,
+                                                    name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
@@ -209,7 +207,7 @@ class CrossCorrelateAdapter(ABCAsynchronous):
         """
         # (tpts, nodes, nodes, state-variables, modes)
         result_shape = self._result_shape(small_ts.data.shape)
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -225,8 +223,8 @@ class CrossCorrelateAdapter(ABCAsynchronous):
                     for n2 in range(result_shape[2]):
                         result[:, n1, n2, var, mode] = correlate(data[:, n1], data[:, n2], mode="same")
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         offset = (small_ts.sample_period *
                   numpy.arange(-numpy.floor(result_shape[0] / 2.0), numpy.ceil(result_shape[0] / 2.0)))
@@ -422,7 +420,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         # (nodes, nodes, state-variables, modes)
         input_shape = ts_h5.data.shape
         result_shape = self._result_shape(input_shape)
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -441,8 +439,8 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
                 data = ts_h5.data[current_slice].squeeze()
                 result[:, :, var, mode] = numpy.corrcoef(data.T)
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         return result
 

@@ -42,14 +42,11 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-
-LOG = get_logger(__name__)
 
 
 class NodeCoherenceModel(ViewModel, NodeCoherence):
@@ -113,7 +110,7 @@ class NodeCoherenceAdapter(ABCAsynchronous):
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("Time series shape is %s" % str(self.input_shape))
+        self.log.debug("Time series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
         self.algorithm = NodeCoherence()
         if view_model.nfft is not None:
