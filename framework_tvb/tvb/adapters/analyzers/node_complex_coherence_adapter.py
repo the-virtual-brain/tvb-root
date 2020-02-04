@@ -42,18 +42,14 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
-LOG = get_logger(__name__)
-
 
 class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
-
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -66,7 +62,8 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self, name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self,
+                                                    name=self.get_input_name(),
                                                     conditions=self.get_filters())
 
     @staticmethod
@@ -142,7 +139,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("Time series shape is %s" % (str(self.input_shape)))
+        self.log.debug("Time series shape is %s" % (str(self.input_shape)))
         # -------------------- Fill Algorithm for Analysis -------------------##
         self.algorithm = NodeComplexCoherence()
         self.memory_factor = 1
@@ -174,10 +171,10 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         self.algorithm.time_series = small_ts
 
         partial_result = self.algorithm.evaluate()
-        LOG.debug("got partial_result")
-        LOG.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
-        LOG.debug("partial epoch_length is %s" % (str(partial_result.epoch_length)))
-        LOG.debug("partial windowing_function is %s" % (str(partial_result.windowing_function)))
+        self.log.debug("got partial_result")
+        self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
+        self.log.debug("partial epoch_length is %s" % (str(partial_result.epoch_length)))
+        self.log.debug("partial windowing_function is %s" % (str(partial_result.windowing_function)))
         # LOG.debug("partial frequency vector is %s" % (str(partial_result.frequency)))
 
         spectra_h5.write_data_slice(partial_result)

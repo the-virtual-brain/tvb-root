@@ -43,14 +43,11 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
-
-LOG = get_logger(__name__)
 
 
 class BalloonModelAdapterModel(ViewModel):
@@ -103,7 +100,8 @@ class BalloonModelAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self, name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self,
+                                                    name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
         self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
         self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
@@ -157,7 +155,7 @@ class BalloonModelAdapter(ABCAsynchronous):
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
 
-        LOG.debug("time_series shape is %s" % str(self.input_shape))
+        self.log.debug("time_series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
         algorithm = BalloonModel()
 

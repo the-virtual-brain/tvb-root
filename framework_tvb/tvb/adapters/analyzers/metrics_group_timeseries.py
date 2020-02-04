@@ -43,7 +43,6 @@ import numpy
 import json
 from collections import OrderedDict
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits._attr import List
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
@@ -60,7 +59,6 @@ import tvb.analyzers.metric_variance_of_node_variance
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
-LOG = get_logger(__name__)
 ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
 
 algo_names = list(ALGORITHMS)
@@ -174,7 +172,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         if algorithms is None:
             algorithms = list(ALGORITHMS)
 
-        LOG.debug("time_series shape is %s" % str(self.input_shape))
+        self.log.debug("time_series shape is %s" % str(self.input_shape))
         dt_timeseries = h5.load_from_index(self.input_time_series_index)
 
         metrics_results = {}
@@ -190,11 +188,11 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
             algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
             if algorithm_filter is not None \
                     and not algorithm_filter.get_python_filter_equivalent(self.input_time_series_index):
-                LOG.warning('Measure algorithm will not be computed because of incompatibility on input. '
-                            'Filters failed on algo: ' + str(algorithm_name))
+                self.log.warning('Measure algorithm will not be computed because of incompatibility on input. '
+                                 'Filters failed on algo: ' + str(algorithm_name))
                 continue
             else:
-                LOG.debug("Applying measure: " + str(algorithm_name))
+                self.log.debug("Applying measure: " + str(algorithm_name))
 
             unstored_result = algorithm.evaluate()
             # ----------------- Prepare a Float object(s) for result ----------------##
