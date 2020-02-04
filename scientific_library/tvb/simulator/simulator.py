@@ -131,7 +131,7 @@ class Simulator(HasTraits):
     integrator = Attr(
         field_type=integrators.Integrator,
         label="Integration scheme",
-        default=integrators.HeunDeterministic(dt=0.001),
+        default=integrators.HeunStochastic(dt=0.1),
         required=True,
         doc="""A tvb.simulator.Integrator object which is
             an integration scheme with supporting attributes such as
