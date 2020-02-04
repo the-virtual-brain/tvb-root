@@ -28,9 +28,9 @@
 #
 #
 import numpy
+from uuid import UUID
 from tvb.analyzers.fft import FFT
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
-from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
@@ -53,7 +53,6 @@ class TestFFT(TransactionalTestCase):
     def test_fourier_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
         # make file stored and indexed time series
         ts_db = time_series_index_factory()
-        ts = h5.load_from_index(ts_db)
 
         # we have the required data to start the adapter
         # REVIEW THIS
@@ -71,11 +70,11 @@ class TestFFT(TransactionalTestCase):
         adapter = FourierAdapter()
         adapter.storage_path = str(tmpdir)
         view_model = adapter.get_view_model_class()()
-        view_model.time_series = ts.gid
+        view_model.time_series = UUID(ts_db.gid)
         view_model.segment_length = 400
         adapter.configure(view_model)
-        diskq = adapter.get_required_disk_size(ts_db)
-        memq = adapter.get_required_memory_size(ts_db)
+        diskq = adapter.get_required_disk_size(view_model)
+        memq = adapter.get_required_memory_size(view_model)
         spectra_idx = adapter.launch(view_model)
 
         assert spectra_idx.source_gid == ts_db.gid
