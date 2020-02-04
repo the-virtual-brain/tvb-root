@@ -437,43 +437,23 @@ class Simulator(HasTraits):
         self.bound_and_clamp(history)
         # If there are non-state variables, they need to be updated for history:
         try:
-            update_initial_conditions = self.model.update_initial_conditions_non_state_variables
+            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
+            # in the extreme case where all state variables are cvars as well, we set:
+            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], 1))
+            for i_time in range(history.shape[1]):
+                self.model.update_non_state_variables(history[:, i_time], node_coupling[:, 0], 0.0)
+            self.bound_and_clamp(history)
         except:
-            try:
-                update_initial_conditions = self.model.update_non_state_variables
-            except:
-                return
-        # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
-        # in the extreme case where all state variables are cvars as well, we set:
-        node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
-        for i_time in range(history.shape[1]):
-            update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0)
-        self.bound_and_clamp(history)
+            pass
 
-    def update_state(self, state, node_coupling, local_coupling=0.0, use_numba=True):
+    def update_state(self, state, node_coupling, local_coupling=0.0):
         # If there are non-state variables, they need to be updated for the initial condition:
         try:
-            self.model.update_non_state_variables
+            self.model.update_non_state_variables(state, node_coupling, local_coupling)
+            self.bound_and_clamp(state)
         except:
-            return
-        self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba)
-        self.bound_and_clamp(state)
-
-    def _print_progression_message(self, step, n_steps):
-        if step - self.current_step >= self._tic_point:
-            toc = time.time() - self._tic
-            if toc > 600:
-                if toc > 7200:
-                    time_string = "%0.1f hours" % (toc / 3600)
-                else:
-                    time_string = "%0.1f min" % (toc / 60)
-            else:
-                time_string = "%0.1f sec" % toc
-            print_this = "\r...%0.1f%% done in %s" % \
-                         (100.0 * (step - self.current_step) / n_steps, time_string)
-            sys.stdout.write(print_this)
-            sys.stdout.flush()
-            self._tic_point += self._tic_ratio * n_steps
+            # If not, the kwarg will fail and nothing will happen
+            pass
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -503,82 +483,43 @@ class Simulator(HasTraits):
         step = self.current_step + 1  # the first step in the loop
         node_coupling = self._loop_compute_node_coupling(step)
         self._loop_update_stimulus(step, stimulus)
-
-        # TODO: temporary hack because numba dfuns fail for multiple modes
-        if self.model.number_of_modes > 1:
-            use_numba = False
-            dfun = self.model._numpy_dfun
-        else:
-            use_numba = True
-            dfun = self.model.dfun
-
         # This is not necessary in most cases
         # if update_non_state_variables=True in the model dfun by default
-        self.update_state(state, node_coupling, local_coupling, use_numba)
-
-        # TODO: We could have another __call__method obviously when there is no co-simulation...
-        if self.tvb_spikeNet_interface is not None:
-            # spikeNet simulation preparation:
-            self.configure_spiking_simulator()
-            # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
-            updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_sv_interfaces_ids) > 0
-        else:
-            updateTVBstateFromSpikeNet = False
+        self.update_state(state, node_coupling, local_coupling)
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        if self.PRINT_PROGRESSION_MESSAGE:
-            self._tic = time.time()
-            self._tic_ratio = 0.1
-            self._tic_point = self._tic_ratio * n_steps
+        tic = time.time()
+        tic_ratio = 0.1
+        tic_point = tic_ratio * n_steps
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-
-            # TODO: We could have another __call__method obviously when there is no co-simulation...
-            if self.tvb_spikeNet_interface is not None:
-                # TVB state -> SpikeNet (state or parameter)
-                # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
-                # including any necessary conversions from TVB state to SpikeNet variables,
-                # in a model specific manner
-                # TODO: find what is the general treatment of local coupling, if any!
-                #  Is this addition correct in all cases for all builders?
-                self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus,
-                                                                  self.model)
-                # SpikeNet state -> TVB model parameter
-                # Couple the SpikeNet state to some TVB model parameter,
-                # including any necessary conversions in a model specific manner
-                # TODO: probably deprecate it since we have introduced dynamic non-state variables
-                self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
-
-                # Integrate Spiking Network to get the new Spiking Network state
-                self.run_spiking_simulator(self.integrator.dt)
-
             # Integrate TVB to get the new TVB state
-            state = self.integrator.scheme(state, dfun, node_coupling, local_coupling, stimulus)
-
-            if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
-                raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
-
-            if updateTVBstateFromSpikeNet:
-                # SpikeNet state -> TVB state
-                # Update the new TVB state variable with the new SpikeNet state,
-                # including any necessary conversions from SpikeNet variables to TVB state,
-                # in a model specific manner
-                state = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_state(state)
-                self.bound_and_clamp(state)
-
+            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
             # Prepare coupling and stimulus for next time step
             # and, therefore, for the new TVB state:
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             # Update any non-state variables and apply any boundaries again to the new state:
-            self.update_state(state, node_coupling, local_coupling, use_numba)
+            self.update_state(state, node_coupling, local_coupling)
             # Now direct the new state to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
-            if self.PRINT_PROGRESSION_MESSAGE:
-                self._print_progression_message(step, n_steps)
+            if step - self.current_step >= tic_point:
+                toc = time.time() - tic
+                if toc > 600:
+                    if toc > 7200:
+                        time_string = "%0.1f hours" % (toc / 3600)
+                    else:
+                        time_string = "%0.1f min" % (toc / 60)
+                else:
+                    time_string = "%0.1f sec" % toc
+                print_this = "\r...%0.1f%% done in %s" % \
+                             (100.0 * (step - self.current_step) / n_steps, time_string)
+                sys.stdout.write(print_this)
+                sys.stdout.flush()
+                tic_point += tic_ratio * n_steps
 
         self.current_state = state
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
@@ -679,7 +620,7 @@ class Simulator(HasTraits):
                              "Setting integrator.noise.ntau = 0.0 and configuring white noise!")
             self.integrator.noise.ntau = 0.0
 
-        noise = self.integrator.noise        
+        noise = self.integrator.noise
 
         if self.integrator.noise.ntau > 0.0:
             self.integrator.noise.configure_coloured(self.integrator.dt,
