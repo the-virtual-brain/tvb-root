@@ -47,6 +47,8 @@ from tvb.interfaces.rest.server.resources.simulator.simulation_resource import F
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource, \
     AuthenticateResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from dotenv import load_dotenv
+
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -55,6 +57,9 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 
 FLASK_PORT = 9090
 SECRET_KEY = 'super-secret'
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')  # Path to .env file
+load_dotenv(dotenv_path)
 
 
 def initialize_tvb(arguments):
