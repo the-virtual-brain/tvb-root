@@ -30,7 +30,6 @@
 
 import os
 import sys
-
 from flask import Flask
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -47,6 +46,8 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetOpe
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from dotenv import load_dotenv
+
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -54,6 +55,9 @@ LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 FLASK_PORT = 9090
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')  # Path to .env file
+load_dotenv(dotenv_path)
 
 
 def initialize_tvb(arguments):
