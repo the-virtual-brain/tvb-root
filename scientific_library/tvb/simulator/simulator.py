@@ -249,7 +249,7 @@ class Simulator(HasTraits):
                      rm.size, unmapped.size, self.number_of_nodes)
         self._guesstimate_memory_requirement()
 
-    def configure(self, tvb_spikeNet_interface, full_configure=True):
+    def configure(self, tvb_spikeNet_interface=None, full_configure=True):
         """Configure simulator and its components.
 
         The first step of configuration is to run the configure methods of all
@@ -275,15 +275,16 @@ class Simulator(HasTraits):
         # Set TVB - spikeNet interface:
         self.tvb_spikeNet_interface = tvb_spikeNet_interface
 
-        # TODO: decide if this is really necessary...
-        if self.integrator.dt >= 2 * self.tvb_spikeNet_interface.spikeNet_min_delay:
-            self.integrator.dt = int(numpy.round(self.integrator.dt /
-                                                 self.tvb_spikeNet_interface.spikeNet_min_delay)) * \
-                                 self.tvb_spikeNet_interface.spikeNet_min_delay
-        else:
-            raise ValueError("TVB integration time step dt=%f "
-                             "is not equal or greater than twice the Spiking Network minimum delay min_delay=%f!" %
-                             (self.integrator.dt, self.tvb_spikeNet_interface.spikeNet_min_delay))
+        if self.tvb_spikeNet_interface is not None:
+            # TODO: decide if this is really necessary...
+            if self.integrator.dt >= 2 * self.tvb_spikeNet_interface.spikeNet_min_delay:
+                self.integrator.dt = int(numpy.round(self.integrator.dt /
+                                                     self.tvb_spikeNet_interface.spikeNet_min_delay)) * \
+                                     self.tvb_spikeNet_interface.spikeNet_min_delay
+            else:
+                raise ValueError("TVB integration time step dt=%f "
+                                 "is not equal or greater than twice the Spiking Network minimum delay min_delay=%f!" %
+                                 (self.integrator.dt, self.tvb_spikeNet_interface.spikeNet_min_delay))
 
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
@@ -312,33 +313,34 @@ class Simulator(HasTraits):
         if isinstance(self.integrator, integrators.IntegratorStochastic):
             self._configure_integrator_noise()
 
-        # Setup Spiking Simulator configure() and Run() method
-        self.configure_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.configure
-        self.run_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.Run
+        if self.tvb_spikeNet_interface is not None:
+            # Setup Spiking Simulator configure() and Run() method
+            self.configure_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.configure
+            self.run_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.Run
 
-        # Configure tvb-spikeNet interface
-        self.tvb_spikeNet_interface.configure(self.model)
+            # Configure tvb-spikeNet interface
+            self.tvb_spikeNet_interface.configure(self.model)
 
-        # TODO: maybe deprecate this given that
-        #  we have introduced dynamic non-state variables
-        # Create TVB model parameter for SpikeNet to target
-        dummy = -numpy.ones((self.connectivity.number_of_regions,))
-        dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
-        for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
-            setattr(self.model, param, dummy)
+            # TODO: maybe deprecate this given that
+            #  we have introduced dynamic non-state variables
+            # Create TVB model parameter for SpikeNet to target
+            dummy = -numpy.ones((self.connectivity.number_of_regions,))
+            dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
+            for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
+                setattr(self.model, param, dummy)
 
-        # If there are Spiking nodes and are represented exclusively in Spiking Network...
-        if self.tvb_spikeNet_interface.exclusive_nodes and len(self.tvb_spikeNet_interface.spiking_nodes_ids) > 0:
-            # ...set the respective connectivity weights among them to zero:
-            self.connectivity.weights[self.tvb_spikeNet_interface.spiking_nodes_ids] \
-                [:, self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
+            # If there are Spiking nodes and are represented exclusively in Spiking Network...
+            if self.tvb_spikeNet_interface.exclusive_nodes and len(self.tvb_spikeNet_interface.spiking_nodes_ids) > 0:
+                # ...set the respective connectivity weights among them to zero:
+                self.connectivity.weights[self.tvb_spikeNet_interface.spiking_nodes_ids] \
+                    [:, self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
 
         # Setup history
         # TODO: Reflect upon the idea to allow SpikeNet initialization and history setting via TVB
         self._configure_history(self.initial_conditions)
         # Configure Monitors to work with selected Model, etc...
         # TODO: Shall we implement a parallel implentation for multiple modes for SpikeNet as well?!
-        if self.current_state.shape[2] > 1:
+        if self.tvb_spikeNet_interface is not None and self.current_state.shape[2] > 1:
             raise ValueError("Multiple modes' simulation not supported for TVB multiscale simulations!\n"
                              "Current modes number is %d." % self.initial_conditions.shape[3])
 
@@ -484,11 +486,14 @@ class Simulator(HasTraits):
         # if update_non_state_variables=True in the model dfun by default
         self.update_state(state, node_coupling, local_coupling)
 
-        # spikeNet simulation preparation:
-        self.configure_spiking_simulator()
-
-        # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
-        updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_sv_interfaces_ids) > 0
+        # TODO: We could have another __call__method obviously when there is no co-simulation...
+        if self.tvb_spikeNet_interface is not None:
+            # spikeNet simulation preparation:
+            self.configure_spiking_simulator()
+            # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
+            updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_sv_interfaces_ids) > 0
+        else:
+            updateTVBstateFromSpikeNet = False
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
@@ -496,19 +501,25 @@ class Simulator(HasTraits):
         tic_ratio = 0.1
         tic_point = tic_ratio * n_steps
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # TVB state -> SpikeNet (state or parameter)
-            # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
-            # including any necessary conversions from TVB state to SpikeNet variables,
-            # in a model specific manner
-            # TODO: find what is the general treatment of local coupling, if any!
-            #  Is this addition correct in all cases for all builders?
-            self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus,
-                                                              self.model)
-            # SpikeNet state -> TVB model parameter
-            # Couple the SpikeNet state to some TVB model parameter,
-            # including any necessary conversions in a model specific manner
-            # TODO: probably deprecate it since we have introduced dynamic non-state variables
-            self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
+
+            # TODO: We could have another __call__method obviously when there is no co-simulation...
+            if self.tvb_spikeNet_interface is not None:
+                # TVB state -> SpikeNet (state or parameter)
+                # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
+                # including any necessary conversions from TVB state to SpikeNet variables,
+                # in a model specific manner
+                # TODO: find what is the general treatment of local coupling, if any!
+                #  Is this addition correct in all cases for all builders?
+                self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus,
+                                                                  self.model)
+                # SpikeNet state -> TVB model parameter
+                # Couple the SpikeNet state to some TVB model parameter,
+                # including any necessary conversions in a model specific manner
+                # TODO: probably deprecate it since we have introduced dynamic non-state variables
+                self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
+
+                # Integrate Spiking Network to get the new Spiking Network state
+                self.run_spiking_simulator(self.integrator.dt)
 
             # Integrate TVB to get the new TVB state
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
@@ -517,9 +528,6 @@ class Simulator(HasTraits):
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
             if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                 raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
-
-            # Integrate Spiking Network to get the new Spiking Network state
-            self.run_spiking_simulator(self.integrator.dt)
 
             if updateTVBstateFromSpikeNet:
                 # SpikeNet state -> TVB state
@@ -648,7 +656,7 @@ class Simulator(HasTraits):
 
         """
 
-        if self.integrator.noise.ntau > 0.0:
+        if self.tvb_spikeNet_interface is not None and self.integrator.noise.ntau > 0.0:
             # TODO: find out if this is really a problem
             self.log.warning("Colored noise is currently not supported for tvb-multiscale co-simulations!\n" +
                              "Setting integrator.noise.ntau = 0.0 and configuring white noise!")
