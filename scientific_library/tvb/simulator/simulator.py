@@ -38,7 +38,7 @@ simulation and the method for running the simulation.
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
-
+import sys
 import time
 import math
 import numpy
@@ -363,6 +363,38 @@ class Simulator(HasTraits):
         if any(outputi is not None for outputi in output):
             return output
 
+    def bound_and_clamp(self, state):
+        # If there is a state boundary...
+        if self.integrator.state_variable_boundaries is not None:
+            # ...use the integrator's bound_state
+            self.integrator.bound_state(state)
+        # If there is a state clamping...
+        if self.integrator.clamped_state_variable_values is not None:
+            # ...use the integrator's clamp_state
+            self.integrator.clamp_state(state)
+
+    def _update_and_bound_history(self, history):
+        self.bound_and_clamp(history)
+        # If there are non-state variables, they need to be updated for history:
+        try:
+            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
+            # in the extreme case where all state variables are cvars as well, we set:
+            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], 1))
+            for i_time in range(history.shape[1]):
+                self.model.update_non_state_variables(history[:, i_time], node_coupling[:, 0], 0.0)
+            self.bound_and_clamp(history)
+        except:
+            pass
+
+    def update_state(self, state, node_coupling, local_coupling=0.0):
+        # If there are non-state variables, they need to be updated for the initial condition:
+        try:
+            self.model.update_non_state_variables(state, node_coupling, local_coupling)
+            self.bound_and_clamp(state)
+        except:
+            # If not, the kwarg will fail and nothing will happen
+            pass
+
     def __call__(self, simulation_length=None, random_state=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -376,9 +408,9 @@ class Simulator(HasTraits):
 
         self.calls += 1
         if simulation_length is not None:
-            self.simulation_length = float(simulation_length)
+            self.simulation_length = simulation_length
 
-        # intialization
+        # Intialization
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
         self._handle_random_state(random_state)
@@ -387,20 +419,50 @@ class Simulator(HasTraits):
         stimulus = self._prepare_stimulus()
         state = self.current_state
 
+        # Do for initial condition:
+        step = self.current_step + 1  # the first step in the loop
+        node_coupling = self._loop_compute_node_coupling(step)
+        self._loop_update_stimulus(step, stimulus)
+        # This is not necessary in most cases
+        # if update_non_state_variables=True in the model dfun by default
+        self.update_state(state, node_coupling, local_coupling)
+
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        tic = time.time()
+        tic_ratio = 0.1
+        tic_point = tic_ratio * n_steps
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
+            # Integrate TVB to get the new TVB state
+            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
+            # Prepare coupling and stimulus for next time step
+            # and, therefore, for the new TVB state:
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
+            # Update any non-state variables and apply any boundaries again to the new state:
+            self.update_state(state, node_coupling, local_coupling)
+            # Now direct the new state to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
+            if step - self.current_step >= tic_point:
+                toc = time.time() - tic
+                if toc > 600:
+                    if toc > 7200:
+                        time_string = "%0.1f hours" % (toc / 3600)
+                    else:
+                        time_string = "%0.1f min" % (toc / 60)
+                else:
+                    time_string = "%0.1f sec" % toc
+                print_this = "\r...%0.1f%% done in %s" % \
+                             (100.0 * (step - self.current_step) / n_steps, time_string)
+                sys.stdout.write(print_this)
+                sys.stdout.flush()
+                tic_point += tic_ratio * n_steps
 
         self.current_state = state
-        self.current_step = self.current_step + n_steps
+        self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
 
     def _configure_history(self, initial_conditions):
         """
@@ -436,7 +498,7 @@ class Simulator(HasTraits):
                 return self._configure_history(initial_conditions)
             elif ic_shape[1:] != self.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
-                                 % (ic_shape[1:], self.good_history_shape[1:]))
+                                 % ic_shape[1:], self.good_history_shape[1:])
             else:
                 if ic_shape[0] >= self.horizon:
                     self.log.debug("Using last %d time-steps for history.", self.horizon)
@@ -450,13 +512,15 @@ class Simulator(HasTraits):
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
-        if self.integrator.state_variable_boundaries is not None:
-            self.integrator.bound_state(numpy.swapaxes(history, 0, 1))
+        # Make sure that history values are bounded,
+        # and any possible non-state variables are initialized
+        # based on state variable ones (but with no coupling yet...)
+        self._update_and_bound_history(numpy.swapaxes(history, 0, 1))
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
         self.current_state = history[self.current_step % self.horizon].copy()
-        self.log.debug('initial state has shape %r' % (self.current_state.shape, ))
+        self.log.debug('initial state has shape %r' % (self.current_state.shape,))
         if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
             n_reg = self.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
