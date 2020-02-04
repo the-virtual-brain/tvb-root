@@ -35,8 +35,8 @@
 import os
 import tvb_data
 import json
+from uuid import UUID
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model import model_operation
@@ -77,28 +77,29 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                IntrospectionRegistry.SIMULATOR_CLASS)
         self.operation = model_operation.Operation(self.test_user.id, self.test_project.id, algo.id, json.dumps(''),
-                                         meta=json.dumps(meta), status=model_operation.STATUS_STARTED)
+                                                   meta=json.dumps(meta), status=model_operation.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
 
         # Get connectivity, region_mapping and a dummy time_series_region
         connectivity = connectivity_factory()
         region_mapping = region_mapping_factory()
-        dummy_time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
+        dummy_time_series_index = time_series_region_index_factory(connectivity=connectivity,
+                                                                   region_mapping=region_mapping)
 
         dummy_time_series_index.start_time = 0.0
         dummy_time_series_index.sample_period = 1.0
 
-        dummy_time_series_index = dao.get_generic_entity(dummy_time_series_index.__class__, dummy_time_series_index.gid, 'gid')[0]
-        dummy_time_series = h5.load_from_index(dummy_time_series_index)
+        dummy_time_series_index = \
+        dao.get_generic_entity(dummy_time_series_index.__class__, dummy_time_series_index.gid, 'gid')[0]
         ts_metric_adapter = TimeseriesMetricsAdapter()
         form = TimeseriesMetricsAdapterForm()
         view_model = form.get_view_model()()
-        view_model.time_series = dummy_time_series.gid
+        view_model.time_series = UUID(dummy_time_series_index.gid)
         form.fill_trait(view_model)
         ts_metric_adapter.submit_form(form)
         resulted_metric = ts_metric_adapter.launch(view_model)
         assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."
-        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.get_form().algorithms.choices)),\
-                        "At least a result should have been generated for every metric."
+        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.get_form().algorithms.choices)), \
+            "At least a result should have been generated for every metric."
         for metric_value in json.loads(resulted_metric.metrics).values():
             assert isinstance(metric_value, (float, int))

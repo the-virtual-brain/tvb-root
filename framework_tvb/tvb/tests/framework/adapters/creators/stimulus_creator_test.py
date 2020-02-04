@@ -33,11 +33,11 @@ import os
 import numpy
 import tvb_data
 import tvb_data.surfaceData
+from uuid import UUID
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
@@ -58,12 +58,10 @@ class TestStimulusCreator(TransactionalTestCase):
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        self.connectivity = h5.load_from_index(connectivity_index)
+        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
         cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        surface_index = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
-        self.surface = h5.load_from_index(surface_index)
+        self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
 
     def transactional_teardown_method(self):
         """
@@ -76,7 +74,7 @@ class TestStimulusCreator(TransactionalTestCase):
         region_stimulus_creator = RegionStimulusCreator()
 
         view_model = region_stimulus_creator.get_view_model_class()()
-        view_model.connectivity = self.connectivity.gid
+        view_model.connectivity = UUID(self.connectivity.gid)
         view_model.weight = weight_array
         view_model.temporal = TemporalApplicableEquation()
         view_model.temporal.parameters['a'] = 1.0
@@ -86,31 +84,32 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid.hex
+        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
 
     def test_create_stimulus_region_with_operation(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
         region_stimulus_creator = RegionStimulusCreator()
 
         view_model = region_stimulus_creator.get_view_model_class()()
-        view_model.connectivity = self.connectivity.gid
+        view_model.connectivity = UUID(self.connectivity.gid)
         view_model.weight = weight_array
         view_model.temporal = TemporalApplicableEquation()
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 2.0
 
-        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id, view_model=view_model)
+        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id,
+                                     view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid.hex
+        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
 
     def test_create_stimulus_surface(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
 
         view_model = surface_stimulus_creator.get_view_model_class()()
-        view_model.surface = self.surface.gid
+        view_model.surface = UUID(self.surface.gid)
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
         view_model.spatial = FiniteSupportEquation()
         view_model.spatial_amp = 1.0
@@ -124,13 +123,13 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
         assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
-        assert surface_stimulus_index.surface_gid == self.surface.gid.hex
+        assert surface_stimulus_index.surface_gid == self.surface.gid
 
     def test_create_stimulus_surface_with_operation(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
 
         view_model = surface_stimulus_creator.get_view_model_class()()
-        view_model.surface = self.surface.gid
+        view_model.surface = UUID(self.surface.gid)
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
         view_model.spatial = FiniteSupportEquation()
         view_model.spatial_amp = 1.0
@@ -140,9 +139,10 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 0.0
 
-        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id, view_model=view_model)
+        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id,
+                                     view_model=view_model)
         surface_stimulus_index = TestFactory.get_entity(self.test_project, StimuliSurfaceIndex)
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
         assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
-        assert surface_stimulus_index.surface_gid == self.surface.gid.hex
+        assert surface_stimulus_index.surface_gid == self.surface.gid
