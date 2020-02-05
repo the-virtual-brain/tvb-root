@@ -48,6 +48,7 @@ from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersReso
     AuthenticateResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 from dotenv import load_dotenv
+# from gevent.pywsgi import WSGIServer
 
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -58,7 +59,8 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 FLASK_PORT = 9090
 SECRET_KEY = 'super-secret'
 
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')  # Path to .env file
+# Comment these lines when running in production mode
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 
@@ -139,6 +141,9 @@ def initialize_flask():
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
 
+    # Uncomment these lines and comment app.run... for running Flask in production mode
+    # http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
+    # http_server.serve_forever()
     app.run(host="0.0.0.0", debug=True, port=FLASK_PORT)
 
 
