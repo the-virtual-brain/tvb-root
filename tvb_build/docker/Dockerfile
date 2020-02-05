@@ -42,7 +42,7 @@ RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git; \
-y    cd tvb-root/tvb_build; \
+     cd tvb-root/tvb_build; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
