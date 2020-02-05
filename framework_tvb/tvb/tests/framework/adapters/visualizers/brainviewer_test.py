@@ -36,13 +36,13 @@ import os
 from uuid import UUID
 import tvb_data.surfaceData
 import tvb_data.regionMapping as demo_data
-from tests.framework.conftest import time_series_region_index_factory, operation_factory
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.conftest import time_series_region_index_factory, operation_factory
 
 
 class TestBrainViewer(TransactionalTestCase):
