@@ -32,11 +32,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.neocom import h5
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizer
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestCrossCorrelationViewer(TransactionalTestCase):
@@ -44,33 +42,15 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
     Unit-tests for Cross Correlation Viewer.
     """
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.test_user = TestFactory.create_user("Cross_Corelation_Viewer_User")
-        self.test_project = TestFactory.create_project(self.test_user, "Cross_Corelation_Viewer_Project")
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_launch(self, cross_correlation_factory):
         """
-        Check that all required keys are present in output from BrainViewer launch.
+        Check that all required keys are present in output from CrossCorrelationVisualizer launch.
         """
-
         cross_correlation_index = cross_correlation_factory()
-        cross_correlation = h5.load_from_index(cross_correlation_index)
         viewer = CrossCorrelationVisualizer()
         view_model = viewer.get_view_model_class()()
-        view_model.datatype = cross_correlation.gid
+        view_model.datatype = UUID(cross_correlation_index.gid)
         result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:
             assert key in result
-

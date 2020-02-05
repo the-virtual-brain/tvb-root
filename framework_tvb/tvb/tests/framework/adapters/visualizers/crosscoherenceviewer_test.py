@@ -32,11 +32,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.neocom import h5
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.cross_coherence import CrossCoherenceVisualizer
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestCrossCoherenceViewer(TransactionalTestCase):
@@ -44,30 +42,14 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
     Unit-tests for Cross Coherence Viewer.
     """
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.test_user = TestFactory.create_user('Cross_Coherence_Viewer_User')
-        self.test_project = TestFactory.create_project(self.test_user, "Cross_Coherence_Viewer__Project")
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_launch(self, cross_coherence_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
         cross_coherence_index = cross_coherence_factory()
-        cross_coherence = h5.load_from_index(cross_coherence_index)
         viewer = CrossCoherenceVisualizer()
         view_model = viewer.get_view_model_class()()
-        view_model.datatype = cross_coherence.gid
+        view_model.datatype = UUID(cross_coherence_index.gid)
         result = viewer.launch(view_model)
         expected_keys = ['matrix_data', 'matrix_shape', 'frequency']
         for key in expected_keys:

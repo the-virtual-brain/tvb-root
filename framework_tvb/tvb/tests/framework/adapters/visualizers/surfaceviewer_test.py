@@ -34,13 +34,13 @@
 
 import os
 import tvb_data.surfaceData
+import tvb_data.regionMapping as demo_data
+from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
-import tvb_data.regionMapping as demo_data
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -60,24 +60,22 @@ class TestSurfaceViewers(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.test_user = TestFactory.create_user('Surface_Viewer_User')
-        self.test_project = TestFactory.create_project(self.test_user, 'Surface_Viewer_Project')
+        test_user = TestFactory.create_user('Surface_Viewer_User')
+        self.test_project = TestFactory.create_project(test_user, 'Surface_Viewer_Project')
 
         surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        surface_index = TestFactory.import_surface_zip(self.test_user, self.test_project, surf_skull, CORTICAL)
-        assert surface_index is not None
-        self.surface = h5.load_from_index(surface_index)
+        self.surface = TestFactory.import_surface_zip(test_user, self.test_project, surf_skull, CORTICAL)
+        assert self.surface is not None
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        self.connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity_index is not None
+        TestFactory.import_zip_connectivity(test_user, self.test_project, zip_path, "John")
+        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert connectivity_index is not None
 
         TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
-        region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, TXT_FILE,
-                                                                 surface_index.gid, self.connectivity_index.gid)
-        assert region_mapping_index is not None
-        self.region_mapping = h5.load_from_index(region_mapping_index)
+        self.region_mapping = TestFactory.import_region_mapping(test_user, self.test_project, TXT_FILE,
+                                                                self.surface.gid, connectivity_index.gid)
+        assert self.region_mapping is not None
 
     def transactional_teardown_method(self):
         """
@@ -92,8 +90,8 @@ class TestSurfaceViewers(TransactionalTestCase):
         viewer = SurfaceViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.surface = self.surface.gid
-        view_model.region_map = self.region_mapping.gid
+        view_model.surface = UUID(self.surface.gid)
+        view_model.region_map = UUID(self.region_mapping.gid)
         result = viewer.launch(view_model)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
@@ -105,7 +103,7 @@ class TestSurfaceViewers(TransactionalTestCase):
         viewer = RegionMappingViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.region_map = self.region_mapping.gid
+        view_model.region_map = UUID(self.region_mapping.gid)
         result = viewer.launch(view_model)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
