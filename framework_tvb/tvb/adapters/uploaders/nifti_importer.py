@@ -232,8 +232,8 @@ class NIFTIImporter(ABCUploader):
             volume_idx, volume_ht = self._create_volume()
             title = "NIFTI Import - " + os.path.split(view_model.data_file)[1]
 
-            connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
-            if connectivity_index:
+            if view_model.connectivity is not None:
+                connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
                 rm = self._create_region_map(volume_ht, connectivity_index, view_model.apply_corrections,
                                              view_model.mappings_file, view_model.title)
                 return [volume_idx, rm]

@@ -71,11 +71,6 @@ class TestNIFTIImporter(TransactionalTestCase):
         self.test_user = TestFactory.create_user('Nifti_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Nifti_Importer_Project")
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        self.connectivity_gid = connectivity_index.gid
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
@@ -119,7 +114,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        time_series_index = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolumeIndex, self.connectivity_gid)
+        time_series_index = self._import(self.TIMESERIES_NII_FILE, TimeSeriesVolumeIndex)
 
         # Since self.assertAlmostEquals is not available on all machine
         # We compare floats as following
@@ -143,7 +138,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file.
         """
-        structural_mri_index = self._import(self.NII_FILE, connectivity_gid=self.connectivity_gid)
+        structural_mri_index = self._import(self.NII_FILE)
         assert "T1" == structural_mri_index.weighting
 
         structural_mri = h5.load_from_index(structural_mri_index)
@@ -167,31 +162,28 @@ class TestNIFTIImporter(TransactionalTestCase):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
-        structure = self._import(self.GZ_NII_FILE, connectivity_gid=self.connectivity_gid)
+        structure = self._import(self.GZ_NII_FILE)
         assert "T1" == structure.weighting
 
     def test_import_region_mapping(self):
         """
         This method tests import of a NIFTI file compressed in GZ format.
         """
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         to_link_conn = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        mapping_index = self._import(self.GZ_NII_FILE, RegionVolumeMappingIndex, self.connectivity_gid)
 
+        mapping_index = self._import(self.GZ_NII_FILE, RegionVolumeMappingIndex, to_link_conn.gid)
         mapping = h5.load_from_index(mapping_index)
 
         assert -1 <= mapping.array_data.min()
         assert mapping.array_data.max() < to_link_conn.number_of_regions
-
-        connectivity_index = ABCAdapter.load_entity_by_gid(mapping_index.connectivity_gid)
-        assert connectivity_index is not None
-
-        assert to_link_conn.number_of_regions == connectivity_index.number_of_regions
+        assert to_link_conn.gid == mapping_index.connectivity_gid
 
         volume_index = ABCAdapter.load_entity_by_gid(mapping_index.volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)
-
         assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
         assert numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all()
         assert self.UNKNOWN_STR == volume.voxel_unit
