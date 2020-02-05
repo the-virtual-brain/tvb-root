@@ -42,7 +42,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
 from tvb.simulator.integrators import EulerStochastic
-from tvb.simulator.models import Generic2dOscillator
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.noise import Additive
 
 
@@ -92,7 +92,7 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
         # Simulate selection of a specific integration  from the ui
         new_params[PARAM_INTEGRATOR] = {'value': EulerStochastic.__name__}
-        new_params[PARAM_MODEL] = {'value': Generic2dOscillator.__name__}
+        new_params[PARAM_MODEL] = {'value': ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__}
         new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
         stored_burst.simulator_configuration = new_params
         """

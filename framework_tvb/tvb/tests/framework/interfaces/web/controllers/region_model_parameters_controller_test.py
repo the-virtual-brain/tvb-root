@@ -41,7 +41,7 @@ from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.simulator.integrators import HeunDeterministic
-from tvb.simulator.models import Generic2dOscillator, Kuramoto
+from tvb.simulator.models import ModelsEnum
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import tvb.interfaces.web.controllers.common as common
 
@@ -73,12 +73,12 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
 
 
     def _setup_dynamic(self):
-        dynamic_g = Dynamic("test_dyn", self.test_user.id, Generic2dOscillator.__name__,
+        dynamic_g = Dynamic("test_dyn", self.test_user.id, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__,
                             '[["tau", 1.0], ["a", 5.0], ["b", -10.0], ["c", 10.0], ["I", 0.0], ["d", 0.02], '
                             '["e", 3.0], ["f", 1.0], ["g", 0.0], ["alpha", 1.0], ["beta", 5.0], ["gamma", 1.0]]',
                             HeunDeterministic.__name__, None)
 
-        dynamic_k = Dynamic("test_dyn_kura", self.test_user.id, Kuramoto.__name__,
+        dynamic_k = Dynamic("test_dyn_kura", self.test_user.id, ModelsEnum.KURAMOTO.get_class().__name__,
                             '[["omega", 1.0]]', HeunDeterministic.__name__, None)
 
         self.dynamic_g = dao.store_entity(dynamic_g)

@@ -38,17 +38,106 @@ Specific models inherit from the abstract class Model.
 
 """
 
-from .base import Model
-from .epileptor import Epileptor, Epileptor2D
-from .epileptor_rs import EpileptorRestingState
-from .epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
-from .hopfield import Hopfield
-from .jansen_rit import JansenRit, ZetterbergJansen
-from .larter_breakspear import LarterBreakspear
-from .linear import Linear
-from .oscillator import Generic2dOscillator, Kuramoto, SupHopf
-from .stefanescu_jirsa import ReducedSetFitzHughNagumo, ReducedSetHindmarshRose
-from .wilson_cowan import WilsonCowan
-from .wong_wang import ReducedWongWang
-from .wong_wang_exc_inh import ReducedWongWangExcInh
-from .zerlaut import ZerlautFirstOrder, ZerlautSecondOrder
+# we don't import all models by default here, since they are time consuming
+# to setup (e.g. numba gufunc compilation), but provide them as module-level
+# properties for compatibility with previous version of TVB. For example
+#
+#     import tvb.simulator.models.Epileptor
+#
+# works, but only lazily loads the tvb.simulator.models.epileptor module
+# and returns the Epileptor class.
+
+from enum import Enum
+
+
+class ModelsEnum(Enum):
+    BASE_MODEL = "Model"
+    EPILEPTOR = "Epileptor"
+    EPILEPTOR_2D = "Epileptor2D"
+    EPILEPTOR_RS = "EpileptorRestingState"
+    EPILEPTOR_CODIM_3 = "EpileptorCodim3"
+    EPILEPTOR_CODIM_3_SLOW = "EpileptorCodim3SlowMod"
+    HOPFIELD = "Hopfield"
+    JANSEN_RIT = "JansenRit"
+    ZETTERBERG_JANSEN = "ZetterbergJansen"
+    LARTER_BREAKSPEAR = "LarterBreakspear"
+    LINEAR = "Linear"
+    GENERIC_2D_OSCILLATOR = "Generic2dOscillator"
+    KURAMOTO = "Kuramoto"
+    SUP_HOPF = "SupHopf"
+    REDUCED_SET_FITZ_HUGH_NAGUMO = "ReducedSetFitzHughNagumo"
+    REDUCED_SET_HINDMARSH_ROSE = "ReducedSetHindmarshRose"
+    WILSON_COWAN = "WilsonCowan"
+    REDUCED_WONG_WANG = "ReducedWongWang"
+    REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
+    ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
+    ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
+
+    def get_class(self):
+        return _get_imported_model(self.value)
+
+    @staticmethod
+    def get_base_model_subclasses():
+        return [model.get_class() for model in list(ModelsEnum) if model != ModelsEnum.BASE_MODEL]
+
+
+def _get_imported_model(model):
+    import sys
+    # Imported modules
+    imported_modules = sys.modules['tvb.simulator.models']
+    try:
+        return getattr(imported_modules, model)
+    except AttributeError:
+        return None
+
+
+_module_models = {
+    'base': [ModelsEnum.BASE_MODEL],
+    'epileptor': [ModelsEnum.EPILEPTOR, ModelsEnum.EPILEPTOR_2D],
+    'epileptor_rs': [ModelsEnum.EPILEPTOR_RS],
+    'epileptorcodim3': [ModelsEnum.EPILEPTOR_CODIM_3, ModelsEnum.EPILEPTOR_CODIM_3_SLOW],
+    'hopfield': [ModelsEnum.HOPFIELD],
+    'jansen_rit': [ModelsEnum.JANSEN_RIT, ModelsEnum.ZETTERBERG_JANSEN],
+    'larter_breakspear': [ModelsEnum.LARTER_BREAKSPEAR],
+    'linear': [ModelsEnum.LINEAR],
+    'oscillator': [ModelsEnum.GENERIC_2D_OSCILLATOR, ModelsEnum.KURAMOTO, ModelsEnum.SUP_HOPF],
+    'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
+    'wilson_cowan': [ModelsEnum.WILSON_COWAN],
+    'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
+    'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
+    'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
+}
+
+
+def _delay_import_one(mod, model):
+    """Create getter thunk for module and model name.
+    """
+    import importlib
+    def do_import(_):
+        module_name = f'tvb.simulator.models.{mod}'
+        model_module = importlib.import_module(module_name)
+        return getattr(model_module, model)
+    return property(do_import)
+
+
+def _delay_model_imports():
+    """Set up this module with all properties for all models.
+    """
+    # create substitute module class & object
+    class _Module:
+        pass
+    module = _Module()
+    module.__dict__ = globals()
+    # create properties for each model
+    for mod, models in _module_models.items():
+        for model in models:
+            setattr(_Module, model.value, _delay_import_one(mod, model.value))
+    # register module object
+    import sys
+    module._module = sys.modules[module.__name__]
+    module._pmodule = module
+    sys.modules[module.__name__] = module
+
+
+_delay_model_imports()
+

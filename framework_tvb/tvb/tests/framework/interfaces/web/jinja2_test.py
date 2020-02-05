@@ -40,7 +40,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
-from tvb.simulator.models import Epileptor
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -140,7 +140,7 @@ class TestJinja2Simulator(Jinja2Test):
         all_models_for_ui = get_ui_name_to_model()
         models_form = SimulatorModelFragment()
         simulator = Simulator()
-        simulator.model = Epileptor()
+        simulator.model = ModelsEnum.EPILEPTOR.get_class()()
         models_form.fill_from_trait(simulator)
 
         html = str(models_form)

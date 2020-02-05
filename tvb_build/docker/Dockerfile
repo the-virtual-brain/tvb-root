@@ -2,7 +2,7 @@ FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y install texlive-base texlive-formats-extra
-RUN apt-get -y install octave postgresql
+RUN apt-get -y update && apt-get -y install octave postgresql
 
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
@@ -41,8 +41,12 @@ RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -
     /opt/conda/envs/tvb-docs/bin/python setup.py develop
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
-RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git; \
-     cd tvb-root/tvb_build; \
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+
+ARG LAST_SHA=LATEST
+RUN cd tvb-root; \
+    git pull; \
+    cd tvb_build; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 

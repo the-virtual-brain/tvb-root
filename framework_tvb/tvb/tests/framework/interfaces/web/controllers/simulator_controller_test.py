@@ -61,7 +61,7 @@ from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic, EulerStochastic
-from tvb.simulator.models import Generic2dOscillator
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.monitors import TemporalAverage, MEG, Bold, SubSample, EEG, iEEG
 from tvb.simulator.noise import Multiplicative
 from tvb.tests.framework.core.factory import TestFactory
@@ -202,7 +202,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_model(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.model, Generic2dOscillator), "Model class is incorrect."
+        assert isinstance(self.session_stored_simulator.model, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()), "Model class is incorrect."
 
     def test_set_model_params(self):
         self.sess_mock['_tau'] = '[1.0]'

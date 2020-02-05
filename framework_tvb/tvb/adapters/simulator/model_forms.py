@@ -28,33 +28,33 @@
 #
 #
 
-from tvb.simulator.models import *
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
+from tvb.simulator.models import ModelsEnum
 
 
 def get_model_to_form_dict():
     model_class_to_form = {
-        Generic2dOscillator: Generic2dOscillatorModelForm,
-        Kuramoto: KuramotoModelForm,
-        SupHopf: SupHopfModelForm,
-        Hopfield: HopfieldModelForm,
-        Epileptor: EpileptorModelForm,
-        Epileptor2D: Epileptor2DModelForm,
-        EpileptorCodim3: EpileptorCodim3ModelForm,
-        EpileptorCodim3SlowMod: EpileptorCodim3SlowModModelForm,
-        EpileptorRestingState: EpileptorRestingStateModelForm,
-        JansenRit: JansenRitModelForm,
-        ZetterbergJansen: ZetterbergJansenModelForm,
-        ReducedWongWang: ReducedWongWangModelForm,
-        ReducedWongWangExcInh: ReducedWongWangExcInhModelForm,
-        ReducedSetFitzHughNagumo: ReducedSetFitzHughNagumoModelForm,
-        ReducedSetHindmarshRose: ReducedSetHindmarshRoseModelForm,
-        ZerlautFirstOrder: ZerlautFirstOrderModelForm,
-        ZerlautSecondOrder: ZerlautSecondOrderModelForm,
-        Linear: LinearModelForm,
-        WilsonCowan: WilsonCowanModelForm,
-        LarterBreakspear: LarterBreakspearModelForm
+        ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(): Generic2dOscillatorModelForm,
+        ModelsEnum.KURAMOTO.get_class(): KuramotoModelForm,
+        ModelsEnum.SUP_HOPF.get_class(): SupHopfModelForm,
+        ModelsEnum.HOPFIELD.get_class(): HopfieldModelForm,
+        ModelsEnum.EPILEPTOR.get_class(): EpileptorModelForm,
+        ModelsEnum.EPILEPTOR_2D.get_class(): Epileptor2DModelForm,
+        ModelsEnum.EPILEPTOR_CODIM_3.get_class(): EpileptorCodim3ModelForm,
+        ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(): EpileptorCodim3SlowModModelForm,
+        ModelsEnum.EPILEPTOR_RS.get_class(): EpileptorRestingStateModelForm,
+        ModelsEnum.JANSEN_RIT.get_class(): JansenRitModelForm,
+        ModelsEnum.ZETTERBERG_JANSEN.get_class(): ZetterbergJansenModelForm,
+        ModelsEnum.REDUCED_WONG_WANG.get_class(): ReducedWongWangModelForm,
+        ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(): ReducedWongWangExcInhModelForm,
+        ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(): ReducedSetFitzHughNagumoModelForm,
+        ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(): ReducedSetHindmarshRoseModelForm,
+        ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(): ZerlautAdaptationFirstOrderModelForm,
+        ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(): ZerlautAdaptationSecondOrderModelForm,
+        ModelsEnum.LINEAR.get_class(): LinearModelForm,
+        ModelsEnum.WILSON_COWAN.get_class(): WilsonCowanModelForm,
+        ModelsEnum.LARTER_BREAKSPEAR.get_class(): LarterBreakspearModelForm
     }
 
     return model_class_to_form
@@ -62,26 +62,26 @@ def get_model_to_form_dict():
 
 def get_ui_name_to_model():
     ui_name_to_model = {
-        'Generic 2d Oscillator': Generic2dOscillator,
-        'Kuramoto Oscillator': Kuramoto,
-        'supHopf': SupHopf,
-        'Hopfield': Hopfield,
-        'Epileptor': Epileptor,
-        'Epileptor2D': Epileptor2D,
-        'Epileptor codim 3': EpileptorCodim3,
-        'Epileptor codim 3 ultra-slow modulations': EpileptorCodim3SlowMod,
-        'EpileptorRestingState': EpileptorRestingState,
-        'Jansen-Rit': JansenRit,
-        'Zetterberg-Jansen': ZetterbergJansen,
-        'Reduced Wong-Wang': ReducedWongWang,
-        'Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations': ReducedWongWangExcInh,
-        'Stefanescu-Jirsa 2D': ReducedSetFitzHughNagumo,
-        'Stefanescu-Jirsa 3D': ReducedSetHindmarshRose,
-        'Zerlaut adaptation first order': ZerlautFirstOrder,
-        'Zerlaut adaptation second order': ZerlautSecondOrder,
-        'Linear model': Linear,
-        'Wilson-Cowan': WilsonCowan,
-        'Larter-Breakspear': LarterBreakspear
+        'Generic 2d Oscillator': ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(),
+        'Kuramoto Oscillator': ModelsEnum.KURAMOTO.get_class(),
+        'supHopf': ModelsEnum.KURAMOTO.get_class(),
+        'Hopfield': ModelsEnum.HOPFIELD.get_class(),
+        'Epileptor': ModelsEnum.EPILEPTOR.get_class(),
+        'Epileptor2D': ModelsEnum.EPILEPTOR_2D.get_class(),
+        'Epileptor codim 3': ModelsEnum.EPILEPTOR_CODIM_3.get_class(),
+        'Epileptor codim 3 ultra-slow modulations': ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(),
+        'EpileptorRestingState': ModelsEnum.EPILEPTOR_RS.get_class(),
+        'Jansen-Rit': ModelsEnum.JANSEN_RIT.get_class(),
+        'Zetterberg-Jansen': ModelsEnum.ZETTERBERG_JANSEN.get_class(),
+        'Reduced Wong-Wang': ModelsEnum.REDUCED_WONG_WANG.get_class(),
+        'Reduced Wong-Wang with Excitatory and Inhibitory Coupled Populations': ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(),
+        'Stefanescu-Jirsa 2D': ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(),
+        'Stefanescu-Jirsa 3D': ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(),
+        'Zerlaut adaptation first order': ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(),
+        'Zerlaut adaptation second order': ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(),
+        'Linear model': ModelsEnum.LINEAR.get_class(),
+        'Wilson-Cowan': ModelsEnum.WILSON_COWAN.get_class(),
+        'Larter-Breakspear': ModelsEnum.LARTER_BREAKSPEAR.get_class()
     }
     return ui_name_to_model
 
@@ -100,19 +100,21 @@ class Generic2dOscillatorModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(Generic2dOscillatorModelForm, self).__init__(prefix)
-        self.tau = ArrayField(Generic2dOscillator.tau, self)
-        self.I = ArrayField(Generic2dOscillator.I, self)
-        self.a = ArrayField(Generic2dOscillator.a, self)
-        self.b = ArrayField(Generic2dOscillator.b, self)
-        self.c = ArrayField(Generic2dOscillator.c, self)
-        self.d = ArrayField(Generic2dOscillator.d, self)
-        self.e = ArrayField(Generic2dOscillator.e, self)
-        self.f = ArrayField(Generic2dOscillator.f, self)
-        self.g = ArrayField(Generic2dOscillator.g, self)
-        self.alpha = ArrayField(Generic2dOscillator.alpha, self)
-        self.beta = ArrayField(Generic2dOscillator.beta, self)
-        self.gamma = ArrayField(Generic2dOscillator.gamma, self)
-        self.variables_of_interest = MultiSelectField(Generic2dOscillator.variables_of_interest, self)
+        self.tau = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().tau, self)
+        self.I = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().I, self)
+        self.a = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().b, self)
+        self.c = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().c, self)
+        self.d = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().d, self)
+        self.e = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().e, self)
+        self.f = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().f, self)
+        self.g = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().g, self)
+        self.alpha = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().alpha, self)
+        self.beta = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().beta, self)
+        self.gamma = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().gamma, self)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().variables_of_interest,
+            self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -123,8 +125,8 @@ class KuramotoModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(KuramotoModelForm, self).__init__(prefix)
-        self.omega = ArrayField(Kuramoto.omega, self)
-        self.variables_of_interest = MultiSelectField(Kuramoto.variables_of_interest, self)
+        self.omega = ArrayField(ModelsEnum.KURAMOTO.get_class().omega, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.KURAMOTO.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -135,9 +137,9 @@ class SupHopfModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(SupHopfModelForm, self).__init__(prefix)
-        self.a = ArrayField(SupHopf.a, self)
-        self.omega = ArrayField(SupHopf.omega, self)
-        self.variables_of_interest = MultiSelectField(SupHopf.variables_of_interest, self)
+        self.a = ArrayField(ModelsEnum.SUP_HOPF.get_class().a, self)
+        self.omega = ArrayField(ModelsEnum.SUP_HOPF.get_class().omega, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.SUP_HOPF.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -148,10 +150,10 @@ class HopfieldModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(HopfieldModelForm, self).__init__(prefix)
-        self.taux = ArrayField(Hopfield.taux, self)
-        self.tauT = ArrayField(Hopfield.tauT, self)
-        self.dynamic = ArrayField(Hopfield.dynamic, self)
-        self.variables_of_interest = MultiSelectField(Hopfield.variables_of_interest, self)
+        self.taux = ArrayField(ModelsEnum.HOPFIELD.get_class().taux, self)
+        self.tauT = ArrayField(ModelsEnum.HOPFIELD.get_class().tauT, self)
+        self.dynamic = ArrayField(ModelsEnum.HOPFIELD.get_class().dynamic, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.HOPFIELD.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -162,25 +164,25 @@ class EpileptorModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorModelForm, self).__init__(prefix)
-        self.a = ArrayField(Epileptor.a, self)
-        self.b = ArrayField(Epileptor.b, self)
-        self.c = ArrayField(Epileptor.c, self)
-        self.d = ArrayField(Epileptor.d, self)
-        self.r = ArrayField(Epileptor.r, self)
-        self.s = ArrayField(Epileptor.s, self)
-        self.x0 = ArrayField(Epileptor.x0, self)
-        self.Iext = ArrayField(Epileptor.Iext, self)
-        self.slope = ArrayField(Epileptor.slope, self)
-        self.Iext2 = ArrayField(Epileptor.Iext2, self)
-        self.tau = ArrayField(Epileptor.tau, self)
-        self.aa = ArrayField(Epileptor.aa, self)
-        self.bb = ArrayField(Epileptor.bb, self)
-        self.Kvf = ArrayField(Epileptor.Kvf, self)
-        self.Kf = ArrayField(Epileptor.Kf, self)
-        self.Ks = ArrayField(Epileptor.Ks, self)
-        self.tt = ArrayField(Epileptor.tt, self)
-        self.modification = ArrayField(Epileptor.modification, self)
-        self.variables_of_interest = MultiSelectField(Epileptor.variables_of_interest, self)
+        self.a = ArrayField(ModelsEnum.EPILEPTOR.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.EPILEPTOR.get_class().b, self)
+        self.c = ArrayField(ModelsEnum.EPILEPTOR.get_class().c, self)
+        self.d = ArrayField(ModelsEnum.EPILEPTOR.get_class().d, self)
+        self.r = ArrayField(ModelsEnum.EPILEPTOR.get_class().r, self)
+        self.s = ArrayField(ModelsEnum.EPILEPTOR.get_class().s, self)
+        self.x0 = ArrayField(ModelsEnum.EPILEPTOR.get_class().x0, self)
+        self.Iext = ArrayField(ModelsEnum.EPILEPTOR.get_class().Iext, self)
+        self.slope = ArrayField(ModelsEnum.EPILEPTOR.get_class().slope, self)
+        self.Iext2 = ArrayField(ModelsEnum.EPILEPTOR.get_class().Iext2, self)
+        self.tau = ArrayField(ModelsEnum.EPILEPTOR.get_class().tau, self)
+        self.aa = ArrayField(ModelsEnum.EPILEPTOR.get_class().aa, self)
+        self.bb = ArrayField(ModelsEnum.EPILEPTOR.get_class().bb, self)
+        self.Kvf = ArrayField(ModelsEnum.EPILEPTOR.get_class().Kvf, self)
+        self.Kf = ArrayField(ModelsEnum.EPILEPTOR.get_class().Kf, self)
+        self.Ks = ArrayField(ModelsEnum.EPILEPTOR.get_class().Ks, self)
+        self.tt = ArrayField(ModelsEnum.EPILEPTOR.get_class().tt, self)
+        self.modification = ArrayField(ModelsEnum.EPILEPTOR.get_class().modification, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -191,19 +193,19 @@ class Epileptor2DModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(Epileptor2DModelForm, self).__init__(prefix)
-        self.a = ArrayField(Epileptor2D.a, self)
-        self.b = ArrayField(Epileptor2D.b, self)
-        self.c = ArrayField(Epileptor2D.c, self)
-        self.d = ArrayField(Epileptor2D.d, self)
-        self.r = ArrayField(Epileptor2D.r, self)
-        self.x0 = ArrayField(Epileptor2D.x0, self)
-        self.Iext = ArrayField(Epileptor2D.Iext, self)
-        self.slope = ArrayField(Epileptor2D.slope, self)
-        self.Kvf = ArrayField(Epileptor2D.Kvf, self)
-        self.Ks = ArrayField(Epileptor2D.Ks, self)
-        self.tt = ArrayField(Epileptor2D.tt, self)
-        self.modification = ArrayField(Epileptor2D.modification, self)
-        self.variables_of_interest = MultiSelectField(Epileptor2D.variables_of_interest, self)
+        self.a = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().b, self)
+        self.c = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().c, self)
+        self.d = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().d, self)
+        self.r = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().r, self)
+        self.x0 = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().x0, self)
+        self.Iext = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().Iext, self)
+        self.slope = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().slope, self)
+        self.Kvf = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().Kvf, self)
+        self.Ks = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().Ks, self)
+        self.tt = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().tt, self)
+        self.modification = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().modification, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_2D.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -214,20 +216,21 @@ class EpileptorCodim3ModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorCodim3ModelForm, self).__init__(prefix)
-        self.mu1_start = ArrayField(EpileptorCodim3.mu1_start, self)
-        self.mu2_start = ArrayField(EpileptorCodim3.mu2_start, self)
-        self.nu_start = ArrayField(EpileptorCodim3.nu_start, self)
-        self.mu1_stop = ArrayField(EpileptorCodim3.mu1_stop, self)
-        self.mu2_stop = ArrayField(EpileptorCodim3.mu2_stop, self)
-        self.nu_stop = ArrayField(EpileptorCodim3.nu_stop, self)
-        self.b = ArrayField(EpileptorCodim3.b, self)
-        self.R = ArrayField(EpileptorCodim3.R, self)
-        self.c = ArrayField(EpileptorCodim3.c, self)
-        self.dstar = ArrayField(EpileptorCodim3.dstar, self)
-        self.Ks = ArrayField(EpileptorCodim3.Ks, self)
-        self.N = ArrayField(EpileptorCodim3.N, self)
-        self.modification = ArrayField(EpileptorCodim3.modification, self)
-        self.variables_of_interest = MultiSelectField(EpileptorCodim3.variables_of_interest, self)
+        self.mu1_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu1_start, self)
+        self.mu2_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu2_start, self)
+        self.nu_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().nu_start, self)
+        self.mu1_stop = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu1_stop, self)
+        self.mu2_stop = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu2_stop, self)
+        self.nu_stop = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().nu_stop, self)
+        self.b = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().b, self)
+        self.R = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().R, self)
+        self.c = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().c, self)
+        self.dstar = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().dstar, self)
+        self.Ks = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().Ks, self)
+        self.N = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().N, self)
+        self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().modification, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -239,28 +242,29 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorCodim3SlowModModelForm, self).__init__(prefix)
-        self.mu1_Ain = ArrayField(EpileptorCodim3SlowMod.mu1_Ain, self)
-        self.mu2_Ain = ArrayField(EpileptorCodim3SlowMod.mu2_Ain, self)
-        self.nu_Ain = ArrayField(EpileptorCodim3SlowMod.nu_Ain, self)
-        self.mu1_Bin = ArrayField(EpileptorCodim3SlowMod.mu1_Bin, self)
-        self.mu2_Bin = ArrayField(EpileptorCodim3SlowMod.mu2_Bin, self)
-        self.nu_Bin = ArrayField(EpileptorCodim3SlowMod.nu_Bin, self)
-        self.mu1_Aend = ArrayField(EpileptorCodim3SlowMod.mu1_Aend, self)
-        self.mu2_Aend = ArrayField(EpileptorCodim3SlowMod.mu2_Aend, self)
-        self.nu_Aend = ArrayField(EpileptorCodim3SlowMod.nu_Aend, self)
-        self.mu1_Bend = ArrayField(EpileptorCodim3SlowMod.mu1_Bend, self)
-        self.mu2_Bend = ArrayField(EpileptorCodim3SlowMod.mu2_Bend, self)
-        self.nu_Bend = ArrayField(EpileptorCodim3SlowMod.nu_Bend, self)
-        self.b = ArrayField(EpileptorCodim3SlowMod.b, self)
-        self.R = ArrayField(EpileptorCodim3SlowMod.R, self)
-        self.c = ArrayField(EpileptorCodim3SlowMod.c, self)
-        self.cA = ArrayField(EpileptorCodim3SlowMod.cA, self)
-        self.cB = ArrayField(EpileptorCodim3SlowMod.cB, self)
-        self.dstar = ArrayField(EpileptorCodim3SlowMod.dstar, self)
-        self.Ks = ArrayField(EpileptorCodim3SlowMod.Ks, self)
-        self.N = ArrayField(EpileptorCodim3SlowMod.N, self)
-        self.modification = ArrayField(EpileptorCodim3SlowMod.modification, self)
-        self.variables_of_interest = ArrayField(EpileptorCodim3SlowMod.variables_of_interest, self)
+        self.mu1_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Ain, self)
+        self.mu2_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Ain, self)
+        self.nu_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Ain, self)
+        self.mu1_Bin = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Bin, self)
+        self.mu2_Bin = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Bin, self)
+        self.nu_Bin = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Bin, self)
+        self.mu1_Aend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Aend, self)
+        self.mu2_Aend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Aend, self)
+        self.nu_Aend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Aend, self)
+        self.mu1_Bend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Bend, self)
+        self.mu2_Bend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Bend, self)
+        self.nu_Bend = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Bend, self)
+        self.b = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().b, self)
+        self.R = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().R, self)
+        self.c = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().c, self)
+        self.cA = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().cA, self)
+        self.cB = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().cB, self)
+        self.dstar = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().dstar, self)
+        self.Ks = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().Ks, self)
+        self.N = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().N, self)
+        self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().modification, self)
+        self.variables_of_interest = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().variables_of_interest,
+                                                self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -272,35 +276,36 @@ class EpileptorRestingStateModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(EpileptorRestingStateModelForm, self).__init__(prefix)
-        self.a = ArrayField(EpileptorRestingState.a, self)
-        self.b = ArrayField(EpileptorRestingState.b, self)
-        self.c = ArrayField(EpileptorRestingState.c, self)
-        self.d = ArrayField(EpileptorRestingState.d, self)
-        self.r = ArrayField(EpileptorRestingState.r, self)
-        self.s = ArrayField(EpileptorRestingState.s, self)
-        self.x0 = ArrayField(EpileptorRestingState.x0, self)
-        self.Iext = ArrayField(EpileptorRestingState.Iext, self)
-        self.slope = ArrayField(EpileptorRestingState.slope, self)
-        self.Iext2 = ArrayField(EpileptorRestingState.Iext2, self)
-        self.tau = ArrayField(EpileptorRestingState.tau, self)
-        self.aa = ArrayField(EpileptorRestingState.aa, self)
-        self.bb = ArrayField(EpileptorRestingState.bb, self)
-        self.Kvf = ArrayField(EpileptorRestingState.Kvf, self)
-        self.Kf = ArrayField(EpileptorRestingState.Kf, self)
-        self.Ks = ArrayField(EpileptorRestingState.Ks, self)
-        self.tt = ArrayField(EpileptorRestingState.tt, self)
-        self.tau_rs = ArrayField(EpileptorRestingState.tau_rs, self)
-        self.I_rs = ArrayField(EpileptorRestingState.I_rs, self)
-        self.a_rs = ArrayField(EpileptorRestingState.a_rs, self)
-        self.b_rs = ArrayField(EpileptorRestingState.b_rs, self)
-        self.d_rs = ArrayField(EpileptorRestingState.d_rs, self)
-        self.e_rs = ArrayField(EpileptorRestingState.e_rs, self)
-        self.f_rs = ArrayField(EpileptorRestingState.f_rs, self)
-        self.alpha_rs = ArrayField(EpileptorRestingState.alpha_rs, self)
-        self.beta_rs = ArrayField(EpileptorRestingState.beta_rs, self)
-        self.K_rs = ArrayField(EpileptorRestingState.K_rs, self)
-        self.p = ArrayField(EpileptorRestingState.p, self)
-        self.variables_of_interest = MultiSelectField(EpileptorRestingState.variables_of_interest, self)
+        self.a = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().b, self)
+        self.c = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().c, self)
+        self.d = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().d, self)
+        self.r = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().r, self)
+        self.s = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().s, self)
+        self.x0 = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().x0, self)
+        self.Iext = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().Iext, self)
+        self.slope = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().slope, self)
+        self.Iext2 = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().Iext2, self)
+        self.tau = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().tau, self)
+        self.aa = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().aa, self)
+        self.bb = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().bb, self)
+        self.Kvf = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().Kvf, self)
+        self.Kf = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().Kf, self)
+        self.Ks = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().Ks, self)
+        self.tt = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().tt, self)
+        self.tau_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().tau_rs, self)
+        self.I_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().I_rs, self)
+        self.a_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().a_rs, self)
+        self.b_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().b_rs, self)
+        self.d_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().d_rs, self)
+        self.e_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().e_rs, self)
+        self.f_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().f_rs, self)
+        self.alpha_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().alpha_rs, self)
+        self.beta_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().beta_rs, self)
+        self.K_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().K_rs, self)
+        self.p = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().p, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_RS.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -312,22 +317,22 @@ class JansenRitModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(JansenRitModelForm, self).__init__(prefix)
-        self.A = ArrayField(JansenRit.A, self)
-        self.B = ArrayField(JansenRit.B, self)
-        self.a = ArrayField(JansenRit.a, self)
-        self.b = ArrayField(JansenRit.b, self)
-        self.v0 = ArrayField(JansenRit.v0, self)
-        self.nu_max = ArrayField(JansenRit.nu_max, self)
-        self.r = ArrayField(JansenRit.r, self)
-        self.J = ArrayField(JansenRit.J, self)
-        self.a_1 = ArrayField(JansenRit.a_1, self)
-        self.a_2 = ArrayField(JansenRit.a_2, self)
-        self.a_3 = ArrayField(JansenRit.a_3, self)
-        self.a_4 = ArrayField(JansenRit.a_4, self)
-        self.p_min = ArrayField(JansenRit.p_min, self)
-        self.p_max = ArrayField(JansenRit.p_max, self)
-        self.mu = ArrayField(JansenRit.mu, self)
-        self.variables_of_interest = ArrayField(JansenRit.variables_of_interest, self)
+        self.A = ArrayField(ModelsEnum.JANSEN_RIT.get_class().A, self)
+        self.B = ArrayField(ModelsEnum.JANSEN_RIT.get_class().B, self)
+        self.a = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.JANSEN_RIT.get_class().b, self)
+        self.v0 = ArrayField(ModelsEnum.JANSEN_RIT.get_class().v0, self)
+        self.nu_max = ArrayField(ModelsEnum.JANSEN_RIT.get_class().nu_max, self)
+        self.r = ArrayField(ModelsEnum.JANSEN_RIT.get_class().r, self)
+        self.J = ArrayField(ModelsEnum.JANSEN_RIT.get_class().J, self)
+        self.a_1 = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a_1, self)
+        self.a_2 = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a_2, self)
+        self.a_3 = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a_3, self)
+        self.a_4 = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a_4, self)
+        self.p_min = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_min, self)
+        self.p_max = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_max, self)
+        self.mu = ArrayField(ModelsEnum.JANSEN_RIT.get_class().mu, self)
+        self.variables_of_interest = ArrayField(ModelsEnum.JANSEN_RIT.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -338,25 +343,26 @@ class ZetterbergJansenModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ZetterbergJansenModelForm, self).__init__(prefix)
-        self.He = ArrayField(ZetterbergJansen.He, self)
-        self.Hi = ArrayField(ZetterbergJansen.Hi, self)
-        self.ke = ArrayField(ZetterbergJansen.ke, self)
-        self.ki = ArrayField(ZetterbergJansen.ki, self)
-        self.e0 = ArrayField(ZetterbergJansen.e0, self)
-        self.rho_2 = ArrayField(ZetterbergJansen.rho_2, self)
-        self.rho_1 = ArrayField(ZetterbergJansen.rho_1, self)
-        self.gamma_1 = ArrayField(ZetterbergJansen.gamma_1, self)
-        self.gamma_2 = ArrayField(ZetterbergJansen.gamma_2, self)
-        self.gamma_3 = ArrayField(ZetterbergJansen.gamma_3, self)
-        self.gamma_4 = ArrayField(ZetterbergJansen.gamma_4, self)
-        self.gamma_5 = ArrayField(ZetterbergJansen.gamma_5, self)
-        self.gamma_1T = ArrayField(ZetterbergJansen.gamma_1T, self)
-        self.gamma_2T = ArrayField(ZetterbergJansen.gamma_2T, self)
-        self.gamma_3T = ArrayField(ZetterbergJansen.gamma_3T, self)
-        self.P = ArrayField(ZetterbergJansen.P, self)
-        self.U = ArrayField(ZetterbergJansen.U, self)
-        self.Q = ArrayField(ZetterbergJansen.Q, self)
-        self.variables_of_interest = MultiSelectField(ZetterbergJansen.variables_of_interest, self)
+        self.He = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().He, self)
+        self.Hi = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().Hi, self)
+        self.ke = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().ke, self)
+        self.ki = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().ki, self)
+        self.e0 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().e0, self)
+        self.rho_2 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().rho_2, self)
+        self.rho_1 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().rho_1, self)
+        self.gamma_1 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_1, self)
+        self.gamma_2 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_2, self)
+        self.gamma_3 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_3, self)
+        self.gamma_4 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_4, self)
+        self.gamma_5 = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_5, self)
+        self.gamma_1T = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_1T, self)
+        self.gamma_2T = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_2T, self)
+        self.gamma_3T = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().gamma_3T, self)
+        self.P = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().P, self)
+        self.U = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().U, self)
+        self.Q = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().Q, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.ZETTERBERG_JANSEN.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -368,16 +374,17 @@ class ReducedWongWangModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedWongWangModelForm, self).__init__(prefix)
-        self.a = ArrayField(ReducedWongWang.a, self)
-        self.b = ArrayField(ReducedWongWang.b, self)
-        self.d = ArrayField(ReducedWongWang.d, self)
-        self.gamma = ArrayField(ReducedWongWang.gamma, self)
-        self.tau_s = ArrayField(ReducedWongWang.tau_s, self)
-        self.w = ArrayField(ReducedWongWang.w, self)
-        self.J_N = ArrayField(ReducedWongWang.J_N, self)
-        self.I_o = ArrayField(ReducedWongWang.I_o, self)
-        self.sigma_noise = ArrayField(ReducedWongWang.sigma_noise, self)
-        self.variables_of_interest = MultiSelectField(ReducedWongWang.variables_of_interest, self)
+        self.a = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().b, self)
+        self.d = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().d, self)
+        self.gamma = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().gamma, self)
+        self.tau_s = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().tau_s, self)
+        self.w = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().w, self)
+        self.J_N = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().J_N, self)
+        self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().I_o, self)
+        self.sigma_noise = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().sigma_noise, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.REDUCED_WONG_WANG.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -388,25 +395,27 @@ class ReducedWongWangExcInhModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedWongWangExcInhModelForm, self).__init__(prefix)
-        self.a_e = ArrayField(ReducedWongWangExcInh.a_e, self)
-        self.b_e = ArrayField(ReducedWongWangExcInh.b_e, self)
-        self.d_e = ArrayField(ReducedWongWangExcInh.d_e, self)
-        self.gamma_e = ArrayField(ReducedWongWangExcInh.gamma_e, self)
-        self.tau_e = ArrayField(ReducedWongWangExcInh.tau_e, self)
-        self.w_p = ArrayField(ReducedWongWangExcInh.w_p, self)
-        self.J_N = ArrayField(ReducedWongWangExcInh.J_N, self)
-        self.W_e = ArrayField(ReducedWongWangExcInh.W_e, self)
-        self.a_i = ArrayField(ReducedWongWangExcInh.a_i, self)
-        self.b_i = ArrayField(ReducedWongWangExcInh.b_i, self)
-        self.d_i = ArrayField(ReducedWongWangExcInh.d_i, self)
-        self.gamma_i = ArrayField(ReducedWongWangExcInh.gamma_i, self)
-        self.tau_i = ArrayField(ReducedWongWangExcInh.tau_i, self)
-        self.J_i = ArrayField(ReducedWongWangExcInh.J_i, self)
-        self.W_i = ArrayField(ReducedWongWangExcInh.W_i, self)
-        self.I_o = ArrayField(ReducedWongWangExcInh.I_o, self)
-        self.G = ArrayField(ReducedWongWangExcInh.G, self)
-        self.lamda = ArrayField(ReducedWongWangExcInh.lamda, self)
-        self.variables_of_interest = MultiSelectField(ReducedWongWangExcInh.variables_of_interest, self)
+        self.a_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().a_e, self)
+        self.b_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().b_e, self)
+        self.d_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().d_e, self)
+        self.gamma_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().gamma_e, self)
+        self.tau_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().tau_e, self)
+        self.w_p = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().w_p, self)
+        self.J_N = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().J_N, self)
+        self.W_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().W_e, self)
+        self.a_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().a_i, self)
+        self.b_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().b_i, self)
+        self.d_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().d_i, self)
+        self.gamma_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().gamma_i, self)
+        self.tau_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().tau_i, self)
+        self.J_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().J_i, self)
+        self.W_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().W_i, self)
+        self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().I_o, self)
+        self.G = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().G, self)
+        self.lamda = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().lamda, self)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().variables_of_interest,
+            self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -418,15 +427,16 @@ class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedSetFitzHughNagumoModelForm, self).__init__(prefix)
-        self.tau = ArrayField(ReducedSetFitzHughNagumo.tau, self)
-        self.a = ArrayField(ReducedSetFitzHughNagumo.a, self)
-        self.b = ArrayField(ReducedSetFitzHughNagumo.b, self)
-        self.K11 = ArrayField(ReducedSetFitzHughNagumo.K11, self)
-        self.K12 = ArrayField(ReducedSetFitzHughNagumo.K12, self)
-        self.K21 = ArrayField(ReducedSetFitzHughNagumo.K21, self)
-        self.sigma = ArrayField(ReducedSetFitzHughNagumo.sigma, self)
-        self.mu = ArrayField(ReducedSetFitzHughNagumo.mu, self)
-        self.variables_of_interest = MultiSelectField(ReducedSetFitzHughNagumo.variables_of_interest, self)
+        self.tau = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().tau, self)
+        self.a = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().b, self)
+        self.K11 = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().K11, self)
+        self.K12 = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().K12, self)
+        self.K21 = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().K21, self)
+        self.sigma = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().sigma, self)
+        self.mu = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().mu, self)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -437,69 +447,82 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(ReducedSetHindmarshRoseModelForm, self).__init__(prefix)
-        self.r = ArrayField(ReducedSetHindmarshRose.r, self)
-        self.a = ArrayField(ReducedSetHindmarshRose.a, self)
-        self.b = ArrayField(ReducedSetHindmarshRose.b, self)
-        self.c = ArrayField(ReducedSetHindmarshRose.c, self)
-        self.d = ArrayField(ReducedSetHindmarshRose.d, self)
-        self.s = ArrayField(ReducedSetHindmarshRose.s, self)
-        self.xo = ArrayField(ReducedSetHindmarshRose.xo, self)
-        self.K11 = ArrayField(ReducedSetHindmarshRose.K11, self)
-        self.K12 = ArrayField(ReducedSetHindmarshRose.K12, self)
-        self.K21 = ArrayField(ReducedSetHindmarshRose.K21, self)
-        self.sigma = ArrayField(ReducedSetHindmarshRose.sigma, self)
-        self.mu = ArrayField(ReducedSetHindmarshRose.mu, self)
-        self.variables_of_interest = MultiSelectField(ReducedSetHindmarshRose.variables_of_interest, self)
+        self.r = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().r, self)
+        self.a = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().a, self)
+        self.b = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().b, self)
+        self.c = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().c, self)
+        self.d = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().d, self)
+        self.s = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().s, self)
+        self.xo = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().xo, self)
+        self.K11 = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().K11, self)
+        self.K12 = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().K12, self)
+        self.K21 = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().K21, self)
+        self.sigma = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().sigma, self)
+        self.mu = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().mu, self)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
-class ZerlautFirstOrderModelForm(FormWithRanges):
+class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
-        super(ZerlautFirstOrderModelForm, self).__init__(prefix)
-        self.g_L = ArrayField(ZerlautFirstOrder.g_L, self)
-        self.E_L_e = ArrayField(ZerlautFirstOrder.E_L_e, self)
-        self.E_L_i = ArrayField(ZerlautFirstOrder.E_L_i, self)
-        self.C_m = ArrayField(ZerlautFirstOrder.C_m, self)
-        self.b = ArrayField(ZerlautFirstOrder.b, self)
-        self.tau_w = ArrayField(ZerlautFirstOrder.tau_w, self)
-        self.E_e = ArrayField(ZerlautFirstOrder.E_e, self)
-        self.E_i = ArrayField(ZerlautFirstOrder.E_i, self)
-        self.Q_e = ArrayField(ZerlautFirstOrder.Q_e, self)
-        self.Q_i = ArrayField(ZerlautFirstOrder.Q_i, self)
-        self.tau_e = ArrayField(ZerlautFirstOrder.tau_e, self)
-        self.tau_i = ArrayField(ZerlautFirstOrder.tau_i, self)
-        self.N_tot = ArrayField(ZerlautFirstOrder.N_tot, self)
-        self.p_connect = ArrayField(ZerlautFirstOrder.p_connect, self)
-        self.g = ArrayField(ZerlautFirstOrder.g, self)
-        self.T = ArrayField(ZerlautFirstOrder.T, self)
-        self.P_e = ArrayField(ZerlautFirstOrder.P_e, self)
-        self.P_i = ArrayField(ZerlautFirstOrder.P_i, self)
-        self.external_input = ArrayField(ZerlautFirstOrder.external_input, self)
-        self.variables_of_interest = MultiSelectField(ZerlautFirstOrder.variables_of_interest, self)
+        super(ZerlautAdaptationFirstOrderModelForm, self).__init__(prefix)
+        self.g_L = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().g_L, self)
+        self.E_L_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_e, self)
+        self.E_L_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_i, self)
+        self.C_m = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().C_m, self)
+        self.b_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().b_e, self)
+        self.b_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().b_i, self)
+        self.a_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().a_e, self)
+        self.a_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().a_i, self)
+        self.tau_w_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().tau_w_e, self)
+        self.tau_w_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().tau_w_i, self)
+        self.E_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_e, self)
+        self.E_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_i, self)
+        self.Q_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().Q_e, self)
+        self.Q_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().Q_i, self)
+        self.tau_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().tau_e, self)
+        self.tau_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().tau_i, self)
+        self.N_tot = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().N_tot, self)
+        self.p_connect = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().p_connect, self)
+        self.g = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().g, self)
+        self.K_ext_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().K_ext_e, self)
+        self.K_ext_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().K_ext_i, self)
+        self.T = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().T, self)
+        self.P_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().P_e, self)
+        self.P_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().P_i, self)
+        self.external_input_ex_ex = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_ex_ex, self)
+        self.external_input_ex_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_ex_in, self)
+        self.external_input_in_ex = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_in_ex, self)
+        self.external_input_in_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_in_in, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b', 'tau_w', 'E_e', 'E_i', 'Q_e', 'Q_i', 'tau_e', 'tau_i', 'N_tot',
-                'p_connect', 'g', 'T', 'external_input']
+        return ['g_L', 'E_L_e', 'E_L_i', 'C_m', 'b_e', 'b_i', 'a_e', 'a_i', 'tau_w_e', 'tau_w_i', 'E_e', 'E_i', 'Q_e',
+                'Q_i', 'tau_e', 'tau_i', 'N_tot', 'p_connect', 'g', 'K_ext_e', 'K_ext_i', 'T', 'external_input_ex_ex',
+                'external_input_ex_in', 'external_input_in_ex', 'external_input_in_in']
 
 
-class ZerlautSecondOrderModelForm(ZerlautFirstOrderModelForm):
+class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
 
     def __init__(self, prefix=''):
-        super(ZerlautSecondOrderModelForm, self).__init__(prefix)
-        self.variables_of_interest = MultiSelectField(ZerlautSecondOrder.variables_of_interest, self)
+        super(ZerlautAdaptationSecondOrderModelForm, self).__init__(prefix)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_SECOND_ORDER.get_class().variables_of_interest,
+                                                      self)
 
 
 class LinearModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(LinearModelForm, self).__init__(prefix)
-        self.gamma = ArrayField(Linear.gamma, self)
-        self.variables_of_interest = MultiSelectField(Linear.variables_of_interest, self)
+        self.gamma = ArrayField(ModelsEnum.LINEAR.get_class().gamma, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.LINEAR.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -510,29 +533,29 @@ class WilsonCowanModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(WilsonCowanModelForm, self).__init__(prefix)
-        self.c_ee = ArrayField(WilsonCowan.c_ee, self)
-        self.c_ie = ArrayField(WilsonCowan.c_ie, self)
-        self.c_ei = ArrayField(WilsonCowan.c_ei, self)
-        self.c_ii = ArrayField(WilsonCowan.c_ii, self)
-        self.tau_e = ArrayField(WilsonCowan.tau_e, self)
-        self.tau_i = ArrayField(WilsonCowan.tau_i, self)
-        self.a_e = ArrayField(WilsonCowan.a_e, self)
-        self.b_e = ArrayField(WilsonCowan.b_e, self)
-        self.c_e = ArrayField(WilsonCowan.c_e, self)
-        self.theta_e = ArrayField(WilsonCowan.theta_e, self)
-        self.a_i = ArrayField(WilsonCowan.a_i, self)
-        self.b_i = ArrayField(WilsonCowan.b_i, self)
-        self.theta_i = ArrayField(WilsonCowan.theta_i, self)
-        self.c_i = ArrayField(WilsonCowan.c_i, self)
-        self.r_e = ArrayField(WilsonCowan.r_e, self)
-        self.r_i = ArrayField(WilsonCowan.r_i, self)
-        self.k_e = ArrayField(WilsonCowan.k_e, self)
-        self.k_i = ArrayField(WilsonCowan.k_i, self)
-        self.P = ArrayField(WilsonCowan.P, self)
-        self.Q = ArrayField(WilsonCowan.Q, self)
-        self.alpha_e = ArrayField(WilsonCowan.alpha_e, self)
-        self.alpha_i = ArrayField(WilsonCowan.alpha_i, self)
-        self.variables_of_interest = MultiSelectField(WilsonCowan.variables_of_interest, self)
+        self.c_ee = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ee, self)
+        self.c_ie = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ie, self)
+        self.c_ei = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ei, self)
+        self.c_ii = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ii, self)
+        self.tau_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().tau_e, self)
+        self.tau_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().tau_i, self)
+        self.a_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().a_e, self)
+        self.b_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().b_e, self)
+        self.c_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_e, self)
+        self.theta_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().theta_e, self)
+        self.a_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().a_i, self)
+        self.b_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().b_i, self)
+        self.theta_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().theta_i, self)
+        self.c_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_i, self)
+        self.r_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().r_e, self)
+        self.r_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().r_i, self)
+        self.k_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().k_e, self)
+        self.k_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().k_i, self)
+        self.P = ArrayField(ModelsEnum.WILSON_COWAN.get_class().P, self)
+        self.Q = ArrayField(ModelsEnum.WILSON_COWAN.get_class().Q, self)
+        self.alpha_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().alpha_e, self)
+        self.alpha_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().alpha_i, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.WILSON_COWAN.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -544,39 +567,40 @@ class LarterBreakspearModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(LarterBreakspearModelForm, self).__init__(prefix)
-        self.gCa = ArrayField(LarterBreakspear.gCa, self)
-        self.gK = ArrayField(LarterBreakspear.gK, self)
-        self.gL = ArrayField(LarterBreakspear.gL, self)
-        self.phi = ArrayField(LarterBreakspear.phi, self)
-        self.gNa = ArrayField(LarterBreakspear.gNa, self)
-        self.TK = ArrayField(LarterBreakspear.TK, self)
-        self.TCa = ArrayField(LarterBreakspear.TCa, self)
-        self.TNa = ArrayField(LarterBreakspear.TNa, self)
-        self.VCa = ArrayField(LarterBreakspear.VCa, self)
-        self.VK = ArrayField(LarterBreakspear.VK, self)
-        self.VL = ArrayField(LarterBreakspear.VL, self)
-        self.VNa = ArrayField(LarterBreakspear.VNa, self)
-        self.d_K = ArrayField(LarterBreakspear.d_K, self)
-        self.tau_K = ArrayField(LarterBreakspear.tau_K, self)
-        self.d_Na = ArrayField(LarterBreakspear.d_Na, self)
-        self.d_Ca = ArrayField(LarterBreakspear.d_Ca, self)
-        self.aei = ArrayField(LarterBreakspear.aei, self)
-        self.aie = ArrayField(LarterBreakspear.aie, self)
-        self.b = ArrayField(LarterBreakspear.b, self)
-        self.C = ArrayField(LarterBreakspear.C, self)
-        self.ane = ArrayField(LarterBreakspear.ane, self)
-        self.ani = ArrayField(LarterBreakspear.ani, self)
-        self.aee = ArrayField(LarterBreakspear.aee, self)
-        self.Iext = ArrayField(LarterBreakspear.Iext, self)
-        self.rNMDA = ArrayField(LarterBreakspear.rNMDA, self)
-        self.VT = ArrayField(LarterBreakspear.VT, self)
-        self.d_V = ArrayField(LarterBreakspear.d_V, self)
-        self.ZT = ArrayField(LarterBreakspear.ZT, self)
-        self.d_Z = ArrayField(LarterBreakspear.d_Z, self)
-        self.QV_max = ArrayField(LarterBreakspear.QV_max, self)
-        self.QZ_max = ArrayField(LarterBreakspear.QZ_max, self)
-        self.t_scale = ArrayField(LarterBreakspear.t_scale, self)
-        self.variables_of_interest = MultiSelectField(LarterBreakspear.variables_of_interest, self)
+        self.gCa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gCa, self)
+        self.gK = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gK, self)
+        self.gL = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gL, self)
+        self.phi = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().phi, self)
+        self.gNa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gNa, self)
+        self.TK = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().TK, self)
+        self.TCa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().TCa, self)
+        self.TNa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().TNa, self)
+        self.VCa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().VCa, self)
+        self.VK = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().VK, self)
+        self.VL = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().VL, self)
+        self.VNa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().VNa, self)
+        self.d_K = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().d_K, self)
+        self.tau_K = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().tau_K, self)
+        self.d_Na = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().d_Na, self)
+        self.d_Ca = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().d_Ca, self)
+        self.aei = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().aei, self)
+        self.aie = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().aie, self)
+        self.b = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().b, self)
+        self.C = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().C, self)
+        self.ane = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().ane, self)
+        self.ani = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().ani, self)
+        self.aee = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().aee, self)
+        self.Iext = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().Iext, self)
+        self.rNMDA = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().rNMDA, self)
+        self.VT = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().VT, self)
+        self.d_V = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().d_V, self)
+        self.ZT = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().ZT, self)
+        self.d_Z = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().d_Z, self)
+        self.QV_max = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().QV_max, self)
+        self.QZ_max = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().QZ_max, self)
+        self.t_scale = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().t_scale, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.LARTER_BREAKSPEAR.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():

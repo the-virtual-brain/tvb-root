@@ -30,7 +30,7 @@
 from tvb.datatypes.cortex import Cortex
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import *
-from tvb.simulator.models import Model
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.monitors import Monitor, SubSample, GlobalAverage, TemporalAverage
 from tvb.simulator.noise import Additive, Multiplicative, Noise
 
@@ -45,7 +45,7 @@ def config_h5_factory(config_class):
         return integrator_h5_factory(config_class)
     if issubclass(config_class, Coupling):
         return coupling_h5_factory(config_class)
-    if issubclass(config_class, Model):
+    if issubclass(config_class, ModelsEnum.BASE_MODEL.get_class()):
         return model_h5_factory(config_class)
     if issubclass(config_class, Monitor):
         return monitor_h5_factory(config_class)
@@ -107,36 +107,33 @@ def coupling_h5_factory(coupling_class):
 
 
 def model_h5_factory(model_class):
-    from tvb.simulator.models import Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, Hopfield, \
-        JansenRit, ZetterbergJansen, EpileptorRestingState, LarterBreakspear, Generic2dOscillator, \
-        ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, WilsonCowan, ReducedWongWang, ReducedWongWangExcInh, \
-        ZerlautFirstOrder, ZerlautSecondOrder, SupHopf, Linear, Kuramoto
     from tvb.core.entities.file.simulator.model_h5 import EpileptorH5, Epileptor2DH5, EpileptorCodim3H5, \
         EpileptorCodim3SlowModH5, HopfieldH5, JansenRitH5, ZetterbergJansenH5, EpileptorRestingStateH5, \
         LarterBreakspearH5, LinearH5, Generic2dOscillatorH5, KuramotoH5, ReducedSetFitzHughNagumoH5, \
-        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, ZerlautFirstOrderH5, \
-        ZerlautSecondOrderH5, SupHopfH5
+        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, \
+        ZerlautAdaptationFirstOrderH5, \
+        ZerlautAdaptationSecondOrderH5, SupHopfH5
     model_class_to_h5 = {
-        Epileptor: EpileptorH5,
-        Epileptor2D: Epileptor2DH5,
-        EpileptorCodim3: EpileptorCodim3H5,
-        EpileptorCodim3SlowMod: EpileptorCodim3SlowModH5,
-        Hopfield: HopfieldH5,
-        JansenRit: JansenRitH5,
-        ZetterbergJansen: ZetterbergJansenH5,
-        EpileptorRestingState: EpileptorRestingStateH5,
-        LarterBreakspear: LarterBreakspearH5,
-        Linear: LinearH5,
-        Generic2dOscillator: Generic2dOscillatorH5,
-        Kuramoto: KuramotoH5,
-        ReducedSetFitzHughNagumo: ReducedSetFitzHughNagumoH5,
-        ReducedSetHindmarshRose: ReducedSetHindmarshRoseH5,
-        WilsonCowan: WilsonCowanH5,
-        ReducedWongWang: ReducedWongWangH5,
-        ReducedWongWangExcInh: ReducedWongWangExcInhH5,
-        ZerlautFirstOrder: ZerlautFirstOrderH5,
-        ZerlautSecondOrder: ZerlautSecondOrderH5,
-        SupHopf: SupHopfH5
+        ModelsEnum.EPILEPTOR.get_class(): EpileptorH5,
+        ModelsEnum.EPILEPTOR_2D.get_class(): Epileptor2DH5,
+        ModelsEnum.EPILEPTOR_CODIM_3.get_class(): EpileptorCodim3H5,
+        ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(): EpileptorCodim3SlowModH5,
+        ModelsEnum.HOPFIELD.get_class(): HopfieldH5,
+        ModelsEnum.JANSEN_RIT.get_class(): JansenRitH5,
+        ModelsEnum.ZETTERBERG_JANSEN.get_class(): ZetterbergJansenH5,
+        ModelsEnum.EPILEPTOR_RS.get_class(): EpileptorRestingStateH5,
+        ModelsEnum.LARTER_BREAKSPEAR.get_class(): LarterBreakspearH5,
+        ModelsEnum.LINEAR.get_class(): LinearH5,
+        ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(): Generic2dOscillatorH5,
+        ModelsEnum.KURAMOTO.get_class(): KuramotoH5,
+        ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(): ReducedSetFitzHughNagumoH5,
+        ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(): ReducedSetHindmarshRoseH5,
+        ModelsEnum.WILSON_COWAN.get_class(): WilsonCowanH5,
+        ModelsEnum.REDUCED_WONG_WANG.get_class(): ReducedWongWangH5,
+        ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(): ReducedWongWangExcInhH5,
+        ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(): ZerlautAdaptationFirstOrderH5,
+        ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(): ZerlautAdaptationSecondOrderH5,
+        ModelsEnum.SUP_HOPF.get_class(): SupHopfH5
     }
 
     return model_class_to_h5.get(model_class)
