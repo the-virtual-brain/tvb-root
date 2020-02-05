@@ -13,7 +13,7 @@ RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark pytest-mock matplotlib
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
-RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask
+RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32 flask-restplus
 RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing sphinx==1.2.3 docutils==0.12
@@ -21,7 +21,7 @@ RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing sphinx==1.2.3 docu
 RUN conda create -y --name tvb-run python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
-RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32 flask-restplus
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing
@@ -42,7 +42,7 @@ RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git; \
-    cd tvb-root/tvb_build; \
+y    cd tvb-root/tvb_build; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
