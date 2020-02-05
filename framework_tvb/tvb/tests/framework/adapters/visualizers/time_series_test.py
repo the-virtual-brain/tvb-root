@@ -32,11 +32,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.neocom import h5
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.time_series import TimeSeriesDisplay
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestTimeSeries(TransactionalTestCase):
@@ -44,30 +42,14 @@ class TestTimeSeries(TransactionalTestCase):
     Unit-tests for Time Series Viewer.
     """
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.test_user = TestFactory.create_user('Time_Series_User')
-        self.test_project = TestFactory.create_project(self.test_user, 'Time_Series_Project')
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_launch(self, time_series_index_factory):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
         time_series_index = time_series_index_factory()
-        time_series = h5.load_from_index(time_series_index)
         viewer = TimeSeriesDisplay()
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = time_series.gid
+        view_model.time_series = UUID(time_series_index.gid)
         result = viewer.launch(view_model)
         expected_keys = ['t0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',
                          'mainContent', 'labels', 'labels_json', 'figsize', 'dt']
