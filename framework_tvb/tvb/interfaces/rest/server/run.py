@@ -58,7 +58,6 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 FLASK_PORT = 9090
 SECRET_KEY = 'super-secret'
 
-os.environ['FLASK_ENV'] = 'development'
 
 
 def initialize_tvb(arguments):
@@ -138,11 +137,8 @@ def initialize_flask():
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
 
-    if TvbProfile.env.is_distribution():
-        http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
-        http_server.serve_forever()
-    else:
-        app.run(host="0.0.0.0", debug=True, port=FLASK_PORT)
+    http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
+    http_server.serve_forever()
 
 
 if __name__ == '__main__':
