@@ -27,21 +27,35 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
+from functools import wraps
 
-from tvb.core.neotraits.h5 import H5File, Scalar
-from tvb.tests.framework.test_datatype import DummyDataType
+from tvb.interfaces.rest.commons.decoders import CustomDecoder
+from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
-class DummyDataTypeH5(H5File):
-    def __init__(self, path):
-        super(DummyDataTypeH5, self).__init__(path)
-        self.row1 = Scalar(DummyDataType.row1, self)
-        self.row2 = Scalar(DummyDataType.row2, self)
+def handle_response(func):
+    @wraps(func)
+    def decorator(*a, **b):
+        result = func(*a, **b)
+        response = result
+        classz = None
 
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (DummyDataType, bool, bool) -> None
-        super(DummyDataTypeH5, self).store(datatype, scalars_only, store_references)
+        if isinstance(result, tuple):
+            response = result[0]
+            classz = result[1]
 
-    def load_into(self, datatype):
-        # type: (DummyDataType) -> None
-        super(DummyDataTypeH5, self).load_into(datatype)
+        content = response.content
+        successful_call = response.ok
+
+        if successful_call:
+            if classz is not None:
+                return json.loads(content.decode('utf-8'),
+                                  object_hook=lambda d: classz(**d) if '__type__' not in d
+                                  else CustomDecoder.date_hook(d))
+            return json.loads(content.decode('utf-8'), cls=CustomDecoder)
+
+        decoded_dict = json.loads(content.decode('utf-8'))
+        raise ClientException(decoded_dict['message'], decoded_dict['code'])
+
+    return decorator

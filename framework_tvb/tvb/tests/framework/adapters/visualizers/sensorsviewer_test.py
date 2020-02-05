@@ -33,19 +33,18 @@
 """
 
 import os
-
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.obj
 import tvb_data.sensors
-from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterForm
+from uuid import UUID
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.sensors import SensorsInternal, EEG_POLYMORPHIC_IDENTITY, \
-    MEG_POLYMORPHIC_IDENTITY
+from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY
 from tvb.datatypes.surfaces import EEG_CAP
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -83,32 +82,36 @@ class TestSensorViewers(TransactionalTestCase):
         """
         Check that all required keys are present in output from EegSensorViewer launch.
         """
-        ## Import Sensors
+        # Import Sensors
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterForm.options['EEG Sensors'])
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
+                                   SensorsImporterModel.OPTIONS['EEG Sensors'])
         field = FilterChain.datatype + '.sensors_type'
         filters = FilterChain('', [field], [EEG_POLYMORPHIC_IDENTITY], ['=='])
-        sensors = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
+        sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
-        ## Import EEGCap
+        # Import EEGCap
         cap_path = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'eeg_cap.obj')
         TestFactory.import_surface_obj(self.test_user, self.test_project, cap_path, EEG_CAP)
         field = FilterChain.datatype + '.surface_type'
         filters = FilterChain('', [field], [EEG_CAP], ['=='])
-        eeg_cap_surface = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
+        eeg_cap_surface_index = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
 
         viewer = SensorsViewer()
+        view_model = viewer.get_view_model_class()()
+        view_model.sensors = UUID(sensors_index.gid)
         viewer.current_project_id = self.test_project.id
 
-        ## Launch with EEG Cap selected
-        result = viewer.launch(sensors, eeg_cap_surface)
+        # Launch without EEG Cap
+        result = viewer.launch(view_model)
+        self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
+
+        # Launch with EEG Cap selected
+        view_model.shell_surface = UUID(eeg_cap_surface_index.gid)
+        result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
             assert result[key] is not None, "Value at key %s should not be None" % key
-
-        ## Launch without EEG Cap
-        result = viewer.launch(sensors)
-        self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
 
     def test_launch_meg(self):
         """
@@ -116,15 +119,19 @@ class TestSensorViewers(TransactionalTestCase):
         """
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterForm.options['MEG Sensors'])
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
+                                   SensorsImporterModel.OPTIONS['MEG Sensors'])
+
         field = FilterChain.datatype + '.sensors_type'
         filters = FilterChain('', [field], [MEG_POLYMORPHIC_IDENTITY], ['=='])
-        sensors = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
+        sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
+        view_model = viewer.get_view_model_class()()
+        view_model.sensors = UUID(sensors_index.gid)
 
-        result = viewer.launch(sensors)
+        result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_MEG, result)
 
     def test_launch_internal(self):
@@ -132,11 +139,12 @@ class TestSensorViewers(TransactionalTestCase):
         Check that all required keys are present in output from InternalSensorViewer launch.
         """
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt.bz2')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterForm.options['Internal Sensors'])
-        sensors = TestFactory.get_entity(self.test_project, SensorsIndex)
-
+        sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
+                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
         viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
+        view_model = viewer.get_view_model_class()()
+        view_model.sensors = UUID(sensors_index.gid)
 
-        result = viewer.launch(sensors)
+        result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_INTERNAL, result)

@@ -30,49 +30,27 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
-import os
-import tvb_data
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-import tvb_data.sensors as sensors_dataset
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestEEGMonitor(TransactionalTestCase):
     """
     Unit-tests for EEG Viewer.
     """
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.test_user = TestFactory.create_user("EEG_Monitor_User")
-        self.test_project = TestFactory.create_project(self.test_user, "EEG_Monitor_Project")
-
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_launch(self, time_series_index_factory):
         """
-        Check that all required keys are present in output from BrainViewer launch.
+        Check that all required keys are present in output from EegMonitor launch.
         """
-
-        time_series = time_series_index_factory()
+        time_series_index = time_series_index_factory()
         viewer = EegMonitor()
-        result = viewer.launch(time_series)
+        view_model = viewer.get_view_model_class()()
+        view_model.input_data = UUID(time_series_index.gid)
+        result = viewer.launch(view_model)
         expected_keys = ['tsNames', 'groupedLabels', 'tsModes', 'tsStateVars', 'longestChannelLength',
                          'label_x', 'entities', 'page_size', 'number_of_visible_points',
                          'extended_view', 'initialSelection', 'ag_settings', 'ag_settings']
@@ -89,4 +67,3 @@ class TestEEGMonitor(TransactionalTestCase):
 
         for key in expected_ag_settings:
             assert key in ag_settings, "ag_settings should have the key %s" % key
-

@@ -26,25 +26,23 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+#
 
-from sqlalchemy import Column, Integer, String, ForeignKey
-from tvb.core.entities.model.model_datatype import DataType
-import numpy
+from flask_restplus import Api
+from tvb.basic.exceptions import TVBException
 
 
-class DummyDataTypeIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+class RestApi(Api):
+    def handle_error(self, e):
+        if not isinstance(e, TVBException):
+            super().handle_error(e)
 
-    row1 = Column(String)
-    row2 = Column(String)
+        code = getattr(e, 'code', 500)
+        message = getattr(e, 'message', 'Internal Server Error')
+        to_dict = getattr(e, 'to_dict', None)
 
-    def fill_from_has_traits(self, datatype):
-        # type: (HasTraits) -> None
-        super(DummyDataTypeIndex, self).fill_from_has_traits(datatype)
-        self.row1 = datatype.row1
-        self.row2 = datatype.row2
-
-    @staticmethod
-    def accepted_filters():
-        filters = DataType.accepted_filters()
-        return filters
+        if to_dict:
+            data = to_dict()
+        else:
+            data = {'message': message}
+        return self.make_response(data, code)

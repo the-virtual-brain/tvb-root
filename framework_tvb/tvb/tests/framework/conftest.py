@@ -36,13 +36,10 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.basic.profile import TvbProfile
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
-from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
-from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
@@ -53,11 +50,14 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
-from tvb.tests.framework.test_datatype import DummyDataType
-from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 
 
 def pytest_addoption(parser):

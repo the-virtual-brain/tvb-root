@@ -39,20 +39,45 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
+
+
+class EegMonitorModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label='Input Data',
+        doc='Time series to display.'
+    )
+
+    data_2 = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        required=False,
+        label='Input Data 2',
+        doc='Time series to display.'
+    )
+
+    data_3 = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        required=False,
+        label='Input Data 3',
+        doc='Time series to display.'
+    )
 
 
 class EegMonitorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(EegMonitorForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Input Data', doc='Time series to display.')
-        self.data_2 = DataTypeSelectField(self.get_required_datatype(), self, name='data_2', label='Input Data 2',
-                                          doc='Time series to display.')
-        self.data_3 = DataTypeSelectField(self.get_required_datatype(), self, name='data_3', label='Input Data 3',
-                                          doc='Time series to display.')
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self, name='data_3')
+
+    @staticmethod
+    def get_view_model():
+        return EegMonitorModel
 
     @staticmethod
     def get_required_datatype():
@@ -85,7 +110,8 @@ class EegMonitor(ABCDisplayer):
     def get_form_class(self):
         return EegMonitorForm
 
-    def get_required_memory_size(self, time_series):
+    def get_required_memory_size(self, view_model):
+        # type: (EegMonitorModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -208,16 +234,32 @@ class EegMonitor(ABCDisplayer):
 
         return parameters
 
-    def generate_preview(self, input_data, data_2=None, data_3=None, figure_size=None):
-        params = self.compute_parameters(input_data, data_2, data_3, is_preview=True)
+    def _load_input_indexes(self, view_model):
+        main_time_series_index = self.load_entity_by_gid(view_model.input_data.hex)
+        time_series_index2 = None
+        time_series_index3 = None
+
+        if view_model.data_2:
+            time_series_index2 = self.load_entity_by_gid(view_model.data_2.hex)
+        if view_model.data_3:
+            time_series_index3 = self.load_entity_by_gid(view_model.data_3.hex)
+        return main_time_series_index, time_series_index2, time_series_index3
+
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (EegMonitorModel, list) -> dict
+        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
+        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3,
+                                         is_preview=True)
         pages = dict(channelsPage=None)
         return self.build_display_result("eeg/preview", params, pages)
 
-    def launch(self, input_data, data_2=None, data_3=None):
+    def launch(self, view_model):
+        # type: (EegMonitorModel) -> dict
         """
         Compute visualizer's page
         """
-        params = self.compute_parameters(input_data, data_2, data_3)
+        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
+        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3)
         pages = dict(controlPage="eeg/controls", channelsPage="commons/channel_selector.html")
         return self.build_display_result("eeg/view", params, pages=pages)
 

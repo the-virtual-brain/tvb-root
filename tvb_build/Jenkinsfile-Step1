@@ -58,18 +58,18 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-run
-                    rm -rf TEST_OUT
-                    mkdir TEST_OUT
+                    rm -rf TEST_OUTPUT
+                    mkdir TEST_OUTPUT
                     cd tvb_build
                     bash install_full_tvb.sh
                     cd ../scientific_library
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_lib.xml --junitxml=../TEST_OUT/results_lib.xml
+                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_lib.xml --junitxml=../TEST_OUTPUT/results_lib.xml
                     cd ../framework_tvb
-                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUT/coverage_frw.xml --junitxml=../TEST_OUT/results_frw.xml
+                    py.test --cov-config .coveragerc --cov=tvb tvb/tests --cov-branch --cov-report xml:../TEST_OUTPUT/coverage_frw.xml --junitxml=../TEST_OUTPUT/results_frw.xml
                     exit 0
                 '''
-                 junit 'TEST_OUT/results_*.xml'
-                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUT/coverage_*.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
+                 junit 'TEST_OUTPUT/results_*.xml'
+                 step([$class: 'CoberturaPublisher', autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'TEST_OUTPUT/coverage_*.xml', failUnhealthy: false, failUnstable: false, maxNumberOfBuilds: 0, onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false])
             }
         }
     }

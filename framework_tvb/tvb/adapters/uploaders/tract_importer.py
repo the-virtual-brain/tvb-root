@@ -37,11 +37,13 @@ from nibabel import trackvis
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
-from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -58,15 +60,29 @@ def chunk_iter(iterable, n):
         yield chunk
 
 
+class TrackImporterModel(UploaderViewModel):
+    data_file = Str(
+        label='Please select file to import'
+    )
+
+    region_volume = DataTypeGidAttr(
+        linked_datatype=RegionVolumeMapping,
+        required=False,
+        label='Reference Volume Map'
+    )
+
+
 class TrackImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TrackImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.trk', self, name='data_file', required=True,
-                                     label='Please select file to import')
-        self.region_volume = DataTypeSelectField(RegionVolumeMappingIndex, self, name='region_volume',
-                                                 label='Reference Volume Map')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self, name='data_file')
+        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self, name='region_volume')
+
+    @staticmethod
+    def get_view_model():
+        return TrackImporterModel
 
 
 class TrackZipImporterForm(TrackImporterForm):
@@ -74,8 +90,7 @@ class TrackZipImporterForm(TrackImporterForm):
     def __init__(self, prefix='', project_id=None):
         super(TrackZipImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.zip', self, name='data_file', required=True,
-                                     label='Please select file to import')
+        self.data_file.required_type = '.zip'
 
 
 class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
@@ -217,13 +232,15 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         return TrackZipImporterForm
 
     @transactional
-    def launch(self, data_file, region_volume=None):
-        datatype = self._base_before_launch(data_file, region_volume)
+    def launch(self, view_model):
+        # type: (TrackImporterModel) -> [TractsIndex]
+        region_volume_index = self.load_entity_by_gid(view_model.region_volume.hex)
+        datatype = self._base_before_launch(view_model.data_file, region_volume_index)
 
         tract_start_indices = [0]
         tract_region = []
 
-        with TvbZip(data_file) as zipf:
+        with TvbZip(view_model.data_file) as zipf:
             for tractf in sorted(zipf.namelist()):  # one track per file
                 if not tractf.endswith('.txt'):  # omit directories and other non track files
                     continue
@@ -233,7 +250,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 tract_start_indices.append(tract_start_indices[-1] + len(tract_vertices))
                 datatype.store_data_chunk("vertices", tract_vertices, grow_dimension=0, close_file=False)
 
-                if region_volume is not None:
+                if region_volume_index is not None:
                     tract_region.append(self._get_tract_region(tract_vertices[0]))
                 vertices_file.close()
 

@@ -244,12 +244,12 @@ class TestBurstService(BaseTestCase):
         Try removing a started burst, which should result in it getting canceled.
         """
         burst_entity = self._prepare_and_launch_async_burst(length=20000)
-        assert BurstConfiguration2.BURST_RUNNING == burst_entity.status,\
+        assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
                          'A 20000 length simulation should still be started immediately after launch.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
         assert not got_deleted, "Burst should be cancelled before deleted."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert BurstConfiguration2.BURST_CANCELED == burst_entity.status,\
+        assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
                          'Deleting a running burst should just cancel it first.'
         got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
         assert got_deleted, "Burst should be deleted if status is cancelled."
@@ -317,7 +317,7 @@ class TestBurstService(BaseTestCase):
         burst_config.update_simulator_configuration(kwargs_replica)
         burst_id, _ = self.burst_service.launch_burst(burst_config, 0, first_step_algo.id, self.test_user.id)
         burst_config = dao.get_burst_by_id(burst_id)
-        assert burst_config.status in (BurstConfiguration2.BURST_FINISHED, BurstConfiguration2.BURST_RUNNING),\
+        assert burst_config.status in (BurstConfiguration.BURST_FINISHED, BurstConfiguration.BURST_RUNNING),\
                         "Burst not launched successfully!"
         # Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config)
@@ -384,7 +384,7 @@ class TestBurstService(BaseTestCase):
         group and a DataType group for the results of the simulations and for the metric steps.
         """
         burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=120)
-        if burst_config.status != BurstConfiguration2.BURST_FINISHED:
+        if burst_config.status != BurstConfiguration.BURST_FINISHED:
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Burst should have finished successfully.")
 
@@ -466,7 +466,7 @@ class TestBurstService(BaseTestCase):
         :param timeout: the maximum number of seconds to wait after the burst
         """
         waited = 0
-        while burst_config.status == BurstConfiguration2.BURST_RUNNING and waited <= timeout:
+        while burst_config.status == BurstConfiguration.BURST_RUNNING and waited <= timeout:
             sleep(0.5)
             waited += 0.5
             burst_config = dao.get_burst_by_id(burst_config.id)
@@ -475,11 +475,11 @@ class TestBurstService(BaseTestCase):
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Timed out waiting for simulations to finish. We will cancel it")
 
-        if error_expected and burst_config.status != BurstConfiguration2.BURST_ERROR:
+        if error_expected and burst_config.status != BurstConfiguration.BURST_ERROR:
             self.burst_service.stop_burst(burst_config)
             raise AssertionError("Burst should have failed due to invalid input data.")
 
-        if (not error_expected) and burst_config.status != BurstConfiguration2.BURST_FINISHED:
+        if (not error_expected) and burst_config.status != BurstConfiguration.BURST_FINISHED:
             msg = "Burst status should have been FINISH. Instead got %s %s" % (burst_config.status,
                                                                                burst_config.error_message)
             self.burst_service.stop_burst(burst_config)
@@ -534,7 +534,7 @@ class TestBurstService(BaseTestCase):
             "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}
-        operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id,
+        operations, group = self.operation_service.prepare_operations(self.test_user.id, self.test_project,
                                                                       first_step_algorithm,
                                                                       first_step_algorithm.algorithm_category,
                                                                       metadata, **kwargs)
