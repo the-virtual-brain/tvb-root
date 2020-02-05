@@ -30,7 +30,6 @@
 
 import os
 import sys
-
 from flask import Flask
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -47,6 +46,9 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetOpe
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from dotenv import load_dotenv
+# from gevent.pywsgi import WSGIServer
+
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -54,6 +56,10 @@ LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 FLASK_PORT = 9090
+
+# Comment these lines when running in production mode
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 
 def initialize_tvb(arguments):
@@ -130,6 +136,9 @@ def initialize_flask():
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
 
+    # Uncomment these lines and comment app.run... for running Flask in production mode
+    # http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
+    # http_server.serve_forever()
     app.run(host="0.0.0.0", debug=True, port=FLASK_PORT)
 
 
