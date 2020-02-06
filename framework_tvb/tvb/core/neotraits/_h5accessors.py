@@ -35,6 +35,7 @@ import numpy
 import scipy.sparse
 import typing
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
 
 
@@ -85,13 +86,18 @@ class Scalar(Accessor):
         # type: (typing.Union[str, int, float]) -> None
         # noinspection PyProtectedMember
         val = self.trait_attribute._validate_set(None, val)
-        self.owner.storage_manager.set_metadata({self.field_name: val})
+        if val is not None:
+            self.owner.storage_manager.set_metadata({self.field_name: val})
 
     def load(self):
         # type: () -> typing.Union[str, int, float]
         # assuming here that the h5 will return the type we stored.
         # if paranoid do self.trait_attribute.field_type(value)
-        return self.owner.storage_manager.get_metadata()[self.field_name]
+        metadata = self.owner.storage_manager.get_metadata()
+        if self.field_name in metadata:
+            return metadata[self.field_name]
+        else:
+            raise MissingDataSetException(self.field_name)
 
 
 class Uuid(Scalar):
