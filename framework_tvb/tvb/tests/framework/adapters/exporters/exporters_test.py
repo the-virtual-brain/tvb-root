@@ -38,6 +38,7 @@ import zipfile
 from contextlib import closing
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
@@ -186,7 +187,7 @@ class TestExporters(TransactionalTestCase):
         simulator_index.fk_from_operation = operation.id
         simulator_index = dao.store_entity(simulator_index)
 
-        burst_configuration = BurstConfiguration2(self.test_project.id, simulator_index.id)
+        burst_configuration = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_configuration = dao.store_entity(burst_configuration)
         simulator_index.fk_parent_burst = burst_configuration.id
         simulator_index = dao.store_entity(simulator_index)
