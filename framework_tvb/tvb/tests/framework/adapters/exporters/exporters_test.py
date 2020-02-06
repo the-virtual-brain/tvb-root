@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BurstConfiguration
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -186,7 +186,7 @@ class TestExporters(TransactionalTestCase):
         simulator_index.fk_from_operation = operation.id
         simulator_index = dao.store_entity(simulator_index)
 
-        burst_configuration = BurstConfiguration2(self.test_project.id, simulator_index.id)
+        burst_configuration = BurstConfiguration(self.test_project.id, simulator_index.id)
         burst_configuration = dao.store_entity(burst_configuration)
         simulator_index.fk_parent_burst = burst_configuration.id
         simulator_index = dao.store_entity(simulator_index)
