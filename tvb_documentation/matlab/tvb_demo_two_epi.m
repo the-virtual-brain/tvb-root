@@ -8,15 +8,18 @@ tvb_setup
 %% Build simulator
 
 % Create epileptor model.
-model = py.tvb.simulator.models.Epileptor();
+model = py.tvb.simulator.models.epileptor.Epileptor();
 
 % Difference coupling between nodes' coupling variables
-coupling = py.tvb.simulator.coupling.Difference(pyargs('a', 1e-3));
+coupling = py.tvb.simulator.coupling.Difference(pyargs('a', py.numpy.array({1e-3})));
 
 % 2 nodes, random connection weights, zero tract lengths
 conn = py.tvb.datatypes.connectivity.Connectivity();
-conn.weights = py.numpy.random.rand(2, 2);
-conn.tract_lengths = py.numpy.zeros([2 2]);
+p2 = py.int(2);
+conn.weights = py.numpy.random.rand(p2, p2);
+conn.tract_lengths = py.numpy.zeros({p2 p2});
+conn.region_labels = py.numpy.array({'left' 'right'});
+conn.centres = py.numpy.zeros({p2 py.int(3)});
 
 % Noise per state variable
 noise = py.tvb.simulator.noise.Additive(...
@@ -33,14 +36,14 @@ sim = py.tvb.simulator.simulator.Simulator(pyargs(...
     'model', model, ...
     'coupling', coupling, ...
     'connectivity', conn, ...
-    'monitors', monitor, ...
+    'monitors', py.list({monitor}), ...
     'simulation_length', 5000));
 
 % Perform internal configuration
 configure(sim);
 
 % Spatialize epileptor excitability
-model.x0 = [-2.0, -1.6];
+model.x0 = py.numpy.array([-2.0, -1.6]);
 
 %% Run simulation
 monitor_output = run(sim);
