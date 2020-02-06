@@ -274,6 +274,7 @@ def region_simulation_factory(connectivity_factory):
 
     return build
 
+
 @pytest.fixture()
 def time_series_factory():
     def build(data=None):
@@ -283,11 +284,13 @@ def time_series_factory():
             data = numpy.zeros((time.size, 1, 3, 1))
             data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
             data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
-            data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
+            data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(
+                2 * numpy.pi * time / 1000.0 * 300)
 
         return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
 
     return build
+
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
@@ -315,7 +318,7 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 @pytest.fixture()
 def time_series_region_index_factory(operation_factory):
-    def build(connectivity, region_mapping):
+    def build(connectivity, region_mapping, test_user=None, test_project=None):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
@@ -323,9 +326,10 @@ def time_series_region_index_factory(operation_factory):
         data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
                            numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
 
-        ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity, region_mapping=region_mapping)
+        ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity,
+                              region_mapping=region_mapping)
 
-        op = operation_factory()
+        op = operation_factory(test_user=test_user, test_project=test_project)
 
         ts_db = TimeSeriesRegionIndex()
         ts_db.fk_from_operation = op.id
@@ -339,6 +343,7 @@ def time_series_region_index_factory(operation_factory):
 
         ts_db = dao.store_entity(ts_db)
         return ts_db
+
     return build
 
 
@@ -346,6 +351,7 @@ def time_series_region_index_factory(operation_factory):
 def dummy_datatype_factory():
     def build():
         return DummyDataType()
+
     return build
 
 
@@ -353,6 +359,7 @@ def dummy_datatype_factory():
 def dummy_datatype2_index_factory():
     def build(subject=None, state=None):
         return DummyDataType2Index(subject=subject, state=state)
+
     return build
 
 
@@ -383,7 +390,6 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 @pytest.fixture()
 def datatype_measure_factory(operation_factory):
     def build(analyzed_entity):
-
         measure = DatatypeMeasureIndex()
         measure.metrics = '{"v": 3}'
         measure.source = analyzed_entity
@@ -395,7 +401,8 @@ def datatype_measure_factory(operation_factory):
 
 
 @pytest.fixture()
-def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory, operation_factory):
+def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory,
+                           operation_factory):
     def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
 
         range_1 = ["row1", [1, 2, 3]]
@@ -496,4 +503,5 @@ def test_adapter_factory():
             stored_adapter.id = inst_from_db.id
 
         dao.store_entity(stored_adapter, inst_from_db is not None)
+
     return build

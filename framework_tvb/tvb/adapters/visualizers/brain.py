@@ -116,10 +116,11 @@ class BrainViewer(ABCSurfaceDisplayer):
         used_shape = (overall_shape[0] / (self.PAGE_SIZE * 2.0), overall_shape[1], overall_shape[2], overall_shape[3])
         return numpy.prod(used_shape) * 8.0
 
-    def generate_preview(self, time_series, shell_surface=None, figure_size=None):
+    def generate_preview(self, view_model, figure_size=None):
         """
         Generate the preview for the burst page
         """
+        time_series = self.load_entity_by_gid(view_model.time_series.hex)
         self.populate_surface_fields(time_series)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
