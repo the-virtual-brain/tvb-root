@@ -35,12 +35,12 @@ from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.resources.rest_resource import SecuredRestResource
 
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
-class RetrieveDatatypeResource(RestResource):
+class RetrieveDatatypeResource(SecuredRestResource):
 
     @staticmethod
     def get(datatype_gid):
@@ -56,7 +56,7 @@ class RetrieveDatatypeResource(RestResource):
         return flask.send_file(h5_file.path, as_attachment=True, attachment_filename=file_name)
 
 
-class GetOperationsForDatatypeResource(RestResource):
+class GetOperationsForDatatypeResource(SecuredRestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

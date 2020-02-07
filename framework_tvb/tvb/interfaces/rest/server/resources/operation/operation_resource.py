@@ -40,16 +40,14 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
-from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, token_required
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.resources.rest_resource import SecuredRestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
 
-class GetOperationStatusResource(RestResource):
-    method_decorators = [rest_jsonify, token_required]
+class GetOperationStatusResource(SecuredRestResource):
 
     def get(self, operation_gid):
         """
@@ -62,8 +60,7 @@ class GetOperationStatusResource(RestResource):
         return operation.status
 
 
-class GetOperationResultsResource(RestResource):
-    method_decorators = [rest_jsonify, token_required]
+class GetOperationResultsResource(SecuredRestResource):
 
     @staticmethod
     def get(operation_gid):
@@ -82,8 +79,7 @@ class GetOperationResultsResource(RestResource):
         return [DataTypeDto(datatype) for datatype in data_types]
 
 
-class LaunchOperationResource(RestResource):
-    method_decorators = [rest_jsonify, token_required]
+class LaunchOperationResource(SecuredRestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

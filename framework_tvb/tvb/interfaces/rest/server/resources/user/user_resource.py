@@ -31,8 +31,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import UserDto, ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.decorators.rest_decorators import token_required, rest_jsonify
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredRestResource
 from flask import make_response, jsonify, request
 import jwt
 import datetime
@@ -65,8 +64,7 @@ class AuthenticateResource(RestResource):
         return make_response('Could not verify', 401, {'WWWW-Authenticate': 'Basic realm="Incorrect password!"'})
 
 
-class GetUsersResource(RestResource):
-    method_decorators = [rest_jsonify, token_required]
+class GetUsersResource(SecuredRestResource):
 
     def get(self):
         """
@@ -76,8 +74,7 @@ class GetUsersResource(RestResource):
         return [UserDto(user) for user in users]
 
 
-class GetProjectsListResource(RestResource):
-    method_decorators = [rest_jsonify, token_required]
+class GetProjectsListResource(SecuredRestResource):
 
     def get(self, username):
         """

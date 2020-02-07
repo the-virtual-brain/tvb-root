@@ -31,6 +31,7 @@ import flask
 from flask_restplus import Resource
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException
+from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, token_required
 
 
 class RestResource(Resource):
@@ -44,3 +45,7 @@ class RestResource(Resource):
             raise BadRequestException('Only %s files are allowed!' % file_extension)
 
         return file
+
+
+class SecuredRestResource(RestResource):
+    method_decorators = [rest_jsonify, token_required]
