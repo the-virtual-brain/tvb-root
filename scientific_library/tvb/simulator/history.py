@@ -200,6 +200,7 @@ class CatRingBuffer(HasGradient):
         "Non-in-place update for delay buffer 'trace'."
         self.state = new_state
         self.trpos = (self.trpos + 1) % self.nt
+        # TODO work out a CoW scheme for this
         self.trace = anp.concatenate([
             self.trace[:self.trpos],
             self.state.reshape((1, -1)),
