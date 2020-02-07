@@ -31,7 +31,7 @@
 """
 A displayer for the cross coherence of a time series.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

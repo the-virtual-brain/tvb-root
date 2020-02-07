@@ -32,7 +32,7 @@
 Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 
 .. moduleauthor:: Francesca Melozzi <france.melozzi@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

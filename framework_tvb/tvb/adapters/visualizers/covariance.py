@@ -31,7 +31,7 @@
 """
 A displayer for covariance.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

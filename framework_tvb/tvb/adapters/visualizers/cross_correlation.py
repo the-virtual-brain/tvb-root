@@ -32,7 +32,7 @@
 A displayer for cross correlation.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin

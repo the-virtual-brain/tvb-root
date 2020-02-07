@@ -38,7 +38,7 @@ Usage::
     run generate_model_phase_plane_images.py
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

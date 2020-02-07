@@ -31,7 +31,7 @@
 """
 Experimental OpenCL models implementations.
 
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

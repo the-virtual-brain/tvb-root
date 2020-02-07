@@ -33,7 +33,7 @@ Surface relates DataTypes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 import scipy.sparse

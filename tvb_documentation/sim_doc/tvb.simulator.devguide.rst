@@ -1,5 +1,5 @@
 .. moduleauthor:: Stuart Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 
 =============================
