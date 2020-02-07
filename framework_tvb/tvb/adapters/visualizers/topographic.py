@@ -43,8 +43,10 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
 
 
 class TopographyCalculations(object):
@@ -165,22 +167,45 @@ class TopographyCalculations(object):
         return points_positions - step
 
 
+class TopographicViewerModel(ViewModel):
+    data_0 = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        label='Connectivity Measures 1',
+        doc='Punctual values for each node in the connectivity matrix. This will '
+            'give the colors of the resulting topographic image.'
+    )
+
+    data_1 = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        required=False,
+        label='Connectivity Measures 2',
+        doc='Comparative values'
+    )
+
+    data_2 = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        required=False,
+        label='Connectivity Measures 3',
+        doc='Comparative values'
+    )
+
+
 class TopographicViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TopographicViewerForm, self).__init__(prefix, project_id)
-        self.data_0 = DataTypeSelectField(self.get_required_datatype(), self, name='data_0', required=True,
-                                          label='Connectivity Measures 1', conditions=self.get_filters(),
-                                          doc='Punctual values for each node in the connectivity matrix. This will '
-                                              'give the colors of the resulting topographic image.')
-        self.data_1 = DataTypeSelectField(self.get_required_datatype(), self, name='data_1',
-                                          label='Connectivity Measures 2', doc='Comparative values',
-                                          conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                 operations=["=="], values=[1]))
-        self.data_2 = DataTypeSelectField(self.get_required_datatype(), self, name='data_2',
-                                          label='Connectivity Measures 3', doc='Comparative values',
-                                          conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                 operations=["=="], values=[1]))
+        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
+                                               conditions=self.get_filters())
+        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
+                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                                                      operations=["=="], values=[1]))
+        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
+                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
+                                                                      operations=["=="], values=[1]))
+
+    @staticmethod
+    def get_view_model():
+        return TopographicViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -206,23 +231,27 @@ class TopographicViewer(ABCDisplayer):
     def get_form_class(self):
         return TopographicViewerForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TopographicViewerModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         return -1
 
-    def generate_preview(self, data_0, data_1=None, data_2=None, figure_size=None):
-        return self.launch(data_0, data_1, data_2)
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (TopographicViewerModel, list) -> dict
+        return self.launch(view_model)
 
-    def launch(self, data_0, data_1=None, data_2=None):
+    def launch(self, view_model):
+        # type: (TopographicViewerModel) -> dict
 
         connectivities_idx = []
         measures_ht = []
-        for measure in [data_0, data_1, data_2]:
+        for measure in [view_model.data_0, view_model.data_1, view_model.data_2]:
             if measure is not None:
-                measures_ht.append(h5.load_from_index(measure))
-                conn_index = self.load_entity_by_gid(measure.connectivity_gid)
+                measure_index = self.load_entity_by_gid(measure.hex)
+                measures_ht.append(h5.load_from_index(measure_index))
+                conn_index = self.load_entity_by_gid(measure_index.connectivity_gid)
                 connectivities_idx.append(conn_index)
 
         with h5.h5_file_for_index(connectivities_idx[0]) as conn_h5:

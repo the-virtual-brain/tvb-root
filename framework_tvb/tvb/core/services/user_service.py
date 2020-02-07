@@ -49,7 +49,6 @@ from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import hash_password
 
-
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
 SUBJECT_VALIDATE = '[TVB] Account validated'
@@ -244,6 +243,13 @@ class UserService:
         pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
 
+    @staticmethod
+    def fetch_all_users(page_start=0, page_size=USERS_PAGE_SIZE):
+        """
+        Return all users from the database without pagination
+        """
+        return dao.get_all_users(page_size=page_size, page_start=page_start)
+
     def edit_user(self, edited_user, old_password=None):
         """
         Retrieve a user by and id, then modify it's role and validate status.
@@ -298,6 +304,13 @@ class UserService:
         Retrieves a user by its id.
         """
         return dao.get_user_by_id(user_id)
+
+    @staticmethod
+    def get_user_by_name(username):
+        """
+        Retrieves a user by its username.
+        """
+        return dao.get_user_by_name(username)
 
     @staticmethod
     def compute_user_generated_disk_size(user_id):

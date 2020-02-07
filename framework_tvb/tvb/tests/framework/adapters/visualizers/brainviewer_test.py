@@ -31,9 +31,11 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
+from uuid import UUID
 import tvb_data.surfaceData
-import tvb_data.regionMapping as demo_data
+import tvb_data.regionMapping
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -54,8 +56,7 @@ class TestBrainViewer(TransactionalTestCase):
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
     face = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-
-    region_mapping_path = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
+    region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
 
     def transactional_setup_method(self):
         """
@@ -63,19 +64,21 @@ class TestBrainViewer(TransactionalTestCase):
         creates a test user, a test project, a connectivity, a cortical surface and a face surface;
         imports a CFF data-set
         """
-
         self.test_user = TestFactory.create_user('Brain_Viewer_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Brain_Viewer_Project')
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
+        connectivity_idx = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert connectivity_idx is not None
 
         self.face_surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.face, CORTICAL)
 
-        self.region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project,
-                                                                self.region_mapping_path, self.face_surface.gid, self.connectivity.gid)
+        region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project,
+                                                           self.region_mapping_path, self.face_surface.gid,
+                                                           connectivity_idx.gid)
+        self.connectivity = h5.load_from_index(connectivity_idx)
+        self.region_mapping = h5.load_from_index(region_mapping)
 
     def transactional_teardown_method(self):
         """
@@ -87,13 +90,14 @@ class TestBrainViewer(TransactionalTestCase):
         """
         Check that all required keys are present in output from BrainViewer launch.
         """
-
-        conn = h5.load_from_index(self.connectivity)
-        rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
+        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
+                                                             self.test_user, self.test_project)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(time_series=time_series, shell_surface=self.face_surface)
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = UUID(time_series_index.gid)
+        view_model.shell_surface = UUID(self.face_surface.gid)
+        result = viewer.launch(view_model)
 
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None
@@ -103,20 +107,25 @@ class TestBrainViewer(TransactionalTestCase):
         """
         Brainviewer should know required memory so expect positive number and not -1.
         """
-        conn = h5.load_from_index(self.connectivity)
-        rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
-        assert BrainViewer().get_required_memory_size(time_series) > 0
+        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
+                                                             self.test_user, self.test_project)
+        viewer = BrainViewer()
+        viewer.current_project_id = self.test_project.id
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = UUID(time_series_index.gid)
+        assert viewer.get_required_memory_size(view_model) > 0
 
     def test_generate_preview(self, time_series_region_index_factory):
         """
         Check that all required keys are present in preview generate by BrainViewer.
         """
-        conn = h5.load_from_index(self.connectivity)
-        rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
+        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
+                                                             self.test_user, self.test_project)
         viewer = BrainViewer()
-        result = viewer.generate_preview(time_series, figure_size=(500, 200))
+        viewer.current_project_id = self.test_project.id
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = UUID(time_series_index.gid)
+        result = viewer.generate_preview(view_model, figure_size=(500, 200))
         for key in TestBrainViewer.EXPECTED_KEYS:
             assert key in result and result[key] is not None, key
 
@@ -124,13 +133,14 @@ class TestBrainViewer(TransactionalTestCase):
         """
         Tests successful launch of a BrainEEG and that all required keys are present in returned template dictionary
         """
-        conn = h5.load_from_index(self.connectivity)
-        rm = h5.load_from_index(self.region_mapping)
-        time_series = time_series_region_index_factory(conn, rm)
-        #time_series.configure()
+        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
+                                                             self.test_user, self.test_project)
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(time_series, shell_surface=self.face_surface)
+        view_model = viewer.get_view_model_class()()
+        view_model.time_series = UUID(time_series_index.gid)
+        view_model.shell_surface = UUID(self.face_surface.gid)
+        result = viewer.launch(view_model)
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None
         assert result['extended_view']

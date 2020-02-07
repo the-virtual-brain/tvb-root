@@ -37,6 +37,7 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 import json
 from abc import ABCMeta
 from six import add_metaclass
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -48,7 +49,11 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleStrField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.datatypes.structural import StructuralMRI
 
 
 @add_metaclass(ABCMeta)
@@ -59,7 +64,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     """
     _ui_subsection = "volume"
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (BaseVolumeVisualizerModel) -> int
         return -1
 
     @staticmethod
@@ -249,25 +255,55 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return [result_x, result_y, result_z]
 
 
+class BaseVolumeVisualizerModel(ViewModel):
+    background = DataTypeGidAttr(
+        linked_datatype=StructuralMRI,
+        required=False,
+        label='Background T1'
+    )
+
+
 @add_metaclass(ABCMeta)
 class BaseVolumeVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseVolumeVisualizerForm, self).__init__(prefix, project_id)
-        self.background = DataTypeSelectField(StructuralMRIIndex, self, name='background', required=False,
-                                              label='Background T1')
+        self.background = TraitDataTypeSelectField(BaseVolumeVisualizerModel.background, self, name='background')
+
+
+class VolumeVisualizerModel(BaseVolumeVisualizerModel):
+    measure = DataTypeGidAttr(
+        linked_datatype=DataTypeMatrix,
+        label='Measure',
+        doc='A measure to view on anatomy'
+    )
+
+    region_mapping_volume = DataTypeGidAttr(
+        linked_datatype=RegionVolumeMapping,
+        required=False,
+        label='Region mapping'
+    )
+
+    data_slice = Attr(
+        field_type=str,
+        required=False,
+        label='slice indices in numpy syntax'
+    )
 
 
 class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     def __init__(self, prefix='', project_id=None):
         super(VolumeVisualizerForm, self).__init__(prefix, project_id)
-        self.measure = DataTypeSelectField(self.get_required_datatype(), self, name='measure', required=True,
-                                           label='Measure', doc='A measure to view on anatomy',
-                                           conditions=self.get_filters())
-        self.region_mapping_volume = DataTypeSelectField(RegionVolumeMappingIndex, self, name='region_mapping_volume',
-                                                         label='Region mapping')
-        self.data_slice = SimpleStrField(self, name='data_slice', label='slice indices in numpy syntax')
+        self.measure = TraitDataTypeSelectField(VolumeVisualizerModel.measure, self, name='measure',
+                                                conditions=self.get_filters())
+        self.region_mapping_volume = TraitDataTypeSelectField(VolumeVisualizerModel.region_mapping_volume, self,
+                                                              name='region_mapping_volume')
+        self.data_slice = StrField(VolumeVisualizerModel.data_slice, self, name='data_slice')
+
+    @staticmethod
+    def get_view_model():
+        return VolumeVisualizerModel
 
     @staticmethod
     def get_filters():
@@ -292,22 +328,51 @@ class MappedArrayVolumeVisualizer(_MappedArrayVolumeBase):
     def get_form_class(self):
         return VolumeVisualizerForm
 
-    def launch(self, measure, region_mapping_volume=None, data_slice='', background=None):
-        params = self.compute_params(region_mapping_volume, measure, data_slice, background=background)
+    def launch(self, view_model):
+        # type: (VolumeVisualizerModel) -> dict
+        measure_index = self.load_entity_by_gid(view_model.measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, measure_index, view_model.data_slice,
+                                     background=background_volume_index)
         params['title'] = "Mapped array on region volume Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
+
+
+class ConnectivityMeasureVolumeVisualizerModel(BaseVolumeVisualizerModel):
+    connectivity_measure = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        label='Connectivity measure',
+        doc='A connectivity measure'
+    )
+
+    region_mapping_volume = DataTypeGidAttr(
+        linked_datatype=RegionVolumeMapping,
+        required=False,
+        label='Region mapping'
+    )
 
 
 class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityMeasureVolumeVisualizerForm, self).__init__(prefix, project_id)
-        self.connectivity_measure = DataTypeSelectField(self.get_required_datatype(), self, name='connectivity_measure',
-                                                        required=True, label='Connectivity measure',
-                                                        doc='A connectivity measure', conditions=self.get_filters())
-        self.region_mapping_volume = DataTypeSelectField(RegionVolumeMappingIndex, self, name='region_mapping_volume',
-                                                         label='Region mapping')
+        self.connectivity_measure = TraitDataTypeSelectField(
+            ConnectivityMeasureVolumeVisualizerModel.connectivity_measure, self, name='connectivity_measure',
+            conditions=self.get_filters())
+        self.region_mapping_volume = TraitDataTypeSelectField(
+            ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, self, name='region_mapping_volume')
+
+    @staticmethod
+    def get_view_model():
+        return ConnectivityMeasureVolumeVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -328,8 +393,19 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
     def get_form_class(self):
         return ConnectivityMeasureVolumeVisualizerForm
 
-    def launch(self, connectivity_measure, region_mapping_volume=None, background=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
+    def launch(self, view_model):
+        # type: (ConnectivityMeasureVolumeVisualizerModel) -> dict
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, connectivity_measure_index,
+                                     background=background_volume_index)
         params['title'] = "Connectivity Measure in Volume Visualizer"
         # the view will display slicing information if this key is present.
         # compute_params works with generic mapped arrays and it will return slicing info
@@ -338,18 +414,36 @@ class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
                                          pages=dict(controlPage="time_series_volume/controls"))
 
 
+class RegionVolumeMappingVisualiserModel(BaseVolumeVisualizerModel):
+    region_mapping_volume = DataTypeGidAttr(
+        linked_datatype=RegionVolumeMapping,
+        label='Region mapping'
+    )
+
+    connectivity_measure = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        required=False,
+        label='Connectivity measure',
+        doc='A connectivity measure'
+    )
+
+
 class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
 
     def __init__(self, prefix='', project_id=None):
         super(RegionVolumeMappingVisualiserForm, self).__init__(prefix, project_id)
-        self.region_mapping_volume = DataTypeSelectField(self.get_required_datatype(), self,
-                                                         name='region_mapping_volume', required=True,
-                                                         label='Region mapping', conditions=self.get_filters())
+        self.region_mapping_volume = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.region_mapping_volume,
+                                                              self, name='region_mapping_volume',
+                                                              conditions=self.get_filters())
 
         cm_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.connectivity_measure = DataTypeSelectField(ConnectivityMeasureIndex, self, name='connectivity_measure',
-                                                        label='Connectivity measure', doc='A connectivity measure',
-                                                        conditions=cm_conditions)
+        self.connectivity_measure = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.connectivity_measure,
+                                                             self, name='connectivity_measure',
+                                                             conditions=cm_conditions)
+
+    @staticmethod
+    def get_view_model():
+        return RegionVolumeMappingVisualiserModel
 
     @staticmethod
     def get_filters():
@@ -370,8 +464,19 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
     def get_form_class(self):
         return RegionVolumeMappingVisualiserForm
 
-    def launch(self, region_mapping_volume, connectivity_measure=None, background=None):
-        params = self.compute_params(region_mapping_volume, connectivity_measure, background=background)
+    def launch(self, view_model):
+        # type: (RegionVolumeMappingVisualiserModel) -> dict
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        region_mapping_volume_index = None
+        background_volume_index = None
+
+        if view_model.region_mapping_volume:
+            region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
+        if view_model.background:
+            background_volume_index = self.load_entity_by_gid(view_model.background.hex)
+
+        params = self.compute_params(region_mapping_volume_index, connectivity_measure_index,
+                                     background=background_volume_index)
         params['title'] = "Volume to Regions Visualizer"
         return self.build_display_result("time_series_volume/staticView", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
@@ -382,6 +487,10 @@ class MriVolumeVisualizerForm(BaseVolumeVisualizerForm):
     def __init__(self, prefix='', project_id=None):
         super(MriVolumeVisualizerForm, self).__init__(prefix, project_id)
         self.background.required = True
+
+    @staticmethod
+    def get_view_model():
+        return VolumeVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -403,17 +512,20 @@ class MriVolumeVisualizer(ABCDisplayer):
     def get_form_class(self):
         return MriVolumeVisualizerForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (VolumeVisualizerModel) -> int
         return -1
 
-    def launch(self, background=None):
-        background_class, background_path = self._load_h5_of_gid(background.gid)
+    def launch(self, view_model):
+        # type: (VolumeVisualizerModel) -> dict
+
+        background_class, background_path = self._load_h5_of_gid(view_model.background.hex)
         background_h5 = background_class(background_path)
         volume_shape = background_h5.array_data.shape
         volume_shape = (1,) + volume_shape
 
         min_value, max_value = background_h5.get_min_max_values()
-        url_volume_data = self.build_url('/get_volume_view/', background.gid, '')
+        url_volume_data = self.build_url('/get_volume_view/', view_model.background.hex, '')
 
         volume_gid = background_h5.volume.load()
         volume_class, volume_path = self._load_h5_of_gid(volume_gid.hex)

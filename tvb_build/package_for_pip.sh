@@ -38,5 +38,13 @@ for pipPackage in "${folders2pack[@]}"; do
     fi
 done
 
+cd framework_tvb
+python setup_rest_client.py sdist
+python setup_rest_client.py bdist_wheel
+mv dist/* ../dist/
+rm -R dist
+rm -R build
+cd ..
+
 ## After manual check, do the actual deploy on Pypi
 # twine upload dist/*

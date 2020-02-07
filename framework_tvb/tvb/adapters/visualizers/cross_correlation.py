@@ -32,22 +32,33 @@
 A displayer for cross correlation.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.temporal_correlations import CrossCorrelation
+
+
+class CrossCorrelationVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=CrossCorrelation,
+        label='Cross correlation'
+    )
 
 
 class CrossCorrelationVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelationVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Cross correlation')
+        self.datatype = TraitDataTypeSelectField(CrossCorrelationVisualizerModel.datatype, self, name='datatype')
+
+    @staticmethod
+    def get_view_model():
+        return CrossCorrelationVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -69,9 +80,11 @@ class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return CrossCorrelationVisualizerForm
 
-    def launch(self, datatype):
+    def launch(self, view_model):
+        # type: (CrossCorrelationVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
-        labels, matrix = self._extract_labels_and_data_matrix(datatype)
+        time_series_index = self.load_entity_by_gid(view_model.datatype.hex)
+        labels, matrix = self._extract_labels_and_data_matrix(time_series_index)
         matrix = matrix.mean(axis=0)[:, :, 0, 0]
         pars = self.compute_params(matrix, 'Correlation matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

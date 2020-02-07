@@ -39,11 +39,25 @@ from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesSurfaceH5
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.datatypes.surfaces import Surface
+
+
+class GIFTITimeSeriesImporterModel(UploaderViewModel):
+    data_file = Str(
+        label='Please select file to import (.gii)'
+    )
+
+    surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        label='Brain Surface',
+        doc='The Brain Surface used to generate imported TimeSeries.'
+    )
 
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
@@ -51,13 +65,15 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.gii', self, name='data_file', required=True,
-                                     label='Please select file to import (.gii)')
+        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self, name='data_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True,
-                                           conditions=surface_conditions, label='Brain Surface',
-                                           doc='The Brain Surface used to generate imported TimeSeries.')
+        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
+                                                conditions=surface_conditions)
+
+    @staticmethod
+    def get_view_model():
+        return GIFTITimeSeriesImporterModel
 
 
 class GIFTITimeSeriesImporter(ABCUploader):
@@ -75,16 +91,17 @@ class GIFTITimeSeriesImporter(ABCUploader):
     def get_output(self):
         return [TimeSeriesSurfaceIndex]
 
-    def launch(self, data_file, surface=None):
+    def launch(self, view_model):
+        # type: (GIFTITimeSeriesImporterModel) -> [TimeSeriesSurfaceIndex]
         """
         Execute import operations:
         """
-        if surface is None:
+        if view_model.surface is None:
             raise LaunchException("No surface selected. Please initiate upload again and select a brain surface.")
 
         parser = GIFTIParser(self.storage_path, self.operation_id)
         try:
-            partial_time_series, gifti_data_arrays = parser.parse(data_file)
+            partial_time_series, gifti_data_arrays = parser.parse(view_model.data_file)
 
             ts_idx = TimeSeriesSurfaceIndex()
             ts_h5_path = h5.path_for(self.storage_path, TimeSeriesSurfaceH5, ts_idx.gid)
@@ -98,6 +115,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_h5.gid.store(uuid.UUID(ts_idx.gid))
 
             ts_data_shape = ts_h5.read_data_shape()
+            surface = self.load_entity_by_gid(view_model.surface.hex)
             if surface.number_of_vertices != ts_data_shape[1]:
                 msg = "Imported time series doesn't have values for all surface vertices. Surface has %d vertices " \
                       "while time series has %d values." % (surface.number_of_vertices, ts_data_shape[1])
@@ -113,7 +131,8 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_idx.labels_ordering = json.dumps(partial_time_series.labels_ordering)
             ts_idx.labels_dimensions = json.dumps(partial_time_series.labels_dimensions)
             ts_idx.data_ndim = len(ts_data_shape)
-            ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(ts_data_shape)
+            ts_idx.data_length_1d, ts_idx.data_length_2d, ts_idx.data_length_3d, ts_idx.data_length_4d = prepare_array_shape_meta(
+                ts_data_shape)
 
             return [ts_idx]
 

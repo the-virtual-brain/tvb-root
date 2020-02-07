@@ -32,7 +32,7 @@
 The original Wong and Wang model
 
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <Marmaduke@tvb.invalid>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """

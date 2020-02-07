@@ -34,7 +34,7 @@ This module implements a class for executing arbitray MATLAB code
 Conversion between Python types and MATLAB types is handled and dependent
 on scipy.io's loadmat and savemat function.
 
-.. moduleauthor:: Marmaduke Woodman <Marmaduke@tvb.invalid>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 """
 

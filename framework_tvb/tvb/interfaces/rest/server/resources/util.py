@@ -26,27 +26,19 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+#
 
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
-from tvb.core.entities.model.model_datatype import DataType
+import os
+import tempfile
+from tvb.basic.profile import TvbProfile
+from werkzeug.utils import secure_filename
 
 
-class DummyDataType2Index(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+def save_temporary_file(file):
+    filename = secure_filename(file.filename)
+    temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+    destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+    full_path = os.path.join(destination_folder, filename)
+    file.save(full_path)
 
-    row1 = Column(String, default="test-spatial")
-    row2 = Column(String, default="test-temporal")
-
-    number1 = Column(Integer, default=1)
-    number2 = Column(Float, default=0.1)
-
-    def fill_from_has_traits(self, datatype):
-        # type: (HasTraits) -> None
-        super(DummyDataType2Index, self).fill_from_has_traits(datatype)
-        self.row1 = datatype.row1
-        self.row2 = datatype.row2
-
-    @staticmethod
-    def accepted_filters():
-        filters = DataType.accepted_filters()
-        return filters
+    return full_path

@@ -39,12 +39,13 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import UploadField, SimpleStrField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, Surface
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
@@ -61,25 +62,50 @@ def determine_projection_type(sensors_idx):
     return projection_matrix_type
 
 
+class ProjectionMatrixImporterModel(UploaderViewModel):
+    projection_file = Str(
+        label='Projection matrix file (.mat or .npy format)',
+        doc='Expected a file containing projection matrix (one vector of length '
+            'number of surface vertices nd values in the sensors range).'
+    )
+
+    dataset_name = Attr(
+        field_type=str,
+        required=False,
+        default=DEFAULT_DATASET_NAME,
+        label='Matlab dataset name',
+        doc='Name of the MATLAB dataset where data is stored. Required only for .mat files'
+    )
+
+    surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        label='Brain Cortical Surface',
+        doc='The Brain Surface used by the uploaded projection matrix.'
+    )
+
+    sensors = DataTypeGidAttr(
+        linked_datatype=Sensors,
+        label='Sensors',
+        doc='The Sensors used in for current projection.'
+    )
+
+
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
-        self.projection_file = UploadField('.mat, .npy', self, name='projection_file', required=True,
-                                           label='Projection matrix file (.mat or .npy format)',
-                                           doc='Expected a file containing projection matrix (one vector of length '
-                                               'number of surface vertices nd values in the sensors range).')
-        self.dataset_name = SimpleStrField(self, name='dataset_name', default=DEFAULT_DATASET_NAME,
-                                           label='Matlab dataset name',
-                                           doc='Name of the MATLAB dataset where data is stored. '
-                                               'Required only for .mat files')
+        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, '.mat, .npy', self,
+                                                name='projection_file')
+        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=['Cortical Surface'])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=True,
-                                           conditions=surface_conditions, label='Brain Cortical Surface',
-                                           doc='The Brain Surface used by the uploaded projection matrix.')
-        self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label='Sensors',
-                                           doc='The Sensors used in for current projection.')
+        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self, name='surface',
+                                                conditions=surface_conditions)
+        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self, name='sensors')
+
+    @staticmethod
+    def get_view_model():
+        return ProjectionMatrixImporterModel
 
 
 class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
@@ -97,7 +123,8 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     def get_output(self):
         return [ProjectionMatrixIndex]
 
-    def launch(self, projection_file, surface, sensors, dataset_name=DEFAULT_DATASET_NAME):
+    def launch(self, view_model):
+        # type: (ProjectionMatrixImporterModel) -> [ProjectionMatrixIndex]
         """
         Creates ProjectionMatrix entity from uploaded data.
 
@@ -106,37 +133,41 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                     * the dataset is invalid
                     * number of sensors is different from the one in dataset
         """
-        if projection_file is None:
+        if view_model.projection_file is None:
             raise LaunchException("Please select MATLAB file which contains data to import")
 
-        if sensors is None:
+        if view_model.sensors is None:
             raise LaunchException("No sensors selected. Please initiate upload again and select one.")
 
-        if surface is None:
+        if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        expected_shape = surface.number_of_vertices
+        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        expected_surface_shape = surface_index.number_of_vertices
+
+        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        expected_sensors_shape = sensors_index.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")
-        if projection_file.endswith(".mat"):
-            projection_data = self.read_matlab_data(projection_file, dataset_name)
+        if view_model.projection_file.endswith(".mat"):
+            projection_data = self.read_matlab_data(view_model.projection_file, view_model.dataset_name)
         else:
-            projection_data = self.read_list_data(projection_file)
+            projection_data = self.read_list_data(view_model.projection_file)
 
         if projection_data is None or len(projection_data) == 0:
             raise LaunchException("Invalid (empty) dataset...")
 
-        if projection_data.shape[0] != sensors.number_of_sensors:
+        if projection_data.shape[0] != expected_sensors_shape:
             raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (projection_data.shape[0],
-                                                                                           sensors.number_of_sensors))
+                                                                                           expected_sensors_shape))
 
-        if projection_data.shape[1] != expected_shape:
+        if projection_data.shape[1] != expected_surface_shape:
             raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (projection_data.shape[1],
-                                                                                           expected_shape))
+                                                                                           expected_surface_shape))
 
-        projection_matrix_type = determine_projection_type(sensors)
-        surface_ht = h5.load_from_index(surface, CorticalSurface)
-        sensors_ht = h5.load_from_index(sensors)
+        projection_matrix_type = determine_projection_type(sensors_index)
+        surface_ht = h5.load_from_index(surface_index, CorticalSurface)
+        sensors_ht = h5.load_from_index(sensors_index)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,
                                              projection_data=projection_data)

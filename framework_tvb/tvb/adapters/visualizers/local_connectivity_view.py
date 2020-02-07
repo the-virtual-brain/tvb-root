@@ -33,20 +33,31 @@
 """
 
 import json
-
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.local_connectivity import LocalConnectivity
+
+
+class LocalConnectivityViewerModel(ViewModel):
+    local_conn = DataTypeGidAttr(
+        linked_datatype=LocalConnectivity,
+        label='Local connectivity'
+    )
 
 
 class LocalConnectivityViewerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivityViewerForm, self).__init__(prefix, project_id)
-        self.local_conn = DataTypeSelectField(self.get_required_datatype(), self, name='local_conn', required=True,
-                                              label='Local connectivity', conditions=self.get_filters())
+        self.local_conn = TraitDataTypeSelectField(LocalConnectivityViewerModel.local_conn, self, name='local_conn',
+                                                   conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return LocalConnectivityViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -72,7 +83,8 @@ class LocalConnectivityViewer(ABCDisplayer):
         return LocalConnectivityViewerForm
 
     def _compute_surface_params(self, surface_h5):
-        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(surface_h5)
+        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
+            surface_h5)
         url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
 
         return {
@@ -85,11 +97,11 @@ class LocalConnectivityViewer(ABCDisplayer):
             'brainCenter': json.dumps(surface_h5.center())
         }
 
-    def launch(self, local_conn):
+    def launch(self, view_model):
         params = dict(title="Local Connectivity Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=False)
 
-        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(local_conn.gid)
+        local_conn_h5_class, local_conn_h5_path = self._load_h5_of_gid(view_model.local_conn.hex)
         with local_conn_h5_class(local_conn_h5_path) as local_conn_h5:
             surface_gid = local_conn_h5.surface.load().hex
             min_value, max_value = local_conn_h5.get_min_max_values()
@@ -98,12 +110,11 @@ class LocalConnectivityViewer(ABCDisplayer):
         with surface_h5_class(surface_h5_path) as surface_h5:
             params.update(self._compute_surface_params(surface_h5))
 
-        params['local_connectivity_gid'] = local_conn.gid
+        params['local_connectivity_gid'] = view_model.local_conn.hex
         params['minValue'] = min_value
         params['maxValue'] = max_value
         return self.build_display_result("local_connectivity/view", params,
                                          pages={"controlPage": "local_connectivity/controls"})
-
 
     def get_required_memory_size(self):
         return -1

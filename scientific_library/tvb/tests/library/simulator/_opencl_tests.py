@@ -31,7 +31,7 @@
 """
 Test suite for experimental OpenCL components.
 
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

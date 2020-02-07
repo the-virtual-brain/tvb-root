@@ -28,6 +28,7 @@
 #
 #
 import numpy
+from uuid import UUID
 from tvb.analyzers.fft import FFT
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -68,10 +69,13 @@ class TestFFT(TransactionalTestCase):
 
         adapter = FourierAdapter()
         adapter.storage_path = str(tmpdir)
-        adapter.configure(ts_db, segment_length=400)
-        diskq = adapter.get_required_disk_size(ts_db, segment_length=400)
-        memq = adapter.get_required_memory_size(ts_db, segment_length=400)
-        spectra_idx = adapter.launch(ts_db, segment_length=400)
+        view_model = adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_db.gid)
+        view_model.segment_length = 400
+        adapter.configure(view_model)
+        diskq = adapter.get_required_disk_size(view_model)
+        memq = adapter.get_required_memory_size(view_model)
+        spectra_idx = adapter.launch(view_model)
 
         assert spectra_idx.source_gid == ts_db.gid
         assert spectra_idx.gid is not None

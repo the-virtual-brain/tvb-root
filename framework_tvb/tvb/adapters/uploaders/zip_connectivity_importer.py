@@ -36,12 +36,27 @@ import numpy
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
+
+
+class ZIPConnectivityImporterModel(UploaderViewModel):
+    uploaded = Str(
+        label='Connectivity file (zip)'
+    )
+
+    normalization = Str(
+        required=False,
+        choices=tuple(NORMALIZATION_OPTIONS.values()),
+        label='Weights Normalization',
+        doc='Normalization mode for weights'
+    )
 
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
@@ -49,9 +64,14 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.uploaded = UploadField("application/zip", self, name='uploaded', label='Connectivity file (zip)')
-        self.normalization = SimpleSelectField(NORMALIZATION_OPTIONS, self, name='normalization',
-                                               label='Weights Normalization', doc='Normalization mode for weights')
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, "application/zip", self,
+                                         name='uploaded')
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization',
+                                         choices=NORMALIZATION_OPTIONS)
+
+    @staticmethod
+    def get_view_model():
+        return ZIPConnectivityImporterModel
 
 
 class ZIPConnectivityImporter(ABCUploader):
@@ -78,24 +98,20 @@ class ZIPConnectivityImporter(ABCUploader):
     def get_output(self):
         return [ConnectivityIndex]
 
-    def launch(self, uploaded, normalization=None):
+    def launch(self, view_model):
+        # type: (ZIPConnectivityImporterModel) -> [ConnectivityIndex]
         """
         Execute import operations: unpack ZIP and build Connectivity object as result.
-
-        :param uploaded: an archive containing the Connectivity data to be imported
-
-        :returns: `Connectivity`
-
         :raises LaunchException: when `uploaded` is empty or nonexistent
         :raises Exception: when
                     * weights or tracts matrix is invalid (negative values, wrong shape)
                     * any of the vector orientation, areas, cortical or hemisphere is \
                       different from the expected number of nodes
         """
-        if uploaded is None:
+        if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        files = FilesHelper().unpack_zip(uploaded, self.storage_path)
+        files = FilesHelper().unpack_zip(view_model.uploaded, self.storage_path)
 
         weights_matrix = None
         centres = None
@@ -146,8 +162,8 @@ class ZIPConnectivityImporter(ABCUploader):
                 raise Exception("Unexpected shape for weights matrix! "
                                 "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
             result.weights = weights_matrix
-            if normalization:
-                result.weights = result.scaled_weights(normalization)
+            if view_model.normalization:
+                result.weights = result.scaled_weights(view_model.normalization)
 
         # Fill and check tracts
         if tract_matrix is not None:

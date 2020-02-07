@@ -31,22 +31,34 @@
 """
 A displayer for the principal components analysis.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 import json
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.mode_decompositions import PrincipalComponents
+
+
+class PCAModel(ViewModel):
+    pca = DataTypeGidAttr(
+        linked_datatype=PrincipalComponents,
+        label='Principal component analysis:'
+    )
 
 
 class PCAForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PCAForm, self).__init__(prefix, project_id)
-        self.pca = DataTypeSelectField(self.get_required_datatype(), self, name='pca', required=True,
-                                       label='Principal component analysis:', conditions=self.get_filters())
+        self.pca = TraitDataTypeSelectField(PCAModel.pca, self, name='pca', conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return PCAModel
 
     @staticmethod
     def get_input_name():
@@ -67,13 +79,15 @@ class PCA(ABCSpaceDisplayer):
     def get_form_class(self):
         return PCAForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (PCAModel) -> int
         """Return required memory. Here, it's unknown/insignificant."""
         return -1
 
-    def launch(self, pca):
+    def launch(self, view_model):
+        # type: (PCAModel) -> dict
         """Construct data for visualization and launch it."""
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(pca.gid)
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.pca.hex)
         with ts_h5_class(ts_h5_path) as ts_h5:
             source_gid = ts_h5.source.load()
 
@@ -81,8 +95,8 @@ class PCA(ABCSpaceDisplayer):
         with source_h5_class(source_h5_path) as source_h5:
             labels_data = self.get_space_labels(source_h5)
 
-        fractions_update_url = self.build_h5_url(pca.gid, 'read_fractions_data')
-        weights_update_url = self.build_h5_url(pca.gid, 'read_weights_data')
+        fractions_update_url = self.build_h5_url(view_model.pca.hex, 'read_fractions_data')
+        weights_update_url = self.build_h5_url(view_model.pca.hex, 'read_weights_data')
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))

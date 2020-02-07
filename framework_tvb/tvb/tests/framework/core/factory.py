@@ -45,10 +45,9 @@ from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
@@ -171,7 +170,7 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -192,7 +191,7 @@ class TestFactory(object):
         """
         Build and persist BurstConfiguration entity.
         """
-        burst = BurstConfiguration2(project_id)
+        burst = BurstConfiguration(project_id)
         if simulator_config is not None:
             burst.simulator_configuration = simulator_config
         burst.prepare_before_save()
@@ -226,10 +225,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.mapping_file.data = import_file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         # Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_dict())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
 
@@ -246,17 +247,19 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
+        form.fill_from_post({'_file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
                              '_data_file': Part(path, HeaderMap({}), ''),
                              '_data_file_part2': Part('', HeaderMap({}), ''),
                              '_should_center': 'False',
                              '_Data_Subject': 'John Doe',
                             })
         form.data_file.data = path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         surface = CorticalSurface
         data_types = FlowService().get_available_datatypes(project.id,
@@ -281,10 +284,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -305,10 +310,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -334,11 +341,13 @@ class TestFactory(object):
                              })
         form.sensors_file.data = zip_path
         form.sensors_type.data = sensors_type
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
 
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
         assert 1 == len(data_types), "Project should contain only one data type = Sensors."
@@ -356,14 +365,18 @@ class TestFactory(object):
 
         form = ZIPConnectivityImporterForm()
         form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_normalization': None,
                              '_project_id': {1},
                              '_Data_Subject': subject
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        view_model.data_subject = subject
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
 class ExtremeTestFactory(object):

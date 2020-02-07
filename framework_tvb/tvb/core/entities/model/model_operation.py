@@ -263,6 +263,7 @@ STATUS_STARTED = "3-STARTED"
 STATUS_CANCELED = "2-CANCELED"
 STATUS_ERROR = "1-ERROR"
 
+OperationPossibleStatus = [STATUS_FINISHED, STATUS_PENDING, STATUS_STARTED, STATUS_CANCELED, STATUS_ERROR]
 
 def has_finished(status):
     """ Is the given status indicating a finished operation? """
