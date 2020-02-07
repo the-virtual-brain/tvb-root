@@ -53,3 +53,21 @@ class Volume(HasTraits):
             "Voxel size": self.voxel_size,
             "Units": self.voxel_unit
         }
+
+
+class VolumeInFile(Volume):
+    """
+    Volume in a file.
+    """
+    file_path = Attr(str, label="Path to data files.")
+
+    @classmethod
+    def from_volume(self, vol: Volume):
+        raise NotImplemented
+
+
+class FreeSurferSubject(HasTraits):
+    """
+    Analysis of volume by FreeSurfer
+    """
+    subject_folder = Volume(label="Input data for analysis.")
