@@ -34,7 +34,7 @@ A contributed model: Hindmarsh-Rose
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 .. moduleauthor:: Gaurav Malhotra <Gaurav@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <Marmaduke@tvb.invalid>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

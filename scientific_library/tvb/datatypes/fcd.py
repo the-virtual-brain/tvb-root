@@ -32,7 +32,7 @@
 Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 .. moduleauthor:: Francesca Melozzi <france.melozzi@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
