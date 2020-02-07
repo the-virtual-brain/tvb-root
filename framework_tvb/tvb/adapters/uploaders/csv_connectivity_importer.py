@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,12 +35,14 @@
 import csv
 import numpy
 from tvb.basic.logger.builder import get_logger
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField, SimpleSelectField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 
@@ -68,10 +70,10 @@ class CSVConnectivityParser(object):
         elif rows_count == self.connectivity_size:
             pass  # we have no header
         else:
-            raise LaunchException("Could not parse a number matrix. Check field delimiter. Found %d rows and %d columns" %
-                                  (rows_count, self.connectivity_size))
+            raise LaunchException(
+                "Could not parse a number matrix. Check field delimiter. Found %d rows and %d columns" %
+                (rows_count, self.connectivity_size))
         self._parse_body()
-
 
     def _parse_header(self):
         """
@@ -92,7 +94,6 @@ class CSVConnectivityParser(object):
 
         self.rows = self.rows[1:]  # consume header
 
-
     def _parse_body(self):
         for row_idx, row in enumerate(self.rows):
             self.line += 1
@@ -112,19 +113,49 @@ class CSVConnectivityParser(object):
 DELIMITER_OPTIONS = {'comma': ',', 'semicolon': ';', 'tab': '\t', 'space': ' ', 'colon': ':'}
 
 
+class CSVConnectivityImporterModel(UploaderViewModel):
+    weights = Str(
+        label='Weights file (csv)'
+    )
+
+    weights_delimiter = Str(
+        choices=tuple(DELIMITER_OPTIONS.values()),
+        default=tuple(DELIMITER_OPTIONS.values())[0],
+        label='Field delimiter : '
+    )
+
+    tracts = Str(
+        label='Tracts file (csv)'
+    )
+
+    tracts_delimiter = Str(
+        choices=tuple(DELIMITER_OPTIONS.values()),
+        default=tuple(DELIMITER_OPTIONS.values())[0],
+        label='Field delimiter : '
+    )
+
+    input_data = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label='Reference Connectivity Matrix (for node labels, 3d positions etc.)'
+    )
+
+
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CSVConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.weights = UploadField('.csv', self, name='weights', label='Weights file (csv)', required=True)
-        self.weights_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='weights_delimiter', required=True,
-                                                   label='Field delimiter : ', default=list(DELIMITER_OPTIONS)[0])
-        self.tracts = UploadField('.csv', self, name='tracts', label='Tracts file (csv)', required=True)
-        self.tracts_delimiter = SimpleSelectField(DELIMITER_OPTIONS, self, name='tracts_delimiter', required=True,
-                                                  label='Field delimiter : ', default=list(DELIMITER_OPTIONS)[0])
-        self.input_data = DataTypeSelectField(ConnectivityIndex, self, name='input_data', required=True,
-                                              label='Reference Connectivity Matrix (for node labels, 3d positions etc.)')
+        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self, name='weights')
+        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self,
+                                             name='weights_delimiter', choices=DELIMITER_OPTIONS)
+        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, '.csv', self, name='tracts')
+        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self,
+                                            name='tracts_delimiter', choices=DELIMITER_OPTIONS)
+        self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self, name='input_data')
+
+    @staticmethod
+    def get_view_model():
+        return CSVConnectivityImporterModel
 
 
 class CSVConnectivityImporter(ABCUploader):
@@ -147,7 +178,6 @@ class CSVConnectivityImporter(ABCUploader):
     def get_output(self):
         return [ConnectivityIndex]
 
-
     def _read_csv_file(self, csv_file, delimiter):
         """
         Read a CSV file, arrange rows/columns in the correct order,
@@ -158,21 +188,18 @@ class CSVConnectivityImporter(ABCUploader):
             self.logger.debug("Read Connectivity file of size %d" % len(result_conn))
             return numpy.array(result_conn)
 
-
-    def launch(self, weights, weights_delimiter, tracts, tracts_delimiter, input_data):
+    def launch(self, view_model):
+        # type: (CSVConnectivityImporterModel) -> ConnectivityIndex
         """
         Execute import operations: process the weights and tracts csv files, then use
         the reference connectivity passed as input_data for the rest of the attributes.
 
-        :param weights: csv file containing the weights measures
-        :param tracts:  csv file containing the tracts measures
-        :param input_data: a reference connectivity with the additional attributes
-
         :raises LaunchException: when the number of nodes in CSV files doesn't match the one in the connectivity
         """
-        weights_matrix = self._read_csv_file(weights, weights_delimiter)
-        tract_matrix = self._read_csv_file(tracts, tracts_delimiter)
-        FilesHelper.remove_files([weights, tracts])
+        weights_matrix = self._read_csv_file(view_model.weights, view_model.weights_delimiter)
+        tract_matrix = self._read_csv_file(view_model.tracts, view_model.tracts_delimiter)
+        FilesHelper.remove_files([view_model.weights, view_model.tracts])
+        input_data = self.load_entity_by_gid(view_model.input_data.hex)
         if weights_matrix.shape[0] != input_data.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))

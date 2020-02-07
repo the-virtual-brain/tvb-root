@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,6 +37,7 @@ Root classes for adding custom functionality to the code.
 
 import os
 import json
+import uuid
 import psutil
 import numpy
 import importlib
@@ -46,8 +47,8 @@ from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters import input_tree
-from tvb.core.adapters.input_tree import InputTreeManager
+from tvb.basic.neotraits.api import HasTraits
+from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
@@ -58,15 +59,10 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits.forms import Form, DataTypeSelectField
-from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.core.neotraits.forms import Form, DataTypeSelectField, TraitDataTypeSelectField
 
 ATT_METHOD = "python_method"
 ATT_PARAMETERS = "parameters_prefix"
-
-KEY_EQUATION = input_tree.KEY_EQUATION
-KEY_FOCAL_POINTS = input_tree.KEY_FOCAL_POINTS
-KEY_SURFACE_GID = input_tree.KEY_SURFACE_GID
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -136,6 +132,10 @@ class ABCAdapterForm(Form):
     def get_input_name():
         raise NotImplementedError
 
+    @staticmethod
+    def get_view_model():
+        raise NotImplementedError
+
     def get_traited_datatype(self):
         """
         This is used to fill in defaults for GET requests.
@@ -159,15 +159,20 @@ class ABCAdapterForm(Form):
         attrs_dict = {}
         for field in self.fields:
             field_name = self._get_original_field_name(field)
-            if isinstance(field, DataTypeSelectField):
+            if isinstance(field, DataTypeSelectField) or isinstance(field, TraitDataTypeSelectField):
                 field_data = field.get_dt_from_db()
             else:
                 field_data = field.data
             attrs_dict.update({field_name: field_data})
         return attrs_dict
 
-    @using_template('form_fields/form')
     def __str__(self):
+        # TODO: remove dependency from web
+        from tvb.interfaces.web.controllers.decorators import using_template
+        template = using_template('form_fields/form')(self._get_template_dict)()
+        return template
+
+    def _get_template_dict(self):
         return {'form': self}
 
 
@@ -177,38 +182,18 @@ class ABCAdapter(object):
     Root Abstract class for all TVB Adapters. 
     """
     # todo this constants copy is not nice
-    TYPE_SELECT = input_tree.TYPE_SELECT
-    TYPE_MULTIPLE = input_tree.TYPE_MULTIPLE
-    STATIC_ACCEPTED_TYPES = input_tree.STATIC_ACCEPTED_TYPES
-    KEY_TYPE = input_tree.KEY_TYPE
-    KEY_OPTIONS = input_tree.KEY_OPTIONS
-    KEY_ATTRIBUTES = input_tree.KEY_ATTRIBUTES
-    KEY_NAME = input_tree.KEY_NAME
-    KEY_DESCRIPTION = input_tree.KEY_DESCRIPTION
-    KEY_VALUE = input_tree.KEY_VALUE
-    KEY_LABEL = input_tree.KEY_LABEL
-    KEY_DEFAULT = input_tree.KEY_DEFAULT
-    KEY_DATATYPE = input_tree.KEY_DATATYPE
-    KEY_DTYPE = input_tree.KEY_DTYPE
-    KEY_DISABLED = input_tree.KEY_DISABLED
-    KEY_ALL = input_tree.KEY_ALL
-    KEY_CONDITION = input_tree.KEY_CONDITION
-    KEY_FILTERABLE = input_tree.KEY_FILTERABLE
-    KEY_REQUIRED = input_tree.KEY_REQUIRED
-    KEY_ID = input_tree.KEY_ID
-    KEY_UI_HIDE = input_tree.KEY_UI_HIDE
-
-    # TODO: move everything related to parameters PRE + POST into parameters_factory
-    KEYWORD_PARAMS = input_tree.KEYWORD_PARAMS
-    KEYWORD_SEPARATOR = input_tree.KEYWORD_SEPARATOR
-    KEYWORD_OPTION = input_tree.KEYWORD_OPTION
-
-    INTERFACE_ATTRIBUTES_ONLY = "attributes-only"
-    INTERFACE_ATTRIBUTES = "attributes"
+    KEY_TYPE = constants.ATT_TYPE
+    KEY_OPTIONS = constants.ELEM_OPTIONS
+    KEY_ATTRIBUTES = constants.ATT_ATTRIBUTES
+    KEY_NAME = constants.ELEM_NAME
+    KEY_VALUE = constants.ATT_VALUE
+    KEY_DEFAULT = constants.ATT_DEFAULT
+    KEY_DATATYPE = "datatype"
+    KEY_DISABLED = "disabled"
+    KEY_FILTERABLE = "filterable"
 
     # model.Algorithm instance that will be set for each adapter created by in build_adapter method
     stored_adapter = None
-
 
     def __init__(self):
         # It will be populate with key from DataTypeMetaData
@@ -221,7 +206,6 @@ class ABCAdapter(object):
         self.operation_id = None
         self.user_id = None
         self.log = get_logger(self.__class__.__module__)
-        self.tree_manager = InputTreeManager()
         self.submitted_form = None
 
     @classmethod
@@ -265,12 +249,6 @@ class ABCAdapter(object):
         """
         return True
 
-    def get_input_tree(self):
-        """
-        Describes inputs and outputs of the launch method.
-        """
-        return None
-
     def submit_form(self, form):
         self.submitted_form = form
 
@@ -284,52 +262,51 @@ class ABCAdapter(object):
     def get_form_class(self):
         return None
 
+    def get_view_model_class(self):
+        return self.get_form_class().get_view_model()
+
     @abstractmethod
     def get_output(self):
         """
         Describes inputs and outputs of the launch method.
         """
 
-
-    def configure(self, **kwargs):
+    def configure(self, view_model):
         """
         To be implemented in each Adapter that requires any specific configurations
         before the actual launch.
         """
 
-
     @abstractmethod
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter.
         """
 
-
     @abstractmethod
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter in kilo-Bytes.
         """
 
-
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
         """
         return -1
 
-
     @abstractmethod
-    def launch(self):
+    def launch(self, view_model):
         """
          To be implemented in each Adapter.
          Will contain the logic of the Adapter.
+         Takes a ViewModel with data, dependency direction is: Adapter -> Form -> ViewModel
          Any returned DataType will be stored in DB, by the Framework.
+        :param view_model: the data model corresponding to the current adapter
         """
-
 
     def add_operation_additional_info(self, message):
         """
@@ -353,7 +330,7 @@ class ABCAdapter(object):
             self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
 
     @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Method to wrap LAUNCH.
         Will prepare data, and store results on return. 
@@ -364,7 +341,7 @@ class ABCAdapter(object):
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        self.configure(**kwargs)
+        self.configure(view_model)
 
         # Compare the amount of memory the current algorithms states it needs,
         # with the average between the RAM available on the OS and the free memory at the current moment.
@@ -372,7 +349,7 @@ class ABCAdapter(object):
         total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
         total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
         memory_reference = (total_free_memory + total_existent_memory) / 2
-        adapter_required_memory = self.get_required_memory_size(**kwargs)
+        adapter_required_memory = self.get_required_memory_size(view_model)
 
         if adapter_required_memory > memory_reference:
             msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
@@ -380,7 +357,7 @@ class ABCAdapter(object):
 
         # Compare the expected size of the operation results with the HDD space currently available for the user
         # TVB defines a quota per user.
-        required_disk_space = self.get_required_disk_size(**kwargs)
+        required_disk_space = self.get_required_disk_size(view_model)
         if available_disk_space < 0:
             msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
             raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
@@ -394,13 +371,12 @@ class ABCAdapter(object):
         dao.store_entity(operation)
 
         self._prepare_generic_attributes(uid)
-        result = self.launch(**kwargs)
+        result = self.launch(view_model)
 
         if not isinstance(result, (list, tuple)):
             result = [result, ]
         self.__check_integrity(result)
         return self._capture_operation_results(result)
-
 
     def _capture_operation_results(self, result):
         """
@@ -419,7 +395,7 @@ class ABCAdapter(object):
             burst_reference = self.meta_data[DataTypeMetaData.KEY_BURST]
 
         count_stored = 0
-        group_type = None   # In case of a group, the first not-none type is sufficient to memorize here
+        group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:
             if res is None:
                 continue
@@ -449,7 +425,6 @@ class ABCAdapter(object):
 
         return 'Operation ' + str(self.operation_id) + ' has finished.', count_stored
 
-
     def __check_integrity(self, result):
         """
         Check that the returned parameters for LAUNCH operation
@@ -462,7 +437,6 @@ class ABCAdapter(object):
                 msg = "Unexpected output DataType %s"
                 raise InvalidParameterException(msg % type(result_entity))
 
-
     def __is_data_in_supported_types(self, data):
 
         if data is None:
@@ -473,14 +447,12 @@ class ABCAdapter(object):
         # Data can't be mapped on any supported type !!
         return False
 
-
     def _is_group_launch(self):
         """
         Return true if this adapter is launched from a group of operations
         """
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
-
 
     @staticmethod
     def load_entity_by_gid(data_gid):
@@ -489,6 +461,14 @@ class ABCAdapter(object):
         """
         return load_entity_by_gid(data_gid)
 
+    @staticmethod
+    def load_traited_by_gid(data_gid):
+        # type: (uuid.UUID) -> HasTraits
+        """
+        Load a generic HasTraits instance, specified by GID.
+        """
+        index = load_entity_by_gid(data_gid.hex)
+        return h5.load_from_index(index)
 
     @staticmethod
     def build_adapter_from_class(adapter_class):
@@ -507,7 +487,6 @@ class ABCAdapter(object):
             LOGGER.exception(excep)
             raise IntrospectionException(str(excep))
 
-
     @staticmethod
     def build_adapter(stored_adapter):
         """
@@ -525,48 +504,13 @@ class ABCAdapter(object):
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
 
-
-    # METHODS for PROCESSING PARAMETERS start here #############################
-
     def review_operation_inputs(self, parameters):
+        # TODO: implement this for neoforms
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
         """
-        flat_interface = self.flaten_input_interface()
-        return self.tree_manager.review_operation_inputs(parameters, flat_interface)
-
-
-    def prepare_ui_inputs(self, kwargs, validation_required=True):
-        """
-        Prepare the inputs received from a HTTP Post in a form that will be
-        used by the Python adapter.
-        """
-        algorithm_inputs = self.get_input_tree()
-        algorithm_inputs = InputTreeManager.prepare_param_names(algorithm_inputs)
-        self.tree_manager.append_required_defaults(kwargs, algorithm_inputs)
-        return self.convert_ui_inputs(kwargs, validation_required=validation_required)
-
-
-    def convert_ui_inputs(self, kwargs, validation_required=True):
-        """
-        Convert HTTP POST parameters into Python parameters.
-        """
-        return self.tree_manager.convert_ui_inputs(self.flaten_input_interface(), kwargs, self.meta_data,
-                                                   validation_required)
-
-
-    def noise_configurable_parameters(self):
-        return [entry[self.KEY_NAME] for entry in self.flaten_input_interface() if 'configurableNoise' in entry]
-
-
-    def flaten_input_interface(self):
-        # TODO: temporary condition to pass introspection on neoforms
-        form = self.get_form_class()()
-        if form:
-            return [form._get_original_field_name(form_field) for form_field in form.fields]
-        return self.tree_manager.flatten(self.get_input_tree())
-
+        return {}, None
 
 
 @add_metaclass(ABCMeta)
@@ -588,5 +532,3 @@ class ABCSynchronous(ABCAdapter):
     """
     Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
     """
-
-

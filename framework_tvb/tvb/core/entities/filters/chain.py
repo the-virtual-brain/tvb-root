@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -46,7 +46,7 @@ In order to define a default filter, from the adapter interface add::
     'conditions': FilterChain(fields= [FilterChain.datatype + ".subject", FilterChain.datatype + ".some_attribute",
                               values= [["John Doe", "JohnDoe1"], "Some Attr Value"], operations= ["in", "=="])
 """
-
+import importlib
 import json
 import datetime
 from tvb.basic.logger.builder import get_logger
@@ -165,7 +165,7 @@ class FilterChain(object):
         if isinstance(data_name, str):
             try:
                 module_name, class_name = str(data_name).rsplit('.', 1)
-                module = __import__(module_name, globals(), locals(), [class_name])
+                module = importlib.import_module(module_name)
                 data_class = getattr(module, class_name)
             except Exception as excep:
                 LOGGER.error("Expected DataType full class quantifier! Got:" + str(data_name))

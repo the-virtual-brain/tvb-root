@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,42 +32,64 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-#from tvb.datatypes.arrays import MappedArray
-#from tvb.datatypes.mapped_values import ValueWrapper
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCAsynchronous, ABCSynchronous
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
+from tvb.core.adapters import abcadapter
+from tvb.core.neotraits.forms import SimpleIntField
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
+class TestAdapter3Form(abcadapter.ABCAdapterForm):
+    """
+        This class is used for testing purposes.
+    """
 
-class TestAdapter3(ABCAsynchronous):
+    def __init__(self, prefix='', project_id=None):
+        super(TestAdapter3Form, self).__init__(prefix, project_id)
+        self.param_5 = SimpleIntField(self, name="param_5", label="Param 5:", default=0)
+        self.param_6 = SimpleIntField(self, name="param_6", label="Param 6:", default=0)
+
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class TestAdapter3(abcadapter.ABCAsynchronous):
     """
     This class is used for testing purposes.
     It will be used as an adapter for testing Groups of operations. For ranges to work, it need to be asynchronous.
-    """ 
-        
-    def get_input_tree(self):
-        return [{'name': 'param_1', 'label': 'Param 1:', 'type': MappedArray, 'datatype': True},
-                {'name': 'param_2', 'label': 'Param 2:', 'type': MappedArray, 'datatype': True},
-                {'name': 'param_3', 'label': 'Param 3:', 'type': MappedArray, 'datatype': True},
-                {'name': 'param_4', 'label': 'Param 4:', 'type': ValueWrapper, 'datatype': True},
-                {'name': 'param_5', 'label': 'Param 5:', 'type': 'int', 'default': '0'},
-                {'name': 'param_6', 'label': 'Param 6:', 'type': 'int', 'default': '0'},
-                {'name': 'test', 'type': Datatype1, 'default': '0'}
-                ]
-                
+    """
+
+    def __init__(self):
+        super(TestAdapter3, self).__init__()
+
+    def get_form_class(self):
+        return TestAdapter3Form
+
     def get_output(self):
-        return [Datatype2]
-    
+        return [DummyDataTypeIndex]
+
     def get_required_memory_size(self, **kwargs):
+        """
+        Return the required memory to run this algorithm.
+        """
+        # Don't know how much memory is needed.
         return -1
     
     def get_required_disk_size(self, **kwargs):
-        """ Returns the required disk size to be able to run the adapter. """
+        """
+        Returns the required disk size to be able to run the adapter.
+         """
         return 0
         
     def launch(self, **kwargs):
-        result = Datatype2()
+        result = DummyDataTypeIndex()
         if 'param_5' in kwargs:
             result.row1 = str(kwargs['param_5'])
         if 'param_6' in kwargs:
@@ -77,20 +99,41 @@ class TestAdapter3(ABCAsynchronous):
         return result
 
 
+class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
+    """
+        This class is used for testing purposes.
+    """
 
-class TestAdapterHugeMemoryRequired(ABCAdapter):
+    def __init__(self, prefix='', project_id=None):
+        super(TestAdapterHugeMemoryRequiredForm, self).__init__(prefix, project_id)
+        self.test = SimpleIntField(self, name='test', default=0)
+
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class TestAdapterHugeMemoryRequired(abcadapter.ABCAsynchronous):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
     
     def __init__(self):
-        ABCAdapter.__init__(self)
-        
-    def get_input_tree(self):
-        return [{'name': 'test', 'type': 'int', 'default': '0'}]
-                
+        super(TestAdapterHugeMemoryRequired, self).__init__()
+
+    def get_form_class(self):
+        return TestAdapterHugeMemoryRequiredForm
+
     def get_output(self):
-        return []
+        return [DummyDataTypeIndex]
     
     def get_required_memory_size(self, **kwargs):
         """ Huge memory requirement, should fail launch.  """
@@ -100,24 +143,45 @@ class TestAdapterHugeMemoryRequired(ABCAdapter):
         """ Returns the required disk size to be able to run the adapter. """
         return 0
     
-    def launch(self, test):
-        str(test)
+    def launch(self):
+        str(self.test)
 
 
+class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
+    """
+        This class is used for testing purposes.
+    """
 
-class TestAdapterHDDRequired(ABCSynchronous):
+    def __init__(self, prefix='', project_id=None):
+        super(TestAdapterHDDRequiredForm, self).__init__(prefix, project_id)
+        self.test = SimpleIntField(self, name='test', default=0)
+
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class TestAdapterHDDRequired(abcadapter.ABCSynchronous):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
     
     def __init__(self):
-        ABCAdapter.__init__(self)
+        super(TestAdapterHDDRequired, self).__init__()
         
-    def get_input_tree(self):
-        return [{'name': 'test', 'type': 'int', 'default': '0'}]
+    def get_form_class(self):
+        return TestAdapterHDDRequiredForm
                 
     def get_output(self):
-        return [Datatype2]
+        return [DummyDataTypeIndex]
     
     def get_required_memory_size(self, **kwargs):
         """ Value test to be correctly returned """
@@ -127,21 +191,19 @@ class TestAdapterHDDRequired(ABCSynchronous):
         """ Returns the required disk size to be able to run the adapter. """
         return int(kwargs['test']) * 8 / 2 ** 10
     
-    def launch(self, test):
+    def launch(self):
         """
         Mimics launching with a lot of memory usage
 
         :param test: should be a very large integer; the larger, the more memory is used
         :returns: a `Datatype2` object, with big string_data
         """
-        result = Datatype2()
+        result = DummyDataTypeIndex()
         result.row1 = 'param_5'
         result.row2 = 'param_6'
         result.storage_path = self.storage_path
         res_array = []
-        for _ in range(int(test)):
+        for _ in range(int(self.test)):
             res_array.append("data")
         result.string_data = res_array
         return result
-
-    

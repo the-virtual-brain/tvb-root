@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -41,12 +41,13 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import tvb_data
-from hashlib import md5
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
-
-from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
@@ -55,10 +56,8 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterForm
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_workflow import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model.model_burst import BurstConfiguration, RANGE_PARAMETER_1
-from tvb.core.entities.transient.burst_configuration_entities import WorkflowStepConfiguration as wf_cfg
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
@@ -99,7 +98,7 @@ class TestFactory(object):
                     mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
-        
+
         :returns: User entity after persistence.
         """
         user = User(username, password, mail, validated, role)
@@ -109,7 +108,7 @@ class TestFactory(object):
     def create_project(admin, name="TestProject", description='description', users=None):
         """
         Create persisted Project entity, with no linked DataTypes.
-        
+
         :returns: Project entity after persistence.
         """
         if users is None:
@@ -132,13 +131,12 @@ class TestFactory(object):
                          operation_status=STATUS_FINISHED, parameters="test params"):
         """
         Create persisted operation.
-        
+
         :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
-        :return: Operation entity after persistence. 
+        :return: Operation entity after persistence.
         """
         if algorithm is None:
-            algorithm = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                    'NDimensionArrayAdapter')
+            algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
 
         if test_user is None:
             test_user = TestFactory.create_user()
@@ -172,7 +170,7 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -200,30 +198,6 @@ class TestFactory(object):
         return dao.store_entity(burst)
 
     @staticmethod
-    def create_workflow_step(module, classname, static_kwargs=None, dynamic_kwargs=None,
-                             step_index=0, base_step=0, tab_index=0, index_in_tab=0, is_view_step=False):
-        """
-        Build non-persisted WorkflowStep entity.
-        """
-        if static_kwargs is None:
-            static_kwargs = {}
-        if dynamic_kwargs is None:
-            dynamic_kwargs = {}
-        algorithm = dao.get_algorithm_by_module(module, classname)
-        second_step_configuration = wf_cfg(algorithm.id, static_kwargs, dynamic_kwargs)
-
-        static_params = second_step_configuration.static_params
-        dynamic_params = second_step_configuration.dynamic_params
-        for entry in dynamic_params:
-            dynamic_params[entry][wf_cfg.STEP_INDEX_KEY] += base_step
-
-        if is_view_step:
-            return WorkflowStepView(algorithm_id=algorithm.id, tab_index=tab_index, index_in_tab=index_in_tab,
-                                    static_param=static_params, dynamic_param=dynamic_params)
-        return WorkflowStep(algorithm_id=algorithm.id, step_index=step_index, tab_index=tab_index,
-                            index_in_tab=index_in_tab, static_param=static_params, dynamic_param=dynamic_params)
-
-    @staticmethod
     def import_default_project(admin_user=None):
 
         if not admin_user:
@@ -233,6 +207,34 @@ class TestFactory(object):
         import_service = ImportService()
         import_service.import_project_structure(project_path, admin_user.id)
         return import_service.created_projects[0]
+
+    @staticmethod
+    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):
+        """
+                This method is used for importing region mappings
+                :param import_file_path: absolute path of the file to be imported
+                """
+
+        # Retrieve Adapter instance
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
+                                              'RegionMappingImporter')
+        form = RegionMappingImporterForm()
+        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
+                             '_surface': surface_gid,
+                             '_connectivity': connectivity_gid,
+                             '_Data_Subject': 'John Doe'
+                             })
+        form.mapping_file.data = import_file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
+        importer.submit_form(form)
+
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
+
+        region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
+
+        return region_mapping
 
     @staticmethod
     def import_surface_gifti(user, project, path):
@@ -245,17 +247,19 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
+        form.fill_from_post({'_file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
                              '_data_file': Part(path, HeaderMap({}), ''),
                              '_data_file_part2': Part('', HeaderMap({}), ''),
                              '_should_center': 'False',
                              '_Data_Subject': 'John Doe',
                             })
         form.data_file.data = path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         surface = CorticalSurface
         data_types = FlowService().get_available_datatypes(project.id,
@@ -280,10 +284,12 @@ class TestFactory(object):
                              '_Data_Subject': 'John Doe'
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -300,16 +306,18 @@ class TestFactory(object):
 
         form = ObjSurfaceImporterForm()
         form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
-                             '_surface_type': "Face Surface",
+                             '_surface_type': surface_type,
                              '_Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
-        data_types = FlowService().get_available_datatypes(project.id,  SurfaceIndex)[0]
+        data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
 
         surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
@@ -333,11 +341,13 @@ class TestFactory(object):
                              })
         form.sensors_file.data = zip_path
         form.sensors_type.data = sensors_type
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
 
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
         assert 1 == len(data_types), "Project should contain only one data type = Sensors."
@@ -355,14 +365,18 @@ class TestFactory(object):
 
         form = ZIPConnectivityImporterForm()
         form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
+                             '_normalization': None,
                              '_project_id': {1},
                              '_Data_Subject': subject
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        view_model.data_subject = subject
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
 class ExtremeTestFactory(object):
@@ -401,7 +415,7 @@ class ExtremeTestFactory(object):
         for i in range(nr_users):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
-            password = md5("test").hexdigest()
+            password = hash_password("test")
             new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,9 +34,8 @@
 
 import cherrypy
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.core.entities.transient.context_local_connectivity import ContextLocalConnectivity
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
-from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN_CONTEXT
+from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import KEY_LCONN
 
 
 class TestLocalConnectivityController(BaseTransactionalControllerTest):
@@ -81,8 +80,8 @@ class TestLocalConnectivityController(BaseTransactionalControllerTest):
         """
         Test that the dictionary returned by the controller for the LC Workflow second step is correct.
         """
-        context = ContextLocalConnectivity()
-        cherrypy.session[KEY_LCONN_CONTEXT] = context
+        context = LocalConnectivity()
+        cherrypy.session[KEY_LCONN] = context
         result_dict = self.local_p_c.step_2()
         self._default_checks(result_dict)
         assert result_dict['loadExistentEntityUrl'] == '/spatial/localconnectivity/load_local_connectivity'

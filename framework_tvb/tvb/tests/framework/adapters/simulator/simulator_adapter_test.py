@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,14 +32,13 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import json
+
 import pytest
 from copy import copy
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2
-from tvb.core.entities.model.model_operation import STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.operation_service import OperationService
@@ -100,30 +99,28 @@ class TestSimulatorAdapter(TransactionalTestCase):
                                                 IntrospectionRegistry.SIMULATOR_CLASS)
         self.simulator_adapter = ABCAdapter.build_adapter(algorithm)
 
-    def test_happy_flow_launch(self, datatype_factory, connectivity_factory):
+    def test_happy_flow_launch(self, connectivity_factory, operation_factory):
         """
         Test that launching a simulation from UI works.
         """
 
-        self.test_user = datatype_factory['user']
-        self.test_project = datatype_factory['project']
-        self.connectivity = connectivity_factory(self.CONNECTIVITY_NODES)[1]
+        self.test_user = TestFactory.create_user("Simulator_Adapter_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Simulator_Adapter_Project")
+        self.connectivity = connectivity_factory(self.CONNECTIVITY_NODES)
 
-        self.operation = TestFactory.create_operation(datatype_factory['algorithm'], self.test_user, self.test_project,
-                                                      STATUS_STARTED, json.dumps(SIMULATOR_PARAMETERS))
+        self.operation = operation_factory()
+
         SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
 
         OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **SIMULATOR_PARAMETERS)
         sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
         assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
-
     def _estimate_hdd(self, new_parameters_dict):
         """ Private method, to return HDD estimation for a given set of input parameters"""
         filtered_params = self.simulator_adapter.prepare_ui_inputs(new_parameters_dict)
         self.simulator_adapter.configure(**filtered_params)
         return self.simulator_adapter.get_required_disk_size(**filtered_params)
-
 
     def test_estimate_hdd(self, connectivity_factory):
         """
@@ -147,7 +144,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
         simulation_parameters['connectivity'] = large_conn_gid
         estimate3 = self._estimate_hdd(simulation_parameters)
         assert estimate2 == estimate3 / factor
-
 
     def test_estimate_execution_time(self):
         """
@@ -186,7 +182,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
         estimation5 = self.simulator_adapter.get_execution_time_approximation(**params)
         assert estimation5 > 0
 
-
     def test_noise_2d_bad_shape(self):
         """
         Test a simulation with noise. Pass a wrong shape and expect exception to be raised.
@@ -208,7 +203,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
             raise AssertionError("Simulator adapter was not initialized properly")
         with pytest.raises(Exception):
             OperationService().initiate_prelaunch(self.operation,self.simulator_adapter, {}, **params)
-
 
     def test_noise_2d_happy_flow(self):
         """
@@ -232,7 +226,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
         params['integrator_parameters_option_HeunStochastic_noise_parameters_option_Additive_nsig'] = '[1]'
         self._launch_and_check_noise(params, (1,))
 
-
     def _launch_and_check_noise(self, params, expected_noise_shape):
 
         filtered_params = self.simulator_adapter.prepare_ui_inputs(params)
@@ -244,7 +237,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
             raise AssertionError("Simulator adapter was not initialized properly")
 
         OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **params)
-
 
     def test_simulation_with_stimulus(self, stimulus_factory):
         """

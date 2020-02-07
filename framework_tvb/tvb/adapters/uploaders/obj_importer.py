@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,13 +33,35 @@
 """
 
 from tvb.adapters.uploaders.obj.surface import ObjSurface
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.entities.storage import transactional
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import make_surface, center_vertices
-from tvb.core.neotraits.forms import SimpleSelectField, UploadField, SimpleBoolField
+from tvb.core.neotraits.forms import BoolField, TraitUploadField, SelectField
 from tvb.core.neocom import h5
+
+
+class ObjSurfaceImporterModel(UploaderViewModel):
+    surface_type = Str(
+        label='Specify file type :',
+        choices=tuple(ALL_SURFACES_SELECTION.values()),
+        default=tuple(ALL_SURFACES_SELECTION.values())[0]
+    )
+
+    data_file = Str(
+        label='Please select file to import'
+    )
+
+    should_center = Attr(
+        field_type=bool,
+        required=False,
+        default=False,
+        label='Center surface using vertex means along axes'
+    )
 
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
@@ -47,12 +69,14 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
 
-        self.surface_type = SimpleSelectField(ALL_SURFACES_SELECTION, self, name='surface_type', required=True,
-                                              label='Specify file type :', default=list(ALL_SURFACES_SELECTION)[0])
-        self.data_file = UploadField('.obj', self, name='data_file', required=True,
-                                     label='Please select file to import')
-        self.should_center = SimpleBoolField(self, name='should_center', default=False,
-                                             label='Center surface using vertex means along axes')
+        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, self, name='surface_type',
+                                        choices=ALL_SURFACES_SELECTION)
+        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self, name='data_file')
+        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self, name='should_center')
+
+    @staticmethod
+    def get_view_model():
+        return ObjSurfaceImporterModel
 
 
 class ObjSurfaceImporter(ABCUploader):
@@ -70,21 +94,22 @@ class ObjSurfaceImporter(ABCUploader):
         return [SurfaceIndex]
 
     @transactional
-    def launch(self, surface_type, data_file, should_center=False):
+    def launch(self, view_model):
+        # type: (ObjSurfaceImporterModel) -> [SurfaceIndex]
         """
         Execute import operations:
         """
         try:
-            surface = make_surface(surface_type)
+            surface = make_surface(view_model.surface_type)
             if surface is None:
-                raise ParseException("Could not determine surface type! %s" % surface_type)
+                raise ParseException("Could not determine surface type! %s" % view_model.surface_type)
 
             surface.zero_based_triangles = True
 
-            with open(data_file) as f:
+            with open(view_model.data_file) as f:
                 obj = ObjSurface(f)
 
-            if should_center:
+            if view_model.should_center:
                 vertices = center_vertices(obj.vertices)
             else:
                 vertices = obj.vertices

@@ -2,8 +2,7 @@
 	
 	<h4><mark>View</mark> Local connectivity</h4>
 
-	{% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-    {{ gatf.generateDisplay(existentEntitiesInputList, false, "") }}
+	{{ existentEntitiesInputList | safe }}
 
 	{% if no_local_connectivity == false %}
 		{% include 'spatial/left_template_brain_pick.html' %}

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,11 +32,15 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+import os
+import tvb_data.surfaceData
+import tvb_data.regionMapping as demo_data
+from uuid import UUID
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CORTICAL
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -56,15 +60,22 @@ class TestSurfaceViewers(TransactionalTestCase):
         creates a test user, a test project, a connectivity and a surface;
         imports a CFF data-set
         """
-        self.test_user = TestFactory.create_user()
-        self.test_project = TestFactory.import_default_project(self.test_user)
+        test_user = TestFactory.create_user('Surface_Viewer_User')
+        self.test_project = TestFactory.create_project(test_user, 'Surface_Viewer_Project')
 
-        self.surface = TestFactory.get_entity(self.test_project, CorticalSurface())
+        surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        self.surface = TestFactory.import_surface_zip(test_user, self.test_project, surf_skull, CORTICAL)
         assert self.surface is not None
 
-        self.region_mapping = TestFactory.get_entity(self.test_project, RegionMapping())
-        assert self.region_mapping is not None
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(test_user, self.test_project, zip_path, "John")
+        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert connectivity_index is not None
 
+        TXT_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'regionMapping_16k_76.txt')
+        self.region_mapping = TestFactory.import_region_mapping(test_user, self.test_project, TXT_FILE,
+                                                                self.surface.gid, connectivity_index.gid)
+        assert self.region_mapping is not None
 
     def transactional_teardown_method(self):
         """
@@ -72,17 +83,18 @@ class TestSurfaceViewers(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
     def test_launch_surface(self):
         """
         Check that all required keys are present in output from SurfaceViewer launch.
         """
         viewer = SurfaceViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(self.surface, self.region_mapping)
+        view_model = viewer.get_view_model_class()()
+        view_model.surface = UUID(self.surface.gid)
+        view_model.region_map = UUID(self.region_mapping.gid)
+        result = viewer.launch(view_model)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)
-
 
     def test_launch_region(self):
         """
@@ -90,6 +102,8 @@ class TestSurfaceViewers(TransactionalTestCase):
         """
         viewer = RegionMappingViewer()
         viewer.current_project_id = self.test_project.id
-        result = viewer.launch(self.region_mapping)
+        view_model = viewer.get_view_model_class()()
+        view_model.region_map = UUID(self.region_mapping.gid)
+        result = viewer.launch(view_model)
 
         self.assert_compliant_dictionary(self.EXPECTED_KEYS, result)

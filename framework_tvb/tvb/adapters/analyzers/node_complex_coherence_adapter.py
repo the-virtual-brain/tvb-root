@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,25 +39,36 @@ import uuid
 import numpy
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
-LOG = get_logger(__name__)
+
+class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The timeseries for which the CrossCoherence and ComplexCoherence is to be computed."""
+    )
 
 
 class NodeComplexCoherenceForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=NodeComplexCoherence.time_series.label,
-                                               doc=NodeComplexCoherence.time_series.doc, conditions=self.get_filters())
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self,
+                                                    name=self.get_input_name(),
+                                                    conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return NodeComplexCoherenceModel
 
     @staticmethod
     def get_required_datatype():
@@ -88,7 +99,8 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
     def get_output(self):
         return [ComplexCoherenceSpectrumIndex]
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -103,7 +115,8 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
 
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
@@ -116,21 +129,23 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
                                             self.algorithm.average_segments)
         return self.array_size2kb(result)
 
-    def configure(self, time_series):
+    def configure(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> None
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("Time series shape is %s" % (str(self.input_shape)))
+        self.log.debug("Time series shape is %s" % (str(self.input_shape)))
         # -------------------- Fill Algorithm for Analysis -------------------##
         self.algorithm = NodeComplexCoherence()
         self.memory_factor = 1
 
-    def launch(self, time_series):
+    def launch(self, view_model):
+        # type: (NodeComplexCoherenceModel) -> [ComplexCoherenceSpectrumIndex]
         """
         Launch algorithm and build results.
 
@@ -138,7 +153,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         """
         # ------- Prepare a ComplexCoherenceSpectrum object for result -------##
         complex_coherence_spectrum_index = ComplexCoherenceSpectrumIndex()
-        time_series_h5 = h5.h5_file_for_index(time_series)
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         dest_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_index.gid)
         spectra_h5 = ComplexCoherenceSpectrumH5(dest_path)
@@ -156,10 +171,10 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         self.algorithm.time_series = small_ts
 
         partial_result = self.algorithm.evaluate()
-        LOG.debug("got partial_result")
-        LOG.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
-        LOG.debug("partial epoch_length is %s" % (str(partial_result.epoch_length)))
-        LOG.debug("partial windowing_function is %s" % (str(partial_result.windowing_function)))
+        self.log.debug("got partial_result")
+        self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
+        self.log.debug("partial epoch_length is %s" % (str(partial_result.epoch_length)))
+        self.log.debug("partial windowing_function is %s" % (str(partial_result.windowing_function)))
         # LOG.debug("partial frequency vector is %s" % (str(partial_result.frequency)))
 
         spectra_h5.write_data_slice(partial_result)

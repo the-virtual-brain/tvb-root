@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,24 +37,48 @@ It displays the mixing matrix of siae n_features x n_components
 """
 
 from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleIntField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.mode_decompositions import IndependentComponents
 
 LOG = get_logger(__name__)
+
+
+class ICAModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=IndependentComponents,
+        label='Independent component analysis:'
+    )
+
+    i_svar = Attr(
+        field_type=int,
+        default=0,
+        label='Index of state variable (defaults to first state variable)'
+    )
+
+    i_mode = Attr(
+        field_type=int,
+        default=0,
+        label='Index of mode (defaults to first mode)'
+    )
 
 
 class ICAForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ICAForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Independent component analysis:', conditions=self.get_filters())
-        self.i_svar = SimpleIntField(self, name='i_svar', default=0,
-                                     label='Index of state variable (defaults to first state variable)')
-        self.i_mode = SimpleIntField(self, name='i_mode', default=0, label='Index of mode (defaults to first mode)')
+        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, self, name='datatype',
+                                                 conditions=self.get_filters())
+        self.i_svar = IntField(ICAModel.i_svar, self, name='i_svar')
+        self.i_mode = IntField(ICAModel.i_mode, self, name='i_mode')
+
+    @staticmethod
+    def get_view_model():
+        return ICAModel
 
     @staticmethod
     def get_required_datatype():
@@ -75,17 +99,18 @@ class ICA(MappedArraySVGVisualizerMixin):
     def get_form_class(self):
         return ICAForm
 
-    def launch(self, datatype, i_svar=0, i_mode=0):
+    def launch(self, view_model):
+        # type: (ICAModel) -> dict
         """Construct data for visualization and launch it."""
         # get data from IndependentComponents datatype, convert to json
         # HACK: dump only a 2D array
-        h5_class, h5_path = self._load_h5_of_gid(datatype.gid)
+        h5_class, h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with h5_class(h5_path) as h5_file:
             unmixing_matrix = h5_file.unmixing_matrix.load()
             prewhitening_matrix = h5_file.prewhitening_matrix.load()
 
-        unmixing_matrix = unmixing_matrix[..., i_svar, i_mode]
-        prewhitening_matrix = prewhitening_matrix[..., i_svar, i_mode]
+        unmixing_matrix = unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
+        prewhitening_matrix = prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
         Cinv = unmixing_matrix.dot(prewhitening_matrix)
-        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (i_svar))
+        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (view_model.i_svar))
         return self.build_display_result("matrix/svg_view", pars)

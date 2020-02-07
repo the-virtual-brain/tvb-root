@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,6 +31,7 @@
 import os
 from abc import abstractmethod
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
+from tvb.basic.neotraits.api import Attr
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
@@ -38,8 +39,9 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.utils import extract_matlab_doc_string
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 
 BCT_GROUP_MODULARITY = AlgorithmTransientGroup("Modularity Algorithms", "Brain Connectivity Toolbox", "bct")
@@ -62,9 +64,9 @@ def bct_description(mat_file_name):
 class BaseBCTForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, draw_ranges=True):
         super(BaseBCTForm, self).__init__(prefix, project_id, draw_ranges)
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name="connectivity",
-                                                required=True, label=self.get_connectivity_label(),
-                                                conditions=self.get_filters(), has_all_option=True)
+        self.connectivity = TraitDataTypeSelectField(Attr(field_type=Connectivity, label=self.get_connectivity_label()),
+                                                     self, name="connectivity", conditions=self.get_filters(),
+                                                     has_all_option=True)
 
     @staticmethod
     def get_required_datatype():

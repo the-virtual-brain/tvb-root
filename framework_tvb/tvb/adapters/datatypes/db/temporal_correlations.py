@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -52,7 +52,7 @@ class CrossCorrelationIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (CrossCorrelation)  -> None
         super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
+        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.subtype = datatype.__class__.__name__
         self.source_gid = datatype.source.gid.hex

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,6 +30,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import importlib
 import json
 import os
 from threading import Lock
@@ -38,6 +39,7 @@ from six import add_metaclass
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel
 
 LOCK_CREATE_FIGURE = Lock()
 
@@ -63,7 +65,6 @@ class URLGenerator(object):
 
         return url
 
-
     @staticmethod
     def build_h5_url(entity_gid, method_name, flatten=False, datatype_kwargs=None, parameter=None):
         json_kwargs = json.dumps(datatype_kwargs)
@@ -75,7 +76,6 @@ class URLGenerator(object):
             url += "?" + str(parameter)
 
         return url
-
 
     @staticmethod
     def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
@@ -101,36 +101,30 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     VISUALIZERS_ROOT = ''
     VISUALIZERS_URL_PREFIX = ''
 
-
     def get_output(self):
         return []
 
-
-    def generate_preview(self, **kwargs):
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (ViewModel, (int,int)) -> dict
         """
         Should be implemented by all visualizers that can be used by portlets.
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
 
-
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Shortcut in case of visualization calls.
         """
-        self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        return self.launch(view_model=view_model), 0
 
-        return self.launch(**kwargs), 0
-
-
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Visualizers should no occupy any additional disk space.
         """
         return 0
-
 
     def build_display_result(self, template, parameters, pages=None):
         """
@@ -139,11 +133,11 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         :param parameters : dictionary with parameters for "template"
         :param pages : dictionary of pages to be used with <xi:include>
         """
-        module_ref = __import__(self.VISUALIZERS_ROOT, globals(), locals(), ["__init__"])
+        module_ref = importlib.import_module(self.VISUALIZERS_ROOT)
         relative_path = os.path.basename(os.path.dirname(module_ref.__file__))
         jinja_separator = '/'
 
-        template = os.path.join(relative_path, template)
+        template = relative_path + jinja_separator + template
         if pages:
             for key, value in pages.items():
                 if value is not None:
@@ -153,7 +147,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         parameters[self.KEY_IS_ADAPTER] = True
 
         return parameters
-
 
     @staticmethod
     def get_one_dimensional_list(list_of_elements, expected_size, error_msg):
@@ -184,12 +177,11 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
 
         return url
 
-    def build_h5_url(self, entity_gid, method_name, parameter=None):
+    @staticmethod
+    def build_h5_url(entity_gid, method_name, parameter=None):
         url = '/flow/read_from_h5_file/' + entity_gid + '/' + method_name
-
         if parameter is not None:
             url += "?" + str(parameter)
-
         return url
 
     @staticmethod
@@ -211,7 +203,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    # TODO review usages
+    # TODO review usages, can be replaced by load_from_index?
     def _load_h5_of_gid(self, entity_gid):
         entity_index = self.load_entity_by_gid(entity_gid)
         entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))

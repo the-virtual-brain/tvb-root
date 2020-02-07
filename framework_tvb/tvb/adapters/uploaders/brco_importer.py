@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,11 +36,25 @@ from tvb.adapters.uploaders.brco.parser import XMLParser
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotations
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.storage import transactional
 from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import UploadField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+
+
+class BRCOImporterModel(UploaderViewModel):
+    data_file = Str(
+        label='Connectivity Annotations'
+    )
+
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label='Target Large Scale Connectivity',
+        doc='The Connectivity for which these annotations were made'
+    )
 
 
 class BRCOImporterForm(ABCUploaderForm):
@@ -48,10 +62,12 @@ class BRCOImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(BRCOImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.xml', self, name='data_file', required=True, label='Connectivity Annotations')
-        self.connectivity = DataTypeSelectField(ConnectivityIndex, self, name='connectivity', required=True,
-                                                label='Target Large Scale Connectivity',
-                                                doc='The Connectivity for which these annotations were made')
+        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self, name='data_file')
+        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self, name='connectivity')
+
+    @staticmethod
+    def get_view_model():
+        return BRCOImporterModel
 
 
 class BRCOImporter(ABCUploader):
@@ -69,11 +85,11 @@ class BRCOImporter(ABCUploader):
         return [ConnectivityAnnotationsIndex]
 
     @transactional
-    def launch(self, data_file, connectivity):
+    def launch(self, view_model):
         try:
-            conn = h5.load_from_index(connectivity)
+            conn = self.load_traited_by_gid(view_model.connectivity)
 
-            parser = XMLParser(data_file, conn.region_labels)
+            parser = XMLParser(view_model.data_file, conn.region_labels)
             annotations = parser.read_annotation_terms()
 
             result_ht = ConnectivityAnnotations()

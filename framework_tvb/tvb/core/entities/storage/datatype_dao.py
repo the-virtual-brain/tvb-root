@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,7 @@ DAO operations related to generic DataTypes are defined here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import importlib
 from sqlalchemy import func, or_, not_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
@@ -43,11 +43,10 @@ from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Links, MeasurePointsSelection, \
-    StoredPSEFilter
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 from tvb.core.neotraits.db import Base
 
 
@@ -215,7 +214,7 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_all_datatypes(self, page_start=0, page_size=20):
+    def get_all_datatypes(self, page_start=0, page_size=DEFAULT_PAGE_SIZE):
         """
         Return a list with all of the datatypes currently available in TVB. Is used by 
         the file storage update manager to upgrade from version to the next.
@@ -296,7 +295,7 @@ class DatatypeDAO(RootDAO):
                                                        Links.fk_to_project == project_id))
                         ).outerjoin(BurstConfiguration,
                                     DataType.fk_parent_burst == BurstConfiguration.id
-                        ).filter(DataType.fk_datatype_group == None
+                                    ).filter(DataType.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
@@ -321,7 +320,7 @@ class DatatypeDAO(RootDAO):
                                                 links.fk_to_project == project_id)
                         ).outerjoin(BurstConfiguration,
                                     DataType.fk_parent_burst == BurstConfiguration.id
-                        ).filter(DataType.fk_datatype_group != None
+                                    ).filter(DataType.fk_datatype_group != None
                         ).filter(links.id == None)
 
             if visibility_filter:
@@ -391,9 +390,8 @@ class DatatypeDAO(RootDAO):
         try:
             datatype_instance = self.session.query(DataType).filter_by(gid=gid).one()
             classname = datatype_instance.type
-            data_class = __import__(datatype_instance.module, globals(), locals(), [classname])
-            data_class = eval("data_class." + classname)
-            data_type = data_class
+            module = importlib.import_module(datatype_instance.module)
+            data_type = getattr(module, classname)
             result_dt = self.session.query(data_type).filter_by(gid=gid).one()
 
             result_dt.parent_operation.project

@@ -7,7 +7,7 @@
        {% for burst in burst_list %}
             <li class="burst {{ 'burst-group' if burst.is_group else '' }} {{'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished' }}"
                 id='burst_id_{{ burst.id }}'>
-                <a href="#" onclick="changeBurstHistory({{ burst.id }}, true);" title="Load this simulation">{{ burst.name }}</a>
+                <a href="#" onclick="changeBurstHistory({{ burst.id }}, true, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
                 <nav class="inline-menu inline-hover-menu">
                     <button class="action action-edit action-menu">Edit</button>
                     <div class="extension">
@@ -24,7 +24,7 @@
                                 <button class="action action-store" onclick="renameBurstEntry({{ burst.id }}, 'new_name_{{ burst.id }}')"
                                         title="Rename with new name from above input-field">Rename</button>
                             {% endif %}
-                            <p><button class="action action-copy" onclick="copyBurst({{ burst.id }})" title="Create a copy of the current simulation configuration.">
+                            <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
                             <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
                                         title="Export simulation JSON, for later import or use in command line">

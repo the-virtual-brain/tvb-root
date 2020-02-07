@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,13 +31,18 @@
 import importlib
 import typing
 import os.path
+import uuid
 from datetime import datetime
+import scipy.sparse
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, EquationScalar, \
+    SparseMatrix
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
+from tvb.datatypes.equations import Equation
 
 
 class H5File(object):
@@ -203,3 +208,35 @@ class H5File(object):
 
     def __repr__(self):
         return '<{}("{}")>'.format(type(self).__name__, self.path)
+
+
+class ViewModelH5(H5File):
+
+    def __init__(self, path, view_model):
+        super(ViewModelH5, self).__init__(path)
+        self.view_model = type(view_model)
+        attrs = self.view_model.declarative_attrs
+        self._generate_accessors(attrs)
+
+    def _generate_accessors(self, view_model_fields):
+        for attr_name in view_model_fields:
+            attr = getattr(self.view_model, attr_name)
+            if not issubclass(type(attr), Attr):
+                raise ValueError('expected a Attr, got a {}'.format(type(attr)))
+
+            if isinstance(attr, DataTypeGidAttr):
+                ref = Uuid(attr, self)
+            elif isinstance(attr, NArray):
+                ref = DataSet(attr, self)
+            elif isinstance(attr, List):
+                ref = Json(attr, self)
+            elif issubclass(type(attr), Attr):
+                if attr.field_type is scipy.sparse.spmatrix:
+                    ref = SparseMatrix(attr, self)
+                elif attr.field_type is uuid.UUID:
+                    ref = Uuid(attr, self)
+                elif issubclass(attr.field_type, Equation):
+                    ref = EquationScalar(attr, self)
+                else:
+                    ref = Scalar(attr, self)
+            setattr(self, attr.field_name, ref)

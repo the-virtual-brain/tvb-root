@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -42,6 +42,7 @@ import pytest
 import numpy
 import itertools
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.models import ModelsEnum
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
 from tvb.datatypes.connectivity import Connectivity
@@ -50,7 +51,7 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
 
-MODEL_CLASSES = models.Model.get_known_subclasses().values()
+MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
 
 
@@ -98,7 +99,7 @@ class Simulator(object):
 
         return results
 
-    def configure(self, dt=2 ** -3, model=models.Generic2dOscillator, speed=4.0,
+    def configure(self, dt=2 ** -3, model=ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), speed=4.0,
                   coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
                   default_connectivity=True):
@@ -178,3 +179,19 @@ class TestSimulator(BaseTestCase):
         result = test_simulator.run_simulation(simulation_length=2)
 
         assert len(test_simulator.monitors) == len(result)
+
+    def test_integrator_boundaries_config(self):
+        from . models_test import TestBoundsModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestBoundsModel()
+        test_simulator.model.configure()
+        test_simulator.integrator.configure()
+        test_simulator._configure_integrator_boundaries()
+        assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
+        state_variable_boundaries = numpy.array([[0.0, 1.0], [min_float, 1.0],
+                                                 [0.0, max_float], [min_float, max_float]]).astype("float64")
+        assert numpy.allclose(state_variable_boundaries,
+                              test_simulator.integrator.state_variable_boundaries,
+                              1.0/numpy.finfo("single").max)

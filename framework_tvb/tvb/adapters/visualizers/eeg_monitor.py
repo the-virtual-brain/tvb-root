@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,20 +39,45 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
+
+
+class EegMonitorModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label='Input Data',
+        doc='Time series to display.'
+    )
+
+    data_2 = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        required=False,
+        label='Input Data 2',
+        doc='Time series to display.'
+    )
+
+    data_3 = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        required=False,
+        label='Input Data 3',
+        doc='Time series to display.'
+    )
 
 
 class EegMonitorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(EegMonitorForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Input Data', doc='Time series to display.')
-        self.data_2 = DataTypeSelectField(self.get_required_datatype(), self, name='data_2', label='Input Data 2',
-                                          doc='Time series to display.')
-        self.data_3 = DataTypeSelectField(self.get_required_datatype(), self, name='data_3', label='Input Data 3',
-                                          doc='Time series to display.')
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self, name='data_3')
+
+    @staticmethod
+    def get_view_model():
+        return EegMonitorModel
 
     @staticmethod
     def get_required_datatype():
@@ -85,7 +110,8 @@ class EegMonitor(ABCDisplayer):
     def get_form_class(self):
         return EegMonitorForm
 
-    def get_required_memory_size(self, time_series):
+    def get_required_memory_size(self, view_model):
+        # type: (EegMonitorModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -208,21 +234,34 @@ class EegMonitor(ABCDisplayer):
 
         return parameters
 
+    def _load_input_indexes(self, view_model):
+        main_time_series_index = self.load_entity_by_gid(view_model.input_data.hex)
+        time_series_index2 = None
+        time_series_index3 = None
 
-    def generate_preview(self, input_data, data_2=None, data_3=None, figure_size=None):
-        params = self.compute_parameters(input_data, data_2, data_3, is_preview=True)
+        if view_model.data_2:
+            time_series_index2 = self.load_entity_by_gid(view_model.data_2.hex)
+        if view_model.data_3:
+            time_series_index3 = self.load_entity_by_gid(view_model.data_3.hex)
+        return main_time_series_index, time_series_index2, time_series_index3
+
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (EegMonitorModel, list) -> dict
+        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
+        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3,
+                                         is_preview=True)
         pages = dict(channelsPage=None)
         return self.build_display_result("eeg/preview", params, pages)
 
-
-    def launch(self, input_data, data_2=None, data_3=None):
+    def launch(self, view_model):
+        # type: (EegMonitorModel) -> dict
         """
         Compute visualizer's page
         """
-        params = self.compute_parameters(input_data, data_2, data_3)
+        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
+        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3)
         pages = dict(controlPage="eeg/controls", channelsPage="commons/channel_selector.html")
         return self.build_display_result("eeg/view", params, pages=pages)
-
 
     def _pre_process(self, timeseries_list):
         """From input, Compute no of lines and labels."""
@@ -250,7 +289,10 @@ class EegMonitor(ABCDisplayer):
             else:
                 initial_selections.append(timeseries.get_default_selection())
 
-            measures_sel_gids.append(timeseries.get_measure_points_selection_gid())
+            if isinstance(timeseries.get_measure_points_selection_gid(), str):
+                measures_sel_gids.append(timeseries.get_measure_points_selection_gid())
+            else:
+                measures_sel_gids.append(timeseries.get_measure_points_selection_gid().hex)
             grouped_labels.append(timeseries.get_grouped_space_labels())
 
             state_vars[ts_name] = timeseries.labels_dimensions.load().get(timeseries.labels_ordering.load()[1], [])
@@ -278,7 +320,6 @@ class EegMonitor(ABCDisplayer):
                 this_label = str(idx + 1) + '.' + this_label
             graph_labels.append(this_label)
 
-
     @staticmethod
     def _replace_nan_values(input_data):
         """ Replace NAN values with a given values"""
@@ -288,7 +329,6 @@ class EegMonitor(ABCDisplayer):
                 input_data[idx] = numpy.nan_to_num(input_data[idx])
             is_any_value_nan = True
         return is_any_value_nan
-
 
     def compute_required_info(self, list_of_timeseries):
         """Compute average difference between Max and Min."""
@@ -321,18 +361,15 @@ class EegMonitor(ABCDisplayer):
 
         return float(max(step)), translations, channels_per_set
 
-
     @staticmethod
     def _get_sub_title(datatype_list):
         """ Compute sub-title for current page"""
         return "_".join(d.display_name for d in datatype_list)
 
-
     @staticmethod
     def _get_label_x(original_timeseries):
         """ Compute the label displayed on the x axis """
         return "Time(%s)" % original_timeseries.sample_period_unit
-
 
     def _get_data_set_urls(self, list_of_timeseries, is_preview=False):
         """

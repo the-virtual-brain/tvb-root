@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,11 +37,10 @@ import pytest
 import tvb_data
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
-from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities import model
+from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.services.exceptions import ProjectServiceException
@@ -230,8 +229,7 @@ class TestProjectService(TransactionalTestCase):
         assert len(projects) == 3, "Projects not retrieved properly!"
         projects = self.project_service.retrieve_projects_for_user(member3.id, 1)[0]
         assert len(projects) == 2, "Projects not retrieved properly!"
-        
-        
+
     def test_retrieve_projects_random(self):
         """
         Generate a large number of users/projects, and validate the results.
@@ -244,7 +242,7 @@ class TestProjectService(TransactionalTestCase):
                 expected_pages = expected_projects / PROJECTS_PAGE_SIZE
                 exp_proj_per_page = PROJECTS_PAGE_SIZE
             else:
-                expected_pages = expected_projects / PROJECTS_PAGE_SIZE + 1
+                expected_pages = expected_projects // PROJECTS_PAGE_SIZE + 1
                 exp_proj_per_page = expected_projects % PROJECTS_PAGE_SIZE
             if expected_projects == 0:
                 expected_pages = 0
@@ -258,8 +256,7 @@ class TestProjectService(TransactionalTestCase):
             full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
             if os.path.isdir(full_path) and folder.startswith('Generated'): 
                 shutil.rmtree(full_path)
-        
-            
+
     def test_retrieve_projects_page2(self):
         """
         Test for retrieving the second page projects for a given user.
@@ -269,8 +266,7 @@ class TestProjectService(TransactionalTestCase):
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
         assert len(projects) == (PROJECTS_PAGE_SIZE + 3) % PROJECTS_PAGE_SIZE, "Pagination inproper."
         assert pages == 2, 'Wrong number of pages retrieved.'
-        
-        
+
     def test_retrieve_projects_and_del(self):
         """
         Test for retrieving the second page projects for a given user.
@@ -280,7 +276,7 @@ class TestProjectService(TransactionalTestCase):
             created_projects.append(TestFactory.create_project(self.test_user, 'test_proj' + str(i)))
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
         assert len(projects) == (PROJECTS_PAGE_SIZE + 1) % PROJECTS_PAGE_SIZE, "Pagination improper."
-        assert pages == (PROJECTS_PAGE_SIZE + 1) / PROJECTS_PAGE_SIZE + 1, 'Wrong number of pages'
+        assert pages == (PROJECTS_PAGE_SIZE + 1) // PROJECTS_PAGE_SIZE + 1, 'Wrong number of pages'
         self.project_service.remove_project(created_projects[1].id)
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id, 2)
         assert len(projects) == 0, "Pagination improper."
@@ -289,22 +285,20 @@ class TestProjectService(TransactionalTestCase):
         assert len(projects) == PROJECTS_PAGE_SIZE, "Pagination improper."
         assert pages == 1, 'Wrong number of pages retrieved.'
 
-
     def test_empty_project_has_zero_disk_size(self):
         TestFactory.create_project(self.test_user, 'test_proj')
         projects, pages = self.project_service.retrieve_projects_for_user(self.test_user.id)
         assert 0 == projects[0].disk_size
         assert '0.0 KiB' == projects[0].disk_size_human
 
-
     def test_project_disk_size(self):
         project1 = TestFactory.create_project(self.test_user, 'test_proj1')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, project1, 'testSubject', zip_path)
+        TestFactory.import_zip_connectivity(self.test_user, project1, zip_path, 'testSubject')
 
         project2 = TestFactory.create_project(self.test_user, 'test_proj2')
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path);
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject');
 
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
         assert projects[0].disk_size != projects[1].disk_size, "projects should have different size"
@@ -319,7 +313,6 @@ class TestProjectService(TransactionalTestCase):
             ratio = float(actual_disk_size) / project.disk_size
             msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
             assert ratio < 1.4, msg
-
 
     def test_get_linkable_projects(self):
         """
@@ -338,7 +331,7 @@ class TestProjectService(TransactionalTestCase):
 
         project_storage = os.path.join(project_storage, str(operation.id))
         os.makedirs(project_storage)
-        datatype = dao.store_entity(model.DataType(module="test_data", subject="subj1", 
+        datatype = dao.store_entity(model_datatype.DataType(module="test_data", subject="subj1",
                                                    state="test_state", operation_id=operation.id))
         linkable = self.project_service.get_linkable_projects_for_user(self.test_user.id, str(datatype.id))[0]
         assert len(linkable) == 2, "Wrong count of link-able projects!"
@@ -346,8 +339,7 @@ class TestProjectService(TransactionalTestCase):
         assert test_proj[1].name in proj_names
         assert test_proj[2].name in proj_names
         assert not test_proj[3].name in proj_names
-    
-    
+
     def test_remove_project_happy_flow(self):
         """
         Standard flow for deleting a project.
@@ -361,8 +353,7 @@ class TestProjectService(TransactionalTestCase):
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 0, "Project was not deleted!"
         assert not os.path.exists(project_root), "Root folder not deleted!"
-        
-        
+
     def test_remove_project_wrong_id(self):
         """
         Flow for deleting a project giving an un-existing id.
@@ -372,7 +363,6 @@ class TestProjectService(TransactionalTestCase):
         assert len(projects) == 1, "Initializations failed!"
         with pytest.raises(ProjectServiceException):
             self.project_service.remove_project(99)   
-    
 
     @staticmethod
     def _create_value_wrapper(test_user, test_project=None):
@@ -398,7 +388,6 @@ class TestProjectService(TransactionalTestCase):
         result_vw = ABCAdapter.load_entity_by_gid(all_value_wrappers[0][2])
         return test_project, result_vw.gid, operation.gid
 
-     
     def __check_meta_data(self, expected_meta_data, new_datatype):
         """Validate Meta-Data"""
         mapp_keys = {DataTypeMetaData.KEY_SUBJECT: "subject", DataTypeMetaData.KEY_STATE: "state"}
@@ -409,24 +398,23 @@ class TestProjectService(TransactionalTestCase):
                 if DataTypeMetaData.KEY_OP_GROUP_ID in expected_meta_data:
                     # We have a Group to check
                     op_group = new_datatype.parent_operation.fk_operation_group
-                    op_group = dao.get_generic_entity(model.OperationGroup, op_group)[0]
+                    op_group = dao.get_generic_entity(model_operation.OperationGroup, op_group)[0]
                     assert value == op_group.name
                 else:
                     assert value == new_datatype.parent_operation.user_group
-    
-    
-    def test_remove_project_node(self):
+
+    def test_remove_project_node(self, test_adapter_factory):
         """
         Test removing of a node from a project.
         """
         inserted_project, gid, gid_op = self._create_value_wrapper(self.test_user) 
-        project_to_link = model.Project("Link", self.test_user.id, "descript")
+        project_to_link = model_project.Project("Link", self.test_user.id, "descript")
         project_to_link = dao.store_entity(project_to_link)
         exact_data = dao.get_datatype_by_gid(gid)
-        dao.store_entity(model.Links(exact_data.id, project_to_link.id))
+        dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
         assert dao.get_datatype_by_gid(gid) is not None, "Initialization problem!"
         
-        operation_id = dao.get_generic_entity(model.Operation, gid_op, 'gid')[0].id
+        operation_id = dao.get_generic_entity(model_operation.Operation, gid_op, 'gid')[0].id
         op_folder = self.structure_helper.get_project_folder("test_proj", str(operation_id))
         assert os.path.exists(op_folder)
         sub_files = os.listdir(op_folder)
@@ -434,7 +422,7 @@ class TestProjectService(TransactionalTestCase):
         ### Validate that no more files are created than needed.
 
         if(dao.get_system_user() is None):
-            dao.store_entity(model.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+            dao.store_entity(model_operation.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
         self.project_service._remove_project_node_files(inserted_project.id, gid)
         sub_files = os.listdir(op_folder)
         assert 1 == len(sub_files)
@@ -449,8 +437,7 @@ class TestProjectService(TransactionalTestCase):
         sub_files = os.listdir(op_folder)
         assert 1 == len(sub_files)
         ### operation.xml file should still be there
-        
-        
+
     def test_update_meta_data_simple(self):
         """
         Test the new update metaData for a simple data that is not part of a group.
@@ -469,85 +456,88 @@ class TestProjectService(TransactionalTestCase):
         op_meta = XMLReader(op_path).read_metadata()
         assert op_meta['user_group'] == 'new user group', 'UserGroup not updated!'
 
-
-    def test_update_meta_data_group(self):
+    def test_update_meta_data_group(self, datatype_group_factory):
         """
         Test the new update metaData for a group of dataTypes.
         """
-        datatypes, group_id = TestFactory.create_group(self.test_user, subject="test-subject-1")
+        group = datatype_group_factory()
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "updated_state",
-                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: group_id,
+                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: group.id,
                          DataTypeOverlayDetails.CODE_OPERATION_TAG: 'newGroupName'}
-        self.project_service.update_metadata(new_meta_data)  
-          
+        self.project_service.update_metadata(new_meta_data)
+        datatypes = dao.get_datatype_in_group(group.id)
         for datatype in datatypes:
             new_datatype = dao.get_datatype_by_id(datatype.id)
-            assert group_id == new_datatype.parent_operation.fk_operation_group
-            new_group = dao.get_generic_entity(model.OperationGroup, group_id)[0]
+            assert group.id == new_datatype.parent_operation.fk_operation_group
+            new_group = dao.get_generic_entity(model_operation.OperationGroup, group.id)[0]
             assert new_group.name == "newGroupName"
             self.__check_meta_data(new_meta_data, new_datatype)
-            
-    
+
     def _create_datatypes(self, dt_factory, nr_of_dts):
         for idx in range(nr_of_dts):
             dt = Datatype1()
             dt.row1 = "value%i" % (idx,)
             dt.row2 = "value%i" % (idx + 1,)
             dt_factory._store_datatype(dt)
-            
-            
-    def test_retrieve_project_full(self):
+
+    def test_retrieve_project_full(self, dummy_datatype_index_factory):
         """
         Tests full project information is retrieved by method `ProjectService.retrieve_project_full(...)`
         """
-        dt_factory = datatypes_factory.DatatypesFactory()
-        self._create_datatypes(dt_factory, 3)
-        _, ops_nr, operations, pages_no = self.project_service.retrieve_project_full(dt_factory.project.id)
+
+        project = TestFactory.create_project(self.test_user)
+        operation = TestFactory.create_operation(test_user=self.test_user, test_project=project)
+
+        dummy_datatype_index_factory(project=project, operation=operation)
+        dummy_datatype_index_factory(project=project, operation=operation)
+        dummy_datatype_index_factory(project=project, operation=operation)
+
+        _, ops_nr, operations, pages_no = self.project_service.retrieve_project_full(project.id)
         assert ops_nr == 1, "DataType Factory should only use one operation to store all it's datatypes."
         assert pages_no == 1, "DataType Factory should only use one operation to store all it's datatypes."
         resulted_dts = operations[0]['results']
         assert len(resulted_dts) == 3, "3 datatypes should be created."
-        
-        
-    def test_get_project_structure(self):
+
+    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory, project_factory, user_factory):
         """
         Tests project structure is as expected and contains all datatypes
         """
         SELF_DTS_NUMBER = 3
-        dt_factory_1 = datatypes_factory.DatatypesFactory()
-        self._create_datatypes(dt_factory_1, SELF_DTS_NUMBER)
-        dt_group = dt_factory_1.create_datatype_group()
+
+        user = user_factory()
+        project = project_factory(user)
+
+        dt_group = datatype_group_factory(project=project)
 
         link_ids, expected_links = [], []
         # Prepare link towards a simple DT
-        dt_factory_2 = datatypes_factory.DatatypesFactory()
-        dt_to_link = dt_factory_2.create_simple_datatype()
+        dt_to_link = dummy_datatype_index_factory(state="RAW_DATA")
         link_ids.append(dt_to_link.id)
         expected_links.append(dt_to_link.gid)
 
         # Prepare links towards a full DT Group, but expecting only the DT_Group in the final tree
-        link_gr = dt_factory_2.create_datatype_group()
+        link_gr = dt_group
         dts = dao.get_datatype_in_group(datatype_group_id=link_gr.id)
         link_ids.extend([dt_to_link.id for dt_to_link in dts])
         link_ids.append(link_gr.id)
         expected_links.append(link_gr.gid)
 
         # Prepare link towards a single DT inside a group, and expecting to find the DT in the final tree
-        link_gr = dt_factory_2.create_datatype_group()
+        link_gr = dt_group
         dt_to_link = dao.get_datatype_in_group(datatype_group_id=link_gr.id)[0]
         link_ids.append(dt_to_link.id)
         expected_links.append(dt_to_link.gid)
 
         # Actually create the links from Prj2 into Prj1
-        FlowService().create_link(link_ids, dt_factory_1.project.id)
+        FlowService().create_link(link_ids, project.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
-        dts_in_tree = dao.get_data_in_project(dt_factory_1.project.id)
+        dts_in_tree = dao.get_data_in_project(project.id)
         dts_in_tree = [dt.gid for dt in dts_in_tree]
         # Retrieve the tree json (for trivial validations only, as we can not decode)
-        node_json = self.project_service.get_project_structure(dt_factory_1.project, None, DataTypeMetaData.KEY_STATE,
+        node_json = self.project_service.get_project_structure(project, None, DataTypeMetaData.KEY_STATE,
                                                                DataTypeMetaData.KEY_SUBJECT, None)
 
         assert len(expected_links) + SELF_DTS_NUMBER + 2 == len(dts_in_tree), "invalid number of nodes in tree"
@@ -555,7 +545,7 @@ class TestProjectService(TransactionalTestCase):
         assert dt_group.gid in dts_in_tree, "DT_Group should be in the Project Tree!"
         assert dt_group.gid in node_json, "DT_Group should be in the Project Tree JSON!"
 
-        project_dts = dao.get_datatypes_in_project(dt_factory_1.project.id)
+        project_dts = dao.get_datatypes_in_project(project.id)
         for dt in project_dts:
             if dt.fk_datatype_group is not None:
                 assert not dt.gid in node_json, "DTs part of a group should not be"
@@ -567,4 +557,4 @@ class TestProjectService(TransactionalTestCase):
         for link_gid in expected_links:
             assert link_gid in node_json, "Expected Link not present"
             assert link_gid in dts_in_tree, "Expected Link not present"
-            
+

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -46,6 +46,9 @@ from tvb.datatypes.time_series import TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSE
 from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
 from tvb.datatypes.cortex import Cortex
+from tvb.simulator.simulator import Simulator
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
@@ -134,3 +137,4 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(None, ValueWrapperH5, ValueWrapperIndex)
     REGISTRY.register_datatype(Cortex, CortexH5, None)
+    REGISTRY.register_datatype(Simulator, SimulatorH5, SimulatorIndex)

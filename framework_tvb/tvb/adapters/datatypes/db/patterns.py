@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
@@ -52,9 +53,9 @@ class StimuliRegionIndex(DataType):
         # type: (StimuliRegion)  -> None
         super(StimuliRegionIndex, self).fill_from_has_traits(datatype)
         self.spatial_equation = datatype.spatial.__class__.__name__
-        self.spatial_parameters = datatype.spatial.parameters
+        self.spatial_parameters = json.dumps(datatype.spatial.parameters)
         self.temporal_equation = datatype.temporal.__class__.__name__
-        self.temporal_parameters = datatype.temporal.parameters
+        self.temporal_parameters = json.dumps(datatype.temporal.parameters)
         self.connectivity_gid = datatype.connectivity.gid.hex
 
 
@@ -73,7 +74,7 @@ class StimuliSurfaceIndex(DataType):
         # type: (StimuliSurface)  -> None
         super(StimuliSurfaceIndex, self).fill_from_has_traits(datatype)
         self.spatial_equation = datatype.spatial.__class__.__name__
-        self.spatial_parameters = datatype.spatial.parameters
+        self.spatial_parameters = json.dumps(datatype.spatial.parameters)
         self.temporal_equation = datatype.temporal.__class__.__name__
-        self.temporal_parameters = datatype.temporal.parameters
-        self.surface_gid = datatype.surface.gid
+        self.temporal_parameters = json.dumps(datatype.temporal.parameters)
+        self.surface_gid = datatype.surface.gid.hex

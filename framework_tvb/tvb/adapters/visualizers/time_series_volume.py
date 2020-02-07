@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,18 +47,37 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSer
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.utils import prepare_time_slice
+from tvb.datatypes.structural import StructuralMRI
+from tvb.datatypes.time_series import TimeSeries
+
+
+class TimeSeriesVolumeVisualiserModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label='Time Series'
+    )
+
+    background = DataTypeGidAttr(
+        linked_datatype=StructuralMRI,
+        required=False,
+        label='Background T1'
+    )
 
 
 class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TimeSeriesVolumeVisualiserForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series', conditions=self.get_filters())
-        self.background = DataTypeSelectField(StructuralMRIIndex, self, name='background', required=False,
-                                              label='Background T1')
+        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self,
+                                                    name='time_series', conditions=self.get_filters())
+        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self, name='background')
+
+    @staticmethod
+    def get_view_model():
+        return TimeSeriesVolumeVisualiserModel
 
     @staticmethod
     def get_input_name():
@@ -80,16 +99,18 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
     def get_form_class(self):
         return TimeSeriesVolumeVisualiserForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TimeSeriesVolumeVisualiserModel) -> int
         """Return required memory."""
         return -1
 
-    def launch(self, time_series, background=None):
+    def launch(self, view_model):
+        # type: (TimeSeriesVolumeVisualiserModel) -> dict
 
-        url_volume_data = self.build_url('get_volume_view', time_series.gid, '')
-        url_timeseries_data = self.build_url('get_voxel_time_series', time_series.gid, '')
+        url_volume_data = self.build_url('get_volume_view', view_model.time_series.hex, '')
+        url_timeseries_data = self.build_url('get_voxel_time_series', view_model.time_series.hex, '')
 
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(time_series.gid)
+        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.time_series.hex)
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
 
@@ -108,6 +129,10 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             volume_shape.extend(rmv_h5.array_data.shape)
             rmv_h5.close()
 
+        background_index = None
+        if view_model.background:
+            background_index = self.load_entity_by_gid(view_model.background.hex)
+
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),
                       labelsStateVar=ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], []),
@@ -122,7 +147,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
                       voxelUnit=volume_h5.voxel_unit.load(),
                       voxelSize=json.dumps(volume_h5.voxel_size.load().tolist()))
 
-        params.update(self.ensure_background(background))
+        params.update(self.ensure_background(background_index))
 
         volume_h5.close()
         ts_h5.close()
@@ -143,7 +168,6 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         url_volume_data = self.build_url('get_volume_view', background_index.gid, '')
         return _MappedArrayVolumeBase.compute_background_params(min_value, max_value, url_volume_data)
-
 
     def get_voxel_time_series(self, entity_gid, **kwargs):
         """

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,6 +29,8 @@
 #
 
 import os
+from uuid import UUID
+
 from tvb.adapters.analyzers.cross_correlation_adapter import CrossCorrelateAdapter, PearsonCorrelationCoefficientAdapter
 from tvb.adapters.analyzers.fcd_adapter import FunctionalConnectivityDynamicsAdapter
 from tvb.adapters.analyzers.fmri_balloon_adapter import BalloonModelAdapter
@@ -48,200 +50,217 @@ from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5, Coheren
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.core.neocom import h5
-from tvb.tests.framework.adapters.analyzers.fft_test import make_ts_from_op
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestAdapters(TransactionalTestCase):
-    def test_wavelet_adapter(self, tmpdir, session, operation_factory):
+    def test_wavelet_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         wavelet_adapter = ContinuousWaveletTransformAdapter()
+        view_model = wavelet_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
         wavelet_adapter.storage_path = storage_folder
-        wavelet_adapter.configure(ts_index)
+        wavelet_adapter.configure(view_model)
 
-        disk = wavelet_adapter.get_required_disk_size()
-        mem = wavelet_adapter.get_required_memory_size()
+        disk = wavelet_adapter.get_required_disk_size(view_model)
+        mem = wavelet_adapter.get_required_memory_size(view_model)
 
-        wavelet_idx = wavelet_adapter.launch(ts_index)
+        wavelet_idx = wavelet_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, WaveletCoefficientsH5, wavelet_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_pca_adapter(self, tmpdir, session, operation_factory):
+    def test_pca_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         pca_adapter = PCAAdapter()
+        view_model = pca_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
         pca_adapter.storage_path = storage_folder
-        pca_adapter.configure(ts_index)
+        pca_adapter.configure(view_model)
 
-        disk = pca_adapter.get_required_disk_size(ts_index)
-        mem = pca_adapter.get_required_memory_size(ts_index)
+        disk = pca_adapter.get_required_disk_size(view_model)
+        mem = pca_adapter.get_required_memory_size(view_model)
 
-        pca_idx = pca_adapter.launch(ts_index)
+        pca_idx = pca_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, PrincipalComponentsH5, pca_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_ica_adapter(self, tmpdir, session, operation_factory):
+    def test_ica_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         ica_adapter = ICAAdapter()
         ica_adapter.storage_path = storage_folder
-        ica_adapter.configure(ts_index)
+        view_model = ica_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        ica_adapter.configure(view_model)
 
-        disk = ica_adapter.get_required_disk_size(ts_index)
-        mem = ica_adapter.get_required_memory_size(ts_index)
+        disk = ica_adapter.get_required_disk_size(view_model)
+        mem = ica_adapter.get_required_memory_size(view_model)
 
-        ica_idx = ica_adapter.launch(ts_index)
+        ica_idx = ica_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, IndependentComponentsH5, ica_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_metrics_adapter_launch(self, tmpdir, session, operation_factory):
+    def test_metrics_adapter_launch(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         metrics_adapter = TimeseriesMetricsAdapter()
         metrics_adapter.storage_path = storage_folder
-        metrics_adapter.configure(ts_index)
+        view_model = metrics_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        metrics_adapter.configure(view_model)
 
-        disk = metrics_adapter.get_required_disk_size()
-        mem = metrics_adapter.get_required_memory_size()
+        disk = metrics_adapter.get_required_disk_size(view_model)
+        mem = metrics_adapter.get_required_memory_size(view_model)
 
-        datatype_measure_index = metrics_adapter.launch(ts_index)
+        datatype_measure_index = metrics_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, DatatypeMeasureH5, datatype_measure_index.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_cross_correlation_adapter(self, tmpdir, session, operation_factory):
+    def test_cross_correlation_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         cross_correlation_adapter = CrossCorrelateAdapter()
         cross_correlation_adapter.storage_path = storage_folder
-        cross_correlation_adapter.configure(ts_index)
+        view_model = cross_correlation_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        cross_correlation_adapter.configure(view_model)
 
-        disk = cross_correlation_adapter.get_required_disk_size()
-        mem = cross_correlation_adapter.get_required_memory_size()
+        disk = cross_correlation_adapter.get_required_disk_size(view_model)
+        mem = cross_correlation_adapter.get_required_memory_size(view_model)
 
-        cross_correlation_idx = cross_correlation_adapter.launch(ts_index)
+        cross_correlation_idx = cross_correlation_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CrossCorrelationH5, cross_correlation_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_pearson_correlation_coefficient_adapter(self, tmpdir, session, operation_factory):
+    def test_pearson_correlation_coefficient_adapter(self, tmpdir, time_series_index_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
-        t_start = 0.9765625
-        t_end = 1000.0
+        ts_index = time_series_index_factory()
 
         pearson_correlation_coefficient_adapter = PearsonCorrelationCoefficientAdapter()
         pearson_correlation_coefficient_adapter.storage_path = storage_folder
-        pearson_correlation_coefficient_adapter.configure(ts_index, t_start, t_end)
+        view_model = pearson_correlation_coefficient_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        pearson_correlation_coefficient_adapter.configure(view_model)
 
-        disk = pearson_correlation_coefficient_adapter.get_required_disk_size()
-        mem = pearson_correlation_coefficient_adapter.get_required_memory_size()
+        disk = pearson_correlation_coefficient_adapter.get_required_disk_size(view_model)
+        mem = pearson_correlation_coefficient_adapter.get_required_memory_size(view_model)
 
-        correlation_coefficients_idx = pearson_correlation_coefficient_adapter.launch(ts_index, t_start, t_end)
+        correlation_coefficients_idx = pearson_correlation_coefficient_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CorrelationCoefficientsH5, correlation_coefficients_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_node_coherence_adapter(self, tmpdir, session, operation_factory):
+    def test_node_coherence_adapter(self, tmpdir, time_series_index_factory):
         # algorithm returns complex values instead of float
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         node_coherence_adapter = NodeCoherenceAdapter()
         node_coherence_adapter.storage_path = storage_folder
-        node_coherence_adapter.configure(ts_index)
+        view_model = node_coherence_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        node_coherence_adapter.configure(view_model)
 
-        disk = node_coherence_adapter.get_required_disk_size()
-        mem = node_coherence_adapter.get_required_memory_size()
+        disk = node_coherence_adapter.get_required_disk_size(view_model)
+        mem = node_coherence_adapter.get_required_memory_size(view_model)
 
-        coherence_spectrum_idx = node_coherence_adapter.launch(ts_index)
+        coherence_spectrum_idx = node_coherence_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CoherenceSpectrumH5, coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_node_complex_coherence_adapter(self, tmpdir, session, operation_factory):
+    def test_node_complex_coherence_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         node_complex_coherence_adapter = NodeComplexCoherenceAdapter()
         node_complex_coherence_adapter.storage_path = storage_folder
-        node_complex_coherence_adapter.configure(ts_index)
+        view_model = node_complex_coherence_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        node_complex_coherence_adapter.configure(view_model)
 
-        disk = node_complex_coherence_adapter.get_required_disk_size()
-        mem = node_complex_coherence_adapter.get_required_memory_size()
+        disk = node_complex_coherence_adapter.get_required_disk_size(view_model)
+        mem = node_complex_coherence_adapter.get_required_memory_size(view_model)
 
-        complex_coherence_spectrum_idx = node_complex_coherence_adapter.launch(ts_index)
+        complex_coherence_spectrum_idx = node_complex_coherence_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_fcd_adapter(self, tmpdir, session, operation_factory):
+    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory,
+                         connectivity_factory, region_mapping_factory, surface_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
-        sw = 0.5
-        sp = 0.2
+        connectivity = connectivity_factory()
+        surface = surface_factory()
+        region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
+        ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         fcd_adapter = FunctionalConnectivityDynamicsAdapter()
         fcd_adapter.storage_path = storage_folder
-        fcd_adapter.configure(ts_index, sw, sp)
+        view_model = fcd_adapter.get_view_model_class()()
+        view_model.sw = 0.5
+        view_model.sp = 0.2
+        view_model.time_series = UUID(ts_index.gid)
+        fcd_adapter.configure(view_model)
 
-        disk = fcd_adapter.get_required_disk_size()
-        mem = fcd_adapter.get_required_memory_size()
+        disk = fcd_adapter.get_required_disk_size(view_model)
+        mem = fcd_adapter.get_required_memory_size(view_model)
 
-        fcd_idx = fcd_adapter.launch(ts_index, sw, sp)
+        fcd_idx = fcd_adapter.launch(view_model)
 
-        result_h5 = h5.path_for(storage_folder, FcdH5, fcd_idx.gid)
+        result_h5 = h5.path_for(storage_folder, FcdH5, fcd_idx[0].gid)
         assert os.path.exists(result_h5)
 
-
-    def test_fmri_balloon_adapter(self, tmpdir, session, operation_factory):
+    def test_fmri_balloon_adapter(self, tmpdir, time_series_region_index_factory,
+                                  connectivity_factory, region_mapping_factory, surface_factory):
         # To be fixed once we have the migrated importers
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        connectivity = connectivity_factory()
+        surface = surface_factory()
+        region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
+        ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         fmri_balloon_adapter = BalloonModelAdapter()
         fmri_balloon_adapter.storage_path = storage_folder
-        fmri_balloon_adapter.configure(ts_index)
+        view_model = fmri_balloon_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        fmri_balloon_adapter.configure(view_model)
 
-        disk = fmri_balloon_adapter.get_required_disk_size()
-        mem = fmri_balloon_adapter.get_required_memory_size()
+        disk = fmri_balloon_adapter.get_required_disk_size(view_model)
+        mem = fmri_balloon_adapter.get_required_memory_size(view_model)
 
-        ts_index = fmri_balloon_adapter.launch(ts_index)
+        ts_index = fmri_balloon_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, TimeSeriesRegionH5, ts_index.gid)
         assert os.path.exists(result_h5)
 
-
-    def test_node_covariance_adapter(self, tmpdir, session, operation_factory):
+    def test_node_covariance_adapter(self, tmpdir, time_series_index_factory):
         storage_folder = str(tmpdir)
-        ts_index = make_ts_from_op(session, operation_factory)
+        ts_index = time_series_index_factory()
 
         node_covariance_adapter = NodeCovarianceAdapter()
         node_covariance_adapter.storage_path = storage_folder
-        node_covariance_adapter.configure(ts_index)
+        view_model = node_covariance_adapter.get_view_model_class()()
+        view_model.time_series = UUID(ts_index.gid)
+        node_covariance_adapter.configure(view_model)
 
-        disk = node_covariance_adapter.get_required_disk_size()
-        mem = node_covariance_adapter.get_required_memory_size()
+        disk = node_covariance_adapter.get_required_disk_size(view_model)
+        mem = node_covariance_adapter.get_required_memory_size(view_model)
 
-        covariance_idx = node_covariance_adapter.launch(ts_index)
+        covariance_idx = node_covariance_adapter.launch(view_model)
 
         result_h5 = h5.path_for(storage_folder, CovarianceH5, covariance_idx.gid)
         assert os.path.exists(result_h5)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,8 +34,10 @@
 
 import json
 import pytest
+from tvb.tests.framework.adapters.testadapter3 import TestAdapterHugeMemoryRequired, TestAdapterHDDRequired, \
+    TestAdapterHugeMemoryRequiredForm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities import model
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
@@ -55,27 +57,30 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         self.test_project = TestFactory.create_project(admin=self.test_user)
     
     
-    def test_adapter_memory(self):
+    def test_adapter_memory(self, test_adapter_factory):
         """
         Test that a method not implemented exception is raised in case the
         get_required_memory_size method is not implemented.
         """
+        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         assert 42 == adapter.get_required_memory_size()
-        
-        
-    def test_adapter_huge_memory_requirement(self):
+
+    def test_adapter_huge_memory_requirement(self, test_adapter_factory):
         """
         Test that an MemoryException is raised in case adapter cant launch due to lack of memory.
         """
+        test_adapter_factory(adapter_class=TestAdapterHugeMemoryRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3",
                                              "TestAdapterHugeMemoryRequired")
+        form = TestAdapterHugeMemoryRequiredForm()
+        adapter.submit_form(form)
         data = {"test": 5}
 
-        operation = model.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
-                                    json.dumps(data), json.dumps({}), status=model.STATUS_STARTED)
+        operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
+                                    json.dumps(data), json.dumps({}), status=model_operation.STATUS_STARTED)
         operation = dao.store_entity(operation)
         with pytest.raises(NoMemoryAvailableException):
-            OperationService().initiate_prelaunch(operation, adapter, {})
+            OperationService().initiate_prelaunch(operation, adapter)
 
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,11 +35,12 @@
 from os import path
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestConnectivityZip(TransactionalTestCase):
+class TestConnectivityZipImporter(TransactionalTestCase):
     """
     Unit-tests for CFF-importer.
     """
@@ -50,6 +51,12 @@ class TestConnectivityZip(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
+
+    def transactional_teardown_method(self):
+        """
+        Clean-up tests data
+        """
+        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_happy_flow_import(self):
         """

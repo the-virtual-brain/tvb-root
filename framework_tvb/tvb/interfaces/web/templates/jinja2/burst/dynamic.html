@@ -12,11 +12,11 @@
 
     <section class="configure-stimulus-shape view-column col-1">
         <h4> Model parameter configuration </h4>
-        <div id="left_input_tree">{{ gatf.generateDisplay(input_tree, false, "") }}</div>
+        <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}</div>
         <fieldset id='div_spatial_model_params'></fieldset>
 
         <h4> Phase plane viewer settings </h4>
-        <div id="integrator_input_tree">{{ gatf.generateDisplay(integrator_input_tree, false, "") }}</div>
+        <div id="integrator_input_tree">{{ integrator_form | safe }}</div>
 
         <fieldset id='div_phase_plane_settings'></fieldset>
     </section>

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,41 +45,32 @@ class TestExplorationController(BaseTransactionalControllerTest):
     Unit tests ParameterExplorationController
     """
 
-    # def transactional_setup_method(self):
-    #     """
-    #     Sets up the environment for testing;
-    #     creates a datatype group and a Parameter Exploration Controller
-    #     """
-    #     self.init()
-    #     self.dt_group = DatatypesFactory().create_datatype_group()
-    #     self.controller = ParameterExplorationController()
-
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
 
-    def test_draw_discrete_exploration(self, datatype_group_factory, define_attributes):
+    def test_draw_discrete_exploration(self, datatype_group_factory):
         """
         Test that Discrete PSE is getting launched and correct fields are prepared.
         """
         self.dt_group = datatype_group_factory()
         self.controller = ParameterExplorationController()
         result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
-        assert result['available_metrics'] == list(define_attributes['DATATYPE_MEASURE_METRIC'])
-        assert result['color_metric'] == list(define_attributes['DATATYPE_MEASURE_METRIC'])[0]
+        assert result['available_metrics'] == list('{"v": 3}')
+        assert result['color_metric'] == list('{"v": 3}')[0]
         assert result['size_metric'] is None
-        assert define_attributes['RANGE_1'][1] == json.loads(result['labels_x'])
-        assert define_attributes['RANGE_2'][1] == json.loads(result['labels_y'])
+        assert [1, 2, 3] == json.loads(result['labels_x'])
+        assert [0.1, 0.3, 0.5] == json.loads(result['labels_y'])
         data = json.loads(result['d3_data'])
-        assert len(data) == len(define_attributes['RANGE_1'][1])
+        assert len(data) == 3
         for row in data.values():
-            assert len(row) == len(define_attributes['RANGE_2'][1])
+            assert len(row) == 3
             for entry in row.values():
                 assert entry['dataType'] == 'Datatype2'
                 for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                     assert key in entry
 
-    def test_draw_isocline_exploration(self, datatype_group_factory, define_attributes):
+    def test_draw_isocline_exploration(self, datatype_group_factory):
         """
         Test that isocline PSE gets launched.
         """
@@ -89,4 +80,4 @@ class TestExplorationController(BaseTransactionalControllerTest):
         assert isinstance(result['canvasName'], str)
         assert isinstance(result['xAxisName'], str)
         assert isinstance(result['url_base'], str)
-        assert list(define_attributes['DATATYPE_MEASURE_METRIC']) == result['available_metrics']
+        assert list('{"v": 3}') == result['available_metrics']

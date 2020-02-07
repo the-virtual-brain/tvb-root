@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,8 +33,9 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import importlib
 import time
+from subprocess import Popen, PIPE
 
 STARTUP_TIC = time.time()
 
@@ -72,7 +73,6 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 
-
 LOGGER = get_logger('tvb.interfaces.web.run')
 CONFIG_EXISTS = not TvbProfile.is_first_run()
 PARAM_RESET_DB = "reset"
@@ -84,7 +84,7 @@ def init_cherrypy(arguments=None):
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     for module in arguments:
-        module_inst = __import__(str(module), globals(), locals(), ["__init__"])
+        module_inst = importlib.import_module(str(module))
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
         CONFIGUER["/static_" + str(module)] = {'tools.staticdir.on': True,
                                                'tools.staticdir.dir': '.',
@@ -98,7 +98,6 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
     cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
     cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    # cherrypy.tree.mount(BurstController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
     cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
     cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)
@@ -121,6 +120,19 @@ def init_cherrypy(arguments=None):
 
     #### HTTP Server is fired now ######  
     cherrypy.engine.start()
+
+
+def expose_rest_api():
+    if CONFIG_EXISTS:
+        LOGGER.info("Starting Flask server with REST API...")
+        run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
+                      TvbProfile.CURRENT_PROFILE_NAME]
+        flask_process = Popen(run_params, stderr=PIPE)
+        stdout, stderr = flask_process.communicate()
+        if flask_process.returncode != 0:
+            LOGGER.warn("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
+        else:
+            LOGGER.info("Finished starting Flask server with REST API...")
 
 
 def start_tvb(arguments, browser=True):
@@ -154,6 +166,8 @@ def start_tvb(arguments, browser=True):
     #### Fire a browser page at the end.
     if browser:
         run_browser()
+
+    expose_rest_api()
 
     ## Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",

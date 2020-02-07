@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,11 +34,10 @@ DAO layer for WorkFlow and Burst entities.
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import desc, or_
+from sqlalchemy.sql.expression import or_
 from tvb.core.entities.model.model_burst import Dynamic
-from tvb.core.entities.model.model_datatype import DataTypeGroup, DataType
-from tvb.core.entities.model.model_operation import Operation, Algorithm, AlgorithmCategory
-from tvb.core.entities.model.model_workflow import WorkflowStep, Workflow, Portlet, WorkflowStepView
+from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
+from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage.root_dao import RootDAO
 
 
@@ -67,120 +66,6 @@ class WorkflowDAO(RootDAO):
             self.logger.exception(ex)
             result = [], []
         return result
-
-
-    def get_visualization_steps(self, workflow_id):
-        """Retrieve all the visualization steps for a workflow."""
-        try:
-            result = self.session.query(WorkflowStepView
-                                        ).filter(WorkflowStepView.fk_workflow == workflow_id
-                                        ).order_by(WorkflowStepView.tab_index,
-                                                   WorkflowStepView.index_in_tab).all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-
-    def get_workflow_steps(self, workflow_id):
-        """Retrieve all the simulation/analyzers steps for a workflow."""
-        try:
-            # Also check that index is non-negative to preserve backwards
-            # compatibility to versions < 1.0.2.
-            result = self.session.query(WorkflowStep
-                                        ).filter(WorkflowStep.fk_workflow == workflow_id
-                                        ).filter(WorkflowStep.step_index > -1
-                                        ).order_by(WorkflowStep.step_index).all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-
-    def get_workflows_for_burst(self, burst_id, is_count=False):
-        """Returns all the workflows that were launched for this burst id"""
-        query = self.session.query(Workflow).filter_by(fk_burst=burst_id)
-
-        if is_count:
-            result = query.count()
-        else:
-            result = query.all()
-
-        return result
-
-
-    def get_workflow_by_id(self, workflow_id):
-        """"Returns the workflow instance with the given id"""
-        workflow = None
-        try:
-            workflow = self.session.query(Workflow).filter_by(id=workflow_id).one()
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return workflow
-
-
-    def get_workflow_step_by_step_index(self, workflow_id, step_index):
-        """
-        :returns: WorkflowStep entity or None.
-        """
-        step = None
-        try:
-            step = self.session.query(WorkflowStep).filter_by(fk_workflow=workflow_id,
-                                                                    step_index=step_index).one()
-        except NoResultFound:
-            self.logger.debug("No step found for workflow_id=%s and step_index=%s" % (workflow_id, step_index))
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return step
-
-
-    def get_workflow_steps_for_position(self, workflow_id, tab_index, index_in_tab):
-        """
-        Retrieve a list of analyzers corresponding to current cell in the portlets grid.
-        Will be used for deciding the interface.
-        """
-        steps = []
-        try:
-            steps = self.session.query(WorkflowStep
-                                       ).filter_by(fk_workflow=workflow_id,
-                                                   tab_index=tab_index, index_in_tab=index_in_tab
-                                       ).order_by(WorkflowStep.step_index).all()
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return steps
-
-
-    def get_configured_portlets_for_id(self, portlet_id):
-        """
-        Get the workflow steps that were generated from the portlet given by portlet_id.
-        """
-        wf_steps = []
-        try:
-            wf_steps = self.session.query(WorkflowStepView).filter_by(fk_portlet=portlet_id).all()
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return wf_steps
-
-
-    def get_workflow_step_for_operation(self, operation_id):
-        """
-        Returns the executed workflow step from which resulted
-        the operation with the given id 'operation_id'.
-        Returns None if there is no such executed workflow step.
-        """
-        step = None
-        try:
-            step = self.session.query(WorkflowStep).filter_by(fk_operation=operation_id).one()
-        except NoResultFound:
-            self.logger.debug("No step found for operation_id=%s" % operation_id)
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-        return step
-
 
     def get_available_portlets(self, ):
         """
@@ -221,47 +106,6 @@ class WorkflowDAO(RootDAO):
             self.logger.exception(excep)
 
         return portlet
-
-
-    def get_workflow_for_operation_id(self, operation_id):
-        """
-        Get the workflow from which operation_id was generated.
-        """
-        workflow = None
-        try:
-            workflow = self.session.query(Workflow).join(WorkflowStep
-                                          ).filter(WorkflowStep.fk_operation == operation_id).one()
-        except NoResultFound:
-            self.logger.warning("Operation with id=%s was not generated from any workflow." % operation_id)
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-        return workflow
-
-
-    def get_all_datatypes_in_burst(self, burst_id):
-        """
-        Get all dataTypes in burst, order by their creation, desc.
-        
-        :param burst_id BurstConfiguration Identifier.
-        :returns: list dataType GIDs or empty list.
-        """
-        try:
-            groups = self.session.query(DataTypeGroup,
-                           ).join(Operation, DataTypeGroup.fk_from_operation == Operation.id
-                           ).join(WorkflowStep, Operation.id == WorkflowStep.fk_operation
-                           ).join(Workflow).filter(Workflow.fk_burst == burst_id
-                           ).order_by(desc(DataTypeGroup.id)).all()
-            result = self.session.query(DataType
-                                      ).filter(DataType.fk_parent_burst == burst_id
-                                      ).filter(DataType.fk_datatype_group == None
-                                      ).filter(DataType.type != self.EXCEPTION_DATATYPE_GROUP
-                                      ).order_by(desc(DataType.id)).all()
-            result.extend(groups)
-        except SQLAlchemyError as exc:
-            self.logger.exception(exc)
-            result = []
-        return result
-
 
     def get_dynamics_for_user(self, user_id):
         try:

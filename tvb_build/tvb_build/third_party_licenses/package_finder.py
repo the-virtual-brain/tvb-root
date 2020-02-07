@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import importlib
 import os
 import re
 import sys
@@ -148,7 +148,7 @@ def _extract_all(zip_name, dest):
 def _get_module_version(module_name):
     """For a package name, return its version"""
     try:
-        module = __import__(str(module_name), globals(), locals(), [])
+        module = importlib.import_module(str(module_name))
         if hasattr(module, '__version__'):
             return str(module.__version__)
         if hasattr(module, 'version') and not isinstance(module.version, ModuleType):

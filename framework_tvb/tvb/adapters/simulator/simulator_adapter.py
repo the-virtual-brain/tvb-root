@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,24 +35,80 @@ Few supplementary steps are done here:
    * from submitted Monitor/Model... names, build transient entities
    * after UI parameters submit, compose transient Cortex entity to be passed to the Simulator.
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import numpy
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.patterns import SpatioTemporalPattern
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, Attr
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
+
+
+class CortexViewModel(ViewModel, Cortex):
+
+    surface_gid = DataTypeGidAttr(
+        linked_datatype=CorticalSurface
+    )
+
+    local_connectivity = DataTypeGidAttr(
+        linked_datatype=LocalConnectivity,
+        required=Cortex.local_connectivity.required,
+        label=Cortex.local_connectivity.label,
+        doc=Cortex.local_connectivity.doc
+    )
+
+    region_mapping_data = DataTypeGidAttr(
+        linked_datatype=RegionMapping,
+        label=Cortex.region_mapping_data.label,
+        doc=Cortex.region_mapping_data.doc
+    )
+
+
+class SimulatorAdapterModel(ViewModel, Simulator):
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        required=Simulator.connectivity.required,
+        label=Simulator.connectivity.label,
+        doc=Simulator.connectivity.doc
+    )
+
+    surface = Attr(
+        field_type=CortexViewModel,
+        label=Simulator.surface.label,
+        default=Simulator.surface.default,
+        required=Simulator.surface.required,
+        doc=Simulator.surface.doc
+    )
+
+    stimulus = DataTypeGidAttr(
+        linked_datatype=SpatioTemporalPattern,
+        label=Simulator.stimulus.label,
+        default=Simulator.stimulus.default,
+        required=Simulator.stimulus.required,
+        doc=Simulator.stimulus.doc
+    )
+
+    history_gid = DataTypeGidAttr(
+        linked_datatype=SimulationHistory,
+        required=False
+    )
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
@@ -74,9 +130,13 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if hasattr(trait, 'connectivity'):
-            self.connectivity.data = trait.connectivity.gid.hex
+            self.connectivity.data = trait.connectivity.hex
         self.coupling.data = trait.coupling.__class__
         self.conduction_speed.data = trait.conduction_speed
+
+    @staticmethod
+    def get_view_model():
+        return SimulatorAdapterModel
 
     @staticmethod
     def get_input_name():
@@ -95,6 +155,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __str__(self):
         pass
+
 
 class SimulatorAdapter(ABCAsynchronous):
     """
@@ -122,13 +183,60 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         return [TimeSeriesIndex, SimulationHistoryIndex]
 
-    def configure(self, simulator_gid):
+    def _prepare_simulator_from_view_model(self, view_model):
+        simulator = Simulator()
+        simulator.gid = view_model.gid
+
+        conn = self.load_traited_by_gid(view_model.connectivity)
+        simulator.connectivity = conn
+
+        simulator.conduction_speed = view_model.conduction_speed
+        simulator.coupling = view_model.coupling
+
+        if view_model.surface:
+            simulator.surface = Cortex()
+            rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
+            rm = h5.load_from_index(rm_index)
+
+            rm_surface_index = self.load_entity_by_gid(rm_index.surface_gid)
+            rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
+            rm.surface = rm_surface
+            rm.connectivity = conn
+
+            simulator.surface.region_mapping_data = rm
+            if simulator.surface.local_connectivity:
+                lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
+                assert lc.surface.gid == rm_index.surface_gid
+                lc.surface = rm_surface
+                simulator.surface.local_connectivity = lc
+
+        if view_model.stimulus:
+            stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
+            stimulus = h5.load_from_index(stimulus_index)
+            simulator.stimulus = stimulus
+
+        simulator.model = view_model.model
+        simulator.integrator = view_model.integrator
+        simulator.initial_conditions = view_model.initial_conditions
+        simulator.monitors = view_model.monitors
+        simulator.simulation_length = view_model.simulation_length
+
+        # TODO: why not load history here?
+        # if view_model.history:
+        #     history_index = dao.get_datatype_by_gid(view_model.history.hex)
+        #     history = h5.load_from_index(history_index)
+        #     assert isinstance(history, SimulationHistory)
+        #     history.fill_into(self.algorithm)
+        return simulator
+
+    def configure(self, view_model):
+        # type: (SimulatorAdapterModel) -> None
         """
         Make preparations for the adapter launch.
         """
         self.log.debug("%s: Configuring simulator adapter..." % str(self))
-        self.algorithm, history_gid = SimulatorService().deserialize_simulator(simulator_gid, self.storage_path)
-        self.branch_simulation_state_gid = history_gid
+        self.algorithm = self._prepare_simulator_from_view_model(view_model)
+        self.branch_simulation_state_gid = view_model.history_gid
 
         # for monitor in self.algorithm.monitors:
         #     if issubclass(monitor, Projection):
@@ -141,19 +249,22 @@ class SimulatorAdapter(ABCAsynchronous):
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         return self.algorithm.memory_requirement()
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
         return self.algorithm.storage_requirement() / 2 ** 10
 
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
@@ -213,7 +324,8 @@ class SimulatorAdapter(ABCAsynchronous):
 
         return region_map, region_volume_map
 
-    def launch(self, simulator_gid):
+    def launch(self, view_model):
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         """
         Called from the GUI to launch a simulation.
           *: string class name of chosen model, etc...
@@ -266,14 +378,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
                 ts_h5.surface.store(self.algorithm.surface.gid)
             else:
-                ts_index.connectivity_gid = self.algorithm.connectivity.gid.hex
-                ts_h5.connectivity.store(self.algorithm.connectivity.gid)
-                if region_map:
-                    ts_index.region_mapping_gid = region_map.gid.hex
-                    ts_h5.region_mapping.store(region_map.gid)
-                if region_volume_map:
-                    ts_index.region_mapping_volume_gid = region_volume_map.gid.hex
-                    ts_h5.region_mapping_volume.store(region_volume_map.gid)
+                ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5
@@ -303,45 +408,6 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()
-        # self.log.info("%s: Adapter simulation finished!!" % str(self))
+        self.log.debug("%s: Adapter simulation finished!!" % str(self))
         results.extend(result_indexes.values())
         return results
-
-    def _validate_model_parameters(self, model_instance, connectivity, surface):
-        """
-        Checks if the size of the model parameters is set correctly.
-        """
-        ui_configurable_params = model_instance.ui_configurable_parameters
-        for param in ui_configurable_params:
-            param_value = eval('model_instance.' + param)
-            if isinstance(param_value, numpy.ndarray):
-                if len(param_value) == 1 or connectivity is None:
-                    continue
-                if surface is not None:
-                    if (len(param_value) != surface.number_of_vertices
-                            and len(param_value) != connectivity.number_of_regions):
-                        msg = str(surface.number_of_vertices) + ' or ' + str(connectivity.number_of_regions)
-                        msg = self._get_exception_message(param, msg, len(param_value))
-                        self.log.error(msg)
-                        raise LaunchException(msg)
-                elif len(param_value) != connectivity.number_of_regions:
-                    msg = self._get_exception_message(param, connectivity.number_of_regions, len(param_value))
-                    self.log.error(msg)
-                    raise LaunchException(msg)
-
-    @staticmethod
-    def _get_exception_message(param_name, expected_size, actual_size):
-        """
-        Creates the message that will be displayed to the user when the size of a model parameter is incorrect.
-        """
-        msg = "The length of the parameter '" + param_name + "' is not correct."
-        msg += " It is expected to be an array of length " + str(expected_size) + "."
-        msg += " It is an array of length " + str(actual_size) + "."
-        return msg
-
-    @staticmethod
-    def _is_surface_simulation(surface, surface_parameters):
-        """
-        Is this a surface simulation?
-        """
-        return surface is not None and surface_parameters is not None

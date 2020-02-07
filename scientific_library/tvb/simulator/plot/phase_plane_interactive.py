@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -378,7 +378,7 @@ class PhasePlaneInteractive(HasTraits):
         offset = 0.0
         self.param_sliders = dict()
         # import pdb; pdb.set_trace()
-        for param_name in type(self.model).own_declarative_attrs:
+        for param_name in type(self.model).declarative_attrs:
             if self.exclude_sliders is not None and param_name in self.exclude_sliders:
                 continue
             param_def = getattr(type(self.model), param_name)
@@ -617,22 +617,22 @@ class PhasePlaneInteractive(HasTraits):
 
         """
         #TODO: Grab caller and use val directly, ie independent range update.
-        self.axes_range_sliders["sl_x_min"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_x_max"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor(AXCOLOUR)
-        self.axes_range_sliders["sl_y_max"].ax.set_axis_bgcolor(AXCOLOUR)
+        self.axes_range_sliders["sl_x_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_x_max"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_min"].ax.set_facecolor(AXCOLOUR)
+        self.axes_range_sliders["sl_y_max"].ax.set_facecolor(AXCOLOUR)
 
         if (self.axes_range_sliders["sl_x_min"].val >=
             self.axes_range_sliders["sl_x_max"].val):
             LOG.error("X-axis min must be less than max...")
-            self.axes_range_sliders["sl_x_min"].ax.set_axis_bgcolor("Red")
-            self.axes_range_sliders["sl_x_max"].ax.set_axis_bgcolor("Red")
+            self.axes_range_sliders["sl_x_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_x_max"].ax.set_facecolor("Red")
             return
         if (self.axes_range_sliders["sl_y_min"].val >=
             self.axes_range_sliders["sl_y_max"].val):
             LOG.error("Y-axis min must be less than max...")
-            self.axes_range_sliders["sl_y_min"].ax.set_axis_bgcolor("Red")
-            self.axes_range_sliders["sl_y_max"].ax.set_axis_bgcolor("Red")
+            self.axes_range_sliders["sl_y_min"].ax.set_facecolor("Red")
+            self.axes_range_sliders["sl_y_max"].ax.set_facecolor("Red")
             return
 
         msv_range = self.model.state_variable_range

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,16 +37,23 @@
 import os
 import sys
 import shutil
+import decorator
 from functools import wraps
 from types import FunctionType
-import decorator
-from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.neocom.h5 import REGISTRY
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+
 
 def init_test_env():
     """
     This method prepares all necessary data for tests execution
     """
     # Set a default test profile, for when running tests from dev-env.
+    from tvb.basic.profile import TvbProfile
     if TvbProfile.CURRENT_PROFILE_NAME is None:
         profile = TvbProfile.TEST_SQLITE_PROFILE
         if len(sys.argv) > 1:
@@ -64,6 +71,10 @@ def init_test_env():
 
     reset_database()
     initialize(skip_import=True)
+
+    # Add Dummy DataType
+    REGISTRY.register_datatype(DummyDataType, DummyDataTypeH5, DummyDataTypeIndex)
+    REGISTRY.register_datatype(None, None, DummyDataType2Index)
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.
@@ -223,6 +234,7 @@ class BaseTestCase(object):
             if value is not None:
                 assert value == found_dict[key]
 
+
 def transactional_test(func, callback=None):
     """
     A decorator to be used in tests which makes sure all database changes are reverted at the end of the test.
@@ -234,6 +246,7 @@ def transactional_test(func, callback=None):
             session_maker = SessionMaker()
             TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = True
             session_maker.start_transaction()
+            ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
             try:
                 try:
                     if hasattr(args[0], 'transactional_setup_method_TVB'):

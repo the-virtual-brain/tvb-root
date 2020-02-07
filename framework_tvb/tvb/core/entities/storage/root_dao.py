@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,7 @@ Base DAO behavior.
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import importlib
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.logger.builder import get_logger
@@ -42,6 +42,8 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage.session_maker import SESSION_META_CLASS
 from tvb.config import SIMULATION_DATATYPE_CLASS
 
+
+DEFAULT_PAGE_SIZE = 200
 
 
 class RootDAO(object, metaclass=SESSION_META_CLASS):
@@ -92,8 +94,8 @@ class RootDAO(object, metaclass=SESSION_META_CLASS):
         """
         if isinstance(entity_type, str):
             classname = entity_type[entity_type.rfind(".") + 1:]
-            entity_class = __import__(entity_type[0: entity_type.rfind(".")], globals(), locals(), classname)
-            entity_class = eval("entity_class." + classname)
+            module = importlib.import_module(entity_type[0: entity_type.rfind(".")])
+            entity_class = getattr(module, classname)
             result = self.session.query(entity_class).filter(entity_class.__dict__[select_field] == filter_value).all()
         else:
             result = self.session.query(entity_type).filter(entity_type.__dict__[select_field] == filter_value).all()

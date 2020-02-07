@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,6 +44,12 @@ from tvb.simulator import noise
 
 # For the moment all integrators inherit dt from the base class
 dt = integrators.Integrator.dt.default
+
+
+INTEGRATORStoTEST = [integrators.HeunDeterministic, integrators.HeunStochastic,
+                     integrators.EulerDeterministic, integrators.EulerStochastic,
+                     integrators.RungeKutta4thOrderDeterministic,
+                     integrators.VODE, integrators.VODEStochastic]
 
 
 class TestIntegrators(BaseTestCase):
@@ -115,6 +121,8 @@ class TestIntegrators(BaseTestCase):
             cls = getattr(integrators, name_)
             obj = cls()
             assert dt == obj.dt
+            if hasattr(obj, 'noise'):
+                obj.noise.configure_white(dt=dt)
             self._test_scheme(obj)
 
     def test_scipy_vode(self):
@@ -126,29 +134,41 @@ class TestIntegrators(BaseTestCase):
     def test_scipy_dopri5(self):
         self._scipy_scheme_tester('Dopri5')
 
-    def test_bound(self):
-        vode = integrators.VODE(
-            bounded_state_variable_indices=numpy.r_[0, 1, 2, 3],
-            state_variable_boundaries=numpy.array([[0.0, 1.0], [None, 1.0], [0.0, None], [None, None]], dtype=float)
-        )
+    def test_boundaries(self):
+        min_float = numpy.finfo("double").min
+        max_float = numpy.finfo("double").max
+        bounded_state_variable_indices = numpy.r_[0, 1, 2, 3]
+        state_variable_boundaries = numpy.array([[0.0, 1.0], [min_float, 1.0],
+                                                 [0.0, max_float], [min_float, max_float]], dtype=float)
         x = numpy.ones((5, 4, 2))
         x[:, 0, ] = -x[:, 0, ]
         x[:, 1, ] = 2 * x[:, 1, ]
         x0 = numpy.array(x)
-        for i in range(10):
-            x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
-        for idx, val in zip(vode.bounded_state_variable_indices, vode.state_variable_boundaries):
-            if idx == 0:
-                assert numpy.all(x[idx] >= val[0])
-                assert numpy.all(x[idx] <= val[1])
-            elif idx == 1:
-                assert numpy.all(x[idx] <= val[1])
-                assert numpy.allclose(x[idx, 0], x0[idx, 0], atol=0.2)
-            elif idx == 2:
-                assert numpy.all(x[idx] >= val[0])
-                assert numpy.allclose(x[idx, 1], x0[idx, 1], atol=0.3)
-            else:
-                assert numpy.all(numpy.isfinite(x[idx]))
+        dfun = lambda state, node_coupling, local_coupling=0.0: 0.0 * state
+        for integrator_class in INTEGRATORStoTEST:
+            integrator = integrator_class(
+                bounded_state_variable_indices=bounded_state_variable_indices,
+                state_variable_boundaries=state_variable_boundaries)
+            integrator.dt = dt
+            try:
+                # Set noise to 0 if this is a stochastic integrator
+                integrator.noise.nsig = numpy.array([0.0])
+                integrator.noise.dt = dt
+            except:
+                pass
+            x = integrator.scheme(x, dfun, 0.0, 0.0, 0.0)
+            for idx, val in zip(integrator.bounded_state_variable_indices, integrator.state_variable_boundaries):
+                if idx == 0:
+                    assert numpy.all(x[idx] >= val[0])
+                    assert numpy.all(x[idx] <= val[1])
+                elif idx == 1:
+                    assert numpy.all(x[idx] <= val[1])
+                    assert numpy.allclose(x[idx, 0], x0[idx, 0], atol=0.2)
+                elif idx == 2:
+                    assert numpy.all(x[idx] >= val[0])
+                    assert numpy.all(x[idx, 1] == x0[idx, 1])
+                else:
+                    assert numpy.all(x[idx] == x0[idx])
 
     def test_clamp(self):
         vode = integrators.VODE(

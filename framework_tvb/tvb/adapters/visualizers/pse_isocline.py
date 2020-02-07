@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,7 +44,8 @@ from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 
 class PseIsoModel(object):
@@ -151,12 +152,23 @@ class PseIsoModel(object):
         return result
 
 
+class IsoclinePSEAdapterModel(ViewModel):
+    datatype_group = DataTypeGidAttr(
+        linked_datatype=DataTypeGroup,
+        label='Datatype Group'
+    )
+
+
 class IsoclinePSEAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(IsoclinePSEAdapterForm, self).__init__(prefix, project_id)
-        self.datatype_group = DataTypeSelectField(self.get_required_datatype(), self, name='datatype_group',
-                                                  required=True, label='Datatype Group', conditions=self.get_filters())
+        self.datatype_group = TraitDataTypeSelectField(IsoclinePSEAdapterModel.datatype_group, self,
+                                                       name='datatype_group', conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return IsoclinePSEAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -186,12 +198,11 @@ class IsoclinePSEAdapter(ABCDisplayer):
         self.interp_models = {}
         self.nan_indices = {}
 
-
     def get_form_class(self):
         return IsoclinePSEAdapterForm
 
-
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (IsoclinePSEAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -199,12 +210,12 @@ class IsoclinePSEAdapter(ABCDisplayer):
         return -1
 
     # TODO: migrate to neotraits
-    def burst_preview(self, datatype_group_gid):
+    def burst_preview(self, view_model):
+        # type: (IsoclinePSEAdapterModel) -> dict
         """
         Generate the preview for the burst page.
         """
-        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        return self.launch(datatype_group=datatype_group)
+        return self.launch(view_model)
 
     def get_metric_matrix(self, datatype_group, selected_metric=None):
         self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
@@ -255,14 +266,15 @@ class IsoclinePSEAdapter(ABCDisplayer):
                                                     datatype_invalid=datatype.invalid)
         return node_info_dict
 
-    def launch(self, datatype_group, **kwargs):
-        params = self.get_metric_matrix(datatype_group)
+    def launch(self, view_model):
+        datatype_group_index = self.load_entity_by_gid(view_model.datatype_group.hex)
+        params = self.get_metric_matrix(datatype_group_index)
         params["title"] = self._ui_name
         params["canvasName"] = "Interpolated values for PSE metric: "
         params["xAxisName"] = self.model.range1_name
         params["yAxisName"] = self.model.range2_name
-        params["url_base"] = "/burst/explore/get_metric_matrix/" + datatype_group.gid
-        params["node_info_url"] = "/burst/explore/get_node_matrix/" + datatype_group.gid
+        params["url_base"] = "/burst/explore/get_metric_matrix/" + view_model.datatype_group.hex
+        params["node_info_url"] = "/burst/explore/get_node_matrix/" + view_model.datatype_group.hex
         params["available_metrics"] = list(self.model.metrics)
         return self.build_display_result('pse_isocline/view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,7 +37,7 @@ Populate Surface fields after 1.3.1, in version 1.4.
 import json
 from sqlalchemy.sql import text
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.traits.types_basic import MapAsJson
+# from tvb.basic.traits.types_basic import MapAsJson
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao, transactional
 from tvb.core.entities.file.files_helper import FilesHelper

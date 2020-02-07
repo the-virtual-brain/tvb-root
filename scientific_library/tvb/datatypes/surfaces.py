@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -649,6 +649,16 @@ class Surface(HasTraits):
         return [float(numpy.mean(self.vertices[:, 0])),
                 float(numpy.mean(self.vertices[:, 1])),
                 float(numpy.mean(self.vertices[:, 2]))]
+
+    def compute_equation(self, focal_points, equation):
+        """
+        focal_points - a list of focal points. Used for specifying the vertices
+        from which the distance is calculated.
+        equation - the equation which should be evaluated
+        """
+        focal_points = numpy.array(focal_points, dtype=numpy.int32)
+        dist = self.geodesic_distance(focal_points)
+        return equation.evaluate(dist)
 
 
 class WhiteMatterSurface(Surface):

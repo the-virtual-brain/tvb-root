@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,25 +29,38 @@
 #
 
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY
-from tvb.adapters.uploaders.mat_timeseries_importer import MatTimeSeriesImporterForm, TS_EEG, MatTimeSeriesImporter
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import DataTypeGidAttr
+from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, Sensors
+from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
+    RegionTimeSeriesImporter
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
-class EEGMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
+class EEGMatTimeSeriesImporterModel(UploaderViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=Sensors,
+        label='EEG Sensors'
+    )
+
+
+class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
     def __init__(self, prefix='', project_id=None):
-        super(EEGMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+        super(EEGRegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[EEG_POLYMORPHIC_IDENTITY])
-        self.eeg = DataTypeSelectField(SensorsIndex, self, name='tstype_parameters', required=True,
-                                       conditions=eeg_conditions, label='EEG Sensors')
+        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self, name='tstype_parameters',
+                                                 conditions=eeg_conditions)
+
+    @staticmethod
+    def get_view_model():
+        return EEGMatTimeSeriesImporterModel
 
 
-class EEGMatTimeSeriesImporter(MatTimeSeriesImporter):
+class EEGRegionTimeSeriesImporter(RegionTimeSeriesImporter):
     _ui_name = "Timeseries EEG MAT"
     tstype = TS_EEG
 
     def get_form_class(self):
-        return EEGMatTimeSeriesImporterForm
+        return EEGRegionMatTimeSeriesImporterForm

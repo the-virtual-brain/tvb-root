@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -82,6 +82,7 @@ KEY_BURST_CONFIG = 'burst_configuration'
 KEY_SIMULATOR_CONFIG = 'simulator_configuration'
 KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
 KEY_IS_SIMULATOR_LOAD = 'is_simulator_load'
+KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
 KEY_CACHED_SIMULATOR_TREE = 'simulator_input_tree'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"

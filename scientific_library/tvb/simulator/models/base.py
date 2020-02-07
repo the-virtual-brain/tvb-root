@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -73,6 +73,20 @@ class Model(HasTraits):
         self.observe = namespace['observe']
         self.observe.code = code
 
+    def _setup_sv_boundaries(self):
+        for sv, sv_bounds in self.state_variable_boundaries.items():
+            try:
+                # ...the boundaries correspond to model's state variables,
+                self.state_variables.index(sv)
+            except IndexError:
+                raise ValueError("Non-existent state variable in bounds %s!" % str(sv_bounds))
+            infs = [-numpy.inf, numpy.inf]
+            minmax = [numpy.finfo("double").min, numpy.finfo("double").max]
+            for i_bound, (sv_bound, inf, default) in enumerate(zip(sv_bounds, infs, minmax)):
+                if sv_bound is None or sv_bound == inf:
+                    sv_bounds[i_bound] = default
+            self.state_variable_boundaries[sv] = sv_bounds.astype("float64")
+
     def configure(self):
         "Configure base model."
         for req_attr in 'nvar number_of_modes cvar'.split():
@@ -82,19 +96,10 @@ class Model(HasTraits):
         self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
-            for sv, bounds in self. state_variable_boundaries.items():
-                try:
-                    # ...the boundaries correspond to model's state variables,
-                    self.state_variables.index(sv)
-                except:
-                    # TODO: Add the correct type of error and error message
-                    raise
-                # and for every two sided constraint, the left boundary is lower than the right one
-                if bounds[0] is not None and bounds[1] is not None:
-                    assert bounds[0] <= bounds[1]
+            self._setup_sv_boundaries()
         elif self.state_variable_boundaries is not None:
-            # TODO: Add here a warning or, even, error?
             self.state_variable_boundaries = None
+            Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
 
     @property
     def nvar(self):

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,17 +31,14 @@
 """
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
-import pytest
+
 import tvb_data.surfaceData
 import os
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.basic.exceptions import TVBException
+
+from tvb.basic.neotraits.ex import TraitValueError
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -49,7 +46,6 @@ import tvb_data.regionMapping as demo_data
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 
@@ -93,48 +89,22 @@ class TestRegionMappingImporter(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def _import(self, import_file_path, surface_gid, connectivity_gid):
-        """
-        This method is used for importing region mappings
-        :param import_file_path: absolute path of the file to be imported
-        """
-
-        # Retrieve Adapter instance
-        test_subject = "test"
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
-                                              'RegionMappingImporter')
-        form = RegionMappingImporterForm()
-        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
-                             '_surface': surface_gid,
-                             '_connectivity': connectivity_gid,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.mapping_file.data = import_file_path
-        importer.submit_form(form)
-
-        # Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
-
-        region_mapping = TestFactory.get_entity(self.test_project, RegionMappingIndex)
-
-        return region_mapping
-
     def test_import_no_surface_or_connectivity(self):
         """
         This method tests import of region mapping without providing a surface or connectivity
         """
         try:
-            self._import(self.TXT_FILE, None, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self. test_project, self.TXT_FILE, None, self.connectivity.gid)
             raise AssertionError("Import should fail in case Surface is missing")
-        except OperationException:
-            # Expected exception
+        except TraitValueError:
+            # Expected error
             pass
 
         try:
-            self._import(self.TXT_FILE, self.surface.gid, None)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, self.surface.gid, None)
             raise AssertionError("Import should fail in case Connectivity is missing")
-        except OperationException:
-            # Expected exception
+        except TraitValueError:
+            # Expected error
             pass
 
     def test_import_from_txt(self):
@@ -159,7 +129,7 @@ class TestRegionMappingImporter(TransactionalTestCase):
         """
         This method tests import of region mapping from TXT file
         """
-        region_mapping_index = self._import(import_file, self.surface.gid, self.connectivity.gid)
+        region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, import_file, self.surface.gid, self.connectivity.gid)
 
         surface_index = ABCAdapter.load_entity_by_gid(region_mapping_index.surface_gid)
         assert surface_index is not None
@@ -181,21 +151,21 @@ class TestRegionMappingImporter(TransactionalTestCase):
             - negative region number
         """
         try:
-            self._import(self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid region number")
         except OperationException:
             # Expected exception
             pass
 
         try:
-            self._import(self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid regions number")
         except OperationException:
             # Expected exception
             pass
 
         try:
-            self._import(self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid region number (negative number)")
         except OperationException:
             # Expected exception

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,25 +39,38 @@ import uuid
 import numpy
 from tvb.analyzers.pca import PCA
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
-LOG = get_logger(__name__)
+
+class PCAAdapterModel(ViewModel, PCA):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The timeseries to which the PCA is to be applied. NOTE: The 
+                TimeSeries must be longer(more time-points) than the number of nodes
+                -- Mostly a problem for surface times-series, which, if sampled at
+                1024Hz, would need to be greater than 16 seconds long."""
+    )
 
 
 class PCAAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PCAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=PCA.time_series.label, doc=PCA.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(PCAAdapterModel.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+
+    @staticmethod
+    def get_view_model():
+        return PCAAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -88,21 +101,23 @@ class PCAAdapter(ABCAsynchronous):
     def get_output(self):
         return [PrincipalComponentsIndex]
 
-    def configure(self, time_series):
+    def configure(self, view_model):
+        # type: (PCAAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("Time series shape is %s" % str(self.input_shape))
+        self.log.debug("Time series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
         self.algorithm = PCA()
 
-    def get_required_memory_size(self, time_series):
+    def get_required_memory_size(self, view_model):
+        # type: (PCAAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -111,14 +126,16 @@ class PCAAdapter(ABCAsynchronous):
         output_size = self.algorithm.result_size(used_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, time_series):
+    def get_required_disk_size(self, view_model):
+        # type: (PCAAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
         return self.array_size2kb(self.algorithm.result_size(used_shape))
 
-    def launch(self, time_series):
+    def launch(self, view_model):
+        # type: (PCAAdapterModel) -> [PrincipalComponentsIndex]
         """ 
         Launch algorithm and build results.
 
@@ -126,9 +143,9 @@ class PCAAdapter(ABCAsynchronous):
         """
         # --------- Prepare a PrincipalComponents object for result ----------##
         principal_components_index = PrincipalComponentsIndex()
-        principal_components_index.source_gid = time_series.gid
+        principal_components_index.source_gid = view_model.time_series.hex
 
-        time_series_h5 = h5.h5_file_for_index(time_series)
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         dest_path = h5.path_for(self.storage_path, PrincipalComponentsH5, principal_components_index.gid)
         pca_h5 = PrincipalComponentsH5(path=dest_path)

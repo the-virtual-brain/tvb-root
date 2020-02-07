@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,22 +44,39 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.time_series import *
 from tvb.core.entities.storage import dao
-from tvb.datatypes.surfaces import CORTICAL, EEG_CAP
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
+from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 
 MAX_MEASURE_POINTS_LENGTH = 600
+
+
+class BrainViewerModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label='Time Series (Region or Surface)'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Surface to be displayed semi-transparently as overlay, for visual navigation purposes only.'
+    )
 
 
 class BrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series (Region or Surface)', conditions=self.get_filters())
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Surface to be displayed semi-transparently as overlay, '
-                                                     'for visual navigation purposes only.')
+        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
+        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self, name='shell_surface')
+
+    @staticmethod
+    def get_view_model():
+        return BrainViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -88,25 +105,28 @@ class BrainViewer(ABCSurfaceDisplayer):
     def get_form_class(self):
         return BrainViewerForm
 
-    def get_required_memory_size(self, time_series, shell_surface=None):
+    def get_required_memory_size(self, view_model):
+        # type: (BrainViewerModel) -> numpy.ndarray
         """
         Assume one page doesn't get 'dumped' in time and it is highly probably that
         two consecutive pages will be in the same time in memory.
         """
+        time_series = self.load_entity_by_gid(view_model.time_series.hex)
         overall_shape = time_series.get_data_shape()
         used_shape = (overall_shape[0] / (self.PAGE_SIZE * 2.0), overall_shape[1], overall_shape[2], overall_shape[3])
         return numpy.prod(used_shape) * 8.0
 
-    def generate_preview(self, time_series, shell_surface=None, figure_size=None):
+    def generate_preview(self, view_model, figure_size=None):
         """
         Generate the preview for the burst page
         """
+        time_series = self.load_entity_by_gid(view_model.time_series.hex)
         self.populate_surface_fields(time_series)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
             SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_gid)
 
-        params = self.retrieve_measure_points_prams(time_series)
+        params = self.retrieve_measure_points_params(time_series)
 
         time_series_h5 = h5.h5_file_for_index(time_series)
         assert isinstance(time_series_h5, TimeSeriesH5)
@@ -137,11 +157,16 @@ class BrainViewer(ABCSurfaceDisplayer):
 
         return self.build_display_result("brain/portlet_preview", params)
 
-    def launch(self, time_series, shell_surface=None):
+    def launch(self, view_model):
+        # type: (BrainViewerModel) -> dict
         """
         Build visualizer's page.
         """
-        params = self.compute_parameters(time_series, shell_surface)
+        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        shell_surface_index = None
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+        params = self.compute_parameters(time_series_index, shell_surface_index)
         return self.build_display_result("brain/view", params, pages=dict(controlPage="brain/controls"))
 
     def populate_surface_fields(self, time_series_index):
@@ -178,7 +203,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         self.region_map_gid = None if region_map_index is None else region_map_index.gid
         self.surface_h5 = None if surface_index is None else h5.h5_file_for_index(surface_index)
 
-    def retrieve_measure_points_prams(self, time_series):
+    def retrieve_measure_points_params(self, time_series):
         """
         To be overwritten method, for retrieving the measurement points (region centers, EEG sensors).
         """
@@ -213,7 +238,7 @@ class BrainViewer(ABCSurfaceDisplayer):
             self.surface_h5, self.region_map_gid)
         hemisphere_chunk_mask = self.surface_h5.get_slices_to_hemisphere_mask()
 
-        params = self.retrieve_measure_points_prams(time_series)
+        params = self.retrieve_measure_points_params(time_series)
 
         if not self.one_to_one_map and self.measure_points_no > MAX_MEASURE_POINTS_LENGTH:
             raise Exception("Max number of measure points " + str(MAX_MEASURE_POINTS_LENGTH) + " exceeded.")
@@ -330,20 +355,42 @@ class BrainViewer(ABCSurfaceDisplayer):
         return activity_base_url, time_urls
 
 
+class DualBrainViewerModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label='Time Series'
+    )
+
+    projection_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Projection Surface',
+        doc='A surface on which to project the results. When missing, the first EEGCap is taken. '
+            'This parameter is ignored when InternalSensors measures.'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Wrapping surface over the internal sensors, to be displayed '
+            'semi-transparently, for visual purposes only.'
+    )
+
+
 class DualBrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(DualBrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label='Time Series', conditions=self.get_filters())
-        self.projection_surface = DataTypeSelectField(SurfaceIndex, self, name='projection_surface',
-                                                      label='Projection Surface',
-                                                      doc='A surface on which to project the results. When missing, '
-                                                          'the first EEGCap is taken. This parameter is ignored when '
-                                                          'InternalSensors measures.')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Wrapping surface over the internal sensors, to be displayed '
-                                                     'semi-transparently, for visual purposes only.')
+        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
+        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface, self,
+                                                           name='projection_surface')
+        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface, self, name='shell_surface')
+
+    @staticmethod
+    def get_view_model():
+        return DualBrainViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -392,10 +439,10 @@ class DualBrainViewer(BrainViewer):
 
         self.surface_h5 = h5.h5_file_for_index(self.surface_index)
 
-    def retrieve_measure_points_prams(self, time_series):
+    def retrieve_measure_points_params(self, time_series):
 
         if isinstance(time_series, TimeSeriesRegionIndex):
-            return BrainViewer.retrieve_measure_points_prams(self, time_series)
+            return BrainViewer.retrieve_measure_points_params(self, time_series)
 
         sensors_index = dao.get_datatype_by_gid(time_series.sensors_gid)
         self.measure_points_no = sensors_index.number_of_sensors
@@ -406,22 +453,30 @@ class DualBrainViewer(BrainViewer):
 
         return prepare_sensors_as_measure_points_params(sensors_index)
 
-    def launch(self, time_series, projection_surface=None, shell_surface=None):
+    def launch(self, view_model):
+        # type: (DualBrainViewerModel) -> dict
 
-        self.surface_index = projection_surface
+        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.surface_index = None
+        shell_surface_index = None
 
-        if isinstance(time_series, TimeSeriesSEEGIndex) and shell_surface is None:
-            shell_surface = dao.try_load_last_surface_of_type(self.current_project_id, CORTICAL)
+        if view_model.projection_surface:
+            self.surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
 
-        params = BrainViewer.compute_parameters(self, time_series, shell_surface)
+        if isinstance(time_series_index, TimeSeriesSEEGIndex) and shell_surface_index is None:
+            shell_surface_index = dao.try_load_last_surface_of_type(self.current_project_id, CORTICAL)
+
+        params = BrainViewer.compute_parameters(self, time_series_index, shell_surface_index)
         eeg_monitor = EegMonitor()
         eeg_monitor.storage_path = self.storage_path
-        params.update(eeg_monitor.compute_parameters(time_series, is_extended_view=True))
+        params.update(eeg_monitor.compute_parameters(time_series_index, is_extended_view=True))
 
         params['isOneToOneMapping'] = False
         params['brainViewerTemplate'] = 'view.html'
 
-        if isinstance(time_series, TimeSeriesSEEGIndex):
+        if isinstance(time_series_index, TimeSeriesSEEGIndex):
             params['brainViewerTemplate'] = "internal_view.html"
             # Mark as None since we only display shelf face and no point to load these as well
             params['urlVertices'] = None

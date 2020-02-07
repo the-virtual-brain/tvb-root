@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,8 +34,8 @@
 
 import os
 import cherrypy
+from tvb.core.utils import hash_password
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from hashlib import md5
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core import utils
 from tvb.interfaces.web.controllers import common
@@ -54,18 +54,20 @@ class TestUsersController(BaseTransactionalControllerTest):
         Sets up the testing environment;
         creates a `UserController`
         """
+        self.clean_database()
         self.init(user_role=ROLE_ADMINISTRATOR)
         self.user_c = UserController()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
+        self.clean_database()
 
     def test_index_valid_post(self):
         """
         Tests for a valid redirect on user login
         """
-        user = User('valid_user', md5('valid_pass').hexdigest(), 'mail@mail.com', True, 'CLINICIAN')
+        user = User('valid_user', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
@@ -232,7 +234,8 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         cherrypy.request.method = "POST"
         data = {"email": self.test_user.email,
-                "username": ""}
+                "username": self.test_user.username,
+               }
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
             "Info message informing successfull reset should be present"

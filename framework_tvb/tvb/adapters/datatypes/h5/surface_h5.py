@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -107,6 +107,15 @@ class SurfaceH5(H5File):
         self.number_of_split_slices.store(self._number_of_split_slices)
         self.split_slices.store(self._split_slices)
         self.split_triangles.store(self._split_triangles)
+
+    def center(self):
+        """
+        Compute the center of the surface as the mean spot on all the three axes.
+        """
+        # is this different from return numpy.mean(self.vertices, axis=0) ?
+        return [float(numpy.mean(self.vertices[:, 0])),
+                float(numpy.mean(self.vertices[:, 1])),
+                float(numpy.mean(self.vertices[:, 2]))]
 
     def get_number_of_split_slices(self):
         return self._number_of_split_slices
@@ -316,7 +325,7 @@ class SurfaceH5(H5File):
         slice_number = int(slice_number)
         slice_triangles = self.triangles[
                           slice_number * SPLIT_PICK_MAX_TRIANGLE:
-                          min(self.number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
+                          min(self.number_of_triangles.load(), (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
                           ]
         result_normals = []
         for triang in slice_triangles:

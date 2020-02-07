@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,7 @@ class LocalConnectivity(HasTraits):
     """
     A sparse matrix for representing the local connectivity within the Cortex.
     """
-    surface = Attr(field_type=surfaces.Surface, label="Surface")
+    surface = Attr(field_type=surfaces.CorticalSurface, label="Surface")
 
     matrix = Attr(field_type=scipy.sparse.spmatrix, required=False)
 
@@ -117,14 +117,6 @@ class LocalConnectivity(HasTraits):
 
         result.matrix = reader.read_array(matlab_data_name="LocalCoupling")
         return result
-
-    def get_min_max_values(self):
-        """
-        Retrieve the minimum and maximum values from the metadata.
-        :returns: (minimum_value, maximum_value)
-        """
-        metadata = self.get_metadata('matrix')
-        return metadata[self.METADATA_ARRAY_MIN], metadata[self.METADATA_ARRAY_MAX]
 
     def summary_info(self):
         """

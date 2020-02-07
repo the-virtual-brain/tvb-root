@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,16 +40,29 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
+
+
+class HistogramViewerModel(ViewModel):
+    input_data = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        label='Connectivity Measure',
+        doc='A BCT computed measure for a Connectivity'
+    )
 
 
 class HistogramViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(HistogramViewerForm, self).__init__(prefix, project_id)
-        self.input_data = DataTypeSelectField(self.get_required_datatype(), self, name='input_data', required=True,
-                                              label='Connectivity Measure', conditions=self.get_filters(),
-                                              doc='A BCT computed measure for a Connectivity')
+        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, self, name='input_data',
+                                                   conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return HistogramViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -74,31 +87,31 @@ class HistogramViewer(ABCDisplayer):
         return HistogramViewerForm
 
     # TODO: migrate to neotraits
-    def launch(self, input_data):
+    def launch(self, view_model):
+        # type: (HistogramViewerModel) -> dict
         """
         Prepare input data for display.
 
         :param input_data: A BCT computed measure for a Connectivity
         :type input_data: `ConnectivityMeasureIndex`
         """
-        params = self.prepare_parameters(input_data)
+        params = self.prepare_parameters(view_model.input_data)
         return self.build_display_result("histogram/view", params, pages=dict(controlPage="histogram/controls"))
 
-
-    def get_required_memory_size(self, input_data, figure_size):
+    def get_required_memory_size(self, view_model):
+        # type: (HistogramViewerModel) -> numpy.ndarray
         """
         Return the required memory to run this algorithm.
         """
+        input_data = self.load_entity_by_gid(view_model.input_data.hex)
         return numpy.prod(input_data.shape) * 2
 
-
-    def generate_preview(self, input_data, figure_size):
+    def generate_preview(self, view_model, figure_size=None):
         """
         The preview for the burst page.
         """
-        params = self.prepare_parameters(input_data)
+        params = self.prepare_parameters(view_model.input_data)
         return self.build_display_result("histogram/view", params)
-
 
     def prepare_parameters(self, input_data):
         """

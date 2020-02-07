@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -454,7 +454,7 @@ function _onParameterChanged(){
 var onParameterChanged = $.debounce(DEBOUNCE_DELAY, _onParameterChanged);
 
 function onSubmit(event){
-    var name = $('#dynamic_name').val().trim();
+    var name = $('#_dynamic_name').val().trim();
     if (name.length ) {
         doAjaxCall({
             url: _url('submit', name),
@@ -486,7 +486,7 @@ var debouncedOnIntegratorChanged = $.debounce( DEBOUNCE_DELAY, onIntegratorChang
 
 function onLeftInputTreeChange(){
     var state = getSubmitableData('left_input_tree');
-    onModelChanged(state.model_type);
+    onModelChanged(state._model);
 }
 
 function onIntegratorInputTreeChange(){

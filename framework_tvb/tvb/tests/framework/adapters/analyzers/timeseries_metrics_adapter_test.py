@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,20 +34,18 @@
 
 import os
 import tvb_data
-import numpy
 import json
+from uuid import UUID
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities import model
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter
-from tvb.datatypes.time_series import TimeSeriesRegion
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.operation_service import OperationService
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 
 
 class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
@@ -71,45 +69,37 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-
-    def test_adapter_launch(self):
+    def test_adapter_launch(self, connectivity_factory, region_mapping_factory, time_series_region_index_factory):
         """
         Test that the adapters launches and successfully generates a datatype measure entry.
         """
         meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                IntrospectionRegistry.SIMULATOR_CLASS)
-        self.operation = model.Operation(self.test_user.id, self.test_project.id, algo.id, json.dumps(''),
-                                         meta=json.dumps(meta), status=model.STATUS_STARTED)
+        self.operation = model_operation.Operation(self.test_user.id, self.test_project.id, algo.id, json.dumps(''),
+                                                   meta=json.dumps(meta), status=model_operation.STATUS_STARTED)
         self.operation = dao.store_entity(self.operation)
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(self.operation.id))
-        dummy_input = numpy.arange(1, 10001).reshape(10, 10, 10, 10)
-        dummy_time = numpy.arange(1, 11)
 
-        # Get connectivity
-        connectivities = FlowService().get_available_datatypes(self.test_project.id,
-                                                               "tvb.datatypes.connectivity.Connectivity")[0]
-        assert 2 == len(connectivities)
-        connectivity_gid = connectivities[0][2]
+        # Get connectivity, region_mapping and a dummy time_series_region
+        connectivity = connectivity_factory()
+        region_mapping = region_mapping_factory()
+        dummy_time_series_index = time_series_region_index_factory(connectivity=connectivity,
+                                                                   region_mapping=region_mapping)
 
-        dummy_time_series = TimeSeriesRegion()
-        dummy_time_series.storage_path = storage_path
-        dummy_time_series.write_data_slice(dummy_input)
-        dummy_time_series.write_time_slice(dummy_time)
-        dummy_time_series.close_file()
-        dummy_time_series.start_time = 0.0
-        dummy_time_series.sample_period = 1.0
-        dummy_time_series.connectivity = connectivity_gid
+        dummy_time_series_index.start_time = 0.0
+        dummy_time_series_index.sample_period = 1.0
 
-        adapter_instance = StoreAdapter([dummy_time_series])
-        OperationService().initiate_prelaunch(self.operation, adapter_instance, {})
-
-        dummy_time_series = dao.get_generic_entity(dummy_time_series.__class__, dummy_time_series.gid, 'gid')[0]
+        dummy_time_series_index = \
+        dao.get_generic_entity(dummy_time_series_index.__class__, dummy_time_series_index.gid, 'gid')[0]
         ts_metric_adapter = TimeseriesMetricsAdapter()
-        resulted_metric = ts_metric_adapter.launch(dummy_time_series)
-        assert isinstance(resulted_metric, DatatypeMeasure), "Result should be a datatype measure."
-        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.available_algorithms)),\
-                        "At least a result should have been generated for every metric."
-        for metric_value in resulted_metric.metrics.values():
+        form = TimeseriesMetricsAdapterForm()
+        view_model = form.get_view_model()()
+        view_model.time_series = UUID(dummy_time_series_index.gid)
+        form.fill_trait(view_model)
+        ts_metric_adapter.submit_form(form)
+        resulted_metric = ts_metric_adapter.launch(view_model)
+        assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."
+        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.get_form().algorithms.choices)), \
+            "At least a result should have been generated for every metric."
+        for metric_value in json.loads(resulted_metric.metrics).values():
             assert isinstance(metric_value, (float, int))
-

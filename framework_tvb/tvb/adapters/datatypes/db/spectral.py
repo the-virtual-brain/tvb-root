@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -79,7 +79,7 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         self.q_ratio = datatype.q_ratio
         self.sample_period = datatype.sample_period
         self.number_of_scales = datatype.frequencies.shape[0]
-        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
         self.source_gid = datatype.source.gid.hex
 
 
@@ -97,8 +97,8 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         # type: (CoherenceSpectrum)  -> None
         super(CoherenceSpectrumIndex, self).fill_from_has_traits(datatype)
         self.nfft = datatype.nfft
-        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
-        self.source_gid = datatype.source.gid
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
+        self.source_gid = datatype.source.gid.hex
 
 
 class ComplexCoherenceSpectrumIndex(DataTypeMatrix):

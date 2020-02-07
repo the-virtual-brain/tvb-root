@@ -5,9 +5,8 @@
 
     <script type="text/javascript">
    		$(document).ready(function() {
-   		   equationsPrefixes = {{ equationsPrefixes | safe }};
-           equationsPrefixes.push('cutoff');
-	       BS_plotEquations('equationDivId', '{{ equationViewerUrl }}', 'form_spatial_local_connectivity_data', equationsPrefixes);
+   		   set_events_on_form_fields({{ equationsPrefixes | safe }}, '{{ localConnBaseUrl }}');
+           plot_equation('{{ localConnBaseUrl }}');
         });
     </script>
 

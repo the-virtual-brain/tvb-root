@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -282,7 +282,7 @@ def show_me_the_colours():
         ax = colours_fig.add_subplot(rows, columns, k)
         ax.set_yticklabels([])
         ax.set_xticklabels([])
-        ax.set_axis_bgcolor(colours[k])
+        ax.set_facecolor(colours[k])
         ax.text(0.05, 0.5, colours[k])
 
 

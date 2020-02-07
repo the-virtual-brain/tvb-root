@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -43,7 +43,6 @@ from scipy import linalg
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import SpectralEmbedding
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
@@ -54,13 +53,12 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
-
-LOG = get_logger(__name__)
 
 
 class FcdCalculator(HasTraits):
@@ -92,15 +90,26 @@ class FcdCalculator(HasTraits):
         between FC(ti) and FC(tj) arranged in a vector""")
 
 
+class FCDAdapterModel(ViewModel, FcdCalculator):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeriesRegion,
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the fcd matrices are calculated."""
+    )
+
+
 class FCDAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=FcdCalculator.time_series.label,
-                                               doc=FcdCalculator.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
-        self.sw = ScalarField(FcdCalculator.sw, self)
-        self.sp = ScalarField(FcdCalculator.sp, self)
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.sw = ScalarField(FCDAdapterModel.sw, self)
+        self.sp = ScalarField(FCDAdapterModel.sp, self)
+
+    @staticmethod
+    def get_view_model():
+        return FCDAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -161,7 +170,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
     def get_output(self):
         return [FcdIndex, ConnectivityMeasureIndex]
 
-    def configure(self, time_series, sw, sp):
+    def configure(self, view_model):
+        # type: (FCDAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
 
@@ -172,14 +182,14 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("time_series shape is %s" % str(self.input_shape))
-        self.actual_sp = float(sp) / time_series.sample_period
-        self.actual_sw = float(sw) / time_series.sample_period
+        self.log.debug("time_series shape is %s" % str(self.input_shape))
+        self.actual_sp = float(view_model.sp) / self.input_time_series_index.sample_period
+        self.actual_sw = float(view_model.sw) / self.input_time_series_index.sample_period
         actual_ts_length = self.input_shape[0]
 
         if self.actual_sw >= actual_ts_length or self.actual_sp >= actual_ts_length or self.actual_sp >= self.actual_sw:
@@ -188,11 +198,13 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                 "and Sp < Sw. After calibration with sampling period, current values are: Sp=%d, Sw=%d, Ts=%d). "
                 "Please configure valid input parameters." % (self.actual_sp, self.actual_sw, actual_ts_length))
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (FCDAdapterModel) -> int
         # We do not know how much memory is needed.
         return -1
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (FCDAdapterModel) -> int
         return 0
 
     @staticmethod
@@ -214,7 +226,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         fcd_h5.labels_ordering.store(json.dumps(Fcd.labels_ordering.default))
         return fcd_h5.array_data.get_cached_metadata()
 
-    def launch(self, time_series, sw, sp):
+    def launch(self, view_model):
+        # type: (FCDAdapterModel) -> [FcdIndex]
         """
         Launch algorithm and build results.
 
@@ -234,8 +247,9 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         fcd_index = FcdIndex()
         fcd_h5_path = h5.path_for(self.storage_path, FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
-            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, time_series.gid, sw, sp)
-        self._populate_fcd_index(fcd_index, time_series.gid, fcd, fcd_array_metadata)
+            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
+                                                       view_model.sw, view_model.sp)
+        self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd, fcd_array_metadata)
         result.append(fcd_index)
 
         if np.amax(fcd_segmented) == 1.1:
@@ -243,8 +257,11 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
             result_fcd_segmented_h5_path = h5.path_for(self.storage_path, FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
                 fcd_segmented_metadata = self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
-                                                               result_fcd_segmented_index.gid, time_series.gid, sw, sp)
-            self._populate_fcd_index(result_fcd_segmented_index, time_series.id, fcd_segmented, fcd_segmented_metadata)
+                                                               result_fcd_segmented_index.gid,
+                                                               self.input_time_series_index.gid, view_model.sw,
+                                                               view_model.sp)
+            self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id, fcd_segmented,
+                                     fcd_segmented_metadata)
             result.append(result_fcd_segmented_index)
 
         for mode in eigvect_dict.keys():
@@ -272,8 +289,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         return result
 
     def _compute_fcd_matrix(self, ts_h5):
-        LOG.debug("timeseries_h5.data")
-        LOG.debug(narray_describe(ts_h5.data[:]))
+        self.log.debug("timeseries_h5.data")
+        self.log.debug(narray_describe(ts_h5.data[:]))
 
         input_shape = ts_h5.data.shape
         result_shape = self._result_shape(input_shape)
@@ -301,8 +318,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                         fcd[j, i, var, mode] = fcd[i, j, var, mode]
                         j += 1
 
-        LOG.debug("FCD")
-        LOG.debug(narray_describe(fcd))
+        self.log.debug("FCD")
+        self.log.debug(narray_describe(fcd))
 
         num_eig = 3  # number of the eigenvector that will be extracted
 

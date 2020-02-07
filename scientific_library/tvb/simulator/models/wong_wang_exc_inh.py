@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -161,7 +161,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
     tau_i = NArray(
         label=r":math:`\tau_i`",
         default=numpy.array([10., ]),
-        domain=Range(lo=50., hi=150., step=1.0),
+        domain=Range(lo=5., hi=100., step=1.0),
         doc="""[ms]. Inhibitory population NMDA decay time constant.""")
 
     J_i = NArray(

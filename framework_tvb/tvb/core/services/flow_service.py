@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,6 @@ from inspect import getmro
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.input_tree import InputTreeManager
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection, \
     DataType
@@ -61,8 +60,7 @@ class FlowService:
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
-        self.input_tree_manager = InputTreeManager()
-    
+
     def get_category_by_id(self, identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
         return dao.get_category_by_id(identifier)
@@ -102,7 +100,6 @@ class FlowService:
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-
     def prepare_adapter_form(self, adapter_instance, project_id):
         form = adapter_instance.get_form()(project_id=project_id)
         try:
@@ -114,14 +111,6 @@ class FlowService:
 
         return form
 
-    def prepare_adapter_tree_interface(self, adapter_instance, project_id, fk_category):
-        """
-        Having a  StoredAdapter, return the Tree Adapter Interface object, populated with datatypes from 'project_id'.
-        """
-        interface = adapter_instance.get_input_tree()
-        interface = self.input_tree_manager.fill_input_tree_with_options(interface, project_id, fk_category)
-        interface = self.input_tree_manager.prepare_param_names(interface)
-        return interface
 
     def prepare_adapter(self, stored_adapter):
 
@@ -174,9 +163,8 @@ class FlowService:
         link = dao.get_link(dt_id, project_id)
         if link is not None:
             dao.remove_entity(Links, link.id)
-    
 
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, **data):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
         """
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
         Current Project and a given set of UI Input Data.
@@ -186,7 +174,8 @@ class FlowService:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
 
-            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, visible, **data)
+            result = OperationService().initiate_operation(current_user, project, adapter_instance, visible,
+                                                           model_view=view_model, **data)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 
@@ -268,11 +257,12 @@ class FlowService:
 
         return self._group_adapters_by_category(filtered_adapters, categories_dict)
 
-
     def _get_launchable_algorithms(self, datatype_gid, categories):
-
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
-        data_class = datatype_instance.__class__
+        return self.get_launchable_algorithms_for_datatype(datatype_instance, categories)
+
+    def get_launchable_algorithms_for_datatype(self, datatype, categories):
+        data_class = datatype.__class__
         all_compatible_classes = [data_class.__name__]
         for one_class in getmro(data_class):
             # from tvb.basic.traits.types_mapped import MappedType
@@ -287,10 +277,10 @@ class FlowService:
         filtered_adapters = []
         for stored_adapter in launchable_adapters:
             filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
-            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_instance):
+            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                 filtered_adapters.append(stored_adapter)
 
-        return datatype_instance, filtered_adapters
+        return datatype, filtered_adapters
 
 
     def _group_adapters_by_category(self, stored_adapters, categories):

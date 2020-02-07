@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -60,17 +60,16 @@ class NetworkxParser(object):
 
     OPERATORS = "[*-+:]"
 
-    def __init__(self, key_edge_weight=None, key_edge_tract=None, key_node_coordinates=None,
-                 key_node_label=None, key_node_region=None, key_node_hemisphere=None):
+    def __init__(self, view_model):
 
         self.logger = get_logger(__name__)
 
-        NetworkxParser._append_key(key_edge_weight, self.KEY_EDGE_WEIGHT)
-        NetworkxParser._append_key(key_edge_tract, self.KEY_EDGE_TRACT)
-        NetworkxParser._append_key(key_node_coordinates, self.KEY_NODE_COORDINATES)
-        NetworkxParser._append_key(key_node_label, self.KEY_NODE_LABEL)
-        NetworkxParser._append_key(key_node_region, self.KEY_NODE_REGION)
-        NetworkxParser._append_key(key_node_hemisphere, self.KEY_NODE_HEMISPHERE)
+        NetworkxParser._append_key(view_model.key_edge_weight, self.KEY_EDGE_WEIGHT)
+        NetworkxParser._append_key(view_model.key_edge_tract, self.KEY_EDGE_TRACT)
+        NetworkxParser._append_key(view_model.key_node_coordinates, self.KEY_NODE_COORDINATES)
+        NetworkxParser._append_key(view_model.key_node_label, self.KEY_NODE_LABEL)
+        NetworkxParser._append_key(view_model.key_node_region, self.KEY_NODE_REGION)
+        NetworkxParser._append_key(view_model.key_node_hemisphere, self.KEY_NODE_HEMISPHERE)
 
     @staticmethod
     def prepare_input_params_tree(prefix=None):

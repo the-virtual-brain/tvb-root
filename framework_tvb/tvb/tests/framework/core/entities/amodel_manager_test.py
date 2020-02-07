@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -46,10 +46,11 @@ class TestsModelManager(BaseTestCase):
     This class contains tests for the tvb.core.entities.modelmanager module.
     """
 
+    @pytest.mark.skipif
     def teardown_method(self):
         init_test_env()
 
-
+    @pytest.mark.skipif
     def test_initialize_startup(self):
         """
         Test "reset_database" and "initialize_startup" calls.

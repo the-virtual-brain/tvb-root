@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -91,7 +91,7 @@ class Attr(_Attr):
         if not isinstance(value, self.field_type):
             raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
         if self.choices is not None:
-            if value not in self.choices:
+            if value not in self.choices and not (value is None and not self.required):
                 raise TraitValueError("Value {!r} must be one of {}".format(value, self.choices), attr=self)
 
     # subclass api
@@ -451,6 +451,8 @@ class NArray(Attr):
                        Represents the expected domain of the values in the array.
         """
 
+        if numpy.issubdtype(dtype, numpy.integer):
+            dtype = numpy.int64
         self.dtype = numpy.dtype(dtype)
 
         super(NArray, self).__init__(

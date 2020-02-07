@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,6 +33,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
@@ -43,34 +44,32 @@ class TestPSE(TransactionalTestCase):
     Unit-tests for BrainViewer.
     """
 
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a datatype group
-        """
-        self.datatypeFactory = DatatypesFactory()
-        self.group = self.datatypeFactory.create_datatype_group()
-
-    def test_launch_discrete(self):
+    def test_launch_discrete(self, datatype_group_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
         viewer = DiscretePSEAdapter()
-        result = viewer.launch(self.group)
+        view_model = viewer.get_view_model_class()()
+        group = datatype_group_factory()
+        view_model.datatype_group = UUID(hex=group.gid)
+        result = viewer.launch(view_model)
 
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
                          'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
         for key in expected_keys:
             assert key in result
-        assert self.group.gid == result["datatype_group_gid"]
+        assert group.gid == result["datatype_group_gid"].hex
         assert 'false' == result["has_started_ops"]
 
-    def test_launch_isocline(self):
+    def test_launch_isocline(self, datatype_group_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
         viewer = IsoclinePSEAdapter()
-        result = viewer.launch(self.group)
+        view_model = viewer.get_view_model_class()()
+        group = datatype_group_factory()
+        view_model.datatype_group = UUID(hex=group.gid)
+        result = viewer.launch(view_model)
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])

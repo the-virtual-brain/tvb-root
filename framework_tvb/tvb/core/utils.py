@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,6 +39,7 @@ import json
 import datetime
 import uuid
 import urllib.request, urllib.parse, urllib.error
+from hashlib import md5
 import numpy
 import six
 from tvb.basic.profile import TvbProfile
@@ -301,7 +302,10 @@ class TVBJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, "to_json"):
             return obj.to_json()
-
+        # TODO: Review this quick fix.
+        # TVB-2565 numpy int serialization
+        if numpy.issubdtype(obj, numpy.integer):
+            return int(obj)
         return json.JSONEncoder.default(self, obj)
 
 
@@ -474,3 +478,7 @@ def prepare_time_slice(total_time_length, max_length=10 ** 4):
         return slice(total_time_length)
 
     return slice(total_time_length - max_length, total_time_length)
+
+
+def hash_password(pass_string):
+    return md5(pass_string.encode('utf-8')).hexdigest()

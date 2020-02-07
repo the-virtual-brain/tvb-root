@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -43,9 +43,18 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.time_series import TimeSeries
+
+
+class TimeSeriesModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time series to be displayed in a 2D form."
+    )
 
 
 class TimeSeriesForm(ABCAdapterForm):
@@ -53,9 +62,12 @@ class TimeSeriesForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(TimeSeriesForm, self).__init__(prefix, project_id, False)
 
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label="Time series to be displayed in a 2D form.",
-                                               conditions=self.get_filters())
+        self.time_series = TraitDataTypeSelectField(TimeSeriesModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters())
+
+    @staticmethod
+    def get_view_model():
+        return TimeSeriesModel
 
     @staticmethod
     def get_required_datatype():
@@ -115,8 +127,8 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         if isinstance(ts_h5, TimeSeriesRegionH5):
             connectivity_gid = ts_h5.connectivity.load()
-            conn_idx = self.load_entity_by_gid(connectivity_gid.hex)
-            conn = h5.load_from_index(conn_idx)
+            conn = self.load_traited_by_gid(connectivity_gid)
+            assert isinstance(conn, Connectivity)
             return self._connectivity_grouped_space_labels(conn)
 
         ts_h5.get_grouped_space_labels()
@@ -144,7 +156,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
         return ts_h5.get_space_labels()
 
 
-class TimeSeries(ABCSpaceDisplayer):
+class TimeSeriesDisplay(ABCSpaceDisplayer):
     _ui_name = "Time Series Visualizer (SVG/d3)"
     _ui_subsection = "timeseries"
 
@@ -153,17 +165,18 @@ class TimeSeries(ABCSpaceDisplayer):
     def get_form_class(self):
         return TimeSeriesForm
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (TimeSeriesModel) -> int
         """Return required memory."""
         return -1
 
-    def launch(self, time_series, preview=False, figsize=None):
-        """Construct data for visualization and launch it."""
-        h5_file = h5.h5_file_for_index(time_series)
+    def _launch(self, view_model, figsize, preview=False):
+        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        h5_file = h5.h5_file_for_index(time_series_index)
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())
         ts = h5_file.storage_manager.get_data('time')
-        state_variables = h5_file.labels_dimensions.load().get(time_series.labels_ordering[1], [])
+        state_variables = time_series_index.get_labels_for_dimension(1)
         labels = self.get_space_labels(h5_file)
 
         # Assume that the first dimension is the time since that is the case so far
@@ -176,9 +189,9 @@ class TimeSeries(ABCSpaceDisplayer):
             for n in range(min(self.MAX_PREVIEW_DATA_LENGTH, shape[2])):
                 labels.append("Node-" + str(n))
 
-        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series.gid),
+        pars = {'baseURL': URLGenerator.build_base_h5_url(time_series_index.gid),
                 'labels': labels, 'labels_json': json.dumps(labels),
-                'ts_title': time_series.title, 'preview': preview, 'figsize': figsize,
+                'ts_title': time_series_index.title, 'preview': preview, 'figsize': figsize,
                 'shape': repr(shape), 't0': ts[0],
                 'dt': ts[1] - ts[0] if len(ts) > 1 else 1,
                 'labelsStateVar': state_variables, 'labelsModes': list(range(shape[3]))
@@ -188,5 +201,11 @@ class TimeSeries(ABCSpaceDisplayer):
 
         return self.build_display_result("time_series/view", pars, pages=dict(controlPage="time_series/control"))
 
-    def generate_preview(self, time_series, figure_size):
-        return self.launch(time_series, preview=True, figsize=figure_size)
+    def launch(self, view_model):
+        # type: (TimeSeriesModel) -> dict
+        """Construct data for visualization and launch it."""
+        return self._launch(view_model, None)
+
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (TimeSeriesModel, (int, int)) -> dict
+        return self._launch(view_model, figsize=figure_size, preview=True)

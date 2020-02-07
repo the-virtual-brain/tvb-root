@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,21 +47,6 @@ class TestUtils(TransactionalTestCase):
     This class contains test helper methods.
     """
 
-
-    def transactional_setup_method(self):
-        """
-        Reset the database before each test.
-        """
-        pass
-
-
-    def transactional_teardown_method(self):
-        """
-        Reset the database when test is done.
-        """
-        pass
-
-
     def test_path2url_part(self):
         """
         Test that all invalid characters are removed from the url.
@@ -70,7 +55,6 @@ class TestUtils(TransactionalTestCase):
         assert not os.sep in processed_path, "Invalid character " + os.sep + " should have beed removed"
         assert not ' ' in processed_path, "Invalid character ' ' should have beed removed"
         assert not ':' in processed_path, "Invalid character ':' should have beed removed"
-
 
     def test_get_unique_file_name(self):
         """
@@ -87,7 +71,6 @@ class TestUtils(TransactionalTestCase):
         assert len(file_names) == len(set(file_names)), 'No duplicate files should be generated.'
         for file_n in file_names:
             os.remove(file_n)
-
 
     def test_string2date(self):
         """
@@ -111,13 +94,13 @@ class TestUtils(TransactionalTestCase):
         assert custom_date == datetime.datetime(1999, 1, 1),\
                          "Did not get expected datetime from conversion object."
 
-
     def test_string2date_invalid(self):
         """
         Check that a ValueError is raised in case some invalid date is passed.
         """
         with pytest.raises(ValueError):
             string2date("somethinginvalid")
+
     def test_date2string(self):
         """
         Check the date2string method for various inputs.
@@ -133,7 +116,6 @@ class TestUtils(TransactionalTestCase):
                          "Did not get expected string from datetime conversion object."
 
         assert "None" == date2string(None), "Expected to return 'None' for None input."
-
 
     def test_string2bool(self):
         """

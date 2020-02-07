@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -78,7 +78,7 @@ class TestModels():
         self.n_nodes = 100
 
     def test_RWW_opencl(self):
-        from tvb.simulator.models import ReducedWongWang
+        from tvb.simulator.models.wong_wang import ReducedWongWang
         from tvb.simulator._opencl.models import CLRWW
 
         self.validate(ReducedWongWang(),CLRWW(),1)

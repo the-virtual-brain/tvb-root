@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,17 +40,15 @@ import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.graph import Covariance
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.logger.builder import get_logger
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
-
-LOG = get_logger(__name__)
 
 
 class NodeCovariance(HasTraits):
@@ -64,13 +62,25 @@ class NodeCovariance(HasTraits):
         doc="""The timeseries to which the NodeCovariance is to be applied.""")
 
 
+class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The timeseries to which the NodeCovariance is to be applied."""
+    )
+
+
 class NodeCovarianceAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=NodeCovariance.time_series.label,
-                                               doc=NodeCovariance.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self,
+                                                    name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+
+    @staticmethod
+    def get_view_model():
+        return NodeCovarianceAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -97,17 +107,19 @@ class NodeCovarianceAdapter(ABCAsynchronous):
     def get_output(self):
         return [CovarianceIndex]
 
-    def configure(self, time_series):
+    def configure(self, view_model):
+        # type: (NodeCovarianceAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (NodeCovarianceAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
@@ -116,14 +128,16 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         output_size = self._result_size(used_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (NodeCovarianceAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter ( in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], 1)
         return self.array_size2kb(self._result_size(used_shape))
 
-    def launch(self, time_series):
+    def launch(self, view_model):
+        # type: (NodeCovarianceAdapterModel) -> [CovarianceIndex]
         """ 
         Launch algorithm and build results.
 
@@ -137,7 +151,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         # NOTE: Assumes 4D, Simulator timeSeries.
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), None]
 
-        with h5.h5_file_for_index(time_series) as ts_h5:
+        with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             for mode in range(self.input_shape[3]):
                 for var in range(self.input_shape[1]):
                     small_ts = TimeSeries()
@@ -148,7 +162,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
                     covariance_h5.write_data_slice(partial_cov.array_data)
             ts_array_metadata = covariance_h5.array_data.get_cached_metadata()
 
-        covariance_index.source_gid = time_series.gid
+        covariance_index.source_gid = self.input_time_series_index.gid
         covariance_index.subtype = type(covariance_index).__name__
         covariance_index.array_data_min = ts_array_metadata.min
         covariance_index.array_data_max = ts_array_metadata.max
@@ -156,12 +170,11 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         covariance_index.ndim = len(covariance_h5.array_data.shape)
 
         covariance_h5.gid.store(uuid.UUID(covariance_index.gid))
-        covariance_h5.source.store(uuid.UUID(time_series.gid))
+        covariance_h5.source.store(view_model.time_series)
         covariance_h5.close()
         return covariance_index
 
-    @staticmethod
-    def _compute_node_covariance(small_ts, input_ts_h5):
+    def _compute_node_covariance(self, small_ts, input_ts_h5):
         """
         Compute the temporal covariance between nodes in a TimeSeries dataType.
         A nodes x nodes matrix is returned for each (state-variable, mode).
@@ -170,7 +183,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
 
         # (nodes, nodes, state-variables, modes)
         result_shape = (data_shape[2], data_shape[2], data_shape[1], data_shape[3])
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -181,8 +194,8 @@ class NodeCovarianceAdapter(ABCAsynchronous):
                 data = data - data.mean(axis=0)[numpy.newaxis, 0]
                 result[:, :, var, mode] = numpy.cov(data.T)
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         covariance = Covariance(source=small_ts, array_data=result)
         return covariance

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,11 +36,13 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCSynchronous
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class ComplexInterfaceAdapter(ABCSynchronous):
     """Adapter with a complex interface, target for testing ABCAdapter methods."""
+
+    def get_form_class(self):
+        pass
 
     def get_input_tree(self):
         return [{'name': 'surface', 'type': 'tvb.core.entities.model.DataType', "datatype": True,
@@ -128,15 +130,6 @@ class TestAdapterABC(TransactionalTestCase):
         """
         self.test_adapter = ComplexInterfaceAdapter()
 
-    def test_flat_interface(self):
-        """
-        Test method flaten_input_interface on a complex adapter interface.
-        """
-        list_flat = self.test_adapter.flaten_input_interface()
-        assert len(self.EXPECTED_FLAT_NAMES) == len(list_flat)
-        for row in list_flat:
-            assert row["name"] in self.EXPECTED_FLAT_NAMES
-
     def test_prepare_ui_inputs_simple(self):
         """
         Test for ABCAdapter.prepare_ui_inputs on a complex adapter interface.
@@ -160,11 +153,11 @@ class TestAdapterABC(TransactionalTestCase):
         with pytest.raises(Exception):
             self.test_adapter.prepare_ui_inputs(self.SUBMIT_DATASET_2)
 
-    def test_prepare_inputs_datatype(self):
+    def test_prepare_inputs_datatype(self, operation_factory):
         """
         Test for ABCAdapter.prepare_ui_inputs method when submitting DataType with sub-attributes.
         """
-        parent_op = TestFactory.create_operation()
+        parent_op = operation_factory()
         test_entity = dao.store_entity(DataType(operation_id=parent_op.id))
         dataset_3 = {}
         for key, value in self.SUBMIT_DATASET_3.items():

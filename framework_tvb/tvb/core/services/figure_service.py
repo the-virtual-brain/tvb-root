@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,13 +40,12 @@ import os
 from PIL import Image
 import base64
 import xml.dom.minidom
-from io import StringIO
+from io import BytesIO
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
-from tvb.core.entities import model
+from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-
 
 
 class FigureService:
@@ -62,21 +61,18 @@ class FigureService:
     _DEFAULT_SESSION_NAME = "Default"
     _DEFAULT_IMAGE_FILE_NAME = "snapshot."
 
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
 
-
     def _write_png(self, store_path, export_data):
         img_data = base64.b64decode(export_data)                        # decode the image
-        final_image = Image.open(StringIO(img_data))                    # place it in a PIL stream
+        final_image = Image.open(BytesIO(img_data))                    # place it in a PIL stream
 
         branding_bar = Image.open(FigureService._BRANDING_BAR_PNG)      # place the branding bar over
         final_image.paste(branding_bar, (0, final_image.size[1] - branding_bar.size[1]), branding_bar)
 
         final_image.save(store_path)                                    # store to disk as PNG
-
 
     def _write_svg(self, store_path, export_data):
         dom = xml.dom.minidom.parseString(export_data)
@@ -107,13 +103,11 @@ class FigureService:
         with open(store_path, 'w') as dest:
             finalSvg.writexml(dest)                                                 # store to disk
 
-
     def _image_path(self, project_name, img_type):
         "Generate path where to store image"
         images_folder = self.file_helper.get_images_folder(project_name)
         file_name = FigureService._DEFAULT_IMAGE_FILE_NAME + img_type
         return utils.get_unique_file_name(images_folder, file_name)
-
 
     @staticmethod
     def _generate_image_name(project, user, operation, image_name):
@@ -127,7 +121,6 @@ class FigureService:
                 image_name = "figure"
         figure_count = dao.get_figure_count(project.id, user.id) + 1
         return 'TVB-%s-%s' % (image_name, figure_count)
-
 
     def store_result_figure(self, project, user, img_type, export_data, image_name=None, operation_id=None):
         """
@@ -149,7 +142,7 @@ class FigureService:
         image_name = self._generate_image_name(project, user, operation, image_name)
 
         # Store entity into DB
-        entity = model.ResultFigure(operation_id, user.id, project.id, FigureService._DEFAULT_SESSION_NAME,
+        entity = ResultFigure(operation_id, user.id, project.id, FigureService._DEFAULT_SESSION_NAME,
                                     image_name, file_name, img_type)
         entity = dao.store_entity(entity)
 
@@ -162,7 +155,6 @@ class FigureService:
             # Force writing operation meta data on disk.
             # This is important later for operation import
             self.file_helper.write_operation_metadata(operation)
-
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -178,14 +170,12 @@ class FigureService:
                 figure.file_path = utils.path2url_part(figure_full_path)
         return result, previews_info
 
-
     @staticmethod
     def load_figure(figure_id):
         """
         Loads a stored figure by its id.
         """
         return dao.load_figure(figure_id)
-
 
     def edit_result_figure(self, figure_id, **data):
         """
@@ -201,7 +191,6 @@ class FigureService:
         # Store figure meta data in an XML attached to the image.
         self.file_helper.write_image_metadata(figure)
 
-
     def remove_result_figure(self, figure_id):
         """
         Remove figure from DB and file storage.
@@ -216,7 +205,7 @@ class FigureService:
             self.file_helper.remove_image_metadata(figure)
 
         # Remove figure reference from DB.
-        result = dao.remove_entity(model.ResultFigure, figure_id)
+        result = dao.remove_entity(ResultFigure, figure_id)
         return result
         
         

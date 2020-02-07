@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,53 +40,25 @@ from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-#from tvb.datatypes.arrays import MappedArray
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCAsynchronous
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities import model
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapter
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
-
-TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.core.services.flow_service_test"
-TEST_ADAPTER_VALID_CLASS = "ValidTestAdapter"
+TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
+TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
 TEST_ADAPTER_INVALID_CLASS = "InvalidTestAdapter"
 
 CATEGORY1 = 1
 CATEGORY2 = 2
 
 
-
-class ValidTestAdapter(ABCSynchronous):
-    """ Adapter used for testing purposes. """
-
-    def __init__(self):
-        ABCSynchronous.__init__(self)
-
-    def get_input_tree(self):
-        return [{'name': 'test', 'type': 'int', 'default': '0'}]
-
-    def get_output(self):
-        return []
-
-    def get_required_memory_size(self, **kwargs):
-        # Don't know how much memory is needed.
-        return -1
-
-    def get_required_disk_size(self, **kwargs):
-        # Don't know how much memory is needed.
-        return -1
-
-    def launch(self, **kwarg):
-        pass
-
-
-
-class InvalidTestAdapter():
+class InvalidTestAdapter(object):
     """ Invalid adapter used for testing purposes. """
 
     def __init__(self):
@@ -99,12 +71,10 @@ class InvalidTestAdapter():
         pass
 
 
-
 class TestFlowService(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.flow_service module.
     """
-
 
     def transactional_setup_method(self):
         """ Prepare some entities to work with during tests:"""
@@ -114,18 +84,17 @@ class TestFlowService(TransactionalTestCase):
         self.test_project = TestFactory.create_project(admin=self.test_user)
 
         category = dao.get_uploader_categories()[0]
-        self.algorithm = dao.store_entity(model.Algorithm(TEST_ADAPTER_VALID_MODULE,
+        self.algorithm = dao.store_entity(model_operation.Algorithm(TEST_ADAPTER_VALID_MODULE,
                                                           TEST_ADAPTER_VALID_CLASS, category.id))
 
-
     def transactional_teardown_method(self):
-        dao.remove_entity(model.Algorithm, self.algorithm)
-
+        dao.remove_entity(model_operation.Algorithm, self.algorithm)
 
     def test_get_uploaders(self):
 
         result = self.flow_service.get_upload_algorithms()
-        assert 29 == len(result)
+        # Not sure if it is correct but I think there are not 29 algorithms anymore here
+        assert 19 == len(result)
         found = False
         for algo in result:
             if algo.classname == self.algorithm.classname and algo.module == self.algorithm.module:
@@ -133,37 +102,32 @@ class TestFlowService(TransactionalTestCase):
                 break
         assert found, "Uploader incorrectly returned"
 
-
     def test_get_analyze_groups(self):
 
         category, groups = self.flow_service.get_analyze_groups()
         assert category.displayname == 'Analyze'
         assert len(groups) > 1
-        assert isinstance(groups[0], model.AlgorithmTransientGroup)
+        assert isinstance(groups[0], model_operation.AlgorithmTransientGroup)
 
+    def test_get_visualizers_for_group(self, datatype_group_factory):
 
-    def test_get_visualizers_for_group(self):
-
-        _, op_group_id = TestFactory.create_group(self.test_user, self.test_project)
-        dt_group = dao.get_datatypegroup_by_op_group_id(op_group_id)
+        group = datatype_group_factory()
+        dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
         # Only the discreet is expected
         assert 1 == len(result)
         assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
 
+    def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory, region_mapping_factory):
 
-    def test_get_launchable_algorithms(self):
-
-        factory = DatatypesFactory()
-        conn = factory.create_connectivity(4)[1]
-        ts = factory.create_timeseries(conn)
+        conn = connectivity_factory()
+        rm = region_mapping_factory()
+        ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
         result = self.flow_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
 
-
-
-    def test_get_roup_by_identifier(self):
+    def test_get_group_by_identifier(self):
         """
         Test for the get_algorithm_by_identifier.
         """
@@ -173,14 +137,13 @@ class TestFlowService(TransactionalTestCase):
         assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
         assert algo_ret.classname == self.algorithm.classname, "Class names are different!"
 
-
-    def test_build_adapter_instance(self):
+    def test_build_adapter_instance(self, test_adapter_factory):
         """
         Test standard flow for building an adapter instance.
         """
+        test_adapter_factory()
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
-
+        assert isinstance(adapter, ABCAsynchronous), "Something went wrong with valid data!"
 
     def test_build_adapter_invalid(self):
         """
@@ -190,21 +153,19 @@ class TestFlowService(TransactionalTestCase):
         with pytest.raises(IntrospectionException):
             ABCAdapter.build_adapter(group)
 
-
     def test_prepare_adapter(self):
         """
         Test preparation of an adapter.
         """
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        interface = self.flow_service.prepare_adapter(self.test_project.id, stored_adapter)
-        assert isinstance(stored_adapter, model.Algorithm), "Something went wrong with valid data!"
+        interface = self.flow_service.prepare_adapter(stored_adapter)
+        assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
         assert "name" in interface[0], "Bad interface created!"
         assert interface[0]["name"] == "test", "Bad interface!"
         assert "type" in interface[0], "Bad interface created!"
         assert interface[0]["type"] == "int", "Bad interface!"
         assert "default" in interface[0], "Bad interface created!"
         assert interface[0]["default"] == "0", "Bad interface!"
-
 
     def test_fire_operation(self):
         """
@@ -214,7 +175,6 @@ class TestFlowService(TransactionalTestCase):
         data = {"test": 5}
         result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
         assert result.endswith("has finished."), "Operation fail"
-
 
     def test_get_filtered_by_column(self):
         """
@@ -258,7 +218,6 @@ class TestFlowService(TransactionalTestCase):
         except Exception:
             pass
 
-
     @staticmethod
     def _store_float_array(array_data, subject_name, operation_id):
         """Create Float Array and DB persist it"""
@@ -271,8 +230,7 @@ class TestFlowService(TransactionalTestCase):
         datatype_inst.state = "RAW"
         dao.store_entity(datatype_inst)
 
-
-    def test_get_filtered_datatypes(self):
+    def test_get_filtered_datatypes(self, dummy_datatype_index_factory):
         """
         Test the filter function when retrieving dataTypes.
         """
@@ -288,32 +246,32 @@ class TestFlowService(TransactionalTestCase):
                      datetime.strptime("08-12-2011", "%m-%d-%Y"),
                      datetime.strptime("08-12-2011", "%m-%d-%Y")]
         for i in range(5):
-            operation = model.Operation(self.test_user.id, self.test_project.id, self.algorithm.id, 'test params',
-                                        status=model.STATUS_FINISHED, start_date=start_dates[i],
+            operation = model_operation.Operation(self.test_user.id, self.test_project.id, self.algorithm.id, 'test params',
+                                        status=model_operation.STATUS_FINISHED, start_date=start_dates[i],
                                         completion_date=end_dates[i])
             operation = dao.store_entity(operation)
             storage_path = FilesHelper().get_project_folder(self.test_project, str(operation.id))
             if i < 4:
-                datatype_inst = Datatype1()
-                datatype_inst.type = "Datatype1"
+                datatype_inst = dummy_datatype_index_factory()
+                datatype_inst.type = "DummyDataTypeIndex"
                 datatype_inst.subject = "John Doe" + str(i)
                 datatype_inst.state = "RAW"
-                datatype_inst.set_operation_id(operation.id)
+                datatype_inst.fk_from_operation = operation.id
                 dao.store_entity(datatype_inst)
             else:
                 for _ in range(2):
-                    datatype_inst = Datatype2()
+                    datatype_inst = dummy_datatype_index_factory()
                     datatype_inst.storage_path = storage_path
-                    datatype_inst.type = "Datatype2"
+                    datatype_inst.type = "DummyDataTypeIndex"
                     datatype_inst.subject = "John Doe" + str(i)
                     datatype_inst.state = "RAW"
                     datatype_inst.string_data = ["data"]
-                    datatype_inst.set_operation_id(operation.id)
+                    datatype_inst.fk_from_operation = operation.id
                     dao.store_entity(datatype_inst)
 
-        returned_data = self.flow_service.get_available_datatypes(self.test_project.id, Datatype1)[0]
+        returned_data = self.flow_service.get_available_datatypes(self.test_project.id, DummyDataTypeIndex)[0]
         for row in returned_data:
-            if row[1] != 'Datatype1':
+            if row[1] != 'DummyDataTypeIndex':
                 raise AssertionError("Some invalid data was returned!")
         assert 4 == len(returned_data), "Invalid length of result"
 

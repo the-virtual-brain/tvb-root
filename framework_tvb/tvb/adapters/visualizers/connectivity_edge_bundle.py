@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,17 +39,25 @@ import json
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.connectivity import Connectivity
+
+
+class ConnectivityEdgeBundleModel(ViewModel):
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label="Connectivity to be displayed in a hierarchical edge bundle"
+    )
 
 
 class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityEdgeBundleForm, self).__init__(prefix)
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name="connectivity",
-                                                required=True, conditions=self.get_filters(), has_all_option=False,
-                                                label="Connectivity to be displayed in a hierarchical edge bundle")
+        self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, self,
+                                                     name="connectivity", conditions=self.get_filters(),
+                                                     has_all_option=False)
         self.project_id = project_id
 
     @staticmethod
@@ -64,6 +72,10 @@ class ConnectivityEdgeBundleForm(ABCAdapterForm):
     def get_filters():
         return None
 
+    @staticmethod
+    def get_view_model():
+        return ConnectivityEdgeBundleModel
+
 
 class ConnectivityEdgeBundle(ABCDisplayer):
     _ui_name = "Connectivity Edge Bundle View"
@@ -76,13 +88,14 @@ class ConnectivityEdgeBundle(ABCDisplayer):
         """Return required memory."""
         return -1
 
-    def launch(self, connectivity):
+    def launch(self, view_model):
         """Construct data for visualization and launch it."""
 
-        connectivity_dt = h5.load_from_index(connectivity)
+        connectivity = self.load_traited_by_gid(view_model.connectivity)
 
-        pars = {"labels": json.dumps(connectivity_dt.region_labels.tolist()),
-                "url_base": ABCDisplayer.paths2url(connectivity.gid, attribute_name="weights", flatten="True")
+        pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
+                "url_base": ABCDisplayer.paths2url(view_model.connectivity.hex,
+                                                   attribute_name="weights", flatten="True")
                 }
 
         return self.build_display_result("connectivity_edge_bundle/view", pars)

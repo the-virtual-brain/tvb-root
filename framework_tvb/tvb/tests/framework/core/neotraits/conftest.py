@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,7 +61,7 @@ def barFactory():
             array_float=numpy.linspace(0, 42, 100),
             array_int=numpy.arange(8 * 8).reshape((8, 8)),
             scalar_int=42,
-            array_str=numpy.array(['ana', 'are', 'mere']),
+            array_str=numpy.array(['ana'.encode('utf-8'), 'are'.encode('utf-8'), 'mere'.encode('utf-8')]),
             abaz=BazDataType(miu=numpy.zeros((2, 2)), scalar_str='a baz')
         )
 

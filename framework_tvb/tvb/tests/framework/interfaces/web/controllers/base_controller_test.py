@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,7 +37,6 @@ from tvb.basic.config.utils import EnhancedDictionary
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 
 
-
 class BaseControllersTest(BaseTestCase):
 
     """
@@ -51,7 +50,6 @@ class BaseControllersTest(BaseTestCase):
         data = {}
         clear = clean_up = release_lock = acquire_lock
 
-
     def _expect_redirect(self, page, method, *args, **kwargs):
         """
         A generic mechanism that calls a method with some arguments and expects a redirect to a given page.
@@ -62,7 +60,6 @@ class BaseControllersTest(BaseTestCase):
         except cherrypy.HTTPRedirect as redirect:
             url = redirect.urls[0]
             assert url.endswith(page), "Should be redirect to %s not %s" % (page, url)
-
 
     def init(self, with_data=True, user_role="test"):
         """
@@ -83,7 +80,6 @@ class BaseControllersTest(BaseTestCase):
             cherrypy.session[KEY_USER] = self.test_user
             cherrypy.session[KEY_PROJECT] = self.test_project
 
-
     def cleanup(self):
         """
         Have a different name than transactional_teardown_method so we can use it safely in transactions and it will
@@ -95,7 +91,6 @@ class BaseControllersTest(BaseTestCase):
 
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
         # let for the other test the env clean, with is_first_run returning True
-
 
 
 class BaseTransactionalControllerTest(TransactionalTestCase, BaseControllersTest):

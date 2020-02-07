@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,8 +40,8 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.surfaces import Surface, CORTICAL, EEG_CAP
 
@@ -62,7 +62,6 @@ def prepare_sensors_as_measure_points_params(sensors):
             'minMeasure': 0,
             'maxMeasure': sensor_no,
             'urlMeasure': ''}
-
 
 
 def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapter_id=None):
@@ -91,21 +90,44 @@ def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapt
     return prepare_sensors_as_measure_points_params(sensors)
 
 
+class SensorsViewerModel(ViewModel):
+    sensors = DataTypeGidAttr(
+        linked_datatype=Sensors,
+        label='Sensors',
+        doc='Internals sensors to view'
+    )
+
+    projection_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Projection Surface',
+        doc='A surface on which to project the results. When missing, '
+            'the first EEGCap is taken. This parameter is ignored when '
+            'InternalSensors are inspected'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Wrapping surface over the internal sensors, to be displayed '
+            'semi-transparently, for visual purposes only.'
+    )
+
+
 class SensorsViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SensorsViewerForm, self).__init__(prefix, project_id)
-        self.sensors = DataTypeSelectField(self.get_required_datatype(), self, name='sensors', required=True,
-                                           label='Sensors', doc='Internals sensors to view',
-                                           conditions=self.get_filters())
-        self.projection_surface = DataTypeSelectField(SurfaceIndex, self, name='projection_surface',
-                                                      label='Projection Surface',
-                                                      doc='A surface on which to project the results. When missing, '
-                                                          'the first EEGCap is taken. This parameter is ignored when '
-                                                          'InternalSensors are inspected')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Wrapping surface over the internal sensors, to be displayed '
-                                                     'semi-transparently, for visual purposes only.')
+        self.sensors = TraitDataTypeSelectField(SensorsViewerModel.sensors, self, name='sensors',
+                                                conditions=self.get_filters())
+        self.projection_surface = TraitDataTypeSelectField(SensorsViewerModel.projection_surface, self,
+                                                           name='projection_surface')
+        self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, self, name='shell_surface')
+
+    @staticmethod
+    def get_view_model():
+        return SensorsViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -131,35 +153,44 @@ class SensorsViewer(ABCDisplayer):
     def get_form_class(self):
         return SensorsViewerForm
 
-    def launch(self, sensors, projection_surface=None, shell_surface=None):
+    def launch(self, view_model):
+        # type: (SensorsViewerModel) -> dict
         """
         Prepare visualizer parameters.
 
         We support viewing all sensor types through a single viewer, so that a user doesn't need to
         go back to the data-page, for loading a different type of sensor.
         """
-        if sensors.sensors_type == SensorsInternal.sensors_type.default:
-            return self._params_internal_sensors(sensors, shell_surface)
+        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        shell_surface_index = None
+        projection_surface_index = None
 
-        if sensors.sensors_type == SensorsEEG.sensors_type.default:
-            return self._params_eeg_sensors(sensors, projection_surface, shell_surface)
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+        if projection_surface_index:
+            projection_surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
 
-        if sensors.sensors_type == SensorsMEG.sensors_type.default:
-            return self._params_meg_sensors(sensors, projection_surface, shell_surface)
+        if sensors_index.sensors_type == SensorsInternal.sensors_type.default:
+            return self._params_internal_sensors(sensors_index, shell_surface_index)
+
+        if sensors_index.sensors_type == SensorsEEG.sensors_type.default:
+            return self._params_eeg_sensors(sensors_index, projection_surface_index, shell_surface_index)
+
+        if sensors_index.sensors_type == SensorsMEG.sensors_type.default:
+            return self._params_meg_sensors(sensors_index, projection_surface_index, shell_surface_index)
 
         raise LaunchException("Unknown sensors type!")
-
 
     def _prepare_shell_surface_params(self, shell_surface):
         if shell_surface:
             shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
             with shell_h5_class(shell_h5_path) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
+                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
+                    shell_h5)
                 shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
 
             return shelfObject
         return None
-
 
     def _params_internal_sensors(self, internal_sensors, shell_surface=None):
 
@@ -171,7 +202,6 @@ class SensorsViewer(ABCDisplayer):
 
         return self.build_display_result('sensors/sensors_internal', params,
                                          pages={'controlPage': 'sensors/sensors_controls'})
-
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
@@ -195,7 +225,6 @@ class SensorsViewer(ABCDisplayer):
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})
 
-
     def _params_meg_sensors(self, meg_sensors, projection_surface=None, shell_surface=None):
 
         params = prepare_sensors_as_measure_points_params(meg_sensors)
@@ -215,7 +244,6 @@ class SensorsViewer(ABCDisplayer):
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})
 
-
     @staticmethod
     def _compute_surface_params(surface_h5):
         rendering_urls = [json.dumps(url) for url in SurfaceURLGenerator.get_urls_for_rendering(surface_h5)]
@@ -226,10 +254,8 @@ class SensorsViewer(ABCDisplayer):
                 'urlLines': url_lines,
                 'urlNormals': url_normals}
 
-
     def get_required_memory_size(self):
         return -1
-
 
     def sensors_to_surface(self, sensors_gid, surface_to_map_gid):
         """

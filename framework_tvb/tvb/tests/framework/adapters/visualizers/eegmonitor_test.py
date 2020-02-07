@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,56 +30,27 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import json
-import os
-import tvb_data
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-import tvb_data.sensors as sensors_dataset
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.sensors import SensorsEEG
-from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestEEGMonitor(TransactionalTestCase):
     """
     Unit-tests for EEG Viewer.
     """
-    def transactional_setup_method(self):
-        """
-        Sets up the environment for running the tests;
-        creates a test user, a test project, a connectivity and a surface;
-        imports a CFF data-set
-        """
-        self.datatypeFactory = DatatypesFactory()
-        self.test_project = self.datatypeFactory.get_project()
-        self.test_user = self.datatypeFactory.get_user()
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
-        self.connectivity = TestFactory.get_entity(self.test_project, Connectivity())
-        assert self.connectivity is not None
-
-                
-    def transactional_teardown_method(self):
+    def test_launch(self, time_series_index_factory):
         """
-        Clean-up tests data
+        Check that all required keys are present in output from EegMonitor launch.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
-    
-    
-    def test_launch(self):
-        """
-        Check that all required keys are present in output from BrainViewer launch.
-        """
-        zip_path = os.path.join(os.path.dirname(sensors_dataset.__file__),  'eeg_unitvector_62.txt.bz2')
-        
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, 'EEG Sensors')
-        sensors = TestFactory.get_entity(self.test_project, SensorsEEG())
-        time_series = self.datatypeFactory.create_timeseries(self.connectivity, 'EEG', sensors)
+        time_series_index = time_series_index_factory()
         viewer = EegMonitor()
-        result = viewer.launch(time_series)
+        view_model = viewer.get_view_model_class()()
+        view_model.input_data = UUID(time_series_index.gid)
+        result = viewer.launch(view_model)
         expected_keys = ['tsNames', 'groupedLabels', 'tsModes', 'tsStateVars', 'longestChannelLength',
                          'label_x', 'entities', 'page_size', 'number_of_visible_points',
                          'extended_view', 'initialSelection', 'ag_settings', 'ag_settings']
@@ -96,4 +67,3 @@ class TestEEGMonitor(TransactionalTestCase):
 
         for key in expected_ag_settings:
             assert key in ag_settings, "ag_settings should have the key %s" % key
-

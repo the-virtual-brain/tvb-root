@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,6 +30,7 @@
 
 import os
 import json
+import uuid
 from collections import namedtuple
 from datetime import datetime
 import numpy
@@ -38,8 +39,10 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 
 # This setting is injected.
 # The pattern might be confusing, but it is an interesting alternative to
@@ -48,13 +51,17 @@ from tvb.basic.neotraits.api import List, Attr
 jinja_env = None
 
 
+def prepare_prefixed_name_for_field(prefix, name):
+    return '{}_{}'.format(prefix, name)
+
+
 class Field(object):
     template = None
 
     def __init__(self, form, name, disabled=False, required=False, label='', doc='', default=None):
         # type: (Form, str, bool, bool, str, str, object) -> None
         self.owner = form
-        self.name = '{}_{}'.format(form.prefix, name)
+        self.name = prepare_prefixed_name_for_field(form.prefix, name)
         self.disabled = disabled
         self.required = required
         self.label = label
@@ -64,12 +71,11 @@ class Field(object):
             self.label_classes.append('field-mandatory')
 
         # keeps the deserialized data
-        self.data = default
+        self.data = None
         # keeps user input, even if wrong, we have to redisplay it
         # todo
-        self.unvalidated_data = None
+        self.unvalidated_data = default
         self.errors = []
-
 
     def fill_from_post(self, post_data):
         """ deserialize form a post dictionary """
@@ -90,6 +96,8 @@ class Field(object):
 
     @property
     def value(self):
+        if str(self.data) == self.unvalidated_data:
+            return self.data
         return self.data or self.unvalidated_data
 
     def __repr__(self):
@@ -332,19 +340,42 @@ class DataTypeSelectField(Field):
         self.data = self.unvalidated_data
 
 
+class TraitField(Field):
+    # mhtodo: while this is consistent with the h5 api, it has the same problem
+    #         it couples the system to traited attr declarations
+    def __init__(self, trait_attribute, form, name=None, disabled=False):
+        # type: (Attr, Form, str, bool) -> None
+        self.trait_attribute = trait_attribute  # type: Attr
+        name = name or trait_attribute.field_name
+        label = trait_attribute.label or name
+
+        super(TraitField, self).__init__(
+            form,
+            name,
+            disabled,
+            trait_attribute.required,
+            label,
+            trait_attribute.doc,
+            trait_attribute.default
+        )
+
+    def from_trait(self, trait, f_name):
+        self.data = getattr(trait, f_name)
+
+
 TEMPORARY_PREFIX = ".tmp"
 
 
-class UploadField(Field):
+class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, required_type, form, name, disabled=False, required=False, label='', doc=''):
-        super(UploadField, self).__init__(form, name, disabled, required, label, doc)
+    def __init__(self, traited_attribute, required_type, form, name, disabled=False):
+        super(TraitUploadField, self).__init__(traited_attribute, form, name, disabled)
         self.required_type = required_type
         self.files_helper = FilesHelper()
 
     def fill_from_post(self, post_data):
-        super(UploadField, self).fill_from_post(post_data)
+        super(TraitUploadField, self).fill_from_post(post_data)
 
         if self.data.file is None:
             self.data = None
@@ -372,24 +403,125 @@ class UploadField(Field):
             self.owner.temporary_files.append(file_name)
 
 
-class TraitField(Field):
-    # mhtodo: while this is consistent with the h5 api, it has the same problem
-    #         it couples the system to traited attr declarations
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        # type: (Attr, Form, str, bool) -> None
-        self.trait_attribute = trait_attribute  # type: Attr
-        name = name or trait_attribute.field_name
-        label = trait_attribute.label or name
+class TraitDataTypeSelectField(TraitField):
+    template = 'form_fields/datatype_select_field.html'
+    missing_value = 'explicit-None-value'
 
-        super(TraitField, self).__init__(
-            form,
-            name,
-            disabled,
-            trait_attribute.required,
-            label,
-            trait_attribute.doc,
-            trait_attribute.default
-        )
+    def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
+                 dynamic_conditions=None, has_all_option=False):
+        super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
+        if issubclass(type(trait_attribute), DataTypeGidAttr):
+            type_to_query = trait_attribute.linked_datatype
+        else:
+            type_to_query = trait_attribute.field_type
+
+        self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
+        self.conditions = conditions
+        self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
+        self.dynamic_conditions = dynamic_conditions
+        self.has_all_option = has_all_option
+
+    def from_trait(self, trait, f_name):
+        if hasattr(trait, f_name):
+            self.data = getattr(trait, f_name)
+
+    @property
+    def get_dynamic_filters(self):
+        return FilterChain().get_filters_for_type(self.datatype_index)
+
+    def _get_values_from_db(self):
+        all_conditions = FilterChain()
+        all_conditions += self.conditions
+        all_conditions += self.dynamic_conditions
+        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
+                                                               self.datatype_index,
+                                                               all_conditions)
+        return filtered_datatypes
+
+    def options(self):
+        if not self.owner.project_id:
+            raise ValueError('A project_id is required in order to query the DB')
+
+        filtered_datatypes = self._get_values_from_db()
+
+        if not self.required:
+            choice = None
+            yield Option(
+                id='{}_{}'.format(self.name, None),
+                value=self.missing_value,
+                label=str(choice).title(),
+                checked=self.data is None
+            )
+
+        for i, datatype in enumerate(filtered_datatypes):
+            yield Option(
+                id='{}_{}'.format(self.name, i),
+                value=datatype[2],
+                label=self._prepare_display_name(datatype),
+                checked=self.data == datatype[2]
+            )
+
+        if self.has_all_option:
+            if not self.owner.draw_ranges:
+                raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
+
+            all_values = ''
+            for fdt in filtered_datatypes:
+                all_values += str(fdt[2]) + ','
+
+            choice = "All"
+            yield Option(
+                id='{}_{}'.format(self.name, choice),
+                value=all_values[:-1],
+                label=choice,
+                checked=self.data is choice
+            )
+
+    def get_dt_from_db(self):
+        return dao.get_datatype_by_gid(self.data)
+
+    def _prepare_display_name(self, value):
+        """
+        Populate meta-data fields for data_list (list of DataTypes).
+
+        Private method, to be called recursively.
+        It will receive a list of Attributes, and it will populate 'options'
+        entry with data references from DB.
+        """
+        # Here we only populate with DB data, actual
+        # XML check will be done after select and submit.
+        entity_gid = value[2]
+        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
+        display_name = ''
+        if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
+            display_name = actual_entity[0].__class__.__name__
+        display_name += ' - ' + (value[3] or "None ")
+        if value[5]:
+            display_name += ' - From: ' + str(value[5])
+        else:
+            display_name += utils.date2string(value[4])
+        if value[6]:
+            display_name += ' - ' + str(value[6])
+        display_name += ' - ID:' + str(value[0])
+
+        return display_name
+
+    def _from_post(self):
+        if self.unvalidated_data == self.missing_value:
+            self.unvalidated_data = None
+
+        if self.required and not self.unvalidated_data:
+            raise ValueError('Field required')
+
+        # TODO: ensure is in choices
+        try:
+            if self.unvalidated_data is None:
+                self.data = None
+            else:
+                self.data = uuid.UUID(self.unvalidated_data)
+        except ValueError:
+            raise ValueError('The chosen entity does not have a proper GID')
+
 
 
 class StrField(TraitField):
@@ -437,7 +569,12 @@ class FloatField(TraitField):
     def _from_post(self):
         super(FloatField, self)._from_post()
         # TODO: Throws exception if attr is optional and has no value
-        self.data = float(self.unvalidated_data)
+        if self.unvalidated_data and len(self.unvalidated_data) == 0:
+            self.unvalidated_data = None
+        if self.unvalidated_data:
+            self.data = float(self.unvalidated_data)
+        else:
+            self.data = None
 
 
 class ArrayField(TraitField):
@@ -454,7 +591,11 @@ class ArrayField(TraitField):
             # this None means self.data is missing, either not set or unset cause of validation error
             return self.unvalidated_data
         try:
-            return json.dumps(self.data.tolist())
+            if self.data.size > 100:
+                data_to_display = self.data[:100]
+            else:
+                data_to_display = self.data
+            return json.dumps(data_to_display.tolist())
         except (TypeError, ValueError):
             return self.unvalidated_data
 
@@ -466,51 +607,66 @@ class SelectField(TraitField):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
+    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
-        if not trait_attribute.choices:
+        if choices:
+            self.choices = choices
+        else:
+            self.choices = {choice: choice for choice in trait_attribute.choices}
+        if not self.choices:
             raise ValueError('no choices for field')
+        self.display_none_choice = display_none_choice
+
+    @property
+    def value(self):
+        if self.data is None and not self.trait_attribute.required:
+            return self.data
+        return super(SelectField, self).value
 
     def options(self):
         """ to be used from template, assumes self.data is set """
-        if not self.trait_attribute.required:
-            choice = None
-            yield Option(
-                id='{}_{}'.format(self.name, None),
-                value=self.missing_value,
-                label=str(choice).title(),
-                checked=self.data is None
-            )
+        if self.display_none_choice:
+            if not self.trait_attribute.required:
+                choice = None
+                yield Option(
+                    id='{}_{}'.format(self.name, None),
+                    value=self.missing_value,
+                    label=str(choice).title(),
+                    checked=self.data is None
+                )
 
-        for i, choice in enumerate(self.trait_attribute.choices):
+        for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice).title(),
-                checked=self.data == choice
+                checked=self.data == self.choices.get(choice)
             )
 
-    def _from_post(self):
-        # encode None as a string
-        if self.unvalidated_data == self.missing_value:
-            self.unvalidated_data = None
+    # def _from_post(self):
+    #     # encode None as a string
+    #     if self.unvalidated_data == self.missing_value:
+    #         self.unvalidated_data = None
+    #
+    #     if self.required and not self.unvalidated_data:
+    #         raise ValueError('Field required')
+    #
+    #     if self.unvalidated_data is not None:
+    #         # todo muliple values
+    #         self.data = self.trait_attribute.field_type(self.unvalidated_data)
+    #     else:
+    #         self.data = None
+    #
+    #     allowed = self.trait_attribute.choices
+    #     if not self.trait_attribute.required:
+    #         allowed = (None,) + allowed
+    #
+    #     if self.data not in allowed:
+    #         raise ValueError('must be one of {}'.format(allowed))
 
-        if self.required and not self.unvalidated_data:
-            raise ValueError('Field required')
-
-        if self.unvalidated_data is not None:
-            # todo muliple values
-            self.data = self.trait_attribute.field_type(self.unvalidated_data)
-        else:
-            self.data = None
-
-        allowed = self.trait_attribute.choices
-        if not self.trait_attribute.required:
-            allowed = (None, ) + allowed
-
-        if self.data not in allowed:
-           raise ValueError('must be one of {}'.format(allowed))
-
+    def fill_from_post(self, post_data):
+        super(SelectField, self).fill_from_post(post_data)
+        self.data = self.choices.get(self.data)
 
 
 class MultiSelectField(TraitField):
@@ -528,7 +684,7 @@ class MultiSelectField(TraitField):
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice).title(),
-                checked=choice in self.data
+                checked=self.data is not None and choice in self.data
             )
 
     def _from_post(self):
@@ -543,7 +699,7 @@ class MultiSelectField(TraitField):
         else:
             selected = self.unvalidated_data
 
-        data = []   # don't mutate self.data until we know all values converted ok
+        data = []  # don't mutate self.data until we know all values converted ok
 
         for s in selected:
             converted_s = self.trait_attribute.element_type(s)
@@ -647,8 +803,7 @@ class Form(object):
             if f_name is None:
                 # skipp attribute that does not seem to belong to a traited type
                 continue
-            field.data = getattr(trait, f_name)
-
+            field.from_trait(trait, f_name)
 
     def fill_trait(self, datatype):
         """
@@ -667,7 +822,7 @@ class Form(object):
                 # as field.data is clearly tainted set it to None so that field.unvalidated_data
                 # will render and the user can fix the typo's
                 field.data = None
-                field.errors.append(ex.message)
+                field.errors.append(ex)
                 raise
 
     def fill_from_post(self, form_data):

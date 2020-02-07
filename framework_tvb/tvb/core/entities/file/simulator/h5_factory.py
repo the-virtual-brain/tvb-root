@@ -1,66 +1,57 @@
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.equations import Equation
 from tvb.simulator.coupling import Coupling
-from tvb.simulator.integrators import Integrator, HeunDeterministic, HeunStochastic, \
-    EulerDeterministic, EulerStochastic, RungeKutta4thOrderDeterministic, Identity, VODE, VODEStochastic, Dopri5, \
-    Dopri5Stochastic, Dop853, Dop853Stochastic
-from tvb.simulator.models import Model
+from tvb.simulator.integrators import *
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.monitors import Monitor, SubSample, GlobalAverage, TemporalAverage
 from tvb.simulator.noise import Additive, Multiplicative, Noise
-
-from tvb.core.services.exceptions import ServicesBaseException
 
 
 # TODO: rethink this solution
 def config_h5_factory(config_class):
     from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 
-    if issubclass(config_class, Equation):
-        return equation_h5_factory(config_class)
     if issubclass(config_class, Noise):
         return noise_h5_factory(config_class)
     if issubclass(config_class, Integrator):
         return integrator_h5_factory(config_class)
     if issubclass(config_class, Coupling):
         return coupling_h5_factory(config_class)
-    if issubclass(config_class, Model):
+    if issubclass(config_class, ModelsEnum.BASE_MODEL.get_class()):
         return model_h5_factory(config_class)
     if issubclass(config_class, Monitor):
         return monitor_h5_factory(config_class)
-    if config_class == Cortex:
+    if issubclass(config_class, Cortex):
         return CortexH5
     return None
-
-
-def equation_h5_factory(equation_class):
-    from tvb.datatypes.equations import DiscreteEquation, Linear, Gaussian, DoubleGaussian, Sigmoid, \
-        GeneralizedSigmoid, Sinusoid, Cosine, PulseTrain, Gamma, Alpha, DoubleExponential, FirstOrderVolterra, \
-        MixtureOfGammas
-    from tvb.core.entities.file.simulator.equation_h5 import DiscreteEquationH5, LinearH5, GaussianH5, DoubleGaussianH5, \
-        SigmoidH5, GeneralizedSigmoidH5, SinusoidH5, CosineH5, AlphaH5, PulseTrainH5, GammaH5, DoubleExponentialH5, \
-        FirstOrderVolterraH5, MixtureOfGammasH5
-
-    equation_class_to_h5 = {
-        DiscreteEquation: DiscreteEquationH5,
-        Linear: LinearH5,
-        Gaussian: GaussianH5,
-        DoubleGaussian: DoubleGaussianH5,
-        Sigmoid: SigmoidH5,
-        GeneralizedSigmoid: GeneralizedSigmoidH5,
-        Sinusoid: SinusoidH5,
-        Cosine: CosineH5,
-        Alpha: AlphaH5,
-        PulseTrain: PulseTrainH5,
-        Gamma: GammaH5,
-        DoubleExponential: DoubleExponentialH5,
-        FirstOrderVolterra: FirstOrderVolterraH5,
-        MixtureOfGammas: MixtureOfGammasH5
-    }
-
-    equation_h5_class = equation_class_to_h5.get(equation_class)
-    if equation_h5_class is None:
-        raise ServicesBaseException('No H5File defined for Equation of type %s' % equation_class.__name__)
-    return equation_h5_class
 
 
 def noise_h5_factory(noise_class):
@@ -116,36 +107,33 @@ def coupling_h5_factory(coupling_class):
 
 
 def model_h5_factory(model_class):
-    from tvb.simulator.models import Epileptor, Epileptor2D, EpileptorCodim3, EpileptorCodim3SlowMod, Hopfield, \
-        JansenRit, ZetterbergJansen, EpileptorRestingState, LarterBreakspear, Generic2dOscillator, \
-        ReducedSetFitzHughNagumo, ReducedSetHindmarshRose, WilsonCowan, ReducedWongWang, ReducedWongWangExcInh, \
-        ZerlautFirstOrder, ZerlautSecondOrder, SupHopf, Linear, Kuramoto
     from tvb.core.entities.file.simulator.model_h5 import EpileptorH5, Epileptor2DH5, EpileptorCodim3H5, \
         EpileptorCodim3SlowModH5, HopfieldH5, JansenRitH5, ZetterbergJansenH5, EpileptorRestingStateH5, \
         LarterBreakspearH5, LinearH5, Generic2dOscillatorH5, KuramotoH5, ReducedSetFitzHughNagumoH5, \
-        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, ZerlautFirstOrderH5, \
-        ZerlautSecondOrderH5, SupHopfH5
+        ReducedSetHindmarshRoseH5, WilsonCowanH5, ReducedWongWangH5, ReducedWongWangExcInhH5, \
+        ZerlautAdaptationFirstOrderH5, \
+        ZerlautAdaptationSecondOrderH5, SupHopfH5
     model_class_to_h5 = {
-        Epileptor: EpileptorH5,
-        Epileptor2D: Epileptor2DH5,
-        EpileptorCodim3: EpileptorCodim3H5,
-        EpileptorCodim3SlowMod: EpileptorCodim3SlowModH5,
-        Hopfield: HopfieldH5,
-        JansenRit: JansenRitH5,
-        ZetterbergJansen: ZetterbergJansenH5,
-        EpileptorRestingState: EpileptorRestingStateH5,
-        LarterBreakspear: LarterBreakspearH5,
-        Linear: LinearH5,
-        Generic2dOscillator: Generic2dOscillatorH5,
-        Kuramoto: KuramotoH5,
-        ReducedSetFitzHughNagumo: ReducedSetFitzHughNagumoH5,
-        ReducedSetHindmarshRose: ReducedSetHindmarshRoseH5,
-        WilsonCowan: WilsonCowanH5,
-        ReducedWongWang: ReducedWongWangH5,
-        ReducedWongWangExcInh: ReducedWongWangExcInhH5,
-        ZerlautFirstOrder: ZerlautFirstOrderH5,
-        ZerlautSecondOrder: ZerlautSecondOrderH5,
-        SupHopf: SupHopfH5
+        ModelsEnum.EPILEPTOR.get_class(): EpileptorH5,
+        ModelsEnum.EPILEPTOR_2D.get_class(): Epileptor2DH5,
+        ModelsEnum.EPILEPTOR_CODIM_3.get_class(): EpileptorCodim3H5,
+        ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(): EpileptorCodim3SlowModH5,
+        ModelsEnum.HOPFIELD.get_class(): HopfieldH5,
+        ModelsEnum.JANSEN_RIT.get_class(): JansenRitH5,
+        ModelsEnum.ZETTERBERG_JANSEN.get_class(): ZetterbergJansenH5,
+        ModelsEnum.EPILEPTOR_RS.get_class(): EpileptorRestingStateH5,
+        ModelsEnum.LARTER_BREAKSPEAR.get_class(): LarterBreakspearH5,
+        ModelsEnum.LINEAR.get_class(): LinearH5,
+        ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(): Generic2dOscillatorH5,
+        ModelsEnum.KURAMOTO.get_class(): KuramotoH5,
+        ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(): ReducedSetFitzHughNagumoH5,
+        ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(): ReducedSetHindmarshRoseH5,
+        ModelsEnum.WILSON_COWAN.get_class(): WilsonCowanH5,
+        ModelsEnum.REDUCED_WONG_WANG.get_class(): ReducedWongWangH5,
+        ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(): ReducedWongWangExcInhH5,
+        ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(): ZerlautAdaptationFirstOrderH5,
+        ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(): ZerlautAdaptationSecondOrderH5,
+        ModelsEnum.SUP_HOPF.get_class(): SupHopfH5
     }
 
     return model_class_to_h5.get(model_class)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,8 +30,10 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import tvb_data
+from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -51,13 +53,13 @@ class TestConnectivityViewer(TransactionalTestCase):
         imports a CFF data-set
         """
 
-        self.test_user = TestFactory.create_user("UserRM")
+        self.test_user = TestFactory.create_user("UserCVV")
         self.test_project = TestFactory.create_project(self.test_user)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
+        self.connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert self.connectivity_index is not None
 
     def transactional_teardown_method(self):
         """
@@ -70,7 +72,9 @@ class TestConnectivityViewer(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         viewer = ConnectivityViewer()
-        result = viewer.launch(self.connectivity)
+        view_model = viewer.get_view_model_class()()
+        view_model.connectivity = UUID(self.connectivity_index.gid)
+        result = viewer.launch(view_model)
         expected_keys = ['weightsMin', 'weightsMax', 'urlWeights', 'urlVertices',
                          'urlTriangles', 'urlTracts', 'urlPositions', 'urlNormals',
                          'rightHemisphereJson', 'raysArray', 'rayMin', 'rayMax', 'positions',

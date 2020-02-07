@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -90,7 +90,7 @@ function resetToNewBurst() {
 /*
  * When clicking the copy button on a burst-history entry, a clone of that burst is prepared.
  */
-function copyBurst(burstID) {
+function copyBurst(burstID, first_wizzard_form_url) {
     doAjaxCall({
         type: "POST",
         url: '/burst/copy_simulator_configuration/' + burstID,
@@ -102,7 +102,7 @@ function copyBurst(burstID) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
 
-            _renderAllSimulatorForms('/burst/set_connectivity');
+            _renderAllSimulatorForms(first_wizzard_form_url);
             displayMessage("A copy of previous simulation was prepared for you!");
         },
         error: function () {
@@ -112,21 +112,23 @@ function copyBurst(burstID) {
     });
 }
 
-function _renderAllSimulatorForms(url){
-    doAjaxCall({
-       type: "GET",
-       url: url,
-       success: function (response) {
-           var t = document.createRange().createContextualFragment(response);
-            document.getElementById('div-simulator-parameters').appendChild(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+function _renderAllSimulatorForms(url, stop_at_url = '') {
+    if (url != stop_at_url) {
+        doAjaxCall({
+            type: "GET",
+            url: url,
+            success: function (response) {
+                var t = document.createRange().createContextualFragment(response);
+                document.getElementById('div-simulator-parameters').appendChild(t);
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
 
-           next_url = $(response).attr("action");
-           if (next_url && next_url.length > 0) {
-               _renderAllSimulatorForms(next_url);
-           }
-       }
-    });
+                next_url = $(response).attr("action");
+                if (next_url && next_url.length > 0) {
+                    _renderAllSimulatorForms(next_url, stop_at_url);
+                }
+            }
+        });
+    }
 }
 
 /*
@@ -288,7 +290,7 @@ function renameBurstEntry(burst_id, new_name_id) {
 /*
  * Load a given burst entry from history. 
  */
-function changeBurstHistory(burst_id, load_burst) {
+function changeBurstHistory(burst_id, load_burst, first_wizzard_form_url) {
     const clickedBurst = document.getElementById("burst_id_" + burst_id);
     // todo : do not store app state in css classes
     if (clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0 &&
@@ -302,7 +304,7 @@ function changeBurstHistory(burst_id, load_burst) {
     });
     if (load_burst) {
         // Load the selected burst.
-        loadBurstReadOnly(burst_id);
+        loadBurstReadOnly(burst_id, first_wizzard_form_url);
     }
 }
 
@@ -444,9 +446,9 @@ function configureSimulator(configureHref) {
 function toggleSimulatorParametersChecks(beChecked) {
     $(".param-config-checkbox").each(function () {
         if (beChecked) {
-            $(this).prop( "checked", true);
+            $(this).prop("checked", true);
         } else {
-            $(this).prop( "checked", false);
+            $(this).prop("checked", false);
         }
     });
 }
@@ -456,27 +458,13 @@ function toggleSimulatorParametersChecks(beChecked) {
  * For Model-Visual-Setter important are: Connectivity and Model.
  */
 function configureModel(actionUrl) {
-    const submittableData = getSubmitableData("div-simulator-parameters", false);
-    doAjaxCall({
-        type: "POST",
-        data: {
-            'simulator_parameters': JSON.stringify(submittableData),
-            'burstName': $("#input-burst-name-id").val()
-        },
-        url: '/burst/save_simulator_configuration?exclude_ranges=False',
-        success: function () {
-            // After submitting current parameters, go to a different page.
-            const myForm = document.createElement("form");
-            myForm.method = "POST";
-            myForm.action = actionUrl;
-            document.body.appendChild(myForm);
-            myForm.submit();
-            document.body.removeChild(myForm);
-        },
-        error: function () {
-            displayMessage("Sorry, the model visual-configurator is unavailable! Please contact your administrator!", "errorMessage");
-        }
-    });
+    // Go to SetupModelParams page.
+    const myForm = document.createElement("form");
+    myForm.method = "POST";
+    myForm.action = actionUrl;
+    document.body.appendChild(myForm);
+    myForm.submit();
+    document.body.removeChild(myForm);
 }
 
 function configureModelParamsOnRegions() {
@@ -994,7 +982,7 @@ function initBurstConfiguration(sessionPortlets, selectedTab) {
 /*
  * Given a burst id, load the simulator configuration in read-only mode
  */
-function loadBurstReadOnly(burst_id) {
+function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
     doAjaxCall({
         type: "POST",
         url: '/burst/load_burst_read_only/' + burst_id,
@@ -1002,7 +990,7 @@ function loadBurstReadOnly(burst_id) {
         success: function (response) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
-            _renderAllSimulatorForms('/burst/set_connectivity');
+            _renderAllSimulatorForms(first_wizzard_form_url);
             displayMessage("The simulation configuration was loaded for you!");
         },
         error: function () {
@@ -1211,14 +1199,15 @@ function launchNewBurst(currentForm, launchMode) {
 }
 
 
-function previousWizzardStep(currentForm, previous_action) {
-    document.getElementById('div-simulator-parameters').removeChild(currentForm);
+function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
+    document.getElementById(div_id).removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
     var previous_button = previous_form.elements.namedItem('previous');
     var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
+    var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -1233,10 +1222,13 @@ function previousWizzardStep(currentForm, previous_action) {
     if (config_surface_param_button != null) {
         config_surface_param_button.style.visibility = 'visible';
     }
+    if (config_noise_button != null) {
+        config_noise_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
-function wizzard_submit(currentForm) {
+function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
@@ -1245,6 +1237,7 @@ function wizzard_submit(currentForm) {
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
+    var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -1252,23 +1245,29 @@ function wizzard_submit(currentForm) {
         type: request_method,
         data: form_data,
         success: function (response) {
-            if (next_button != null) {
-                next_button.style.visibility = 'hidden';
+            if (success_function != null) {
+                success_function();
+            } else {
+                if (next_button != null) {
+                    next_button.style.visibility = 'hidden';
+                }
+                if (previous_button != null) {
+                    previous_button.style.visibility = 'hidden';
+                }
+                if (config_region_param_button != null) {
+                    config_region_param_button.style.visibility = 'hidden';
+                }
+                if (config_surface_param_button != null) {
+                    config_surface_param_button.style.visibility = 'hidden';
+                }
+                if (config_noise_button != null) {
+                    config_noise_button.style.visibility = 'hidden';
+                }
+                fieldset.disabled = true;
+                var t = document.createRange().createContextualFragment(response);
+                document.getElementById(div_id).appendChild(t);
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
             }
-            if (previous_button != null) {
-                previous_button.style.visibility = 'hidden';
-            }
-            if (config_region_param_button != null) {
-                config_region_param_button.style.visibility = 'hidden';
-            }
-            if (config_surface_param_button != null) {
-                config_surface_param_button.style.visibility = 'hidden';
-            }
-            fieldset.disabled = true;
-            var t = document.createRange().createContextualFragment(response);
-            document.getElementById('div-simulator-parameters').appendChild(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
-
         }
     })
 }

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
-from tvb.simulator.models import Epileptor
+from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -140,7 +140,7 @@ class TestJinja2Simulator(Jinja2Test):
         all_models_for_ui = get_ui_name_to_model()
         models_form = SimulatorModelFragment()
         simulator = Simulator()
-        simulator.model = Epileptor()
+        simulator.model = ModelsEnum.EPILEPTOR.get_class()()
         models_form.fill_from_trait(simulator)
 
         html = str(models_form)

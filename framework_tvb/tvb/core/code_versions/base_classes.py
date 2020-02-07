@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+import importlib
 import os
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.exceptions import TVBException
@@ -84,7 +84,7 @@ class UpdateManager(object):
         Run one script file.
         """
         script_module_name = self.update_scripts_module.__name__ + '.' + script_name.split('.')[0]
-        script_module = __import__(script_module_name, globals(), locals(), ['update'])
+        script_module = importlib.import_module(script_module_name)
 
         if not hasattr(script_module, 'update'):
             raise InvalidUpgradeScriptException("Code update scripts should expose a 'update()' method.")

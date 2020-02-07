@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2017, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -87,7 +87,11 @@ def find_sys_mod_names(root, base):
 
 
 def unsupport_module(modname):
-    h5py_path, = find_on_sys_path('h5py')
+    try:
+        h5py_path, = find_on_sys_path('h5py')
+    except ValueError as exc:
+        print('[TVB] cannot find TVB deps, maybe you have wrong Python interpreter?')
+        raise exc
     h5py_mods = find_sys_mod_names(h5py_path, 'h5py')
     sys.modules[modname] = UnsupportedModule(modname)
     for submodname in h5py_mods:
@@ -123,3 +127,13 @@ def run_sim_with_seed(sim, length, seed):
         return sim.run(simulation_length=length, random_state=rstate)
     except Exception as exc:
         print('unable to run: %r' % (exc,))
+
+
+def get_model(name):
+    "Return a model class for a name"
+    # This is required since models are now available in the top
+    # level model module via module property, which isn't invoked
+    # when MATLAB looks for stuff in that module, so this is a
+    # workaround to make it easy to find the model.
+    import tvb.simulator.models as models
+    return getattr(models, name)
