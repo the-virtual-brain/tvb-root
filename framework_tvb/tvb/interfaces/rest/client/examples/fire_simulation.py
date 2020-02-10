@@ -30,16 +30,21 @@
 
 import time
 import uuid
+
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR
 from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
+    # TODO: Remove this line after pypi package update
+    populate_datatypes_registry()
+
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")

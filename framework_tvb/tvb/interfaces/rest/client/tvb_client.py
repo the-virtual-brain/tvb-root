@@ -30,6 +30,7 @@
 
 import tempfile
 
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
@@ -44,6 +45,7 @@ class TVBClient:
     """
 
     def __init__(self, server_url):
+        populate_datatypes_registry()
         self.temp_folder = tempfile.gettempdir()
         self.user_api = UserApi(server_url)
         self.project_api = ProjectApi(server_url)
