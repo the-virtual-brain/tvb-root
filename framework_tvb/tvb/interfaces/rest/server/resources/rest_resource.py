@@ -38,11 +38,15 @@ class RestResource(Resource):
     method_decorators = [rest_jsonify]
 
     @staticmethod
-    def extract_file_from_request(file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-        if 'file' not in flask.request.files:
-            raise BadRequestException('No file part in the request!')
-        file = flask.request.files['file']
+    def extract_file_from_request(file_name='model_file', file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+        if is_path_in_files(file_name):
+            raise BadRequestException("No file '%s' in the request!" % file_name)
+        file = flask.request.files[file_name]
         if not file.filename.endswith(file_extension):
-            raise BadRequestException('Only %s files are allowed!' % file_extension)
+            raise BadRequestException("Only %s files are allowed!" % file_extension)
 
         return file
+
+
+def is_path_in_files(file_name):
+    return file_name not in flask.request.files

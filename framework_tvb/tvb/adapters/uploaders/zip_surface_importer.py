@@ -71,12 +71,20 @@ class ZIPSurfaceImporterModel(UploaderViewModel):
         label='Center surface using vertex means along axes'
     )
 
+    @staticmethod
+    def get_files_types():
+        return ['.zip']
+
+    @staticmethod
+    def get_upload_files_names():
+        return 'uploaded'
+
 
 class ZIPSurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ZIPSurfaceImporterForm, self).__init__(prefix, project_id)
-        self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, 'application/zip', self, name='uploaded')
+        self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, self.get_view_model().get_files_types()[0], self, name='uploaded')
         self.surface_type = SelectField(ZIPSurfaceImporterModel.surface_type, self, name='surface_type',
                                         choices=ALL_SURFACES_SELECTION)
         self.zero_based_triangles = BoolField(ZIPSurfaceImporterModel.zero_based_triangles, self,

@@ -72,6 +72,14 @@ class GIFTISurfaceImporterModel(UploaderViewModel):
         label='Center surface using vertex means along axes'
     )
 
+    @staticmethod
+    def get_files_types():
+        return ['.gii', '.gii']
+
+    @staticmethod
+    def get_upload_files_names():
+        return ['data_file', 'data_file_part2']
+
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
@@ -80,8 +88,8 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
 
         self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type',
                                      choices=GIFTISurfaceImporterModel.surface_types)
-        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', self, name='data_file')
-        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', self,
+        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, self.get_view_model().get_files_types()[1], self,
                                                 name='data_file_part2')
         self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, self, name='should_center')
 

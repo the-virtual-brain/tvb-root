@@ -32,8 +32,24 @@ from tvb.core.neotraits.view_model import ViewModel, Str
 
 
 class UploaderViewModel(ViewModel):
+    REQUIRED_TYPE = None
 
     data_subject = Str(
         default=DataTypeMetaData.DEFAULT_SUBJECT,
         label='Subject'
     )
+
+    @staticmethod
+    def get_files_types():
+        """
+        :return: a list of one or two elements which contains the required file types for uploaders.
+        """
+        return NotImplementedError
+
+    @staticmethod
+    def get_upload_files_names():
+        """
+        :return: a list of one or two elements which contains the attribute names for trait field uploaders.
+        """
+        return NotImplementedError
+

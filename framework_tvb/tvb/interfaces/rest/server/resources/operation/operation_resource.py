@@ -29,9 +29,12 @@
 #
 
 import shutil
-
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
+from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporter
+from tvb.adapters.uploaders.nifti_importer import NIFTIImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.exceptions import ProjectServiceException
@@ -43,8 +46,8 @@ from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.resources.util import save_temporary_file
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource, is_path_in_files
+from tvb.interfaces.rest.server.resources.util import save_temporary_file, get_destination_folder, handle_data_file
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
@@ -94,8 +97,9 @@ class LaunchOperationResource(RestResource):
         """
         :generic method of launching Analyzers
         """
-        file = self.extract_file_from_request()
-        h5_path = save_temporary_file(file)
+        model_file = self.extract_file_from_request()
+        destination_folder = get_destination_folder()
+        h5_path = save_temporary_file(model_file, destination_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
@@ -109,8 +113,9 @@ class LaunchOperationResource(RestResource):
         try:
             adapter_instance = ABCAdapter.build_adapter(algorithm)
             view_model = adapter_instance.get_view_model_class()()
-            with ViewModelH5(h5_path, view_model) as view_model_h5:
-                view_model_gid = view_model_h5.gid.load()
+
+            view_model_h5 = ViewModelH5(h5_path, view_model)
+            view_model_gid = view_model_h5.gid.load()
 
             # TODO: use logged user
             user_id = project.fk_admin
@@ -119,7 +124,17 @@ class LaunchOperationResource(RestResource):
                                                                  {})
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
+            if isinstance(adapter_instance, ABCUploader):
+                data_file_1 = self.extract_file_from_request(file_name='data_file_1', file_extension=view_model.get_files_types()[0])
+                handle_data_file(data_file_1, destination_folder, view_model_h5, storage_path, 0)
+
+                if isinstance(adapter_instance, (CSVConnectivityImporter, NIFTIImporter)) or \
+                        (isinstance(adapter_instance, GIFTISurfaceImporter) and is_path_in_files('data_file_2')):
+                    data_file_2 = self.extract_file_from_request(file_name='data_file_2', file_extension=view_model.get_files_types()[1])
+                    handle_data_file(data_file_2, destination_folder, view_model_h5, storage_path, 1)
+
             shutil.move(h5_path, storage_path)
+            view_model_h5.close()
             OperationService().launch_operation(operation.id, True)
         except Exception as excep:
             self.logger.error(excep, exc_info=True)

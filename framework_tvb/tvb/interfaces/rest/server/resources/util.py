@@ -29,16 +29,33 @@
 #
 
 import os
+import shutil
 import tempfile
 from tvb.basic.profile import TvbProfile
 from werkzeug.utils import secure_filename
 
 
-def save_temporary_file(file):
+def save_temporary_file(file, destination_folder):
     filename = secure_filename(file.filename)
-    temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
-    destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
     full_path = os.path.join(destination_folder, filename)
     file.save(full_path)
 
     return full_path
+
+
+def get_destination_folder():
+    temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+    destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+
+    return destination_folder
+
+
+def handle_data_file(data_file, destination_folder, view_model_h5, storage_path, number):
+    data_file_path = save_temporary_file(data_file, destination_folder)
+    file_name = os.path.basename(data_file_path)
+    field_name = view_model_h5.view_model.get_upload_files_names()[number]
+    upload_field = getattr(view_model_h5, field_name)
+    upload_field.store(os.path.join(storage_path, file_name))
+    shutil.move(data_file_path, storage_path)
+
+    return data_file_path

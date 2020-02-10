@@ -71,13 +71,21 @@ class RegionMappingImporterModel(UploaderViewModel):
         required=True, doc='The Connectivity used by uploaded region mapping.'
     )
 
+    @staticmethod
+    def get_files_types():
+        return [('.txt', '.zip', '.bz2')]
+
+    @staticmethod
+    def get_upload_files_names():
+        return ['mapping_file']
+
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(RegionMappingImporterForm, self).__init__(prefix, project_id)
 
-        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, '.txt, .zip, .bz2', self,
+        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, self.get_view_model().get_files_types()[0], self,
                                              name='mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])

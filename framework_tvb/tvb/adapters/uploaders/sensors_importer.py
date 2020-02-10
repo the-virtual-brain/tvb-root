@@ -60,13 +60,21 @@ class SensorsImporterModel(UploaderViewModel):
         default=tuple(OPTIONS.values())[0]
     )
 
+    @staticmethod
+    def get_files_types():
+        return [('.txt', '.bz2')]
+
+    @staticmethod
+    def get_upload_files_names():
+        return ['sensors_file']
+
 
 class SensorsImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SensorsImporterForm, self).__init__(prefix, project_id)
 
-        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, 'text/plain, .bz2', self,
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, self.get_view_model().get_files_types()[0], self,
                                              name='sensors_file')
         self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type',
                                         choices=SensorsImporterModel.OPTIONS)
