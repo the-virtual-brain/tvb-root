@@ -29,6 +29,7 @@
 #
 
 import shutil
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -40,6 +41,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -123,4 +125,4 @@ class LaunchOperationResource(RestResource):
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
 
-        return operation.gid, 201
+        return operation.gid, HTTP_STATUS_CREATED

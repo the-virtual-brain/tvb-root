@@ -29,6 +29,7 @@
 #
 
 import os
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -38,6 +39,7 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.resources.util import save_temporary_file
@@ -88,4 +90,4 @@ class FireSimulationResource(RestResource):
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
 
-        return operation.gid, 201
+        return operation.gid, HTTP_STATUS_CREATED
