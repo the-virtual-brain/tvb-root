@@ -57,6 +57,9 @@ class RegionMappingIndex(DataType):
         # type: (RegionMapping)  -> None
         super(RegionMappingIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+        self.array_data_min = float(self.array_data_min)
+        self.array_data_mean = float(self.array_data_mean)
+        self.array_data_max = float(self.array_data_max)
         self.surface_gid = datatype.surface.gid.hex
         self.connectivity_gid = datatype.connectivity.gid.hex
 
@@ -81,5 +84,8 @@ class RegionVolumeMappingIndex(DataTypeMatrix):
         # type: (RegionVolumeMapping)  -> None
         super(RegionVolumeMappingIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+        self.array_data_min = float(self.array_data_min)
+        self.array_data_mean = float(self.array_data_mean)
+        self.array_data_max = float(self.array_data_max)
         self.connectivity_gid = datatype.connectivity.gid.hex
         self.volume_gid = datatype.volume.gid.hex
