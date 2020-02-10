@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import numpy
 from collections import OrderedDict
 from tvb.datatypes.surfaces import CORTICAL, INNER_SKULL, OUTER_SKIN, OUTER_SKULL, EEG_CAP, FACE, WHITE_MATTER, Surface
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
@@ -67,3 +68,6 @@ class SurfaceIndex(DataType):
         self.edge_mean_length = datatype.edge_mean_length
         self.edge_min_length = datatype.edge_min_length
         self.edge_max_length = datatype.edge_max_length
+        self.edge_min_length = numpy.float64(self.edge_min_length)
+        self.edge_mean_length = numpy.float64(self.edge_mean_length)
+        self.edge_max_length = numpy.float64(self.edge_max_length)

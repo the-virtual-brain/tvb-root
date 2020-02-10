@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import numpy
 from sqlalchemy import Column, Integer, ForeignKey, Boolean, Float
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import from_ndarray
@@ -67,6 +67,12 @@ class ConnectivityIndex(DataType):
         self.undirected = datatype.undirected
         self.weights_min, self.weights_max, self.weights_mean = from_ndarray(datatype.weights)
         self.tract_lengths_min, self.tract_lengths_max, self.tract_lengths_mean = from_ndarray(datatype.tract_lengths)
+        self.weights_min = numpy.float64(self.weights_min)
+        self.weights_mean = numpy.float64(self.weights_mean)
+        self.weights_max = numpy.float64(self.weights_max)
+        self.tract_lengths_min = numpy.float64(self.tract_lengths_min)
+        self.tract_lengths_mean = numpy.float64(self.tract_lengths_mean)
+        self.tract_lengths_max = numpy.float64(self.tract_lengths_max)
         # self.weights_non_zero = NArrayIndex.from_ndarray(datatype.weights[datatype.weights.nonzero()])
         # self.tract_lengths_non_zero = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.tract_lengths.nonzero()])
         # self.tract_lengths_connections = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.weights.nonzero()])
