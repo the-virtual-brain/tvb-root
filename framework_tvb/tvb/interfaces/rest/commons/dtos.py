@@ -27,20 +27,33 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from datetime import datetime
-
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_operation import Algorithm
+from tvb.core.entities.model.model_project import User, Project
 from tvb.interfaces.rest.commons.decoders import CustomDecoder
 
 
 class BaseDto:
     def update(self, kwargs):
+        # type: ({}) -> None
+        """
+        This method is setting object fields starting from a dictionary
+        :param kwargs: fields dictionary (rest server response)
+        """
         for key, value in kwargs.items():
-            kwargs[key] = CustomDecoder.date_hook(value)
+            kwargs[key] = CustomDecoder.custom_hook(value)
         self.__dict__.update(kwargs)
 
 
 class UserDto(BaseDto):
     def __init__(self, user=None, **kwargs):
+        # type: (User, {}) -> None
+        """
+        Create an UserDto instance starting from an User entity or from a dictionary.
+        For an UserDto object the unique identifier is the username field.
+        :param user: DB User model
+        :param kwargs: dictionary (rest server response)
+        """
         self.update(kwargs)
         if user is not None:
             self.username = user.username
@@ -51,6 +64,13 @@ class UserDto(BaseDto):
 
 class ProjectDto(BaseDto):
     def __init__(self, project=None, **kwargs):
+        # type: (Project, {}) -> None
+        """
+        Create a ProjectDto instance starting from a Project entity or from a dictionary.
+        For an ProjectDto object the unique identifier is the gid field.
+        :param project: DB Project model
+        :param kwargs: dictionary (rest server response)
+        """
         self.update(kwargs)
         if project is not None:
             self.gid = project.gid
@@ -62,6 +82,13 @@ class ProjectDto(BaseDto):
 
 class OperationDto(BaseDto):
     def __init__(self, operation=None, **kwargs):
+        # type: ({}, {}) -> None
+        """
+        Create an OperationDto instance starting from an operations dictionary or from another dictionary.
+        For an OperationDto object the unique identifier is the gid field.
+        :param operation: dictionary computed from db
+        :param kwargs: dictionary (rest server response)
+        """
         self.update(kwargs)
         if operation is not None:
             self.user_id = operation['user'].id
@@ -77,6 +104,13 @@ class OperationDto(BaseDto):
 
 class AlgorithmDto(BaseDto):
     def __init__(self, algorithm=None, **kwargs):
+        # type: (Algorithm, {}) -> None
+        """
+        Create an AlgorithmDto instance starting from an Algorithm entity or from a dictionary.
+        For an OperationDto object the unique identifier is tuple (module,classname).
+        :param algorithm: DB Algorithm model
+        :param kwargs: dictionary (rest server response)
+        """
         self.update(kwargs)
         if algorithm is not None:
             self.module = algorithm.module
@@ -87,6 +121,13 @@ class AlgorithmDto(BaseDto):
 
 class DataTypeDto(BaseDto):
     def __init__(self, datatype=None, **kwargs):
+        # type: (DataType, {}) -> None
+        """
+        Create a DataTypeDto instance starting from a DataType entity or from a dictionary.
+        For an DataTypeDto object the unique identifier is the gid field.
+        :param datatype: DB DataType model
+        :param kwargs: dictionary (rest server response)
+        """
         self.update(kwargs)
         if datatype is not None:
             self.gid = datatype.gid
