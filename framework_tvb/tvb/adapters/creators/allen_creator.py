@@ -33,7 +33,7 @@ The adapters in this module create new connectivities from the Allen Institute
 data using their SDK.
 
 .. moduleauthor:: Francesca Melozzi <france.melozzi@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

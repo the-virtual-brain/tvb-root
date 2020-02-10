@@ -31,7 +31,7 @@
 """
 A Javascript displayer for time series, using SVG.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

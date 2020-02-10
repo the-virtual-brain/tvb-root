@@ -32,7 +32,7 @@
 Test for tvb.simulator.coupling module
 
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

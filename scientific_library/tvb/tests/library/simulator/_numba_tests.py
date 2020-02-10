@@ -31,7 +31,7 @@
 """
 Tests for the experiment Numba simulator component implementations.
 
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
