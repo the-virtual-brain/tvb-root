@@ -27,9 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Range
 from tvb.simulator.noise import Noise, Additive, Multiplicative
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import ScalarField, ArrayField, SimpleSelectField
@@ -44,15 +44,10 @@ def get_form_for_noise(noise_class):
     return noise_class_to_form.get(noise_class)
 
 
-def get_ui_name_to_noise_dict():
-    ui_name_to_noise = {
-        'Additive': Additive,
-        'Multiplicative': Multiplicative
-    }
-    return ui_name_to_noise
-
-
 class NoiseForm(FormWithRanges):
+
+    def get_subform_key(self):
+        return SubformsEnum.NOISE.name
 
     def __init__(self, prefix=''):
         super(NoiseForm, self).__init__(prefix)
@@ -60,6 +55,7 @@ class NoiseForm(FormWithRanges):
         self.noise_seed = ScalarField(Noise.noise_seed, self)
         # TODO: should we display something for random_stream?
         # self.random_stream = ScalarField(Noise.random_stream)
+
 
 
 class AdditiveNoiseForm(NoiseForm):

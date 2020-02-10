@@ -35,9 +35,9 @@
 
 import cherrypy
 import json
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation, \
-    GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import Form, SimpleSelectField, SimpleFloatField, FormField

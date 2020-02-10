@@ -759,6 +759,12 @@ class Form(object):
         self.errors = []
         self.draw_ranges = draw_ranges
 
+    def get_subform_key(self):
+        """
+        If the current form can be used as subform, this method should return the proper value from SubformsEnum.
+        """
+        raise NotImplementedError
+
     @property
     def fields(self):
         for field in self.__dict__.values():

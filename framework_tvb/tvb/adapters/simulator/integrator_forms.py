@@ -27,9 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
 from tvb.simulator.integrators import *
-from tvb.adapters.simulator.noise_forms import get_ui_name_to_noise_dict
 from tvb.core.neotraits.forms import Form, ScalarField, SimpleSelectField
 
 
@@ -51,30 +50,14 @@ def get_integrator_to_form_dict():
     return integrator_class_to_form
 
 
-def get_ui_name_to_integrator_dict():
-    ui_name_to_integrator = {
-        'Heun': HeunDeterministic,
-        'Stochastic Heun': HeunStochastic,
-        'Euler': EulerDeterministic,
-        'Euler-Maruyama': EulerStochastic,
-        'Runge-Kutta 4th order': RungeKutta4thOrderDeterministic,
-        '"Difference equation': Identity,
-        'Variable-order Adams / BDF': VODE,
-        'Stochastic variable-order Adams / BDF': VODEStochastic,
-        'Dormand-Prince, order (4, 5)': Dopri5,
-        'Stochastic Dormand-Prince, order (4, 5)': Dopri5Stochastic,
-        'Dormand-Prince, order 8 (5, 3)': Dop853,
-        'Stochastic Dormand-Prince, order 8 (5, 3)': Dop853Stochastic,
-
-    }
-    return ui_name_to_integrator
-
-
 def get_form_for_integrator(integrator_class):
     return get_integrator_to_form_dict().get(integrator_class)
 
 
 class IntegratorForm(Form):
+
+    def get_subform_key(self):
+        return SubformsEnum.INTEGRATOR.name
 
     def __init__(self, prefix=''):
         super(IntegratorForm, self).__init__(prefix)

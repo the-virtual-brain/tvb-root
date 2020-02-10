@@ -34,9 +34,9 @@
 import json
 import numpy
 import threading
-from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils

@@ -31,12 +31,12 @@
 import uuid
 import formencode
 from formencode import validators
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.neotraits.api import Attr, Range
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.simulator import Simulator
-from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict
 from tvb.adapters.simulator.range_parameter import RangeParameter

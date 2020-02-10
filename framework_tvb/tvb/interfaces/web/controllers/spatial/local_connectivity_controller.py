@@ -40,7 +40,9 @@ import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.simulator.equation_forms import *
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
+    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
