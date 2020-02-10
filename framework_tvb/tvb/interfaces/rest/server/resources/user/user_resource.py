@@ -40,7 +40,7 @@ class GetUsersResource(RestResource):
         """
         :return a list of system's users
         """
-        users = UserService.fetch_all_users()
+        users = UserService.fetch_all_users(page_size=1000)
         return [UserDto(user) for user in users]
 
 
