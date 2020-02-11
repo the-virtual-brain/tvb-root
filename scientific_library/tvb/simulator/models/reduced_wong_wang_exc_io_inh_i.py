@@ -114,11 +114,11 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         domain=Range(lo=-1., hi=10000., step=1.),
         doc="[Hz]. Excitatory population firing rate.")
 
-    G = NArray(
-        label=":math:`G`",
-        default=numpy.array([2.0, ]),
-        domain=Range(lo=0.0, hi=10.0, step=0.01),
-        doc="""Global coupling scaling""")
+    R_i = NArray(
+        label=":math:`R_i`",
+        default=numpy.array([-1., ]),
+        domain=Range(lo=-1., hi=10000., step=1.),
+        doc="[Hz]. Inhibitory population firing rate.")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_boundaries = Final(
