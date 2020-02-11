@@ -32,6 +32,7 @@ Models based on Wong-Wang's work.
 """
 
 from numba import guvectorize, float64
+from tvb.simulator.models.wong_wang_exc_inh import ReducedWongWangExcInh as TVBReducedWongWangExcInh
 from tvb.simulator.models.base import numpy, ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
@@ -73,7 +74,7 @@ def _numba_dfun(S, ge, te, gi, ti, dx):
     dx[3] = 0.0
 
 
-class ReducedWongWangExcIOInhI(ModelNumbaDfun):
+class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
     r"""
     .. [WW_2006] Kong-Fatt Wong and Xiao-Jing Wang,  *A Recurrent Network
                 Mechanism of Time Integration in Perceptual Decisions*.
@@ -113,125 +114,11 @@ class ReducedWongWangExcIOInhI(ModelNumbaDfun):
         domain=Range(lo=-1., hi=10000., step=1.),
         doc="[Hz]. Excitatory population firing rate.")
 
-    a_e = NArray(
-        label=":math:`a_e`",
-        default=numpy.array([310., ]),
-        domain=Range(lo=0., hi=500., step=1.),
-        doc="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions.")
-
-    b_e = NArray(
-        label=":math:`b_e`",
-        default=numpy.array([125., ]),
-        domain=Range(lo=0., hi=200., step=1.),
-        doc="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions.")
-
-    d_e = NArray(
-        label=":math:`d_e`",
-        default=numpy.array([0.160, ]),
-        domain=Range(lo=0.0, hi=0.2, step=0.001),
-        doc="""[s]. Excitatory population input scaling parameter chosen to fit numerical solutions.""")
-
-    gamma_e = NArray(
-        label=r":math:`\gamma_e`",
-        default=numpy.array([0.641/1000, ]),
-        domain=Range(lo=0.0, hi=1.0/1000, step=0.01/1000),
-        doc="""Excitatory population kinetic parameter""")
-
-    tau_e = NArray(
-        label=r":math:`\tau_e`",
-        default=numpy.array([100., ]),
-        domain=Range(lo=10., hi=150., step=1.),
-        doc="""[ms]. Excitatory population NMDA decay time constant.""")
-
-    w_p = NArray(
-        label=r":math:`w_p`",
-        default=numpy.array([1.4, ]),
-        domain=Range(lo=0.0, hi=2.0, step=0.01),
-        doc="""Excitatory population recurrence weight""")
-
-    J_N = NArray(
-        label=r":math:`J_{N}`",
-        default=numpy.array([0.15, ]),
-        domain=Range(lo=0.001, hi=0.5, step=0.001),
-        doc="""[nA] NMDA current""")
-
-    W_e = NArray(
-        label=r":math:`W_e`",
-        default=numpy.array([1.0, ]),
-        domain=Range(lo=0.0, hi=2.0, step=0.01),
-        doc="""Excitatory population external input scaling weight""")
-
-    R_i = NArray(
-        label=":math:`R_i`",
-        default=numpy.array([-1., ]),
-        domain=Range(lo=-1., hi=10000., step=1.),
-        doc="[Hz]. Inhibitory population firing rate.")
-
-    a_i = NArray(
-        label=":math:`a_i`",
-        default=numpy.array([615., ]),
-        domain=Range(lo=0., hi=1000., step=1.),
-        doc="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions.")
-
-    b_i = NArray(
-        label=":math:`b_i`",
-        default=numpy.array([177.0, ]),
-        domain=Range(lo=0.0, hi=200.0, step=1.0),
-        doc="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions.")
-
-    d_i = NArray(
-        label=":math:`d_i`",
-        default=numpy.array([0.087, ]),
-        domain=Range(lo=0.0, hi=0.2, step=0.001),
-        doc="""[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions.""")
-
-    gamma_i = NArray(
-        label=r":math:`\gamma_i`",
-        default=numpy.array([1.0/1000, ]),
-        domain=Range(lo=0.0, hi=2.0/1000, step=0.01/1000),
-        doc="""Inhibitory population kinetic parameter""")
-
-    tau_i = NArray(
-        label=r":math:`\tau_i`",
-        default=numpy.array([10., ]),
-        domain=Range(lo=5., hi=100., step=1.0),
-        doc="""[ms]. Inhibitory population NMDA decay time constant.""")
-
-    J_i = NArray(
-        label=r":math:`J_{i}`",
-        default=numpy.array([1.0, ]),
-        domain=Range(lo=0.001, hi=2.0, step=0.001),
-        doc="""[nA] Local inhibitory current""")
-
-    W_i = NArray(
-        label=r":math:`W_i`",
-        default=numpy.array([0.7, ]),
-        domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Inhibitory population external input scaling weight""")
-
-    I_o = NArray(
-        label=":math:`I_{o}`",
-        default=numpy.array([0.382, ]),
-        domain=Range(lo=0.0, hi=1.0, step=0.001),
-        doc="""[nA]. Effective external input""")
-
-    # r_o = NArray(
-    #     label=":math:`r_o`",
-    #     default=numpy.array([0., ]),
-    #     domain=Range(lo=0., hi=10000., step=1.),
-    #     doc="[Hz]. Excitatory population output firing rate.")
-
     G = NArray(
         label=":math:`G`",
         default=numpy.array([2.0, ]),
         domain=Range(lo=0.0, hi=10.0, step=0.01),
         doc="""Global coupling scaling""")
-
-    lamda = NArray(
-        label=":math:`\lambda`",
-        default=numpy.array([1.0, ]),
-        domain=Range(lo=0.0, hi=1.0, step=0.01),
-        doc="""Inhibitory global coupling scaling""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_boundaries = Final(
@@ -263,11 +150,6 @@ class ReducedWongWangExcIOInhI(ModelNumbaDfun):
     state_variables = ['S_e', 'S_i', 'R_e', 'R_i']
     _nvar = 4
     cvar = numpy.array([0], dtype=numpy.int32)
-
-    def configure(self):
-        """  """
-        super(ReducedWongWangExcIOInhI, self).configure()
-        self.update_derived_parameters()
 
     def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
         if use_numba:
