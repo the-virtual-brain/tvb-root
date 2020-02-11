@@ -54,9 +54,9 @@ class CovarianceIndex(DataTypeMatrix):
         super(CovarianceIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.array_data_min = numpy.float64(self.array_data_min)
-        self.array_data_mean = numpy.float64(self.array_data_mean)
-        self.array_data_max = numpy.float64(self.array_data_max)
+        self.array_data_min = self.array_data_min
+        self.array_data_mean = self.array_data_mean
+        self.array_data_max = self.array_data_max
         self.source_gid = datatype.source.gid.hex
 
 
@@ -81,9 +81,9 @@ class CorrelationCoefficientsIndex(DataTypeMatrix):
         self.subtype = datatype.__class__.__name__
         self.labels_ordering = datatype.labels_ordering
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
-        self.array_data_min = numpy.float64(self.array_data_min)
-        self.array_data_mean = numpy.float64(self.array_data_mean)
-        self.array_data_max = numpy.float64(self.array_data_max)
+        self.array_data_min = self.array_data_min
+        self.array_data_mean = self.array_data_mean
+        self.array_data_max = self.array_data_max
         self.source_gid = datatype.source.gid.hex
 
 
@@ -106,7 +106,7 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.data_array)
-        self.array_data_min = numpy.float64(self.array_data_min)
-        self.array_data_mean = numpy.float64(self.array_data_mean)
-        self.array_data_max = numpy.float64(self.array_data_max)
+        self.array_data_min = self.array_data_min
+        self.array_data_mean = self.array_data_mean
+        self.array_data_max = self.array_data_max
         self.connectivity_gid = datatype.connectivity.gid.hex

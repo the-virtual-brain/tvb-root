@@ -50,13 +50,10 @@ class FourierSpectrumIndex(DataTypeMatrix):
     def fill_from_has_traits(self, datatype):
         # type: (FourierSpectrum)  -> None
         super(FourierSpectrumIndex, self).fill_from_has_traits(datatype)
-        self.segment_length = datatype.segment_length
-        self.segment_length = numpy.float64(self.segment_length)
+        self.segment_length = numpy.float64(datatype.segment_length)
         self.windowing_function = datatype.windowing_function
-        self.frequency_step = datatype.frequency_step
-        self.frequency_step = numpy.float64(self.frequency_step)
-        self.max_frequency = datatype.max_frequency
-        self.max_frequency = numpy.float64(self.max_frequency)
+        self.frequency_step = numpy.float64(datatype.frequency_step)
+        self.max_frequency = numpy.float64(datatype.max_frequency)
         self.source_gid = datatype.source.gid.hex
 
 
@@ -80,14 +77,12 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         super(WaveletCoefficientsIndex, self).fill_from_has_traits(datatype)
         self.mother = datatype.mother
         self.normalisation = datatype.normalisation
-        self.q_ratio = datatype.q_ratio
-        self.q_ratio = numpy.float64(self.q_ratio)
-        self.sample_period = datatype.sample_period
-        self.sample_period = numpy.float64(self.sample_period)
+        self.q_ratio = numpy.float64(datatype.q_ratio)
+        self.sample_period = numpy.float64(datatype.sample_period)
         self.number_of_scales = datatype.frequencies.shape[0]
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
-        self.frequencies_min = numpy.float64(self.frequencies_min)
-        self.frequencies_max = numpy.float64(self.frequencies_max)
+        self.frequencies_min = self.frequencies_min
+        self.frequencies_max = self.frequencies_max
         self.source_gid = datatype.source.gid.hex
 
 
@@ -106,8 +101,8 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         super(CoherenceSpectrumIndex, self).fill_from_has_traits(datatype)
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
-        self.frequencies_min = numpy.float64(self.frequencies_min)
-        self.frequencies_max = numpy.float64(self.frequencies_max)
+        self.frequencies_min = self.frequencies_min
+        self.frequencies_max = self.frequencies_max
         self.source_gid = datatype.source.gid.hex
 
 
@@ -127,13 +122,9 @@ class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
     def fill_from_has_traits(self, datatype):
         # type: (ComplexCoherenceSpectrum)  -> None
         super(ComplexCoherenceSpectrumIndex, self).fill_from_has_traits(datatype)
-        self.epoch_length = datatype.epoch_length
-        self.epoch_length = numpy.float64(self.epoch_length)
-        self.segment_length = datatype.segment_length
-        self.segment_length = numpy.float64(self.segment_length)
+        self.epoch_length = numpy.float64(datatype.epoch_length)
+        self.segment_length = numpy.float64(datatype.segment_length)
         self.windowing_function = datatype.windowing_function
-        self.frequency_step = datatype.freq_step
-        self.frequency_step = numpy.float64(self.frequency_step)
-        self.max_frequency = datatype.max_freq
-        self.max_frequency = numpy.float64(self.max_frequency)
+        self.frequency_step = numpy.float64(datatype.freq_step)
+        self.max_frequency = numpy.float(datatype.max_freq)
         self.source_gid = datatype.source.gid.hex

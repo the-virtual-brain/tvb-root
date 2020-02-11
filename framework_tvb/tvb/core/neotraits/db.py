@@ -98,8 +98,8 @@ def from_ndarray(array):
     if array.dtype.kind in 'iufc' and array.size != 0:
         # we compute these simple statistics for integer unsigned float or complex
         # arrays that are not empty
-        minvalue, maxvalue = array.min(), array.max()
-        median = numpy.median(array)
+        minvalue, maxvalue = numpy.float64(array.min()), numpy.float64(array.max())
+        median = numpy.float64(numpy.median(array))
     else:
         minvalue, maxvalue, median = None, None, None
 

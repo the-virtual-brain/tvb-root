@@ -53,7 +53,7 @@ class StructuralMRIIndex(DataTypeMatrix):
         super(StructuralMRIIndex, self).fill_from_has_traits(datatype)
         self.weighting = datatype.weighting
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.array_data_min = numpy.float64(self.array_data_min)
-        self.array_data_mean = numpy.float64(self.array_data_mean)
-        self.array_data_max = numpy.float64(self.array_data_max)
+        self.array_data_min = self.array_data_min
+        self.array_data_mean = self.array_data_mean
+        self.array_data_max = self.array_data_max
         self.volume_gid = datatype.volume.gid.hex

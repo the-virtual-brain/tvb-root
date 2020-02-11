@@ -54,9 +54,9 @@ class CrossCorrelationIndex(DataType):
         # type: (CrossCorrelation)  -> None
         super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.array_data_min = numpy.float64(self.array_data_min)
-        self.array_data_mean = numpy.float64(self.array_data_mean)
-        self.array_data_max = numpy.float64(self.array_data_max)
+        self.array_data_min = self.array_data_min
+        self.array_data_mean = self.array_data_mean
+        self.array_data_max = self.array_data_max
         self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.subtype = datatype.__class__.__name__
         self.source_gid = datatype.source.gid.hex

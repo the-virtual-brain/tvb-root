@@ -65,9 +65,6 @@ class SurfaceIndex(DataType):
         self.number_of_triangles = datatype.number_of_triangles
         self.number_of_edges = datatype.number_of_edges
         self.bi_hemispheric = datatype.bi_hemispheric
-        self.edge_mean_length = datatype.edge_mean_length
-        self.edge_min_length = datatype.edge_min_length
-        self.edge_max_length = datatype.edge_max_length
-        self.edge_min_length = numpy.float64(self.edge_min_length)
-        self.edge_mean_length = numpy.float64(self.edge_mean_length)
-        self.edge_max_length = numpy.float64(self.edge_max_length)
+        self.edge_mean_length = numpy.float64(datatype.edge_mean_length)
+        self.edge_min_length = numpy.float64(datatype.edge_min_length)
+        self.edge_max_length = numpy.float64(datatype.edge_max_length)

@@ -52,7 +52,7 @@ class LocalConnectivityIndex(DataType):
         super(LocalConnectivityIndex, self).fill_from_has_traits(datatype)
         I, J, V = scipy.sparse.find(datatype.matrix)
         self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
-        self.matrix_non_zero_min = numpy.float64(self.matrix_non_zero_min)
-        self.matrix_non_zero_mean = numpy.float64(self.matrix_non_zero_mean)
-        self.matrix_non_zero_max = numpy.float64(self.matrix_non_zero_max)
+        self.matrix_non_zero_min = self.matrix_non_zero_min
+        self.matrix_non_zero_mean = self.matrix_non_zero_mean
+        self.matrix_non_zero_max = self.matrix_non_zero_max
         self.surface_gid = datatype.surface.gid.hex
