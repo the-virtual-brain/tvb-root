@@ -93,7 +93,7 @@ class Model(HasTraits):
         for req_attr in 'nvar number_of_modes cvar'.split():
             assert hasattr(self, req_attr)
         if self.stvar is None:
-            self.stvar = self.cvar
+            self.stvar = self.cvar.copy()
         super(Model, self).configure()
         self.update_derived_parameters()
         self._build_observer()
