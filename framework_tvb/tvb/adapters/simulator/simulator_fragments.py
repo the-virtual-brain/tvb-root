@@ -170,7 +170,7 @@ class SimulatorFinalFragment(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None, simulation_number=1):
         super(SimulatorFinalFragment, self).__init__(prefix, project_id)
-        default_simulation_name = "default_simulation_" + str(simulation_number)
+        default_simulation_name = "simulation_" + str(simulation_number)
         self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration', default=default_simulation_name,
                                                 label='Simulation name'), self, name='input-simulation-name-id')
 
