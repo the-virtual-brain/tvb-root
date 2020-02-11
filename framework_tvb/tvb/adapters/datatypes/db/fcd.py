@@ -51,8 +51,5 @@ class FcdIndex(DataTypeMatrix):
         # type: (Fcd)  -> None
         super(FcdIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.array_data_min = self.array_data_min
-        self.array_data_mean = self.array_data_mean
-        self.array_data_max = self.array_data_max
         self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.source_gid = datatype.source.gid.hex

@@ -66,12 +66,6 @@ class ConnectivityIndex(DataType):
         self.undirected = datatype.undirected
         self.weights_min, self.weights_max, self.weights_mean = from_ndarray(datatype.weights)
         self.tract_lengths_min, self.tract_lengths_max, self.tract_lengths_mean = from_ndarray(datatype.tract_lengths)
-        self.weights_min = self.weights_min
-        self.weights_mean = self.weights_mean
-        self.weights_max = self.weights_max
-        self.tract_lengths_min = self.tract_lengths_min
-        self.tract_lengths_mean = self.tract_lengths_mean
-        self.tract_lengths_max = self.tract_lengths_max
         # self.weights_non_zero = NArrayIndex.from_ndarray(datatype.weights[datatype.weights.nonzero()])
         # self.tract_lengths_non_zero = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.tract_lengths.nonzero()])
         # self.tract_lengths_connections = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.weights.nonzero()])

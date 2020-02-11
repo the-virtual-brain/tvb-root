@@ -81,8 +81,6 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         self.sample_period = numpy.float64(datatype.sample_period)
         self.number_of_scales = datatype.frequencies.shape[0]
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
-        self.frequencies_min = self.frequencies_min
-        self.frequencies_max = self.frequencies_max
         self.source_gid = datatype.source.gid.hex
 
 
@@ -101,8 +99,6 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         super(CoherenceSpectrumIndex, self).fill_from_has_traits(datatype)
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
-        self.frequencies_min = self.frequencies_min
-        self.frequencies_max = self.frequencies_max
         self.source_gid = datatype.source.gid.hex
 
 
