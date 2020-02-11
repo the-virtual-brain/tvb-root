@@ -168,12 +168,18 @@ class SimpleFloatField(Field):
 class SimpleSelectField(Field):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
+    subform_prefix = 'subform_'
 
     def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None,
-                 include_none=True):
+                 include_none=True, subform=None, base_url=None):
+        # type: (dict, Form, str, bool, bool, str, str, object, bool, Form, str) -> None
         super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc, default)
         self.choices = choices
         self.include_none = include_none
+        self.subform_field = None
+        if subform:
+            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
+            self.base_url = base_url
 
     def options(self):
         """ to be used from template, assumes self.data is set """
@@ -197,6 +203,12 @@ class SimpleSelectField(Field):
     def fill_from_post(self, post_data):
         super(SimpleSelectField, self).fill_from_post(post_data)
         self.data = self.choices.get(self.data)
+        if self.subform_field:
+            self.subform_field.fill_from_post(post_data)
+
+    def validate(self):
+        super(SimpleSelectField, self).validate()
+        # TODO: validate subform
 
 
 class SimpleArrayField(Field):
@@ -516,7 +528,6 @@ class TraitDataTypeSelectField(TraitField):
             raise ValueError('The chosen entity does not have a proper GID')
 
 
-
 class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
@@ -599,8 +610,10 @@ Option = namedtuple('Option', ['id', 'value', 'label', 'checked'])
 class SelectField(TraitField):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
+    subform_prefix = 'subform_'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True):
+    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
+                 subform=None, base_url=None):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
         if choices:
             self.choices = choices
@@ -609,6 +622,10 @@ class SelectField(TraitField):
         if not self.choices:
             raise ValueError('no choices for field')
         self.display_none_choice = display_none_choice
+        self.subform_field = None
+        if subform:
+            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
+            self.base_url = base_url
 
     @property
     def value(self):
@@ -660,6 +677,8 @@ class SelectField(TraitField):
     def fill_from_post(self, post_data):
         super(SelectField, self).fill_from_post(post_data)
         self.data = self.choices.get(self.data)
+        if self.subform_field:
+            self.subform_field.fill_from_post(post_data)
 
 
 class MultiSelectField(TraitField):
@@ -741,6 +760,10 @@ class FormField(Field):
 
     def validate(self):
         return self.form.validate()
+
+    @property
+    def prefix_name(self):
+        return self.form.prefix
 
     def __str__(self):
         return jinja_env.get_template(self.template).render(adapter_form=self.form)

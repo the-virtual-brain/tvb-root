@@ -31,7 +31,8 @@
 import uuid
 import formencode
 from formencode import validators
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, HeunDeterministic
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.neotraits.api import Attr, Range
 from tvb.datatypes.cortex import Cortex
@@ -137,7 +138,8 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
 
         self.integrator = SimpleSelectField(choices=self.integrator_choices, form=self, name='integrator',
                                             required=True,
-                                            label=Simulator.integrator.label, doc=Simulator.integrator.doc)
+                                            label=Simulator.integrator.label, doc=Simulator.integrator.doc,
+                                            subform=get_form_for_integrator(HeunDeterministic))
         self.integrator.template = "form_fields/select_field.html"
 
     def fill_from_trait(self, trait):

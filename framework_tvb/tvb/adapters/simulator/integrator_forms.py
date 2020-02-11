@@ -27,9 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
 from tvb.simulator.integrators import *
 from tvb.core.neotraits.forms import Form, ScalarField, SimpleSelectField
+from tvb.simulator.noise import Additive
 
 
 def get_integrator_to_form_dict():
@@ -69,10 +71,10 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def __init__(self, prefix=''):
         super(IntegratorStochasticForm, self).__init__(prefix)
-        # TODO: show select box with Noise types
-        # self.noise = FormField(MultiplicativeNoiseForm, self, name='noise', label='Noise')
         self.noise_choices = get_ui_name_to_noise_dict()
-        self.noise = SimpleSelectField(self.noise_choices, self, name='noise', required=True, label='Noise')
+        self.noise = SimpleSelectField(self.noise_choices, self, name='noise', required=True, label='Noise',
+                                       subform=get_form_for_noise(Additive))
+        self.noise.template = self.template
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)

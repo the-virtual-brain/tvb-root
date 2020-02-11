@@ -27,7 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict, Linear
 from tvb.basic.neotraits.api import Range
 from tvb.simulator.noise import Noise, Additive, Multiplicative
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
@@ -78,7 +79,9 @@ class MultiplicativeNoiseForm(NoiseForm):
         super(MultiplicativeNoiseForm, self).__init__(prefix)
         self.nsig = ArrayField(Multiplicative.nsig, self)
         self.equation_choices = get_ui_name_to_equation_dict()
-        self.equation = SimpleSelectField(self.equation_choices, self, name='equation', required=True, label='Equation')
+        self.equation = SimpleSelectField(self.equation_choices, self, name='equation', required=True, label='Equation',
+                                          subform=get_form_for_equation(Linear))
+        self.equation.template = 'form_fields/select_field.html'
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)

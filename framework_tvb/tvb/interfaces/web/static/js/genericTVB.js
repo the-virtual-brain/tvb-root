@@ -1223,3 +1223,17 @@ function setupMenuEvents(parent) {
 $(document).ready(function () {
     setupMenuEvents();
 });
+
+function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
+    let url = 'refresh_subform/' + currentElem.value + '/' + elementType;
+    if (baseUrl !== 'None') {
+        url = baseUrl + '/' + url;
+    }
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (r) {
+            $('#' + subformDiv).html(r);
+        }
+    })
+}
