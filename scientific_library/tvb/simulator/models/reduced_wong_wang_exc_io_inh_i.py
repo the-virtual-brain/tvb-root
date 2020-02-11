@@ -101,10 +101,6 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                  \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
     """
-    _ui_name = "Reduced Wong-Wang"
-    ui_configurable_parameters = ['a_e', 'b_e', 'd_e', 'gamma_e', 'tau_e', 'W_e', 'w_p', 'J_N', "R_e",
-                                  'a_i', 'b_i', 'd_i', 'gamma_i', 'tau_i', 'W_i', 'J_i', "R_i",
-                                  'I_o', 'G', 'lamda']
 
     # Define traited attributes for this model, these represent possible kwargs.
 
