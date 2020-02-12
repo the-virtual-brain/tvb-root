@@ -1,0 +1,19 @@
+#!/bin/bash
+
+rm error.er 
+rm output.out
+sed "s/bencharg/$1/" benchAll.sh | bsub
+#sleep 2
+
+while [ ! -f ./error.er ] ;
+do
+  sleep 0.2 
+done
+
+if [ $1 == "regular" ]; 
+then
+  tail -f ./output.out | grep -i -E "INFO|WARNING|ERROR"
+  tail -f ./error.er
+else
+  tail -f ./error.er
+fi

@@ -1,0 +1,183 @@
+<Lems
+      xmlns="http://www.neuroml.org/lems/0.7.4"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
+      description="A number of ComponentTypes for rate based/population models.
+                    Base type of any cell/population which has a (dimensionless) rate _R.
+                    Epileptor 2-D (phase plane) oscillator.">
+
+    <ComponentType name="Epileptor_2D"
+                   description="Rate based 2D oscillator for TVB"
+                   value="">
+
+        <Constant name="a" symbol="float32" dimension="" value="1.0" description="Coefficient of the cubic term in the first state-variable."/>
+        <Constant name="b" symbol="float32" dimension="" value="3.0" description="Coefficient of the squared term in the first state-variable."/>
+        <Constant name="c" symbol="float32" dimension="" value="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
+        <Constant name="d" symbol="float32" dimension="" value="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
+        <Constant name="r" symbol="float32" dimension="lo=0.0, hi=0.001, step=0.00005" value="0.00035" description="Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."/>
+        <Constant name="s" symbol="float32" dimension="" value="4.0" description="Linear coefficient in the third state variable"/>
+        <Constant name="x0" symbol="float32" dimension="lo=-3.0, hi=-1.0, step=0.1" value="-1.6" description="Epileptogenicity parameter."/>
+        <Constant name="Iext" symbol="float32" dimension="lo=1.5, hi=5.0, step=0.1" value="3.1" description="External input current to the first state-variable."/>
+        <Constant name="slope" symbol="float32" dimension="lo=-16.0, hi=6.0, step=0.1" value="0." description="Linear coefficient in the first state-variable."/>
+        <Constant name="Iext2" symbol="float32" dimension="lo=0.0, hi=1.0, step=0.05" value="3.1" description="External input current to the first state-variable."/>
+        <Constant name="tau" symbol="float32" dimension="" value="10.0" description="Temporal scaling coefficient in fifth state variable."/>
+        <Constant name="aa" symbol="float32" dimension="" value="6.0" description="Linear coefficient in fifth state variable."/>
+        <Constant name="bb" symbol="float32" dimension="" value="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
+        <Constant name="Kvf" symbol="float32" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Coupling scaling on a very fast time scale."/>
+        <Constant name="Kf" symbol="float32" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
+        <Constant name="Ks" symbol="float32" dimension="lo=-4.0, hi=4.0, step=0.1" value="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
+        <Constant name="tt" symbol="float32" dimension="lo=0.001, hi=1.0, step=0.001" value="1.0" description="Time scaling of the whole system to the system in real time."/>
+        <Constant name="modification" symbol="bool" dimension="" value="1.0" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_coupling" dimension="float" />
+        <Parameter name="global_speed" dimension="float" />
+        <Parameter name="x0" dimension="float" />
+
+        <Dynamics>
+            <StateVariable name="x1" dimension="-2., 1." exposure=""/>
+            <StateVariable name="y1" dimension="-20., 2."/>
+            <StateVariable name="z" dimension="-2.0, 5.0" exposure=""/>
+            <StateVariable name="x2" dimension="-2., 0."/>
+            <StateVariable name="y2" dimension="0., 2." exposure=""/>
+            <StateVariable name="g" dimension="-1, 1."/>
+
+<!--            <DerivedVariable name="coupling_value" exposure="c_0" value="0.0" reduce="add"/>-->
+            <!-- Per state variable specifiable noise factor -->
+            <DerivedVariable name="sig_x1" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
+            <DerivedVariable name="sig_y1" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
+            <DerivedVariable name="sig_z" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
+            <DerivedVariable name="sig_x2" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
+            <DerivedVariable name="sig_y2" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
+            <DerivedVariable name="sig_g" exposure="float" value="0" reduce="add"/>
+
+            <DerivedVariable name="rec_speed_dt" exposure="float" value="1.0f / global_speed / (dt)" reduce="add"/>
+<!--            <DerivedVariable name="G" exposure="float" value="params" reduce="add"/>-->
+            <DerivedVariable name="lc_0" exposure="float" value="0.0"/>
+
+            <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
+            <!-- Population 1 -->
+            <ConditionalDerivedVariable name="if_ydot0" exposure="" dimension="(x1 &lt; 0) * (- a * powf(x1, 2) * b * x1)"/>
+            <ConditionalDerivedVariable name="else_ydot0" exposure="" dimension="(x1 &gt;= 0) * (slope - x2 + 0.6 * powf((z - 4.0), 2))"/>
+            <TimeDerivative variable="dx1" exposure="" value="tt * (y1 - z + Iext + Kvf * c_pop1 + (if_ydot0 + else_ydot0) )"/>
+            <TimeDerivative variable="dy1" exposure="" value="tt * (c - d * powf(x1, 2) - y1)"/>
+
+            <!-- Energy -->
+            <ConditionalDerivedVariable name="if_ydot1" exposure="" dimension="(y1 &lt; 0) * (- 0.1 * powf(Z, 7))"/>
+            <ConditionalDerivedVariable name="else_ydot1" exposure="" dimension="0"/>
+            <ConditionalDerivedVariable name="ifmod_h" exposure="" dimension="(modification==true)*(x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)) "/>
+            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==false)*(4 * (x1 - x0) + if_ydot1) )"/>
+            <TimeDerivative variable="dz" exposure="" value="tt * (r * ((ifmod_h + elsemod_h)) - z + Ks * c_pop1))"/>
+
+            <!-- Population 2 -->
+            <TimeDerivative variable="dx2" exposure="" value="tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
+            <ConditionalDerivedVariable name="if_ydot3" exposure="" dimension="0"/>
+            <ConditionalDerivedVariable name="else_ydot3" exposure="" dimension="(x2 &gt;= -0.25) * (aa * (x2 + 0.25))"/>
+            <TimeDerivative variable="dy2" exposure="" value="tt * (-y2 + else_ydot3) / tau"/>
+
+            <!-- Filter -->
+            <TimeDerivative variable="dg" exposure="" value="tt * (-0.01 * (g - 0.1 * x1) )"/>
+
+
+        </Dynamics>
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality-->
+        <Exposure name="o_x1" dimension="x1"/>
+        <Exposure name="o_x2" dimension="x2"/>
+        <Exposure name="o_z" dimension="z"/>
+        <Exposure name="o_-x1+x2" dimension="-x1 + x2"/>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function_pop1">
+
+<!--        Added function for pre and post synaptic activity. Fixed the power being **, however no parse checks for it-->
+
+        <Constant name="coupl_a" symbol="float32" dimension="lo=0.0, hi=10., step=0.1" value="1" description="Rescales the connection strength."/>
+
+        <!-- variable for pre synaptic function, only 1 param is allowed (and should be sufficient))  -->
+        <Parameter name="x1_j" dimension=''/>
+
+<!--        variables for post synaptic function-->
+        <Requirement name="wij" dimension=''/>
+
+        <Function name="pre" value="sin(x1_j - x1)" description="pre synaptic function for coupling activity"/>
+        <Function name="post" value="a" description="post synaptic = a * pre"/>
+
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+        <DerivedParameter name="c_pop1" value="global_coupling"/>
+
+    </ComponentType>
+
+        <ComponentType name="coupling_function_pop2">
+
+<!--        Added function for pre and post synaptic activity. Fixed the power being **, however no parse checks for it-->
+
+        <Constant name="coupl_b" symbol="float32" dimension="lo=0.0, hi=10., step=0.1" value="0.1" description="Rescales the connection strength."/>
+
+        <!-- variables for pre synaptic function-->
+        <Parameter name="y1_j" dimension=''/>
+
+<!--        variables for post synaptic function-->
+        <Requirement name="wij" dimension=''/>
+
+        <Function name="pre" value="" description = "pre synaptic function for coupling activity"/>
+        <Function name="post" value="" description = "post synaptic function for coupling activity"/>
+
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+        <DerivedParameter name="c_pop2" value="g"/>
+
+    </ComponentType>
+
+    <ComponentType name="noise">
+
+<!--        Param a-->
+<!--        Related to exposures?-->
+
+<!--        StateVariables for certain noises-->
+<!--        parant noise of specific children-->
+<!--        ScalingFunction GFUN; noisescaling-->
+
+<!-- dimension field for Constant is being (mis)used for fields required for Float (True or False), domain for float32 (lo, hi, step) or field_type for Attr ('str') ) -->
+<!--        is label more than a short description? -->
+
+        <Constant name="ntau" symbol="Float" dimension="True" value="0.1" description="The noise correlation time"/>
+        <Constant name="noise_seed" symbol="Int" dimension="" value="42" description="A random seed used to initialise the random_stream if it is missing."/>
+        <Constant name="random_stream" symbol="Attr" dimension="numpy.random.RandomState" value="0.0" description="An instance of numpy's RandomState associated with this
+            specific Noise object. Used when you need to resume a simulation from a state saved to disk"/>
+<!--        <Requirement name="temperature" dimension="temperature"/>-->
+
+    </ComponentType>
+
+    <ComponentType name="additive" extends="noise">
+
+<!--        specific child of noise-->
+        <Constant name="nsig" symbol="float32" dimension="lo=0.0, hi=10.0, step=0.1" value="1.0"
+            description="The noise dispersion, it is the standard deviation of the
+distribution from which the Gaussian random variates are drawn. NOTE:
+Sensible values are typically ~gt 1% of the dynamic range of a Model's
+state variables."/>
+
+    </ComponentType>
+
+        <ComponentType name="multiplicative" extends="noise">
+
+<!--        specific https://gitlab.version.fz-juelich.de/diaz1/tvb_dslchild of noise-->
+            <Constant name="nsig" symbol="float32" dimension="lo=0.0, hi=10.0, step=0.1" value="1.0"
+            description="The noise dispersion, it is the standard deviation of the
+distribution from which the Gaussian random variates are drawn. NOTE:
+Sensible values are typically ~gt 1% of the dynamic range of a Model's
+state variables."/>
+
+            <Constant name="b" symbol="Attr" dimension="equations.TemporalApplicableEquation" value="0.0"
+            description="A function evaluated on the state-variables, the result of which enters as the diffusion coefficient."/>
+
+    </ComponentType>
+
+
+
+</Lems>
+
+
+<!--Look at vector representation in XML LEMS-->

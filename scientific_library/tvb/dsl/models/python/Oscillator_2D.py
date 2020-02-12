@@ -1,7 +1,7 @@
 from tvb.basic.neotraits.api import NArray, Final, List, Range, HasTraits
 import numpy
 
-class Oscillator:
+class Oscillator_2D:
 
     def __init__(self):
 
