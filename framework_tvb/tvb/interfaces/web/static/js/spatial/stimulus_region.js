@@ -24,21 +24,6 @@
  */
 
 // Following methods are used for handling events on dynamic forms
-function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
-    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
-    $.ajax({
-        url: url,
-        type: 'POST',
-        success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            $("#" + equationParamsDiv).empty().append(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
-            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
-            plotEquation(baseUrl)
-        }
-    })
-}
-
 function setStimulusParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
     let currentParam = fieldName + '=' + fieldValue;
     let url = baseUrl + '/' + methodToCall + '?' + currentParam;
@@ -64,9 +49,8 @@ function redrawPlotOnMinMaxChanges(baseUrl) {
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false) {
+function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false, div_id='_temporal_params') {
     let CONNECTIVITY_FIELD = 'set_connectivity';
-    let TEMPORAL_FIELD = 'set_temporal';
     let DISPLAY_NAME_FIELD = 'set_display_name';
     let TEMPORAL_PARAMS_FIELD = 'set_temporal_param';
 
@@ -77,17 +61,8 @@ function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false
         $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
             setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
         });
-
-        //TODO: we want to have also support fields for this/ extract hardcoded strings
-        let equationSelectFields = document.getElementsByName(fieldsWithEvents[TEMPORAL_FIELD]);
-        for (let i=0; i<equationSelectFields.length; i++) {
-            equationSelectFields[i].onclick = function () {
-                changeEquationParamsForm(url, TEMPORAL_FIELD, this.value, 'temporal_params',
-                    fieldsWithEvents)
-            };
-        }
     }
-    $('input[name^="' + fieldsWithEvents[TEMPORAL_PARAMS_FIELD] + '"]').change(function () {
+    $('#' + div_id + ' :input').change(function () {
         setStimulusParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
     });
 }

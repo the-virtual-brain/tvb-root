@@ -1234,6 +1234,9 @@ function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
         type: 'POST',
         success: function (r) {
             $('#' + subformDiv).html(r);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
+            setEventsOnFormFields('', baseUrl, true, '_temporal_params');
+            plotEquation(baseUrl);
         }
     })
 }

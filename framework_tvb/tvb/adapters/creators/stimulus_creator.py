@@ -219,15 +219,15 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
     default_temporal = PulseTrain
 
-    def __init__(self, equation_choices, project_id):
+    def __init__(self, equation_choices, project_id, temporal_base_url):
         super(RegionStimulusCreatorForm, self).__init__()
         self.project_id = project_id
 
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
-        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal', choices=equation_choices)
-        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
-                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
-        # self.temporal.template = 'form_fields/select_field.html'
+        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
+                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal),
+                                    base_url=temporal_base_url)
+        self.temporal.template = 'form_fields/select_field.html'
 
     @staticmethod
     def get_view_model():
@@ -249,8 +249,9 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         # type: (RegionStimulusCreatorModel) -> None
         self.connectivity.data = trait.connectivity.hex
         self.temporal.data = type(trait.temporal)
-        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
-        self.temporal_params.form.fill_from_trait(trait.temporal)
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+                                                self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal.subform_field.form.fill_from_trait(trait.temporal)
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
