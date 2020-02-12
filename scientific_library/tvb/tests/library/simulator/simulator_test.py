@@ -87,6 +87,9 @@ class Simulator(object):
         self.method = None
         self.sim = None
 
+        self.stim_nodes = numpy.r_[10,20]
+        self.stim_value = 3.0
+
     def run_simulation(self, simulation_length=2 ** 2):
         """
         Test a simulator constructed with one of the <model>_<scheme> methods.
@@ -148,9 +151,9 @@ class Simulator(object):
             default_cortex = None
             if with_stimulus:
                 weights = StimuliRegion.get_default_weights(white_matter.weights.shape[0])
-                weights[10:20] = 1.
+                weights[self.stim_nodes] = 1.
                 stimulus = StimuliRegion(
-                        temporal=Linear(parameters={"a":0.0, "b":3.0}),
+                        temporal=Linear(parameters={"a":0.0, "b":self.stim_value}),
                         connectivity=white_matter,
                         weight=weights
                 )
@@ -226,9 +229,9 @@ class TestSimulator(BaseTestCase):
         )
 
         test_simulator.sim._loop_update_stimulus(1,stimulus)
-        self.assert_equal( numpy.count_nonzero(stimulus), 10)
-        assert numpy.allclose( stimulus[test_simulator.sim.model.stvar,10:20,:], 
-                               3.0,
+        self.assert_equal( numpy.count_nonzero(stimulus), len(test_simulator.stim_nodes))
+        assert numpy.allclose( stimulus[test_simulator.sim.model.stvar,test_simulator.stim_nodes,:], 
+                               test_simulator.stim_value,
                                1.0/numpy.finfo("single").max)
 
 
