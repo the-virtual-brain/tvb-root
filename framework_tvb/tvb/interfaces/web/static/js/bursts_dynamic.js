@@ -499,7 +499,7 @@ function main(dynamic_gid){
     $('.field-adapters').hide(); // hide expand range buttons. Careful as this class is used for other things as well
     // listen for changes of the input trees
     $('#left_input_tree').find('select').change(onLeftInputTreeChange); // intentionally omit <input>. We only need to listen for model type changes
-    $('#integrator_input_tree').find('input, select').change(onIntegratorInputTreeChange);
+    // $('#integrator_input_tree').find('input, select').change(onIntegratorInputTreeChange);
     $('#base_spatio_temporal_form').submit(onSubmit);
     onLeftInputTreeChange();
     dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');
@@ -509,3 +509,32 @@ function main(dynamic_gid){
 dynamicPage.main = main;
 
 })();
+
+function setIntegratorParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue, type) {
+    let currentParam = fieldName + '=' + fieldValue;
+    let url = methodToCall + '/' + dynamicPage.dynamic_gid + '/' + type + '?' + currentParam;
+        if (baseUrl !== 'None') {
+            url = baseUrl + '/' + url
+        }
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function () {
+            plotEquation();
+        }
+    })
+}
+
+function plotEquation(baseUrl='') {
+    dynamicPage.grafic._redrawTrajectories();
+}
+
+function setEventsOnFormFields(param, url, boolparam, div_id) {
+    $('#' + div_id + ' input').change(function () {
+        setIntegratorParamAndRedrawChart(url, 'integrator_parameters_changed', this.name, this.value, param)
+    });
+}
+
+function prepareURL(currentElem, elementType) {
+    return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
+}

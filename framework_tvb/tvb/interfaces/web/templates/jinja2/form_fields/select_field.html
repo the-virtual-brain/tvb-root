@@ -14,7 +14,7 @@
             });
         </script>
         <div id="{{ field.subform_field.name }}">
-            {% with form=field.subform_field.form %}
+            {% with adapter_form=field.subform_field.form %}
                 {% include 'form_fields/form_field.html' %}
             {% endwith %}
         </div>

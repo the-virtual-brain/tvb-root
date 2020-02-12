@@ -62,7 +62,7 @@ function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false
             setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
         });
     }
-    $('#' + div_id + ' :input').change(function () {
+    $('#' + div_id + ' input').change(function () {
         setStimulusParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
     });
 }
@@ -80,4 +80,8 @@ function plotEquation(baseUrl, params=null) {
             $("#" + 'equationDivId').empty().append(data);
         }
     });
+}
+
+function prepareURL(currentElem, elementType) {
+    return 'refresh_subform/' + currentElem.value + '/' + elementType;
 }
