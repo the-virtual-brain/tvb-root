@@ -27,8 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import numpy
 from collections import OrderedDict
+from tvb.core.neotraits.db import ensure_float
 from tvb.datatypes.surfaces import CORTICAL, INNER_SKULL, OUTER_SKIN, OUTER_SKULL, EEG_CAP, FACE, WHITE_MATTER, Surface
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
 from tvb.core.entities.model.model_datatype import DataType
@@ -65,6 +65,6 @@ class SurfaceIndex(DataType):
         self.number_of_triangles = datatype.number_of_triangles
         self.number_of_edges = datatype.number_of_edges
         self.bi_hemispheric = datatype.bi_hemispheric
-        self.edge_mean_length = numpy.float64(datatype.edge_mean_length)
-        self.edge_min_length = numpy.float64(datatype.edge_min_length)
-        self.edge_max_length = numpy.float64(datatype.edge_max_length)
+        self.edge_mean_length = ensure_float(datatype.edge_mean_length)
+        self.edge_min_length = ensure_float(datatype.edge_min_length)
+        self.edge_max_length = ensure_float(datatype.edge_max_length)
