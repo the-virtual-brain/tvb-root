@@ -1,0 +1,8 @@
+name: docker-based library testing
+on: [push]
+jobs:
+  build:
+    runs-on: tvb/library
+    steps:
+      - name: pytest library
+        run: ls
