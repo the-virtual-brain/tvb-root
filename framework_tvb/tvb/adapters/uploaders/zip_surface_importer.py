@@ -77,7 +77,7 @@ class ZIPSurfaceImporterModel(UploaderViewModel):
 
     @staticmethod
     def get_upload_files_names():
-        return 'uploaded'
+        return ['uploaded']
 
 
 class ZIPSurfaceImporterForm(ABCUploaderForm):
