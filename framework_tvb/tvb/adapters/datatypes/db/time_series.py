@@ -28,7 +28,6 @@
 #
 #
 import json
-from tvb.core.neotraits.db import ensure_float
 from tvb.datatypes.time_series import *
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
 from sqlalchemy.orm import relationship
@@ -64,10 +63,10 @@ class TimeSeriesIndex(DataType):
         super(TimeSeriesIndex, self).fill_from_has_traits(datatype)
         self.title = datatype.title
         self.time_series_type = type(datatype).__name__
-        self.start_time = ensure_float(datatype.start_time)
+        self.start_time = datatype.start_time
         self.sample_period_unit = datatype.sample_period_unit
-        self.sample_period = ensure_float(datatype.sample_period)
-        self.sample_rate = ensure_float(datatype.sample_rate)
+        self.sample_period = datatype.sample_period
+        self.sample_rate = datatype.sample_rate
         self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.labels_dimensions = json.dumps(datatype.labels_dimensions)
 
