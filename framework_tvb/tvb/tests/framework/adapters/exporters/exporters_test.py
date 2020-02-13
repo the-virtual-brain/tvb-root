@@ -46,7 +46,7 @@ from tvb.core.neocom import h5
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BurstConfiguration
 from tvb.tests.framework.core.factory import TestFactory
 
 

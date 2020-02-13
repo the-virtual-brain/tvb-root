@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
 from sqlalchemy import Column, Integer, ForeignKey, Boolean, Float
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import from_ndarray

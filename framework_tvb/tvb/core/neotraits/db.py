@@ -91,6 +91,10 @@ class HasTraitsIndex(Base):
         )
 
 
+def ensure_float(data):
+    return numpy.float64(data)
+
+
 def from_ndarray(array):
     if array is None:
         return None
@@ -98,7 +102,7 @@ def from_ndarray(array):
     if array.dtype.kind in 'iufc' and array.size != 0:
         # we compute these simple statistics for integer unsigned float or complex
         # arrays that are not empty
-        minvalue, maxvalue = array.min(), array.max()
+        minvalue, maxvalue = ensure_float(array.min()), ensure_float(array.max())
         median = numpy.median(array)
     else:
         minvalue, maxvalue, median = None, None, None
