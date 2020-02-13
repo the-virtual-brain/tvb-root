@@ -128,8 +128,8 @@ class LaunchOperationResource(RestResource):
                 data_file_1 = self.extract_file_from_request(file_name='data_file_1', file_extension=view_model.get_files_types()[0])
                 handle_data_file(data_file_1, destination_folder, view_model_h5, storage_path, 0)
 
-                if isinstance(adapter_instance, (CSVConnectivityImporter, NIFTIImporter)) or \
-                        (isinstance(adapter_instance, GIFTISurfaceImporter) and is_path_in_files('data_file_2')):
+                if isinstance(adapter_instance, CSVConnectivityImporter) or \
+                        (isinstance(adapter_instance, (GIFTISurfaceImporter, NIFTIImporter)) and is_path_in_files('data_file_2')):
                     data_file_2 = self.extract_file_from_request(file_name='data_file_2', file_extension=view_model.get_files_types()[1])
                     handle_data_file(data_file_2, destination_folder, view_model_h5, storage_path, 1)
 
