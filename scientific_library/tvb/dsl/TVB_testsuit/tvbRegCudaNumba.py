@@ -4,6 +4,8 @@ sys.path.insert(0, '../../../')
 from tvb.datatypes import connectivity
 # from tvb.simulator import integrators
 from tvb.simulator import coupling
+from tvb.simulator.lab import *
+
 import numpy as np
 import numpy.random as rgn
 import matplotlib.pyplot as plt
@@ -41,7 +43,7 @@ class TVB_test:
 		self.omega = 60.0 * 2.0 * math.pi / 1e3
 		(self.connectivity, self.coupling) = self.tvb_connectivity(self.s, self.g, self.dt)
 		self.SC = self.connectivity.weights
-		# self.integrator = integrators.EulerDeterministic(dt=self.dt)
+		self.integrator = integrators.EulerDeterministic(dt=self.dt)
 
 	def tvb_connectivity(self, speed, global_coupling, dt=0.1):
 		white_matter = connectivity.Connectivity.from_file(source_file="data/connectivity_68.zip")
@@ -51,7 +53,7 @@ class TVB_test:
 		return white_matter, white_matter_coupling
 	
 	def tvb_python_model(self):
-		populations = models.Kuramoto()
+		populations = models.Generic2dOscillator()
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations
@@ -150,6 +152,69 @@ class TVB_test:
 
 		logger.info('result OK')
 
+	def regular(self):
+		logger.info('start regular TVB run')
+		# Initialize Model
+		model = self.tvb_python_model()
+		# Initialize Monitors
+		monitorsen = (monitors.TemporalAverage(period=self.period))
+		# Initialize Simulator
+		sim = simulator.Simulator(model=model, connectivity=self.connectivity, coupling=self.coupling, integrator=self.integrator,
+									  monitors=[monitorsen])
+		sim.configure()
+		tavg_data = sim.run(simulation_length=self.sim_length)
+
+		# from regular_run import regularRun
+		# regularrun = regularRun()
+		# tavg_data = regularrun.simulate_python(logger, args, model, connectivity, coupling, integrator)
+		# FC = tvbhpc.calculate_FC(np.squeeze(tavg_data))
+		# r = tvbhpc.plot_SC_FC(SC, FC,"numbacuda")
+		# print(FC)
+
+	def numba(self):
+		logger.info('start Numba run')
+		from numbacuda_run import NumbaCudaRun
+		numbacuda = NumbaCudaRun()
+		trace = numbacuda.run_simulation(dt)
+		#
+		# (numbacuda_FC, python_r) = tvbhpc.simulate_numbacuda()
+		# print(numbacuda_FC)
+		# tavg_data = np.transpose(trace, (1, 2, 0))
+		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
+
+	# numba kernel based on the c index used for cuda
+	def numbac(self):
+		logger.info('start Numba run')
+		from cindex_numbacuda_run import NumbaCudaRun
+		numbacuda = NumbaCudaRun()
+		tavg_data = numbacuda.run_simulation(blockspergrid, threadsperblock, n_inner_steps, n_nodes, buf_len, dt, weights, lengths, params.T, logger)
+		logger.info('tavg_data.shape %s', tavg_data.shape)
+		logger.info('tavg_data %f', tavg_data)
+		#
+		# (numbacuda_FC, python_r) = tvbhpc.simulate_numbacuda()
+		# print(numbacuda_FC)
+		# tavg_data = np.transpose(trace, (1, 2, 0))
+		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
+
+	def cuda(self):
+		logger.info('start Cuda run')
+		from cuda_run import CudaRun
+		cudarun = CudaRun()
+		tavg_data = cudarun.run_simulation(weights, lengths, params, couplings, speeds, logger, args, n_nodes, n_work_items, n_params, nstep, n_inner_steps,
+			buf_len, states, dt, min_speed)
+		# logger.info('tavg_data %f', tavg_data)
+
+		# Todo: fix this for cuda
+		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
+
+	def testcon(self):
+		logger.info('print some stuff')
+		logger.info('connectivity %s', (self.connectivity.tract_lengths.shape))
+		# logger.info('connectivity.speed %s', (tvbhpc.connectivity.speed))
+		# logger.info('coupling %s', couplings)
+		logger.info('connectivity.speed %s', speeds.shape)
+		logger.info('params %s', params.T.shape)
+
 
 if __name__ == '__main__':
 
@@ -212,73 +277,20 @@ if __name__ == '__main__':
 	logger.info('threadsperblock %d', threadsperblock)
 	logger.info('blockspergrid %d', blockspergrid)
 
-	def regular():
-		logger.info('start regular TVB run')
-		from regular_run import regularRun
-		regularrun = regularRun()
-		tavg_data = regularrun.simulate_python(logger, args)
-		# FC = tvbhpc.calculate_FC(np.squeeze(tavg_data))
-		# r = tvbhpc.plot_SC_FC(SC, FC,"numbacuda")
-		# print(FC)
-
-	def numba():
-		logger.info('start Numba run')
-		from numbacuda_run import NumbaCudaRun
-		numbacuda = NumbaCudaRun()
-		trace = numbacuda.run_simulation(dt)
-		# 
-		# (numbacuda_FC, python_r) = tvbhpc.simulate_numbacuda()
-		# print(numbacuda_FC)
-		# tavg_data = np.transpose(trace, (1, 2, 0))
-		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
-
-	# numba kernel based on the c index used for cuda
-	def numbac():
-		logger.info('start Numba run')
-		from cindex_numbacuda_run import NumbaCudaRun
-		numbacuda = NumbaCudaRun()
-		tavg_data = numbacuda.run_simulation(blockspergrid, threadsperblock, n_inner_steps, n_nodes, buf_len, dt, weights, lengths, params.T, logger)
-		logger.info('tavg_data.shape %s', tavg_data.shape)
-		logger.info('tavg_data %f', tavg_data)
-		# 
-		# (numbacuda_FC, python_r) = tvbhpc.simulate_numbacuda()
-		# print(numbacuda_FC)
-		# tavg_data = np.transpose(trace, (1, 2, 0))
-		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
-
-	def cuda():
-		logger.info('start Cuda run')
-		from cuda_run import CudaRun
-		cudarun = CudaRun()
-		tavg_data = cudarun.run_simulation(weights, lengths, params, couplings, speeds, logger, args, n_nodes, n_work_items, n_params, nstep, n_inner_steps, 
-			buf_len, states, dt, min_speed)
-		# logger.info('tavg_data %f', tavg_data)
-
-		# Todo: fix this for cuda
-		# tvbhpc.check_results(n_nodes, n_work_items, tavg_data, weights, speeds, couplings, logger, args)
-
-	def testcon():
-		logger.info('print some stuff')
-		logger.info('connectivity %s', (tvbhpc.connectivity.tract_lengths.shape))
-		# logger.info('connectivity.speed %s', (tvbhpc.connectivity.speed))
-		# logger.info('coupling %s', couplings)
-		logger.info('connectivity.speed %s', speeds.shape)
-		logger.info('params %s', params.T.shape)
-
 
 	benchwhat = args.bench
-	locals()[benchwhat]()
-	# logger.info('benchwhat: %s', benchwhat)
-	# # def bencher(benchwhat):
-	# switcher = {
-	# 	'regular': regular,
-	# 	'numba': numba,
-	# 	'numbac': numba_cindex,
-	# 	'cuda': cuda
-	# }
-	# func = switcher.get(benchwhat, 'invalid bench choice')
-	# logger.info('func %s', func)
-	# func()
+	# locals()[benchwhat]()
+	logger.info('benchwhat: %s', benchwhat)
+	# def bencher(benchwhat):
+	switcher = {
+		'regular': tvbhpc.regular,
+		'numba': tvbhpc.numba,
+		'numbac': tvbhpc.numbac,
+		'cuda': tvbhpc.cuda
+	}
+	func = switcher.get(benchwhat, 'invalid bench choice')
+	logger.info('func %s', func)
+	func()
 
 	toc = time.time()
 	print("Finished python simulation successfully in: {}".format(toc - tac))
