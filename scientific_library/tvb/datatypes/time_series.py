@@ -84,8 +84,11 @@ class TimeSeries(HasTraits):
 
     @property
     def sample_rate(self):
-        if len(self.sample_period_unit) > 0 and self.sample_period_unit[0] == "s":
+        """:returns samples per second [kHz] """
+        if self.sample_period_unit in ("ms", "msec"):
             return 1000.0 / self.sample_period
+        if self.sample_period_unit in ("us", "usec"):
+            return 1000000.0 / self.sample_period
         return 1.0 / self.sample_period
 
     def summary_info(self):
