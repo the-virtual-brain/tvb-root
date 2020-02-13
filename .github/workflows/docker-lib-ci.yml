@@ -2,7 +2,10 @@ name: docker-based library testing
 on: [push]
 jobs:
   build:
-    runs-on: tvb/library
+    runs-on: ubuntu-latest
     steps:
-      - name: pytest library
-        run: ls
+      - uses: actions/checkout@v1
+      - name: Build image
+        run: docker build -f scientific_library/Dockerfile -t tvb/lib-ci scientific_library
+      - name: Run tests
+        run: docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci pytest -Wignore -n8
