@@ -1,122 +1,120 @@
-from tvb.basic.neotraits.api import NArray, Final, List, Range, HasTraits
+from .base import Model, ModelNumbaDfun
+import numexpr
 import numpy
+from numba import guvectorize, float64
+from tvb.basic.neotraits.api import NArray, Final, List, Range
 
-class Oscillator:
+class Generic2dOscillator(ModelNumbaDfun):
 
-    def __init__(self):
-
-    # Define traited attributes for this model, these represent possible kwargs.
             
-        tau = NArray(/
-            label=":math:`tau`",
-            default=numpy.array([1.0]),
-            domain = Range(lo=1.0, hi=5.0, step=0.01),
-            doc = """A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."""
-        )
-        self.tau = tau
-                    
-        I = NArray(/
-            label=":math:`I`",
-            default=numpy.array([0.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.01),
-            doc = """Baseline shift of the cubic nullcline"""
-        )
-        self.I = I
-                    
-        a = NArray(/
-            label=":math:`a`",
-            default=numpy.array([-2.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.01),
-            doc = """Vertical shift of the configurable nullcline"""
-        )
-        self.a = a
-                    
-        b = NArray(/
-            label=":math:`b`",
-            default=numpy.array([-10.0]),
-            domain = Range(lo=-20.0, hi=15.0, step=0.01),
-            doc = """Linear slope of the configurable nullcline"""
-        )
-        self.b = b
-                    
-        c = NArray(/
-            label=":math:`c`",
-            default=numpy.array([0]),
-            domain = Range(lo=-10.0, hi=10.0, step=0.01),
-            doc = """Parabolic term of the configurable nullcline"""
-        )
-        self.c = c
-                    
-        d = NArray(/
-            label=":math:`d`",
-            default=numpy.array([0.02]),
-            domain = Range(lo=0.0001, hi=1.0, step=0.0001),
-            doc = """Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."""
-        )
-        self.d = d
-                    
-        e = NArray(/
-            label=":math:`e`",
-            default=numpy.array([3.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.0001),
-            doc = """Coefficient of the quadratic term of the cubic nullcline."""
-        )
-        self.e = e
-                    
-        f = NArray(/
-            label=":math:`f`",
-            default=numpy.array([1.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.0001),
-            doc = """Coefficient of the cubic term of the cubic nullcline."""
-        )
-        self.f = f
-                    
-        g = NArray(/
-            label=":math:`g`",
-            default=numpy.array([0.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.5),
-            doc = """Coefficient of the linear term of the cubic nullcline."""
-        )
-        self.g = g
-                    
-        alpha = NArray(/
-            label=":math:`alpha`",
-            default=numpy.array([1.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.0001),
-            doc = """Constant parameter to scale the rate of feedback from the slow variable to the fast variable."""
-        )
-        self.alpha = alpha
-                    
-        beta = NArray(/
-            label=":math:`beta`",
-            default=numpy.array([1.0]),
-            domain = Range(lo=-5.0, hi=5.0, step=0.0001),
-            doc = """Constant parameter to scale the rate of feedback from the slow variable to itself"""
-        )
-        self.beta = beta
-                    
-        gamma = NArray(/
-            label=":math:`gamma`",
-            default=numpy.array([1.0]),
-            domain = Range(lo=-1.0, hi=1.0, step=0.1),
-            doc = """Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term.."""
-        )
-        self.gamma = gamma
-        
-        state_variable_range = Final(
-            label="State Variable ranges [lo, hi]",
-            default={    "V": numpy.array([-2.0, 4.0]), 
-				     "W": numpy.array([-6.0, 6.0])},
-            doc="""V"""
+    tau = NArray(
+        label=":math:`tau`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=1.0, hi=5.0, step=0.01),
+        doc="""A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."""
+    )    
+            
+    I = NArray(
+        label=":math:`I`",
+        default=numpy.array([0.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.01),
+        doc="""Baseline shift of the cubic nullcline"""
+    )    
+            
+    a = NArray(
+        label=":math:`a`",
+        default=numpy.array([-2.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.01),
+        doc="""Vertical shift of the configurable nullcline"""
+    )    
+            
+    b = NArray(
+        label=":math:`b`",
+        default=numpy.array([-10.0]),
+        domain=Range(lo=-20.0, hi=15.0, step=0.01),
+        doc="""Linear slope of the configurable nullcline"""
+    )    
+            
+    c = NArray(
+        label=":math:`c`",
+        default=numpy.array([0]),
+        domain=Range(lo=-10.0, hi=10.0, step=0.01),
+        doc="""Parabolic term of the configurable nullcline"""
+    )    
+            
+    d = NArray(
+        label=":math:`d`",
+        default=numpy.array([0.02]),
+        domain=Range(lo=0.0001, hi=1.0, step=0.0001),
+        doc="""Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."""
+    )    
+            
+    e = NArray(
+        label=":math:`e`",
+        default=numpy.array([3.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Coefficient of the quadratic term of the cubic nullcline."""
+    )    
+            
+    f = NArray(
+        label=":math:`f`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Coefficient of the cubic term of the cubic nullcline."""
+    )    
+            
+    g = NArray(
+        label=":math:`g`",
+        default=numpy.array([0.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.5),
+        doc="""Coefficient of the linear term of the cubic nullcline."""
+    )    
+            
+    alpha = NArray(
+        label=":math:`alpha`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Constant parameter to scale the rate of feedback from the slow variable to the fast variable."""
+    )    
+            
+    beta = NArray(
+        label=":math:`beta`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=-5.0, hi=5.0, step=0.0001),
+        doc="""Constant parameter to scale the rate of feedback from the slow variable to itself"""
+    )    
+            
+    gamma = NArray(
+        label=":math:`gamma`",
+        default=numpy.array([1.0]),
+        domain=Range(lo=-1.0, hi=1.0, step=0.1),
+        doc="""Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term.."""
+    )    
+
+    state_variable_range = Final(
+        label="State Variable ranges [lo, hi]",
+        default={"V": numpy.array([-2.0, 4.0]), 
+				 "W": numpy.array([-6.0, 6.0])},
+        doc="""V"""
         )
 
-        state_variables = ('V', 'W')
+    state_variables = ('V', 'W')
 
-        _nvar = 2
-        cvar = numpy.array([0], dtype=numpy.int32)
+    variables_of_interest = List(
+        of=str,
+        label="Variables or quantities available to Monitors",
+        choices=("V", "W", "V + W", "V - W"),
+        default=("V",),
+        doc="The quantities of interest for monitoring for the generic 2D oscillator."
+    )
 
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
+
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
         V = state_variables[0, :]
         W = state_variables[1, :]
@@ -124,19 +122,19 @@ class Oscillator:
         #[State_variables, nodes]
         c_0 = coupling[0, :]
 
-        # TODO why does it not default auto to default
-        tau = self.tau.default
-        I = self.I.default
-        a = self.a.default
-        b = self.b.default
-        c = self.c.default
-        d = self.d.default
-        e = self.e.default
-        f = self.f.default
-        g = self.g.default
-        alpha = self.alpha.default
-        beta = self.beta.default
-        gamma = self.gamma.default
+        # # TODO why does it not default auto to default
+        tau = self.tau
+        I = self.I
+        a = self.a
+        b = self.b
+        c = self.c
+        d = self.d
+        e = self.e
+        f = self.f
+        g = self.g
+        alpha = self.alpha
+        beta = self.beta
+        gamma = self.gamma
 
         lc_0 = local_coupling * V
         derivative = numpy.empty_like(state_variables)
@@ -147,4 +145,12 @@ class Oscillator:
 
         return derivative
 
-                                                        
+    def dfun(self, vw, c, local_coupling=0.0):
+        lc_0 = local_coupling * vw[0, :, 0]
+        vw_ = vw.reshape(vw.shape[:-1]).T
+        c_ = c.reshape(c.shape[:-1]).T
+        deriv = _numba_dfun_g2d(vw_, c_, self.tau, self.I, self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.alpha, self.beta, self.gamma, lc_0)
+        
+        return deriv.T[..., numpy.newaxis]
+
+                            

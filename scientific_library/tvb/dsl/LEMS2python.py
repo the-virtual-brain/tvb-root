@@ -4,14 +4,15 @@ from mako.template import Template
 import argparse
 
 import sys
-sys.path.insert(0, '../NeuroML/lems/')
+sys.path.insert(0, 'NeuroML/lems/')
 from model.model import Model
 
 # model file location
-modelname = 'Oscillator'
+modelname = 'Generic2dOscillator' # is also the class name
+filename = 'oscillator' # TVB output file name
 fp_xml = 'NeuroML/' + modelname.lower() + '.xml'
 # modelfile="../models/python/" + modelname + ".py"
-modelfile="../simulator/models/" + modelname.lower() + ".py"
+modelfile="../simulator/models/" + filename.lower() + ".py"
 
 model = Model()
 model.import_from_file(fp_xml)
