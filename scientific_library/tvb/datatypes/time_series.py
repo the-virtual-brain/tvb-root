@@ -40,6 +40,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, narray
 import numpy
 from copy import deepcopy
 
+
 class TimeSeries(HasTraits):
     """
     Base time-series dataType.
@@ -83,7 +84,7 @@ class TimeSeries(HasTraits):
 
     @property
     def sample_rate(self):
-        if len(self.sample_period_unit) > 0 and self.sample_period_unit[0] == "m":
+        if len(self.sample_period_unit) > 0 and self.sample_period_unit[0] == "s":
             return 1000.0 / self.sample_period
         return 1.0 / self.sample_period
 

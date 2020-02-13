@@ -1,16 +1,50 @@
 # -*- coding: utf-8 -*-
+#
+#
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 
-from six import string_types
+"""
+.. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
+.. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
+"""
+
+import numpy
 import matplotlib
+from six import string_types
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
-import numpy
 from tvb.simulator.plot.utils import ensure_list, isequal_string, generate_region_labels
 from tvb.basic.logger.builder import get_logger
 from tvb.simulator.plot.utils import time_spectral_analysis
 from tvb.simulator.plot.base_plotter import BasePlotter
 from tvb.datatypes.time_series import TimeSeries
 LOG = get_logger(__name__)
+
 
 def assert_time(time, n_times, time_unit="ms", logger=None):
     if time_unit.find("ms"):
@@ -205,8 +239,8 @@ class TimeSeriesPlotter(BasePlotter):
             n_cols = subplots[1]
             if n_rows * n_cols < nTS:
                 LOG.error("Not enough subplots for all time series:"
-                                  "\nn_rows * n_cols = product(subplots) = product(" + str(subplots) + " = "
-                                  + str(n_rows * n_cols) + "!")
+                          "\nn_rows * n_cols = product(subplots) = product(" + str(subplots) + " = "
+                          + str(n_rows * n_cols) + "!")
         if n_rows * n_cols > 1:
             def_alpha = 0.5
             subtitle = lambda labels, iTS: subtitle_traj(labels, iTS)
@@ -243,7 +277,7 @@ class TimeSeriesPlotter(BasePlotter):
             data = ensure_list(data)
         else:
             LOG.error("Input timeseries: %s \n" "is not on of one of the following types: "
-                              "[numpy.ndarray, dict, list, tuple]" % str(data))
+                      "[numpy.ndarray, dict, list, tuple]" % str(data))
         n_vars = len(data)
         data_lims = []
         for id, d in enumerate(data):
@@ -386,7 +420,7 @@ class TimeSeriesPlotter(BasePlotter):
                                 figsize=figsize)
         else:
             LOG.error("Input time_series: %s \n" "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
+                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
 
     def plot_raster(self, time_series, subplots=None, special_idx=[], subtitles=[],
                     offset=0.5, title=None, figure_name=None, figsize=None, **kwargs):
@@ -422,8 +456,8 @@ class TimeSeriesPlotter(BasePlotter):
             self.plot_tvb_time_series_interactive(time_series, first_n, **kwargs)
         else:
             LOG.error("Input time_series: %s \n" "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict, list, tuple]" %
-                              str(time_series))
+                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict, list, tuple]" %
+                      str(time_series))
 
     @staticmethod
     def plot_tvb_power_spectra_interactive(time_series, spectral_props, **kwargs):
@@ -562,12 +596,9 @@ class TimeSeriesPlotter(BasePlotter):
                                       figsize=None, **kwargs):
         if isinstance(time_series, TimeSeries):
             return self.plot_ts_spectral_analysis_raster(numpy.swapaxes(time_series._tvb.data, 1, 2).squeeze(),
-                                                         time_series.time, time_series.time_unit, freq, spectral_options,
+                                                         time_series.time, time_series.time_unit, freq,
+                                                         spectral_options,
                                                          special_idx, labels, title, figure_name, figsize)
-        # elif isinstance(time_series, TimeSeriesTVB):
-        #     return self.plot_ts_spectral_analysis_raster(numpy.swapaxes(time_series.data, 1, 2).squeeze(),
-        #                                                  time_series.time, time_series.time_unit, freq, spectral_options,
-        #                                                  special_idx, labels, title, figure_name, figsize)
         elif isinstance(time_series, (numpy.ndarray, dict, list, tuple)):
             time = kwargs.get("time", None)
             return self.plot_ts_spectral_analysis_raster(time_series, time=time, freq=freq,
@@ -576,5 +607,5 @@ class TimeSeriesPlotter(BasePlotter):
                                                          figsize=figsize)
         else:
             LOG.error("Input time_series: %s \n"
-                              "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
+                      "is not on of one of the following types: "
+                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
