@@ -39,8 +39,8 @@ import math
 from numba import cuda, int32, float32
 from tvb.simulator._numba.coupling import cu_delay_cfun, next_pow_of_2
 from tvb.simulator._numba.util import cu_expr
-from tvb.simulator.async import AsyncResult
-from randomstate.prng.xorshift128 import xorshift128
+# from tvb.simulator.async import AsyncResult
+# from randomstate.prng.xorshift128 import xorshift128
 import datetime
 
 
@@ -55,7 +55,8 @@ class AsyncNoise(object):
         self._set_ar()
 
     def _set_ar(self):
-        self._ar = AsyncResult.do(self.rng.randn, *self.shape)
+        # self._ar = AsyncResult.do(self.rng.randn, *self.shape)
+        pass
 
     def get(self):
         noise = self._ar.result
@@ -94,7 +95,7 @@ def make_kernel(delays, n_thread_per_block, n_inner):
 
 if __name__ == '__main__':
     import sys
-    print sys.executable
+    print(sys.executable)
     cuda.close()
     cuda.select_device(0)
     # load data
@@ -118,17 +119,17 @@ if __name__ == '__main__':
     step = numpy.zeros((1, ), numpy.int32)
     cvars = numpy.zeros((1, ), numpy.int32)
     # noise
-    xorshift128.seed(42)
+    # xorshift128.seed(42)
     async_noise = AsyncNoise((n_inner, n_nodes, n_threads), numpy.random)
     # kernel
     n_thread_per_block = 64
     n_block = int(n_threads / n_thread_per_block)
     horizon, kernel = make_kernel(delays, n_thread_per_block, n_inner)
     buf = numpy.zeros((n_nodes, horizon, 1, n_threads), numpy.float32)
-    print 'buf dims', buf.shape
+    print('buf dims', buf.shape)
     # begin
     tic = time.time()
-    print datetime.datetime.now().isoformat(' ')
+    print(datetime.datetime.now().isoformat(' '))
     for i in range(n_iter):
         noise = async_noise.get().astype('f')
         kernel[(n_thread_per_block, ), (n_block,)](
@@ -138,6 +139,6 @@ if __name__ == '__main__':
             pct = i * 1e2 / n_iter
             tta = (time.time() - tic) / pct * (100 - pct)
             eta = (datetime.datetime.now() + datetime.timedelta(seconds=tta)).isoformat(' ')
-            print 'Step %d of %d, %02.2f %% done, ETA %s' % (i, n_iter, pct, eta)
+            print('Step %d of %d, %02.2f %% done, ETA %s' % (i, n_iter, pct, eta))
     toc = time.time() - tic
-    print toc
+    print(toc)

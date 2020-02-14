@@ -1,6 +1,7 @@
 import numpy as np
 import vtkplotter as vp
 from tvb.simulator.lab import surfaces
+vp.settings.useFXAA=True
 cortex = surfaces.CorticalSurface.from_file()
 cortex.configure()
 cortex.compute_geodesic_distance_matrix(3)
@@ -60,3 +61,4 @@ pt += vp.Line(pts).off().addShadow(x=3) # only show shadow, not line
 pt += vp.Line(pts).off().addShadow(z=-30)
 
 pt.show()
+# vp.screenshot()

@@ -1,6 +1,7 @@
 import numpy as np
 import nibabel
 import vtkplotter
+vtkplotter.settings.useFXAA= True
 
 path = '/home/duke/src/tvb-root'
 t1 = nibabel.load(f'{path}/T1.mgz')
@@ -10,9 +11,8 @@ vtkplotter.printHistogram(vol, logscale=True)
 vol.crop(back=0.2, left=0.2, top=0.2)
 lego = vol.legosurface(vmin=100, cmap='seismic')
 
-vp = vtkplotter.Plotter(shape=(2, 1), axes=1)
 
-vp.show(lego, at=0)
+vtkplotter.show(lego, shape='1/1', at=0, sharecam=False)
 
 # add the lorenz lines
 dt = 0.002
@@ -38,6 +38,6 @@ for t in np.linspace(0, 20, int(20 / dt)):
 # pt += vp.Point(y, r=10, c="g") # end point
 # pt += vp.Points(pts, r=3, c=cols)
 # vp.show(vp.Line(pts).off().addShadow(x=3) # only show shadow, not line
-vp.show(vtkplotter.Line(pts), at=1)#.off().addShadow(z=-30)
-
-vtkplotter.show(vp)
+vtkplotter.show(vtkplotter.Line(pts), shape='1/1', at=1, sharecam=False)#.off().addShadow(z=-30)
+vtkplotter.vtkio.screenshot()
+vtkplotter.interactive()
