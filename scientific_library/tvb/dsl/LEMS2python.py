@@ -7,10 +7,15 @@ import sys
 sys.path.insert(0, 'NeuroML/lems/')
 from model.model import Model
 
-# model file location
+# model file setting oscillator
 modelname = 'Generic2dOscillator' # is also the class name
 filename = 'oscillator' # TVB output file name
-fp_xml = 'NeuroML/' + modelname.lower() + '.xml'
+
+# model file setting oscillator
+# modelname = 'ReducedWongWang' # is also the class name
+# filename = 'wong_wang' # TVB output file name
+
+fp_xml = 'NeuroML/' + filename.lower() + '.xml'
 # modelfile="../models/python/" + modelname + ".py"
 modelfile="../simulator/models/" + filename.lower() + ".py"
 
@@ -31,7 +36,7 @@ def drift_templating():
                             dfunname=modelname,
                             const=modelist[0].constants,
                             dynamics=modelist[0].dynamics,
-                            drift=(1e-3, 1e-3)
+                            exposures=modelist[0].exposures
                             )
     # write template to file
     with open(modelfile, "w") as f:
