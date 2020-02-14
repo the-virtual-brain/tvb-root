@@ -184,6 +184,7 @@ class ExprParser(LEMSBase):
         '^':7,
         '~':8,
         'exp':8,
+        'numpy.exp': 8,
         '.and.':1,
         '.or.':1,
         '.gt.':2,

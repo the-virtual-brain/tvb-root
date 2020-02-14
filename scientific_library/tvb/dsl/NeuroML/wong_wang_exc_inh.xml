@@ -6,7 +6,7 @@
                     Base type of any cell/population which has a (dimensionless) rate _R.
                     Generic nonlinear 2-D (phase plane) oscillator.">
 
-    <ComponentType name="Generic2dOscillator"
+    <ComponentType name="ReducedWongWang"
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
@@ -14,27 +14,36 @@
 
 <!--        Look at vector implementation for multi heterogenous nodes.-->
 
-        <Constant name="tau" symbol="NArray" value="1.0" dimension="lo=1.0, hi=5.0, step=0.01"
-                  description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
-        <Constant name="I" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.01" value="0.0" description="Baseline shift of the cubic nullcline"/>
-        <Constant name="a" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.01" value="-2.0" description="Vertical shift of the configurable nullcline"/>
-        <Constant name="b" symbol="NArray" dimension="lo=-20.0, hi=15.0, step=0.01" value="-10.0" description="Linear slope of the configurable nullcline"/>
-        <Constant name="c" symbol="NArray" dimension="lo=-10.0, hi=10.0, step=0.01" value="0" description="Parabolic term of the configurable nullcline"/>
-        <Constant name="d" symbol="NArray" dimension="lo=0.0001, hi=1.0, step=0.0001" value="0.02" description="Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."/>
-        <Constant name="e" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.0001" value="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
-        <Constant name="f" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
-        <Constant name="g" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.5" value="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
-        <Constant name="alpha" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
-        <Constant name="beta" symbol="NArray" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
-        <Constant name="gamma" symbol="NArray" dimension="lo=-1.0, hi=1.0, step=0.1" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative.
-It scales both I and the long range coupling term.."/>
+        <Constant name="w_plus" symbol="NArray" value="1.4f" dimension="lo=0.0, hi=2.0, step=0.01"
+                  description="Excitatory population recurrence weight"/>
+        <Constant name="a_E" symbol="NArray" dimension="lo=0., hi=500., step=1." value="310.0f" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_E" symbol="NArray" dimension="lo=0., hi=200., step=1." value="125.0f" description="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_E" symbol="NArray" dimension="lo=-10.0, hi=10.0, step=0.01" value="0.154f" description="[s]. Excitatory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="a_I" symbol="NArray" dimension="lo=0., hi=1000., step=1." value="615.0f" description="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_I" symbol="NArray" dimension="lo=0.0, hi=200.0, step=1.0" value="177.0f" description="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_I" symbol="NArray" dimension="lo=0.0, hi=0.2, step=0.001" value="0.087f" description="[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma_E" symbol="NArray" dimension="lo=0.0, hi=1.0/1000, step=0.01/1000" value="0.641f / 1000.0f" description="Excitatory population kinetic parameter"/>
+        <Constant name="tau_E" symbol="NArray" dimension="lo=50., hi=150., step=1." value="100.0f" description="[ms]. Excitatory population NMDA decay time constant."/>
+        <Constant name="tau_I" symbol="NArray" dimension="lo=5., hi=100., step=1.0" value="=10.0f" description="[ms]. Inhibitory population NMDA decay time constant."/>
+        <Constant name="I_0" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.001" value="0.382f" description="[nA]. Effective external input"/>
+        <Constant name="w_E" symbol="NArray" dimension="lo=0.0, hi=2.0, step=0.01" value="1.0f" description="Excitatory population external input scaling weight"/>
+        <Constant name="w_I" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.7f" description="Inhibitory population external input scaling weight"/>
+        <Constant name="gamma_I" symbol="NArray" dimension="lo=0.0, hi=2.0/1000, step=0.01/1000" value="1.0f / 1000.0f" description="Inhibitory population kinetic parameter"/>
+        <Constant name="min_d_E" symbol="NArray" dimension="" value="-1.0f * d_E" description="Only in CUDA"/>
+        <Constant name="min_d_I" symbol="NArray" dimension="" value="-1.0f * d_I" description="Only in CUDA"/>
+        <Constant name="imintau_E" symbol="NArray" dimension="" value="-1.0f / tau_E" description="Only in CUDA"/>
+        <Constant name="imintau_I" symbol="NArray" dimension="" value="-1.0f / tau_I" description="Only in CUDA"/>
+        <Constant name="w_E__I_0" symbol="NArray" dimension="" value="w_E * I_0" description="Only in CUDA"/>
+        <Constant name="w_I__I_0" symbol="NArray" dimension="" value="w_I * I_0" description="Only in CUDA"/>
+
+        <Constant name="J_N" symbol="NArray" dimension="lo=0.001, hi=0.5, step=0.001" value="0.15" description="[nA] NMDA current"/>
+        <Constant name="J_I" symbol="NArray" dimension="lo=0.001, hi=2.0, step=0.001" value="1.0" description="[nA] Local inhibitory current"/>
+        <Constant name="G" symbol="NArray" dimension="lo=0.0, hi=10.0, step=0.01" value="2.0" description="Global coupling scaling"/>
+        <Constant name="lamda" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.0" description="Inhibitory global coupling scaling"/>
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
         <Parameter name="global_coupling" dimension="float" />
         <Parameter name="global_speed" dimension="float" />
-
-        <!-- TODO: Define the observables -->
-        <Exposure name="V" dimension="sin(theta_i)"/>
 
         <Dynamics>
             <StateVariable name="V" dimension="-2.0, 4.0" exposure="V"/>
@@ -46,11 +55,17 @@ It scales both I and the long range coupling term.."/>
 <!--            <DerivedVariable name="G" exposure="float" value="params" reduce="add"/>-->
             <DerivedVariable name="lc_0" exposure="float" value="0.0"/>
 
-            <TimeDerivative variable="dV" exposure="dV" value="d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * c_0 + lc_0)"/>
-            <TimeDerivative variable="dW" exposure="dW" value="d * (a + b * V + c * V**2 - beta * W) / tau"/>
+            <TimeDerivative variable="tmp_I_E" value="a_E * (w_E__I_0 + w_plus__J_NMDA * S_E + sum - JI*S_I) - b_E"/>
+            <TimeDerivative variable="tmp_H_E" value="tmp_I_E/(1.0-exp(min_d_E * tmp_I_E))"/>
+            <TimeDerivative variable="tmp_I_I" value="(a_I*((w_I__I_0+(J_NMDA * S_E))-S_I))-b_I"/>
+            <TimeDerivative variable="tmp_H_I" value="tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))"/>
+
+            <TimeDerivative variable="dV" exposure="dV" value="(imintau_E* S_E)+(tmp_H_E*(1-S_E)*gamma_E)"/>
+            <TimeDerivative variable="dW" exposure="dW" value="(imintau_I* S_I)+(tmp_H_I*gamma_I)"/>
         </Dynamics>
 
-        <!-- Variables of interest. Add for dimension the choices -->
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality-->
         <Exposure name="V" dimension="sin(V)"/>
         <Exposure name="W" dimension="sin(W)"/>
 

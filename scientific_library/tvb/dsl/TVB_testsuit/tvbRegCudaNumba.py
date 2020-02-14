@@ -1,9 +1,9 @@
 # from tvb.simulator.lab import *
 import sys
 sys.path.insert(0, '../../../')
-from tvb.datatypes import connectivity
+#from tvb.datatypes import connectivity
 # from tvb.simulator import integrators
-from tvb.simulator import coupling
+#from tvb.simulator import coupling
 from tvb.simulator.lab import *
 
 import numpy as np
@@ -53,7 +53,8 @@ class TVB_test:
 		return white_matter, white_matter_coupling
 	
 	def tvb_python_model(self):
-		populations = models.Generic2dOscillator()
+		# populations = models.Generic2dOscillator()
+		populations = models.ReducedWongWang()
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations
