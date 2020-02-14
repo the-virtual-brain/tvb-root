@@ -48,7 +48,12 @@ class TestUserResource(TransactionalTestCase):
     def test_get_users(self):
         result = self.users_resource.get()
         assert type(result) is list
-        assert len(result) == 2
+        found = False
+        for userDTO in result:
+            if userDTO.username == self.username:
+                found = True
+                break
+        assert found
 
     def test_get_project_invalid_username(self):
         invalid_username = 'invalid-username'
