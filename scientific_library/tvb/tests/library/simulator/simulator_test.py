@@ -49,6 +49,8 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.patterns import StimuliRegion
+from tvb.datatypes.equations import Linear
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
 
 MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
@@ -85,6 +87,9 @@ class Simulator(object):
         self.method = None
         self.sim = None
 
+        self.stim_nodes = numpy.r_[10,20]
+        self.stim_value = 3.0
+
     def run_simulation(self, simulation_length=2 ** 2):
         """
         Test a simulator constructed with one of the <model>_<scheme> methods.
@@ -102,7 +107,8 @@ class Simulator(object):
     def configure(self, dt=2 ** -3, model=ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), speed=4.0,
                   coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
-                  default_connectivity=True):
+                  default_connectivity=True,
+                  with_stimulus=False):
         """
         Create an instance of the Simulator class, by default use the
         generic plane oscillator local dynamic model and the deterministic 
@@ -140,8 +146,18 @@ class Simulator(object):
             else:
                 default_cortex.local_connectivity = LocalConnectivity()
             default_cortex.local_connectivity.surface = default_cortex.region_mapping_data.surface
+            # TODO stimulus
         else:
             default_cortex = None
+            if with_stimulus:
+                weights = StimuliRegion.get_default_weights(white_matter.weights.shape[0])
+                weights[self.stim_nodes] = 1.
+                stimulus = StimuliRegion(
+                        temporal=Linear(parameters={"a":0.0, "b":self.stim_value}),
+                        connectivity=white_matter,
+                        weight=weights
+                )
+
 
         # Order of monitors determines order of returned values.
         self.sim = simulator.Simulator()
@@ -151,6 +167,8 @@ class Simulator(object):
         self.sim.connectivity = white_matter
         self.sim.coupling = white_matter_coupling
         self.sim.monitors = self.monitors
+        if with_stimulus:
+            self.sim.stimulus = stimulus
         self.sim.configure()
 
 
@@ -195,3 +213,28 @@ class TestSimulator(BaseTestCase):
         assert numpy.allclose(state_variable_boundaries,
                               test_simulator.integrator.state_variable_boundaries,
                               1.0/numpy.finfo("single").max)
+
+    @pytest.mark.parametrize('default_connectivity', [True, False])
+    def test_simulator_regional_stimulus(self,default_connectivity):
+        test_simulator = Simulator()
+        test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
+        stimulus = test_simulator.sim._prepare_stimulus()
+        self.assert_equal(
+                stimulus.shape, 
+                (
+                    test_simulator.sim.model.nvar,
+                    test_simulator.sim.connectivity.number_of_regions,
+                    test_simulator.sim.model.number_of_modes
+                )
+        )
+
+        test_simulator.sim._loop_update_stimulus(1,stimulus)
+        self.assert_equal( numpy.count_nonzero(stimulus), len(test_simulator.stim_nodes))
+        assert numpy.allclose( stimulus[test_simulator.sim.model.stvar,test_simulator.stim_nodes,:], 
+                               test_simulator.stim_value,
+                               1.0/numpy.finfo("single").max)
+
+
+
+        
+        
