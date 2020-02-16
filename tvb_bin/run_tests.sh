@@ -5,6 +5,14 @@ echo 'Executing clean before tests...'
 rm -rf TEST_OUTPUT
 
 if [[ "$1" ]]; then
+
+    COUNT=0
+    until pg_isready -U postgres || [[ ${COUNT} -eq 5 ]]; do
+        echo "Postgres is unavailable - sleeping"
+        sleep 1
+        let COUNT=COUNT+1
+    done
+
     # Make sure TVB application is not running....
     python tvb_bin/app.py stop TEST_POSTGRES_PROFILE
 
@@ -25,6 +33,7 @@ else
 	echo 'Starting TVB tests on SQLite DB ...'
 	mkdir TEST_OUTPUT
 	pytest --pyargs tvb.tests.framework --junitxml=TEST_OUTPUT/results_frw.xml > TEST_OUTPUT/frw.out 2>&1
+
 fi
 
 echo 'Starting TVB Scientific Library tests'
