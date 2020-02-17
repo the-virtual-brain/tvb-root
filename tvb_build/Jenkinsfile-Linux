@@ -10,10 +10,11 @@ pipeline {
         stage('Copy step 1') {
              steps {
                  script {
-                     step ([$class: 'CopyArtifact',
-                     projectName: 'TVB%20-%20Step1',
-                     filter: "tvb_build/build/TVB_build_step1.zip",
-                     target: 'tvb_build/build/']);
+                     step ([copyArtifacts
+                        projectName: 'TVB - Step1',
+                        selector: lastCompleted(),
+                        filter: 'tvb_build/build/TVB_build_step1.zip',
+                        target: 'tvb_build/build/']);
                  }
              }
         }
