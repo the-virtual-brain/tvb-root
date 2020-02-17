@@ -29,6 +29,7 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build
+                    ls -all build/*
                     bash install_full_tvb.sh
                     rm -R -f build/TVB_Distribution
                     python build_from_conda.py

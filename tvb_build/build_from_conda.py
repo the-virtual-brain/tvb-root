@@ -267,8 +267,10 @@ def prepare_anaconda_dist(config):
 
     _log(1, "Removing old artifacts")
     for ar in glob.glob(config.artifact_glob):
+        _log(2, ar)
         os.remove(ar)
     shutil.rmtree(config.target_root, True)
+    _log(2, config.target_root)
 
     _log(1, "Decompressing " + config.step1_result + " into '" + config.target_root + "' ...")
     zipfile.ZipFile(config.step1_result).extractall(config.target_root)
