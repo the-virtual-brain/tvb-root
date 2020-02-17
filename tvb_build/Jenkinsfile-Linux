@@ -12,8 +12,8 @@ pipeline {
                  script {
                      step ([$class: 'CopyArtifact',
                      projectName: 'TVB - Step1',
-                     selector: lastCompleted(),
-                     filter: '*.zip',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip',
                      target: 'tvb_build/build/']);
                  }
              }
