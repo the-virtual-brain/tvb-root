@@ -11,7 +11,7 @@ pipeline {
              steps {
                  script {
                      step ([$class: 'CopyArtifact',
-                     projectName: 'TVB - Root',
+                     projectName: 'TVB%20-%20Step1',
                      filter: "tvb_build/build/TVB_build_step1.zip",
                      target: 'tvb_build/build/']);
                  }
