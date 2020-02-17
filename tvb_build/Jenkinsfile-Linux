@@ -13,7 +13,7 @@ pipeline {
                      step ([$class: 'CopyArtifact',
                      projectName: 'TVB - Step1',
                      selector: lastCompleted(),
-                     filter: 'TVB_build_step1.zip',
+                     filter: '*.zip',
                      target: 'tvb_build/build/']);
                  }
              }
