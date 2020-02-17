@@ -26,7 +26,6 @@ pipeline {
                 }
             }
             steps {
-                unstash 'docs-website'
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build
