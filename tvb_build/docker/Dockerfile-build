@@ -15,8 +15,8 @@ RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark pytest-m
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32 flask-restplus
-RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing sphinx==1.2.3 docutils==0.12
+RUN /opt/conda/envs/tvb-docs/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
+RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus sphinx==1.2.3 docutils==0.12
 
 RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-run python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
@@ -24,8 +24,8 @@ RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mo
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk BeautifulSoup4 subprocess32 flask-restplus
-RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -51,7 +51,7 @@ RUN cd tvb-root; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"; \
     /bin/bash -c "source activate tvb-docs && /bin/bash install_full_tvb.sh"
 
-RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_DATA
+RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_STORAGE
 
 COPY .tvb.configuration /root/.tvb.configuration
 
@@ -66,8 +66,6 @@ WORKDIR /root/tvb-root
 
 # For running all unit-tests
 # inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
-#<testsuite errors="100" failures="248" hostname="747eee3aaab5" name="pytest" skipped="3" tests="463"
-#<testsuite errors="100" failures="237" hostname="fe4fc3f6b6c7" name="pytest" skipped="3" tests="463"
 #CMD ["bash","-c","source activate tvb-run && cd tvb_bin && service postgresql start && bash run_tests.sh postgres"]
 
 # For running Jupyter notebooks
@@ -76,7 +74,7 @@ WORKDIR /root/tvb-root
 
 # For running TVB Web GUI
 # bind port 8080
-# MOUNT -v [local- ~/TVB ]:/root/TVB_DATA
+# MOUNT -v [local- ~/TVB ]:/root/TVB_STORAGE
 #CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]
 
 CMD ["bash","-c","source activate tvb-run && /bin/bash"]

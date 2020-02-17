@@ -2,22 +2,22 @@ pipeline {
     agent any
 
     environment {
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-run'
         LATEST_TAG = 'latest'
     }
 
     stages {
-        stage('Copy step 1') {
-             steps {
-                 script {
-                     step ([$class: 'CopyArtifact',
-                     projectName: 'TVB - Root',
-                     filter: "tvb_build/build/TVB_build_step1.zip",
-                     target: 'tvb_build/build/']);
-                 }
-             }
+        stage ('Build docker image') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:${env.BUILD_ID}", "--build-arg LAST_SHA='${LAST_SHA}' -f Dockerfile-run tvb_build/docker")
+                    dockerImage.push()
+                    dockerImage.push('${LATEST_TAG}')
+                }
+            }
         }
-        stage ('Build TVB Distribution') {
+        stage ('Tests on SqLite') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
@@ -25,15 +25,15 @@ pipeline {
                 }
             }
             steps {
-                unstash 'docs-website'
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build
                     bash install_full_tvb.sh
-                    rm -R -f build/TVB_Distribution
-                    python build_from_conda.py
+                    cd ../tvb_bin
+                    bash run_tests.sh
+                    exit 0
                 '''
-                archiveArtifacts artifacts: 'tvb_build/build/TVB_Linux*.zip'
+                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
         }
     }
