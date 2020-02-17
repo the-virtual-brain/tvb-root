@@ -26,6 +26,11 @@ pipeline {
                 }
             }
             steps {
+                step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip',
+                     target: 'tvb_build/build/']);
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build
