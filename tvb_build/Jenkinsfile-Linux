@@ -12,10 +12,10 @@ pipeline {
                  step ([$class: 'CopyArtifact',
                      projectName: 'TVB - Step1',
                      selector: lastSuccessful(),
-                     filter: 'tvb_build/build/TVB_build_step1.zip',
-                     target: 'tvb_build/build']);
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
                  sh '''#!/bin/bash
                        ls -all tvb_build/build
+                       ls -all ./*
                  '''
                  stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
              }
