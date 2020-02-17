@@ -1,28 +1,29 @@
 # from models import G2DO
 from mako.template import Template 
 
-import argparse
-
 import sys
 sys.path.insert(0, 'NeuroML/lems/')
 from model.model import Model
 
 # model file setting oscillator
-modelname = 'Generic2dOscillator' # is also the class name
-filename = 'oscillator' # TVB output file name
+# modelname = 'Generic2dOscillator' # is also the class name
+# filename = 'oscillator' # TVB output file name
 
 # model file setting oscillator
-# modelname = 'ReducedWongWang' # is also the class name
-# filename = 'wong_wang' # TVB output file name
+modelname = 'ReducedWongWang' # is also the class name
+filename = 'wong_wang' # TVB output file name
+
+# modelname = 'Kuramoto' # is also the class name
+# filename = 'kuramoto' # TVB output file name
 
 fp_xml = 'NeuroML/' + filename.lower() + '.xml'
 # modelfile="../models/python/" + modelname + ".py"
+# place results directly into tvb model directory
 modelfile="../simulator/models/" + filename.lower() + ".py"
 
 model = Model()
 model.import_from_file(fp_xml)
 modelextended = model.resolve()
-
 
 def drift_templating():
 
@@ -99,3 +100,4 @@ def noise_templating():
 drift_templating()
 # coupling_templating()
 # noise_templating()
+

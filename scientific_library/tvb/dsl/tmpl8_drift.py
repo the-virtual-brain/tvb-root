@@ -7,17 +7,8 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class ${dfunname}(ModelNumbaDfun):
 
-    ##def __init__(self):
     %for mconst in const:
-        %if mconst.symbol == 'NArray':
-            ${NArray(mconst)}
-        %elif mconst.symbol == 'Attr':
-            ${Attr(mconst)}
-        %elif mconst.symbol == 'Float':
-            ${Float(mconst)}
-        %elif mconst.symbol == 'Int':
-            ${Int(mconst)}
-        %endif
+        ${NArray(mconst)}
     %endfor
 
     state_variable_range = Final(
@@ -30,12 +21,6 @@ class ${dfunname}(ModelNumbaDfun):
         ## doc="""${dynamics.state_variables['V'].exposure}"""
         doc="""state variables"""
         )
-
-    state_variables = (\
-%for itemB in dynamics.state_variables:
-'${itemB.name}'${'' if loop.last else ', '}\
-%endfor
-)
 
     variables_of_interest = List(
         of=str,
@@ -50,36 +35,37 @@ class ${dfunname}(ModelNumbaDfun):
         doc="The quantities of interest for monitoring for the generic 2D oscillator."
     )
 
-
+    state_variables = [\
+%for itemB in dynamics.state_variables:
+'${itemB.name}'${'' if loop.last else ', '}\
+%endfor
+]
 
     _nvar = ${dynamics.state_variables.__len__()}
     cvar = numpy.array([0], dtype=numpy.int32)
-
-        ## % for item in const:
-        ## self.${item.name} = ${item.name}
-        ## % endfor
-        ## self.state_variables = state_variables
-        ## self.state_variable_range = state_variable_range
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
         % for i, itemC in enumerate(dynamics.state_variables):
         ${itemC.name} = state_variables[${i}, :]
-        % if i == 0:
+        %if (i == 0):
         lc_0 = local_coupling * ${itemC.name}
-        % endif
+        %endif
         % endfor
 
         #[State_variables, nodes]
         c_0 = coupling[0, :]
-        ## c_0 = coupling
 
-        # # TODO why does it not default auto to default
         %for itemD in const:
         ${itemD.name} = self.${itemD.name}
         %endfor
 
         derivative = numpy.empty_like(state_variables)
+
+        ## derived variables
+        % for i, der_var in enumerate(dynamics.derived_variables):
+        ${der_var.name} = ${der_var.value}
+        % endfor
 
         % for i, item in enumerate(dynamics.time_derivatives):
         ##derivative[${i}] = ${item.value}
@@ -92,7 +78,7 @@ class ${dfunname}(ModelNumbaDfun):
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_g2d(vw_, c_, \
+        deriv = _numba_dfun_${dfunname}(vw_, c_, \
 %for itemE in const:
 self.${itemE.name}, \
 %endfor
@@ -102,7 +88,7 @@ lc_0)
 
 ## signature is always the number of constants +4. the extras are vw, c_0, lc_0 and dx.
 @guvectorize([(float64[:],) * ${const.__len__()+4}], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
-def _numba_dfun_g2d(vw, c_0, \
+def _numba_dfun_${dfunname}(vw, c_0, \
 % for itemI in const:
 ${itemI.name}, \
 % endfor
@@ -120,6 +106,11 @@ lc_0, dx):
     c_0 = c_0[0]
     lc_0 = lc_0[0]
 
+    ## derived variables
+    % for i, der_var in enumerate(dynamics.derived_variables):
+    ${der_var.name} = ${der_var.value}
+    % endfor
+
     % for i, itemH in enumerate(dynamics.time_derivatives):
     dx[${i}] = ${itemH.value}
     % endfor
@@ -127,41 +118,11 @@ lc_0, dx):
     \
     ## TVB numpy constant declarations
     <%def name="NArray(nconst)">
-    ${nconst.name} = ${nconst.symbol}(
+    ${nconst.name} = NArray(
         label=":math:`${nconst.name}`",
         default=numpy.array([${nconst.value}]),
         domain=Range(${nconst.dimension}),
         doc="""${nconst.description}"""
-    )\
-    ##self.${nconst.name} = ${nconst.name}
-    </%def>\
-    \
-    <%def name="Attr(nconst)">
-    ${nconst.name} = ${nconst.symbol}(
-        ## todo: adapt fields in LEMS to match TVBs constant requirements more closely
-        field_type=${nconst.dimension},
-        label=":math:`${nconst.name}`",
-        # defaults to super init
-        doc = """${nconst.description}"""
-    )\
-    ##self.${nconst.name} = ${nconst.name}
-    </%def>\
-    \
-    <%def name="Float(nconst)">
-    ${nconst.name} = ${nconst.symbol}(
-        ## todo: adapt fields in LEMS to match TVBs constant requirements more closely
-        label=":math:`${nconst.name}`",
-        required=nconst.dimension,
-        default=${nconst.value},
-        doc = """${nconst.description}"""
-    )\
-    ##self.${nconst.name} = ${nconst.name}
-    </%def>\
-    \
-    <%def name="Int(nconst)">
-    ${nconst.name} = ${nconst.symbol}(
-        default=${nconst.value},
-        doc = """${nconst.description}"""
     )\
     ##self.${nconst.name} = ${nconst.name}
     </%def>
