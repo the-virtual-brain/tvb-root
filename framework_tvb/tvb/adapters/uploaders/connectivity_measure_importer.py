@@ -66,21 +66,13 @@ class ConnectivityMeasureImporterModel(UploaderViewModel):
         doc='The Connectivity for which these measurements were made'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.mat']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class ConnectivityMeasureImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityMeasureImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self, name='data_file')
         self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self, name='dataset_name')
         self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self,
                                                      name='connectivity')
@@ -103,6 +95,12 @@ class ConnectivityMeasureImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityMeasureIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.mat'
+        }
 
     @transactional
     def launch(self, view_model):

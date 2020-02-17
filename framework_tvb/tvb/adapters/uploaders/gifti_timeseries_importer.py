@@ -59,21 +59,13 @@ class GIFTITimeSeriesImporterModel(UploaderViewModel):
         doc='The Brain Surface used to generate imported TimeSeries.'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.gii']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self, name='data_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
         self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
@@ -98,6 +90,12 @@ class GIFTITimeSeriesImporter(ABCUploader):
 
     def get_output(self):
         return [TimeSeriesSurfaceIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gii'
+        }
 
     def launch(self, view_model):
         # type: (GIFTITimeSeriesImporterModel) -> [TimeSeriesSurfaceIndex]

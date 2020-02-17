@@ -39,17 +39,3 @@ class UploaderViewModel(ViewModel):
         label='Subject'
     )
 
-    @staticmethod
-    def get_files_types():
-        """
-        :return: a list of one or two elements which contains the required file types for uploaders.
-        """
-        return NotImplementedError
-
-    @staticmethod
-    def get_upload_files_names():
-        """
-        :return: a list of one or two elements which contains the attribute names for trait field uploaders.
-        """
-        return NotImplementedError
-

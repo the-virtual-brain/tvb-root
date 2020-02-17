@@ -56,21 +56,13 @@ class BRCOImporterModel(UploaderViewModel):
         doc='The Connectivity for which these annotations were made'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.xml']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class BRCOImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BRCOImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(BRCOImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self, name='data_file')
         self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self, name='connectivity')
 
     @staticmethod
@@ -91,6 +83,12 @@ class BRCOImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityAnnotationsIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.xml'
+        }
 
     @transactional
     def launch(self, view_model):

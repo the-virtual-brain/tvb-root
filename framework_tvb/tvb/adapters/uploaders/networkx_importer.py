@@ -91,20 +91,12 @@ class NetworkxImporterModel(UploaderViewModel):
         label='Key Node Hemisphere'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.gpickle']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
-        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self, name='data_file')
         self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self, name='key_edge_weight')
         self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, self, name='key_edge_tract')
         self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, self,
@@ -131,6 +123,12 @@ class NetworkxConnectivityImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gpickle'
+        }
 
     @transactional
     def launch(self, view_model):

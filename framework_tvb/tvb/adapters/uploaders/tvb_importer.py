@@ -52,21 +52,13 @@ class TVBImporterModel(UploaderViewModel):
         label='Please select file to import (h5 or zip)'
     )
 
-    @staticmethod
-    def get_files_types():
-        return [('.zip', '.h5')]
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class TVBImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TVBImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(TVBImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), self, name='data_file')
 
     @staticmethod
     def get_view_model():
@@ -87,6 +79,12 @@ class TVBImporter(ABCUploader):
 
     def get_output(self):
         return []
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': ('.zip', '.h5')
+        }
 
     def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
         """

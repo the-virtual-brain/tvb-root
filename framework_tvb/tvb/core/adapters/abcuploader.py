@@ -131,3 +131,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
             available = [s for s in matlab_data if not double__(s)]
             raise KeyError("Could not find dataset named %s. Available datasets: %s" % (matlab_data_name, available))
+
+    @staticmethod
+    def get_upload_information():
+        return NotImplementedError

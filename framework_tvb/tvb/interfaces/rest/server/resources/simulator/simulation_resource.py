@@ -29,7 +29,6 @@
 #
 
 import os
-
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -42,7 +41,6 @@ from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, I
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.resources.util import save_temporary_file
 from tvb.simulator.simulator import Simulator
 
 
@@ -59,7 +57,8 @@ class FireSimulationResource(RestResource):
         :start a simulation using a project id and a zip archive with the simulator data serialized
         """
         file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
-        zip_path = save_temporary_file(file)
+        destination_folder = RestResource.get_destination_folder()
+        zip_path = RestResource.save_temporary_file(file, destination_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)

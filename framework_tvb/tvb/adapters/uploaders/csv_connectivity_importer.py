@@ -139,24 +139,16 @@ class CSVConnectivityImporterModel(UploaderViewModel):
         label='Reference Connectivity Matrix (for node labels, 3d positions etc.)'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.csv', '.csv']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['weights', 'tracts']
-
 
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CSVConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, self.get_view_model().get_files_types()[0], self, name='weights')
+        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self, name='weights')
         self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self,
                                              name='weights_delimiter', choices=DELIMITER_OPTIONS)
-        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, [self.get_view_model().get_files_types()[1]], self, name='tracts')
+        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], self, name='tracts')
         self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self,
                                             name='tracts_delimiter', choices=DELIMITER_OPTIONS)
         self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self, name='input_data')
@@ -185,6 +177,13 @@ class CSVConnectivityImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'weights': '.csv',
+            'tracts': '.csv'
+        }
 
     def _read_csv_file(self, csv_file, delimiter):
         """

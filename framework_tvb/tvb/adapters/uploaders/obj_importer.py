@@ -63,14 +63,6 @@ class ObjSurfaceImporterModel(UploaderViewModel):
         label='Center surface using vertex means along axes'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.obj']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
 
@@ -100,6 +92,13 @@ class ObjSurfaceImporter(ABCUploader):
 
     def get_output(self):
         return [SurfaceIndex]
+
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.obj'
+        }
 
     @transactional
     def launch(self, view_model):

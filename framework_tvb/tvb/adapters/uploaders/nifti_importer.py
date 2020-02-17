@@ -86,23 +86,15 @@ class NIFTIImporterModel(UploaderViewModel):
         doc='Optional Connectivity if the NII file is a volume2regions mapping'
     )
 
-    @staticmethod
-    def get_files_types():
-        return [('.nii', '.gz', '.zip'), '.txt']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file', 'mappings_file']
-
 
 class NIFTIImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(NIFTIImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), self, name='data_file')
         self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, self, name='apply_corrections')
-        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, self.get_view_model().get_files_types()[1], self, name='mappings_file')
+        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self, name='mappings_file')
         self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self, name='connectivity')
 
     @staticmethod
@@ -124,6 +116,13 @@ class NIFTIImporter(ABCUploader):
 
     def get_output(self):
         return [VolumeIndex, StructuralMRIIndex, TimeSeriesVolumeIndex, RegionVolumeMappingIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': ('.nii', '.gz', '.zip'),
+            'mappings_file': '.txt'
+        }
 
     def _create_volume(self):
         volume = Volume()

@@ -71,21 +71,13 @@ class TrackImporterModel(UploaderViewModel):
         label='Reference Volume Map'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.trk']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['data_file']
-
 
 class TrackImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TrackImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(TrackImporterModel.data_file, self.get_view_model().get_files_types()[0], self, name='data_file')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self, name='data_file')
         self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self, name='region_volume')
 
     @staticmethod
@@ -113,6 +105,12 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
     def get_output(self):
         return [TractsIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.trk'
+        }
 
     def _get_tract_region(self, start_vertex):
         # Map to voxel index space

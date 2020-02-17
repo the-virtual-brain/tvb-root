@@ -59,21 +59,13 @@ class ZIPConnectivityImporterModel(UploaderViewModel):
         doc='Normalization mode for weights'
     )
 
-    @staticmethod
-    def get_files_types():
-        return ['.zip']
-
-    @staticmethod
-    def get_upload_files_names():
-        return ['uploaded']
-
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, self.get_view_model().get_files_types()[0], self,
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self,
                                          name='uploaded')
         self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization',
                                          choices=NORMALIZATION_OPTIONS)
@@ -106,6 +98,12 @@ class ZIPConnectivityImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityIndex]
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'uploaded': '.zip'
+        }
 
     def launch(self, view_model):
         # type: (ZIPConnectivityImporterModel) -> [ConnectivityIndex]

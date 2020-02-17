@@ -29,9 +29,7 @@
 #
 
 import shutil
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
-from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporter
-from tvb.adapters.uploaders.nifti_importer import NIFTIImporter
+import os
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
@@ -46,8 +44,7 @@ from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource, is_path_in_files
-from tvb.interfaces.rest.server.resources.util import save_temporary_file, get_destination_folder, handle_data_file
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
@@ -98,8 +95,8 @@ class LaunchOperationResource(RestResource):
         :generic method of launching Analyzers
         """
         model_file = self.extract_file_from_request()
-        destination_folder = get_destination_folder()
-        h5_path = save_temporary_file(model_file, destination_folder)
+        destination_folder = RestResource.get_destination_folder()
+        h5_path = RestResource.save_temporary_file(model_file, destination_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
@@ -125,15 +122,19 @@ class LaunchOperationResource(RestResource):
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
             if isinstance(adapter_instance, ABCUploader):
-                data_file_1 = self.extract_file_from_request(file_name='data_file_1', file_extension=view_model.get_files_types()[0])
-                handle_data_file(data_file_1, destination_folder, view_model_h5, storage_path, 0)
 
-                if isinstance(adapter_instance, CSVConnectivityImporter) or \
-                        (isinstance(adapter_instance, (GIFTISurfaceImporter, NIFTIImporter)) and is_path_in_files('data_file_2')):
-                    data_file_2 = self.extract_file_from_request(file_name='data_file_2', file_extension=view_model.get_files_types()[1])
-                    handle_data_file(data_file_2, destination_folder, view_model_h5, storage_path, 1)
+                index = 1
+                for key, value in adapter_instance.get_upload_information().items():
+                    data_file = self.extract_file_from_request(file_name='data_file_' + str(index), file_extension=value)
+                    data_file_path = RestResource.save_temporary_file(data_file, destination_folder)
+                    file_name = os.path.basename(data_file_path)
+                    upload_field = getattr(view_model_h5, key)
+                    upload_field.store(os.path.join(storage_path, file_name))
+                    shutil.move(data_file_path, storage_path)
+                    index = index + 1
 
             shutil.move(h5_path, storage_path)
+            os.rmdir(destination_folder)
             view_model_h5.close()
             OperationService().launch_operation(operation.id, True)
         except Exception as excep:
