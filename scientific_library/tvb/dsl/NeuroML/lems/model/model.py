@@ -15,7 +15,7 @@ from lems.base.map import Map
 # from lems.parser.LEMS import LEMSFileParser
 # sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
 from parser.LEMS import LEMSFileParser
-from base.util import merge_maps, merge_lists
+from lems.base.util import merge_maps, merge_lists
 from model.component import Constant,ComponentType,Component,FatComponent
 
 from lems.base.errors import ModelError

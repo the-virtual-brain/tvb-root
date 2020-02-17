@@ -1,0 +1,32 @@
+<Lems
+      xmlns="http://www.neuroml.org/lems/0.7.4"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
+      description="A number of ComponentTypes for rate based/population models">
+
+    <ComponentType name="Kuramoto"
+                   description="Base type of any cell/population which has a (dimensionless) rate _R."
+                   value="none">
+
+        <Constant name="omega" symbol="" dimension="lo=0.01, hi=200.0, step=0.1" value="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_coupling" dimension='float'/>
+        <Parameter name="global_speed" dimension='float'/>
+
+        <Exposure name="theta" dimension="sin(theta)"/>
+
+        <Dynamics>
+            <StateVariable name="theta" dimension="0.0, pi * 2.0"/>
+
+            <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
+            <!-- Default defined: c_0 = coupling[0, ] and lc_0 = local_coupling * {1st state variable} -->
+            <!-- Used here to introduce the sin wrapper -->
+            <DerivedVariable name="I" dimension="none" value="c_0 + sin(lc_0 * theta)"/>
+
+            <TimeDerivative variable="dV" exposure="" value="omega * I"/>
+        </Dynamics>
+
+    </ComponentType>
+
+</Lems>

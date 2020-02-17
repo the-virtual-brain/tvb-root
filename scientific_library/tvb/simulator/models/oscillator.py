@@ -7,84 +7,84 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class Generic2dOscillator(ModelNumbaDfun):
 
-            
+        
     tau = NArray(
         label=":math:`tau`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=5.0, step=0.01),
         doc="""A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."""
     )    
-            
+        
     I = NArray(
         label=":math:`I`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="""Baseline shift of the cubic nullcline"""
     )    
-            
+        
     a = NArray(
         label=":math:`a`",
         default=numpy.array([-2.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="""Vertical shift of the configurable nullcline"""
     )    
-            
+        
     b = NArray(
         label=":math:`b`",
         default=numpy.array([-10.0]),
         domain=Range(lo=-20.0, hi=15.0, step=0.01),
         doc="""Linear slope of the configurable nullcline"""
     )    
-            
+        
     c = NArray(
         label=":math:`c`",
         default=numpy.array([0]),
         domain=Range(lo=-10.0, hi=10.0, step=0.01),
         doc="""Parabolic term of the configurable nullcline"""
     )    
-            
+        
     d = NArray(
         label=":math:`d`",
         default=numpy.array([0.02]),
         domain=Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="""Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."""
     )    
-            
+        
     e = NArray(
         label=":math:`e`",
         default=numpy.array([3.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Coefficient of the quadratic term of the cubic nullcline."""
     )    
-            
+        
     f = NArray(
         label=":math:`f`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Coefficient of the cubic term of the cubic nullcline."""
     )    
-            
+        
     g = NArray(
         label=":math:`g`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.5),
         doc="""Coefficient of the linear term of the cubic nullcline."""
     )    
-            
+        
     alpha = NArray(
         label=":math:`alpha`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the slow variable to the fast variable."""
     )    
-            
+        
     beta = NArray(
         label=":math:`beta`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="""Constant parameter to scale the rate of feedback from the slow variable to itself"""
     )    
-            
+        
     gamma = NArray(
         label=":math:`gamma`",
         default=numpy.array([1.0]),
@@ -99,21 +99,18 @@ class Generic2dOscillator(ModelNumbaDfun):
         doc="""state variables"""
         )
 
-    state_variables = ('V', 'W')
-
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
-        choices=("sin(V)"),
+        choices=("'V', 'W', 'V + W', 'V - W'"),
         default=("V", ),
         doc="The quantities of interest for monitoring for the generic 2D oscillator."
     )
 
-
+    state_variables = ['V', 'W']
 
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
-
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
@@ -124,7 +121,6 @@ class Generic2dOscillator(ModelNumbaDfun):
         #[State_variables, nodes]
         c_0 = coupling[0, :]
 
-        # # TODO why does it not default auto to default
         tau = self.tau
         I = self.I
         a = self.a
@@ -140,6 +136,7 @@ class Generic2dOscillator(ModelNumbaDfun):
 
         derivative = numpy.empty_like(state_variables)
 
+
         ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * c_0 + lc_0)', out=derivative[0])
         ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
 
@@ -149,12 +146,12 @@ class Generic2dOscillator(ModelNumbaDfun):
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_g2d(vw_, c_, self.tau, self.I, self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.alpha, self.beta, self.gamma, lc_0)
+        deriv = _numba_dfun_Generic2dOscillator(vw_, c_, self.tau, self.I, self.a, self.b, self.c, self.d, self.e, self.f, self.g, self.alpha, self.beta, self.gamma, lc_0)
 
         return deriv.T[..., numpy.newaxis]
 
 @guvectorize([(float64[:],) * 16], '(n),(m)' + ',()'*13 + '->(n)', nopython=True)
-def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, alpha, beta, gamma, lc_0, dx):
+def _numba_dfun_Generic2dOscillator(vw, c_0, tau, I, a, b, c, d, e, f, g, alpha, beta, gamma, lc_0, dx):
     "Gufunc for Generic2dOscillator model equations."
 
     V = vw[0]
@@ -175,6 +172,7 @@ def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, alpha, beta, gamma, lc
     c_0 = c_0[0]
     lc_0 = lc_0[0]
 
+
     dx[0] = d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * c_0 + lc_0)
     dx[1] = d * (a + b * V + c * V**2 - beta * W) / tau
-                                    
+            

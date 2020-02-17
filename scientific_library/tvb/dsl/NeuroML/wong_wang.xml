@@ -10,14 +10,14 @@
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
-        <Constant name="a" symbol="NArray" dimension="lo=0.0, hi=0.270, step=0.01" value="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
-        <Constant name="b" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
-        <Constant name="d" symbol="NArray" dimension="lo=0.0, hi=200.0, step=0.01" value="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
-        <Constant name="gamma" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.641" description="Kinetic parameter"/>
-        <Constant name="tau_s" symbol="NArray" dimension="lo=50., hi=150., step=1." value="100." description="Kinetic parameter. NMDA decay time constant."/>
-        <Constant name="w" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.6" description="Excitatory recurrence"/>
-        <Constant name="J_N" symbol="NArray" dimension="lo=0.2609, hi=0.5, step=0.001" value="0.2609" description="Excitatory recurrence"/>
-        <Constant name="I_o" symbol="NArray" dimension="lo=0.0, hi=1.0, step=0.01" value="0.33" description="[nA] Effective external input"/>
+        <Constant name="a" symbol="" dimension="lo=0.0, hi=0.270, step=0.01" value="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d" symbol="" dimension="lo=0.0, hi=200.0, step=0.01" value="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.641" description="Kinetic parameter"/>
+        <Constant name="tau_s" symbol="" dimension="lo=50., hi=150., step=1." value="100." description="Kinetic parameter. NMDA decay time constant."/>
+        <Constant name="w" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.6" description="Excitatory recurrence"/>
+        <Constant name="J_N" symbol="" dimension="lo=0.2609, hi=0.5, step=0.001" value="0.2609" description="Excitatory recurrence"/>
+        <Constant name="I_o" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.33" description="[nA] Effective external input"/>
 <!--        <Constant name="sigma_noise" symbol="NArray" dimension="lo=0.0, hi=0.005, step=0.0001" value="0.000000001" description="[nA] Noise amplitude. Take this value into account for stochatic-->
 <!--        integration schemes."/>-->
 
@@ -28,22 +28,20 @@
         <Dynamics>
             <StateVariable name="S" dimension="0.0, 1.0"/>
 
-<!--            <DerivedVariable name="coupling_value" exposure="c_0" value="0.0" reduce="add"/>-->
-            <DerivedVariable name="nsig" exposure="float" value="sqrt(dt) * sqrt(2.0 * 1e-3)" reduce="add"/>
-            <DerivedVariable name="rec_speed_dt" exposure="float" value="1.0f / global_speed / (dt)" reduce="add"/>
-<!--            <DerivedVariable name="G" exposure="float" value="params" reduce="add"/>-->
-            <DerivedVariable name="lc_0" exposure="float" value="0.0"/>
+            <!-- Derived variables can be used to 'easify' the time dervivatives with temp variables -->
+            <!-- Default defined: c_0 = coupling[0, ] and lc_0 = local_coupling * {1st state variable} -->
+            <!-- Used here to split the time derivative in 2 parts -->
+            <DerivedVariable name="x" dimension="none" value="w * J_N * S + I_o + J_N * c_0 + J_N * lc_0"/>
+            <DerivedVariable name="H" dimension="none" value="(a * x - b) / (1 - exp(-d * (a * x - b)))"/>
 
-            <TimeDerivative variable="dS" exposure="dS" value="-(S / tau_s) + (1 - S) * ((a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b) / (1 - exp(-d * (a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b)))) * gamma"/>
+            <TimeDerivative variable="dS" exposure="dS" value="- (S / tau_s) + (1 - S) * H * gamma"/>
+
+<!--            <TimeDerivative variable="dS" exposure="dS" value="-(S / tau_s) + (1 - S) * ((a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b) / (1 - exp(-d * (a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b)))) * gamma"/>-->
         </Dynamics>
 
         <!-- Variables of interest. Use field dimension to specify choices. -->
         <Exposure name="S" dimension="S"/>
-<!--        <Exposure name="W" dimension="sin(W)"/>-->
 
     </ComponentType>
 
 </Lems>
-
-
-<!--Look at vector representation in XML LEMS-->

@@ -55,11 +55,12 @@ class TVB_test:
 	def tvb_python_model(self):
 		# populations = models.Generic2dOscillator()
 		populations = models.ReducedWongWang()
+		# populations = models.Kuramoto()
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations
 
-	def parse_args(self):#{{{
+	def parse_args(self):
 		parser = argparse.ArgumentParser(description='Run parameter sweep.')
 		parser.add_argument('-c', '--n_coupling', help='num grid points for coupling parameter', default=32, type=int)
 		parser.add_argument('-s', '--n_speed', help='num grid points for speed parameter', default=32, type=int)
