@@ -150,8 +150,8 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
 
     dep_html = docutils.core.publish_string(dep_text, writer_name='html4css1', settings=None,
                                             settings_overrides={
-                                            'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
-    with open(RESULT_FILE_NAME + '.html', 'w') as f:
+                                                'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
+    with open(RESULT_FILE_NAME + '.html', 'wb') as f:
         f.write(dep_html)
     # Create ZIP with included dependencies.
     if os.path.exists(RESULT_FILE_NAME + '.zip'):
