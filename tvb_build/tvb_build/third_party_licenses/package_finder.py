@@ -79,7 +79,8 @@ EXCLUDES_SO = [
 
 EXCLUDES_DYLIB = [
     'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.8.dylib',
-    'libssl.1.0.0.dylib', 'libpython2.7.dylib', 'libsz.2.0.0.dylib',
+    'libssl.1.0.0.dylib', 'libsz.2.0.0.dylib',
+    re.compile(r'libpython3.*\.dylib'),
     re.compile(r'libgcc.*\.dylib'),
     # Public domain:
     'liblzma.5.dylib',
@@ -271,5 +272,5 @@ def parse_tree_structure(root_, excludes=None):
 # Test case for Windows or Mac
 if __name__ == '__main__':
     ROOT = 'D:\Projects\Brain\dist-repo\TVB_distribution\library.zip'
-    ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python2.7'
+    ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python3.7'
     print(parse_tree_structure(ROOT))

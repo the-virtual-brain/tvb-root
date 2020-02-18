@@ -79,7 +79,8 @@ class Config:
         # TODO check paths
         set_path = 'cd ../tvb_data \n' + \
                    'export PATH=`pwd`/bin:$PATH \n' + \
-                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages \n' + \
+                   'export PYTHONPATH=`pwd`/lib/' + Environment.PYTHON_FOLDER + \
+                   ':`pwd`/lib/' + Environment.PYTHON_FOLDER + '/site-packages \n' + \
                    'export PYTHONIOENCODING=utf8 \n' + \
                    'unset PYTHONHOME \n\n' + \
                    '# export TVB_USER_HOME=`pwd` \n'
@@ -93,7 +94,7 @@ class Config:
             'demo_scripts/jupyter_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
         }
 
-        return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", "python2.7", "site-packages"),
+        return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
                       commands_map, _create_unix_command)
 
 
@@ -123,7 +124,8 @@ class Config:
     def linux64():
         set_path = 'cd ../tvb_data \n' + \
                    'export PATH=`pwd`/bin:$PATH \n' + \
-                   'export PYTHONPATH=`pwd`/lib/python2.7:`pwd`/lib/python2.7/site-packages \n' + \
+                   'export PYTHONPATH=`pwd`/lib/' + Environment.PYTHON_FOLDER + \
+                   ':`pwd`/lib/' + Environment.PYTHON_FOLDER + '/site-packages \n' + \
                    'export PYTHONIOENCODING=utf8 \n' + \
                    'unset PYTHONHOME \n\n' + \
                    '# export TVB_USER_HOME=`pwd` \n'
@@ -144,8 +146,7 @@ class Config:
             'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
         }
 
-        #TODO: This is changed to docker container env locations
-        return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", "python2.7", "site-packages"),
+        return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
                       commands_map, _create_unix_command)
 
 

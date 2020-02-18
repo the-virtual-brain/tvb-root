@@ -169,10 +169,6 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     return RESULT_FILE_NAME + '.zip'
 
 
-ROOT_WINDOWS = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_Windows', 'TVB_distribution', 'library.zip')
-ROOT_MAC = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_MacOS', 'TVB_distribution', 'tvb.app',
-                        'Contents', 'Resources', 'lib', 'python2.7')
-
 if __name__ == "__main__":
     # Run stand-alone.
     all_libs = parser.read_default()
