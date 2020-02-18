@@ -2,7 +2,7 @@
 from mako.template import Template 
 
 import sys
-sys.path.insert(0, 'NeuroML/lems/')
+# sys.path.insert(0, 'NeuroML/lems/')
 from model.model import Model
 
 def drift_templating(target):
