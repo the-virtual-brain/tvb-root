@@ -9,13 +9,15 @@ pipeline {
     stages {
         stage('Copy Step 1') {
              steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
                  step ([$class: 'CopyArtifact',
                      projectName: 'TVB - Step1',
                      selector: lastSuccessful(),
                      filter: 'tvb_build/build/TVB_build_step1.zip']);
                  sh '''#!/bin/bash
                        ls -all tvb_build/build
-                       ls -all ./*
                  '''
                  stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
              }
@@ -32,7 +34,6 @@ pipeline {
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build
-                    ls -all build
                     bash install_full_tvb.sh
                     rm -R -f build/TVB_Distribution
                     python build_from_conda.py
