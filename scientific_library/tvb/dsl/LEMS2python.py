@@ -5,27 +5,47 @@ import sys
 sys.path.insert(0, 'NeuroML/lems/')
 from model.model import Model
 
-# model file setting oscillator
-# modelname = 'Generic2dOscillator' # is also the class name
-# filename = 'oscillator' # TVB output file name
+def drift_templating(target):
 
-# model file setting oscillator
-modelname = 'ReducedWongWang' # is also the class name
-filename = 'wong_wang' # TVB output file name
+    def epileptor():
+        modelname = 'Epileptor_2D'
+        filename = 'epilipetor'
+        return modelname, filename
 
-# modelname = 'Kuramoto' # is also the class name
-# filename = 'kuramoto' # TVB output file name
+    def oscillator():
+        modelname = 'Generic2dOscillator' # is also the class name
+        filename = 'oscillator' # TVB output file name
+        return modelname, filename
 
-fp_xml = 'NeuroML/' + filename.lower() + '.xml'
-# modelfile="../models/python/" + modelname + ".py"
-# place results directly into tvb model directory
-modelfile="../simulator/models/" + filename.lower() + ".py"
+    def wong_wang():
+        modelname = 'ReducedWongWang' # is also the class name
+        filename = 'wong_wang' # TVB output file name
+        return modelname, filename
 
-model = Model()
-model.import_from_file(fp_xml)
-modelextended = model.resolve()
+    def kuramoto():
+        modelname = 'Kuramoto'  # is also the class name
+        filename = 'kuramoto'  # TVB output file name
+        return modelname, filename
 
-def drift_templating():
+    switcher = {
+        'Kuramoto': kuramoto,
+        'ReducedWongWang': wong_wang,
+        'Generic2dOscillator': oscillator,
+        'Epileptor': epileptor
+    }
+
+    func = switcher.get(target, 'invalid model choice')
+    modelname, filename = func()
+    print(modelname)
+
+    fp_xml = 'NeuroML/' + filename.lower() + '.xml'
+    # modelfile="../models/python/" + modelname + ".py"
+    # place results directly into tvb model directory
+    modelfile = "../simulator/models/" + filename.lower() + ".py"
+
+    model = Model()
+    model.import_from_file(fp_xml)
+    modelextended = model.resolve()
 
     # drift dynamics
     modelist = list()
@@ -97,7 +117,8 @@ def noise_templating():
         f.writelines(model_str)
 
 
-drift_templating()
+# drift_templating()
+
 # coupling_templating()
 # noise_templating()
 
