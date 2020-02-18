@@ -1,6 +1,6 @@
 # from tvb.simulator.lab import *
-import sys
-sys.path.insert(0, '../../../')
+import sys, os
+# sys.path.insert(0, '../../../')
 #from tvb.datatypes import connectivity
 # from tvb.simulator import integrators
 #from tvb.simulator import coupling
@@ -46,16 +46,25 @@ class TVB_test:
 		self.integrator = integrators.EulerDeterministic(dt=self.dt)
 
 	def tvb_connectivity(self, speed, global_coupling, dt=0.1):
-		white_matter = connectivity.Connectivity.from_file(source_file="data/connectivity_68.zip")
+		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_68.zip")
 		white_matter.configure()
 		white_matter.speed = np.array([speed])
 		white_matter_coupling = coupling.Linear(a=global_coupling)
 		return white_matter, white_matter_coupling
 	
-	def tvb_python_model(self):
+	def tvb_python_model(self, pop):
 		# populations = models.Generic2dOscillator()
-		populations = models.ReducedWongWang()
+		# populations = models.ReducedWongWang()
 		# populations = models.Kuramoto()
+		switcher = {
+			'Kuramoto': models.Kuramoto,
+			'ReducedWongWang': models.ReducedWongWang,
+			'Generic2dOscillator': models.Generic2dOscillator,
+			'Epileptor': models.EpileptorCodim3
+		}
+		func = switcher.get(pop, 'invalid model choice')
+		# logger.info('func %s', func)
+		populations = func()
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations
@@ -154,10 +163,12 @@ class TVB_test:
 
 		logger.info('result OK')
 
-	def regular(self):
+	def regular(self, logger, pop):
 		logger.info('start regular TVB run')
+		logger.info('model to run %s', pop)
+		print('model to run:', pop)
 		# Initialize Model
-		model = self.tvb_python_model()
+		model = self.tvb_python_model(pop)
 		# Initialize Monitors
 		monitorsen = (monitors.TemporalAverage(period=self.period))
 		# Initialize Simulator
@@ -217,89 +228,90 @@ class TVB_test:
 		logger.info('connectivity.speed %s', speeds.shape)
 		logger.info('params %s', params.T.shape)
 
+	def startsim(self, pop):
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-	tic = time.time()
-	tvbhpc = TVB_test()
+		tic = time.time()
+		tvbhpc = TVB_test()
 
-	args = tvbhpc.parse_args()
-	logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
-	logger = logging.getLogger('[tvbBench.py]')
-		
-	# dimensions#{{{
-	dt, tavg_period = 1.0, 10.0
-	nstep = args.n_time # 4s
-	n_inner_steps = int(tavg_period / dt)
-	states = 1
-	# if args.model == 'rww':
-	# 	states = 2
-	# TODO buf_len per speed/block
-	logger.info('dt %f', dt)
-	logger.info('nstep %d', nstep)
-	logger.info('caching strategy %r', args.caching)
-	logger.info('n_inner_steps %f', n_inner_steps)
-	if args.test and args.n_time % 200:
-		logger.warning('rerun w/ a multiple of 200 time steps (-n 200, -n 400, etc) for testing') #}}}
+		args = tvbhpc.parse_args()
+		logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+		logger = logging.getLogger('[tvbBench.py]')
 
-	#setup data
-	weights = tvbhpc.connectivity.weights
-	logger.info('weights.shape %s', weights.shape)
-	lengths = tvbhpc.connectivity.tract_lengths
-	logger.info('lengths.shape %s', lengths.shape)
-	n_nodes = weights.shape[0]
-	logger.info('n_nodes %d', n_nodes)	
+		# dimensions#{{{
+		dt, tavg_period = 1.0, 10.0
+		nstep = args.n_time # 4s
+		n_inner_steps = int(tavg_period / dt)
+		states = 1
+		# if args.model == 'rww':
+		# 	states = 2
+		# TODO buf_len per speed/block
+		logger.info('dt %f', dt)
+		logger.info('nstep %d', nstep)
+		logger.info('caching strategy %r', args.caching)
+		logger.info('n_inner_steps %f', n_inner_steps)
+		if args.test and args.n_time % 200:
+			logger.warning('rerun w/ a multiple of 200 time steps (-n 200, -n 400, etc) for testing') #}}}
 
-	# couplings and speeds are not derived from the regular TVB connection setup routine. these parameters are swooped every GPU spawn
-	nc = args.n_coupling
-	ns = args.n_speed
-	logger.info('single connectome, %d x %d parameter space', ns, nc)
-	logger.info('%d total num threads', ns * nc)
-	couplings, speeds = tvbhpc.setup_params(nc=nc, ns=ns)
-	params = tvbhpc.expand_params(couplings, speeds)
-	# # params = tvbhpc.expand_params(tvbhpc.coupling, tvbhpc.connectivity.speed)
-	# logger.info('coupling %s', couplings)
-	# logger.info('connectivity.speed %s', speeds)
-	# logger.info('coupling %s', (tvbhpc.coupling.pre))
-	# logger.info('connectivity.speed %s', dir(tvbhpc.connectivity.speed))
-	# logger.info('%f', params.T)
+		#setup data
+		weights = tvbhpc.connectivity.weights
+		logger.info('weights.shape %s', weights.shape)
+		lengths = tvbhpc.connectivity.tract_lengths
+		logger.info('lengths.shape %s', lengths.shape)
+		n_nodes = weights.shape[0]
+		logger.info('n_nodes %d', n_nodes)
 
-	n_work_items, n_params = params.shape
-	min_speed = speeds.min()
-	buf_len_ = ((lengths / min_speed / dt).astype('i').max() + 1)
-	logger.info('min_speed %f', min_speed)
-	buf_len = 2**np.argwhere(2**np.r_[:30] > buf_len_)[0][0]  # use next power of 2
-	logger.info('real buf_len %d, using power of 2 %d', buf_len_, buf_len)
+		# couplings and speeds are not derived from the regular TVB connection setup routine. these parameters are swooped every GPU spawn
+		nc = args.n_coupling
+		ns = args.n_speed
+		logger.info('single connectome, %d x %d parameter space', ns, nc)
+		logger.info('%d total num threads', ns * nc)
+		couplings, speeds = tvbhpc.setup_params(nc=nc, ns=ns)
+		params = tvbhpc.expand_params(couplings, speeds)
+		# # params = tvbhpc.expand_params(tvbhpc.coupling, tvbhpc.connectivity.speed)
+		# logger.info('coupling %s', couplings)
+		# logger.info('connectivity.speed %s', speeds)
+		# logger.info('coupling %s', (tvbhpc.coupling.pre))
+		# logger.info('connectivity.speed %s', dir(tvbhpc.connectivity.speed))
+		# logger.info('%f', params.T)
 
-	tac = time.time()
-	logger.info("Setup in: {}".format(tac - tic))
+		n_work_items, n_params = params.shape
+		min_speed = speeds.min()
+		buf_len_ = ((lengths / min_speed / dt).astype('i').max() + 1)
+		logger.info('min_speed %f', min_speed)
+		buf_len = 2**np.argwhere(2**np.r_[:30] > buf_len_)[0][0]  # use next power of 2
+		logger.info('real buf_len %d, using power of 2 %d', buf_len_, buf_len)
 
-	threadsperblock = len(couplings)
-	blockspergrid = len(speeds)
-	logger.info('threadsperblock %d', threadsperblock)
-	logger.info('blockspergrid %d', blockspergrid)
+		tac = time.time()
+		logger.info("Setup in: {}".format(tac - tic))
+
+		threadsperblock = len(couplings)
+		blockspergrid = len(speeds)
+		logger.info('threadsperblock %d', threadsperblock)
+		logger.info('blockspergrid %d', blockspergrid)
 
 
-	benchwhat = args.bench
-	# locals()[benchwhat]()
-	logger.info('benchwhat: %s', benchwhat)
-	# def bencher(benchwhat):
-	switcher = {
-		'regular': tvbhpc.regular,
-		'numba': tvbhpc.numba,
-		'numbac': tvbhpc.numbac,
-		'cuda': tvbhpc.cuda
-	}
-	func = switcher.get(benchwhat, 'invalid bench choice')
-	logger.info('func %s', func)
-	func()
+		benchwhat = args.bench
+		# locals()[benchwhat]()
+		logger.info('benchwhat: %s', benchwhat)
+		# def bencher(benchwhat):
+		switcher = {
+			'regular': tvbhpc.regular,
+			'numba': tvbhpc.numba,
+			'numbac': tvbhpc.numbac,
+			'cuda': tvbhpc.cuda
+		}
+		func = switcher.get(benchwhat, 'invalid bench choice')
+		logger.info('func %s', func)
+		func(logger, pop)
 
-	toc = time.time()
-	print("Finished python simulation successfully in: {}".format(toc - tac))
-	elapsed = toc - tic
-		# inform about time
-	logger.info('elapsed time %0.3f', elapsed)
-	logger.info('%0.3f M step/s', 1e-6 * nstep * n_inner_steps * n_work_items / elapsed)
-	logger.info('finished')
+		toc = time.time()
+		print("Finished python simulation successfully in: {}".format(toc - tac))
+		elapsed = toc - tic
+			# inform about time
+		logger.info('elapsed time %0.3f', elapsed)
+		logger.info('%0.3f M step/s', 1e-6 * nstep * n_inner_steps * n_work_items / elapsed)
+		logger.info('finished')
 
 	
