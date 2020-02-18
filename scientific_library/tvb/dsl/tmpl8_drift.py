@@ -47,10 +47,10 @@ class ${dfunname}(ModelNumbaDfun):
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
         % for i, itemC in enumerate(dynamics.state_variables):
-        ${itemC.name} = state_variables[${i}, :]
         %if (i == 0):
         lc_0 = local_coupling * ${itemC.name}
         %endif
+        ${itemC.name} = state_variables[${i},:]
         % endfor
 
         #[State_variables, nodes]

@@ -9,7 +9,7 @@ def drift_templating(target):
 
     def epileptor():
         modelname = 'Epileptor_2D'
-        filename = 'epilipetor'
+        filename = 'epileptor_2D'
         return modelname, filename
 
     def oscillator():

@@ -9,7 +9,7 @@ import sys, os
 # Generic2dOscillator
 # Epileptor
 
-target = 'ReducedWongWang'
+target = 'Epileptor'
 import LEMS2python as templating
 
 templating.drift_templating(target)
