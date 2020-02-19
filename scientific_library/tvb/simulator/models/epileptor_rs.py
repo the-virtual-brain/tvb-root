@@ -33,7 +33,7 @@
 """
 
 import numpy
-from .base import ModelNumbaDfun
+from simulator.models.base import ModelNumbaDfun
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 

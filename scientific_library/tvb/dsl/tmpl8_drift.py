@@ -47,14 +47,14 @@ class ${dfunname}(ModelNumbaDfun):
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
         % for i, itemC in enumerate(dynamics.state_variables):
-        %if (i == 0):
-        lc_0 = local_coupling * ${itemC.name}
-        %endif
+        ## %if (i == 0):
+        ## lc_0 = local_coupling * ${itemC.name}
+        ## %endif
         ${itemC.name} = state_variables[${i},:]
         % endfor
 
         #[State_variables, nodes]
-        c_0 = coupling[0, :]
+        ## c_0 = coupling[0, :]
 
         %for itemD in const:
         ${itemD.name} = self.${itemD.name}
@@ -67,6 +67,11 @@ class ${dfunname}(ModelNumbaDfun):
         ${der_var.name} = ${der_var.value}
         % endfor
 
+        ## conditional variables
+        % for i, con_der in enumerate(dynamics.conditional_derived_variables):
+        ${con_der.name} = ${con_der.dimension}
+        % endfor /
+
         % for i, item in enumerate(dynamics.time_derivatives):
         ##derivative[${i}] = ${item.value}
         ev('${item.value}', out=derivative[${i}])
@@ -75,41 +80,56 @@ class ${dfunname}(ModelNumbaDfun):
         return derivative
 
     def dfun(self, vw, c, local_coupling=0.0):
-        lc_0 = local_coupling * vw[0, :, 0]
+        ##lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         deriv = _numba_dfun_${dfunname}(vw_, c_, \
 %for itemE in const:
 self.${itemE.name}, \
 %endfor
-lc_0)
+local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
 ## signature is always the number of constants +4. the extras are vw, c_0, lc_0 and dx.
-@guvectorize([(float64[:],) * ${const.__len__()+4}], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
-def _numba_dfun_${dfunname}(vw, c_0, \
+# @guvectorize([(float64[:],) * ${const.__len__()+4}], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
+@guvectorize([(float64[:], float64[:], \
+% for i in range(const.__len__()+1):
+float64, \
+% endfor
+float64[:])], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
+
+def _numba_dfun_${dfunname}(vw, coupling, \
 % for itemI in const:
 ${itemI.name}, \
 % endfor
-lc_0, dx):
+local_coupling, dx):
     "Gufunc for ${dfunname} model equations."
 
     % for i, itemF in enumerate(dynamics.state_variables):
     ${itemF.name} = vw[${i}]
     % endfor
 
-    ## annotate with [0]
-    % for itemG in const:
-    ${itemG.name} = ${itemG.name}[0]
-    % endfor
-    c_0 = c_0[0]
-    lc_0 = lc_0[0]
-
     ## derived variables
     % for i, der_var in enumerate(dynamics.derived_variables):
     ${der_var.name} = ${der_var.value}
     % endfor
+
+    ## annotate with [0]
+    ## % for itemG in const:
+    ## ${itemG.name} = ${itemG.name}[0]
+    ## % endfor
+    ##c_0 = c_0[0]
+    ##lc_0 = local_coupling[0]
+
+    ## % for i, der_var in enumerate(dynamics.derived_variables):
+    ## ${der_var.name} = ${der_var.name}[0]
+    ## % endfor
+
+    ## conditional variables
+    % for i, con_der in enumerate(dynamics.conditional_derived_variables):
+    ${con_der.name} = ${con_der.dimension}
+    % endfor /
 
     % for i, itemH in enumerate(dynamics.time_derivatives):
     dx[${i}] = ${itemH.value}

@@ -8,8 +8,8 @@ from model.model import Model
 def drift_templating(target):
 
     def epileptor():
-        modelname = 'Epileptor_2D'
-        filename = 'epileptor_2D'
+        modelname = 'Epileptor'
+        filename = 'epileptor'
         return modelname, filename
 
     def oscillator():

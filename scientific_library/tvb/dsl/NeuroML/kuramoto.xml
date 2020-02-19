@@ -20,9 +20,10 @@
             <StateVariable name="theta" dimension="0.0, pi * 2.0"/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
-            <!-- Default defined: c_0 = coupling[0, ] and lc_0 = local_coupling * {1st state variable} -->
+            <!-- Use this to define global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
+            <!-- _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate) -->
             <!-- Used here to introduce the sin wrapper -->
-            <DerivedVariable name="I" dimension="none" value="c_0 + sin(lc_0 * theta)"/>
+            <DerivedVariable name="I" dimension="none" value="coupling[0] + sin(local_coupling * theta)"/>
 
             <TimeDerivative variable="dV" exposure="" value="omega * I"/>
         </Dynamics>
