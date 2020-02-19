@@ -196,6 +196,18 @@ class ClusterSettings(object):
         return None
 
 
+class HPCSettings(object):
+    """
+    HPC related specifications
+    """
+    SCHEDULER_SARUS = "sarus"
+
+    def __init__(self, manager):
+        self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
+        self.HPC_SCHEDULER = manager.get_attribute(stored.KEY_HPC_SCHEDULER, self.SCHEDULER_SARUS)
+        self.ACCEPTED_SCHEDULERS = {self.SCHEDULER_SARUS: self.SCHEDULER_SARUS}
+
+
 class WebSettings(object):
     """
     Web related specifications

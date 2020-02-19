@@ -38,7 +38,7 @@ import sys
 
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
-from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
+from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings, HPCSettings
 
 
 class BaseSettingsProfile(object):
@@ -71,6 +71,7 @@ class BaseSettingsProfile(object):
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
+        self.hpc = HPCSettings(self.manager)
         self.web = WebSettings(self.manager)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
