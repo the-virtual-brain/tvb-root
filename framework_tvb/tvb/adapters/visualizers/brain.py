@@ -250,7 +250,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         legend_labels = self._compute_legend_labels(min_val, max_val)
 
         data_shape = time_series_h5.read_data_shape()
-        state_variables = time_series_h5.labels_dimensions.load().get(time_series_h5.labels_ordering.load()[1], [])
+        state_variables = time_series.get_labels_for_dimension(1)
 
         if self.surface_h5 and self.region_map_gid:
             boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_gid,
