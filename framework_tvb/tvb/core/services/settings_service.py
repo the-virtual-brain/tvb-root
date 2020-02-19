@@ -65,6 +65,8 @@ class SettingsService(object):
     KEY_DB_URL = stored.KEY_DB_URL
     KEY_CLUSTER = stored.KEY_CLUSTER
     KEY_CLUSTER_SCHEDULER = stored.KEY_CLUSTER_SCHEDULER
+    KEY_HPC_SCHEDULER = stored.KEY_HPC_SCHEDULER
+    KEY_HPC = stored.KEY_HPC
     KEY_MAX_NR_THREADS = stored.KEY_MAX_THREAD_NR
     KEY_MAX_RANGE = stored.KEY_MAX_RANGE_NR
     KEY_MAX_NR_SURFACE_VERTEX = stored.KEY_MAX_NR_SURFACE_VERTEX
@@ -76,6 +78,7 @@ class SettingsService(object):
                           KEY_DB_URL, None,
                           KEY_PORT, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
+                          KEY_HPC, KEY_HPC_SCHEDULER,
                           KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
 
     def __init__(self):
@@ -124,10 +127,15 @@ class SettingsService(object):
             self.KEY_CLUSTER_SCHEDULER: {'label': 'Cluster Scheduler', 'readonly': False,
                                          'value': TvbProfile.current.cluster.CLUSTER_SCHEDULER, 'type': 'select',
                                          'options': TvbProfile.current.cluster.ACCEPTED_SCHEDULERS},
+            self.KEY_HPC: {'label': 'Run operations on HPC', 'value': TvbProfile.current.hpc.IS_HPC_RUN,
+                           'description': 'Check this only if the web-server machine has access to HPC.',
+                           'dtype': 'primitive', 'type': 'boolean'},
+            self.KEY_HPC_SCHEDULER: {'label': 'HPC Scheduler', 'readonly': False,
+                                     'value': TvbProfile.current.hpc.HPC_SCHEDULER, 'type': 'select',
+                                     'options': TvbProfile.current.hpc.ACCEPTED_SCHEDULERS},
             self.KEY_ADMIN_DISPLAY_NAME: {'label': 'Administrator Display Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                   'type': 'text', 'readonly': not first_run},
-
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                   'type': 'text', 'readonly': not first_run,
