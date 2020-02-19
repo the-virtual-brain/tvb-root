@@ -1,6 +1,6 @@
 # from tvb.simulator.lab import *
 import sys, os
-# sys.path.insert(0, '../../../')
+# sys.path.insert(0, '/home/michiel/Documents/TVB/tvb-root/scientific_library/')
 #from tvb.datatypes import connectivity
 # from tvb.simulator import integrators
 #from tvb.simulator import coupling
@@ -60,7 +60,7 @@ class TVB_test:
 			'Kuramoto': models.Kuramoto,
 			'ReducedWongWang': models.ReducedWongWang,
 			'Generic2dOscillator': models.Generic2dOscillator,
-			'Epileptor': models.EpileptorCodim3
+			'Epileptor': models.Epileptor
 		}
 		func = switcher.get(pop, 'invalid model choice')
 		# logger.info('func %s', func)
@@ -314,4 +314,6 @@ class TVB_test:
 		logger.info('%0.3f M step/s', 1e-6 * nstep * n_inner_steps * n_work_items / elapsed)
 		logger.info('finished')
 
-	
+if __name__ == '__main__':
+	zelf = TVB_test()
+	zelf.startsim('Epileptor')
