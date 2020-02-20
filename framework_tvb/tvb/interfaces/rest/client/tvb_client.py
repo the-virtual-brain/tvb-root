@@ -107,13 +107,12 @@ class TVBClient:
         """
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator, self.temp_folder)
 
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, data_files):
+    def launch_operation(self, project_gid, algorithm_class, view_model):
         """
         This is a more generic method of launching Analyzers. Given a project id, algorithm module, algorithm classname
         and a view model instance, this function will serialize the view model and will launch the analyzer.
         """
-        return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
-                                                   view_model, self.temp_folder, data_files)
+        return self.operation_api.launch_operation(project_gid, algorithm_class, view_model, self.temp_folder)
 
     def get_operation_status(self, operation_gid):
         """

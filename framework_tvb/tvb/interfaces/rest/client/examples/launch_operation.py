@@ -32,10 +32,10 @@ from uuid import UUID
 import time
 import tvb_data
 import os
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporterForm
-from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporterForm
-from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporterForm
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel, CSVConnectivityImporterForm
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
+from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel, CSVConnectivityImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
@@ -67,13 +67,9 @@ if __name__ == '__main__':
     conn_zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
     connectivity_view_model.uploaded = conn_zip_path
     connectivity_view_model.normalization = 'region'
-    file_name = ZIPConnectivityImporterForm.get_upload_information().keys()
-    data_files = {list(file_name)[0]: conn_zip_path}
 
     logger.info("Launching connectivity uploading operation...")
-    algorithm_module = 'tvb.adapters.uploaders.zip_connectivity_importer'
-    algorithm_class = 'ZIPConnectivityImporter'
-    operation_gid = tvb_client.launch_operation(project_gid, algorithm_module, algorithm_class, connectivity_view_model, data_files=data_files)
+    operation_gid = tvb_client.launch_operation(project_gid, ZIPConnectivityImporter, connectivity_view_model)
 
     while True:
         status = tvb_client.get_operation_status(operation_gid)
@@ -91,13 +87,9 @@ if __name__ == '__main__':
     surface_view_model.uploaded = surface_zip_path
     surface_view_model.surface_type = "Cortical Surface"
     surface_view_model.should_center = False
-    file_name = ZIPSurfaceImporterForm.get_upload_information().keys()
-    data_files = {list(file_name)[0]: surface_zip_path}
 
     logger.info("Launching surface uploading operation...")
-    algorithm_module = 'tvb.adapters.uploaders.zip_surface_importer'
-    algorithm_class = 'ZIPSurfaceImporter'
-    operation_gid = tvb_client.launch_operation(project_gid, algorithm_module, algorithm_class, surface_view_model, data_files=data_files)
+    operation_gid = tvb_client.launch_operation(project_gid, ZIPSurfaceImporter, surface_view_model)
 
     while True:
         status = tvb_client.get_operation_status(operation_gid)
@@ -123,13 +115,9 @@ if __name__ == '__main__':
     rm_view_model.connectivity = UUID(conn_db)
     surface_db = dao.get_datatype_by_gid(surface_result.gid).gid
     rm_view_model.surface = UUID(surface_db)
-    file_name = RegionMappingImporterForm.get_upload_information().keys()
-    data_files = {list(file_name)[0]: rm_text_path}
 
     logger.info("Launching region mapping upload operation...")
-    algorithm_module = 'tvb.adapters.uploaders.region_mapping_importer'
-    algorithm_class = 'RegionMappingImporter'
-    operation_gid = tvb_client.launch_operation(project_gid, algorithm_module, algorithm_class, rm_view_model, data_files=data_files)
+    operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_view_model)
 
     while True:
         status = tvb_client.get_operation_status(operation_gid)
@@ -149,13 +137,9 @@ if __name__ == '__main__':
     csv_view_model.tracts = csv_tracts_path
     csv = dao.get_datatype_by_gid(connectivity_result.gid).gid
     csv_view_model.input_data = UUID(csv)
-    file_names = CSVConnectivityImporterForm.get_upload_information().keys()
-    data_files = {list(file_names)[0]: csv_weights_path, list(file_names)[1]: csv_tracts_path}
 
     logger.info("Launching connectivity csv upload operation...")
-    algorithm_module = 'tvb.adapters.uploaders.csv_connectivity_importer'
-    algorithm_class = 'CSVConnectivityImporter'
-    operation_gid = tvb_client.launch_operation(project_gid, algorithm_module, algorithm_class, csv_view_model, data_files=data_files)
+    operation_gid = tvb_client.launch_operation(project_gid, CSVConnectivityImporter, csv_view_model)
 
     while True:
         status = tvb_client.get_operation_status(operation_gid)
