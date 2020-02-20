@@ -30,13 +30,15 @@
 
 import os
 import sys
+
 from flask import Flask
+from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder, Strings
-from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
+from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
@@ -46,8 +48,7 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetOpe
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
-from gevent.pywsgi import WSGIServer
-
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -130,6 +131,9 @@ def initialize_flask():
     api.add_namespace(name_space_datatypes)
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
+
+    # Register keycloak authorization manager
+    AuthorizationManager("C:/Users/bogdan.valean/Desktop/keycloak.json")
 
     http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
     http_server.serve_forever()

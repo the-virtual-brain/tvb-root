@@ -69,6 +69,14 @@ class InvalidIdentifierException(BaseRestException):
         return "No data found for the given identifier"
 
 
+class AuthorizationRequestException(BaseRestException):
+    def __init__(self, message=None, code=401):
+        super(AuthorizationRequestException, self).__init__(message, code)
+
+    def get_default_message(self):
+        return "Token is missing."
+
+
 class InvalidInputException(BadRequestException):
     def __init__(self, message=None, payload=None):
         super(InvalidInputException, self).__init__(message, payload=payload)
