@@ -202,7 +202,7 @@ class DataType(HasTraitsIndex):
 
 class DataTypeMatrix(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-    ndim = Column(Integer)
+    ndim = Column(Integer, default=0)
 
 
 class DataTypeGroup(DataType):

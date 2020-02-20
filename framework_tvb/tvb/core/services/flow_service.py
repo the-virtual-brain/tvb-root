@@ -239,7 +239,7 @@ class FlowService:
         :return: dict(category_name: List AlgorithmTransientGroup)
         """
         categories = dao.get_launchable_categories()
-        datatype_instance, filtered_adapters = self._get_launchable_algorithms(datatype_gid, categories)
+        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid, categories)
 
         if isinstance(datatype_instance, DataTypeGroup):
             # If part of a group, update also with specific analyzers of the child datatype
@@ -255,7 +255,7 @@ class FlowService:
         for c in categories:
             categories_dict[c.id] = c.displayname
 
-        return self._group_adapters_by_category(filtered_adapters, categories_dict)
+        return self._group_adapters_by_category(filtered_adapters, categories_dict), has_operations_warning
 
     def _get_launchable_algorithms(self, datatype_gid, categories):
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
@@ -275,12 +275,16 @@ class FlowService:
         launchable_adapters = dao.get_applicable_adapters(all_compatible_classes, categories_ids)
 
         filtered_adapters = []
+        has_operations_warning = False
         for stored_adapter in launchable_adapters:
             filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
-            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
-                filtered_adapters.append(stored_adapter)
+            try:
+                if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
+                    filtered_adapters.append(stored_adapter)
+            except TypeError:
+                has_operations_warning = True
 
-        return datatype, filtered_adapters
+        return datatype, filtered_adapters, has_operations_warning
 
 
     def _group_adapters_by_category(self, stored_adapters, categories):
