@@ -119,6 +119,13 @@ class DatatypeDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
+    def get_number_of_bursts(self, project_id):
+        try:
+            bursts = self.session.query(BurstConfiguration).filter_by(project_id=project_id)
+            return bursts.count()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
 
     def get_disk_size_for_operation(self, operation_id):
         """

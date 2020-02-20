@@ -214,7 +214,7 @@ class SimulatorController(BurstBaseController):
         BurstBaseController.__init__(self)
         self.last_loaded_form_url = SimulatorWizzardURLs.SET_CONNECTIVITY_URL
         self.range_parameters = SimulatorRangeParameters()
-        self.burst_service2 = BurstService()
+        self.burst_service = BurstService()
         self.simulator_service = SimulatorService()
         self.files_helper = FilesHelper()
         self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(
@@ -248,7 +248,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
 
         template_specification['burstConfig'] = burst_config
-        template_specification['burst_list'] = self.burst_service2.get_available_bursts(common.get_current_project().id)
+        template_specification['burst_list'] = self.burst_service.get_available_bursts(common.get_current_project().id)
         portlets_list = []  # self.burst_service.get_available_portlets()
         template_specification['portletList'] = portlets_list
         template_specification['selectedPortlets'] = json.dumps(portlets_list)
@@ -780,7 +780,8 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
-        next_form = SimulatorFinalFragment()
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
+        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
                                                           is_simulator_copy, is_simulator_load,
@@ -954,8 +955,8 @@ class SimulatorController(BurstBaseController):
         This is one alternative to 'chrome-back problem'.
         """
         session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        bursts = self.burst_service2.get_available_bursts(common.get_current_project().id)
-        self.burst_service2.populate_burst_disk_usage(bursts)
+        bursts = self.burst_service.get_available_bursts(common.get_current_project().id)
+        self.burst_service.populate_burst_disk_usage(bursts)
         return {'burst_list': bursts,
                 'selectedBurst': session_burst.id,
                 'first_fragment_url': SimulatorFragmentRenderingRules.FIRST_FORM_URL}
@@ -1048,7 +1049,7 @@ class SimulatorController(BurstBaseController):
         """
         validation_result = SimulatorFinalFragment.is_burst_name_ok(burst_name)
         if validation_result is True:
-            self.burst_service2.rename_burst(burst_id, burst_name)
+            self.burst_service.rename_burst(burst_id, burst_name)
             return {'success': "Simulation successfully renamed!"}
         else:
             self.logger.exception(validation_result)
@@ -1059,7 +1060,7 @@ class SimulatorController(BurstBaseController):
         """
         For each burst id received, get the status and return it.
         """
-        return self.burst_service2.update_history_status(json.loads(data['burst_ids']))
+        return self.burst_service.update_history_status(json.loads(data['burst_ids']))
 
     @cherrypy.expose
     @handle_error(redirect=False)
