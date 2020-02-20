@@ -201,6 +201,7 @@ class HPCSettings(object):
     HPC related specifications
     """
     SCHEDULER_SARUS = "sarus"
+    HPC_INPUT_FOLDER = None
 
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
