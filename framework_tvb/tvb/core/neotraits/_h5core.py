@@ -182,6 +182,10 @@ class H5File(object):
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         return self.generic_attributes
 
+    def gather_references_gids(self):
+        references = self.gather_references()
+        references_gids = [reference[1] for reference in references]
+        return references_gids
 
     def gather_references(self):
         ret = []

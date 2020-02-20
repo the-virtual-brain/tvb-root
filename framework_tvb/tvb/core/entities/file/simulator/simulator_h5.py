@@ -50,6 +50,13 @@ class SimulatorH5(SimulatorConfigurationH5):
         self.simulation_length = Scalar(Simulator.simulation_length, self)
         self.simulation_state = Reference(Attr(field_type=uuid.UUID), self, name='simulation_state')
 
+    def gather_references_gids(self):
+        references = super(SimulatorH5, self).gather_references_gids()
+        monitor_hex_gids = self.monitors.load()
+        monitor_gids = [uuid.UUID(monitor_hex_gid) for monitor_hex_gid in monitor_hex_gids]
+        references.extend(monitor_gids)
+        return references
+
     def store(self, datatype, scalars_only=False, store_references=False):
         # type: (Simulator, bool, bool) -> None
         self.gid.store(datatype.gid)
