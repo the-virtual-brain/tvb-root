@@ -780,7 +780,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
-        simulation_number = self.burst_service.get_available_bursts(common.get_current_project().id).__len__() + 1
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
         next_form = SimulatorFinalFragment(simulation_number=simulation_number)
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
