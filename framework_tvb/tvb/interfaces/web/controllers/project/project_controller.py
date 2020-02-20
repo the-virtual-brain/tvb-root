@@ -338,8 +338,12 @@ class ProjectController(BaseController):
         current_type = datatype_details.data_type
         datatype_gid = datatype_details.gid
         categories = {}
+        no_visualisers = None
         if not entity.invalid:
-            categories = self.flow_service.get_launchable_algorithms(datatype_gid)
+            try:
+                categories = self.flow_service.get_launchable_algorithms(datatype_gid)
+            except Exception as excep:
+                no_visualisers = 'Not all operations could be loaded for this input DataType. Contact the admin to check the logs!'
 
         is_group = False
         if datatype_details.operation_group_id is not None:
@@ -410,7 +414,11 @@ class ProjectController(BaseController):
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
         template_specification['baseUrl'] = TvbProfile.current.web.BASE_URL
-        return FlowController().fill_default_attributes(template_specification)
+        template_specification = FlowController().fill_default_attributes(template_specification)
+        if no_visualisers:
+            template_specification[common.KEY_MESSAGE] = no_visualisers
+            template_specification[common.KEY_MESSAGE_TYPE] = "warningMessage"
+        return template_specification
 
 
     @expose_fragment('project/linkable_projects')

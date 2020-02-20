@@ -280,6 +280,9 @@ class FlowService:
             if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                 filtered_adapters.append(stored_adapter)
 
+        if filtered_adapters.__len__() == 0:
+            raise OperationException("There are no valid adapters")
+
         return datatype, filtered_adapters
 
 
