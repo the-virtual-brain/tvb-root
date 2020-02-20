@@ -363,9 +363,7 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_index.state = 'INTERMEDIATE'
 
             state_variable_dimension_name = ts.labels_ordering[1]
-            if ts_index.user_tag_1:
-                ts_index.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
-            elif m_name in self.HAVE_STATE_VARIABLES:
+            if m_name in self.HAVE_STATE_VARIABLES:
                 selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
                 ts.labels_dimensions[state_variable_dimension_name] = selected_vois
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
