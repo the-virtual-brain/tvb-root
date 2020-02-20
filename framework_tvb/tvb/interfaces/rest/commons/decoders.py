@@ -34,11 +34,11 @@ from json import JSONDecoder
 
 class CustomDecoder(JSONDecoder):
     def __init__(self, *args, **kargs):
-        JSONDecoder.__init__(self, object_hook=self.date_hook,
+        JSONDecoder.__init__(self, object_hook=self.custom_hook,
                              *args, **kargs)
 
     @staticmethod
-    def date_hook(d):
+    def custom_hook(d):
         try:
             if '__type__' not in d:
                 return d

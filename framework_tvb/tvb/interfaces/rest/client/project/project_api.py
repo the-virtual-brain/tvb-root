@@ -49,7 +49,7 @@ class ProjectApi(MainApi):
         try:
             page_number = int(page_number)
         except ValueError:
-            raise ClientException(message="Invalid page number", code=400)
+            raise ClientException(message="Invalid page number")
         response = requests.get(self.build_request_url(RestLink.OPERATIONS_IN_PROJECT.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
         })), params={Strings.PAGE_NUMBER.value: page_number})

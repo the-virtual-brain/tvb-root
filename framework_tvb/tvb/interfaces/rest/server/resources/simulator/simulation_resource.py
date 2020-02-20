@@ -38,9 +38,9 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.resources.util import save_temporary_file
 from tvb.simulator.simulator import Simulator
 
 
@@ -57,7 +57,8 @@ class FireSimulationResource(RestResource):
         :start a simulation using a project id and a zip archive with the simulator data serialized
         """
         file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
-        zip_path = save_temporary_file(file)
+        destination_folder = RestResource.get_destination_folder()
+        zip_path = RestResource.save_temporary_file(file, destination_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
@@ -88,4 +89,4 @@ class FireSimulationResource(RestResource):
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
 
-        return operation.gid, 201
+        return operation.gid, HTTP_STATUS_CREATED

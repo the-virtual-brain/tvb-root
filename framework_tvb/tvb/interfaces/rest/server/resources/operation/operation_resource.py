@@ -29,8 +29,10 @@
 #
 
 import shutil
+import os
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.exceptions import ProjectServiceException
@@ -40,9 +42,9 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.resources.util import save_temporary_file
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
@@ -92,8 +94,9 @@ class LaunchOperationResource(RestResource):
         """
         :generic method of launching Analyzers
         """
-        file = self.extract_file_from_request()
-        h5_path = save_temporary_file(file)
+        model_file = self.extract_file_from_request()
+        destination_folder = RestResource.get_destination_folder()
+        h5_path = RestResource.save_temporary_file(model_file, destination_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
@@ -107,8 +110,9 @@ class LaunchOperationResource(RestResource):
         try:
             adapter_instance = ABCAdapter.build_adapter(algorithm)
             view_model = adapter_instance.get_view_model_class()()
-            with ViewModelH5(h5_path, view_model) as view_model_h5:
-                view_model_gid = view_model_h5.gid.load()
+
+            view_model_h5 = ViewModelH5(h5_path, view_model)
+            view_model_gid = view_model_h5.gid.load()
 
             # TODO: use logged user
             user_id = project.fk_admin
@@ -117,10 +121,22 @@ class LaunchOperationResource(RestResource):
                                                                  {})
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
+            if isinstance(adapter_instance, ABCUploader):
+
+                for key, value in adapter_instance.get_form_class().get_upload_information().items():
+                    data_file = self.extract_file_from_request(file_name=key, file_extension=value)
+                    data_file_path = RestResource.save_temporary_file(data_file, destination_folder)
+                    file_name = os.path.basename(data_file_path)
+                    upload_field = getattr(view_model_h5, key)
+                    upload_field.store(os.path.join(storage_path, file_name))
+                    shutil.move(data_file_path, storage_path)
+
             shutil.move(h5_path, storage_path)
+            os.rmdir(destination_folder)
+            view_model_h5.close()
             OperationService().launch_operation(operation.id, True)
         except Exception as excep:
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
 
-        return operation.gid, 201
+        return operation.gid, HTTP_STATUS_CREATED

@@ -78,6 +78,12 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return ObjSurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.obj'
+        }
+
 
 class ObjSurfaceImporter(ABCUploader):
     """

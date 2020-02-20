@@ -31,6 +31,8 @@
 from abc import abstractmethod
 
 from tvb.basic.exceptions import TVBException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_NOT_FOUND, \
+    HTTP_STATUS_SERVER_ERROR
 
 
 class BaseRestException(TVBException):
@@ -53,7 +55,7 @@ class BaseRestException(TVBException):
 
 class BadRequestException(BaseRestException):
     def __init__(self, message, payload=None):
-        super(BadRequestException, self).__init__(message, code=400, payload=payload)
+        super(BadRequestException, self).__init__(message, code=HTTP_STATUS_BAD_REQUEST, payload=payload)
 
     def get_default_message(self):
         return "Bad request error"
@@ -61,7 +63,7 @@ class BadRequestException(BaseRestException):
 
 class InvalidIdentifierException(BaseRestException):
     def __init__(self, message=None, payload=None):
-        super(InvalidIdentifierException, self).__init__(message, code=404, payload=payload)
+        super(InvalidIdentifierException, self).__init__(message, code=HTTP_STATUS_NOT_FOUND, payload=payload)
 
     def get_default_message(self):
         return "No data found for the given identifier"
@@ -78,7 +80,7 @@ class InvalidInputException(BadRequestException):
 class ServiceException(BaseRestException):
     message_prefix = "Something went wrong on the server side"
 
-    def __init__(self, message, code=500, payload=None):
+    def __init__(self, message, code=HTTP_STATUS_SERVER_ERROR, payload=None):
         super(ServiceException, self).__init__(message, code, payload)
         self.message = self.message_prefix + ": " + message
 
@@ -87,7 +89,7 @@ class ServiceException(BaseRestException):
 
 
 class ClientException(BaseRestException):
-    def __init__(self, message, code):
+    def __init__(self, message, code=HTTP_STATUS_BAD_REQUEST):
         super(ClientException, self).__init__(message, code)
 
     def get_default_message(self):

@@ -32,8 +32,10 @@ from tvb.core.neotraits.view_model import ViewModel, Str
 
 
 class UploaderViewModel(ViewModel):
+    REQUIRED_TYPE = None
 
     data_subject = Str(
         default=DataTypeMetaData.DEFAULT_SUBJECT,
         label='Subject'
     )
+

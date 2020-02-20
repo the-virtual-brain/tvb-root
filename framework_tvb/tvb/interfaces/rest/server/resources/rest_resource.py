@@ -27,22 +27,48 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import os
+import tempfile
 import flask
 from flask_restplus import Resource
+from tvb.basic.profile import TvbProfile
+from werkzeug.utils import secure_filename
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify
+
+USERS_PAGE_SIZE = 1000
 
 
 class RestResource(Resource):
     method_decorators = [rest_jsonify]
 
+
     @staticmethod
-    def extract_file_from_request(file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-        if 'file' not in flask.request.files:
-            raise BadRequestException('No file part in the request!')
-        file = flask.request.files['file']
+    def extract_file_from_request(file_name='model_file', file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+        if RestResource.is_path_in_files(file_name):
+            raise BadRequestException("No file '%s' in the request!" % file_name)
+        file = flask.request.files[file_name]
         if not file.filename.endswith(file_extension):
-            raise BadRequestException('Only %s files are allowed!' % file_extension)
+            raise BadRequestException("Only %s files are allowed!" % file_extension)
 
         return file
+
+    @staticmethod
+    def save_temporary_file(file, destination_folder):
+        filename = secure_filename(file.filename)
+        full_path = os.path.join(destination_folder, filename)
+        file.save(full_path)
+
+        return full_path
+
+    @staticmethod
+    def get_destination_folder():
+        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+        destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+
+        return destination_folder
+
+    @staticmethod
+    def is_path_in_files(file_name):
+        return file_name not in flask.request.files

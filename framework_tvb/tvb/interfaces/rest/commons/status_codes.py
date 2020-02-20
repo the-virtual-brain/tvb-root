@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -27,35 +27,43 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
-from functools import wraps
 
-from tvb.interfaces.rest.commons.decoders import CustomDecoder
-from tvb.interfaces.rest.commons.exceptions import ClientException
-
-
-def handle_response(func):
-    @wraps(func)
-    def decorator(*a, **b):
-        result = func(*a, **b)
-        response = result
-        classz = None
-
-        if isinstance(result, tuple):
-            response = result[0]
-            classz = result[1]
-
-        content = response.content
-        successful_call = response.ok
-
-        if successful_call:
-            if classz is not None:
-                return json.loads(content.decode('utf-8'),
-                                  object_hook=lambda d: classz(**d) if '__type__' not in d
-                                  else CustomDecoder.custom_hook(d))
-            return json.loads(content.decode('utf-8'), cls=CustomDecoder)
-
-        decoded_dict = json.loads(content.decode('utf-8'))
-        raise ClientException(decoded_dict['message'], decoded_dict['code'])
-
-    return decorator
+HTTP_STATUS_CONTINUE = 100
+HTTP_STATUS_SWITCH_PROTOCOLS = 101
+HTTP_STATUS_OK = 200
+HTTP_STATUS_CREATED = 201
+HTTP_STATUS_ACCEPTED = 202
+HTTP_STATUS_PARTIAL = 203
+HTTP_STATUS_NO_CONTENT = 204
+HTTP_STATUS_RESET_CONTENT = 205
+HTTP_STATUS_PARTIAL_CONTENT = 206
+HTTP_STATUS_AMBIGUOUS = 300
+HTTP_STATUS_MOVED = 301
+HTTP_STATUS_REDIRECT = 302
+HTTP_STATUS_REDIRECT_METHOD = 303
+HTTP_STATUS_NOT_MODIFIED = 304
+HTTP_STATUS_USE_PROXY = 305
+HTTP_STATUS_REDIRECT_KEEP_VERB = 307
+HTTP_STATUS_BAD_REQUEST = 400
+HTTP_STATUS_DENIED = 401
+HTTP_STATUS_PAYMENT_REQ = 402
+HTTP_STATUS_FORBIDDEN = 403
+HTTP_STATUS_NOT_FOUND = 404
+HTTP_STATUS_BAD_METHOD = 405
+HTTP_STATUS_NONE_ACCEPTABLE = 406
+HTTP_STATUS_PROXY_AUTH_REQ = 407
+HTTP_STATUS_REQUEST_TIMEOUT = 408
+HTTP_STATUS_CONFLICT = 409
+HTTP_STATUS_GONE = 410
+HTTP_STATUS_LENGTH_REQUIRED = 411
+HTTP_STATUS_PRECOND_FAILED = 412
+HTTP_STATUS_REQUEST_TOO_LARGE = 413
+HTTP_STATUS_URI_TOO_LONG = 414
+HTTP_STATUS_UNSUPPORTED_MEDIA = 415
+HTTP_STATUS_RETRY_WITH = 449
+HTTP_STATUS_SERVER_ERROR = 500
+HTTP_STATUS_NOT_SUPPORTED = 501
+HTTP_STATUS_BAD_GATEWAY = 502
+HTTP_STATUS_SERVICE_UNAVAIL = 503
+HTTP_STATUS_GATEWAY_TIMEOUT = 504
+HTTP_STATUS_VERSION_NOT_SUP = 505

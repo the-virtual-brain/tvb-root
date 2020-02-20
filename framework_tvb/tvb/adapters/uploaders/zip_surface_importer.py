@@ -76,7 +76,7 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ZIPSurfaceImporterForm, self).__init__(prefix, project_id)
-        self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, 'application/zip', self, name='uploaded')
+        self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, '.zip', self, name='uploaded')
         self.surface_type = SelectField(ZIPSurfaceImporterModel.surface_type, self, name='surface_type',
                                         choices=ALL_SURFACES_SELECTION)
         self.zero_based_triangles = BoolField(ZIPSurfaceImporterModel.zero_based_triangles, self,
@@ -86,6 +86,12 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
     @staticmethod
     def get_view_model():
         return ZIPSurfaceImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'uploaded': '.zip'
+        }
 
 
 class ZIPSurfaceImporter(ABCUploader):

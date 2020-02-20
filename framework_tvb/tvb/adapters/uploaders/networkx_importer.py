@@ -109,6 +109,12 @@ class NetworkxConnectivityImporterForm(ABCUploaderForm):
     def get_view_model():
         return NetworkxImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gpickle'
+        }
+
 
 class NetworkxConnectivityImporter(ABCUploader):
     """

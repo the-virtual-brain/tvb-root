@@ -79,7 +79,6 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
         return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 
-
     def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
@@ -87,13 +86,11 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         """
         return -1
 
-
     def get_required_disk_size(self, view_model):
         """
         As it is an upload algorithm and we do not have information about data, we can not approximate this.
         """
         return 0
-
 
     @staticmethod
     def read_list_data(full_path, dimensions=None, dtype=numpy.float64, skiprows=0, usecols=None):
@@ -112,7 +109,6 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
             file_ending = os.path.split(full_path)[1]
             exc.args = (exc.args[0] + " In file: " + file_ending,)
             raise
-
 
     @staticmethod
     def read_matlab_data(path, matlab_data_name=None):
@@ -135,3 +131,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
             available = [s for s in matlab_data if not double__(s)]
             raise KeyError("Could not find dataset named %s. Available datasets: %s" % (matlab_data_name, available))
+
+    @staticmethod
+    def get_upload_information():
+        return NotImplementedError

@@ -28,7 +28,7 @@
 #
 #
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.user_service import UserService
+from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
 from tvb.interfaces.rest.commons.dtos import UserDto, ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
@@ -40,7 +40,7 @@ class GetUsersResource(RestResource):
         """
         :return a list of system's users
         """
-        users = UserService.fetch_all_users()
+        users = UserService.fetch_all_users(page_size=USERS_PAGE_SIZE)
         return [UserDto(user) for user in users]
 
 

@@ -40,6 +40,7 @@ from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
+
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")

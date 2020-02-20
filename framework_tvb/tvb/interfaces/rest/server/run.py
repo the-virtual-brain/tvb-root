@@ -57,7 +57,6 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 FLASK_PORT = 9090
 
 
-
 def initialize_tvb(arguments):
     if not os.path.exists(TvbProfile.current.TVB_STORAGE):
         try:
