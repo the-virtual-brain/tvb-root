@@ -29,19 +29,18 @@
 #
 
 import flask
-from flask_restplus import Resource
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredResource
 
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
-class RetrieveDatatypeResource(Resource):
+class RetrieveDatatypeResource(SecuredResource):
 
     def get(self, datatype_gid):
         """

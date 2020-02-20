@@ -27,12 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from datetime import datetime, date
+import json
 from functools import wraps
 
-from flask import current_app
+from flask import current_app, request
 from flask.json import dumps
-from flask.json import JSONEncoder
+from keycloak.exceptions import KeycloakError
+from tvb.interfaces.rest.commons.exceptions import AuthorizationRequestException
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
+
+AUTH_HEADER = "Authorization"
+BEARER = "Bearer "
 
 
 def _convert(obj):
@@ -60,25 +65,23 @@ def rest_jsonify(func):
     return deco
 
 
-class CustomFlaskEncoder(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, datetime):
-            return {
-                '__type__': 'datetime',
-                'year': o.year,
-                'month': o.month,
-                'day': o.day,
-                'hour': o.hour,
-                'minute': o.minute,
-                'second': o.second,
-                'microsecond': o.microsecond,
-                'tzinfo': o.tzinfo,
-            }
-        if isinstance(o, date):
-            return {
-                '__type__': 'date',
-                'year': o.year,
-                'month': o.month,
-                'day': o.day,
-            }
-        return super().default(o)
+def secured(func):
+    @wraps(func)
+    def deco(*a, **b):
+        authorization = request.headers[AUTH_HEADER] if AUTH_HEADER in request.headers else None
+        if not authorization:
+            raise AuthorizationRequestException()
+
+        token = authorization.replace(BEARER, "")
+        try:
+            user_info = AuthorizationManager.get_keycloak_instance().userinfo(token)
+        except KeycloakError as kc_error:
+            try:
+                error_message = json.loads(kc_error.error_message.decode())['error_description']
+            except (KeyError, TypeError):
+                error_message = kc_error.error_message.decode()
+            raise AuthorizationRequestException(message=error_message, code=kc_error.response_code)
+
+        return func(*a, **b)
+
+    return deco
