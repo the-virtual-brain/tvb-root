@@ -105,8 +105,8 @@ class DirLoader(object):
         fname = self._locate(gid)
         return fname
 
-    def load(self, gid=None, fname=None):
-        # type: (typing.Union[uuid.UUID, str], str) -> HasTraits
+    def load(self, gid=None, fname=None, dt_class=None):
+        # type: (typing.Union[uuid.UUID, str], str, typing.Type[HasTraits]) -> HasTraits
         """
         Load from file a HasTraits entity. Either gid or fname should be given, or else an error is raised.
 
@@ -122,7 +122,7 @@ class DirLoader(object):
         sub_dt_refs = []
 
         with H5File.from_file(os.path.join(self.base_dir, fname)) as f:
-            datatype_cls = self.registry.get_datatype_for_h5file(type(f))
+            datatype_cls = dt_class or self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
             f.load_into(datatype)
 
