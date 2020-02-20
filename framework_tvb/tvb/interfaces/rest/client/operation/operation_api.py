@@ -54,7 +54,7 @@ class OperationApi(MainApi):
         return response, DataTypeDto
 
     @handle_response
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder, data_file_path_1=None, data_file_path_2=None):
+    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder, data_files=None):
         h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid)
 
         h5_file = ViewModelH5(h5_file_path, view_model)
@@ -64,13 +64,10 @@ class OperationApi(MainApi):
         model_file_obj = open(h5_file_path, 'rb')
         files = {"model_file": (os.path.basename(h5_file_path), model_file_obj)}
 
-        if data_file_path_1 is not None:
-            data_file_obj_1 = open(data_file_path_1, 'rb')
-            files['data_file_1'] = (os.path.basename(data_file_path_1), data_file_obj_1)
-
-        if data_file_path_2 is not None:
-            data_file_obj_2 = open(data_file_path_2, 'rb')
-            files['data_file_2'] = (os.path.basename(data_file_path_2), data_file_obj_2)
+        if data_files is not None:
+            for key, value in data_files.items():
+                data_file_obj = open(value, 'rb')
+                files[key] = (os.path.basename(value), data_file_obj)
 
         return requests.post(self.build_request_url(RestLink.LAUNCH_OPERATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid,

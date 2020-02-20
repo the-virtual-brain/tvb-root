@@ -87,6 +87,12 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return ZIPSurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'uploaded': '.zip'
+        }
+
 
 class ZIPSurfaceImporter(ABCUploader):
     """
@@ -104,12 +110,6 @@ class ZIPSurfaceImporter(ABCUploader):
 
     def get_output(self):
         return [SurfaceIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'uploaded': '.zip'
-        }
 
     @staticmethod
     def _make_surface(surface_type):

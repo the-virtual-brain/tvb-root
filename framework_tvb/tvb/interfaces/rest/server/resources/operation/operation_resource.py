@@ -123,15 +123,13 @@ class LaunchOperationResource(RestResource):
 
             if isinstance(adapter_instance, ABCUploader):
 
-                index = 1
-                for key, value in adapter_instance.get_upload_information().items():
-                    data_file = self.extract_file_from_request(file_name='data_file_' + str(index), file_extension=value)
+                for key, value in adapter_instance.get_form_class().get_upload_information().items():
+                    data_file = self.extract_file_from_request(file_name=key, file_extension=value)
                     data_file_path = RestResource.save_temporary_file(data_file, destination_folder)
                     file_name = os.path.basename(data_file_path)
                     upload_field = getattr(view_model_h5, key)
                     upload_field.store(os.path.join(storage_path, file_name))
                     shutil.move(data_file_path, storage_path)
-                    index = index + 1
 
             shutil.move(h5_path, storage_path)
             os.rmdir(destination_folder)

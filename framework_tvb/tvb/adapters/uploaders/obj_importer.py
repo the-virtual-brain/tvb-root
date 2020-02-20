@@ -78,6 +78,12 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return ObjSurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.obj'
+        }
+
 
 class ObjSurfaceImporter(ABCUploader):
     """
@@ -92,13 +98,6 @@ class ObjSurfaceImporter(ABCUploader):
 
     def get_output(self):
         return [SurfaceIndex]
-
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': '.obj'
-        }
 
     @transactional
     def launch(self, view_model):

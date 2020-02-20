@@ -89,6 +89,13 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return GIFTISurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gii',
+            'data_file_part2': '.gii'
+        }
+
 
 class GIFTISurfaceImporter(ABCUploader):
     """
@@ -104,13 +111,6 @@ class GIFTISurfaceImporter(ABCUploader):
 
     def get_output(self):
         return [SurfaceIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': '.gii',
-            'data_file_part2': '.gii'
-        }
 
     def launch(self, view_model):
         # type: (GIFTISurfaceImporterModel) -> [SurfaceIndex]

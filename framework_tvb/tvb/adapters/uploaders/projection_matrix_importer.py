@@ -107,6 +107,12 @@ class ProjectionMatrixImporterForm(ABCUploaderForm):
     def get_view_model():
         return ProjectionMatrixImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'projection_file': ('.mat', '.npy')
+        }
+
 
 class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
     """
@@ -122,12 +128,6 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
 
     def get_output(self):
         return [ProjectionMatrixIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'projection_file': ('.mat', '.npy')
-        }
 
     def launch(self, view_model):
         # type: (ProjectionMatrixImporterModel) -> [ProjectionMatrixIndex]

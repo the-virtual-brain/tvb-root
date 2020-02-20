@@ -64,6 +64,12 @@ class TVBImporterForm(ABCUploaderForm):
     def get_view_model():
         return TVBImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': ('.zip', '.h5')
+        }
+
 
 class TVBImporter(ABCUploader):
     """
@@ -79,12 +85,6 @@ class TVBImporter(ABCUploader):
 
     def get_output(self):
         return []
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': ('.zip', '.h5')
-        }
 
     def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
         """

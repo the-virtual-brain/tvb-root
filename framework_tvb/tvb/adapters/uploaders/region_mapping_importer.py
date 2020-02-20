@@ -89,6 +89,12 @@ class RegionMappingImporterForm(ABCUploaderForm):
     def get_view_model():
         return RegionMappingImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'mapping_file': ('.txt', '.zip', '.bz2')
+        }
+
 
 class RegionMappingImporter(ABCUploader):
     """
@@ -105,12 +111,6 @@ class RegionMappingImporter(ABCUploader):
 
     def get_output(self):
         return [RegionMappingIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'mapping_file': ('.txt', '.zip', '.bz2')
-        }
 
     def launch(self, view_model):
         # type: (RegionMappingImporterModel) -> [RegionMappingIndex]

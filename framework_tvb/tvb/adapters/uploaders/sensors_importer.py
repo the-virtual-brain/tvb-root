@@ -75,6 +75,12 @@ class SensorsImporterForm(ABCUploaderForm):
     def get_view_model():
         return SensorsImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'sensors_file': ('.txt', '.bz2')
+        }
+
 
 class SensorsImporter(ABCUploader):
     """
@@ -91,12 +97,6 @@ class SensorsImporter(ABCUploader):
 
     def get_output(self):
         return [SensorsIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'sensors_file': ('.txt', '.bz2')
-        }
 
     def launch(self, view_model):
         # type: (SensorsImporterModel) -> [SensorsIndex]

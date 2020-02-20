@@ -84,6 +84,12 @@ class TrackImporterForm(ABCUploaderForm):
     def get_view_model():
         return TrackImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.trk'
+        }
+
 
 class TrackZipImporterForm(TrackImporterForm):
 
@@ -105,12 +111,6 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
     def get_output(self):
         return [TractsIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': '.trk'
-        }
 
     def _get_tract_region(self, start_vertex):
         # Map to voxel index space

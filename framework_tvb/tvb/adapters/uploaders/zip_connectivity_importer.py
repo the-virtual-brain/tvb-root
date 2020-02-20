@@ -74,6 +74,12 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
     def get_view_model():
         return ZIPConnectivityImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'uploaded': '.zip'
+        }
+
 
 class ZIPConnectivityImporter(ABCUploader):
     """
@@ -98,12 +104,6 @@ class ZIPConnectivityImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'uploaded': '.zip'
-        }
 
     def launch(self, view_model):
         # type: (ZIPConnectivityImporterModel) -> [ConnectivityIndex]

@@ -123,6 +123,12 @@ class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
     def get_view_model():
         return RegionMatTimeSeriesImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.mat'
+        }
+
 
 class RegionTimeSeriesImporter(ABCUploader):
     """
@@ -138,12 +144,6 @@ class RegionTimeSeriesImporter(ABCUploader):
 
     def get_output(self):
         return [TimeSeriesRegionIndex, TimeSeriesEEGIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': '.mat'
-        }
 
     def create_region_ts(self, data_shape, connectivity):
         if connectivity.number_of_regions != data_shape[1]:

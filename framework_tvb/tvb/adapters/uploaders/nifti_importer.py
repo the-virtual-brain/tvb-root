@@ -101,6 +101,13 @@ class NIFTIImporterForm(ABCUploaderForm):
     def get_view_model():
         return NIFTIImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': ('.nii', '.gz', '.zip'),
+            'mappings_file': '.txt'
+        }
+
 
 class NIFTIImporter(ABCUploader):
     """
@@ -116,13 +123,6 @@ class NIFTIImporter(ABCUploader):
 
     def get_output(self):
         return [VolumeIndex, StructuralMRIIndex, TimeSeriesVolumeIndex, RegionVolumeMappingIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': ('.nii', '.gz', '.zip'),
-            'mappings_file': '.txt'
-        }
 
     def _create_volume(self):
         volume = Volume()

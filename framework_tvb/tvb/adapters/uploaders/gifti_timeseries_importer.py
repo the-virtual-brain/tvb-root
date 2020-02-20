@@ -75,6 +75,12 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
     def get_view_model():
         return GIFTITimeSeriesImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gii'
+        }
+
 
 class GIFTITimeSeriesImporter(ABCUploader):
     """
@@ -90,12 +96,6 @@ class GIFTITimeSeriesImporter(ABCUploader):
 
     def get_output(self):
         return [TimeSeriesSurfaceIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'data_file': '.gii'
-        }
 
     def launch(self, view_model):
         # type: (GIFTITimeSeriesImporterModel) -> [TimeSeriesSurfaceIndex]

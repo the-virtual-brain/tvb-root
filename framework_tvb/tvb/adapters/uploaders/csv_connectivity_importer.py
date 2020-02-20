@@ -157,6 +157,13 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
     def get_view_model():
         return CSVConnectivityImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'weights': '.csv',
+            'tracts': '.csv'
+        }
+
 
 class CSVConnectivityImporter(ABCUploader):
     """
@@ -177,13 +184,6 @@ class CSVConnectivityImporter(ABCUploader):
 
     def get_output(self):
         return [ConnectivityIndex]
-
-    @staticmethod
-    def get_upload_information():
-        return {
-            'weights': '.csv',
-            'tracts': '.csv'
-        }
 
     def _read_csv_file(self, csv_file, delimiter):
         """
