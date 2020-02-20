@@ -114,6 +114,8 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
 
+        ts_index = self.load_entity_by_gid(view_model.time_series.hex)
+
         if isinstance(ts_h5, TimeSeriesVolumeH5):
             volume_h5_class, volume_h5_path = self._load_h5_of_gid(ts_h5.volume.load().hex)
             volume_h5 = volume_h5_class(volume_h5_path)
@@ -135,8 +137,8 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),
-                      labelsStateVar=ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], []),
-                      labelsModes=list(range(ts_h5.data.shape[3])),
+                      labelsStateVar=ts_index.get_labels_for_dimension(1),
+                      labelsModes=list(range(ts_index.data_length_4d)),
                       minValue=min_value, maxValue=max_value,
                       urlVolumeData=url_volume_data,
                       urlTimeSeriesData=url_timeseries_data,
