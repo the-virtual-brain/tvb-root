@@ -281,7 +281,7 @@ class FlowService:
             try:
                 if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                     filtered_adapters.append(stored_adapter)
-            except Exception as excep:
+            except TypeError:
                 has_operations_warning = True
 
         return datatype, filtered_adapters, has_operations_warning
