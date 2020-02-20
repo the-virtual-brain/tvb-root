@@ -105,14 +105,14 @@ class DirLoader(object):
         fname = self._locate(gid)
         return fname
 
-    def load(self, gid):
-        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+    def load(self, gid, dt_class=None):
+        # type: (typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
         fname = self.find_file_name(gid)
 
         sub_dt_refs = []
 
         with H5File.from_file(os.path.join(self.base_dir, fname)) as f:
-            datatype_cls = self.registry.get_datatype_for_h5file(type(f))
+            datatype_cls = dt_class or self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
             f.load_into(datatype)
 
