@@ -43,7 +43,7 @@ LIBRARY_VERSION = "2.0.0"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["matplotlib-base", "networkx", "numba", "numexpr", "numpy", "scipy", "typing"]
+LIBRARY_REQUIRED_PACKAGES = ["matplotlib", "networkx", "numba", "numexpr", "numpy", "scipy", "typing"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
 
