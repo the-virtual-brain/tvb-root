@@ -33,9 +33,10 @@ from functools import wraps
 from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
+from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.exceptions import AuthorizationRequestException
-from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager, set_current_user
 
 
 def _convert(obj):
@@ -74,7 +75,13 @@ def secured(func):
         token = authorization.replace(Strings.BEARER.value, "")
         try:
             # Load user details
-            AuthorizationManager.get_keycloak_instance().userinfo(token)
+            kc_user_info = AuthorizationManager.get_keycloak_instance().userinfo(token)
+            external_id = kc_user_info['sub']
+            db_user = UserService.get_user_by_external_id(external_id)
+            if db_user is None:
+                db_user = UserService().create_external_service_user(kc_user_info)
+            set_current_user(db_user)
+
         except KeycloakError as kc_error:
             try:
                 error_message = json.loads(kc_error.error_message.decode())['error_description']

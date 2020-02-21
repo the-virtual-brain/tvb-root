@@ -37,8 +37,8 @@ DAO operation related to Users and Projects are defined here.
 
 from sqlalchemy import or_, and_, func
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import desc
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_datatype import DataType, Links
 from tvb.core.entities.model.model_operation import Operation
@@ -71,6 +71,15 @@ class CaseDAO(RootDAO):
             user = self.session.query(User).filter_by(username=name).one()
         except SQLAlchemyError:
             self.logger.debug("Could not retrieve user for name " + str(name))
+        return user
+
+    def get_user_by_external_id(self, external_id):
+        """Retrieve USER entity by external id."""
+        user = None
+        try:
+            user = self.session.query(User).filter_by(external_id=external_id).one()
+        except SQLAlchemyError:
+            self.logger.debug("Could not retrieve user for external_id " + external_id)
         return user
 
     def get_system_user(self):
