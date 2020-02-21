@@ -29,16 +29,17 @@
 #
 import os
 import tempfile
+
 import flask
 from flask_restplus import Resource
 from tvb.basic.profile import TvbProfile
-from werkzeug.utils import secure_filename
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
-
+from werkzeug.utils import secure_filename
 
 USERS_PAGE_SIZE = 1000
+
 
 class SecuredResource(Resource):
     method_decorators = [secured]
@@ -49,7 +50,8 @@ class RestResource(SecuredResource):
 
     def __init__(self, *args, **kwargs):
         super(RestResource, self).__init__(args, kwargs)
-        self.method_decorators.extend(super().method_decorators)
+        if not all(decorator in self.method_decorators for decorator in super().method_decorators):
+            self.method_decorators.extend(super().method_decorators)
 
     @staticmethod
     def extract_file_from_request(file_name='model_file', file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
