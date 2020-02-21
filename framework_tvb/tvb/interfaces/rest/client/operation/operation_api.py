@@ -29,7 +29,7 @@
 #
 
 import os
-import requests
+
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.interfaces.rest.client.client_decorators import handle_response
@@ -41,13 +41,13 @@ from tvb.interfaces.rest.commons.dtos import DataTypeDto
 class OperationApi(MainApi):
     @handle_response
     def get_operation_status(self, operation_gid):
-        return requests.get(self.build_request_url(RestLink.OPERATION_STATUS.compute_url(True, {
+        return self.secured_request().get(self.build_request_url(RestLink.OPERATION_STATUS.compute_url(True, {
             LinkPlaceholder.OPERATION_GID.value: operation_gid
         })))
 
     @handle_response
     def get_operations_results(self, operation_gid):
-        response = requests.get(
+        response = self.secured_request().get(
             self.build_request_url(RestLink.OPERATION_RESULTS.compute_url(True, {
                 LinkPlaceholder.OPERATION_GID.value: operation_gid
             })))
@@ -69,7 +69,7 @@ class OperationApi(MainApi):
             data_file_obj = open(path, 'rb')
             files[key] = (os.path.basename(path), data_file_obj)
 
-        return requests.post(self.build_request_url(RestLink.LAUNCH_OPERATION.compute_url(True, {
+        return self.secured_request().post(self.build_request_url(RestLink.LAUNCH_OPERATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid,
             LinkPlaceholder.ALG_MODULE.value: algorithm_class.__module__,
             LinkPlaceholder.ALG_CLASSNAME.value: algorithm_class.__name__

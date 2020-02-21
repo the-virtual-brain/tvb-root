@@ -31,7 +31,6 @@
 import os
 import tempfile
 
-import requests
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.simulator.simulator import SimulatorIndex
@@ -56,6 +55,6 @@ class SimulationApi(MainApi):
         FilesHelper().zip_folder(zip_folder_path, destination_folder)
 
         file_obj = open(zip_folder_path, 'rb')
-        return requests.post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {
+        return self.secured_request().post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
         })), files={"file": ("SimulationData.zip", file_obj)})

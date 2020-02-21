@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import requests
 from tvb.interfaces.rest.commons import Strings
 
 
@@ -35,11 +36,26 @@ class MainApi:
     Base API class which will be inherited by all the API specific subclasses
     """
 
-    def __init__(self, server_url):
+    def __init__(self, server_url, auth_token=''):
+        # type: (str, str) -> None
         """
         Rest server url, where all rest calls will be made
+        :param server_url: REST server base URL
+        :param auth_token: Keycloak authorization token
         """
         self.server_url = server_url + "/" + Strings.BASE_PATH.value
+        self.authorization_token = auth_token
 
     def build_request_url(self, url):
         return self.server_url + url
+
+    def secured_request(self):
+        """
+        Build a secured request protected by the authorization token set before, used in the entire session
+        :return: secured requests session
+        """
+
+        authorization_header = {Strings.AUTH_HEADER.value: Strings.BEARER.value + self.authorization_token}
+        with requests.Session() as request_session:
+            request_session.headers.update(authorization_header)
+            return request_session

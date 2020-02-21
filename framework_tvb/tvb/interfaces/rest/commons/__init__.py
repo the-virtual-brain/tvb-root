@@ -34,6 +34,8 @@ from enum import Enum
 class Strings(Enum):
     PAGE_NUMBER = "page"
     BASE_PATH = "api"
+    BEARER = "Bearer "
+    AUTH_HEADER = "Authorization"
 
 
 class RestNamespace(Enum):
