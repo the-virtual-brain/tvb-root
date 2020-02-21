@@ -59,6 +59,7 @@ from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
+from tvb.basic.profile import TvbProfile
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
@@ -239,6 +240,9 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map = None
         region_volume_map = None
 
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            return region_map, region_volume_map
+
         region_map_index = self._try_find_mapping(RegionMappingIndex, self.algorithm.connectivity.gid.hex)
         region_volume_map_index = self._try_find_mapping(RegionVolumeMappingIndex, self.algorithm.connectivity.gid.hex)
 
@@ -266,8 +270,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.algorithm.configure(full_configure=False)
         if self.branch_simulation_state_gid is not None:
-            history_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
-            history = h5.load_from_index(history_index)
+            history = self.load_traited_by_gid(self.branch_simulation_state_gid)
             assert isinstance(history, SimulationHistory)
             history.fill_into(self.algorithm)
 
