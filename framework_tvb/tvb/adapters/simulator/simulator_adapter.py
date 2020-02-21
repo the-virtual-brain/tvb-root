@@ -61,6 +61,7 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
 from tvb.core.neocom import h5
+from tvb.basic.profile import TvbProfile
 
 
 class CortexViewModel(ViewModel, Cortex):
@@ -197,24 +198,21 @@ class SimulatorAdapter(ABCAsynchronous):
 
         if view_model.surface:
             simulator.surface = Cortex()
-            rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
-            rm = h5.load_from_index(rm_index)
+            rm = self.load_traited_by_gid(view_model.surface.region_mapping_data)
 
-            rm_surface_index = self.load_entity_by_gid(rm_index.surface_gid)
-            rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
+            rm_surface = self.load_traited_by_gid(rm.surface.gid, CorticalSurface)
             rm.surface = rm_surface
             rm.connectivity = conn
 
             simulator.surface.region_mapping_data = rm
             if simulator.surface.local_connectivity:
                 lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
-                assert lc.surface.gid == rm_index.surface_gid
+                assert lc.surface.gid == rm.surface.gid.hex
                 lc.surface = rm_surface
                 simulator.surface.local_connectivity = lc
 
         if view_model.stimulus:
-            stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
-            stimulus = h5.load_from_index(stimulus_index)
+            stimulus = self.load_traited_by_gid(view_model.stimulus)
             simulator.stimulus = stimulus
 
         simulator.model = view_model.model
@@ -315,6 +313,9 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map = None
         region_volume_map = None
 
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            return region_map, region_volume_map
+
         region_map_index = self._try_find_mapping(RegionMappingIndex, self.algorithm.connectivity.gid.hex)
         region_volume_map_index = self._try_find_mapping(RegionVolumeMappingIndex, self.algorithm.connectivity.gid.hex)
 
@@ -342,8 +343,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.algorithm.configure(full_configure=False)
         if self.branch_simulation_state_gid is not None:
-            history_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
-            history = h5.load_from_index(history_index)
+            history = self.load_traited_by_gid(self.branch_simulation_state_gid)
             assert isinstance(history, SimulationHistory)
             history.fill_into(self.algorithm)
 

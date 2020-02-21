@@ -34,6 +34,7 @@ from tvb.adapters.datatypes.h5.structural_h5 import VolumetricDataMixin
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
+from tvb.datatypes.surfaces import Surface
 
 
 class RegionMappingH5(H5File):
@@ -55,6 +56,12 @@ class RegionMappingH5(H5File):
         """
         return self.array_data.load()[int(start_idx): int(end_idx)].T
 
+    def load_into(self, datatype):
+        # type: (RegionMapping) -> None
+        super(RegionMappingH5, self).load_into(datatype)
+        datatype.surface = Surface()
+        datatype.surface.gid = self.surface.load()
+        # TODO: a dummy surface is prepared here only to have the gid
 
 
 class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):

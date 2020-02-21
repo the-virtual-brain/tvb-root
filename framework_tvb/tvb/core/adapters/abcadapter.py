@@ -44,6 +44,7 @@ import importlib
 from functools import wraps
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
+import typing
 from six import add_metaclass
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -327,20 +328,14 @@ class ABCAdapter(object):
         else:
             self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
 
-    @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
-        """
-        Method to wrap LAUNCH.
-        Will prepare data, and store results on return. 
-        """
+    def _extract_operation_data(self, operation):
         self.meta_data.update(json.loads(operation.meta_data))
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        self.configure(view_model)
-
+    def _ensure_enough_resources(self, available_disk_space, view_model):
         # Compare the amount of memory the current algorithms states it needs,
         # with the average between the RAM available on the OS and the free memory at the current moment.
         # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
@@ -363,10 +358,23 @@ class ABCAdapter(object):
             msg = ("You only have %.2f GB of disk space available but the operation you "
                    "launched might require %.2f Stopping execution...")
             raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
+        return required_disk_space
 
+    def _update_operation_entity(self, operation, required_disk_space):
         operation.start_now()
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
+
+    @nan_not_allowed()
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+        """
+        Method to wrap LAUNCH.
+        Will prepare data, and store results on return. 
+        """
+        self._extract_operation_data(operation)
+        self.configure(view_model)
+        required_disk_size = self._ensure_enough_resources(available_disk_space, view_model)
+        self._update_operation_entity(operation, required_disk_size)
 
         self._prepare_generic_attributes(uid)
         result = self.launch(view_model)
@@ -449,6 +457,9 @@ class ABCAdapter(object):
         """
         Return true if this adapter is launched from a group of operations
         """
+        # TODO: treat this check
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            return False
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
 
@@ -462,13 +473,16 @@ class ABCAdapter(object):
         return load_entity_by_gid(data_gid)
 
     @staticmethod
-    def load_traited_by_gid(data_gid):
-        # type: (uuid.UUID) -> HasTraits
+    def load_traited_by_gid(data_gid, dt_class=None):
+        # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
+        if TvbProfile.current.hpc.IS_HPC_RUN:
+            return h5.load_from_dir(TvbProfile.current.hpc.HPC_INPUT_FOLDER, data_gid, dt_class=dt_class)
+
         index = load_entity_by_gid(data_gid.hex)
-        return h5.load_from_index(index)
+        return h5.load_from_index(index, dt_class)
 
     @staticmethod
     def load_with_references(dt_gid):
