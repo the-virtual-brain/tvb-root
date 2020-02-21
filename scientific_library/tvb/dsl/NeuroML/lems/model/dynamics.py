@@ -170,7 +170,7 @@ class ConditionalDerivedVariable(LEMSBase):
     Store the specification of a conditional derived variable.
     """
 
-    def __init__(self, name, dimension, exposure = None):
+    def __init__(self, name, condition, exposure = None, cases = None):
         """
         Constructor.
 
@@ -181,7 +181,7 @@ class ConditionalDerivedVariable(LEMSBase):
         """ Name of the derived variable.
         @type: str """
 
-        self.dimension = dimension
+        self.condition = condition
         """ Dimension of the state variable.
         @type: str """
 
@@ -189,7 +189,7 @@ class ConditionalDerivedVariable(LEMSBase):
         """ Exposure name for the state variable.
         @type: str """
         
-        self.cases = list()
+        self.cases = list(cases.split(", "))
         """ List of cases related to this conditional derived variable.
         @type: list(lems.model.dynamics.Case) """
         

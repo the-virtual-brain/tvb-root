@@ -16,7 +16,7 @@ target="Epileptor"
 # make a model template
 templating.drift_templating(target)
 
-#     # run tvb with model template
+# run tvb with model template
 testTemplSim = TemplSim.TVB_test()
 testTemplSim.startsim(target)
 

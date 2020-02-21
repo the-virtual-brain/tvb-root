@@ -276,7 +276,7 @@ class Model(LEMSBase):
         parser = LEMSFileParser(self, inc_dirs, self.include_includes)
         with open(filepath) as f:
             parser.parse(f.read())
-        
+
     # def export_to_dom(self):
     #     """
     #     Exports this model to a DOM.
@@ -346,7 +346,9 @@ class Model(LEMSBase):
 
         for c in ct.constants:
             c2 = c.copy()
-            c2.numeric_value = model.get_numeric_value(c2.value, c2.dimension)
+            # added to exclude True and False values for value
+            if (c2.value != 'False' and c2.value != 'True'):
+                c2.numeric_value = model.get_numeric_value(c2.value, c2.dimension)
             model.add(c2)
 
         return model

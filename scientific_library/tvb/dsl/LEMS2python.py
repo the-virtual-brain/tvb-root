@@ -34,6 +34,7 @@ def drift_templating(target):
         'Epileptor': epileptor
     }
 
+    # target='Kuramoto'
     func = switcher.get(target, 'invalid model choice')
     modelname, filename = func()
     print(modelname)
@@ -50,6 +51,7 @@ def drift_templating(target):
     # drift dynamics
     modelist = list()
     modelist.append(model.component_types[modelname])
+    # print((modelist[0].dynamics.conditional_derived_variables['ctmp0'].cases[1]))
 
     # start templating
     template = Template(filename='tmpl8_drift.py')

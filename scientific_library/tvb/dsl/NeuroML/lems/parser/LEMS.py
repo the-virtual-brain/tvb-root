@@ -801,12 +801,17 @@ class LEMSFileParser(LEMSBase):
         else:
             exposure = None
             
-        if 'dimension' in node.lattrib:
-            dimension = node.lattrib['dimension']
+        if 'condition' in node.lattrib:
+            condition = node.lattrib['condition']
         else:
-            dimension = None
+            condition = None
 
-        conditional_derived_variable = ConditionalDerivedVariable(name, dimension, exposure)
+        if 'cases' in node.lattrib:
+            cases = node.lattrib['cases']
+        else:
+            cases = None
+
+        conditional_derived_variable = ConditionalDerivedVariable(name, condition, exposure, cases)
         
         self.current_regime.add_conditional_derived_variable(conditional_derived_variable)
         
