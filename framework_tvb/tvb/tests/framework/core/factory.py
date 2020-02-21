@@ -194,7 +194,6 @@ class TestFactory(object):
         burst = BurstConfiguration(project_id)
         if simulator_config is not None:
             burst.simulator_configuration = simulator_config
-        burst.prepare_before_save()
         return dao.store_entity(burst)
 
     @staticmethod
@@ -243,7 +242,7 @@ class TestFactory(object):
         :param import_file_path: absolute path of the file to be imported
         """
 
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
@@ -258,7 +257,7 @@ class TestFactory(object):
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         surface = CorticalSurface
@@ -273,7 +272,7 @@ class TestFactory(object):
 
     @staticmethod
     def import_surface_zip(user, project, zip_path, surface_type, zero_based='True'):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
 
         form = ZIPSurfaceImporterForm()
@@ -288,7 +287,7 @@ class TestFactory(object):
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
@@ -301,7 +300,7 @@ class TestFactory(object):
 
     @staticmethod
     def import_surface_obj(user, project, obj_path, surface_type):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
 
         form = ObjSurfaceImporterForm()
@@ -314,7 +313,7 @@ class TestFactory(object):
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
@@ -331,7 +330,7 @@ class TestFactory(object):
                 :param import_file_path: absolute path of the file to be imported
                 """
 
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
 
         form = SensorsImporterForm()
@@ -345,7 +344,7 @@ class TestFactory(object):
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
 
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
@@ -375,7 +374,7 @@ class TestFactory(object):
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch Operation
+        # Launch Operation
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
