@@ -30,7 +30,7 @@
 
 from sqlalchemy import String, ForeignKey, Column, Integer, Float
 from sqlalchemy.orm import relationship
-from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.neotraits.db import HasTraitsIndex, ensure_float
 from tvb.tests.framework.core.neotraits.data import FooDatatype
 
 
@@ -45,8 +45,8 @@ class BazIndex(HasTraitsIndex):
     scalar_str = Column(String)
 
     def fill_from_has_traits(self, datatype):
-        self.miu_min = datatype.miu.min()
-        self.miu_max = datatype.miu.max()
+        self.miu_min = ensure_float(datatype.miu.min())
+        self.miu_max = ensure_float(datatype.miu.max())
         self.miu_mean = datatype.miu.mean()
         self.scalar_str = datatype.scalar_str
 
