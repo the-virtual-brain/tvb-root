@@ -54,7 +54,7 @@
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
             <!-- Population 1 -->if
-            <ConditionalDerivedVariable name="ydot0" exposure="" condition="x1 &lt; 0.0" cases="-a * x1**2 + b, slope - x2 + 0.6 * (z - 4)**2"/>
+            <ConditionalDerivedVariable name="ydot0" exposure="" condition="x1 &lt; 0.0" cases="-a * x1**2 + b * x1, slope - x2 + 0.6 * (z - 4)**2 "/>
 <!--            <ConditionalDerivedVariable name="else_x1" exposure="" dimension="(x1 &gt;= 0.0) * (slope - x2 + 0.6 * (z - 4)**2)"/>-->
             <TimeDerivative variable="dx1" exposure="" value="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
             <TimeDerivative variable="dy1" exposure="" value="tt * (c - d * x1**2 - y1)"/>
