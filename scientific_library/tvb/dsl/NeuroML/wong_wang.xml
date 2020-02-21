@@ -26,12 +26,14 @@
         <Parameter name="global_speed" dimension="float" />
 
         <Dynamics>
-            <StateVariable name="S" dimension="0.0, 1.0"/>
+            <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
+            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
+            <StateVariable name="S" dimension="0.0, 1.0" boundaries="0.0, 1.0"/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives with temp variables -->
-            <!-- Default defined: c_0 = coupling[0, ] and lc_0 = local_coupling * {1st state variable} -->
+            <!-- Use this to define global and local coupling: coupling[0] and local_coupling -->
             <!-- Used here to split the time derivative in 2 parts -->
-            <DerivedVariable name="x" dimension="none" value="w * J_N * S + I_o + J_N * c_0 + J_N * lc_0"/>
+            <DerivedVariable name="x" dimension="none" value="w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling"/>
             <DerivedVariable name="H" dimension="none" value="(a * x - b) / (1 - exp(-d * (a * x - b)))"/>
 
             <TimeDerivative variable="dS" exposure="dS" value="- (S / tau_s) + (1 - S) * H * gamma"/>

@@ -20,7 +20,19 @@ class ${dfunname}(ModelNumbaDfun):
 },
         ## doc="""${dynamics.state_variables['V'].exposure}"""
         doc="""state variables"""
-        )
+    )
+
+    state_variable_boundaries = Final(
+
+        label="State Variable boundaries [lo, hi]",
+        default={\
+%for limit in dynamics.state_variables:
+% if (limit.boundaries!='None' and limit.boundaries!=''):
+"${limit.name}": numpy.array([${limit.boundaries}])\
+% endif
+%endfor
+},
+    )
 
     variables_of_interest = List(
         of=str,
@@ -77,11 +89,10 @@ class ${dfunname}(ModelNumbaDfun):
         else:
             ${con_der.name} = ${case}
         % endif
-        % endfor /
-        % endfor /
+        % endfor
+        % endfor
 
         % for i, item in enumerate(dynamics.time_derivatives):
-        ##derivative[${i}] = ${item.value}
         ev('${item.value}', out=derivative[${i}])
         % endfor
 

@@ -17,7 +17,9 @@
         <Exposure name="theta" dimension="sin(theta)"/>
 
         <Dynamics>
-            <StateVariable name="theta" dimension="0.0, pi * 2.0"/>
+            <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
+            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
+            <StateVariable name="theta" dimension="0.0, pi * 2.0" boundaries=""/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
             <!-- Use this to define global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->

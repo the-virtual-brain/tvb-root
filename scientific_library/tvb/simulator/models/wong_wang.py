@@ -68,7 +68,13 @@ class ReducedWongWang(ModelNumbaDfun):
         label="State Variable ranges [lo, hi]",
         default={"S": numpy.array([0.0, 1.0])},
         doc="""state variables"""
-        )
+    )
+
+    state_variable_boundaries = Final(
+
+        label="State Variable boundaries [lo, hi]",
+        default={"S": numpy.array([0.0, None])},
+    )
 
     variables_of_interest = List(
         of=str,
@@ -85,11 +91,9 @@ class ReducedWongWang(ModelNumbaDfun):
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
-        S = state_variables[0, :]
-        lc_0 = local_coupling * S
+        S = state_variables[0,:]
 
         #[State_variables, nodes]
-        c_0 = coupling[0, :]
 
         a = self.a
         b = self.b
@@ -102,40 +106,32 @@ class ReducedWongWang(ModelNumbaDfun):
 
         derivative = numpy.empty_like(state_variables)
 
-        x = w * J_N * S + I_o + J_N * c_0 + J_N * lc_0
+        x = w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling
         H = (a * x - b) / (1 - exp(-d * (a * x - b)))
+
 
         ev('- (S / tau_s) + (1 - S) * H * gamma', out=derivative[0])
 
         return derivative
 
     def dfun(self, vw, c, local_coupling=0.0):
-        lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_ReducedWongWang(vw_, c_, self.a, self.b, self.d, self.gamma, self.tau_s, self.w, self.J_N, self.I_o, lc_0)
+        deriv = _numba_dfun_ReducedWongWang(vw_, c_, self.a, self.b, self.d, self.gamma, self.tau_s, self.w, self.J_N, self.I_o, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
-@guvectorize([(float64[:],) * 12], '(n),(m)' + ',()'*9 + '->(n)', nopython=True)
-def _numba_dfun_ReducedWongWang(vw, c_0, a, b, d, gamma, tau_s, w, J_N, I_o, lc_0, dx):
+# @guvectorize([(float64[:],) * 12], '(n),(m)' + ',()'*9 + '->(n)', nopython=True)
+@guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], '(n),(m)' + ',()'*9 + '->(n)', nopython=True)
+
+def _numba_dfun_ReducedWongWang(vw, coupling, a, b, d, gamma, tau_s, w, J_N, I_o, local_coupling, dx):
     "Gufunc for ReducedWongWang model equations."
 
     S = vw[0]
 
-    a = a[0]
-    b = b[0]
-    d = d[0]
-    gamma = gamma[0]
-    tau_s = tau_s[0]
-    w = w[0]
-    J_N = J_N[0]
-    I_o = I_o[0]
-    c_0 = c_0[0]
-    lc_0 = lc_0[0]
-
-    x = w * J_N * S + I_o + J_N * c_0 + J_N * lc_0
+    x = w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling
     H = (a * x - b) / (1 - exp(-d * (a * x - b)))
+
 
     dx[0] = - (S / tau_s) + (1 - S) * H * gamma
             

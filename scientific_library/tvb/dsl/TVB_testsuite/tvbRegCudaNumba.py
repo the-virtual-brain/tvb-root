@@ -60,7 +60,8 @@ class TVB_test:
 			'Kuramoto': models.Kuramoto,
 			'ReducedWongWang': models.ReducedWongWang,
 			'Generic2dOscillator': models.Generic2dOscillator,
-			'Epileptor': models.Epileptor
+			'Epileptor': models.Epileptor,
+			'Montbrio': models.Theta2D
 		}
 		func = switcher.get(pop, 'invalid model choice')
 		# logger.info('func %s', func)

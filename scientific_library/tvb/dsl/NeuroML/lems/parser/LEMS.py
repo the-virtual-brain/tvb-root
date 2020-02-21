@@ -1602,12 +1602,12 @@ class LEMSFileParser(LEMSBase):
         else:
             self.raise_error("State variable '{0}' must specify a dimension", name)
 
-        if 'exposure' in node.lattrib:
-            exposure = node.lattrib['exposure']
+        if 'boundaries' in node.lattrib:
+            boundaries = node.lattrib['boundaries']
         else:
-            exposure = None
+            boundaries = None
 
-        self.current_regime.add_state_variable(StateVariable(name, dimension, exposure))
+        self.current_regime.add_state_variable(StateVariable(name, dimension, boundaries))
 
     def parse_structure(self, node):
         """

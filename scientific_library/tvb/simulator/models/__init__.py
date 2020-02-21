@@ -64,6 +64,7 @@ class ModelsEnum(Enum):
     LINEAR = "Linear"
     GENERIC_2D_OSCILLATOR = "Generic2dOscillator"
     KURAMOTO = "Kuramoto"
+    MONTBRIO = "Theta2D"
     SUP_HOPF = "SupHopf"
     REDUCED_SET_FITZ_HUGH_NAGUMO = "ReducedSetFitzHughNagumo"
     REDUCED_SET_HINDMARSH_ROSE = "ReducedSetHindmarshRose"
@@ -101,6 +102,7 @@ _module_models = {
     'kuramoto': [ModelsEnum.KURAMOTO],
     'larter_breakspear': [ModelsEnum.LARTER_BREAKSPEAR],
     'linear': [ModelsEnum.LINEAR],
+    'montbrio': [ModelsEnum.MONTBRIO],
     # 'oscillator': [ModelsEnum.GENERIC_2D_OSCILLATOR, ModelsEnum.KURAMOTO, ModelsEnum.SUP_HOPF],
     'oscillator': [ModelsEnum.GENERIC_2D_OSCILLATOR],
     'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
