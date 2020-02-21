@@ -43,14 +43,14 @@ class TVBClient:
     TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
     """
 
-    def __init__(self, server_url):
+    def __init__(self, server_url, auth_token):
         populate_datatypes_registry()
         self.temp_folder = tempfile.gettempdir()
-        self.user_api = UserApi(server_url)
-        self.project_api = ProjectApi(server_url)
-        self.datatype_api = DataTypeApi(server_url)
-        self.simulation_api = SimulationApi(server_url)
-        self.operation_api = OperationApi(server_url)
+        self.user_api = UserApi(server_url, auth_token)
+        self.project_api = ProjectApi(server_url, auth_token)
+        self.datatype_api = DataTypeApi(server_url, auth_token)
+        self.simulation_api = SimulationApi(server_url, auth_token)
+        self.operation_api = OperationApi(server_url, auth_token)
 
     def get_users(self):
         """

@@ -33,11 +33,9 @@ from functools import wraps
 from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
+from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.exceptions import AuthorizationRequestException
 from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
-
-AUTH_HEADER = "Authorization"
-BEARER = "Bearer "
 
 
 def _convert(obj):
@@ -68,13 +66,15 @@ def rest_jsonify(func):
 def secured(func):
     @wraps(func)
     def deco(*a, **b):
-        authorization = request.headers[AUTH_HEADER] if AUTH_HEADER in request.headers else None
+        authorization = request.headers[Strings.AUTH_HEADER.value] if Strings.AUTH_HEADER.value in request.headers \
+            else None
         if not authorization:
             raise AuthorizationRequestException()
 
-        token = authorization.replace(BEARER, "")
+        token = authorization.replace(Strings.BEARER.value, "")
         try:
-            user_info = AuthorizationManager.get_keycloak_instance().userinfo(token)
+            # Load user details
+            AuthorizationManager.get_keycloak_instance().userinfo(token)
         except KeycloakError as kc_error:
             try:
                 error_message = json.loads(kc_error.error_message.decode())['error_description']

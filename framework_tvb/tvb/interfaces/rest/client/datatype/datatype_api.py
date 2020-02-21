@@ -31,7 +31,7 @@
 import cgi
 import json
 import os
-import requests
+
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
@@ -43,7 +43,7 @@ from tvb.interfaces.rest.commons.exceptions import ClientException
 class DataTypeApi(MainApi):
 
     def retrieve_datatype(self, datatype_gid, download_folder):
-        response = requests.get(self.build_request_url(
+        response = self.secured_request().get(self.build_request_url(
             RestLink.GET_DATATYPE.compute_url(True,
                                               {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})), stream=True)
         content_disposition = response.headers['Content-Disposition']
@@ -59,7 +59,7 @@ class DataTypeApi(MainApi):
 
     @handle_response
     def get_operations_for_datatype(self, datatype_gid):
-        response = requests.get(
+        response = self.secured_request().get(
             self.build_request_url(RestLink.DATATYPE_OPERATIONS.compute_url(True, {
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
             })))

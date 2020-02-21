@@ -30,6 +30,7 @@
 
 import time
 import uuid
+
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
-    tvb_client = TVBClient("http://localhost:9090")
+    tvb_client = TVBClient("http://localhost:9090", "authorization-token")
 
     logger.info("Requesting a list of users...")
     users_list = tvb_client.get_users()
