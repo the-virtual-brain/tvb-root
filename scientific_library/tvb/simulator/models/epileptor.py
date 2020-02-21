@@ -194,12 +194,22 @@ class Epileptor(ModelNumbaDfun):
         c_pop2 = coupling[1]
         Iext = Iext + local_coupling * x1
 
-        ydot0 = x1 < 0.0
-        ydot2 = y1 < 0.0
-        h = modification
-        ydot4 = x2 < -0.25
-
-
+        if (x1 < 0.0):
+            ydot0 = -a * x1**2 + b * x1
+        else:
+            ydot0 = slope - x2 + 0.6 * (z - 4)**2 
+        if (y1 < 0.0):
+            ydot2 = - 0.1 * (z**7)
+        else:
+            ydot2 = 0
+        if (modification):
+            h = x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1))
+        else:
+            h = 4 * (x1 - x0) + ydot2
+        if (x2 < -0.25):
+            ydot4 = 0.0
+        else:
+            ydot4 = aa * (x2 + 0.25)
 
         ev('tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)', out=derivative[0])
         ev('tt * (c - d * x1**2 - y1)', out=derivative[1])
@@ -210,65 +220,51 @@ class Epileptor(ModelNumbaDfun):
 
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0):
-        # print((vw[0], vw[1], vw[2], vw[3], vw[4], vw[5]))
-        Iext = self.Iext + local_coupling * x[0, :, 0]
-        x_ = x.reshape(x.shape[:-1]).T
+    def dfun(self, vw, c, local_coupling=0.0):
+        vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        # Iext = self.Iext + local_coupling * x[0, :, 0]
-        deriv = _numba_dfun_Epileptor(x_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, Iext,
-                                      self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf,
-                                      self.Ks, self.tt, self.modification, local_coupling)
+        deriv = _numba_dfun_Epileptor(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, self.Iext, self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, self.tt, self.modification, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
-#
-# # @guvectorize([(float64[:],) * 22], '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
-# @guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],\
-#                float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:])],\
-#              '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
-@guvectorize(
-    [(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, \
-      float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], \
-    '(n),(m)' + ',()' * 19 + '->(n)', nopython=True)
-def _numba_dfun_Epileptor(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf, Ks, tt,
-                          modification, local_coupling, dx):
+# @guvectorize([(float64[:],) * 22], '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
+@guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
 
+def _numba_dfun_Epileptor(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf, Ks, tt, modification, local_coupling, dx):
     "Gufunc for Epileptor model equations."
 
+    x1 = vw[0]
+    y1 = vw[1]
+    z = vw[2]
+    x2 = vw[3]
+    y2 = vw[4]
+    g = vw[5]
 
     c_pop1 = coupling[0]
     c_pop2 = coupling[1]
+    Iext = Iext + local_coupling * x1
 
-
-
-
-    if (vw[0] < 0.0):
-        dx[0] = -a * vw[0]**2 + b
+    if (x1 < 0.0):
+        ydot0 = -a * x1**2 + b * x1
     else:
-        dx[0] = slope - vw[3] + 0.6 * (vw[2] - 4)**2
-
-    dx[0] = tt * (vw[1] - vw[2] + Iext + Kvf * c_pop1 + dx[0] * vw[0])
-    dx[1] = tt * (c - d * vw[0]**2 - vw[1])
-
-    if (vw[1] < 0.0):
-        dx[2] = - 0.1 * (vw[2]**7)
+        ydot0 = slope - x2 + 0.6 * (z - 4)**2 
+    if (y1 < 0.0):
+        ydot2 = - 0.1 * (z**7)
     else:
-        dx[2] = 0
+        ydot2 = 0
     if (modification):
-        h = x0 + 3. / (1. + exp(-(vw[0] + 0.5) / 0.1))
+        h = x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1))
     else:
-        h = 4 * (vw[0] - x0) + dx[2]
-
-    dx[2] = tt * (r * (h - vw[2] + Ks * c_pop1))
-    dx[3] = tt * (-vw[4] + vw[3] - vw[3]**3 + Iext2 + bb * vw[5] - 0.3 * (vw[2] - 3.5) + Kf * c_pop2)
-
-    if (vw[3] < -0.25):
-        dx[4] = 0.0
+        h = 4 * (x1 - x0) + ydot2
+    if (x2 < -0.25):
+        ydot4 = 0.0
     else:
-        dx[4] = aa * (vw[3] + 0.25)
+        ydot4 = aa * (x2 + 0.25)
 
-
-
-    dx[4] = tt * (-vw[4] + dx[4] / tau)
-    dx[5] = tt * (-0.01 * (vw[5] - 0.1 * vw[0]) )
+    dx[0] = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)
+    dx[1] = tt * (c - d * x1**2 - y1)
+    dx[2] = tt * (r * (h - z + Ks * c_pop1))
+    dx[3] = tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)
+    dx[4] = tt * (-y2 + ydot4 / tau)
+    dx[5] = tt * (-0.01 * (g - 0.1 * x1) )
+            
