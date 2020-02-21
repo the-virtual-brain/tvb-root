@@ -64,11 +64,17 @@ class AuthorizationManager(metaclass=AuthorizationManagerMeta):
         """
         Read keycloak parameters from the configuration file
         """
-        with open(self.config_file) as f:
-            config = json.load(f)
-            self.realm = config['realm']
-            self.auth_server_url = config['auth-server-url']
-            self.client_id = config['resource']
+
+        if self.config_file == '':
+            raise RuntimeError("Empty keycloak config path.")
+        try:
+            with open(self.config_file) as f:
+                config = json.load(f)
+                self.realm = config['realm']
+                self.auth_server_url = config['auth-server-url']
+                self.client_id = config['resource']
+        except OSError:
+            raise RuntimeError("Failed to read Keycloak configuration file from {}".format(self.config_file))
 
     @staticmethod
     def get_keycloak_instance():
