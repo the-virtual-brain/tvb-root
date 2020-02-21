@@ -32,6 +32,7 @@ import os
 import uuid
 import typing
 from uuid import UUID
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -83,6 +84,8 @@ class DirLoader(object):
 
     def __init__(self, base_dir, registry, recursive=False):
         # type: (str, Registry, bool) -> None
+        self.log = get_logger(__name__)
+
         if not os.path.isdir(base_dir):
             raise IOError('not a directory {}'.format(base_dir))
 
@@ -101,8 +104,8 @@ class DirLoader(object):
         # type: (typing.Union[uuid.UUID, str]) -> str
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-
         fname = self._locate(gid)
+        self.log.warning("Computed path for H5 is: {}".format(fname))
         return fname
 
     def load(self, gid, dt_class=None):

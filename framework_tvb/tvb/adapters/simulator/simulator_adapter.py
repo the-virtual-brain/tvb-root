@@ -370,6 +370,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
             ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
+            self.log.warning("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
             ts_h5.sample_rate.store(ts.sample_rate)
