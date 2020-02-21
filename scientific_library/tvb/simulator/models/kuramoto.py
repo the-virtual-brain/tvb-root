@@ -36,41 +36,42 @@ class Kuramoto(ModelNumbaDfun):
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
 
-        theta = state_variables[0, :]
+        theta = state_variables[0,:]
 
         #[State_variables, nodes]
-        lc_0 = local_coupling
-        c_0 = coupling[0, :]
 
         omega = self.omega
 
         derivative = numpy.empty_like(state_variables)
 
-        I = c_0 + sin(lc_0 * theta)
+        I = coupling[0] + sin(local_coupling * theta)
+
+
+
 
         ev('omega * I', out=derivative[0])
 
         return derivative
 
     def dfun(self, vw, c, local_coupling=0.0):
-        lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_Kuramoto(vw_, c_, self.omega, lc_0)
+        deriv = _numba_dfun_Kuramoto(vw_, c_, self.omega, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
-@guvectorize([(float64[:],) * 5], '(n),(m)' + ',()'*2 + '->(n)', nopython=True)
-def _numba_dfun_Kuramoto(vw, c_0, omega, lc_0, dx):
+# @guvectorize([(float64[:],) * 5], '(n),(m)' + ',()'*2 + '->(n)', nopython=True)
+@guvectorize([(float64[:], float64[:], float64, float64, float64[:])], '(n),(m)' + ',()'*2 + '->(n)', nopython=True)
+
+def _numba_dfun_Kuramoto(vw, coupling, omega, local_coupling, dx):
     "Gufunc for Kuramoto model equations."
 
     theta = vw[0]
 
-    omega = omega[0]
-    c_0 = c_0[0]
-    lc_0 = lc_0[0]
+    I = coupling[0] + sin(local_coupling * theta)
 
-    I = c_0 + sin(lc_0 * theta)
+
+
 
     dx[0] = omega * I
             

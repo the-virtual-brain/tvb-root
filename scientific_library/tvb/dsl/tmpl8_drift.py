@@ -69,8 +69,10 @@ class ${dfunname}(ModelNumbaDfun):
 
         ## conditional variables
         % for i, con_der in enumerate(dynamics.conditional_derived_variables):
-        ${con_der.name} = ${con_der.dimension}
+        ${con_der.name} = ${con_der.condition}
         % endfor /
+
+
 
         % for i, item in enumerate(dynamics.time_derivatives):
         ##derivative[${i}] = ${item.value}
@@ -128,7 +130,15 @@ local_coupling, dx):
 
     ## conditional variables
     % for i, con_der in enumerate(dynamics.conditional_derived_variables):
-    ${con_der.name} = ${con_der.dimension}
+    if (${con_der.condition}):
+        % for case in (con_der.cases):
+% if (loop.first):
+        ${con_der.name} = ${case}
+% elif (loop.last):
+    else:
+        ${con_der.name} = ${case}
+%endif
+        % endfor /
     % endfor /
 
     % for i, itemH in enumerate(dynamics.time_derivatives):

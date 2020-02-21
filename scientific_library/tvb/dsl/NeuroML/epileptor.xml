@@ -28,7 +28,7 @@
         <Constant name="Kf" symbol="" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
         <Constant name="Ks" symbol="" dimension="lo=-4.0, hi=4.0, step=0.1" value="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
         <Constant name="tt" symbol="" dimension="lo=0.001, hi=1.0, step=0.001" value="1.0" description="Time scaling of the whole system to the system in real time."/>
-        <Constant name="modification" symbol="bool" dimension="0, 0" value="1.0" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
+        <Constant name="modification" symbol="bool" dimension="0, 0" value="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
         <Parameter name="global_coupling" dimension="float" />
@@ -38,7 +38,7 @@
         <Dynamics>
             <StateVariable name="x1" dimension="-2., 1." exposure=""/>
             <StateVariable name="y1" dimension="-20., 2."/>
-            <StateVariable name="z" dimension="-2.0, 5.0" exposure=""/>
+            <StateVariable name="z" dimension="2.0, 5.0" exposure=""/>
             <StateVariable name="x2" dimension="-2., 0."/>
             <StateVariable name="y2" dimension="0., 2." exposure=""/>
             <StateVariable name="g" dimension="-1, 1."/>
@@ -52,24 +52,25 @@
             <DerivedVariable name="Iext" exposure="" value="Iext + local_coupling * x1"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
-            <!-- Population 1 -->
-            <ConditionalDerivedVariable name="if_x1" exposure="" dimension="(x1 &lt; 0.0) * (- a * x1**2 + b)"/>
-            <ConditionalDerivedVariable name="else_x1" exposure="" dimension="(x1 &gt;= 0.0) * (slope - x2 + 0.6 * (z - 4)**2)"/>
-            <TimeDerivative variable="dx1" exposure="" value="tt * (y1 - z + Iext + Kvf * c_pop1 + (if_x1 + else_x1) * x1)"/>
+            <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
+            <!-- Population 1 -->if
+            <ConditionalDerivedVariable name="ydot0" exposure="" condition="x1 &lt; 0.0" cases="-a * x1**2 + b, slope - x2 + 0.6 * (z - 4)**2"/>
+<!--            <ConditionalDerivedVariable name="else_x1" exposure="" dimension="(x1 &gt;= 0.0) * (slope - x2 + 0.6 * (z - 4)**2)"/>-->
+            <TimeDerivative variable="dx1" exposure="" value="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
             <TimeDerivative variable="dy1" exposure="" value="tt * (c - d * x1**2 - y1)"/>
 
             <!-- Energy -->
-            <ConditionalDerivedVariable name="if_z" exposure="" dimension="(y1 &lt; 0.0) * (- 0.1 * (z**7))"/>
-            <ConditionalDerivedVariable name="else_z" exposure="" dimension="0"/>
-            <ConditionalDerivedVariable name="ifmod_h" exposure="" dimension="(modification==True)*(x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)))"/>
-            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==False)*(4 * (x1 - x0) + if_z)"/>
-            <TimeDerivative variable="dz" exposure="" value="tt * (r * ((ifmod_h + elsemod_h) - z + Ks * c_pop1))"/>
+            <ConditionalDerivedVariable name="ydot2" condition="y1 &lt; 0.0" cases="- 0.1 * (z**7), 0"/>
+<!--            <ConditionalDerivedVariable name="else_z" exposure="" dimension="0"/>-->
+            <ConditionalDerivedVariable name="h" condition="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)), 4 * (x1 - x0) + ydot2"/>
+<!--            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==False)*(4 * (x1 - x0) + if_z)"/>-->
+            <TimeDerivative variable="dz" exposure="" value="tt * (r * (h - z + Ks * c_pop1))"/>
 
             <!-- Population 2 -->
             <TimeDerivative variable="dx2" exposure="" value="tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
-            <ConditionalDerivedVariable name="if_y2" exposure="" dimension="0"/>
-            <ConditionalDerivedVariable name="else_y2" exposure="" dimension="(x2 &gt;= -0.25) * (aa * (x2 + 0.25))"/>
-            <TimeDerivative variable="dy2" exposure="" value="tt * (-y2 + else_y2) / tau"/>
+            <ConditionalDerivedVariable name="ydot4" condition="x2 &lt; -0.25" cases="0.0, aa * (x2 + 0.25)"/>
+<!--            <ConditionalDerivedVariable name="0" exposure="()" dimension="()"/>-->
+            <TimeDerivative variable="dy2" exposure="" value="tt * (-y2 + ydot4 / tau)"/>
 
             <!-- Filter -->
             <TimeDerivative variable="dg" exposure="" value="tt * (-0.01 * (g - 0.1 * x1) )"/>
