@@ -85,12 +85,12 @@ def tmph5factory(tmpdir):
 
 @pytest.fixture(scope='session')
 def db_engine(tmpdir_factory, profile):
-    if profile == 'TEST_SQLITE_PROFILE':
+    if profile == TvbProfile.TEST_SQLITE_PROFILE:
         tmpdir = tmpdir_factory.mktemp('tmp')
         path = os.path.join(str(tmpdir), 'tmp.sqlite')
         conn_string = r'sqlite:///' + path
-    elif profile == 'TEST_POSTGRES_PROFILE':
-        conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+    elif profile == TvbProfile.TEST_POSTGRES_PROFILE:
+        conn_string = TvbProfile.current.db.DB_URL
     else:
         raise ValueError('bad test profile {}'.format(profile))
 
