@@ -35,6 +35,7 @@ Prepare TVB settings to be grouped under various profile classes.
 """
 import os
 import sys
+
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
@@ -61,6 +62,7 @@ class BaseSettingsProfile(object):
         self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
 
         # Actual storage of all TVB related files
+        self.KEYCLOAK_CONFIG = self.manager.get_attribute(stored.KEY_KC_CONFIGURATION, '')
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")

@@ -133,7 +133,7 @@ def initialize_flask():
     api.add_namespace(name_space_simulation)
 
     # Register keycloak authorization manager
-    AuthorizationManager("C:/Users/bogdan.valean/Desktop/keycloak.json")
+    AuthorizationManager(TvbProfile.current.KEYCLOAK_CONFIG)
 
     http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
     http_server.serve_forever()

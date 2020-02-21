@@ -43,6 +43,7 @@ KEY_ADMIN_NAME = 'ADMINISTRATOR_NAME'
 KEY_ADMIN_PWD = 'ADMINISTRATOR_PASSWORD'
 KEY_ADMIN_EMAIL = 'ADMINISTRATOR_EMAIL'
 KEY_STORAGE = 'TVB_STORAGE'
+KEY_KC_CONFIGURATION = 'KEYCLOAK_CONFIGURATION'
 KEY_MAX_DISK_SPACE_USR = 'USR_DISK_SPACE'
 # During the introspection phase, it is checked if either Matlab or
 # octave are installed and available trough the system PATH variable

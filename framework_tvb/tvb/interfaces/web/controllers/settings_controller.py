@@ -33,16 +33,17 @@
 """
 
 import os
+import subprocess
+import threading
+from time import sleep
+
 import cherrypy
 import formencode
-import threading
-import subprocess
-from time import sleep
 from formencode import validators
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import check_matlab_version
-from tvb.core.services.settings_service import SettingsService
 from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.core.services.settings_service import SettingsService
+from tvb.core.utils import check_matlab_version
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import check_admin, using_template, jsonify, handle_error
 from tvb.interfaces.web.controllers.users_controller import UserController
@@ -57,7 +58,6 @@ class SettingsController(UserController):
     def __init__(self):
         UserController.__init__(self)
         self.settingsservice = SettingsService()
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -89,7 +89,6 @@ class SettingsController(UserController):
                                        common.KEY_FIRST_RUN: TvbProfile.is_first_run()})
         return self.fill_default_attributes(template_specification)
 
-
     def _restart_services(self, should_reset):
         """
         Restart CherryPy Backend.
@@ -115,8 +114,6 @@ class SettingsController(UserController):
 
         self.logger.info("Starting CherryPy again ... ")
 
-
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @jsonify
@@ -139,7 +136,6 @@ class SettingsController(UserController):
         except InvalidSettingsException as excep:
             self.logger.error(excep)
             return {'status': 'not ok', 'message': 'The database URL is not valid.'}
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -225,7 +221,6 @@ class SurfaceVerticesNrValidator(formencode.FancyValidator):
     # This limitation is given by our Max number of colors in pick mechanism
     MAX_VALUE = 256 * 256 * 256 + 1
 
-
     def _convert_to_python(self, value, _):
         """ 
         Validation required method.
@@ -246,7 +241,6 @@ class MatlabValidator(formencode.FancyValidator):
     Custom validator for the number of vertices allowed for a surface
     """
 
-
     def _convert_to_python(self, value, _):
         """ 
         Validation method for the Matlab Path.
@@ -262,6 +256,7 @@ class AsciiValidator(formencode.FancyValidator):
     """
     Allow only ascii strings
     """
+
     def _convert_to_python(self, value, _):
         try:
             return str(value).encode('ascii')
@@ -286,12 +281,10 @@ class SettingsForm(formencode.Schema):
     DEPLOY_CLUSTER = validators.Bool()
     CLUSTER_SCHEDULER = validators.UnicodeString(not_empty=True)
 
+    KEYCLOAK_CONFIGURATION = validators.UnicodeString(not_empty=True)
     TVB_STORAGE = validators.UnicodeString(not_empty=True)
     USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)
     MATLAB_EXECUTABLE = MatlabValidator()
     MAXIMUM_NR_OF_THREADS = ThreadNrValidator()
     MAXIMUM_NR_OF_VERTICES_ON_SURFACE = SurfaceVerticesNrValidator()
     MAXIMUM_NR_OF_OPS_IN_RANGE = validators.Int(min=5, max=5000, not_empty=True)
-
-
-
