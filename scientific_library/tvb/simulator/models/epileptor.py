@@ -143,7 +143,13 @@ class Epileptor(ModelNumbaDfun):
 				 "y2": numpy.array([0., 2.]), 
 				 "g": numpy.array([-1, 1.])},
         doc="""state variables"""
-        )
+    )
+
+    state_variable_boundaries = Final(
+
+        label="State Variable boundaries [lo, hi]",
+        default={},
+    )
 
     variables_of_interest = List(
         of=str,

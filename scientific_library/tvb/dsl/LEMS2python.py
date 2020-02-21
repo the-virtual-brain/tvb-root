@@ -7,6 +7,11 @@ from model.model import Model
 
 def drift_templating(target):
 
+    def montbrio():
+        modelname = 'Theta2D'
+        filename = 'montbrio'
+        return modelname, filename
+
     def epileptor():
         modelname = 'Epileptor'
         filename = 'epileptor'
@@ -15,6 +20,7 @@ def drift_templating(target):
     def oscillator():
         modelname = 'Generic2dOscillator' # is also the class name
         filename = 'oscillator' # TVB output file name
+        print('here')
         return modelname, filename
 
     def wong_wang():
@@ -31,10 +37,10 @@ def drift_templating(target):
         'Kuramoto': kuramoto,
         'ReducedWongWang': wong_wang,
         'Generic2dOscillator': oscillator,
-        'Epileptor': epileptor
+        'Epileptor': epileptor,
+        'Montbrio': montbrio
     }
 
-    # target='Kuramoto'
     func = switcher.get(target, 'invalid model choice')
     modelname, filename = func()
     print(modelname)
@@ -118,8 +124,8 @@ def noise_templating():
     with open(modelfile, "w") as f:
         f.writelines(model_str)
 
-
-# drift_templating()
+if __name__ == '__main__':
+    drift_templating('Montbrio')
 
 # coupling_templating()
 # noise_templating()

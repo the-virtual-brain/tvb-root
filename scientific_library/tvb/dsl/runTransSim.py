@@ -11,6 +11,7 @@ import time
 # ReducedWongWang
 # Generic2dOscillator
 # Epileptor
+# Montbrio
 
 target="Epileptor"
 # make a model template

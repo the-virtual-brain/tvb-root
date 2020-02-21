@@ -47,8 +47,6 @@ class Kuramoto(ModelNumbaDfun):
         I = coupling[0] + sin(local_coupling * theta)
 
 
-
-
         ev('omega * I', out=derivative[0])
 
         return derivative
@@ -69,8 +67,6 @@ def _numba_dfun_Kuramoto(vw, coupling, omega, local_coupling, dx):
     theta = vw[0]
 
     I = coupling[0] + sin(local_coupling * theta)
-
-
 
 
     dx[0] = omega * I

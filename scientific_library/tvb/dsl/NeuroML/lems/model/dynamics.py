@@ -20,7 +20,7 @@ class StateVariable(LEMSBase):
     Store the specification of a state variable.
     """
 
-    def __init__(self, name, dimension, exposure = None):
+    def __init__(self, name, dimension, boundaries = None):
         """
         Constructor.
 
@@ -35,13 +35,13 @@ class StateVariable(LEMSBase):
         """ Dimension of the state variable.
         @type: str """
 
-        self.exposure = exposure
+        self.boundaries = boundaries
         """ Exposure name for the state variable.
         @type: str """
 
     def __str__(self):
         return 'StateVariable name="{0}" dimension="{1}"'.format(self.name, self.dimension) +\
-          (' exposure="{0}"'.format(self.exposure) if self.exposure else '') 
+          (' exposure="{0}"'.format(self.boundaries) if self.boundaries else '')
 
 
     def toxml(self):
