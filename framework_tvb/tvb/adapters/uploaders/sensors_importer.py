@@ -143,6 +143,4 @@ class SensorsImporter(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        sensors_idx = h5.store_complete(sensors_inst, self.storage_path)
-        self.generic_attributes.user_tag_1 = sensors_inst.sensors_type
-        return sensors_idx
+        return h5.store_complete(sensors_inst, self.storage_path)

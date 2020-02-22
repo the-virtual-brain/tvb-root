@@ -50,4 +50,4 @@ class SensorsIndex(DataType):
         Overwrite from superclass and add number of sensors and subtype
         """
         previous = "Sensors"
-        return previous + " [" + str(self.number_of_sensors) + "] " + str(self.sensors_type)
+        return previous + " [" + str(self.number_of_sensors) + "] - " + str(self.sensors_type)

@@ -146,10 +146,8 @@ class StructureNode:
                 metas = sublevels[sublevel]
                 datas = []
                 for meta in metas:
-                    parent_name = meta[meta.KEY_NODE_TYPE] + " "
+                    parent_name = meta[meta.KEY_TITLE] + " "
 
-                    if meta[meta.KEY_TAG_1]:
-                        parent_name = parent_name + " - " + meta[meta.KEY_TAG_1]
                     if meta[meta.KEY_OPERATION_TAG]:
                         parent_name = parent_name + " - " + meta[meta.KEY_OPERATION_TAG]
                     
