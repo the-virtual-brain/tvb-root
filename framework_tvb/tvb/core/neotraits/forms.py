@@ -492,10 +492,8 @@ class TraitDataTypeSelectField(TraitField):
         # XML check will be done after select and submit.
         entity_gid = value[2]
         actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
-        display_name = ''
-        if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
-            display_name = actual_entity[0].__class__.__name__
-        display_name += ' - ' + (value[3] or "None ")
+        display_name = actual_entity[0].display_name
+        display_name += ' - ' + (value[3] or "None ")   # Subject
         if value[5]:
             display_name += ' - From: ' + str(value[5])
         else:
