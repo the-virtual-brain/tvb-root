@@ -30,6 +30,7 @@
 
 import os
 import sys
+import formencode_jinja2
 from flask import Flask
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -78,6 +79,7 @@ def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
     app.json_encoder = CustomFlaskEncoder
+    app.jinja_env.add_extension(formencode_jinja2.formfill)
 
     # creating an API object
     api = RestApi(app, title="Rest services for TVB", doc="/doc/")
