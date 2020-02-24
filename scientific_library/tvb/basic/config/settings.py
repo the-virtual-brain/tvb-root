@@ -203,6 +203,17 @@ class HPCSettings(object):
     SCHEDULER_SARUS = "sarus"
     HPC_INPUT_FOLDER = None
 
+    HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
+
+    UNICORE_RESOURCER_KEY = 'Resources'
+    UNICORE_ARGS_KEY = 'Arguments'
+    UNICORE_EXE_KEY = 'Executable'
+
+
+    SUPERCOMPUTER_SITE = 'DAINT-CSCS'
+    JOB_STATUS_KEY = 'status'
+    JOB_MOUNT_POINT_KEY = 'mountPoint'
+
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
         self.HPC_SCHEDULER = manager.get_attribute(stored.KEY_HPC_SCHEDULER, self.SCHEDULER_SARUS)

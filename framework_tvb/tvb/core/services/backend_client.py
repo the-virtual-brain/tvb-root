@@ -33,20 +33,26 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@invalid.tvb>
 """
-
+import json
 import os
 import sys
 import signal
 import queue as queue
 import threading
 from subprocess import Popen, PIPE
+from time import sleep
+import pyunicore.client as unicore_client
+from tvb.basic.config.settings import HPCSettings
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
-
 
 LOGGER = get_logger(__name__)
 
@@ -62,12 +68,10 @@ class OperationExecutor(threading.Thread):
     Thread in charge for starting an operation, used both on cluster and with stand-alone installations.
     """
 
-
     def __init__(self, op_id):
         threading.Thread.__init__(self)
         self.operation_id = op_id
         self._stop_ev = threading.Event()
-
 
     def run(self):
         """
@@ -111,7 +115,7 @@ class OperationExecutor(threading.Thread):
                                                                                                    subprocess_result))
 
                 burst_service.persist_operation_state(operation, STATUS_ERROR,
-                                                         "Operation failed unexpectedly! Please check the log files.")
+                                                      "Operation failed unexpectedly! Please check the log files.")
 
                 burst_entity = dao.get_burst_for_operation_id(self.operation_id)
                 if burst_entity:
@@ -124,16 +128,13 @@ class OperationExecutor(threading.Thread):
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
 
-
     def _stop(self):
         """ Mark current thread for stop"""
         self._stop_ev.set()
 
-
     def stopped(self):
         """Check if current thread was marked for stop."""
         return self._stop_ev.isSet()
-
 
     @staticmethod
     def stop_pid(pid):
@@ -165,14 +166,12 @@ class StandAloneClient(object):
     Instead of communicating with a back-end cluster, fire locally a new thread.
     """
 
-
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
         """Start asynchronous operation locally"""
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
         thread.start()
-
 
     @staticmethod
     def stop_operation(operation_id):
@@ -216,7 +215,6 @@ class ClusterSchedulerClient(object):
     the cluster job scheduling process..
     """
 
-
     @staticmethod
     def _run_cluster_job(operation_identifier, user_name_label, adapter_instance):
         """
@@ -250,7 +248,6 @@ class ClusterSchedulerClient(object):
         operation_identifier = OperationProcessIdentifier(operation_identifier, job_id=job_id)
         dao.store_entity(operation_identifier)
 
-
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
         """Call the correct system command to submit a job to the cluster."""
@@ -259,7 +256,6 @@ class ClusterSchedulerClient(object):
                                           'user_name_label': user_name_label,
                                           'adapter_instance': adapter_instance})
         thread.start()
-
 
     @staticmethod
     def stop_operation(operation_id):
@@ -287,7 +283,101 @@ class ClusterSchedulerClient(object):
         return result == 0
 
 
-if TvbProfile.current.cluster.IS_DEPLOY:
+class HPCSchedulerClient(object):
+    """
+    Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing the operation on
+    an HPC node. Define TVB_BIN_ENV_KEY and CSCS_LOGIN_TOKEN_ENV_KEY as environment variables before running on HPC.
+    """
+    TVB_BIN_ENV_KEY = 'TVB_BIN'
+    CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
+
+    @staticmethod
+    def _gather_file_list(h5_file, file_list):
+        references = h5_file.gather_references_gids()
+        for reference in references:
+            if reference is None:
+                continue
+            try:
+                # TODO: nicer way to identify files?
+                index = dao.get_datatype_by_gid(reference.hex)
+                reference_h5_file = h5.path_for_stored_index(index)
+                h5_file_class = h5.h5_file_for_index(index)
+            except Exception:
+                reference_h5_file = h5_file.get_reference_path(reference)
+                h5_file_class = H5File.from_file(reference_h5_file)
+            if reference_h5_file not in file_list:
+                file_list.append(reference_h5_file)
+            HPCSchedulerClient._gather_file_list(h5_file_class, file_list)
+            h5_file_class.close()
+
+    @staticmethod
+    def _prepare_input(operation, input_gid):
+        storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
+        simulator_in_path = h5.path_for(storage_path, SimulatorH5, input_gid)
+
+        input_files_list = []
+        with SimulatorH5(simulator_in_path) as simulator_h5:
+            HPCSchedulerClient._gather_file_list(simulator_h5, input_files_list)
+        input_files_list.append(simulator_in_path)
+        return input_files_list
+
+    @staticmethod
+    def _configure_job(simulator_gid, available_space):
+        bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
+                                       HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
+        job_inputs = [bash_entrypoint]
+
+        # Build job configuration JSON
+        my_job = {}
+        my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
+        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space]
+        my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
+
+        return my_job, job_inputs
+
+    @staticmethod
+    def _run_hpc_job(operation_identifier):
+        operation = dao.get_operation_by_id(operation_identifier)
+        input_gid = json.loads(operation.parameters)['gid']
+
+        job_inputs = HPCSchedulerClient._prepare_input(operation, input_gid)
+
+        transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+        registry = unicore_client.Registry(transport, unicore_client._HBP_REGISTRY_URL)
+
+        # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
+        site_client = registry.site(HPCSettings.SUPERCOMPUTER_SITE)
+
+        # TODO: compute available space
+        job_config, job_extra_inputs = HPCSchedulerClient._configure_job(input_gid, '100')
+        job_inputs.extend(job_extra_inputs)
+        job = site_client.new_job(job_description=job_config, inputs=job_inputs)
+        LOGGER.info(job.properties)
+        while job.is_running():
+            LOGGER.info(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY])
+            sleep(10)
+        LOGGER.info(job.properties[HPCSettings.JOB_STATUS_KEY])
+        wd = job.working_dir
+        LOGGER.info(wd.properties)
+        LOGGER.info(wd.listdir())
+
+    @staticmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        """Call the correct system command to submit a job to HPC."""
+        thread = threading.Thread(target=HPCSchedulerClient._run_hpc_job,
+                                  kwargs={'operation_identifier': operation_id})
+        thread.start()
+
+    @staticmethod
+    def stop_operation(operation_id):
+        pass
+
+
+if TvbProfile.current.hpc.IS_HPC_RUN:
+    # Return an entity capable to submit jobs to HPC.
+    BACKEND_CLIENT = HPCSchedulerClient()
+elif TvbProfile.current.cluster.IS_DEPLOY:
+    # if TvbProfile.current.cluster.IS_DEPLOY:
     # Return an entity capable to submit jobs to the cluster.
     BACKEND_CLIENT = ClusterSchedulerClient()
 else:
