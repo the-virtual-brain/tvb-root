@@ -40,6 +40,7 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+
 import json
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
@@ -240,9 +241,6 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map = None
         region_volume_map = None
 
-        if TvbProfile.current.hpc.IS_HPC_RUN:
-            return region_map, region_volume_map
-
         region_map_index = self._try_find_mapping(RegionMappingIndex, self.algorithm.connectivity.gid.hex)
         region_volume_map_index = self._try_find_mapping(RegionVolumeMappingIndex, self.algorithm.connectivity.gid.hex)
 
@@ -296,7 +294,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
+            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
             self.log.warning("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
@@ -324,7 +322,7 @@ class SimulatorAdapter(ABCAsynchronous):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self.storage_path)
+            history_index = h5.store_complete(simulation_history, self._get_output_path())
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")
