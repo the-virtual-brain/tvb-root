@@ -140,7 +140,7 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn.equation = eq_class()
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

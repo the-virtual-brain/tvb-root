@@ -68,7 +68,7 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'legend': 'Selected entity'}
+        return {'adapter_form': self, 'legend': 'Selected entity'}
 
 
 class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
@@ -134,7 +134,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_local_connectivity_data',
+        return {'adapter_form': self, 'next_action': 'form_spatial_local_connectivity_data',
                 'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 
 

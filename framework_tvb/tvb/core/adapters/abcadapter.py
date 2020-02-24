@@ -166,15 +166,6 @@ class ABCAdapterForm(Form):
             attrs_dict.update({field_name: field_data})
         return attrs_dict
 
-    def __str__(self):
-        # TODO: remove dependency from web
-        from tvb.interfaces.web.controllers.decorators import using_template
-        template = using_template('form_fields/form')(self._get_template_dict)()
-        return template
-
-    def _get_template_dict(self):
-        return {'form': self}
-
 
 @add_metaclass(ABCMeta)
 class ABCAdapter(object):

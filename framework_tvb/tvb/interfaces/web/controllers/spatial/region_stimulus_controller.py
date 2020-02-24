@@ -117,7 +117,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=RegionStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
         #TODO: check eqPrefixes
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_temporal_param(self, **param):

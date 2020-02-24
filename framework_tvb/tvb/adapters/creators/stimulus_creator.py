@@ -60,7 +60,7 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'legend': 'Loaded stimulus'}
+        return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
@@ -119,7 +119,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
+        return {'adapter_form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
                 'spatial_params_div': self.NAME_SPATIAL_PARAMS_DIV,
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
@@ -202,7 +202,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'legend': 'Loaded stimulus'}
+        return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
@@ -252,7 +252,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
+        return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
 
