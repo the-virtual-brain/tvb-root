@@ -1,0 +1,34 @@
+FROM continuumio/miniconda3
+
+RUN apt-get -y update && apt-get -y install build-essential gcc
+RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
+
+USER root
+RUN conda update -n base -c defaults conda
+RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
+RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson docutils werkzeug==0.16.1
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab
+RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib nibabel allensdk
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 sqlalchemy flask
+
+WORKDIR /root
+
+# make sure a copy of tvb-root exists inside, for users without Github clone
+# TODO: currently installs tvb from tvb-hpc branch
+RUN git clone --depth 1 --branch tvb-hpc https://github.com/the-virtual-brain/tvb-root.git
+
+ARG LAST_SHA=LATEST
+RUN cd tvb-root; \
+    git pull; \
+    cd tvb_build; \
+    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"
+
+RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_STORAGE
+
+COPY .tvb.configuration /root/.tvb.configuration
+
+WORKDIR /root/tvb-root
+
+CMD ["bash","-c","source activate tvb-run"]
