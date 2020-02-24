@@ -40,6 +40,7 @@ class Strings(Enum):
 
 class RequestFileKey(Enum):
     SIMULATION_FILE_KEY = "simulation_zip_file"
+    SIMULATION_FILE_NAME = "SimulationData.zip"
     LAUNCH_ANALYZERS_MODEL_FILE = "model_file"
 
 

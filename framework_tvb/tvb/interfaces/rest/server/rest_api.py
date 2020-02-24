@@ -30,6 +30,7 @@
 
 from flask_restplus import Api
 from tvb.basic.exceptions import TVBException
+from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_SERVER_ERROR
 
 
 class RestApi(Api):
@@ -37,7 +38,7 @@ class RestApi(Api):
         if not isinstance(e, TVBException):
             super().handle_error(e)
 
-        code = getattr(e, 'code', 500)
+        code = getattr(e, 'code', HTTP_STATUS_SERVER_ERROR)
         message = getattr(e, 'message', 'Internal Server Error')
         to_dict = getattr(e, 'to_dict', None)
 
