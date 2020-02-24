@@ -176,7 +176,8 @@ class TestFilesHelper(TransactionalTestCase):
         datatype = dummy_datatype_index_factory(project=self.test_project)
         old_file_path = h5.path_for_stored_index(datatype)
         assert os.path.exists(old_file_path), "Test file was not created!"
-        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1")
+        full_path = h5.path_for_stored_index(datatype)
+        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1", full_path)
         
         assert not os.path.exists(old_file_path), "Test file was not moved!"
         datatype.fk_from_operation = 43

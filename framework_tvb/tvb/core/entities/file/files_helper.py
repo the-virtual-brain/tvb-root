@@ -37,7 +37,6 @@ import os
 import shutil
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -247,14 +246,11 @@ class FilesHelper(object):
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
 
-    def move_datatype(self, datatype, new_project_name, new_op_id):
+    def move_datatype(self, datatype, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
         """
         try:
-            # TODO FOR LIA : CHECK CIRCULAR DEPENDENCY
-            from tvb.core.neocom import h5
-            full_path = h5.path_for_stored_index(datatype)
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
