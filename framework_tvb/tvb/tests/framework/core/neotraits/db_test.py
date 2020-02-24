@@ -64,7 +64,7 @@ class FooIndex(HasTraitsIndex):
 
     array_int_max = Column(Integer)
     array_int_min = Column(Integer)
-    array_int_mean = Column(Integer)
+    array_int_mean = Column(Float)
     # simple scalars
     scalar_int = Column(Integer, nullable=False)
 
