@@ -457,11 +457,11 @@ class ABCAdapter(object):
         """
         Return true if this adapter is launched from a group of operations
         """
-        # TODO: treat this check
-        if TvbProfile.current.hpc.IS_HPC_RUN:
-            return False
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
+
+    def _get_output_path(self):
+        return self.storage_path
 
     @staticmethod
     def load_entity_by_gid(data_gid):
