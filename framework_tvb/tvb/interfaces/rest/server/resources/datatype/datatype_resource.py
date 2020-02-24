@@ -69,5 +69,5 @@ class GetOperationsForDatatypeResource(RestResource):
         datatype = dao.get_datatype_by_gid(datatype_gid)
         if datatype is None:
             raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE.format(datatype_gid))
-        _, filtered_adapters = self.flow_service.get_launchable_algorithms_for_datatype(datatype, categories)
+        _, filtered_adapters, _ = self.flow_service.get_launchable_algorithms_for_datatype(datatype, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]

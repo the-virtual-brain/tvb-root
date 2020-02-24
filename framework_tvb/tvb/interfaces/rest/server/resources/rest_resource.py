@@ -35,10 +35,9 @@ from flask_restplus import Resource
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
 from werkzeug.utils import secure_filename
-
-USERS_PAGE_SIZE = 1000
 
 
 class SecuredResource(Resource):
@@ -54,10 +53,11 @@ class RestResource(SecuredResource):
             self.method_decorators.extend(super().method_decorators)
 
     @staticmethod
-    def extract_file_from_request(file_name='model_file', file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-        if RestResource.is_path_in_files(file_name):
-            raise BadRequestException("No file '%s' in the request!" % file_name)
-        file = flask.request.files[file_name]
+    def extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value,
+                                  file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+        if not RestResource.is_key_in_request_files(request_file_key):
+            raise BadRequestException("No file '%s' in the request!" % request_file_key)
+        file = flask.request.files[request_file_key]
         if not file.filename.endswith(file_extension):
             raise BadRequestException("Only %s files are allowed!" % file_extension)
 
@@ -79,5 +79,5 @@ class RestResource(SecuredResource):
         return destination_folder
 
     @staticmethod
-    def is_path_in_files(file_name):
-        return file_name not in flask.request.files
+    def is_key_in_request_files(key):
+        return key in flask.request.files

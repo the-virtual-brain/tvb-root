@@ -31,7 +31,7 @@
 import time
 import uuid
 
-from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
@@ -45,16 +45,13 @@ if __name__ == '__main__':
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
-    tvb_client = TVBClient("http://localhost:9090", "authorization-token")
+    tvb_client = TVBClient("http://localhost:9090")
 
-    logger.info("Requesting a list of users...")
-    users_list = tvb_client.get_users()
-    assert len(users_list) > 0
-    logger.info("TVB has {} users registered".format(len(users_list)))
+    logger.info("Attempt to login")
+    tvb_client.login('tvb_user', 'pass')
 
-    username = users_list[0].username
-    logger.info("Requesting projects for user {}...".format(username))
-    projects_of_user = tvb_client.get_project_list(username)
+    logger.info("Requesting projects for logged user")
+    projects_of_user = tvb_client.get_project_list()
     assert len(projects_of_user) > 0
     logger.info("TVB has {} projects for this user".format(len(projects_of_user)))
 
@@ -69,7 +66,7 @@ if __name__ == '__main__':
         datatypes_type.append(datatype.type)
         if datatype.type == ConnectivityIndex().display_type:
             connectivity_gid = datatype.gid
-    logger.info("The datatypes in projecct are: {}".format(datatypes_type))
+    logger.info("The datatypes in project are: {}".format(datatypes_type))
 
     if connectivity_gid:
         logger.info("Preparing the simulator...")
@@ -110,12 +107,7 @@ if __name__ == '__main__':
         fourier_model.time_series = uuid.UUID(time_series_gid)
         fourier_model.window_function = 'hamming'
 
-        algo_dto = None
-        for algo in algos:
-            if algo.classname == 'FourierAdapter':
-                algo_dto = algo
-
-        operation_gid = tvb_client.launch_operation(project_gid, algo_dto.module, algo_dto.classname, fourier_model)
+        operation_gid = tvb_client.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
 
         logger.info("Download the connectivity file...")

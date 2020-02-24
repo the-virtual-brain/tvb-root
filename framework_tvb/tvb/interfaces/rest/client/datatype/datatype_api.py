@@ -35,7 +35,7 @@ import os
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
 

@@ -34,7 +34,7 @@ from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
 from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.commons import Strings
+from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.commons.exceptions import AuthorizationRequestException
 from tvb.interfaces.rest.server.security.authorization import AuthorizationManager, set_current_user
 
