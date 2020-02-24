@@ -40,8 +40,8 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import json
 
+import json
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
@@ -61,11 +61,9 @@ from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
 from tvb.core.neocom import h5
-from tvb.basic.profile import TvbProfile
 
 
 class CortexViewModel(ViewModel, Cortex):
-
     surface_gid = DataTypeGidAttr(
         linked_datatype=CorticalSurface
     )
@@ -313,9 +311,6 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map = None
         region_volume_map = None
 
-        if TvbProfile.current.hpc.IS_HPC_RUN:
-            return region_map, region_volume_map
-
         region_map_index = self._try_find_mapping(RegionMappingIndex, self.algorithm.connectivity.gid.hex)
         region_volume_map_index = self._try_find_mapping(RegionVolumeMappingIndex, self.algorithm.connectivity.gid.hex)
 
@@ -369,7 +364,7 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
+            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
             self.log.warning("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
@@ -401,7 +396,7 @@ class SimulatorAdapter(ABCAsynchronous):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self.storage_path)
+            history_index = h5.store_complete(simulation_history, self._get_output_path())
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")

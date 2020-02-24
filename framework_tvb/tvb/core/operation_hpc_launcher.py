@@ -27,9 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import os
 import sys
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
+from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
@@ -50,7 +51,7 @@ def do_operation_launch(simulator_gid, available_disk_space):
         log.info("Current wdir is: {}".format(input_folder))
         TvbProfile.current.hpc.HPC_INPUT_FOLDER = input_folder
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, input_folder)
-        adapter_instance = SimulatorAdapter()
+        adapter_instance = HPCSimulatorAdapter()
         adapter_instance.storage_path = input_folder
         adapter_instance.configure(view_model)
         # adapter_instance._ensure_enough_resources(available_disk_space, view_model)

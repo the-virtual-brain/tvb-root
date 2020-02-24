@@ -42,6 +42,7 @@ import threading
 from subprocess import Popen, PIPE
 from time import sleep
 import pyunicore.client as unicore_client
+from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -358,6 +359,9 @@ class HPCSchedulerClient(object):
             sleep(10)
         LOGGER.info(job.properties[HPCSettings.JOB_STATUS_KEY])
         wd = job.working_dir
+        output_list = wd.listdir(HPCSimulatorAdapter.OUTPUT_FOLDER)
+        for output_filename, output_filepath in output_list.items():
+            output_filepath.download(output_filename)
         LOGGER.info(wd.properties)
         LOGGER.info(wd.listdir())
 
