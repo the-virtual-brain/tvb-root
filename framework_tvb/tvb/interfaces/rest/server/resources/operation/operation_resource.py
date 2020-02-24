@@ -28,8 +28,9 @@
 #
 #
 
-import shutil
 import os
+import shutil
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
@@ -43,8 +44,10 @@ from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.security.authorization import get_current_user
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
@@ -94,7 +97,7 @@ class LaunchOperationResource(RestResource):
         """
         :generic method of launching Analyzers
         """
-        model_file = self.extract_file_from_request()
+        model_file = self.extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value)
         destination_folder = RestResource.get_destination_folder()
         h5_path = RestResource.save_temporary_file(model_file, destination_folder)
 
@@ -114,17 +117,15 @@ class LaunchOperationResource(RestResource):
             view_model_h5 = ViewModelH5(h5_path, view_model)
             view_model_gid = view_model_h5.gid.load()
 
-            # TODO: use logged user
-            user_id = project.fk_admin
-            operation = self.operation_service.prepare_operation(user_id, project.id, algorithm.id,
+            current_user = get_current_user()
+            operation = self.operation_service.prepare_operation(current_user.id, project.id, algorithm.id,
                                                                  algorithm.algorithm_category, view_model_gid.hex, None,
                                                                  {})
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
             if isinstance(adapter_instance, ABCUploader):
-
                 for key, value in adapter_instance.get_form_class().get_upload_information().items():
-                    data_file = self.extract_file_from_request(file_name=key, file_extension=value)
+                    data_file = self.extract_file_from_request(request_file_key=key, file_extension=value)
                     data_file_path = RestResource.save_temporary_file(data_file, destination_folder)
                     file_name = os.path.basename(data_file_path)
                     upload_field = getattr(view_model_h5, key)

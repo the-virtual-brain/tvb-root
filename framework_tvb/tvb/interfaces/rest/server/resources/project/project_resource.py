@@ -30,7 +30,7 @@
 from flask import request
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
-from tvb.interfaces.rest.commons import Strings
+from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.commons.dtos import OperationDto, DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource

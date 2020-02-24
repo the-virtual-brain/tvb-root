@@ -67,7 +67,7 @@ class TestRestService(TransactionalTestCase):
         meg_sensors = h5.load_from_index(meg_sensors_index)
         view_model.sensors = meg_sensors.gid
 
-        operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname, view_model,
+        operation_api.launch_operation(project_gid, algorithm_classname, view_model,
                                        self.temp_folder)
 
     def test_fire_simulation(self):

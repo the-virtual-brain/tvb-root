@@ -37,7 +37,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder, Strings
+from tvb.interfaces.rest.commons.strings import RestNamespace, RestLink, LinkPlaceholder, Strings
 from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
@@ -46,7 +46,7 @@ from tvb.interfaces.rest.server.resources.operation.operation_resource import Ge
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
     GetDataInProjectResource
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
+from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 
@@ -85,9 +85,8 @@ def initialize_flask():
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
-    name_space_users.add_resource(GetUsersResource, '/')
-    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url(
-        values={LinkPlaceholder.USERNAME.value: "<string:username>"}))
+    name_space_users.add_resource(LoginUserResource, RestLink.LOGIN.compute_url())
+    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url())
 
     # Projects namespace
     name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),

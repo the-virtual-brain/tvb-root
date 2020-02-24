@@ -29,6 +29,7 @@
 #
 
 import tempfile
+
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
@@ -43,8 +44,9 @@ class TVBClient:
     TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
     """
 
-    def __init__(self, server_url, auth_token):
+    def __init__(self, server_url, auth_token=''):
         populate_datatypes_registry()
+        self.r_token = None
         self.temp_folder = tempfile.gettempdir()
         self.user_api = UserApi(server_url, auth_token)
         self.project_api = ProjectApi(server_url, auth_token)
@@ -52,17 +54,34 @@ class TVBClient:
         self.simulation_api = SimulationApi(server_url, auth_token)
         self.operation_api = OperationApi(server_url, auth_token)
 
-    def get_users(self):
+    def login(self, username, password):
         """
-        Retrieve users list
+        Login in the keycloak system
         """
-        return self.user_api.get_users()
+        login_response = self.user_api.login(username, password)
+        self._update_token(login_response)
 
-    def get_project_list(self, username):
+    def refresh_token(self):
+        refresh_response = self.user_api.refresh(self.r_token)
+        self._update_token(refresh_response)
+
+    def logout(self):
+        self.user_api.logout(self.r_token)
+
+    def _update_token(self, response):
+        self.r_token = response['refresh_token']
+        new_token = response['access_token']
+        self.user_api.authorization_token = new_token
+        self.project_api.authorization_token = new_token
+        self.datatype_api.authorization_token = new_token
+        self.simulation_api.authorization_token = new_token
+        self.operation_api.authorization_token = new_token
+
+    def get_project_list(self):
         """
         Given a username, this function will return all projects for the given user.
         """
-        return self.user_api.get_projects_list(username)
+        return self.user_api.get_projects_list()
 
     def get_data_in_project(self, project_gid):
         """

@@ -50,13 +50,10 @@ if __name__ == '__main__':
     tvb_client = TVBClient("http://localhost:9090")
 
     logger.info("Requesting a list of users...")
-    users_list = tvb_client.get_users()
-    assert len(users_list) > 0
-    logger.info("TVB has {} users registered".format(len(users_list)))
+    tvb_client.login("tvb_user", "pass")
 
-    username = users_list[0].username
-    logger.info("Requesting projects for user {}...".format(username))
-    projects_of_user = tvb_client.get_project_list(username)
+    logger.info("Requesting projects for logged user")
+    projects_of_user = tvb_client.get_project_list()
     assert len(projects_of_user) > 0
     logger.info("TVB has {} projects for this user".format(len(projects_of_user)))
 

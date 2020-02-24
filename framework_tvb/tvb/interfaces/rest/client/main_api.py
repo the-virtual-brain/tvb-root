@@ -28,7 +28,7 @@
 #
 #
 import requests
-from tvb.interfaces.rest.commons import Strings
+from tvb.interfaces.rest.commons.strings import Strings
 
 
 class MainApi:

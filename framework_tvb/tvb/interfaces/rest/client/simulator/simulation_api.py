@@ -37,7 +37,8 @@ from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 
 
 class SimulationApi(MainApi):
@@ -57,4 +58,4 @@ class SimulationApi(MainApi):
         file_obj = open(zip_folder_path, 'rb')
         return self.secured_request().post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
-        })), files={"file": ("SimulationData.zip", file_obj)})
+        })), files={RequestFileKey.SIMULATION_FILE_KEY.value: ("SimulationData.zip", file_obj)})

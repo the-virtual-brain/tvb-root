@@ -58,8 +58,9 @@ class AuthorizationManager(metaclass=AuthorizationManagerMeta):
         self.realm = None
         self.auth_server_url = None
         self.client_id = None
+        self.secret_key = None
         self._load_configs()
-        self.keycloak = KeycloakOpenID(self.auth_server_url, self.realm, self.client_id)
+        self.keycloak = KeycloakOpenID(self.auth_server_url, self.realm, self.client_id, self.secret_key)
 
     def _load_configs(self):
         """
@@ -74,6 +75,10 @@ class AuthorizationManager(metaclass=AuthorizationManagerMeta):
                 self.realm = config['realm']
                 self.auth_server_url = config['auth-server-url']
                 self.client_id = config['resource']
+                try:
+                    self.secret_key = config['credentials']['secret']
+                except KeyError:
+                    self.secret_key = None
         except OSError:
             raise RuntimeError("Failed to read Keycloak configuration file from {}".format(self.config_file))
 
