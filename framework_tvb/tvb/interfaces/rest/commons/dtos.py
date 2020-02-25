@@ -133,3 +133,5 @@ class DataTypeDto(BaseDto):
             self.gid = datatype.gid
             self.name = datatype.display_name
             self.type = datatype.display_type
+            self.create_date = datatype.create_date
+            self.subject = datatype.subject
