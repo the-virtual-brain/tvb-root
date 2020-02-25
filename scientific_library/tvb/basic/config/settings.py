@@ -202,8 +202,6 @@ class HPCSettings(object):
     HPC related specifications
     """
     SCHEDULER_SARUS = "sarus"
-    HPC_INPUT_FOLDER = None
-
     HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
 
     UNICORE_RESOURCER_KEY = 'Resources'
