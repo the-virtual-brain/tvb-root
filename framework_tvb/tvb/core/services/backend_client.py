@@ -291,6 +291,7 @@ class HPCSchedulerClient(object):
     """
     TVB_BIN_ENV_KEY = 'TVB_BIN'
     CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
+    file_handler = FilesHelper()
 
     @staticmethod
     def _gather_file_list(h5_file, file_list):
@@ -337,6 +338,26 @@ class HPCSchedulerClient(object):
         return my_job, job_inputs
 
     @staticmethod
+    def listdir(working_dir, base='/'):
+        # type: (Storage, str) -> dict
+        """
+        We took this code from pyunicore Storage.listdir method and extended it to use a subdirectory.
+        Looking at the method signature, it should have had this behavior, but the 'base' argument is not used later
+        inside the method code.
+        TODO: Probably will be fixed soon in their API, so we could delete this.
+        :return: dict of {str: PathFile} objects
+        """
+        ret = {}
+        for path, meta in working_dir.contents(base)['content'].items():
+            path_url = working_dir.path_urls['files'] + path
+            path = path[1:]  # strip leading '/'
+            if meta['isDirectory']:
+                ret[path] = unicore_client.PathDir(working_dir, path_url, path)
+            else:
+                ret[path] = unicore_client.PathFile(working_dir, path_url, path)
+        return ret
+
+    @staticmethod
     def _run_hpc_job(operation_identifier):
         operation = dao.get_operation_by_id(operation_identifier)
         input_gid = json.loads(operation.parameters)['gid']
@@ -359,11 +380,19 @@ class HPCSchedulerClient(object):
             sleep(10)
         LOGGER.info(job.properties[HPCSettings.JOB_STATUS_KEY])
         wd = job.working_dir
-        output_list = wd.listdir(HPCSimulatorAdapter.OUTPUT_FOLDER)
-        for output_filename, output_filepath in output_list.items():
-            output_filepath.download(output_filename)
+        output_list = HPCSchedulerClient.listdir(wd, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        h5_path = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
+
+        HPCSchedulerClient._stage_out_outputs(h5_path, output_list)
         LOGGER.info(wd.properties)
         LOGGER.info(wd.listdir())
+
+    @staticmethod
+    def _stage_out_outputs(h5_path, output_list):
+        for output_filename, output_filepath in output_list.items():
+            if type(output_filepath) is not unicore_client.PathFile:
+                continue
+            output_filepath.download(os.path.join(h5_path, os.path.basename(output_filename)))
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):

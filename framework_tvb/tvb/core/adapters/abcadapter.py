@@ -478,10 +478,6 @@ class ABCAdapter(object):
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        if TvbProfile.current.hpc.IS_HPC_RUN:
-            LOGGER.warning("Loading HPC datatype from: {}".format(TvbProfile.current.hpc.HPC_INPUT_FOLDER))
-            return h5.load_from_dir(TvbProfile.current.hpc.HPC_INPUT_FOLDER, data_gid, dt_class=dt_class)
-
         index = load_entity_by_gid(data_gid.hex)
         return h5.load_from_index(index, dt_class)
 
