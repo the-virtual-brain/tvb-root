@@ -46,7 +46,6 @@ class TVBClient:
 
     def __init__(self, server_url, auth_token=''):
         populate_datatypes_registry()
-        self.r_token = None
         self.temp_folder = tempfile.gettempdir()
         self.user_api = UserApi(server_url, auth_token)
         self.project_api = ProjectApi(server_url, auth_token)
@@ -62,14 +61,29 @@ class TVBClient:
         self._update_token(login_response)
 
     def logout(self):
-        self.user_api.logout(self.r_token)
+        """
+        Logout user by invalidating the keycloak token
+        """
+        self.user_api.logout()
+
+    def update_auth_token(self, auth_token):
+        """
+        Set the authorization token for API requests. Use this method if you handle the login and token refreshing
+        processes by yourself.
+        :param auth_token:
+        """
+        self.user_api.authorization_token = auth_token
+        self.project_api.authorization_token = auth_token
+        self.datatype_api.authorization_token = auth_token
+        self.simulation_api.authorization_token = auth_token
+        self.operation_api.authorization_token = auth_token
 
     def _update_token(self, response):
-        self.user_api.update_token(response)
-        self.project_api.update_token(response)
-        self.datatype_api.update_token(response)
-        self.simulation_api.update_token(response)
-        self.operation_api.update_token(response)
+        self.user_api.update_tokens(response)
+        self.project_api.update_tokens(response)
+        self.datatype_api.update_tokens(response)
+        self.simulation_api.update_tokens(response)
+        self.operation_api.update_tokens(response)
 
     def get_project_list(self):
         """

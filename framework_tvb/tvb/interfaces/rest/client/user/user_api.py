@@ -30,8 +30,8 @@
 
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons.strings import RestLink
 from tvb.interfaces.rest.commons.dtos import ProjectDto
+from tvb.interfaces.rest.commons.strings import RestLink
 
 
 class UserApi(MainApi):
@@ -44,9 +44,9 @@ class UserApi(MainApi):
         return response
 
     @handle_response
-    def logout(self, refresh_token):
+    def logout(self):
         response = self.secured_request().delete(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
-            "refresh_token": refresh_token,
+            "refresh_token": self.refresh_token,
         })
         return response
 
