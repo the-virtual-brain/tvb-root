@@ -489,7 +489,7 @@ class FlowController(BaseController):
             common.set_important_message(str(result))
 
         except formencode.Invalid as excep:
-            errors = excep.unpack_errors()
+            errors = excep.unpack_errors
             common.set_error_message("Invalid form inputs")
             self.logger.warning("Invalid form inputs %s" % errors)
         except OperationException as excep1:
