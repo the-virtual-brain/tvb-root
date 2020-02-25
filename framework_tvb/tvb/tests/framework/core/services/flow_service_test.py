@@ -123,9 +123,10 @@ class TestFlowService(TransactionalTestCase):
         conn = connectivity_factory()
         rm = region_mapping_factory()
         ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
-        result = self.flow_service.get_launchable_algorithms(ts.gid)
+        result,  has_operations_warning = self.flow_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
+        assert False == has_operations_warning
 
     def test_get_group_by_identifier(self):
         """
