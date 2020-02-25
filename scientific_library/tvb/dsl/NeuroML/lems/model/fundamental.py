@@ -6,7 +6,7 @@ Dimension and Unit definitions in terms of the fundamental SI units.
 @contact: gautham@lisphacker.org
 """
 
-from lems.base.base import LEMSBase
+from base.base import LEMSBase
 
 class Include(LEMSBase):
     """

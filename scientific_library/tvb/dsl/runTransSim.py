@@ -13,20 +13,19 @@ import time
 # Epileptor
 # Montbrio
 
-target="Epileptor"
-# make a model template
-templating.drift_templating(target)
+# target="Epileptor"
+# # make a model template
+# templating.drift_templating(target)
+# # run tvb with model template
+# testTemplSim = TemplSim.TVB_test()
+# testTemplSim.startsim(target)
 
-# run tvb with model template
-testTemplSim = TemplSim.TVB_test()
-testTemplSim.startsim(target)
 
-
-# model_target = ["Montbrio", "Epileptor", "Kuramoto", "ReducedWongWang", "Generic2dOscillator"]
-# for i, trgt in enumerate(model_target):
-#     # make a model template
-#     templating.drift_templating(trgt)
-#     time.sleep(2)
-#     # run tvb with model template
-#     testTemplSim = TemplSim.TVB_test()
-#     testTemplSim.startsim(trgt)
+model_target = ["Montbrio", "Epileptor", "Kuramoto", "ReducedWongWang", "Generic2dOscillator"]
+for i, trgt in enumerate(model_target):
+    # make a model template
+    templating.drift_templating(trgt)
+    time.sleep(2)
+    # run tvb with model template
+    testTemplSim = TemplSim.TVB_test()
+    testTemplSim.startsim(trgt)

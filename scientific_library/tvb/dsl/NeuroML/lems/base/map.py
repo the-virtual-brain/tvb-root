@@ -6,7 +6,7 @@ Map class.
 @contact: gautham@lisphacker.org
 """
 
-from lems.base.base import LEMSBase
+from base.base import LEMSBase
 
 class Map(dict, LEMSBase):
     """

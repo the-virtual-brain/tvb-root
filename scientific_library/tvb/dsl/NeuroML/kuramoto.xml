@@ -8,23 +8,26 @@
                    description="Base type of any cell/population which has a (dimensionless) rate _R."
                    value="none">
 
-        <Constant name="omega" symbol="" dimension="lo=0.01, hi=200.0, step=0.1" value="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
-
-        <Exposure name="theta" dimension="sin(theta)"/>
+        <Constant name="omega" domain="lo=0.01, hi=200.0, step=0.1" default="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
 
         <Dynamics>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="theta" dimension="0.0, pi * 2.0" boundaries=""/>
+            <StateVariable name="theta" default="0.0, pi * 2.0" boundaries=""/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
             <!-- Use this to define global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <!-- _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate) -->
             <!-- Used here to introduce the sin wrapper -->
-            <DerivedVariable name="I" dimension="none" value="coupling[0] + sin(local_coupling * theta)"/>
+            <DerivedVariable name="I" expression="coupling[0] + sin(local_coupling * theta)"/>
 
-            <TimeDerivative variable="dV" exposure="" value="omega * I"/>
+            <TimeDerivative name="dV" expression="omega * I"/>
         </Dynamics>
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
+        Choices and default list with a (,) seperator-->
+        <Exposure name="theta" default="theta" choices="theta"/>
 
     </ComponentType>
 

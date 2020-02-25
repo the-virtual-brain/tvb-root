@@ -291,7 +291,6 @@ class TVB_test:
 		logger.info('threadsperblock %d', threadsperblock)
 		logger.info('blockspergrid %d', blockspergrid)
 
-
 		benchwhat = args.bench
 		# locals()[benchwhat]()
 		logger.info('benchwhat: %s', benchwhat)
@@ -316,4 +315,4 @@ class TVB_test:
 
 if __name__ == '__main__':
 	zelf = TVB_test()
-	zelf.startsim('Epileptor')
+	zelf.startsim('Kuramoto')
