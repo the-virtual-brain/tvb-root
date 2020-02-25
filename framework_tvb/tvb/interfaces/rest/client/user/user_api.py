@@ -44,13 +44,6 @@ class UserApi(MainApi):
         return response
 
     @handle_response
-    def refresh(self, refresh_token):
-        response = self.secured_request().put(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
-            "refresh_token": refresh_token,
-        })
-        return response
-
-    @handle_response
     def logout(self, refresh_token):
         response = self.secured_request().delete(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
             "refresh_token": refresh_token,
