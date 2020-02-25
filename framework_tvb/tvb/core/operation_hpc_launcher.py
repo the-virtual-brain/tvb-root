@@ -49,16 +49,9 @@ def do_operation_launch(simulator_gid, available_disk_space):
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
         input_folder = os.getcwd()
         log.info("Current wdir is: {}".format(input_folder))
-        TvbProfile.current.hpc.HPC_INPUT_FOLDER = input_folder
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, input_folder)
-        adapter_instance = HPCSimulatorAdapter()
-        adapter_instance.storage_path = input_folder
-        adapter_instance.configure(view_model)
-        # adapter_instance._ensure_enough_resources(available_disk_space, view_model)
-        result = adapter_instance.launch(view_model)
-        if not isinstance(result, (list, tuple)):
-            result = [result, ]
-        # adapter_instance.__check_integrity(result)
+        adapter_instance = HPCSimulatorAdapter(input_folder)
+        result_msg, nr_datatypes = adapter_instance._prelaunch(None, None, available_disk_space, view_model)
 
     except Exception as excep:
         log.error("Could not execute operation {}".format(str(sys.argv[1])))

@@ -27,25 +27,28 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import os
 import uuid
 import typing
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.neotraits.api import HasTraits
-from tvb.basic.profile import TvbProfile
 from tvb.core.neocom import h5
 
 
 class HPCSimulatorAdapter(SimulatorAdapter):
     OUTPUT_FOLDER = 'output'
 
-    @staticmethod
-    def load_traited_by_gid(data_gid, dt_class=None):
+    def __init__(self, storage_path):
+        super(HPCSimulatorAdapter, self).__init__()
+        self.storage_path = storage_path
+
+    def load_traited_by_gid(self, data_gid, dt_class=None):
         # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        return h5.load_from_dir(TvbProfile.current.hpc.HPC_INPUT_FOLDER, data_gid, dt_class=dt_class)
+        return h5.load_from_dir(self.storage_path, data_gid, dt_class=dt_class)
 
     def _try_load_region_mapping(self):
         return None, None
@@ -62,3 +65,18 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
         return output_path
+
+    def _extract_operation_data(self, operation=None):
+        """
+        Do nothing for HPC run.
+        :param operation: None
+        """
+
+    def _update_operation_entity(self, operation, required_disk_space):
+        """
+        """
+
+    def _capture_operation_results(self, result):
+        """
+        """
+        return "", 2
