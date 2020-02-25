@@ -61,21 +61,15 @@ class TVBClient:
         login_response = self.user_api.login(username, password)
         self._update_token(login_response)
 
-    def refresh_token(self):
-        refresh_response = self.user_api.refresh(self.r_token)
-        self._update_token(refresh_response)
-
     def logout(self):
         self.user_api.logout(self.r_token)
 
     def _update_token(self, response):
-        self.r_token = response['refresh_token']
-        new_token = response['access_token']
-        self.user_api.authorization_token = new_token
-        self.project_api.authorization_token = new_token
-        self.datatype_api.authorization_token = new_token
-        self.simulation_api.authorization_token = new_token
-        self.operation_api.authorization_token = new_token
+        self.user_api.update_token(response)
+        self.project_api.update_token(response)
+        self.datatype_api.update_token(response)
+        self.simulation_api.update_token(response)
+        self.operation_api.update_token(response)
 
     def get_project_list(self):
         """
