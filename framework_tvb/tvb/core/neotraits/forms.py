@@ -304,6 +304,7 @@ class DataTypeSelectField(Field):
         return dao.get_datatype_by_gid(self.data)
 
     def _prepare_display_name(self, value):
+        # TODO remove duplicate with TraitedDataTypeSelectField
         """
         Populate meta-data fields for data_list (list of DataTypes).
 
@@ -315,9 +316,7 @@ class DataTypeSelectField(Field):
         # XML check will be done after select and submit.
         entity_gid = value[2]
         actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
-        display_name = ''
-        if actual_entity is not None and len(actual_entity) > 0 and isinstance(actual_entity[0], DataType):
-            display_name = actual_entity[0].__class__.__name__
+        display_name = actual_entity[0].display_name
         display_name += ' - ' + (value[3] or "None ")
         if value[5]:
             display_name += ' - From: ' + str(value[5])
