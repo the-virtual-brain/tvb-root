@@ -22,7 +22,7 @@
         <Dynamics>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="r" dimension="0., 2.0" boundaries="0.0, numpy.inf"/>
+            <StateVariable name="r" dimension="0., 2.0" boundaries="0.0, inf"/>
             <StateVariable name="V" dimension="-2.0, 1.5" boundaries=""/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives, enter the local coupling formulas or any formula -->

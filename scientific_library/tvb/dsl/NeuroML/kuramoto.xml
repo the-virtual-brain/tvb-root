@@ -10,10 +10,6 @@
 
         <Constant name="omega" symbol="" dimension="lo=0.01, hi=200.0, step=0.1" value="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
 
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_coupling" dimension='float'/>
-        <Parameter name="global_speed" dimension='float'/>
-
         <Exposure name="theta" dimension="sin(theta)"/>
 
         <Dynamics>
