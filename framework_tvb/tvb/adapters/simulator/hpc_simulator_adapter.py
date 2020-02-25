@@ -80,3 +80,6 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         """
         """
         return "", 2
+
+    def _ensure_enough_resources(self, available_disk_space, view_model):
+        return 0

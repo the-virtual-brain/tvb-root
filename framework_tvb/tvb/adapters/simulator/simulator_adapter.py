@@ -42,6 +42,7 @@ Few supplementary steps are done here:
 """
 
 import json
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
@@ -368,6 +369,7 @@ class SimulatorAdapter(ABCAsynchronous):
             self.log.warning("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
+            ts_h5.store_generic_attributes(GenericAttributes())
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
 
