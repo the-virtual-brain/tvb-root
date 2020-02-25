@@ -56,16 +56,22 @@ class MainApi:
 
     def secured_request(self):
         """
-        Build a secured request protected by the authorization token set before, used in the entire session
-        :return: secured requests session
+        If we have an expiration date and the token is expired we make a refresh call then we build a secured request
+        based on the refreshed token.
+        :return: secured request session
         """
         if self.token_expiry_date is not None and datetime.now() >= self.token_expiry_date \
                 and self.refresh_token is not None:
             refresh_token_response = self._refresh_token()
-            self.update_token(refresh_token_response)
+            self.update_tokens(refresh_token_response)
         return self._build_request()
 
     def _build_request(self):
+        """
+        Build a secured request protected by the authorization token set before, used in the entire session
+        :return: secured requests session
+        """
+
         authorization_header = {Strings.AUTH_HEADER.value: Strings.BEARER.value + self.authorization_token}
         with requests.Session() as request_session:
             request_session.headers.update(authorization_header)
@@ -77,7 +83,7 @@ class MainApi:
             "refresh_token": self.refresh_token,
         })
 
-    def update_token(self, response):
+    def update_tokens(self, response):
         self.refresh_token = response['refresh_token']
         self.authorization_token = response['access_token']
         expires_in = response['expires_in']
