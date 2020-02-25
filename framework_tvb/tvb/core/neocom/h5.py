@@ -59,6 +59,13 @@ def h5_file_for_index(dt_index_instance):
     return h5_class(h5_path)
 
 
+def index_for_h5_file(source_path):
+    # type: (str) -> typing.Type[DataType]
+    """"""
+    h5_class = H5File.h5_class_from_file(source_path)
+    return REGISTRY.get_index_for_h5file(h5_class)
+
+
 def load_from_index(dt_index, dt_class=None):
     # type: (DataType, typing.Type[HasTraits]) -> HasTraits
     loader = TVBLoader(REGISTRY)

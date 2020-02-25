@@ -365,6 +365,11 @@ class ABCAdapter(object):
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
 
+    def fill_existing_indexes(self, operation, index_list):
+        self._extract_operation_data(operation)
+        self._prepare_generic_attributes()
+        return self._capture_operation_results(index_list)
+
     @nan_not_allowed()
     def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """

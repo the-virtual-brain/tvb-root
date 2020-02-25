@@ -78,6 +78,10 @@ class Registry(object):
         # type: (typing.Type[DataType]) -> typing.Type[H5File]
         return self._h5file_for_datatype[self._datatype_for_index[index_class]]
 
+    def get_index_for_h5file(self, h5file_class):
+        # type: (typing.Type[H5File]) -> typing.Type[DataType]
+        return self._index_for_datatype[self._datatype_for_h5file[h5file_class]]
+
     def register_datatype(self, datatype_class, h5file_class, datatype_index):
         # type: (HasTraits, H5File, DataType) -> None
         self._h5file_for_datatype[datatype_class] = h5file_class

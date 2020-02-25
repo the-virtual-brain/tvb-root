@@ -51,6 +51,7 @@ class H5File(object):
     This class implements reading and writing to a *specific* h5 based file format.
     A subclass of this defines a new file format.
     """
+    KEY_WRITTEN_BY = 'written_by'
     is_new_file = False
 
     def __init__(self, path):
@@ -62,7 +63,7 @@ class H5File(object):
 
         # common scalar headers
         self.gid = Uuid(HasTraits.gid, self)
-        self.written_by = Scalar(Attr(str), self, name='written_by')
+        self.written_by = Scalar(Attr(str), self, name=self.KEY_WRITTEN_BY)
         self.create_date = Scalar(Attr(str), self, name='create_date')
 
         # Generic attributes descriptors
@@ -194,21 +195,25 @@ class H5File(object):
                 ret.append((accessor.trait_attribute, accessor.load()))
         return ret
 
-
     @staticmethod
-    def from_file(path):
+    def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]
         base_dir, fname = os.path.split(path)
         storage_manager = HDF5StorageManager(base_dir, fname)
         meta = storage_manager.get_metadata()
-        h5file_class_fqn = meta.get('written_by')
+        h5file_class_fqn = meta.get(H5File.KEY_WRITTEN_BY)
         if h5file_class_fqn is None:
             return H5File(path)
         package, cls_name = h5file_class_fqn.rsplit('.', 1)
         module = importlib.import_module(package)
         cls = getattr(module, cls_name)
-        return cls(path)
+        return cls
 
+    @staticmethod
+    def from_file(path):
+        # type: (str) -> H5File
+        cls = H5File.h5_class_from_file(path)
+        return cls(path)
 
     def __repr__(self):
         return '<{}("{}")>'.format(type(self).__name__, self.path)
