@@ -10,39 +10,36 @@
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
-        <Constant name="a" symbol="" dimension="lo=0.0, hi=0.270, step=0.01" value="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
-        <Constant name="b" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
-        <Constant name="d" symbol="" dimension="lo=0.0, hi=200.0, step=0.01" value="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
-        <Constant name="gamma" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.641" description="Kinetic parameter"/>
-        <Constant name="tau_s" symbol="" dimension="lo=50., hi=150., step=1." value="100." description="Kinetic parameter. NMDA decay time constant."/>
-        <Constant name="w" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.6" description="Excitatory recurrence"/>
-        <Constant name="J_N" symbol="" dimension="lo=0.2609, hi=0.5, step=0.001" value="0.2609" description="Excitatory recurrence"/>
-        <Constant name="I_o" symbol="" dimension="lo=0.0, hi=1.0, step=0.01" value="0.33" description="[nA] Effective external input"/>
+        <Constant name="a" domain="lo=0.0, hi=0.270, step=0.01" default="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b" domain="lo=0.0, hi=1.0, step=0.01" default="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d" domain="lo=0.0, hi=200.0, step=0.01" default="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma" domain="lo=0.0, hi=1.0, step=0.01" default="0.641" description="Kinetic parameter"/>
+        <Constant name="tau_s" domain="lo=50., hi=150., step=1." default="100." description="Kinetic parameter. NMDA decay time constant."/>
+        <Constant name="w" domain="lo=0.0, hi=1.0, step=0.01" default="0.6" description="Excitatory recurrence"/>
+        <Constant name="J_N" domain="lo=0.2609, hi=0.5, step=0.001" default="0.2609" description="Excitatory recurrence"/>
+        <Constant name="I_o" domain="lo=0.0, hi=1.0, step=0.01" default="0.33" description="[nA] Effective external input"/>
 <!--        <Constant name="sigma_noise" symbol="NArray" dimension="lo=0.0, hi=0.005, step=0.0001" value="0.000000001" description="[nA] Noise amplitude. Take this value into account for stochatic-->
 <!--        integration schemes."/>-->
-
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry (CUDA only)-->
-        <Parameter name="global_coupling" dimension="float" />
-        <Parameter name="global_speed" dimension="float" />
 
         <Dynamics>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="S" dimension="0.0, 1.0" boundaries="0.0, 1.0"/>
+            <StateVariable name="S" default="0.0, 1.0" boundaries="0.0, 1.0"/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives with temp variables -->
             <!-- Use this to define global and local coupling: coupling[0] and local_coupling -->
             <!-- Used here to split the time derivative in 2 parts -->
-            <DerivedVariable name="x" dimension="none" value="w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling"/>
-            <DerivedVariable name="H" dimension="none" value="(a * x - b) / (1 - exp(-d * (a * x - b)))"/>
+            <DerivedVariable name="x" expression="w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling"/>
+            <DerivedVariable name="H" expression="(a * x - b) / (1 - exp(-d * (a * x - b)))"/>
 
-            <TimeDerivative variable="dS" exposure="dS" value="- (S / tau_s) + (1 - S) * H * gamma"/>
+            <TimeDerivative name="dS" expression="- (S / tau_s) + (1 - S) * H * gamma"/>
 
-<!--            <TimeDerivative variable="dS" exposure="dS" value="-(S / tau_s) + (1 - S) * ((a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b) / (1 - exp(-d * (a * (w * J_N * S + I_o + J_N * c_0 + J_N * lc_0) - b)))) * gamma"/>-->
         </Dynamics>
 
-        <!-- Variables of interest. Use field dimension to specify choices. -->
-        <Exposure name="S" dimension="S"/>
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
+        Choices and default list with a (,) seperator-->
+        <Exposure name="S" choices="S" default="S" description="default state variables to be monitored"/>
 
     </ComponentType>
 

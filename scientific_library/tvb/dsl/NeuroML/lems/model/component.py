@@ -6,13 +6,13 @@ Parameter, ComponentType and Component class definitions.
 @contact: gautham@lisphacker.org
 """
 
-from lems.base.base import LEMSBase
-from lems.base.map import Map
-from lems.base.errors import ModelError,ParseError
-
-from lems.model.dynamics import Dynamics
-from lems.model.structure import Structure
-from lems.model.simulation import Simulation
+from base.base import LEMSBase
+from base.map import Map
+# from lems.base.errors import ModelError,ParseError
+#
+from model.dynamics import Dynamics
+from model.structure import Structure
+from model.simulation import Simulation
 
 import sys
 from parser.expr import ExprParser
@@ -222,7 +222,7 @@ class Constant(LEMSBase):
     Stores a constant specification.
     """
     
-    def __init__(self, name, value, dimension = None, symbol = None, description = ''):
+    def __init__(self, name, default, domain = None, symbol = None, description = ''):
         """
         Constructor.
 
@@ -237,11 +237,11 @@ class Constant(LEMSBase):
         """ Symbol of the constant.
         @type: str """
 
-        self.value = value
+        self.default = default
         """ Value of the constant.
         @type: str """
 
-        self.dimension = dimension
+        self.domain = domain
         """ Physical dimensions of the constant.
         @type: str """
 
@@ -322,7 +322,7 @@ class Exposure(LEMSBase):
     Stores a exposure specification.
     """
 
-    def __init__(self, name, dimension, description = ''):
+    def __init__(self, name, choices, default, description = ''):
         """
         Constructor.
 
@@ -333,8 +333,12 @@ class Exposure(LEMSBase):
         """ Name of the exposure.
         @type: str """
          
-        self.dimension = dimension
-        """ Physical dimension of the exposure.
+        self.choices = list(choices.split(", "))
+        """ Choices of the exposure.
+        @type: str """
+
+        self.default = list(default.split(", "))
+        """ Default option of the exposure.
         @type: str """
 
         self.description = description
@@ -346,7 +350,7 @@ class Exposure(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.dimension) +\
+        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.choices) +\
           (' description = "{0}"'.format(self.description) if self.description else '') +\
           '/>'
 

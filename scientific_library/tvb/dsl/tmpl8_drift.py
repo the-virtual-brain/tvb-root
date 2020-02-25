@@ -15,10 +15,9 @@ class ${dfunname}(ModelNumbaDfun):
         label="State Variable ranges [lo, hi]",
         default={\
 %for itemA in dynamics.state_variables:
-"${itemA.name}": numpy.array([${itemA.dimension}])${'' if loop.last else ', \n\t\t\t\t '}\
+"${itemA.name}": numpy.array([${itemA.default}])${'' if loop.last else ', \n\t\t\t\t '}\
 %endfor
 },
-        ## doc="""${dynamics.state_variables['V'].exposure}"""
         doc="""state variables"""
     )
 
@@ -41,11 +40,18 @@ class ${dfunname}(ModelNumbaDfun):
         choices=(\
 %for i, itemJ in enumerate(exposures):
 %if i == 0:
-"${itemJ.dimension}"),
-        default=("${itemJ.name}", ),
+%for choice in (itemJ.choices):
+'${choice}', \
+%endfor
+),
+        default=(\
+%for defa in (itemJ.default):
+'${defa}', \
+%endfor
 %endif
-%endfor),
-        doc="The quantities of interest for monitoring for the generic 2D oscillator."
+%endfor
+),
+        doc="${itemJ.description}"
     )
 
     state_variables = [\
@@ -77,7 +83,7 @@ class ${dfunname}(ModelNumbaDfun):
 
         ## derived variables
         % for i, der_var in enumerate(dynamics.derived_variables):
-        ${der_var.name} = ${der_var.value}
+        ${der_var.name} = ${der_var.expression}
         % endfor
 
         ## conditional variables
@@ -94,7 +100,7 @@ class ${dfunname}(ModelNumbaDfun):
         % endfor
 
         % for i, item in enumerate(dynamics.time_derivatives):
-        ev('${item.value}', out=derivative[${i}])
+        ev('${item.expression}', out=derivative[${i}])
         % endfor
 
         return derivative
@@ -132,7 +138,7 @@ local_coupling, dx):
 
     ## derived variables
     % for i, der_var in enumerate(dynamics.derived_variables):
-    ${der_var.name} = ${der_var.value}
+    ${der_var.name} = ${der_var.expression}
     % endfor
 
     ## conditional variables
@@ -149,7 +155,7 @@ local_coupling, dx):
     % endfor /
 
     % for i, itemH in enumerate(dynamics.time_derivatives):
-    dx[${i}] = ${itemH.value}
+    dx[${i}] = ${itemH.expression}
     % endfor
     \
     \
@@ -157,8 +163,8 @@ local_coupling, dx):
     <%def name="NArray(nconst)">
     ${nconst.name} = NArray(
         label=":math:`${nconst.name}`",
-        default=numpy.array([${nconst.value}]),
-        domain=Range(${nconst.dimension}),
+        default=numpy.array([${nconst.default}]),
+        domain=Range(${nconst.domain}),
         doc="""${nconst.description}"""
     )\
     ##self.${nconst.name} = ${nconst.name}

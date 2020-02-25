@@ -51,7 +51,7 @@ def drift_templating(target):
 
     model = Model()
     model.import_from_file(fp_xml)
-    modelextended = model.resolve()
+    #modelextended = model.resolve()
 
     modelist = list()
     modelist.append(model.component_types[modelname])
@@ -131,7 +131,7 @@ def noise_templating():
         f.writelines(model_str)
 
 if __name__ == '__main__':
-    drift_templating('Montbrio')
+    drift_templating('Generic2dOscillator')
 
 # coupling_templating()
 # noise_templating()

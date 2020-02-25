@@ -8,19 +8,19 @@ LEMS XML file format parser.
 
 import xml.etree.ElementTree as xe
 
-from lems.base.base import LEMSBase
+from base.base import LEMSBase
 # from lems.model.fundamental import *
-# from lems.model.component import *
+from model.component import *
 # from lems.model.dynamics import *
 # from lems.model.structure import *
 # from lems.model.simulation import *
 
 # from lems.base.util import make_id
 
-import sys
-sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
-from model.component import *
-sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
+# import sys
+# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
+# from model.component import *
+# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
 from model.dynamics import *
 
 
@@ -603,17 +603,17 @@ class LEMSFileParser(LEMSBase):
         except:
             self.raise_error('<Constant> must specify a name.')
 
-        dimension = node.lattrib.get('dimension', None)
-        symbol = node.lattrib['symbol']
+        domain = node.lattrib.get('domain', None)
+        symbol = node.lattrib.get('symbol', None)
 
         try:
-            value = node.lattrib['value']
+            default = node.lattrib['default']
         except:
             self.raise_error("Constant '{0}' must have a value.", name)
 
         description = node.lattrib.get('description', '')
 
-        constant = Constant(name, value, dimension, symbol, description)
+        constant = Constant(name, default, domain, symbol, description)
 
         if self.current_component_type:
             self.current_component_type.add_constant(constant)
@@ -772,7 +772,7 @@ class LEMSFileParser(LEMSBase):
             self.raise_error('<DerivedVariable> must specify a name')
 
         params = dict()
-        for attr_name in ['dimension', 'exposure', 'select', 'value', 'reduce', 'required']:
+        for attr_name in ['dimension', 'exposure', 'select', 'expression', 'reduce', 'required']:
             if attr_name in node.lattrib:
                 params[attr_name] = node.lattrib[attr_name]
 
@@ -970,14 +970,20 @@ class LEMSFileParser(LEMSBase):
             self.raise_error('<Exposure> must specify a name')
 
         try:
-            dimension = node.lattrib['dimension']
+            choices = node.lattrib['choices']
         except:
-            self.raise_error("Exposure '{0}' must specify a dimension",
+            self.raise_error("Exposure '{0}' must specify choices",
+                             name)
+
+        try:
+            default = node.lattrib['default']
+        except:
+            self.raise_error("Exposure '{0}' must specify default",
                              name)
 
         description = node.lattrib.get('description', '')
 
-        self.current_component_type.add_exposure(Exposure(name, dimension, description))
+        self.current_component_type.add_exposure(Exposure(name, choices, default, description))
 
     def parse_fixed(self, node):
         """
@@ -1597,8 +1603,8 @@ class LEMSFileParser(LEMSBase):
         else:
             self.raise_error('<StateVariable> must specify a name')
 
-        if 'dimension' in node.lattrib:
-            dimension = node.lattrib['dimension']
+        if 'default' in node.lattrib:
+            default = node.lattrib['default']
         else:
             self.raise_error("State variable '{0}' must specify a dimension", name)
 
@@ -1607,7 +1613,7 @@ class LEMSFileParser(LEMSBase):
         else:
             boundaries = None
 
-        self.current_regime.add_state_variable(StateVariable(name, dimension, boundaries))
+        self.current_regime.add_state_variable(StateVariable(name, default, boundaries))
 
     def parse_structure(self, node):
         """
@@ -1659,18 +1665,18 @@ class LEMSFileParser(LEMSBase):
         name of a value.
         """
 
-        if 'variable' in node.lattrib:
-            variable = node.lattrib['variable']
+        if 'name' in node.lattrib:
+            name = node.lattrib['name']
         else:
-            self.raise_error('<TimeDerivative> must specify a variable.')
+            self.raise_error('<TimeDerivative> must specify a name.')
 
-        if 'value' in node.lattrib:
-            value = node.lattrib['value']
+        if 'expression' in node.lattrib:
+            expression = node.lattrib['expression']
         else:
             self.raise_error("Time derivative for '{0}' must specify an expression.",
                              variable)
 
-        self.current_regime.add_time_derivative(TimeDerivative(variable, value))
+        self.current_regime.add_time_derivative(TimeDerivative(name, expression))
 
     def parse_transition(self, node):
         """

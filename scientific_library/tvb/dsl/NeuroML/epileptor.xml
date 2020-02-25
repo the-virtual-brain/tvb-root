@@ -11,78 +11,75 @@
                    value="">
 
         <!-- If empty then none -->
-        <Constant name="a" symbol="" dimension="0, 0" value="1.0" description="Coefficient of the cubic term in the first state-variable."/>
-        <Constant name="b" symbol="" dimension="0, 0" value="3.0" description="Coefficient of the squared term in the first state-variable."/>
-        <Constant name="c" symbol="" dimension="0, 0" value="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
-        <Constant name="d" symbol="" dimension="0, 0" value="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
-        <Constant name="r" symbol="" dimension="lo=0.0, hi=0.001, step=0.00005" value="0.00035" description="Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."/>
-        <Constant name="s" symbol="" dimension="0, 0" value="4.0" description="Linear coefficient in the third state variable"/>
-        <Constant name="x0" symbol="" dimension="lo=-3.0, hi=-1.0, step=0.1" value="-1.6" description="Epileptogenicity parameter."/>
-        <Constant name="Iext" symbol="" dimension="lo=1.5, hi=5.0, step=0.1" value="3.1" description="External input current to the first state-variable."/>
-        <Constant name="slope" symbol="" dimension="lo=-16.0, hi=6.0, step=0.1" value="0." description="Linear coefficient in the first state-variable."/>
-        <Constant name="Iext2" symbol="" dimension="lo=0.0, hi=1.0, step=0.05" value="3.1" description="External input current to the first state-variable."/>
-        <Constant name="tau" symbol="" dimension="0, 0" value="10.0" description="Temporal scaling coefficient in fifth state variable."/>
-        <Constant name="aa" symbol="" dimension="0, 0" value="6.0" description="Linear coefficient in fifth state variable."/>
-        <Constant name="bb" symbol="" dimension="0, 0" value="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
-        <Constant name="Kvf" symbol="" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Coupling scaling on a very fast time scale."/>
-        <Constant name="Kf" symbol="" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
-        <Constant name="Ks" symbol="" dimension="lo=-4.0, hi=4.0, step=0.1" value="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
-        <Constant name="tt" symbol="" dimension="lo=0.001, hi=1.0, step=0.001" value="1.0" description="Time scaling of the whole system to the system in real time."/>
-        <Constant name="modification" symbol="bool" dimension="0, 0" value="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
-
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_coupling" dimension="float" />
-        <Parameter name="global_speed" dimension="float" />
-        <Parameter name="x0" dimension="float" />
+        <Constant name="a" domain="0, 0" default="1.0" description="Coefficient of the cubic term in the first state-variable."/>
+        <Constant name="b" domain="0, 0" default="3.0" description="Coefficient of the squared term in the first state-variable."/>
+        <Constant name="c" domain="0, 0" default="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
+        <Constant name="d" domain="0, 0" default="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
+        <Constant name="r" domain="lo=0.0, hi=0.001, step=0.00005" default="0.00035" description="Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."/>
+        <Constant name="s" domain="0, 0" default="4.0" description="Linear coefficient in the third state variable"/>
+        <Constant name="x0" domain="lo=-3.0, hi=-1.0, step=0.1" default="-1.6" description="Epileptogenicity parameter."/>
+        <Constant name="Iext" domain="lo=1.5, hi=5.0, step=0.1" default="3.1" description="External input current to the first state-variable."/>
+        <Constant name="slope" domain="lo=-16.0, hi=6.0, step=0.1" default="0." description="Linear coefficient in the first state-variable."/>
+        <Constant name="Iext2" domain="lo=0.0, hi=1.0, step=0.05" default="3.1" description="External input current to the first state-variable."/>
+        <Constant name="tau" domain="0, 0" default="10.0" description="Temporal scaling coefficient in fifth state variable."/>
+        <Constant name="aa" domain="0, 0" default="6.0" description="Linear coefficient in fifth state variable."/>
+        <Constant name="bb" domain="0, 0" default="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
+        <Constant name="Kvf" domain="lo=0.0, hi=4.0, step=0.5" default="0.0" description="Coupling scaling on a very fast time scale."/>
+        <Constant name="Kf" domain="lo=0.0, hi=4.0, step=0.5" default="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
+        <Constant name="Ks" domain="lo=-4.0, hi=4.0, step=0.1" default="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
+        <Constant name="tt" domain="lo=0.001, hi=1.0, step=0.001" default="1.0" description="Time scaling of the whole system to the system in real time."/>
+        <Constant name="modification" domain="0, 0" default="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
 
         <Dynamics>
+            <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="x1" dimension="-2., 1." boundaries=""/>
-            <StateVariable name="y1" dimension="-20., 2." boundaries=""/>
-            <StateVariable name="z" dimension="2.0, 5.0" boundaries=""/>
-            <StateVariable name="x2" dimension="-2., 0." boundaries=""/>
-            <StateVariable name="y2" dimension="0., 2." boundaries=""/>
-            <StateVariable name="g" dimension="-1, 1." boundaries=""/>
+            <StateVariable name="x1" default="-2., 1." boundaries=""/>
+            <StateVariable name="y1" default="-20., 2." boundaries=""/>
+            <StateVariable name="z" default="2.0, 5.0" boundaries=""/>
+            <StateVariable name="x2" default="-2., 0." boundaries=""/>
+            <StateVariable name="y2" default="0., 2." boundaries=""/>
+            <StateVariable name="g" default="-1, 1." boundaries=""/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives, enter the local coupling formulas or any formula -->
             <!-- sytax: [name]=[value] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <!-- default numpy signature: _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate) -->
-            <DerivedVariable name="c_pop1" exposure="" value="coupling[0]"/>
-            <DerivedVariable name="c_pop2" exposure="" value="coupling[1]"/>
-            <DerivedVariable name="Iext" exposure="" value="Iext + local_coupling * x1"/>
+            <DerivedVariable name="c_pop1" expression="coupling[0]"/>
+            <DerivedVariable name="c_pop2" expression="coupling[1]"/>
+            <DerivedVariable name="Iext" expression="Iext + local_coupling * x1"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
-            <!-- Population 1 -->if
-            <ConditionalDerivedVariable name="ydot0" exposure="" condition="x1 &lt; 0.0" cases="-a * x1**2 + b * x1, slope - x2 + 0.6 * (z - 4)**2 "/>
+            <!-- Population 1 -->
+            <ConditionalDerivedVariable name="ydot0" condition="x1 &lt; 0.0" cases="-a * x1**2 + b * x1, slope - x2 + 0.6 * (z - 4)**2 "/>
 <!--            <ConditionalDerivedVariable name="else_x1" exposure="" dimension="(x1 &gt;= 0.0) * (slope - x2 + 0.6 * (z - 4)**2)"/>-->
-            <TimeDerivative variable="dx1" exposure="" value="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
-            <TimeDerivative variable="dy1" exposure="" value="tt * (c - d * x1**2 - y1)"/>
+            <TimeDerivative name="dx1" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
+            <TimeDerivative name="dy1" expression="tt * (c - d * x1**2 - y1)"/>
 
             <!-- Energy -->
             <ConditionalDerivedVariable name="ydot2" condition="y1 &lt; 0.0" cases="- 0.1 * (z**7), 0"/>
 <!--            <ConditionalDerivedVariable name="else_z" exposure="" dimension="0"/>-->
             <ConditionalDerivedVariable name="h" condition="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)), 4 * (x1 - x0) + ydot2"/>
 <!--            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==False)*(4 * (x1 - x0) + if_z)"/>-->
-            <TimeDerivative variable="dz" exposure="" value="tt * (r * (h - z + Ks * c_pop1))"/>
+            <TimeDerivative name="dz" expression="tt * (r * (h - z + Ks * c_pop1))"/>
 
             <!-- Population 2 -->
-            <TimeDerivative variable="dx2" exposure="" value="tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
+            <TimeDerivative name="dx2" expression="tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
             <ConditionalDerivedVariable name="ydot4" condition="x2 &lt; -0.25" cases="0.0, aa * (x2 + 0.25)"/>
 <!--            <ConditionalDerivedVariable name="0" exposure="()" dimension="()"/>-->
-            <TimeDerivative variable="dy2" exposure="" value="tt * (-y2 + ydot4 / tau)"/>
+            <TimeDerivative name="dy2" expression="tt * (-y2 + ydot4 / tau)"/>
 
             <!-- Filter -->
-            <TimeDerivative variable="dg" exposure="" value="tt * (-0.01 * (g - 0.1 * x1) )"/>
+            <TimeDerivative name="dg" expression="tt * (-0.01 * (g - 0.1 * x1) )"/>
 
 
         </Dynamics>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
-        and for dimension enter the reduction functionality-->
-        <Exposure name="x1" dimension="'x1', 'y1', 'z', 'x2', 'y2', 'g', 'x2 - x1'"/>
+        and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
+        Choices and default list with a (,) seperator-->
+        <Exposure name="x1" default="x2 - x1, z" choices="x1, y1, z, x2, y2, g, x2 - x1" description="Quantities of the Epileptor available to monitor."/>
 
     </ComponentType>
 </Lems>

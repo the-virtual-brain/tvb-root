@@ -10,40 +10,35 @@
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
-        <Constant name="tau" symbol="" dimension="lo=1.0, hi=5.0, step=0.01" value="1.0"
+        <Constant name="tau" domain="lo=1.0, hi=5.0, step=0.01" default="1.0"
                   description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
-        <Constant name="I" symbol="" dimension="lo=-5.0, hi=5.0, step=0.01" value="0.0" description="Baseline shift of the cubic nullcline"/>
-        <Constant name="a" symbol="" dimension="lo=-5.0, hi=5.0, step=0.01" value="-2.0" description="Vertical shift of the configurable nullcline"/>
-        <Constant name="b" symbol="" dimension="lo=-20.0, hi=15.0, step=0.01" value="-10.0" description="Linear slope of the configurable nullcline"/>
-        <Constant name="c" symbol="" dimension="lo=-10.0, hi=10.0, step=0.01" value="0" description="Parabolic term of the configurable nullcline"/>
-        <Constant name="d" symbol="" dimension="lo=0.0001, hi=1.0, step=0.0001" value="0.02" description="Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."/>
-        <Constant name="e" symbol="" dimension="lo=-5.0, hi=5.0, step=0.0001" value="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
-        <Constant name="f" symbol="" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
-        <Constant name="g" symbol="" dimension="lo=-5.0, hi=5.0, step=0.5" value="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
-        <Constant name="alpha" symbol="" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
-        <Constant name="beta" symbol="" dimension="lo=-5.0, hi=5.0, step=0.0001" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
-        <Constant name="gamma" symbol="" dimension="lo=-1.0, hi=1.0, step=0.1" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative.
-It scales both I and the long range coupling term.."/>
-
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_coupling" dimension="float" />
-        <Parameter name="global_speed" dimension="float" />
+        <Constant name="I" domain="lo=-5.0, hi=5.0, step=0.01" default="0.0" description="Baseline shift of the cubic nullcline"/>
+        <Constant name="a" domain="lo=-5.0, hi=5.0, step=0.01" default="-2.0" description="Vertical shift of the configurable nullcline"/>
+        <Constant name="b" domain="lo=-20.0, hi=15.0, step=0.01" default="-10.0" description="Linear slope of the configurable nullcline"/>
+        <Constant name="c" domain="lo=-10.0, hi=10.0, step=0.01" default="0" description="Parabolic term of the configurable nullcline"/>
+        <Constant name="d" domain="lo=0.0001, hi=1.0, step=0.0001" default="0.02" description="Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."/>
+        <Constant name="e" domain="lo=-5.0, hi=5.0, step=0.0001" default="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
+        <Constant name="f" domain="lo=-5.0, hi=5.0, step=0.0001" default="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
+        <Constant name="g" domain="lo=-5.0, hi=5.0, step=0.5" default="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
+        <Constant name="alpha" domain="lo=-5.0, hi=5.0, step=0.0001" default="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
+        <Constant name="beta" domain="lo=-5.0, hi=5.0, step=0.0001" default="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
+        <Constant name="gamma" domain="lo=-1.0, hi=1.0, step=0.1" default="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term.."/>
 
         <Dynamics>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="V" dimension="-2.0, 4.0" boundaries=""/>
-            <StateVariable name="W" dimension="-6.0, 6.0" />
+            <StateVariable name="V" default="-2.0, 4.0" boundaries=""/>
+            <StateVariable name="W" default="-6.0, 6.0" />
 
             <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
             <!-- Default defined: coupling[0, ] and local_coupling * {1st state variable} -->
 
-            <TimeDerivative variable="dV" exposure="dV" value="d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * coupling[0] + local_coupling)"/>
-            <TimeDerivative variable="dW" exposure="dW" value="d * (a + b * V + c * V**2 - beta * W) / tau"/>
+            <TimeDerivative name="dV" expression="d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * coupling[0] + local_coupling)"/>
+            <TimeDerivative name="dW" expression="d * (a + b * V + c * V**2 - beta * W) / tau"/>
         </Dynamics>
 
         <!-- Variables of interest. Add the choices at dimension field sepration between single quotes. Name field is default  -->
-        <Exposure name="V" dimension="'V', 'W', 'V + W', 'V - W'"/>
+        <Exposure name="V" choices="V, W, V + W, V - W" default="V"/>
 
     </ComponentType>
 </Lems>

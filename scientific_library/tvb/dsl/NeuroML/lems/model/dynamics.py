@@ -6,9 +6,9 @@ Behavioral dynamics of component types.
 @contact: gautham@lisphacker.org
 """
 
-from lems.base.base import LEMSBase
-from lems.base.map import Map
-from lems.base.errors import ModelError,ParseError
+from base.base import LEMSBase
+from base.map import Map
+from base.errors import ModelError,ParseError
 
 import sys
 # sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/parser')
@@ -20,7 +20,7 @@ class StateVariable(LEMSBase):
     Store the specification of a state variable.
     """
 
-    def __init__(self, name, dimension, boundaries = None):
+    def __init__(self, name, default, boundaries = None):
         """
         Constructor.
 
@@ -31,7 +31,7 @@ class StateVariable(LEMSBase):
         """ Name of the state variable.
         @type: str """
 
-        self.dimension = dimension
+        self.default = default
         """ Dimension of the state variable.
         @type: str """
 
@@ -40,7 +40,7 @@ class StateVariable(LEMSBase):
         @type: str """
 
     def __str__(self):
-        return 'StateVariable name="{0}" dimension="{1}"'.format(self.name, self.dimension) +\
+        return 'StateVariable name="{0}" dimension="{1}"'.format(self.name, self.default) +\
           (' exposure="{0}"'.format(self.boundaries) if self.boundaries else '')
 
 
@@ -81,7 +81,7 @@ class DerivedVariable(LEMSBase):
         """ Selection path/expression for the derived variable.
         @type: str """
 
-        self.value = params['value'] if 'value' in params else None
+        self.expression = params['expression'] if 'expression' in params else None
         """ Value of the derived variable.
         @type: str """
 
@@ -97,13 +97,13 @@ class DerivedVariable(LEMSBase):
         """ Parse tree for the time derivative expression.
         @type: lems.parser.expr.ExprNode """
 
-        if self.value != None:
+        if self.expression != None:
             try:
-                self.expression_tree = ExprParser(self.value).parse()
+                self.expression_tree = ExprParser(self.expression).parse()
             except:
                 raise ParseError("Parse error when parsing value expression "
                                  "'{0}' for derived variable {1}",
-                                 self.value, self.name)
+                                 self.expression, self.name)
 
     def toxml(self):
         """
@@ -243,18 +243,18 @@ class TimeDerivative(LEMSBase):
     Store the specification of a time derivative specifcation.
     """
 
-    def __init__(self, variable, value):
+    def __init__(self, name, expression):
         """
         Constructor.
 
         See instance variable documentation for more info on parameters.
         """
 
-        self.variable = variable
+        self.name = name
         """ Name of the variable for which the time derivative is being specified.
         @type: str """
 
-        self.value = value
+        self.expression = expression
         """ Derivative expression.
         @type: str """
 
@@ -263,11 +263,11 @@ class TimeDerivative(LEMSBase):
         @type: lems.parser.expr.ExprNode """
         
         try:
-            self.expression_tree = ExprParser(value).parse()
+            self.expression_tree = ExprParser(expression).parse()
         except:
             raise ParseError("Parse error when parsing value expression "
                              "'{0}' for state variable {1}",
-                             self.value, self.variable)
+                             self.expression, self.name)
         
     def toxml(self):
         """
@@ -736,7 +736,7 @@ class Behavioral(LEMSBase):
         @type td: lems.model.dynamics.TimeDerivative
         """
 
-        self.time_derivatives[td.variable] = td
+        self.time_derivatives[td.name] = td
 
     def add_event_handler(self, eh):
         """

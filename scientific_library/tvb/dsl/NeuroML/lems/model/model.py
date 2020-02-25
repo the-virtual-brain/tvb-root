@@ -10,21 +10,21 @@ import os
 from os.path import dirname
 import sys
 
-from lems.base.base import LEMSBase
-from lems.base.map import Map
+from base.base import LEMSBase
+from base.map import Map
 # from lems.parser.LEMS import LEMSFileParser
 # sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
 from parser.LEMS import LEMSFileParser
-from lems.base.util import merge_maps, merge_lists
+from base.util import merge_maps, merge_lists
 from model.component import Constant,ComponentType,Component,FatComponent
 
-from lems.base.errors import ModelError
-from lems.base.errors import SimBuildError
+from base.errors import ModelError
+from base.errors import SimBuildError
 
-from lems.model.fundamental import Dimension,Unit,Include
+from model.fundamental import Dimension,Unit,Include
 # from lems.model.component import Constant,ComponentType,Component,FatComponent
-from lems.model.simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
-from lems.model.structure import With,EventConnection,ChildInstance,MultiInstantiate
+from model.simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
+from model.structure import With,EventConnection,ChildInstance,MultiInstantiate
 
 import xml.dom.minidom as minidom
 
@@ -347,8 +347,8 @@ class Model(LEMSBase):
         for c in ct.constants:
             c2 = c.copy()
             # added to exclude True and False values for value
-            if (c2.value != 'False' and c2.value != 'True'):
-                c2.numeric_value = model.get_numeric_value(c2.value, c2.dimension)
+            if (c2.default != 'False' and c2.default != 'True'):
+                c2.numeric_value = model.get_numeric_value(c2.default, c2.domain)
             model.add(c2)
 
         return model

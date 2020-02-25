@@ -8,8 +8,8 @@ Expression parser
 MV: added pow(f,l) function for c translations
 """
 
-from lems.base.base import LEMSBase
-from lems.base.stack import Stack
+from base.base import LEMSBase
+from base.stack import Stack
 
 # mv: removed H as a known function
 known_functions = ['exp', 'log', 'sqrt', 'sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh', 'abs', 'ceil', 'factorial', 'random', 'pow', 'powf', 'powl']

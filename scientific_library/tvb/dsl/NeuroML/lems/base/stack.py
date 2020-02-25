@@ -6,8 +6,8 @@ Stack class.
 @contact: gautham@lisphacker.org
 """
 
-from lems.base.base import LEMSBase
-from lems.base.errors import StackError
+from base.base import LEMSBase
+from base.errors import StackError
 
 class Stack(LEMSBase):
     """
