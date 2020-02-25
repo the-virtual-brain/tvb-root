@@ -22,8 +22,8 @@ class ${dfunname}(ModelNumbaDfun):
         doc="""state variables"""
     )
 
+% if svboundaries:
     state_variable_boundaries = Final(
-
         label="State Variable boundaries [lo, hi]",
         default={\
 %for limit in dynamics.state_variables:
@@ -33,6 +33,7 @@ class ${dfunname}(ModelNumbaDfun):
 %endfor
 },
     )
+% endif \
 
     variables_of_interest = List(
         of=str,

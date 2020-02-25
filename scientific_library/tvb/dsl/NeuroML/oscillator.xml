@@ -33,7 +33,7 @@ It scales both I and the long range coupling term.."/>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
             <StateVariable name="V" dimension="-2.0, 4.0" boundaries=""/>
-            <StateVariable name="W" dimension="-6.0, 6.0"/>
+            <StateVariable name="W" dimension="-6.0, 6.0" />
 
             <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
             <!-- Default defined: coupling[0, ] and local_coupling * {1st state variable} -->

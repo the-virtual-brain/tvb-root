@@ -167,7 +167,6 @@ class TVB_test:
 	def regular(self, logger, pop):
 		logger.info('start regular TVB run')
 		logger.info('model to run %s', pop)
-		print('model to run:', pop)
 		# Initialize Model
 		model = self.tvb_python_model(pop)
 		# Initialize Monitors

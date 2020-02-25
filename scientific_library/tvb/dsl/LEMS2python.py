@@ -20,7 +20,6 @@ def drift_templating(target):
     def oscillator():
         modelname = 'Generic2dOscillator' # is also the class name
         filename = 'oscillator' # TVB output file name
-        print('here')
         return modelname, filename
 
     def wong_wang():
@@ -43,7 +42,7 @@ def drift_templating(target):
 
     func = switcher.get(target, 'invalid model choice')
     modelname, filename = func()
-    print(modelname)
+    print('\n Building and running model:', target)
 
     fp_xml = 'NeuroML/' + filename.lower() + '.xml'
     # modelfile="../models/python/" + modelname + ".py"
@@ -54,10 +53,16 @@ def drift_templating(target):
     model.import_from_file(fp_xml)
     modelextended = model.resolve()
 
-    # drift dynamics
     modelist = list()
     modelist.append(model.component_types[modelname])
     # print((modelist[0].dynamics.conditional_derived_variables['ctmp0'].cases[1]))
+
+    # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
+    svboundaries = 0
+    for i, sv in enumerate(modelist[0].dynamics.state_variables):
+        if sv.boundaries != 'None' and sv.boundaries != '' and sv.boundaries:
+            svboundaries = 1
+            continue
 
     # start templating
     template = Template(filename='tmpl8_drift.py')
@@ -65,6 +70,7 @@ def drift_templating(target):
                             dfunname=modelname,
                             const=modelist[0].constants,
                             dynamics=modelist[0].dynamics,
+                            svboundaries=svboundaries,
                             exposures=modelist[0].exposures
                             )
     # write template to file

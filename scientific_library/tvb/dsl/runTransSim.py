@@ -22,13 +22,11 @@ testTemplSim = TemplSim.TVB_test()
 testTemplSim.startsim(target)
 
 
-# target = ["Epileptor", "Kuramoto"]
-# for i, trgt in enumerate(target):
+# model_target = ["Montbrio", "Epileptor", "Kuramoto", "ReducedWongWang", "Generic2dOscillator"]
+# for i, trgt in enumerate(model_target):
 #     # make a model template
 #     templating.drift_templating(trgt)
 #     time.sleep(2)
-#     if (i==0):
-#         import TVB_testsuite.tvbRegCudaNumba as TemplSim
 #     # run tvb with model template
 #     testTemplSim = TemplSim.TVB_test()
 #     testTemplSim.startsim(trgt)

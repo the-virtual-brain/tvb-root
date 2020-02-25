@@ -38,12 +38,12 @@
         <Dynamics>
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
-            <StateVariable name="x1" dimension="-2., 1." boundaries="None"/>
-            <StateVariable name="y1" dimension="-20., 2." boundaries="None"/>
-            <StateVariable name="z" dimension="2.0, 5.0" boundaries="None"/>
-            <StateVariable name="x2" dimension="-2., 0." boundaries="None"/>
-            <StateVariable name="y2" dimension="0., 2." boundaries="None"/>
-            <StateVariable name="g" dimension="-1, 1." boundaries="None"/>
+            <StateVariable name="x1" dimension="-2., 1." boundaries=""/>
+            <StateVariable name="y1" dimension="-20., 2." boundaries=""/>
+            <StateVariable name="z" dimension="2.0, 5.0" boundaries=""/>
+            <StateVariable name="x2" dimension="-2., 0." boundaries=""/>
+            <StateVariable name="y2" dimension="0., 2." boundaries=""/>
+            <StateVariable name="g" dimension="-1, 1." boundaries=""/>
 
             <!-- Derived variables can be used to 'easify' the time dervivatives, enter the local coupling formulas or any formula -->
             <!-- sytax: [name]=[value] -->
