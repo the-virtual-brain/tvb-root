@@ -28,7 +28,7 @@
 #
 #
 from flask import request
-from flask_restful import Resource
+from flask_restplus import Resource
 from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons.dtos import ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
