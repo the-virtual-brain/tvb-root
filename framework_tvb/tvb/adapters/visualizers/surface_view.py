@@ -51,12 +51,12 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, FACE
 
 LOG = get_logger(__name__)
 
 
-def ensure_shell_surface(project_id, shell_surface=None, preferred_type='Face Surface'):
+def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
     if shell_surface is None:
         shell_surface = dao.try_load_last_surface_of_type(project_id, preferred_type)
 

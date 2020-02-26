@@ -73,3 +73,11 @@ class ProjectionMatrixIndex(DataType):
             self.skin_air_gid = datatype.skin_air.gid.hex
         self.sensors_gid = datatype.sensors.gid.hex
         self.source_gid = datatype.sources.gid.hex
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add subtype
+        """
+        previous = "ProjectionMatrix"
+        return previous + " - " + str(self.projection_type)

@@ -167,7 +167,7 @@ class SensorsViewer(ABCDisplayer):
 
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
-        if projection_surface_index:
+        if view_model.projection_surface:
             projection_surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
 
         if sensors_index.sensors_type == SensorsInternal.sensors_type.default:
@@ -201,7 +201,7 @@ class SensorsViewer(ABCDisplayer):
         params['shelfObject'] = self._prepare_shell_surface_params(shell_surface)
 
         return self.build_display_result('sensors/sensors_internal', params,
-                                         pages={'controlPage': 'sensors/sensors_controls'})
+                                         pages={"controlPage": "sensors/sensors_controls"})
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
