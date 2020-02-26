@@ -39,6 +39,7 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import os
 import json
+import uuid
 import zipfile
 import sys
 from copy import copy
@@ -180,7 +181,7 @@ class OperationService:
         time_series_index = dao.get_generic_entity(TimeSeriesIndex, sim_operation.id, 'fk_from_operation')[0]
 
         view_model = TimeseriesMetricsAdapterModel()
-        view_model.time_series = time_series_index.gid
+        view_model.time_series = uuid.UUID(time_series_index.gid)
         view_model.algorithms = tuple(choices.values())
 
         range_values = sim_operation.range_values
