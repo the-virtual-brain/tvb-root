@@ -50,12 +50,13 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, \
-    Operation, STATUS_FINISHED
+    Operation, STATUS_FINISHED, has_finished
 from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
@@ -329,8 +330,8 @@ class HPCSchedulerClient(object):
         return input_files_list
 
     @staticmethod
-    def _configure_job(simulator_gid, available_space):
-        # type: (str, int) -> (dict, list)
+    def _configure_job(simulator_gid, available_space, is_group_launch):
+        # type: (str, int, bool) -> (dict, list)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         job_inputs = [bash_entrypoint]
@@ -338,7 +339,7 @@ class HPCSchedulerClient(object):
         # Build job configuration JSON
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space]
+        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, job_inputs
@@ -368,6 +369,7 @@ class HPCSchedulerClient(object):
         """
         Generate corresponding Index entities for the resulted H5 files and insert them in DB.
         """
+        burst_service = BurstService()
         index_list = []
         for filename in result_filenames:
             index = h5.index_for_h5_file(filename)()
@@ -377,8 +379,24 @@ class HPCSchedulerClient(object):
             index.fill_from_generic_attributes(ga)
             index.fk_from_operation = operation.id
 
-            burst = dao.get_burst_for_operation_id(operation.id)
-            index.fk_parent_burst = burst.id
+            # TODO: update status during operation run
+            if operation.fk_operation_group:
+                parent_burst = dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
+                operations_in_group = dao.get_operations_in_group(operation.fk_operation_group)
+                if parent_burst.metric_operation_group_id:
+                    operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
+                for operation in operations_in_group:
+                    if not has_finished(operation.status):
+                        break
+                    if parent_burst is not None:
+                        burst_service.mark_burst_finished(parent_burst)
+                        index.fk_parent_burst = parent_burst.id
+            else:
+                parent_burst = burst_service.get_burst_for_operation_id(operation.id)
+                if parent_burst is not None:
+                    burst_service.mark_burst_finished(parent_burst)
+                    index.fk_parent_burst = parent_burst.id
+
             index = dao.store_entity(index)
             index_list.append(index)
 
@@ -387,11 +405,18 @@ class HPCSchedulerClient(object):
         operation.mark_complete(STATUS_FINISHED)
         dao.store_entity(operation)
 
+        # TODO: where to compute this?
+        if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname:
+            from tvb.core.services.operation_service import OperationService
+            operation_service = OperationService()
+            next_op = operation_service._prepare_metric_operation(operation)
+            operation_service.launch_operation(next_op.id)
+
         return mesage
 
     @staticmethod
-    def _launch_job_with_pyunicore(operation, simulator_gid):
-        # type: (Operation, str) -> Job
+    def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
+        # type: (Operation, str, bool) -> Job
         job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
 
         transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
@@ -400,16 +425,27 @@ class HPCSchedulerClient(object):
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         site_client = registry.site(HPCSettings.SUPERCOMPUTER_SITE)
 
-        # TODO: compute available space
-        job_config, job_extra_inputs = HPCSchedulerClient._configure_job(simulator_gid, '100')
+        available_space = HPCSchedulerClient.compute_available_disk_space(operation)
+        job_config, job_extra_inputs = HPCSchedulerClient._configure_job(simulator_gid, available_space,
+                                                                         is_group_launch)
         job_inputs.extend(job_extra_inputs)
         job = site_client.new_job(job_description=job_config, inputs=job_inputs)
         return job
 
     @staticmethod
+    def compute_available_disk_space(operation):
+        # type: (Operation) -> int
+        disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
+        pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
+        user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
+        available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
+        return available_space
+
+    @staticmethod
     def _monitor_job(job):
         # type: (Job) -> Storage
         LOGGER.info(job.properties)
+        # TODO: better monitoring?
         while job.is_running():
             LOGGER.info(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY])
             sleep(10)
@@ -431,8 +467,9 @@ class HPCSchedulerClient(object):
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
+        is_group_launch = operation.fk_operation_group is not None
         simulator_gid = json.loads(operation.parameters)['gid']
-        job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid)
+        job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
 
         wd = HPCSchedulerClient._monitor_job(job)
         h5_filenames = HPCSchedulerClient._stage_out_to_operation_folder(wd, operation)
