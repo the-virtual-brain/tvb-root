@@ -375,7 +375,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
             if self.algorithm.surface:
                 ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
-                ts_h5.surface.store(self.algorithm.surface.gid)
+                ts_h5.surface.store(self.algorithm.surface.region_mapping_data.surface.gid)
             else:
                 ts_h5.store_references(ts)
 
