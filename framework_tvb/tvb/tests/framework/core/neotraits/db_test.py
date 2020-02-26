@@ -30,7 +30,7 @@
 
 from sqlalchemy import String, ForeignKey, Column, Integer, Float
 from sqlalchemy.orm import relationship
-from tvb.core.neotraits.db import HasTraitsIndex, ensure_float
+from tvb.core.neotraits.db import HasTraitsIndex, ensure_float, ensure_int
 from tvb.tests.framework.core.neotraits.data import FooDatatype
 
 
@@ -79,10 +79,10 @@ class FooIndex(HasTraitsIndex):
     # then you might want to implement a method like this if you map a trait
     def fill_from_has_traits(self, datatype):
         self.gid = datatype.gid.hex
-        self.array_float_min = datatype.array_float.min()
-        self.array_float_max = datatype.array_float.max()
-        self.array_int_max = datatype.array_int.max()
-        self.array_int_min = datatype.array_int.min()
+        self.array_float_min = ensure_float(datatype.array_float.min())
+        self.array_float_max = ensure_float(datatype.array_float.max())
+        self.array_int_max = ensure_int(datatype.array_int.max())
+        self.array_int_min = ensure_int(datatype.array_int.min())
         self.array_int_mean = datatype.array_int.mean()
         self.scalar_int = datatype.scalar_int
 
