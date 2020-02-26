@@ -41,7 +41,7 @@ if __name__ == '__main__':
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 
-def do_operation_launch(simulator_gid, available_disk_space):
+def do_operation_launch(simulator_gid, available_disk_space, is_group_launch):
     log = get_logger('tvb.core.operation_hpc_launcher')
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
@@ -50,7 +50,7 @@ def do_operation_launch(simulator_gid, available_disk_space):
         input_folder = os.getcwd()
         log.info("Current wdir is: {}".format(input_folder))
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, input_folder)
-        adapter_instance = HPCSimulatorAdapter(input_folder)
+        adapter_instance = HPCSimulatorAdapter(input_folder, is_group_launch)
         result_msg, nr_datatypes = adapter_instance._prelaunch(None, None, available_disk_space, view_model)
 
     except Exception as excep:
@@ -61,5 +61,6 @@ def do_operation_launch(simulator_gid, available_disk_space):
 if __name__ == '__main__':
     simulator_gid = sys.argv[1]
     available_disk_space = sys.argv[2]
+    is_group_launch = bool(sys.argv[3])
 
-    do_operation_launch(simulator_gid, available_disk_space)
+    do_operation_launch(simulator_gid, available_disk_space, is_group_launch)

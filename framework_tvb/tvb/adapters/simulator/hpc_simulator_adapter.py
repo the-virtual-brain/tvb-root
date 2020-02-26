@@ -39,9 +39,10 @@ from tvb.core.neocom import h5
 class HPCSimulatorAdapter(SimulatorAdapter):
     OUTPUT_FOLDER = 'output'
 
-    def __init__(self, storage_path):
+    def __init__(self, storage_path, is_group_launch):
         super(HPCSimulatorAdapter, self).__init__()
         self.storage_path = storage_path
+        self.is_group_launch = is_group_launch
 
     def load_traited_by_gid(self, data_gid, dt_class=None):
         # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
@@ -57,8 +58,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         """
         Return true if this adapter is launched from a group of operations
         """
-        # TODO: treat this check
-        return False
+        return self.is_group_launch
 
     def _get_output_path(self):
         output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
