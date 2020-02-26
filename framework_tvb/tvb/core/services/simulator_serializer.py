@@ -37,7 +37,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator import h5_factory
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
-from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.simulator.monitors import Projection, EEG, MEG, iEEG
 
@@ -95,7 +94,7 @@ class SimulatorSerializer(object):
             with CortexH5(cortex_path) as cortex_h5:
                 simulator_in.surface.local_connectivity = cortex_h5.local_connectivity.load()
                 simulator_in.surface.region_mapping_data = cortex_h5.region_mapping_data.load()
-                rm_index = dao.get_datatype_by_gid(simulator_in.surface.region_mapping_data.hex)
-                simulator_in.surface.surface_gid = uuid.UUID(rm_index.fk_surface_gid)
+                # rm_index = dao.get_datatype_by_gid(simulator_in.surface.region_mapping_data.hex)
+                # simulator_in.surface.surface_gid = uuid.UUID(rm_index.fk_surface_gid)
 
         return simulator_in
