@@ -25,7 +25,7 @@ RUN /bin/bash -c "source activate tvb-run"; \
 
 WORKDIR /root
 
-RUN wget https://zenodo.org/record/3497545/files/tvb_data_2_0_1.zip?download=1 -O tvb_data.zip; \
+RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip; \
     unzip tvb_data.zip; rm tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop
