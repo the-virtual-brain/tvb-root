@@ -39,6 +39,7 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import os
 import json
+import uuid
 import zipfile
 import sys
 from copy import copy
