@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import json
 import os
 import sys
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
@@ -61,6 +61,6 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch):
 if __name__ == '__main__':
     simulator_gid = sys.argv[1]
     available_disk_space = sys.argv[2]
-    is_group_launch = bool(sys.argv[3])
+    is_group_launch = json.loads(sys.argv[3].lower())
 
     do_operation_launch(simulator_gid, available_disk_space, is_group_launch)
