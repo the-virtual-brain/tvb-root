@@ -39,14 +39,15 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import os
 import json
+import uuid
 import zipfile
 import sys
 from copy import copy
 from cgi import FieldStorage
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
+    choices
 from tvb.basic.exceptions import TVBException
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
@@ -177,31 +178,32 @@ class OperationService:
         # type: (Operation) -> None
         metric_algo = dao.get_algorithm_by_module(TimeseriesMetricsAdapter.__module__,
                                                   TimeseriesMetricsAdapter.__name__)
-
         time_series_index = dao.get_generic_entity(TimeSeriesIndex, sim_operation.id, 'fk_from_operation')[0]
-        ts_metrics_adapter_form = TimeseriesMetricsAdapterForm()
-        ts_metrics_adapter_form.fill_from_trait(BaseTimeseriesMetricAlgorithm())
-        ts_metrics_adapter_form.time_series.data = time_series_index.gid
-        op_params = json.dumps(ts_metrics_adapter_form.get_dict())
+
+        view_model = TimeseriesMetricsAdapterModel()
+        view_model.time_series = uuid.UUID(time_series_index.gid)
+        view_model.algorithms = tuple(choices.values())
+
         range_values = sim_operation.range_values
         metadata = {DataTypeMetaData.KEY_BURST: time_series_index.fk_parent_burst}
-        metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, op_params)
+        metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, {})
         meta_str = json.dumps(metadata)
 
         parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'id')[0]
         metric_operation_group_id = parent_burst.metric_operation_group_id
         metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
-                                     op_params,
+                                     json.dumps({'gid': view_model.gid.hex}),
                                      meta_str, op_group_id=metric_operation_group_id, range_values=range_values)
         metric_operation.visible = False
-        operation = dao.store_entity(metric_operation)
+        stored_metric_operation = dao.store_entity(metric_operation)
 
         metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id, 'fk_operation_group')[
             0]
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
 
-        return operation
+        OperationService._store_view_model(stored_metric_operation, sim_operation.project, view_model)
+        return stored_metric_operation
 
     def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
                           ranges=None, visible=True):
@@ -276,13 +278,17 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            storage_path = FilesHelper().get_project_folder(project, str(operation.id))
-            h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid)
-            h5_file = ViewModelH5(h5_path, view_model)
-            h5_file.store(view_model)
-            h5_file.close()
+            OperationService._store_view_model(operation, project, view_model)
 
         return operations, group
+
+    @staticmethod
+    def _store_view_model(operation, project, view_model):
+        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid)
+        h5_file = ViewModelH5(h5_path, view_model)
+        h5_file.store(view_model)
+        h5_file.close()
 
     def load_view_model(self, adapter_instance, operation):
         storage_path = self.file_helper.get_project_folder(operation.project, str(operation.id))
