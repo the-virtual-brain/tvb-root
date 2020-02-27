@@ -28,10 +28,7 @@
 #
 #
 """
-Exceptions for web interface.
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+Exceptions for the web interface.
 """
 
 from tvb.basic.exceptions import TVBException
