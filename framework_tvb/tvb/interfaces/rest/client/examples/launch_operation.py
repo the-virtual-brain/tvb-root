@@ -28,8 +28,6 @@
 #
 #
 
-from uuid import UUID
-
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel, CSVConnectivityImporter
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
@@ -85,8 +83,8 @@ if __name__ == '__main__':
     logger.info("Launching region mapping upload operation...")
     rm_view_model = RegionMappingImporterModel()
     rm_view_model.mapping_file = compute_tvb_data_path('regionMapping', 'regionMapping_16k_76.txt')
-    rm_view_model.connectivity = UUID(connectivity_result.gid)
-    rm_view_model.surface = UUID(surface_result.gid)
+    rm_view_model.connectivity = connectivity_result.gid
+    rm_view_model.surface = surface_result.gid
     operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_view_model)
     monitor_operation(tvb_client, operation_gid)
 
@@ -103,6 +101,6 @@ if __name__ == '__main__':
     csv_view_model.weights = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionCapacityMatrix.csv')
     csv_view_model.tracts = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionDistanceMatrix.csv')
     csv = connectivity_result.gid
-    csv_view_model.input_data = UUID(csv)
+    csv_view_model.input_data = csv
     operation_gid = tvb_client.launch_operation(project_gid, CSVConnectivityImporter, csv_view_model)
     monitor_operation(tvb_client, operation_gid)

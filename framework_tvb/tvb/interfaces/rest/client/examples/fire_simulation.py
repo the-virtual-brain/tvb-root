@@ -28,8 +28,6 @@
 #
 #
 
-import uuid
-
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
@@ -70,7 +68,7 @@ if __name__ == '__main__':
     if connectivity_gid:
         logger.info("Preparing the simulator...")
         simulator = SimulatorAdapterModel()
-        simulator.connectivity = uuid.UUID(connectivity_gid)
+        simulator.connectivity = connectivity_gid
         simulator.simulation_length = 100
 
         logger.info("Starting the simulation...")
@@ -98,7 +96,7 @@ if __name__ == '__main__':
 
         logger.info("Launch Fourier Analyzer...")
         fourier_model = FFTAdapterModel()
-        fourier_model.time_series = uuid.UUID(time_series_gid)
+        fourier_model.time_series = time_series_gid
         fourier_model.window_function = 'hamming'
 
         operation_gid = tvb_client.launch_operation(project_gid, FourierAdapter, fourier_model)
