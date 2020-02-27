@@ -28,22 +28,18 @@
 #
 #
 
-import os
-import time
 from uuid import UUID
 
-import tvb_data
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel, CSVConnectivityImporter
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
+from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
-
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
@@ -61,39 +57,25 @@ if __name__ == '__main__':
 
     logger.info("Preparing a connectivity H5 file...")
     connectivity_view_model = ZIPConnectivityImporterModel()
-    conn_zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-    connectivity_view_model.uploaded = conn_zip_path
+    connectivity_view_model.uploaded = compute_tvb_data_path('connectivity', 'connectivity_96.zip')
     connectivity_view_model.normalization = 'region'
 
     logger.info("Launching connectivity uploading operation...")
     operation_gid = tvb_client.launch_operation(project_gid, ZIPConnectivityImporter, connectivity_view_model)
-
-    while True:
-        status = tvb_client.get_operation_status(operation_gid)
-        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-            break
-        time.sleep(5)
-    logger.info("The connectivity uploading has finished with status: {}".format(status))
+    monitor_operation(tvb_client, operation_gid)
 
     logger.info("Requesting the result of the connectivity uploading...")
     connectivity_result = tvb_client.get_operation_results(operation_gid)[0]
 
     logger.info("Preparing a surface H5 file...")
     surface_view_model = ZIPSurfaceImporterModel()
-    surface_zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
-    surface_view_model.uploaded = surface_zip_path
+    surface_view_model.uploaded = compute_tvb_data_path('surfaceData', 'cortex_16384.zip')
     surface_view_model.surface_type = "Cortical Surface"
     surface_view_model.should_center = False
 
     logger.info("Launching surface uploading operation...")
     operation_gid = tvb_client.launch_operation(project_gid, ZIPSurfaceImporter, surface_view_model)
-
-    while True:
-        status = tvb_client.get_operation_status(operation_gid)
-        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-            break
-        time.sleep(5)
-    logger.info("The surface uploading has finished with status: {}".format(status))
+    monitor_operation(tvb_client, operation_gid)
 
     logger.info("Requesting the result of the surface uploading...")
     surface_result = tvb_client.get_operation_results(operation_gid)[0]
@@ -106,20 +88,13 @@ if __name__ == '__main__':
 
     logger.info("Preparing a region mapping H5 file using the downloaded connectivity and surface...")
     rm_view_model = RegionMappingImporterModel()
-    rm_text_path = os.path.join(os.path.dirname(tvb_data.__file__), 'regionMapping', 'regionMapping_16k_76.txt')
-    rm_view_model.mapping_file = rm_text_path
+    rm_view_model.mapping_file = compute_tvb_data_path('regionMapping', 'regionMapping_16k_76.txt')
     rm_view_model.connectivity = UUID(connectivity_result.gid)
     rm_view_model.surface = UUID(surface_result.gid)
 
     logger.info("Launching region mapping upload operation...")
     operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_view_model)
-
-    while True:
-        status = tvb_client.get_operation_status(operation_gid)
-        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-            break
-        time.sleep(5)
-    logger.info("The region mapping uploading has finished with status: {}".format(status))
+    monitor_operation(tvb_client, operation_gid)
 
     logger.info("Downloading the region mapping uploaded above")
     region_mapping_gid = tvb_client.get_operation_results(operation_gid)[0].gid
@@ -132,21 +107,11 @@ if __name__ == '__main__':
     logger.info(
         "Preparing a connectivity csv H5 file (this one requires two datatype files: one containing weights and the other one containing tracts)...")
     csv_view_model = CSVConnectivityImporterModel()
-
-    csv_weights_path = os.path.join(os.path.dirname(tvb_data.__file__), 'dti_pipeline_toronto',
-                                    'output_ConnectionCapacityMatrix.csv')
-    csv_tracts_path = os.path.join(os.path.dirname(tvb_data.__file__), 'dti_pipeline_toronto',
-                                   'output_ConnectionDistanceMatrix.csv')
-    csv_view_model.weights = csv_weights_path
-    csv_view_model.tracts = csv_tracts_path
+    csv_view_model.weights = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionCapacityMatrix.csv')
+    csv_view_model.tracts = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionDistanceMatrix.csv')
     csv = connectivity_result.gid
     csv_view_model.input_data = UUID(csv)
 
     logger.info("Launching connectivity csv upload operation...")
     operation_gid = tvb_client.launch_operation(project_gid, CSVConnectivityImporter, csv_view_model)
-    while True:
-        status = tvb_client.get_operation_status(operation_gid)
-        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-            break
-        time.sleep(5)
-    logger.info("The connectivity csv uploading has finished with status: {}".format(status))
+    monitor_operation(tvb_client, operation_gid)

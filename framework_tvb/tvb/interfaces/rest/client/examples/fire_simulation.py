@@ -28,7 +28,6 @@
 #
 #
 
-import time
 import uuid
 
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
@@ -36,8 +35,8 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR
 from tvb.core.neocom import h5
+from tvb.interfaces.rest.client.examples.utils import monitor_operation
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
@@ -78,12 +77,7 @@ if __name__ == '__main__':
         operation_gid = tvb_client.fire_simulation(project_gid, simulator)
 
         logger.info("Monitoring the simulation operation...")
-        while True:
-            status = tvb_client.get_operation_status(operation_gid)
-            if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-                break
-            time.sleep(20)
-        logger.info("The simulation has finished with status: {}".format(status))
+        monitor_operation(tvb_client, operation_gid)
 
         logger.info("Requesting the results of the simulation...")
         simulation_results = tvb_client.get_operation_results(operation_gid)
