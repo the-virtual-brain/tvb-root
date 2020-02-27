@@ -717,6 +717,7 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].region_mapping = region_mapping
 
             # load sensors and projection
+            # TODO BIG review. I do not think the correct Projection Matrix entity is being used
             sensors_index = ABCAdapter.load_entity_by_gid(data['_sensors'])
             sensors = h5.load_from_index(sensors_index)
 

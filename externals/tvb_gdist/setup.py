@@ -65,7 +65,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name="tvb-" + GEODESIC_NAME,
-                 version='2.0.0',
+                 version='2.0.2',
                  ext_modules=GEODESIC_MODULE,
                  include_dirs=INCLUDE_DIRS,
                  cmdclass={'build_ext': build_ext},
