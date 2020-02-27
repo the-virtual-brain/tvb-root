@@ -55,25 +55,21 @@ if __name__ == '__main__':
 
     project_gid = projects_of_user[0].gid
 
-    logger.info("Preparing a connectivity H5 file...")
+    logger.info("Launching connectivity uploading operation...")
     connectivity_view_model = ZIPConnectivityImporterModel()
     connectivity_view_model.uploaded = compute_tvb_data_path('connectivity', 'connectivity_96.zip')
     connectivity_view_model.normalization = 'region'
-
-    logger.info("Launching connectivity uploading operation...")
     operation_gid = tvb_client.launch_operation(project_gid, ZIPConnectivityImporter, connectivity_view_model)
     monitor_operation(tvb_client, operation_gid)
 
     logger.info("Requesting the result of the connectivity uploading...")
     connectivity_result = tvb_client.get_operation_results(operation_gid)[0]
 
-    logger.info("Preparing a surface H5 file...")
+    logger.info("Launching surface uploading operation...")
     surface_view_model = ZIPSurfaceImporterModel()
     surface_view_model.uploaded = compute_tvb_data_path('surfaceData', 'cortex_16384.zip')
     surface_view_model.surface_type = "Cortical Surface"
     surface_view_model.should_center = False
-
-    logger.info("Launching surface uploading operation...")
     operation_gid = tvb_client.launch_operation(project_gid, ZIPSurfaceImporter, surface_view_model)
     monitor_operation(tvb_client, operation_gid)
 
@@ -86,13 +82,11 @@ if __name__ == '__main__':
     logger.info("Downloading the surface from server...")
     surface_path = tvb_client.retrieve_datatype(surface_result.gid, tvb_client.temp_folder)
 
-    logger.info("Preparing a region mapping H5 file using the downloaded connectivity and surface...")
+    logger.info("Launching region mapping upload operation...")
     rm_view_model = RegionMappingImporterModel()
     rm_view_model.mapping_file = compute_tvb_data_path('regionMapping', 'regionMapping_16k_76.txt')
     rm_view_model.connectivity = UUID(connectivity_result.gid)
     rm_view_model.surface = UUID(surface_result.gid)
-
-    logger.info("Launching region mapping upload operation...")
     operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_view_model)
     monitor_operation(tvb_client, operation_gid)
 
@@ -104,14 +98,11 @@ if __name__ == '__main__':
     logger.info("Region mapping with gid {} is linked to a connectivity with gid {}".format(region_mapping_gid,
                                                                                             region_mapping_connectivity_gid))
 
-    logger.info(
-        "Preparing a connectivity csv H5 file (this one requires two datatype files: one containing weights and the other one containing tracts)...")
+    logger.info("Launching connectivity csv upload operation. Takes two files as input")
     csv_view_model = CSVConnectivityImporterModel()
     csv_view_model.weights = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionCapacityMatrix.csv')
     csv_view_model.tracts = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionDistanceMatrix.csv')
     csv = connectivity_result.gid
     csv_view_model.input_data = UUID(csv)
-
-    logger.info("Launching connectivity csv upload operation...")
     operation_gid = tvb_client.launch_operation(project_gid, CSVConnectivityImporter, csv_view_model)
     monitor_operation(tvb_client, operation_gid)
