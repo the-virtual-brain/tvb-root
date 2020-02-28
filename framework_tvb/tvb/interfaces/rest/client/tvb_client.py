@@ -29,7 +29,7 @@
 #
 
 import tempfile
-
+from tvb.basic.neotraits.api import HasTraits
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
@@ -41,7 +41,10 @@ from tvb.interfaces.rest.commons.dtos import OperationDto
 
 class TVBClient:
     """
-    TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
+    TVB-BrainX3 client class which expose the whole API.
+    Initializing this class with the correct rest server url is mandatory.
+    The methods for loading datatypes are not intended to be used for datatypes with expandable fields (eg. TimeSeries).
+    Those should be loaded in chunks, because they might be to large to be loaded in memory at once.
     """
 
     def __init__(self, server_url, auth_token=''):
@@ -115,11 +118,29 @@ class TVBClient:
 
     def load_datatype(self, datatype_path):
         """
-        TODO: TO BE IMPLEMENTED
         Given a local H5 file location, where previously a valid H5 file has been downloaded from TVB server, load in
-        memory a HasTraits subclass instance (e.g. Connectivity, TimeSeriesRegion).
+        memory a HasTraits subclass instance (e.g. Connectivity).
         """
-        return self.datatype_api.load_datatype(datatype_path)
+        return self.datatype_api.load_datatype_from_file(datatype_path)
+
+    def load_datatype_with_full_references(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download the entire tree of dependencies and load them in memory.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with all references fully loaded
+        """
+        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder)
+
+    def load_datatype_with_links(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download only the corresponding H5 file and load it in memory.
+        Also, instantiate empty objects as its references only for the purpose to load the GIDs on them.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with correct GIDs for references
+        """
+        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder)
 
     def get_operations_for_datatype(self, datatype_gid):
         """
