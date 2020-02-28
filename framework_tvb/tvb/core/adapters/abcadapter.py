@@ -144,7 +144,8 @@ class ABCAdapterForm(Form):
         return None
 
     def _get_original_field_name(self, field):
-        return field.name[len(self.prefix) + 1:]
+        start_idx = len(self.prefix) + 1 if (self.prefix != '') else 0
+        return field.name[start_idx:]
 
     # TODO: Used to support original flow (pass form values as kwargs). Also for the asynchronous launch
     def get_dict(self):
@@ -155,8 +156,11 @@ class ABCAdapterForm(Form):
         attrs_dict.update({self.RANGE_2_NAME: self.range_2})
         return attrs_dict
 
-    def fill_defaults(self):
+    def fill_from_post_plus_defaults(self, form_data):
         self.fill_from_trait(self.get_view_model()())
+        for field in self.fields:
+            if field.name in form_data:
+                field.fill_from_post(form_data)
 
     def get_form_values(self):
         attrs_dict = {}
