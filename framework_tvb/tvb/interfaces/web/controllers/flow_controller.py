@@ -54,9 +54,9 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
-from tvb.interfaces.web.controllers.exceptions import InvalidFormValues
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -461,10 +461,10 @@ class FlowController(BaseController):
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
-                    raise formencode.Invalid("Could not find a model for this form!", {}, None,
-                                             error_dict=form.get_errors_dict())
+                    raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
+                                            error_dict=form.get_errors_dict())
             else:
-                raise InvalidFormValues("Could not fill algorithm from the given inputs!",
+                raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
                                         error_dict=form.get_errors_dict())
 
             adapter_instance.submit_form(form)
@@ -497,9 +497,9 @@ class FlowController(BaseController):
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
         except InvalidFormValues as excep2:
-            errors = excep2.display_full_errors()
-            common.set_error_message("Invalid form inputs")
-            self.logger.warning("Invalid form inputs \n%s" % errors)
+            message, errors = excep2.display_full_errors()
+            common.set_error_message(message)
+            self.logger.warning("%s \n %s" % (message, errors))
 
         previous_step = self.context.get_current_substep()
         should_reset = previous_step is None or data.get(common.KEY_ADAPTER) != previous_step
