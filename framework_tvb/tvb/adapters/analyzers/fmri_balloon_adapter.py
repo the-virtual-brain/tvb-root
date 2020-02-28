@@ -233,11 +233,10 @@ class BalloonModelAdapter(ABCAsynchronous):
         return bold_signal_index
 
     def _fill_result_index(self, result_index, result_signal_shape):
-        result_index.time_series_type = type(result_index).__name__
+        result_index.time_series_type = TimeSeriesRegion.__name__
         result_index.data_ndim = len(result_signal_shape)
         result_index.data_length_1d, result_index.data_length_2d, \
-        result_index.data_length_3d, result_index.data_length_3d = \
-            prepare_array_shape_meta(result_signal_shape)
+        result_index.data_length_3d, result_index.data_length_3d = prepare_array_shape_meta(result_signal_shape)
 
         result_index.connectivity_gid = self.input_time_series_index.connectivity_gid
         result_index.region_mapping_gid = self.input_time_series_index.region_mapping_gid
