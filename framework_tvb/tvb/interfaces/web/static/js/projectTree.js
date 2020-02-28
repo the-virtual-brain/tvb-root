@@ -430,6 +430,7 @@ function tvbSubmitPageAsync(action, params){
 function launchAdapter(adapter_url, param_name, param_val, back_page_link, launchAsync){
     var params = {};
     params[param_name] = param_val;
+    params['fill_defaults'] = true;
 
     if (launchAsync){
         tvbSubmitPageAsync(adapter_url, params);

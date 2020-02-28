@@ -155,6 +155,9 @@ class ABCAdapterForm(Form):
         attrs_dict.update({self.RANGE_2_NAME: self.range_2})
         return attrs_dict
 
+    def fill_defaults(self):
+        self.fill_from_trait(self.get_view_model()())
+
     def get_form_values(self):
         attrs_dict = {}
         for field in self.fields:
