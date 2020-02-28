@@ -44,6 +44,13 @@ class RequestFileKey(Enum):
     LAUNCH_ANALYZERS_MODEL_FILE = "model_file"
 
 
+class FormKeyInput(Enum):
+    CREATE_PROJECT_NAME = 'project_name'
+    CREATE_PROJECT_DESCRIPTION = 'project_description'
+    USERS_USERNAME = 'username'
+    USERS_PASSWORD = 'password'
+    KEYCLOAK_REFRESH_TOKEN = 'refresh_token'
+
 class RestNamespace(Enum):
     USERS = "/users"
     PROJECTS = "/projects"
@@ -64,7 +71,7 @@ class LinkPlaceholder(Enum):
 class RestLink(Enum):
     # USERS
     LOGIN = "/login"
-    PROJECTS_LIST = "/logged/projects"
+    PROJECTS = "/logged/projects"
 
     # PROJECTS
     DATA_IN_PROJECT = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/data"
@@ -96,7 +103,7 @@ class RestLink(Enum):
 
 
 _namespace_url_dict = {
-    RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS_LIST],
+    RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS],
     RestNamespace.PROJECTS: [RestLink.DATA_IN_PROJECT, RestLink.OPERATIONS_IN_PROJECT],
     RestNamespace.DATATYPES: [RestLink.GET_DATATYPE, RestLink.DATATYPE_OPERATIONS],
     RestNamespace.OPERATIONS: [RestLink.LAUNCH_OPERATION, RestLink.OPERATION_STATUS, RestLink.OPERATION_RESULTS],

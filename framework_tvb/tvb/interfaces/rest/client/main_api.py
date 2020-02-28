@@ -31,7 +31,7 @@ from datetime import datetime, timedelta
 
 import requests
 from tvb.interfaces.rest.client.client_decorators import handle_response
-from tvb.interfaces.rest.commons.strings import Strings, RestLink
+from tvb.interfaces.rest.commons.strings import Strings, RestLink, FormKeyInput
 
 
 class MainApi:
@@ -80,7 +80,7 @@ class MainApi:
     @handle_response
     def _refresh_token(self):
         return self._build_request().put(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
-            "refresh_token": self.refresh_token,
+            FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value: self.refresh_token,
         })
 
     def update_tokens(self, response):
