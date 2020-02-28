@@ -36,10 +36,23 @@ Created on Jul 21, 2011
 
 import tvb.core.adapters.abcadapter as abcadapter
 from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.forms import SimpleIntField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import SimpleIntField, TraitDataTypeSelectField, IntField
+from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+
+class TestModel(ViewModel):
+
+    test1_val1 = Attr(
+        field_type=str,
+        default='test1_val1'
+    )
+
+    test1_val2 = Attr(
+        field_type=str,
+        default='test1_val2'
+    )
 
 
 class TestAdapter1Form(abcadapter.ABCAdapterForm):
@@ -49,8 +62,12 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapter1Form, self).__init__(prefix, project_id)
-        self.test1_val1 = SimpleIntField(self, name='test1_val1', default=0)
-        self.test1_val2 = SimpleIntField(self, name='test1_val2', default=0)
+        self.test1_val1 = IntField(TestModel.test1_val1, self, name='test1_val1')
+        self.test1_val2 = IntField(TestModel.test1_val2, self, name='test1_val2')
+
+    @staticmethod
+    def get_view_model():
+        return TestModel
 
     @staticmethod
     def get_required_datatype():
@@ -73,26 +90,30 @@ class TestAdapter1(abcadapter.ABCAsynchronous):
     def __init__(self):
         super(TestAdapter1, self).__init__()
 
+    @staticmethod
+    def get_view_model():
+        return TestModel
+
     def get_form_class(self):
         return TestAdapter1Form
 
     def get_output(self):
         return [DummyDataTypeIndex]
     
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
     
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
         """
         return 0
         
-    def launch(self):
+    def launch(self, view_model):
         """
         Tests successful launch of an ABCSynchronous adapter
 
@@ -142,14 +163,14 @@ class TestAdapterDatatypeInput(abcadapter.ABCSynchronous):
     def get_output(self):
         return [Datatype1]
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
     
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
         """

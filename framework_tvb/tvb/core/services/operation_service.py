@@ -52,7 +52,7 @@ from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters import constants
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous, ABCAsynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
@@ -117,13 +117,13 @@ class OperationService:
         operations = self.prepare_operations(current_user.id, project, algo, algo_category,
                                              {}, visible, view_model=model_view, **kwargs)[0]
 
-        if isinstance(adapter_instance, ABCSynchronous):
+        if isinstance(adapter_instance, ABCAsynchronous):
             if len(operations) > 1:
                 raise LaunchException("Synchronous operations are not supporting ranges!")
             if len(operations) < 1:
                 self.logger.warning("No operation was defined")
                 raise LaunchException("Invalid empty Operation!!!")
-            return self.initiate_prelaunch(operations[0], adapter_instance, **kwargs)
+            return self.initiate_prelaunch(operations[0], adapter_instance, view_model=model_view, **kwargs)
         else:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
@@ -303,7 +303,7 @@ class OperationService:
             h5_file.load_into(view_model)
         return view_model
 
-    def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
+    def initiate_prelaunch(self, operation, adapter_instance, view_model=None, **kwargs):
         """
         Public method.
         This should be the common point in calling an adapter- method.
@@ -322,8 +322,9 @@ class OperationService:
             user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
-            view_model = self.load_view_model(adapter_instance, operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model)
+            if view_model is None:
+                view_model = self.load_view_model(adapter_instance, operation)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.parameters = json.dumps(kwargs)

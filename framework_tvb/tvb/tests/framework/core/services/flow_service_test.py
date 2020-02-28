@@ -114,9 +114,9 @@ class TestFlowService(TransactionalTestCase):
         group = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
-        # Only the discreet is expected
+        # Only the isocline is expected due to the 2 ranges set in the factory
         assert 1 == len(result)
-        assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
+        assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS == result[0].classname
 
     def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory, region_mapping_factory):
 
@@ -161,20 +161,19 @@ class TestFlowService(TransactionalTestCase):
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         interface = self.flow_service.prepare_adapter(stored_adapter)
         assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
-        assert "name" in interface[0], "Bad interface created!"
-        assert interface[0]["name"] == "test", "Bad interface!"
-        assert "type" in interface[0], "Bad interface created!"
-        assert interface[0]["type"] == "int", "Bad interface!"
-        assert "default" in interface[0], "Bad interface created!"
-        assert interface[0]["default"] == "0", "Bad interface!"
+        assert "name" in interface.KEY_NAME, "Bad interface created!"
+        assert "filterable" in interface.KEY_FILTERABLE, "Bad interface created!"
+        assert "type" in interface.KEY_TYPE, "Bad interface created!"
+        assert "value" in interface.KEY_VALUE, "Bad interface created!"
+        assert "default" in interface.KEY_DEFAULT, "Bad interface created!"
 
     def test_fire_operation(self):
         """
         Test preparation of an adapter and launch mechanism.
         """
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        data = {"test": 5}
-        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
+        data = {"gid": 5}
+        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, view_model=adapter.get_view_model()(), **data)
         assert result.endswith("has finished."), "Operation fail"
 
     def test_get_filtered_by_column(self):
