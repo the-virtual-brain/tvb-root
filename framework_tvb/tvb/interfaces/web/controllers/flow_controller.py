@@ -455,8 +455,9 @@ class FlowController(BaseController):
         try:
             form = adapter_instance.get_form()(project_id=project_id)
             if 'fill_defaults' in data:
-                form.fill_defaults()
-            form.fill_from_post(data)
+                form.fill_from_post_plus_defaults(data)
+            else:
+                form.fill_from_post(data)
             view_model = None
             if form.validate():
                 try:
