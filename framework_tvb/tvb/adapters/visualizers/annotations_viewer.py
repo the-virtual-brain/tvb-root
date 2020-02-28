@@ -89,7 +89,7 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_annotations_index'
+        return 'annotations_index'
 
     @staticmethod
     def get_filters():

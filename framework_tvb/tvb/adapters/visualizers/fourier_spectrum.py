@@ -67,7 +67,7 @@ class FourierSpectrumForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "_input_data"
+        return "input_data"
 
     @staticmethod
     def get_required_datatype():

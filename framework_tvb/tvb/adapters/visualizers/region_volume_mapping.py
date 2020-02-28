@@ -311,7 +311,7 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_measure'
+        return 'measure'
 
     @staticmethod
     def get_required_datatype():
@@ -380,7 +380,7 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity_measure'
+        return 'connectivity_measure'
 
     @staticmethod
     def get_filters():
@@ -451,7 +451,7 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_region_mapping_volume'
+        return 'region_mapping_volume'
 
     @staticmethod
     def get_required_datatype():
@@ -498,7 +498,7 @@ class MriVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_background'
+        return 'background'
 
     @staticmethod
     def get_filters():
