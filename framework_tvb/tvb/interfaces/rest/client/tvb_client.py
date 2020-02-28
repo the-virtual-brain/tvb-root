@@ -125,7 +125,7 @@ class TVBClient:
 
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
 
-    def load_datatype(self, datatype_path):
+    def load_datatype_from_file(self, datatype_path):
         """
         Given a local H5 file location, where previously a valid H5 file has been downloaded from TVB server, load in
         memory a HasTraits subclass instance (e.g. Connectivity).

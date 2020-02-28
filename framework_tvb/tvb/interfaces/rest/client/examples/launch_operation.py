@@ -28,12 +28,17 @@
 #
 #
 
-from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporterModel, CSVConnectivityImporter
+"""
+Example of using TVB importers from within the REST client API.
+Here, we upload two independent datatypes: a connectivity and a surface from ZIP formats.
+Then, we upload a region mapping that depends on both connectivity and surface to exist in TVB storage.
+"""
+
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
 from tvb.basic.logger.builder import get_logger
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -43,7 +48,7 @@ if __name__ == '__main__':
     logger.info("Preparing client...")
     tvb_client = TVBClient("http://localhost:9090")
 
-    logger.info("Requesting a list of users...")
+    logger.info("Login with default user...")
     tvb_client.login("tvb_user", "pass")
 
     logger.info("Requesting projects for logged user")
@@ -53,52 +58,57 @@ if __name__ == '__main__':
 
     project_gid = projects_of_user[0].gid
 
-    logger.info("Launching connectivity uploading operation...")
-    connectivity_view_model = ZIPConnectivityImporterModel()
-    connectivity_view_model.uploaded = compute_tvb_data_path('connectivity', 'connectivity_96.zip')
-    connectivity_view_model.normalization = 'region'
-    operation_gid = tvb_client.launch_operation(project_gid, ZIPConnectivityImporter, connectivity_view_model)
+    # --- Launch operations to import a Connectivity, a Surface and a RegionMapping ---
+
+    logger.info("Importing a connectivity from ZIP...")
+    zip_connectivity_importer_model = ZIPConnectivityImporterModel()
+    zip_connectivity_importer_model.uploaded = compute_tvb_data_path('connectivity', 'connectivity_96.zip')
+    zip_connectivity_importer_model.normalization = 'region'
+    operation_gid = tvb_client.launch_operation(project_gid, ZIPConnectivityImporter, zip_connectivity_importer_model)
     monitor_operation(tvb_client, operation_gid)
 
-    logger.info("Requesting the result of the connectivity uploading...")
-    connectivity_result = tvb_client.get_operation_results(operation_gid)[0]
+    logger.info("Get the result of connectivity import...")
+    connectivity_dto = tvb_client.get_operation_results(operation_gid)[0]
 
-    logger.info("Launching surface uploading operation...")
-    surface_view_model = ZIPSurfaceImporterModel()
-    surface_view_model.uploaded = compute_tvb_data_path('surfaceData', 'cortex_16384.zip')
-    surface_view_model.surface_type = "Cortical Surface"
-    surface_view_model.should_center = False
-    operation_gid = tvb_client.launch_operation(project_gid, ZIPSurfaceImporter, surface_view_model)
+    logger.info("Importing a surface from ZIP...")
+    zip_surface_importer_model = ZIPSurfaceImporterModel()
+    zip_surface_importer_model.uploaded = compute_tvb_data_path('surfaceData', 'cortex_16384.zip')
+    zip_surface_importer_model.surface_type = CORTICAL
+    zip_surface_importer_model.should_center = False
+    operation_gid = tvb_client.launch_operation(project_gid, ZIPSurfaceImporter, zip_surface_importer_model)
     monitor_operation(tvb_client, operation_gid)
 
-    logger.info("Requesting the result of the surface uploading...")
-    surface_result = tvb_client.get_operation_results(operation_gid)[0]
+    logger.info("Get the result of surface import...")
+    surface_dto = tvb_client.get_operation_results(operation_gid)[0]
 
-    logger.info("Downloading the connectivity from server...")
-    connectivity_path = tvb_client.retrieve_datatype(connectivity_result.gid, tvb_client.temp_folder)
-
-    logger.info("Downloading the surface from server...")
-    surface_path = tvb_client.retrieve_datatype(surface_result.gid, tvb_client.temp_folder)
-
-    logger.info("Launching region mapping upload operation...")
-    rm_view_model = RegionMappingImporterModel()
-    rm_view_model.mapping_file = compute_tvb_data_path('regionMapping', 'regionMapping_16k_76.txt')
-    rm_view_model.connectivity = connectivity_result.gid
-    rm_view_model.surface = surface_result.gid
-    operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_view_model)
+    logger.info("Importing a region mapping...")
+    rm_importer_model = RegionMappingImporterModel()
+    rm_importer_model.mapping_file = compute_tvb_data_path('regionMapping', 'regionMapping_16k_76.txt')
+    rm_importer_model.connectivity = connectivity_dto.gid
+    rm_importer_model.surface = surface_dto.gid
+    operation_gid = tvb_client.launch_operation(project_gid, RegionMappingImporter, rm_importer_model)
     monitor_operation(tvb_client, operation_gid)
 
-    logger.info("Downloading the region mapping uploaded above")
-    region_mapping_gid = tvb_client.get_operation_results(operation_gid)[0].gid
-    region_mapping = tvb_client.load_datatype_with_links(region_mapping_gid, tvb_client.temp_folder)
-    logger.info("Region mapping with gid {} is linked to a connectivity with gid {}".format(region_mapping_gid,
-                                                                                            region_mapping.connectivity.gid))
+    logger.info("Get the result of region mapping import...")
+    region_mapping_dto = tvb_client.get_operation_results(operation_gid)[0]
 
-    logger.info("Launching connectivity csv upload operation. Takes two files as input")
-    csv_view_model = CSVConnectivityImporterModel()
-    csv_view_model.weights = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionCapacityMatrix.csv')
-    csv_view_model.tracts = compute_tvb_data_path('dti_pipeline_toronto', 'output_ConnectionDistanceMatrix.csv')
-    csv = connectivity_result.gid
-    csv_view_model.input_data = csv
-    operation_gid = tvb_client.launch_operation(project_gid, CSVConnectivityImporter, csv_view_model)
-    monitor_operation(tvb_client, operation_gid)
+    # --- Load the region mapping together with references information in 3 different ways ---
+
+    logger.info("1.Download and load the region mapping with all its references...")
+    region_mapping_complete = tvb_client.load_datatype_with_full_references(region_mapping_dto.gid,
+                                                                            tvb_client.temp_folder)
+    logger.info("1.This region mapping is linked to a connectivity with GID={} and number_of_regions={}".format(
+        region_mapping_complete.connectivity.gid, region_mapping_complete.connectivity.number_of_regions))
+
+    logger.info("2.Download and load the region mapping with only GIDs for its references...")
+    region_mapping_with_links = tvb_client.load_datatype_with_links(region_mapping_dto.gid, tvb_client.temp_folder)
+    logger.info("2.This region mapping is linked to a connectivity with GID={}".format(
+        region_mapping_with_links.connectivity.gid))
+
+    logger.info("3.Only download the region mapping on client machine...")
+    region_mapping_path = tvb_client.retrieve_datatype(region_mapping_dto.gid, tvb_client.temp_folder)
+
+    logger.info("3.Load the region mapping that was already downloaded on client machine...")
+    local_region_mapping_with_links = tvb_client.load_datatype_from_file(region_mapping_path)
+    logger.info("3.This region mapping is linked to a connectivity with GID={}".format(
+        local_region_mapping_with_links.connectivity.gid))

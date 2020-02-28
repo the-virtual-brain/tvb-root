@@ -28,12 +28,15 @@
 #
 #
 
+"""
+Example of launching a simulation and an analyzer from within the REST client API.
+"""
+
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.examples.utils import monitor_operation
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -107,7 +110,7 @@ if __name__ == '__main__':
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
         logger.info("Loading an entire Connectivity datatype in memory...")
-        connectivity = h5.load(connectivity_path)
+        connectivity = tvb_client.load_datatype_from_file(connectivity_path)
         logger.info("Info on current Connectivity: {}".format(connectivity.summary_info()))
 
         logger.info("Loading a chuck from the time series H5 file, as this can be very large...")
