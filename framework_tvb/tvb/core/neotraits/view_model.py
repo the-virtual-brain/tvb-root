@@ -30,6 +30,7 @@
 
 import uuid
 from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.ex import TraitAttributeError
 
 
 class ViewModel(HasTraits):
@@ -57,6 +58,15 @@ class DataTypeGidAttr(Attr):
         super(DataTypeGidAttr, self).__init__(field_type, default, doc, label, required, final, choices)
         self.linked_datatype = linked_datatype
         self.filters = filters
+
+    def __set__(self, instance, value):
+        if isinstance(value, str):
+            try:
+                value = uuid.UUID(value)
+            except ValueError:
+                raise TraitAttributeError("Given value cannot be used as UUID for field {}".format(self.field_name))
+
+        super(DataTypeGidAttr, self).__set__(instance, value)
 
 
 class EquationAttr(Attr):

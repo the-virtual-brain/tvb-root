@@ -56,6 +56,10 @@ def handle_response(func):
             return json.loads(content.decode('utf-8'), cls=CustomDecoder)
 
         decoded_dict = json.loads(content.decode('utf-8'))
-        raise ClientException(decoded_dict['message'], decoded_dict['code'])
+        try:
+            error_message = decoded_dict['message']
+        except KeyError:
+            error_message = response.text
+        raise ClientException(error_message, response.status_code)
 
     return decorator

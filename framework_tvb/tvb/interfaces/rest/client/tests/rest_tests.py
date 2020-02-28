@@ -30,7 +30,9 @@
 import os
 import tempfile
 from uuid import UUID
+
 import tvb_data
+import tvb_data.sensors as demo_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
@@ -40,7 +42,6 @@ from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-import tvb_data.sensors as demo_data
 
 
 class TestRestService(TransactionalTestCase):
@@ -67,7 +68,7 @@ class TestRestService(TransactionalTestCase):
         meg_sensors = h5.load_from_index(meg_sensors_index)
         view_model.sensors = meg_sensors.gid
 
-        operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname, view_model,
+        operation_api.launch_operation(project_gid, algorithm_classname, view_model,
                                        self.temp_folder)
 
     def test_fire_simulation(self):
