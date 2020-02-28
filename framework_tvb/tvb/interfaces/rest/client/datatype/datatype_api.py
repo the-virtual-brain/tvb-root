@@ -69,7 +69,8 @@ class DataTypeApi(MainApi):
         return response, AlgorithmDto
 
     def load_datatype_from_file(self, datatype_path):
-        return h5.load_with_links(datatype_path)
+        datatype, _ = h5.load_with_links(datatype_path)
+        return datatype
 
     def _load_with_full_references(self, file_path, download_folder):
         # type: (str, str) -> HasTraits
@@ -82,12 +83,12 @@ class DataTypeApi(MainApi):
         return loader.load_complete_by_function(file_path, load_ht_function)
 
     def load_datatype_with_full_references(self, datatype_gid, download_folder):
-        base_datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
-        base_datatype, _ = self._load_with_full_references(base_datatype_path, download_folder)
-        return base_datatype
+        datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        datatype, _ = self._load_with_full_references(datatype_path, download_folder)
+        return datatype
 
     def load_datatype_with_links(self, datatype_gid, download_folder):
-        base_datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
-        base_datatype, _ = h5.load_with_links(base_datatype_path)
+        datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        datatype, _ = h5.load_with_links(datatype_path)
 
-        return base_datatype
+        return datatype
