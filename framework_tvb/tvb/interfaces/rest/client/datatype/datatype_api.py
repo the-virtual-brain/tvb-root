@@ -32,6 +32,9 @@ import cgi
 import json
 import os
 
+from tvb.basic.neotraits.api import HasTraits
+from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import REGISTRY, TVBLoader
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
@@ -65,6 +68,26 @@ class DataTypeApi(MainApi):
             })))
         return response, AlgorithmDto
 
-    def load_datatype(self, datatype_path):
-        # TODO: TO BE IMPLEMENTED
-        pass
+    def load_datatype_from_file(self, datatype_path):
+        return h5.load_with_links(datatype_path)
+
+    def _load_with_full_references(self, file_path, download_folder):
+        # type: (str, str) -> HasTraits
+        def load_ht_function(sub_gid, traited_attr):
+            ref_ht_path = self.retrieve_datatype(sub_gid.hex, download_folder)
+            ref_ht, _ = h5.load_with_links(ref_ht_path)
+            return ref_ht
+
+        loader = TVBLoader(REGISTRY)
+        return loader.load_complete_by_function(file_path, load_ht_function)
+
+    def load_datatype_with_full_references(self, datatype_gid, download_folder):
+        base_datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        base_datatype, _ = self._load_with_full_references(base_datatype_path, download_folder)
+        return base_datatype
+
+    def load_datatype_with_links(self, datatype_gid, download_folder):
+        base_datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        base_datatype, _ = h5.load_with_links(base_datatype_path)
+
+        return base_datatype

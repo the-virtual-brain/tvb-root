@@ -202,8 +202,8 @@ class TVBLoader(object):
             f.load_into(result_dt)
         return result_dt
 
-    def load_with_references(self, file_path):
-        # type: (str) -> (HasTraits, GenericAttributes)
+    def load_complete_by_function(self, file_path, load_ht_function):
+        # type: (str, callable) -> (HasTraits, GenericAttributes)
         with H5File.from_file(file_path) as f:
             datatype_cls = self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
@@ -214,8 +214,23 @@ class TVBLoader(object):
         for traited_attr, sub_gid in sub_dt_refs:
             if sub_gid is None:
                 continue
-            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
-            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            ref_ht = load_ht_function(sub_gid, traited_attr)
             setattr(datatype, traited_attr.field_name, ref_ht)
 
         return datatype, ga
+
+    def load_with_references(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
+            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)
+
+    def load_with_links(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_ht = traited_attr.field_type()
+            ref_ht.gid = sub_gid
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)

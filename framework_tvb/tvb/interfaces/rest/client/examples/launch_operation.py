@@ -90,11 +90,9 @@ if __name__ == '__main__':
 
     logger.info("Downloading the region mapping uploaded above")
     region_mapping_gid = tvb_client.get_operation_results(operation_gid)[0].gid
-    region_mapping_file_path = tvb_client.retrieve_datatype(region_mapping_gid, tvb_client.temp_folder)
-    with RegionMappingH5(region_mapping_file_path) as rm:
-        region_mapping_connectivity_gid = rm.connectivity.load().hex
+    region_mapping = tvb_client.load_datatype_with_links(region_mapping_gid, tvb_client.temp_folder)
     logger.info("Region mapping with gid {} is linked to a connectivity with gid {}".format(region_mapping_gid,
-                                                                                            region_mapping_connectivity_gid))
+                                                                                            region_mapping.connectivity.gid))
 
     logger.info("Launching connectivity csv upload operation. Takes two files as input")
     csv_view_model = CSVConnectivityImporterModel()
