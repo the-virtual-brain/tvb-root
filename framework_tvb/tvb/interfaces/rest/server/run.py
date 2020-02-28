@@ -86,7 +86,7 @@ def initialize_flask():
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
     name_space_users.add_resource(LoginUserResource, RestLink.LOGIN.compute_url())
-    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url())
+    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS.compute_url())
 
     # Projects namespace
     name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),

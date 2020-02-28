@@ -31,26 +31,33 @@
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.dtos import ProjectDto
-from tvb.interfaces.rest.commons.strings import RestLink
+from tvb.interfaces.rest.commons.strings import RestLink, FormKeyInput
 
 
 class UserApi(MainApi):
     @handle_response
     def login(self, username, password):
         response = self.secured_request().post(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
-            "username": username,
-            "password": password
+            FormKeyInput.USERS_USERNAME.value: username,
+            FormKeyInput.USERS_PASSWORD.value: password
         })
         return response
 
     @handle_response
     def logout(self):
         response = self.secured_request().delete(self.build_request_url(RestLink.LOGIN.compute_url(True)), json={
-            "refresh_token": self.refresh_token,
+            FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value: self.refresh_token,
         })
         return response
 
     @handle_response
     def get_projects_list(self):
-        response = self.secured_request().get(self.build_request_url(RestLink.PROJECTS_LIST.compute_url(True)))
+        response = self.secured_request().get(self.build_request_url(RestLink.PROJECTS.compute_url(True)))
         return response, ProjectDto
+
+    @handle_response
+    def create_project(self, project_name, project_description):
+        return self.secured_request().post(self.build_request_url(RestLink.PROJECTS.compute_url(True)), json={
+            FormKeyInput.CREATE_PROJECT_NAME.value: project_name,
+            FormKeyInput.CREATE_PROJECT_DESCRIPTION.value: project_description
+        })

@@ -90,9 +90,18 @@ class TVBClient:
 
     def get_project_list(self):
         """
-        Given a username, this function will return all projects for the given user.
+        Return all projects for the current logged user.
         """
         return self.user_api.get_projects_list()
+
+    def create_project(self, project_name, project_description=''):
+        """
+        Create a new project which will be linked to the logged user
+        :param project_name: Project name (mandatory)
+        :param project_description: Project description
+        :return: GID of the new project
+        """
+        return self.user_api.create_project(project_name, project_description)
 
     def get_data_in_project(self, project_gid):
         """
