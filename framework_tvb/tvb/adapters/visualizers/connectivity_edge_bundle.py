@@ -66,7 +66,7 @@ class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity'
+        return 'connectivity'
 
     @staticmethod
     def get_filters():

@@ -151,7 +151,7 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "_input_data"
+        return "input_data"
 
 
 class ConnectivityViewer(ABCSpaceDisplayer):

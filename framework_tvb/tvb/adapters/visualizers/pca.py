@@ -62,7 +62,7 @@ class PCAForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_pca'
+        return 'pca'
 
     @staticmethod
     def get_filters():

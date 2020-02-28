@@ -135,7 +135,7 @@ class SensorsViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_sensors'
+        return 'sensors'
 
     @staticmethod
     def get_filters():

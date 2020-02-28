@@ -71,7 +71,7 @@ class DiscretePSEAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype_group'
+        return 'datatype_group'
 
     @staticmethod
     def get_filters():

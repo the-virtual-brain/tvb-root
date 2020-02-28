@@ -84,7 +84,7 @@ class BrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():
@@ -398,7 +398,7 @@ class DualBrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():

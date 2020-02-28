@@ -195,7 +195,7 @@ class SurfaceViewerForm(BaseSurfaceViewerForm):
 
     @staticmethod
     def get_input_name():
-        return '_surface'
+        return 'surface'
 
 
 @add_metaclass(ABCMeta)
@@ -468,7 +468,7 @@ class RegionMappingViewerForm(BaseSurfaceViewerForm):
 
     @staticmethod
     def get_input_name():
-        return '_region_map'
+        return 'region_map'
 
 
 class RegionMappingViewer(SurfaceViewer):
@@ -512,7 +512,7 @@ class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity_measure'
+        return 'connectivity_measure'
 
 
 class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
