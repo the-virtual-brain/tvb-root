@@ -466,6 +466,8 @@ class ABCAdapter(object):
         """
         Load a generic DataType, specified by GID.
         """
+        if isinstance(data_gid, uuid.UUID):
+            data_gid = data_gid.hex
         return load_entity_by_gid(data_gid)
 
     @staticmethod
@@ -476,6 +478,14 @@ class ABCAdapter(object):
         """
         index = load_entity_by_gid(data_gid.hex)
         return h5.load_from_index(index)
+
+    @staticmethod
+    def load_with_references(dt_gid):
+        # type: (uuid.UUID) -> HasTraits
+        dt_index = load_entity_by_gid(dt_gid)
+        h5_path = h5.path_for_stored_index(dt_index)
+        dt, _ = h5.load_with_references(h5_path)
+        return dt
 
     @staticmethod
     def build_adapter_from_class(adapter_class):
