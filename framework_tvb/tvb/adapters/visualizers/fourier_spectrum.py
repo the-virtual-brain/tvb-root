@@ -36,9 +36,9 @@
 """
 import json
 import numpy
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -128,7 +128,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
                       plotName=ts_index.title,
-                      url_base=self.build_h5_url(view_model.input_data.hex, "get_fourier_data", parameter=""),
+                      url_base=URLGenerator.build_h5_url(view_model.input_data, "get_fourier_data", parameter=""),
                       xAxisName="Frequency [kHz]",
                       yAxisName="Power",
                       available_scales=available_scales,

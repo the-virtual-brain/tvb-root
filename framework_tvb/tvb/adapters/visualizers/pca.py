@@ -36,8 +36,9 @@ A displayer for the principal components analysis.
 """
 import json
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
-from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.mode_decompositions import PrincipalComponents
@@ -95,8 +96,8 @@ class PCA(ABCSpaceDisplayer):
         with source_h5_class(source_h5_path) as source_h5:
             labels_data = self.get_space_labels(source_h5)
 
-        fractions_update_url = self.build_h5_url(view_model.pca.hex, 'read_fractions_data')
-        weights_update_url = self.build_h5_url(view_model.pca.hex, 'read_weights_data')
+        fractions_update_url = URLGenerator.build_h5_url(view_model.pca, 'read_fractions_data')
+        weights_update_url = URLGenerator.build_h5_url(view_model.pca, 'read_weights_data')
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))

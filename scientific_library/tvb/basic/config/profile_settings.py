@@ -56,7 +56,7 @@ class BaseSettingsProfile(object):
     # Number used for estimation of TVB used storage space
     MAGIC_NUMBER = 9
 
-    def __init__(self, web_enabled=True):
+    def __init__(self):
 
         self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
 
@@ -67,7 +67,7 @@ class BaseSettingsProfile(object):
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
-        self.web = WebSettings(self.manager, web_enabled)
+        self.web = WebSettings(self.manager)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
 
@@ -175,7 +175,7 @@ class LibrarySettingsProfile(BaseSettingsProfile):
     LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
 
     def __init__(self):
-        super(LibrarySettingsProfile, self).__init__(False)
+        super(LibrarySettingsProfile, self).__init__()
 
 
 class TestLibraryProfile(LibrarySettingsProfile):
