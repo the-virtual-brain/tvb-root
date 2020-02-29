@@ -121,9 +121,8 @@ class SurfaceURLGenerator(URLGenerator):
         return vertices, normals, triangles
 
     @staticmethod
-    def get_url_for_region_boundaries(surface_h5, region_mapping_gid, adapter_id):
-        surface_gid = surface_h5.gid.load().hex
-        return URLGenerator.build_url(surface_gid, 'generate_region_boundaries', adapter_id=adapter_id,
+    def get_url_for_region_boundaries(surface_gid, region_mapping_gid, adapter_id):
+        return URLGenerator.build_url(adapter_id, 'generate_region_boundaries', surface_gid,
                                       parameter='region_mapping_gid=' + region_mapping_gid)
 
 
@@ -359,7 +358,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         hemisphere_chunk_mask = surface_h5.get_slices_to_hemisphere_mask()
         return dict(biHemispheric=bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
-    def _compute_measure_points_param(self, surface_h5, region_map_gid=None, connectivity_gid=None):
+    def _compute_measure_points_param(self, surface_gid, region_map_gid=None, connectivity_gid=None):
         if region_map_gid is None:
             measure_points_no = 0
             url_measure_points = ''
@@ -372,7 +371,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             url_measure_points = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_centres')
             url_measure_points_labels = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_region_labels')
 
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_h5, region_map_gid,
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, region_map_gid,
                                                                              self.stored_adapter.id)
 
         return dict(noOfMeasurePoints=measure_points_no, urlMeasurePoints=url_measure_points,
@@ -423,7 +422,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
                       isOneToOneMapping=False, hasRegionMap=region_map_index is not None)
         params.update(self._compute_surface_params(surface_h5, region_map_gid))
         params.update(self._compute_hemispheric_param(surface_h5))
-        params.update(self._compute_measure_points_param(surface_h5, region_map_gid, connectivity_gid))
+        params.update(self._compute_measure_points_param(surface_index.gid, region_map_gid, connectivity_gid))
         params.update(self._compute_measure_param(cm_h5, params['noOfMeasurePoints']))
 
         surface_h5.close()
