@@ -418,7 +418,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         connectivity_gid = region_map_index.connectivity_gid if region_map_index is not None else None
         assert isinstance(surface_h5, SurfaceH5)
 
-        params = dict(title=view_model.title, extended_view=False,
+        params = dict(title=surface_index.display_name, extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=region_map_index is not None)
         params.update(self._compute_surface_params(surface_h5, region_map_gid))
         params.update(self._compute_hemispheric_param(surface_h5))
