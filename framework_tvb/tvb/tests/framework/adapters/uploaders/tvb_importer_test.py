@@ -101,8 +101,8 @@ class TestTVBImporter(TransactionalTestCase):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.tvb_importer', 'TVBImporter')
 
         form = TVBImporterForm()
-        form.fill_from_post({ '_data_file': Part(import_file_path, HeaderMap({}), ''),
-                              '_Data_Subject': 'John Doe'
+        form.fill_from_post({ 'data_file': Part(import_file_path, HeaderMap({}), ''),
+                              'Data_Subject': 'John Doe'
                             })
         form.data_file.data = import_file_path
         importer.submit_form(form)

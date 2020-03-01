@@ -71,10 +71,10 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)
 
         form = ConnectivityMeasureImporterForm()
-        form.fill_from_post({'_data_file': Part(path, HeaderMap({}), ''),
-                             '_dataset_name': 'M',
-                             '_connectivity': self.connectivity.gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'data_file': Part(path, HeaderMap({}), ''),
+                             'dataset_name': 'M',
+                             'connectivity': self.connectivity.gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.data_file.data = path
         view_model = form.get_view_model()()
