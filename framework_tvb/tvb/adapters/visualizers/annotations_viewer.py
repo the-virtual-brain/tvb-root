@@ -31,19 +31,22 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import numpy
+
 import json
-from tvb.basic.profile import TvbProfile
-from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
+from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.core.entities.storage import dao
 from tvb.adapters.datatypes.db.annotation import *
+from tvb.basic.profile import TvbProfile
+from tvb.core.neocom import h5
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.storage import dao
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
 class ConnectivityAnnotationsViewModel(ViewModel):
@@ -89,7 +92,7 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_annotations_index'
+        return 'annotations_index'
 
     @staticmethod
     def get_filters():
@@ -122,33 +125,52 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
     def launch(self, view_model):
         # type: (ConnectivityAnnotationsViewModel) -> dict
 
+        annotations_index = self.load_entity_by_gid(view_model.annotations_index)
+
+        if view_model.connectivity_index is None:
+            connectivity_index = self.load_entity_by_gid(annotations_index.connectivity_gid)
+        else:
+            connectivity_index = self.load_entity_by_gid(view_model.connectivity_index)
+
         if view_model.region_mapping_index is None:
-            region_map = dao.get_generic_entity(RegionMappingIndex, view_model.annotations_index.connectivity_gid,
+            region_map = dao.get_generic_entity(RegionMappingIndex, connectivity_index.gid,
                                                 'connectivity_gid')
             if len(region_map) < 1:
                 raise LaunchException(
                     "Can not launch this viewer unless we have at least a RegionMapping for the current Connectivity!")
             region_mapping_index = region_map[0]
+        else:
+            region_mapping_index = self.load_entity_by_gid(view_model.region_mapping_index)
 
-        boundary_url = view_model.region_mapping_index.surface.get_url_for_region_boundaries(region_map)
-        url_vertices_pick, url_normals_pick, url_triangles_pick = region_map.surface.get_urls_for_pick_rendering()
-        url_vertices, url_normals, _, url_triangles, url_region_map = \
-            region_map.surface.get_urls_for_rendering(True, region_map)
+        boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(region_mapping_index.surface_gid,
+                                                                         region_mapping_index.gid,
+                                                                         self.stored_adapter.id)
+
+        surface_index = self.load_entity_by_gid(region_mapping_index.surface_gid)
+        surface_h5 = h5.h5_file_for_index(surface_index)
+        assert isinstance(surface_h5, SurfaceH5)
+        url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
+            surface_h5)
+        url_vertices, url_normals, _, url_triangles, url_region_map = SurfaceURLGenerator.get_urls_for_rendering(
+            surface_h5, region_mapping_index.gid)
 
         params = dict(title="Connectivity Annotations Visualizer",
                       baseUrl=TvbProfile.current.web.BASE_URL,
-                      annotationsTreeUrl=self.paths2url(annotations, 'tree_json'),
-                      urlTriangleToRegion=self.paths2url(region_map, "get_triangles_mapping"),
-                      urlActivationPatterns=self.paths2url(annotations, "get_activation_patterns"),
+                      annotationsTreeUrl=URLGenerator.build_url(self.stored_adapter.id, 'tree_json',
+                                                                view_model.annotations_index),
+                      urlTriangleToRegion=URLGenerator.build_url(self.stored_adapter.id, "get_triangles_mapping",
+                                                                 region_mapping_index.gid),
+                      urlActivationPatterns=URLGenerator.paths2url(view_model.annotations_index,
+                                                                   "get_activation_patterns"),
 
                       minValue=0,
-                      maxValue=annotations.connectivity.number_of_regions - 1,
+                      maxValue=connectivity_index.number_of_regions - 1,
                       urlColors=json.dumps(url_region_map),
 
                       urlVerticesPick=json.dumps(url_vertices_pick),
                       urlTrianglesPick=json.dumps(url_triangles_pick),
                       urlNormalsPick=json.dumps(url_normals_pick),
-                      brainCenter=json.dumps(region_map.surface.center()),
+                      brainCenter=json.dumps(surface_h5.center()),
 
                       urlVertices=json.dumps(url_vertices),
                       urlTriangles=json.dumps(url_triangles),
@@ -158,58 +180,33 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
         return self.build_display_result("annotations/annotations_view", params,
                                          pages={"controlPage": "annotations/annotations_controls"})
 
-    def get_activation_patterns(self):
-        """
-        Group Annotation terms by URI.
-        :return: map {brco_id: list of TVB regions IDs in which the same term is being subclass}
-        """
-
-        map_by_uri = {}
-        for ann in self.region_annotations:
-            ann_uri = ann[8]
-            left, right = str(ann[2]), str(ann[3])
-            if ann_uri not in map_by_uri:
-                map_by_uri[ann_uri] = [left, right]
-            else:
-                if left not in map_by_uri[ann_uri]:
-                    map_by_uri[ann_uri].append(left)
-                if right not in map_by_uri[ann_uri]:
-                    map_by_uri[ann_uri].append(right)
-
-        map_by_brco_id = {}
-        for ann in self.region_annotations:
-            ann_uri = ann[8]
-            ann_id = ann[0]
-            map_by_brco_id[str(ann_id)] = map_by_uri[ann_uri]
-
-        return map_by_brco_id
-
-    def get_activation_pattern_labels(self):
+    def _get_activation_pattern_labels(self, annotations):
         """
         :return: map {brco_id: list of TVB regions LABELS in which the same BRCO term is being subclass}
         """
-        map_with_ids = self.get_activation_patterns()
+        map_with_ids = annotations.get_activation_patterns()
         map_with_labels = dict()
 
         for ann_id, activated_ids in list(map_with_ids.items()):
             map_with_labels[ann_id] = []
             for string_idx in activated_ids:
                 int_idx = int(string_idx)
-                conn_label = self.connectivity.region_labels[int_idx]
+                conn_label = annotations.connectivity.region_labels[int_idx]
                 map_with_labels[ann_id].append(conn_label)
 
         return map_with_labels
 
-    def tree_json(self):
+    def tree_json(self, annotations_gid):
         """
         :return: JSON to be rendered in a Tree of entities
         """
+        annotations = self.load_with_references(annotations_gid)
         annotations_map = dict()
         regions_map = dict()
-        for i in range(self.connectivity.number_of_regions):
+        for i in range(annotations.connectivity.number_of_regions):
             regions_map[i] = []
 
-        for ann in self.region_annotations:
+        for ann in annotations.region_annotations:
             ann_obj = AnnotationTerm(ann[0], ann[1], ann[2], ann[3], ann[4], ann[5],
                                      ann[6], ann[7], ann[8], ann[9], ann[10])
             annotations_map[ann_obj.id] = ann_obj
@@ -223,17 +220,18 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
                 self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
 
         left_nodes, right_nodes = [], []
-        activation_patterns = self.get_activation_pattern_labels()
+        activation_patterns = self._get_activation_pattern_labels(annotations)
         for region_idx, annotations_list in list(regions_map.items()):
-            if_right_hemisphere = self.connectivity.is_right_hemisphere(region_idx)
+            if_right_hemisphere = annotations.connectivity.is_right_hemisphere(region_idx)
             childred_json = []
             for ann_term in annotations_list:
                 childred_json.append(ann_term.to_json(if_right_hemisphere, activation_patterns))
             # This node is built for every TVB region
             child_json = dict(data=dict(icon=ICON_TVB,
-                                        title=self.connectivity.region_labels[region_idx]),
+                                        title=annotations.connectivity.region_labels[region_idx]),
                               attr=dict(id=NODE_ID_TVB_ROOT + str(region_idx),
-                                        title=str(region_idx) + " - " + self.connectivity.region_labels[region_idx]),
+                                        title=str(region_idx) + " - " + annotations.connectivity.region_labels[
+                                            region_idx]),
                               state="close", children=childred_json)
             if if_right_hemisphere:
                 right_nodes.append(child_json)
@@ -245,16 +243,17 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
                          state="open", children=left_nodes)
         right_root = dict(data=dict(title="Right Hemisphere", icon=ICON_FOLDER),
                           state="open", children=right_nodes)
-        root_root = dict(data=dict(title=self.display_name, icon=ICON_FOLDER),
+        root_root = dict(data=dict(title="Connectivity Annotations", icon=ICON_FOLDER),
                          state="open", children=[left_root, right_root])
         return root_root
 
-    def get_triangles_mapping(self):
+    def get_triangles_mapping(self, region_mapping_gid):
         """
         :return Numpy array of length triangles and for each the region corresponding to one of its vertices.
         """
-        triangles_no = self.surface.number_of_triangles
+        region_mapping = self.load_with_references(region_mapping_gid)
+        triangles_no = region_mapping.surface.number_of_triangles
         result = []
         for i in range(triangles_no):
-            result.append(self.array_data[self.surface.triangles[i][0]])
-        return numpy.array(result)
+            result.append(region_mapping.array_data[region_mapping.surface.triangles[i][0]])
+        return result

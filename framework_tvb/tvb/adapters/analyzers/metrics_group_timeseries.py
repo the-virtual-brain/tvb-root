@@ -108,7 +108,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():

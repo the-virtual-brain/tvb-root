@@ -218,10 +218,10 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
                                               'RegionMappingImporter')
         form = RegionMappingImporterForm()
-        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
-                             '_surface': surface_gid,
-                             '_connectivity': connectivity_gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'mapping_file': Part(import_file_path, HeaderMap({}), ''),
+                             'surface': surface_gid,
+                             'connectivity': connectivity_gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.mapping_file.data = import_file_path
         view_model = form.get_view_model()()
@@ -246,11 +246,11 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
-                             '_data_file': Part(path, HeaderMap({}), ''),
-                             '_data_file_part2': Part('', HeaderMap({}), ''),
-                             '_should_center': 'False',
-                             '_Data_Subject': 'John Doe',
+        form.fill_from_post({'file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
+                             'data_file': Part(path, HeaderMap({}), ''),
+                             'data_file_part2': Part('', HeaderMap({}), ''),
+                             'should_center': 'False',
+                             'Data_Subject': 'John Doe',
                             })
         form.data_file.data = path
         view_model = form.get_view_model()()
@@ -276,11 +276,11 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
 
         form = ZIPSurfaceImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_zero_based_triangles': zero_based,
-                             '_should_center': 'True',
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'uploaded': Part(zip_path, HeaderMap({}), ''),
+                             'zero_based_triangles': zero_based,
+                             'should_center': 'True',
+                             'surface_type': surface_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.uploaded.data = zip_path
         view_model = form.get_view_model()()
@@ -304,9 +304,9 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
 
         form = ObjSurfaceImporterForm()
-        form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'data_file': Part(obj_path, HeaderMap({}), ''),
+                             'surface_type': surface_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
         view_model = form.get_view_model()()
@@ -334,9 +334,9 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
 
         form = SensorsImporterForm()
-        form.fill_from_post({'_sensors_file': Part(zip_path, HeaderMap({}), ''),
-                             '_sensors_type': sensors_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'sensors_file': Part(zip_path, HeaderMap({}), ''),
+                             'sensors_type': sensors_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.sensors_file.data = zip_path
         form.sensors_type.data = sensors_type
@@ -363,10 +363,10 @@ class TestFactory(object):
                                               'ZIPConnectivityImporter')
 
         form = ZIPConnectivityImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_normalization': None,
-                             '_project_id': {1},
-                             '_Data_Subject': subject
+        form.fill_from_post({'uploaded': Part(zip_path, HeaderMap({}), ''),
+                             'normalization': None,
+                             'project_id': {1},
+                             'Data_Subject': subject
                              })
         form.uploaded.data = zip_path
         view_model = form.get_view_model()()

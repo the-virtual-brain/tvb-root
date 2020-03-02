@@ -159,7 +159,6 @@ def start_tvb(arguments, browser=True):
 
     #### Mark that the interface is Web
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
-    ABCDisplayer.VISUALIZERS_URL_PREFIX = TvbProfile.current.web.VISUALIZERS_URL_PREFIX
 
     init_cherrypy(arguments)
 

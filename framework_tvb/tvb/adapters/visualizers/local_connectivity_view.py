@@ -65,7 +65,7 @@ class LocalConnectivityViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_local_conn'
+        return 'local_conn'
 
     @staticmethod
     def get_filters():

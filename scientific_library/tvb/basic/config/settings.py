@@ -40,7 +40,6 @@ from subprocess import Popen, PIPE
 from tvb.basic.config import stored
 
 
-
 class VersionSettings(object):
     """
     Gather settings related to various version numbers of TVB application
@@ -64,7 +63,6 @@ class VersionSettings(object):
     # Should this be sync-ed with data version changes?
     PROJECT_VERSION = 3
 
-
     def __init__(self, manager, bin_folder):
 
         # Used for reading the version file from it
@@ -78,7 +76,6 @@ class VersionSettings(object):
 
         # The version up until we done the upgrade properly for the file data storage.
         self.CODE_CHECKED_TO_VERSION = manager.get_attribute(stored.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
-
 
     @property
     def SVN_VERSION(self):
@@ -103,7 +100,6 @@ class VersionSettings(object):
 
         raise ValueError('cannot determine TVB revision number')
 
-
     @staticmethod
     def parse_svn_version(version_string):
         if ':' in version_string:
@@ -111,7 +107,6 @@ class VersionSettings(object):
 
         number = ''.join([ch for ch in version_string if ch.isdigit()])
         return int(number)
-
 
 
 class ClusterSettings(object):
@@ -126,7 +121,6 @@ class ClusterSettings(object):
 
     _CACHED_IS_RUNNING_ON_CLUSTER = None
     _CACHED_NODE_NAME = None
-
 
     def __init__(self, manager):
         self.IS_DEPLOY = manager.get_attribute(stored.KEY_CLUSTER, False, eval)
@@ -175,7 +169,6 @@ class ClusterSettings(object):
 
         return self._CACHED_IS_RUNNING_ON_CLUSTER
 
-
     @property
     def CLUSTER_NODE_NAME(self):
         """
@@ -203,33 +196,26 @@ class ClusterSettings(object):
         return None
 
 
-
 class WebSettings(object):
     """
     Web related specifications
     """
 
-    ENABLED = False
     LOCALHOST = "127.0.0.1"
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
-    VISUALIZERS_URL_PREFIX = "/flow/read_datatype_attribute/"
 
+    def __init__(self, manager):
 
-    def __init__(self, manager, enabled):
-
-        self.ENABLED = enabled
         self.admin = WebAdminSettings(manager)
 
         self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if enabled:
-            try:
-                import tvb.interfaces
-                self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(tvb.interfaces.__file__)))
-            except ImportError:
-                pass
-        else:
-            self.VISUALIZERS_URL_PREFIX = ""
+
+        try:
+            import tvb.interfaces
+            self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(tvb.interfaces.__file__)))
+        except ImportError:
+            pass
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
 
@@ -284,7 +270,6 @@ class WebSettings(object):
                                        }
 
 
-
 class WebAdminSettings(object):
     """
     Setting related to the default users of web-tvb
@@ -293,7 +278,6 @@ class WebAdminSettings(object):
     SYSTEM_USER_NAME = 'TVB system'
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
     ADMINISTRATOR_BLANK_PWD = 'pass'
-
 
     def __init__(self, manager):
         # Give name for the Admin user, first created.
@@ -306,9 +290,7 @@ class WebAdminSettings(object):
         self.ADMINISTRATOR_EMAIL = manager.get_attribute(stored.KEY_ADMIN_EMAIL, self.DEFAULT_ADMIN_EMAIL)
 
 
-
 class DBSettings(object):
-
     # Overwrite number of connections to the DB.
     # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
     # MAX_CONNECTION default value will be used for WEB

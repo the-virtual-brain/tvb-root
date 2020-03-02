@@ -100,7 +100,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_surface'
+        return 'surface'
 
     @staticmethod
     def get_filters():
@@ -233,7 +233,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity'
+        return 'connectivity'
 
     @staticmethod
     def get_required_datatype():
