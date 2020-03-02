@@ -89,6 +89,13 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return GIFTISurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gii',
+            'data_file_part2': '.gii'
+        }
+
 
 class GIFTISurfaceImporter(ABCUploader):
     """
@@ -120,7 +127,6 @@ class GIFTISurfaceImporter(ABCUploader):
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
-            self.generic_attributes.user_tag_1 = surface.surface_type
             surface_idx = h5.store_complete(surface, self.storage_path)
             return [surface_idx]
         except ParseException as excep:

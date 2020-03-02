@@ -43,6 +43,8 @@ from tvb.basic.config.settings import VersionSettings
 
 class Environment(object):
 
+    PYTHON_FOLDER = "python%s.%s" % sys.version_info[:2]
+
     def is_framework_present(self):
         """
         :return: True when framework classes are present and can be imported.

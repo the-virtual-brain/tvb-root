@@ -123,6 +123,12 @@ class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
     def get_view_model():
         return RegionMatTimeSeriesImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.mat'
+        }
+
 
 class RegionTimeSeriesImporter(ABCUploader):
     """

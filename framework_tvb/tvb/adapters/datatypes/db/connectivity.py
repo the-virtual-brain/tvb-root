@@ -70,6 +70,14 @@ class ConnectivityIndex(DataType):
         # self.tract_lengths_non_zero = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.tract_lengths.nonzero()])
         # self.tract_lengths_connections = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.weights.nonzero()])
 
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of regions field
+        """
+        previous = "Connectivity"
+        return previous + " [" + str(self.number_of_regions) + "]"
+
     @staticmethod
     def accepted_filters():
         filters = DataType.accepted_filters()

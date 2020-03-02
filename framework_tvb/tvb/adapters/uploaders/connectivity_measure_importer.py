@@ -81,6 +81,12 @@ class ConnectivityMeasureImporterForm(ABCUploaderForm):
     def get_view_model():
         return ConnectivityMeasureImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.mat'
+        }
+
 
 class ConnectivityMeasureImporter(ABCUploader):
     """

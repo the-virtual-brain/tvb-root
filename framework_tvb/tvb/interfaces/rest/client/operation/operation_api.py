@@ -29,41 +29,51 @@
 #
 
 import os
-import requests
+
+from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 
 
 class OperationApi(MainApi):
     @handle_response
     def get_operation_status(self, operation_gid):
-        return requests.get(self.build_request_url(RestLink.OPERATION_STATUS.compute_url(True, {
+        return self.secured_request().get(self.build_request_url(RestLink.OPERATION_STATUS.compute_url(True, {
             LinkPlaceholder.OPERATION_GID.value: operation_gid
         })))
 
     @handle_response
     def get_operations_results(self, operation_gid):
-        response = requests.get(
+        response = self.secured_request().get(
             self.build_request_url(RestLink.OPERATION_RESULTS.compute_url(True, {
                 LinkPlaceholder.OPERATION_GID.value: operation_gid
             })))
         return response, DataTypeDto
 
     @handle_response
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model, temp_folder):
+    def launch_operation(self, project_gid, algorithm_class, view_model, temp_folder):
         h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid)
 
         h5_file = ViewModelH5(h5_file_path, view_model)
         h5_file.store(view_model)
         h5_file.close()
 
-        file_obj = open(h5_file_path, 'rb')
-        return requests.post(self.build_request_url(RestLink.LAUNCH_OPERATION.compute_url(True, {
+        model_file_obj = open(h5_file_path, 'rb')
+        files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: (os.path.basename(h5_file_path), model_file_obj)}
+
+        if issubclass(algorithm_class, ABCUploader):
+            for key in algorithm_class().get_form_class().get_upload_information().keys():
+                path = getattr(view_model, key)
+                data_file_obj = open(path, 'rb')
+                files[key] = (os.path.basename(path), data_file_obj)
+
+        return self.secured_request().post(self.build_request_url(RestLink.LAUNCH_OPERATION.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid,
-            LinkPlaceholder.ALG_MODULE.value: algorithm_module,
-            LinkPlaceholder.ALG_CLASSNAME.value: algorithm_classname
-        })), files={"file": (os.path.basename(h5_file_path), file_obj)})
+            LinkPlaceholder.ALG_MODULE.value: algorithm_class.__module__,
+            LinkPlaceholder.ALG_CLASSNAME.value: algorithm_class.__name__
+        })), files=files)

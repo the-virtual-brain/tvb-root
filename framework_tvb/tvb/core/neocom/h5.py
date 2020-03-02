@@ -83,6 +83,15 @@ def load_with_references(source_path):
     return loader.load_with_references(source_path)
 
 
+def load_with_links(source_path):
+    # type: (str) -> (HasTraits, GenericAttributes)
+    """
+    Load a datatype stored in the tvb h5 file found at the given path, but also create empty linked entities to hold GID
+    """
+    loader = TVBLoader(REGISTRY)
+    return loader.load_with_links(source_path)
+
+
 def store_complete(datatype, base_dir):
     # type: (HasTraits, str) -> DataType
     """

@@ -31,10 +31,14 @@
 import cgi
 import json
 import os
-import requests
+
+from tvb.basic.neotraits.api import HasTraits
+from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import REGISTRY, TVBLoader
 from tvb.interfaces.rest.client.client_decorators import handle_response
+from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons import RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
 
@@ -42,31 +46,49 @@ from tvb.interfaces.rest.commons.exceptions import ClientException
 class DataTypeApi(MainApi):
 
     def retrieve_datatype(self, datatype_gid, download_folder):
-        response = requests.get(self.build_request_url(
+        response = self.secured_request().get(self.build_request_url(
             RestLink.GET_DATATYPE.compute_url(True,
-                                              {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})))
+                                              {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})), stream=True)
         content_disposition = response.headers['Content-Disposition']
         value, params = cgi.parse_header(content_disposition)
         file_name = params['filename']
         file_path = os.path.join(download_folder, os.path.basename(file_name))
 
         if response.ok:
-            with open(file_path, 'wb') as local_file:
-                for chunk in response.iter_content(chunk_size=128):
-                    local_file.write(chunk)
-            return file_path
+            return save_file(file_path, response)
 
         error_response = json.loads(response.content.decode('utf-8'))
         raise ClientException(error_response['message'], error_response['code'])
 
     @handle_response
     def get_operations_for_datatype(self, datatype_gid):
-        response = requests.get(
+        response = self.secured_request().get(
             self.build_request_url(RestLink.DATATYPE_OPERATIONS.compute_url(True, {
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
             })))
         return response, AlgorithmDto
 
-    def load_datatype(self, datatype_path):
-        # TODO: TO BE IMPLEMENTED
-        pass
+    def load_datatype_from_file(self, datatype_path):
+        datatype, _ = h5.load_with_links(datatype_path)
+        return datatype
+
+    def _load_with_full_references(self, file_path, download_folder):
+        # type: (str, str) -> HasTraits
+        def load_ht_function(sub_gid, traited_attr):
+            ref_ht_path = self.retrieve_datatype(sub_gid.hex, download_folder)
+            ref_ht, _ = h5.load_with_links(ref_ht_path)
+            return ref_ht
+
+        loader = TVBLoader(REGISTRY)
+        return loader.load_complete_by_function(file_path, load_ht_function)
+
+    def load_datatype_with_full_references(self, datatype_gid, download_folder):
+        datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        datatype, _ = self._load_with_full_references(datatype_path, download_folder)
+        return datatype
+
+    def load_datatype_with_links(self, datatype_gid, download_folder):
+        datatype_path = self.retrieve_datatype(datatype_gid, download_folder)
+        datatype, _ = h5.load_with_links(datatype_path)
+
+        return datatype

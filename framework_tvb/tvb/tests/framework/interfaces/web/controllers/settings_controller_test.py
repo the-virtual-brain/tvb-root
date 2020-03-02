@@ -38,7 +38,6 @@ import json
 import copy
 import shutil
 import pytest
-import hashlib
 import cherrypy
 from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -88,8 +87,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         """ Cleans the testing environment """
         self.cleanup()
         self.clean_database()
-
-
 
         if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
             shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
@@ -146,7 +143,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
     def test_with_valid_settings(self):
 
-        submit_data = self.VALID_SETTINGS
+        submit_data = copy.copy(self.VALID_SETTINGS)
         self.settings_c._restart_services = self._fake_restart_services
 
         with pytest.raises(cherrypy.HTTPRedirect):

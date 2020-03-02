@@ -28,18 +28,17 @@
 #
 #
 
-import requests
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons import Strings, RestLink, LinkPlaceholder
-from tvb.interfaces.rest.commons.dtos import DataTypeDto, OperationDto
+from tvb.interfaces.rest.commons.strings import Strings, RestLink, LinkPlaceholder
+from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
 class ProjectApi(MainApi):
     @handle_response
     def get_data_in_project(self, project_gid):
-        response = requests.get(self.build_request_url(RestLink.DATA_IN_PROJECT.compute_url(True, {
+        response = self.secured_request().get(self.build_request_url(RestLink.DATA_IN_PROJECT.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
         })))
         return response, DataTypeDto
@@ -49,8 +48,8 @@ class ProjectApi(MainApi):
         try:
             page_number = int(page_number)
         except ValueError:
-            raise ClientException(message="Invalid page number", code=400)
-        response = requests.get(self.build_request_url(RestLink.OPERATIONS_IN_PROJECT.compute_url(True, {
+            raise ClientException(message="Invalid page number")
+        response = self.secured_request().get(self.build_request_url(RestLink.OPERATIONS_IN_PROJECT.compute_url(True, {
             LinkPlaceholder.PROJECT_GID.value: project_gid
         })), params={Strings.PAGE_NUMBER.value: page_number})
         return response

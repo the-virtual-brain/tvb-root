@@ -30,4 +30,6 @@ fi
 
 cd tvb_bin
 python setup.py develop
+
 cd ../tvb_build
+python setup.py develop --no-deps

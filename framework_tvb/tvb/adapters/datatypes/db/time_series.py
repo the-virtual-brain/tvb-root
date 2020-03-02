@@ -119,7 +119,7 @@ class TimeSeriesIndex(DataType):
     def get_labels_for_dimension(self, idx):
         label_dimensions = json.loads(self.labels_dimensions)
         labels_ordering = json.loads(self.labels_ordering)
-        return label_dimensions.get(labels_ordering[idx], [])
+        return label_dimensions.get(labels_ordering[idx], ["0"])
 
 
 class TimeSeriesEEGIndex(TimeSeriesIndex):

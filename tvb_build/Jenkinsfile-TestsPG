@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-run'
+        LATEST_TAG = 'latest-pg'
+    }
+
+    stages {
+        stage ('Build docker image') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-run tvb_build/docker")
+                    dockerImage.push('${LATEST_TAG}')
+                }
+            }
+        }
+        stage ('Tests on Postgres') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
+                    alwaysPull true
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                    source activate tvb-run
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    service postgresql start
+                    cd ../tvb_bin
+                    bash run_tests.sh postgres
+                    exit 0
+                '''
+                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'lia.domide@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}

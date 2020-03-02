@@ -28,13 +28,13 @@ system('tvb_env/bin/conda install -y -q numpy nomkl numba scipy numexpr h5py')
 
 if nargin < 1
     [here, ~, ~] = fileparts(mfilename);
-    dist_path = fullfile(here, '..', 'tvb.app', 'Contents', 'Resources', 'lib', 'python2.7');
+    dist_path = fullfile(here, '..', 'tvb.app', 'Contents', 'Resources', 'lib', 'python3.7');
 end
 
-site_pkgs_path = fullfile(dist_path, 'tvb.app/Contents/Resources/lib/python2.7')
+site_pkgs_path = fullfile(dist_path, 'tvb.app/Contents/Resources/lib/python3.7')
 site_pkgs = dir(site_pkgs_path);
 
-target_path = 'tvb_env/lib/python2.7';
+target_path = 'tvb_env/lib/python3.7';
 
 for i=1:length(site_pkgs)
     cmd_fmt = 'ln -s %s/%s %s/';

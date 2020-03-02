@@ -32,6 +32,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import numpy
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -64,7 +65,7 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
 
-        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, "application/zip", self,
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self,
                                          name='uploaded')
         self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization',
                                          choices=NORMALIZATION_OPTIONS)
@@ -72,6 +73,12 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
     @staticmethod
     def get_view_model():
         return ZIPConnectivityImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'uploaded': '.zip'
+        }
 
 
 class ZIPConnectivityImporter(ABCUploader):

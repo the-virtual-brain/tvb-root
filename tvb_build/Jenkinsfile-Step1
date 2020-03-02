@@ -11,8 +11,7 @@ pipeline {
             steps {
                 script {
                     LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
-                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:${env.BUILD_ID}", "--build-arg LAST_SHA='${LAST_SHA}' tvb_build/docker")
-                    dockerImage.push()
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-build tvb_build/docker")
                     dockerImage.push('${LATEST_TAG}')
                 }
             }

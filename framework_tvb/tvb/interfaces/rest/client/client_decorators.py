@@ -52,10 +52,14 @@ def handle_response(func):
             if classz is not None:
                 return json.loads(content.decode('utf-8'),
                                   object_hook=lambda d: classz(**d) if '__type__' not in d
-                                  else CustomDecoder.date_hook(d))
+                                  else CustomDecoder.custom_hook(d))
             return json.loads(content.decode('utf-8'), cls=CustomDecoder)
 
         decoded_dict = json.loads(content.decode('utf-8'))
-        raise ClientException(decoded_dict['message'], decoded_dict['code'])
+        try:
+            error_message = decoded_dict['message']
+        except KeyError:
+            error_message = response.text
+        raise ClientException(error_message, response.status_code)
 
     return decorator

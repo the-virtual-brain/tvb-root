@@ -69,6 +69,12 @@ class BRCOImporterForm(ABCUploaderForm):
     def get_view_model():
         return BRCOImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.xml'
+        }
+
 
 class BRCOImporter(ABCUploader):
     """

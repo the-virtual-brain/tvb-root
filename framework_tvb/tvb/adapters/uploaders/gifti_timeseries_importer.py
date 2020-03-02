@@ -75,6 +75,12 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
     def get_view_model():
         return GIFTITimeSeriesImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.gii'
+        }
+
 
 class GIFTITimeSeriesImporter(ABCUploader):
     """

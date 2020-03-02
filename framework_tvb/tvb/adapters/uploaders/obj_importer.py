@@ -78,6 +78,12 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def get_view_model():
         return ObjSurfaceImporterModel
 
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.obj'
+        }
+
 
 class ObjSurfaceImporter(ABCUploader):
     """
@@ -132,7 +138,6 @@ class ObjSurfaceImporter(ABCUploader):
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            self.generic_attributes.user_tag_1 = surface.surface_type
             return h5.store_complete(surface, self.storage_path)
 
         except ParseException as excep:

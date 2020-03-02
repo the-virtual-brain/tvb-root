@@ -28,31 +28,30 @@
 #
 #
 
-import time
-import uuid
-from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
+"""
+Example of launching a simulation and an analyzer from within the REST client API.
+"""
+
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR
-from tvb.core.neocom import h5
+from tvb.interfaces.rest.client.examples.utils import monitor_operation
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
+
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
     tvb_client = TVBClient("http://localhost:9090")
 
-    logger.info("Requesting a list of users...")
-    users_list = tvb_client.get_users()
-    assert len(users_list) > 0
-    logger.info("TVB has {} users registered".format(len(users_list)))
+    logger.info("Attempt to login")
+    tvb_client.login('tvb_user', 'pass')
 
-    username = users_list[0].username
-    logger.info("Requesting projects for user {}...".format(username))
-    projects_of_user = tvb_client.get_project_list(username)
+    logger.info("Requesting projects for logged user")
+    projects_of_user = tvb_client.get_project_list()
     assert len(projects_of_user) > 0
     logger.info("TVB has {} projects for this user".format(len(projects_of_user)))
 
@@ -67,24 +66,19 @@ if __name__ == '__main__':
         datatypes_type.append(datatype.type)
         if datatype.type == ConnectivityIndex().display_type:
             connectivity_gid = datatype.gid
-    logger.info("The datatypes in projecct are: {}".format(datatypes_type))
+    logger.info("The datatypes in project are: {}".format(datatypes_type))
 
     if connectivity_gid:
         logger.info("Preparing the simulator...")
         simulator = SimulatorAdapterModel()
-        simulator.connectivity = uuid.UUID(connectivity_gid)
+        simulator.connectivity = connectivity_gid
         simulator.simulation_length = 100
 
         logger.info("Starting the simulation...")
         operation_gid = tvb_client.fire_simulation(project_gid, simulator)
 
         logger.info("Monitoring the simulation operation...")
-        while True:
-            status = tvb_client.get_operation_status(operation_gid)
-            if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-                break
-            time.sleep(20)
-        logger.info("The simulation has finished with status: {}".format(status))
+        monitor_operation(tvb_client, operation_gid)
 
         logger.info("Requesting the results of the simulation...")
         simulation_results = tvb_client.get_operation_results(operation_gid)
@@ -105,15 +99,10 @@ if __name__ == '__main__':
 
         logger.info("Launch Fourier Analyzer...")
         fourier_model = FFTAdapterModel()
-        fourier_model.time_series = uuid.UUID(time_series_gid)
+        fourier_model.time_series = time_series_gid
         fourier_model.window_function = 'hamming'
 
-        algo_dto = None
-        for algo in algos:
-            if algo.classname == 'FourierAdapter':
-                algo_dto = algo
-
-        operation_gid = tvb_client.launch_operation(project_gid, algo_dto.module, algo_dto.classname, fourier_model)
+        operation_gid = tvb_client.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
 
         logger.info("Download the connectivity file...")
@@ -121,7 +110,7 @@ if __name__ == '__main__':
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
         logger.info("Loading an entire Connectivity datatype in memory...")
-        connectivity = h5.load(connectivity_path)
+        connectivity = tvb_client.load_datatype_from_file(connectivity_path)
         logger.info("Info on current Connectivity: {}".format(connectivity.summary_info()))
 
         logger.info("Loading a chuck from the time series H5 file, as this can be very large...")

@@ -40,6 +40,8 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+import json
+
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
@@ -360,12 +362,11 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_index.data_ndim = 4
             ts_index.state = 'INTERMEDIATE'
 
-            # state_variable_dimension_name = ts.labels_ordering[1]
-            # if ts_index.user_tag_1:
-            #     ts_index.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
-            # elif m_name in self.HAVE_STATE_VARIABLES:
-            #     selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
-            #     ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+            state_variable_dimension_name = ts.labels_ordering[1]
+            if m_name in self.HAVE_STATE_VARIABLES:
+                selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
+                ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+                ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
             ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
