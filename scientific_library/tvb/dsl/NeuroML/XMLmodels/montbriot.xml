@@ -20,28 +20,29 @@
         <Constant name="gamma" domain="lo=-2.0, hi=2.0, step=0.1" default="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term."/>
 
         <Dynamics>
+            <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
             <StateVariable name="r" default="0., 2.0" boundaries="0.0, inf"/>
             <StateVariable name="V" default="-2.0, 1.5" boundaries=""/>
 
-            <!-- Derived variables can be used to 'easify' the time dervivatives, enter the local coupling formulas or any formula -->
-            <!-- sytax: [name]=[value] -->
+            <!-- Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula -->
+            <!-- sytax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
-            <!-- default numpy signature: _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate) -->
             <DerivedVariable name="Coupling_global" expression="alpha * coupling[0]"/>
             <DerivedVariable name="Coupling_local" expression="(1-alpha) * local_coupling * r"/>
             <DerivedVariable name="Coupling_Term" expression="Coupling_global + Coupling_local"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
-            <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
+            <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
             <TimeDerivative name="dx" expression="Delta / pi + 2 * V * r - k * r**2 + Gamma * r / pi"/>
             <TimeDerivative name="dy" expression="V**2 - pi**2 * r**2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
 
         </Dynamics>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
-        and for dimension enter the reduction functionality-->
+        and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
+        Choices and default list with a (,) separator-->
         <Exposure name="r" choices="r, V" default="r, V" description="The quantities of interest for monitoring for the Infinite QIF 2D oscillator."/>
 
     </ComponentType>

@@ -22,13 +22,14 @@
 <!--        integration schemes."/>-->
 
         <Dynamics>
+            <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
             <StateVariable name="S" default="0.0, 1.0" boundaries="0.0, 1.0"/>
 
-            <!-- Derived variables can be used to 'easify' the time dervivatives with temp variables -->
-            <!-- Use this to define global and local coupling: coupling[0] and local_coupling -->
-            <!-- Used here to split the time derivative in 2 parts -->
+            <!-- Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula -->
+            <!-- sytax: [name]=[expression] -->
+            <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <DerivedVariable name="x" expression="w * J_N * S + I_o + J_N * coupling[0] + J_N * local_coupling"/>
             <DerivedVariable name="H" expression="(a * x - b) / (1 - exp(-d * (a * x - b)))"/>
 
