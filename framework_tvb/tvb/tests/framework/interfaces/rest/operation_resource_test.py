@@ -34,6 +34,7 @@ from uuid import UUID
 import flask
 import pytest
 import tvb_data
+from flask import Flask
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.analyzers.fft import SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
@@ -41,7 +42,9 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.operation_service import OperationService
+from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
+from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
@@ -65,13 +68,14 @@ class TestOperationResource(TransactionalTestCase):
         operation_gid = "inexistent-gid"
         with pytest.raises(InvalidIdentifierException): self.status_resource.get(operation_gid)
 
-    def test_server_get_operation_status(self):
+    def test_server_get_operation_status(self, rest_app):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+            response = self.operations_resource.get(self.test_project.gid)
 
-        result = self.status_resource.get(operations[0].gid)
+        result = self.status_resource.get(response['operations'][0].gid)
         assert type(result) is str
         assert result in OperationPossibleStatus
 
@@ -79,24 +83,26 @@ class TestOperationResource(TransactionalTestCase):
         operation_gid = "inexistent-gid"
         with pytest.raises(InvalidIdentifierException): self.results_resource.get(operation_gid)
 
-    def test_server_get_operation_results(self):
+    def test_server_get_operation_results(self, rest_app):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+            response = self.operations_resource.get(self.test_project.gid)
 
-        result = self.results_resource.get(operations[0].gid)
+        result = self.results_resource.get(response['operations'][0].gid)
         assert type(result) is list
         assert len(result) == 1
 
-    def test_server_get_operation_results_failed_operation(self):
+    def test_server_get_operation_results_failed_operation(self, rest_app):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_90.zip')
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        operations = self.operations_resource.get(self.test_project.gid)
+        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+            response = self.operations_resource.get(self.test_project.gid)
 
-        result = self.results_resource.get(operations[0].gid)
+        result = self.results_resource.get(response['operations'][0].gid)
         assert type(result) is list
         assert len(result) == 0
 

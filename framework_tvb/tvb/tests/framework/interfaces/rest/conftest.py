@@ -27,6 +27,13 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import pytest
+from flask import Flask
+from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
 
-from tvb.tests.framework.conftest import connectivity_factory, time_series_factory, user_factory, project_factory, \
-    operation_factory, time_series_index_factory
+
+@pytest.fixture(scope='session')
+def rest_app():
+    app = Flask(__name__)
+    app.json_encoder = CustomFlaskEncoder
+    return app

@@ -32,6 +32,7 @@ import os
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
@@ -67,21 +68,25 @@ class TestProjectResource(TransactionalTestCase):
         assert type(result) is list
         assert len(result) > 0
 
-    def test_server_get_operations_in_project_inexistent_gid(self):
+    def test_server_get_operations_in_project_inexistent_gid(self, rest_app):
         project_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid)
+        with pytest.raises(InvalidIdentifierException):
+            with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+                self.operations_resource.get(project_gid)
 
-    def test_server_get_operations_in_project_empty(self):
+    def test_server_get_operations_in_project_empty(self, rest_app):
         project_gid = self.test_project_without_data.gid
-        result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) == 0
+        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+            response = self.operations_resource.get(project_gid)
+        assert type(response['operations']) is list
+        assert len(response['operations']) == 0
 
-    def test_get_operations_in_project(self):
+    def test_get_operations_in_project(self, rest_app):
         project_gid = self.test_project_with_data.gid
-        result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) > 0
+        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
+            response = self.operations_resource.get(project_gid)
+        assert type(response['operations']) is list
+        assert len(response['operations']) > 0
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project_with_data.name)
