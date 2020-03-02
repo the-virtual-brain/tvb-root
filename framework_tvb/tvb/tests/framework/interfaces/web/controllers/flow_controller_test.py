@@ -168,9 +168,9 @@ class TestFlowController(BaseControllersTest):
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()
-        assert type(result['form']) == type(expected_interface)
-        assert result['form'].test1_val1.value == expected_interface.test1_val1.value
-        assert result['form'].test1_val2.value == expected_interface.test1_val2.value
+        assert type(result['adapter_form']) == type(expected_interface)
+        assert result['adapter_form'].test1_val1.value == expected_interface.test1_val1.value
+        assert result['adapter_form'].test1_val2.value == expected_interface.test1_val2.value
 
     def _wait_for_burst_ops(self, burst_config):
         """ sleeps until some operation of the burst is created"""

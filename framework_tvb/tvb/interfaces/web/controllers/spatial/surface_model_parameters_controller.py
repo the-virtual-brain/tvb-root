@@ -88,7 +88,7 @@ class SurfaceModelParametersForm(ABCAdapterForm):
 
     @using_template('spatial/spatial_fragment')
     def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
+        return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
                 'equation_params_div': self.NAME_EQATION_PARAMS_DIV, 'legend': 'Selected parameter'}
 
 
@@ -108,7 +108,7 @@ class EquationPlotForm(Form):
 
     @using_template('form_fields/form')
     def __str__(self):
-        return {'form': self}
+        return {'adapter_form': self}
 
 
 class SurfaceModelParametersController(SpatioTemporalController):
@@ -181,7 +181,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         config_form = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices)
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
-        template_specification.update({'form': config_form})
+        template_specification.update({'adapter_form': config_form})
 
         parameters_equation_plot_form = EquationPlotForm()
         template_specification.update({'parametersEquationPlotForm': parameters_equation_plot_form})
@@ -237,7 +237,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         context.current_equation = eq_class()
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=SurfaceModelParametersForm.NAME_EQATION_PARAMS_DIV)
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

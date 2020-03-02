@@ -42,7 +42,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import settings, expose_page
+from tvb.interfaces.web.controllers.decorators import settings, expose_page, using_template
 
 MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
@@ -142,3 +142,7 @@ class SpatioTemporalController(BaseController):
             return 0, 100, "The min value for the x-axis should be smaller then the max value of the x-axis."
 
         return min_x, max_x, ''
+
+    @using_template('spatial/spatial_fragment')
+    def get_template_dict(self, adapter_form):
+        return adapter_form.get_rendering_dict()
