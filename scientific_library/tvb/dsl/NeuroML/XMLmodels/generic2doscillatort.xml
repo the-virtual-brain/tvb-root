@@ -10,6 +10,7 @@
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
+        <!-- If empty then none -->
         <Constant name="tau" domain="lo=1.0, hi=5.0, step=0.01" default="1.0"
                   description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
         <Constant name="I" domain="lo=-5.0, hi=5.0, step=0.01" default="0.0" description="Baseline shift of the cubic nullcline"/>
@@ -25,19 +26,21 @@
         <Constant name="gamma" domain="lo=-1.0, hi=1.0, step=0.1" default="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term.."/>
 
         <Dynamics>
+            <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
             <StateVariable name="V" default="-2.0, 4.0" boundaries=""/>
             <StateVariable name="W" default="-6.0, 6.0" />
 
-            <!-- Derived variables can be used to 'easify' the time dervivatives or enter the local coupling formulas -->
-            <!-- Default defined: coupling[0, ] and local_coupling * {1st state variable} -->
-
+            <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
+            <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
             <TimeDerivative name="dV" expression="d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * coupling[0] + local_coupling)"/>
             <TimeDerivative name="dW" expression="d * (a + b * V + c * V**2 - beta * W) / tau"/>
         </Dynamics>
 
-        <!-- Variables of interest. Add the choices at dimension field sepration between single quotes. Name field is default  -->
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
+        Choices and default list with a (,) separator-->
         <Exposure name="V" choices="V, W, V + W, V - W" default="V"/>
 
     </ComponentType>

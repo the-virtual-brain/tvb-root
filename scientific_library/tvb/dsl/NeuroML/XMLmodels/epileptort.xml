@@ -41,33 +41,28 @@
             <StateVariable name="y2" default="0., 2." boundaries=""/>
             <StateVariable name="g" default="-1, 1." boundaries=""/>
 
-            <!-- Derived variables can be used to 'easify' the time dervivatives, enter the local coupling formulas or any formula -->
-            <!-- sytax: [name]=[value] -->
+            <!-- Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula -->
+            <!-- sytax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
-            <!-- default numpy signature: _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate) -->
             <DerivedVariable name="c_pop1" expression="coupling[0]"/>
             <DerivedVariable name="c_pop2" expression="coupling[1]"/>
             <DerivedVariable name="Iext" expression="Iext + local_coupling * x1"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
-            <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
+            <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
             <!-- Population 1 -->
             <ConditionalDerivedVariable name="ydot0" condition="x1 &lt; 0.0" cases="-a * x1**2 + b * x1, slope - x2 + 0.6 * (z - 4)**2 "/>
-<!--            <ConditionalDerivedVariable name="else_x1" exposure="" dimension="(x1 &gt;= 0.0) * (slope - x2 + 0.6 * (z - 4)**2)"/>-->
             <TimeDerivative name="dx1" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
             <TimeDerivative name="dy1" expression="tt * (c - d * x1**2 - y1)"/>
 
             <!-- Energy -->
             <ConditionalDerivedVariable name="ydot2" condition="z &lt; 0.0" cases="- 0.1 * (z**7), 0"/>
-<!--            <ConditionalDerivedVariable name="else_z" exposure="" dimension="0"/>-->
             <ConditionalDerivedVariable name="h" condition="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)), 4 * (x1 - x0) + ydot2"/>
-<!--            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==False)*(4 * (x1 - x0) + if_z)"/>-->
             <TimeDerivative name="dz" expression="tt * (r * (h - z + Ks * c_pop1))"/>
 
             <!-- Population 2 -->
             <TimeDerivative name="dx2" expression="tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
             <ConditionalDerivedVariable name="ydot4" condition="x2 &lt; -0.25" cases="0.0, aa * (x2 + 0.25)"/>
-<!--            <ConditionalDerivedVariable name="0" exposure="()" dimension="()"/>-->
             <TimeDerivative name="dy2" expression="tt * ((-y2 + ydot4) / tau)"/>
 
             <!-- Filter -->
@@ -78,8 +73,7 @@
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
-        Choices and default list with a (,) seperator
-        For a FC SC comparison the default option can only be 1. Return matrix will become to dimensional-->
+        Choices and default list with a (,) separator-->
         <Exposure name="x1" default="x2 - x1, z" choices="x1, y1, z, x2, y2, g, x2 - x1" description="Quantities of the Epileptor available to monitor."/>
 
     </ComponentType>
