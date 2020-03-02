@@ -6,29 +6,29 @@
                     Base type of any cell/population which has a (dimensionless) rate _R.
                     Epileptor 2-D (phase plane) oscillator.">
 
-    <ComponentType name="Epileptor"
+    <ComponentType name="EpileptorT"
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
         <!-- If empty then none -->
-        <Constant name="a" domain="0, 0" default="1.0" description="Coefficient of the cubic term in the first state-variable."/>
-        <Constant name="b" domain="0, 0" default="3.0" description="Coefficient of the squared term in the first state-variable."/>
-        <Constant name="c" domain="0, 0" default="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
-        <Constant name="d" domain="0, 0" default="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
+        <Constant name="a" domain="None" default="1.0" description="Coefficient of the cubic term in the first state-variable."/>
+        <Constant name="b" domain="None" default="3.0" description="Coefficient of the squared term in the first state-variable."/>
+        <Constant name="c" domain="None" default="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
+        <Constant name="d" domain="None" default="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
         <Constant name="r" domain="lo=0.0, hi=0.001, step=0.00005" default="0.00035" description="Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."/>
-        <Constant name="s" domain="0, 0" default="4.0" description="Linear coefficient in the third state variable"/>
+        <Constant name="s" domain="None" default="4.0" description="Linear coefficient in the third state variable"/>
         <Constant name="x0" domain="lo=-3.0, hi=-1.0, step=0.1" default="-1.6" description="Epileptogenicity parameter."/>
         <Constant name="Iext" domain="lo=1.5, hi=5.0, step=0.1" default="3.1" description="External input current to the first state-variable."/>
         <Constant name="slope" domain="lo=-16.0, hi=6.0, step=0.1" default="0." description="Linear coefficient in the first state-variable."/>
-        <Constant name="Iext2" domain="lo=0.0, hi=1.0, step=0.05" default="3.1" description="External input current to the first state-variable."/>
-        <Constant name="tau" domain="0, 0" default="10.0" description="Temporal scaling coefficient in fifth state variable."/>
-        <Constant name="aa" domain="0, 0" default="6.0" description="Linear coefficient in fifth state variable."/>
-        <Constant name="bb" domain="0, 0" default="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
+        <Constant name="Iext2" domain="lo=0.0, hi=1.0, step=0.05" default="0.45" description="External input current to the first state-variable."/>
+        <Constant name="tau" domain="None" default="10.0" description="Temporal scaling coefficient in fifth state variable."/>
+        <Constant name="aa" domain="None" default="6.0" description="Linear coefficient in fifth state variable."/>
+        <Constant name="bb" domain="None" default="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
         <Constant name="Kvf" domain="lo=0.0, hi=4.0, step=0.5" default="0.0" description="Coupling scaling on a very fast time scale."/>
         <Constant name="Kf" domain="lo=0.0, hi=4.0, step=0.5" default="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
         <Constant name="Ks" domain="lo=-4.0, hi=4.0, step=0.1" default="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
-        <Constant name="tt" domain="lo=0.001, hi=1.0, step=0.001" default="1.0" description="Time scaling of the whole system to the system in real time."/>
-        <Constant name="modification" domain="0, 0" default="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
+        <Constant name="tt" domain="lo=0.001, hi=10.0, step=0.001" default="1.0" description="Time scaling of the whole system to the system in real time."/>
+        <Constant name="modification" domain="None" default="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
@@ -58,7 +58,7 @@
             <TimeDerivative name="dy1" expression="tt * (c - d * x1**2 - y1)"/>
 
             <!-- Energy -->
-            <ConditionalDerivedVariable name="ydot2" condition="y1 &lt; 0.0" cases="- 0.1 * (z**7), 0"/>
+            <ConditionalDerivedVariable name="ydot2" condition="z &lt; 0.0" cases="- 0.1 * (z**7), 0"/>
 <!--            <ConditionalDerivedVariable name="else_z" exposure="" dimension="0"/>-->
             <ConditionalDerivedVariable name="h" condition="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)), 4 * (x1 - x0) + ydot2"/>
 <!--            <ConditionalDerivedVariable name="elsemod_h" exposure="" dimension="(modification==False)*(4 * (x1 - x0) + if_z)"/>-->
@@ -68,7 +68,7 @@
             <TimeDerivative name="dx2" expression="tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
             <ConditionalDerivedVariable name="ydot4" condition="x2 &lt; -0.25" cases="0.0, aa * (x2 + 0.25)"/>
 <!--            <ConditionalDerivedVariable name="0" exposure="()" dimension="()"/>-->
-            <TimeDerivative name="dy2" expression="tt * (-y2 + ydot4 / tau)"/>
+            <TimeDerivative name="dy2" expression="tt * ((-y2 + ydot4) / tau)"/>
 
             <!-- Filter -->
             <TimeDerivative name="dg" expression="tt * (-0.01 * (g - 0.1 * x1) )"/>
@@ -78,7 +78,8 @@
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
-        Choices and default list with a (,) seperator-->
+        Choices and default list with a (,) seperator
+        For a FC SC comparison the default option can only be 1. Return matrix will become to dimensional-->
         <Exposure name="x1" default="x2 - x1, z" choices="x1, y1, z, x2, y2, g, x2 - x1" description="Quantities of the Epileptor available to monitor."/>
 
     </ComponentType>

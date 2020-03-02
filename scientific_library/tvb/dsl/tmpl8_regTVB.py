@@ -6,7 +6,6 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class ${dfunname}(ModelNumbaDfun):
-
     %for mconst in const:
         ${NArray(mconst)}
     %endfor
@@ -63,48 +62,6 @@ class ${dfunname}(ModelNumbaDfun):
     _nvar = ${dynamics.state_variables.__len__()}
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
-
-        % for i, itemC in enumerate(dynamics.state_variables):
-        ## %if (i == 0):
-        ## lc_0 = local_coupling * ${itemC.name}
-        ## %endif
-        ${itemC.name} = state_variables[${i},:]
-        % endfor
-
-        #[State_variables, nodes]
-        ## c_0 = coupling[0, :]
-
-        %for itemD in const:
-        ${itemD.name} = self.${itemD.name}
-        %endfor
-
-        derivative = numpy.empty_like(state_variables)
-
-        ## derived variables
-        % for i, der_var in enumerate(dynamics.derived_variables):
-        ${der_var.name} = ${der_var.expression}
-        % endfor
-
-        ## conditional variables
-        % for i, con_der in enumerate(dynamics.conditional_derived_variables):
-        if (${con_der.condition}):
-            % for case in (con_der.cases):
-        % if (loop.first):
-            ${con_der.name} = ${case}
-        % elif (loop.last):
-        else:
-            ${con_der.name} = ${case}
-        % endif
-        % endfor
-        % endfor
-
-        % for i, item in enumerate(dynamics.time_derivatives):
-        ev('${item.expression}', out=derivative[${i}])
-        % endfor
-
-        return derivative
-
     def dfun(self, vw, c, local_coupling=0.0):
         ##lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
@@ -118,13 +75,11 @@ local_coupling)
         return deriv.T[..., numpy.newaxis]
 
 ## signature is always the number of constants +4. the extras are vw, c_0, lc_0 and dx.
-# @guvectorize([(float64[:],) * ${const.__len__()+4}], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
 @guvectorize([(float64[:], float64[:], \
 % for i in range(const.__len__()+1):
 float64, \
 % endfor
 float64[:])], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
-
 def _numba_dfun_${dfunname}(vw, coupling, \
 % for itemI in const:
 ${itemI.name}, \
@@ -151,8 +106,8 @@ local_coupling, dx):
     else:
         ${con_der.name} = ${case}
 %endif
-        % endfor /
-    % endfor /
+        % endfor
+    % endfor \
 
     % for i, itemH in enumerate(dynamics.time_derivatives):
     dx[${i}] = ${itemH.expression}
@@ -164,7 +119,9 @@ local_coupling, dx):
     ${nconst.name} = NArray(
         label=":math:`${nconst.name}`",
         default=numpy.array([${nconst.default}]),
+        % if (nconst.domain != "None" and nconst.domain != ""):
         domain=Range(${nconst.domain}),
+        % endif
         doc="""${nconst.description}"""
     )\
     ##self.${nconst.name} = ${nconst.name}

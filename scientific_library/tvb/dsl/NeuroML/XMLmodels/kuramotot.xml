@@ -4,7 +4,7 @@
       xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
       description="A number of ComponentTypes for rate based/population models">
 
-    <ComponentType name="Kuramoto"
+    <ComponentType name="KuramotoT"
                    description="Base type of any cell/population which has a (dimensionless) rate _R."
                    value="none">
 
@@ -21,7 +21,7 @@
             <!-- Used here to introduce the sin wrapper -->
             <DerivedVariable name="I" expression="coupling[0] + sin(local_coupling * theta)"/>
 
-            <TimeDerivative name="dV" expression="omega * I"/>
+            <TimeDerivative name="dV" expression="omega + I"/>
         </Dynamics>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
