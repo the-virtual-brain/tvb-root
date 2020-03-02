@@ -192,8 +192,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
 
         template_specification = dict(title="Spatio temporal - Surface stimulus")
-        template_specification['surfaceStimulusSelectForm'] = surface_stim_selector_form
-        template_specification['surfaceStimulusCreateForm'] = surface_stim_creator_form
+        template_specification['surfaceStimulusSelectForm'] = self.get_template_dict(surface_stim_selector_form)
+        template_specification['surfaceStimulusCreateForm'] = self.get_template_dict(surface_stim_creator_form)
         self.plotted_equation_prefixes = {
             self.SURFACE_FIELD: surface_stim_creator_form.surface.name,
             self.SPATIAL_FIELD: surface_stim_creator_form.spatial.name,

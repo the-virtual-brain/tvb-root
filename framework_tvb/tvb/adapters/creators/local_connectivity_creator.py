@@ -43,7 +43,6 @@ from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField
     TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
-from tvb.interfaces.web.controllers.decorators import using_template
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
@@ -66,8 +65,7 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
     def get_filters():
         return None
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Selected entity'}
 
 
@@ -132,8 +130,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.spatial_params.form = get_form_for_equation(type(lc_equation))(self.NAME_EQUATION_PARAMS_DIV)
         self.spatial_params.form.fill_from_trait(lc_equation)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_local_connectivity_data',
                 'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 

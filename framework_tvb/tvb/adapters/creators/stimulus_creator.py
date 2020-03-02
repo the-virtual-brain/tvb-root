@@ -46,7 +46,6 @@ from tvb.datatypes.equations import Sigmoid, PulseTrain
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.interfaces.web.controllers.decorators import using_template
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
@@ -58,8 +57,7 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
                                                     label='Load Surface Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
@@ -117,8 +115,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.spatial_params.form.fill_from_trait(trait.spatial)
         self.temporal_params.form.fill_from_trait(trait.temporal)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
                 'spatial_params_div': self.NAME_SPATIAL_PARAMS_DIV,
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
@@ -200,8 +197,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
                                                    label='Load Region Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
@@ -250,8 +246,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal_params.form.fill_from_trait(trait.temporal)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
+    def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
