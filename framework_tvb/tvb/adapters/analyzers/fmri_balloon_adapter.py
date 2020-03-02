@@ -236,7 +236,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         result_index.time_series_type = TimeSeriesRegion.__name__
         result_index.data_ndim = len(result_signal_shape)
         result_index.data_length_1d, result_index.data_length_2d, \
-        result_index.data_length_3d, result_index.data_length_3d = prepare_array_shape_meta(result_signal_shape)
+        result_index.data_length_3d, result_index.data_length_4d = prepare_array_shape_meta(result_signal_shape)
 
         result_index.connectivity_gid = self.input_time_series_index.connectivity_gid
         result_index.region_mapping_gid = self.input_time_series_index.region_mapping_gid
