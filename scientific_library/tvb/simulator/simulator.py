@@ -51,7 +51,6 @@ from .history import SparseHistory
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 
 from tvb.simulator.models.reduced_wong_wang_exc_io_inh_i import ReducedWongWangExcIOInhI
-from tvb_multiscale.config import CONFIGURED
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
@@ -61,13 +60,14 @@ class Simulator(HasTraits):
     tvb_spikeNet_interface = None
     configure_spiking_simulator = None
     run_spiking_simulator = None
+    _config = None
 
     """A Simulator assembles components required to perform simulations."""
 
     connectivity = Attr(
         field_type=connectivity.Connectivity,
         label="Long-range connectivity",
-        default=CONFIGURED.DEFAULT_SUBJECT["connectivity"],
+        default=None,
         required=True,
         doc="""A tvb.datatypes.Connectivity object which contains the
          structural long-range connectivity data (i.e., white-matter tracts). In
@@ -175,7 +175,7 @@ class Simulator(HasTraits):
         try:
             return self.tvb_spikeNet_interface.config
         except:
-            return CONFIGURED
+            return self._config
 
     @property
     def good_history_shape(self):
@@ -297,11 +297,11 @@ class Simulator(HasTraits):
             # If it's a surface sim and model parameters were provided at the region level
             region_parameters = getattr(self.model, param)
             if self.surface is not None:
-                if region_parameters.size == self.connectivity.number_of_regions:
+                if region_parameters.shape[0] == self.connectivity.number_of_regions:
                     new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
                     setattr(self.model, param, new_parameters)
             region_parameters = getattr(self.model, param)
-            if region_parameters.size == self.number_of_nodes:
+            if region_parameters.shape[0] == self.number_of_nodes:
                 new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
@@ -436,23 +436,27 @@ class Simulator(HasTraits):
         self.bound_and_clamp(history)
         # If there are non-state variables, they need to be updated for history:
         try:
-            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
-            # in the extreme case where all state variables are cvars as well, we set:
-            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], 1))
-            for i_time in range(history.shape[1]):
-                self.model.update_non_state_variables(history[:, i_time], node_coupling[:, 0], 0.0)
-            self.bound_and_clamp(history)
+            update_initial_conditions = self.model.update_initial_conditions_non_state_variables
         except:
-            pass
+            try:
+                update_initial_conditions = self.model.update_non_state_variables
+            except:
+                return
+        # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
+        # in the extreme case where all state variables are cvars as well, we set:
+        node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
+        for i_time in range(history.shape[1]):
+            update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0)
+        self.bound_and_clamp(history)
 
-    def update_state(self, state, node_coupling, local_coupling=0.0):
+    def update_state(self, state, node_coupling, local_coupling=0.0, use_numba=True):
         # If there are non-state variables, they need to be updated for the initial condition:
         try:
-            self.model.update_non_state_variables(state, node_coupling, local_coupling)
-            self.bound_and_clamp(state)
+            self.model.update_non_state_variables
         except:
-            # If not, the kwarg will fail and nothing will happen
-            pass
+            return
+        self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba)
+        self.bound_and_clamp(state)
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -482,9 +486,17 @@ class Simulator(HasTraits):
         step = self.current_step + 1  # the first step in the loop
         node_coupling = self._loop_compute_node_coupling(step)
         self._loop_update_stimulus(step, stimulus)
+
+        # TODO: temporary hack because numba dfuns fail for multiple modes
+        if self.model.number_of_modes > 1:
+            use_numba = False
+            dfun = self.model._numpy_dfun
+        else:
+            dfun = self.model.dfun
+
         # This is not necessary in most cases
         # if update_non_state_variables=True in the model dfun by default
-        self.update_state(state, node_coupling, local_coupling)
+        self.update_state(state, node_coupling, local_coupling, use_numba)
 
         # TODO: We could have another __call__method obviously when there is no co-simulation...
         if self.tvb_spikeNet_interface is not None:
@@ -522,10 +534,8 @@ class Simulator(HasTraits):
                 self.run_spiking_simulator(self.integrator.dt)
 
             # Integrate TVB to get the new TVB state
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrator.scheme(state, dfun, node_coupling, local_coupling, stimulus)
 
-            # Integrate TVB to get the new TVB state
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
             if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                 raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
 
@@ -542,7 +552,7 @@ class Simulator(HasTraits):
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             # Update any non-state variables and apply any boundaries again to the new state:
-            self.update_state(state, node_coupling, local_coupling)
+            self.update_state(state, node_coupling, local_coupling, use_numba)
             # Now direct the new state to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
