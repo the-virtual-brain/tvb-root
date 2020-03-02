@@ -61,11 +61,17 @@ class TVB_test:
 			'ReducedWongWang': models.ReducedWongWang,
 			'Generic2dOscillator': models.Generic2dOscillator,
 			'Epileptor': models.Epileptor,
-			'Montbrio': models.Theta2D
+			'Montbrio': models.Theta2D,
+			'KuramotoT': models.KuramotoT,
+			'ReducedWongWangT': models.ReducedWongWangT,
+			'Generic2dOscillatorT': models.Generic2dOscillatorT,
+			'EpileptorT': models.EpileptorT,
+			'MontbrioT': models.MontbrioT,
 		}
 		func = switcher.get(pop, 'invalid model choice')
 		# logger.info('func %s', func)
 		populations = func()
+		# populations = getattr(models, pop)
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations

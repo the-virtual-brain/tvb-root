@@ -4,7 +4,7 @@
       xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
       description="Rate based/population models translated using LEMS.">
 
-    <ComponentType name="Theta2D"
+    <ComponentType name="MontbrioT"
                    description="2D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons)."
                    value="">
 
@@ -35,8 +35,8 @@
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional now used for if statement using ternary operator: syntax: [on_true:exposure] if [expression:name] else [on_false:dimension] -->
-            <TimeDerivative name="dx" expression="Delta / 3.14 + 2 * V * r - k * r**2 + Gamma * r / 3.14"/>
-            <TimeDerivative name="dy" expression="V**2 - 3.14**2 * r**2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
+            <TimeDerivative name="dx" expression="Delta / pi + 2 * V * r - k * r**2 + Gamma * r / pi"/>
+            <TimeDerivative name="dy" expression="V**2 - pi**2 * r**2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
 
         </Dynamics>
 
