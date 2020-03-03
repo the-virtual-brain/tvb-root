@@ -2,7 +2,7 @@
       xmlns="http://www.neuroml.org/lems/0.7.4"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
-      description="A number of ComponentTypes for rate based/population models">
+      description="A number of ComponentTypes for rate based/population models.">
 
     <ComponentType name="KuramotoT"
                    description="Base type of any cell/population which has a (dimensionless) rate _R."

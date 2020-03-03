@@ -11,18 +11,17 @@ def regTVB_templating(model_filename):
     .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
     """
 
+    # file locations
     fp_xml = 'NeuroML/XMLmodels/' + model_filename.lower() + '.xml'
     modelfile = "../simulator/models/" + model_filename.lower() + ".py"
 
+    # instantiate LEMS lib
     model = Model()
     model.import_from_file(fp_xml)
 
-    modelist = list()
-    modelist.append(model.component_types[model_filename])
-
     # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
     svboundaries = 0
-    for i, sv in enumerate(modelist[0].dynamics.state_variables):
+    for i, sv in enumerate(model.component_types[model_filename].dynamics.state_variables):
         if sv.boundaries != 'None' and sv.boundaries != '' and sv.boundaries:
             svboundaries = 1
             continue
@@ -31,20 +30,20 @@ def regTVB_templating(model_filename):
     template = Template(filename='tmpl8_regTVB.py')
     model_str = template.render(
                             dfunname=model_filename,
-                            const=modelist[0].constants,
-                            dynamics=modelist[0].dynamics,
+                            const=model.component_types[model_filename].constants,
+                            dynamics=model.component_types[model_filename].dynamics,
                             svboundaries=svboundaries,
-                            exposures=modelist[0].exposures
+                            exposures=model.component_types[model_filename].exposures
                             )
-    # write template to file
+    # write templated model to file
     with open(modelfile, "w") as f:
         f.writelines(model_str)
 
-    # write new model to init.py such it is familiar to TVB
-    doprint=1
+    # write new model to init.py such it is familiar to TVB if not already present
+    doprint=True
     with open("../simulator/models/__init__.py", "r+") as f:
         for line in f.readlines():
             if ("from ." + model_filename.lower() + " import " + model_filename) in line:
-                doprint=0
+                doprint=False
         if doprint:
             f.writelines("\nfrom ." + model_filename.lower() + " import " + model_filename)
