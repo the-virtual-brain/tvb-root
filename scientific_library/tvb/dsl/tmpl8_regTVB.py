@@ -102,7 +102,7 @@ local_coupling, dx):
         % for case in (con_der.cases):
 % if (loop.first):
         ${con_der.name} = ${case}
-% elif (loop.last):
+% elif (loop.last and not loop.first):
     else:
         ${con_der.name} = ${case}
 %endif

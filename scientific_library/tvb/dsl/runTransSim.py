@@ -63,7 +63,7 @@ for i, trgt in enumerate(model_target):
     # modelname = trgt+'T'
     templating.regTVB_templating(trgt)
 
-    import TVB_testsuite.tvbRegCudaNumba as TemplSim
-    # # run tvb with model template
-    testTemplSim = TemplSim.TVB_test()
-    testTemplSim.startsim(trgt)
+    # import TVB_testsuite.tvbRegCudaNumba as TemplSim
+    # # # run tvb with model template
+    # testTemplSim = TemplSim.TVB_test()
+    # testTemplSim.startsim(trgt)
