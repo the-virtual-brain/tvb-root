@@ -76,10 +76,7 @@ def secured(func):
         try:
             # Load user details
             kc_user_info = AuthorizationManager.get_keycloak_instance().userinfo(token)
-            external_id = kc_user_info['sub']
-            db_user = UserService.get_user_by_external_id(external_id)
-            if db_user is None:
-                db_user = UserService().create_external_service_user(kc_user_info)
+            db_user = UserService().get_external_db_user(kc_user_info)
             set_current_user(db_user)
 
         except KeycloakError as kc_error:

@@ -282,6 +282,8 @@ class SettingsForm(formencode.Schema):
     CLUSTER_SCHEDULER = validators.UnicodeString(not_empty=True)
 
     KEYCLOAK_CONFIGURATION = validators.UnicodeString(not_empty=True)
+    KEYCLOAK_WEB_CONFIGURATION = validators.UnicodeString()
+    ENABLE_KEYCLOAK_LOGIN = validators.Bool()
     TVB_STORAGE = validators.UnicodeString(not_empty=True)
     USR_DISK_SPACE = DiskSpaceValidator(not_empty=True)
     MATLAB_EXECUTABLE = MatlabValidator()

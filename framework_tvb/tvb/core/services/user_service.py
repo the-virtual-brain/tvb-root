@@ -69,6 +69,7 @@ TEXT_CREATE_TO_ADMIN = 'New member requires validation. Go to this url to valida
 TEXT_VALIDATED = ',\n\nYour registration has been validated by TVB Administrator, Please proceed with the login at '
 KEY_USERNAME = "username"
 KEY_PASSWORD = "password"
+KEY_AUTH_TOKEN = "auth_token"
 KEY_EMAIL = "email"
 KEY_ROLE = "role"
 KEY_COMMENT = "comment"
@@ -333,3 +334,10 @@ class UserService:
                          external_id=external_id, email=email,
                          validated=True, skip_sending_email=True)
         return self.get_user_by_external_id(external_id)
+
+    def get_external_db_user(self, user_data):
+        external_id = user_data['sub']
+        db_user = UserService.get_user_by_external_id(external_id)
+        if db_user is None:
+            db_user = self.create_external_service_user(user_data)
+        return db_user

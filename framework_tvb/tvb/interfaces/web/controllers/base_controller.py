@@ -210,6 +210,13 @@ class BaseController(object):
         template_dictionary.update(msg)
         return template_dictionary
 
+    @staticmethod
+    def _populate_web_keycloak_config(template_dictionary):
+        if common.KEY_KEYCLOAK_WEB not in template_dictionary and TvbProfile.current.KEYCLOAK_LOGIN_ENABLED \
+                and TvbProfile.current.KEYCLOAK_WEB_CONFIG:
+            template_dictionary[common.KEY_KEYCLOAK_WEB] = TvbProfile.current.KEYCLOAK_WEB_CONFIG
+        return template_dictionary
+
     def _populate_menu(self, template_dictionary):
         """
         Populate current template with information for the Left Menu.
@@ -280,6 +287,7 @@ class BaseController(object):
         template_dictionary = self._populate_user_and_project(template_dictionary, escape_db_operations)
         template_dictionary = self._populate_message(template_dictionary)
         template_dictionary = self._populate_menu(template_dictionary)
+        template_dictionary = self._populate_web_keycloak_config(template_dictionary)
 
         if common.KEY_ERRORS not in template_dictionary:
             template_dictionary[common.KEY_ERRORS] = {}

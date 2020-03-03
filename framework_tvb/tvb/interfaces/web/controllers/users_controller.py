@@ -36,27 +36,29 @@ but also user related annotation (checked-logged).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import os
 import json
-import time
+import os
 import ssl
+import time
+from urllib.request import urlopen
+
 import cherrypy
 import formencode
-from urllib.request import urlopen
-from formencode import validators
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
-from tvb.basic.profile import TvbProfile
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import UsernameException
-from tvb.core.utils import format_bytes_human, hash_password
 import tvb.interfaces.web
+from formencode import validators
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.core.services.exceptions import UsernameException
+from tvb.core.services.project_service import ProjectService
+from tvb.core.services.texture_to_json import color_texture_to_list
+from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT, \
+    KEY_AUTH_TOKEN
+from tvb.core.utils import format_bytes_human, hash_password
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
-from tvb.core.services.texture_to_json import color_texture_to_list
-
+from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
@@ -72,7 +74,6 @@ class UserController(BaseController):
         BaseController.__init__(self)
         self.version_info = None
 
-
     @cherrypy.expose
     @handle_error(redirect=True)
     @using_template('user/base_user')
@@ -83,16 +84,24 @@ class UserController(BaseController):
         """
         template_specification = dict(mainContent="user/login", title="Login", data=data)
         if cherrypy.request.method == 'POST':
-            form = LoginForm()
+            keycloak_login = TvbProfile.current.KEYCLOAK_LOGIN_ENABLED
+            form = LoginForm() if not keycloak_login else KeycloakLoginForm()
+
             try:
                 data = form.to_python(data)
-                username = data[KEY_USERNAME]
-                password = data[KEY_PASSWORD]
-                user = self.user_service.check_login(username, password)
+                if keycloak_login:
+                    auth_token = data[KEY_AUTH_TOKEN]
+                    kc_user_info = AuthorizationManager(
+                        TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().userinfo(auth_token)
+                    user = self.user_service.get_external_db_user(kc_user_info)
+                else:
+                    username = data[KEY_USERNAME]
+                    password = data[KEY_PASSWORD]
+                    user = self.user_service.check_login(username, password)
                 if user is not None:
                     common.add2session(common.KEY_USER, user)
-                    common.set_info_message('Welcome ' + username)
-                    self.logger.debug("User " + username + " has just logged in!")
+                    common.set_info_message('Welcome ' + user.username)
+                    self.logger.debug("User " + user.username + " has just logged in!")
                     if user.selected_project is not None:
                         prj = user.selected_project
                         prj = ProjectService().find_project(prj)
@@ -100,12 +109,11 @@ class UserController(BaseController):
                     raise cherrypy.HTTPRedirect('/user/profile')
                 else:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
-                    self.logger.debug("Wrong username " + username + " !!!")
+                    self.logger.debug("Wrong username " + user.username + " !!!")
             except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
 
         return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -173,6 +181,13 @@ class UserController(BaseController):
         common.expire_session()
         raise cherrypy.HTTPRedirect("/user")
 
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
+    def keycloak_web_config(self):
+        file_path = TvbProfile.current.KEYCLOAK_WEB_CONFIG
+        with open(file_path) as f:
+            return json.load(f)
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -437,6 +452,13 @@ class LoginForm(formencode.Schema):
     password = validators.UnicodeString(not_empty=True, use_builtins_gettext=False, messages={'empty': empty_msg})
 
 
+class KeycloakLoginForm(formencode.Schema):
+    """
+        Validate for Login UI Form
+    """
+    empty_msg = 'Please enter a value'
+    auth_token = validators.UnicodeString(not_empty=True, use_builtins_gettext=False, messages={'empty': empty_msg})
+
 
 class UniqueUsername(formencode.FancyValidator):
     """
@@ -484,5 +506,5 @@ class EditUserForm(formencode.Schema):
     email = validators.Email(if_missing=None)
     chained_validators = [validators.FieldsMatch('password', 'password2'),
                           validators.RequireIfPresent('password', present='old_password')]
-    
-    
+
+
