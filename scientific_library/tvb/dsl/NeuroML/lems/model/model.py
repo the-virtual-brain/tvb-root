@@ -8,21 +8,18 @@ Model storage.
 
 import os
 from os.path import dirname
-import sys
 
 from base.base import LEMSBase
 from base.map import Map
-# from lems.parser.LEMS import LEMSFileParser
-# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
+from parser.LEMS import LEMSFileParser
 from parser.LEMS import LEMSFileParser
 from base.util import merge_maps, merge_lists
-from model.component import Constant,ComponentType,Component,FatComponent
 
 from base.errors import ModelError
 from base.errors import SimBuildError
 
 from model.fundamental import Dimension,Unit,Include
-# from lems.model.component import Constant,ComponentType,Component,FatComponent
+from model.component import Constant,ComponentType,Component,FatComponent
 from model.simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
 from model.structure import With,EventConnection,ChildInstance,MultiInstantiate
 
@@ -212,55 +209,55 @@ class Model(LEMSBase):
         else:
             raise ModelError('Unsupported child element')
 
-    # def add_include_directory(self, path):
-    #     """
-    #     Adds a directory to the include file search path.
-    #
-    #     @param path: Directory to be added.
-    #     @type path: str
-    #     """
-    #
-    #     self.include_directories.append(path)
+    def add_include_directory(self, path):
+        """
+        Adds a directory to the include file search path.
 
-    # def include_file(self, path, include_dirs = []):
-    #     """
-    #     Includes a file into the current model.
-    #
-    #     @param path: Path to the file to be included.
-    #     @type path: str
-    #
-    #     @param include_dirs: Optional alternate include search path.
-    #     @type include_dirs: list(str)
-    #     """
-    #     if self.include_includes:
-    #         if self.debug: print("------------------                   Including a file: %s"%path)
-    #         inc_dirs = include_dirs if include_dirs else self.include_dirs
-    #
-    #         parser = LEMSFileParser(self, inc_dirs, self.include_includes)
-    #         if os.access(path, os.F_OK):
-    #             if not path in self.included_files:
-    #                 parser.parse(open(path).read())
-    #                 self.included_files.append(path)
-    #                 return
-    #             else:
-    #                 if self.debug: print("Already included: %s"%path)
-    #                 return
-    #         else:
-    #             for inc_dir in inc_dirs:
-    #                 new_path = (inc_dir + '/' + path)
-    #                 if os.access(new_path, os.F_OK):
-    #                     if not new_path in self.included_files:
-    #                         parser.parse(open(new_path).read())
-    #                         self.included_files.append(new_path)
-    #                         return
-    #                     else:
-    #                         if self.debug: print("Already included: %s"%path)
-    #                         return
-    #         msg = 'Unable to open ' + path
-    #         if self.fail_on_missing_includes:
-    #             raise Exception(msg)
-    #         elif self.debug:
-    #             print(msg)
+        @param path: Directory to be added.
+        @type path: str
+        """
+
+        self.include_directories.append(path)
+
+    def include_file(self, path, include_dirs = []):
+        """
+        Includes a file into the current model.
+
+        @param path: Path to the file to be included.
+        @type path: str
+
+        @param include_dirs: Optional alternate include search path.
+        @type include_dirs: list(str)
+        """
+        if self.include_includes:
+            if self.debug: print("------------------                   Including a file: %s"%path)
+            inc_dirs = include_dirs if include_dirs else self.include_dirs
+
+            parser = LEMSFileParser(self, inc_dirs, self.include_includes)
+            if os.access(path, os.F_OK):
+                if not path in self.included_files:
+                    parser.parse(open(path).read())
+                    self.included_files.append(path)
+                    return
+                else:
+                    if self.debug: print("Already included: %s"%path)
+                    return
+            else:
+                for inc_dir in inc_dirs:
+                    new_path = (inc_dir + '/' + path)
+                    if os.access(new_path, os.F_OK):
+                        if not new_path in self.included_files:
+                            parser.parse(open(new_path).read())
+                            self.included_files.append(new_path)
+                            return
+                        else:
+                            if self.debug: print("Already included: %s"%path)
+                            return
+            msg = 'Unable to open ' + path
+            if self.fail_on_missing_includes:
+                raise Exception(msg)
+            elif self.debug:
+                print(msg)
             
     def import_from_file(self, filepath):
         """
@@ -277,59 +274,59 @@ class Model(LEMSBase):
         with open(filepath) as f:
             parser.parse(f.read())
 
-    # def export_to_dom(self):
-    #     """
-    #     Exports this model to a DOM.
-    #     """
-    #     namespaces = 'xmlns="http://www.neuroml.org/lems/%s" ' + \
-    #                  'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' + \
-    #                  'xsi:schemaLocation="http://www.neuroml.org/lems/%s %s"'
-    #
-    #     namespaces = namespaces%(self.target_lems_version,self.target_lems_version,self.schema_location)
-    #
-    #     xmlstr = '<Lems %s>'%namespaces
-    #
-    #     for include in self.includes:
-    #         xmlstr += include.toxml()
-    #
-    #     for target in self.targets:
-    #         xmlstr += '<Target component="{0}"/>'.format(target)
-    #
-    #     for dimension in self.dimensions:
-    #         xmlstr += dimension.toxml()
-    #
-    #     for unit in self.units:
-    #         xmlstr += unit.toxml()
-    #
-    #     for constant in self.constants:
-    #         xmlstr += constant.toxml()
-    #
-    #     for component_type in self.component_types:
-    #         xmlstr += component_type.toxml()
-    #
-    #     for component in self.components:
-    #         xmlstr += component.toxml()
-    #
-    #     xmlstr += '</Lems>'
-    #
-    #     xmldom = minidom.parseString(xmlstr)
-    #     return xmldom
-    #
-    # def export_to_file(self, filepath, level_prefix = '  '):
-    #     """
-    #     Exports this model to a file.
-    #
-    #     @param filepath: File to be exported to.
-    #     @type filepath: str
-    #     """
-    #     xmldom = self.export_to_dom()
-    #     xmlstr = xmldom.toprettyxml(level_prefix, '\n',)
-    #
-    #
-    #     f = open(filepath, 'w')
-    #     f.write(xmlstr)
-    #     f.close()
-    #
+    def export_to_dom(self):
+        """
+        Exports this model to a DOM.
+        """
+        namespaces = 'xmlns="http://www.neuroml.org/lems/%s" ' + \
+                     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' + \
+                     'xsi:schemaLocation="http://www.neuroml.org/lems/%s %s"'
+
+        namespaces = namespaces%(self.target_lems_version,self.target_lems_version,self.schema_location)
+
+        xmlstr = '<Lems %s>'%namespaces
+
+        for include in self.includes:
+            xmlstr += include.toxml()
+
+        for target in self.targets:
+            xmlstr += '<Target component="{0}"/>'.format(target)
+
+        for dimension in self.dimensions:
+            xmlstr += dimension.toxml()
+
+        for unit in self.units:
+            xmlstr += unit.toxml()
+
+        for constant in self.constants:
+            xmlstr += constant.toxml()
+
+        for component_type in self.component_types:
+            xmlstr += component_type.toxml()
+
+        for component in self.components:
+            xmlstr += component.toxml()
+
+        xmlstr += '</Lems>'
+
+        xmldom = minidom.parseString(xmlstr)
+        return xmldom
+
+    def export_to_file(self, filepath, level_prefix = '  '):
+        """
+        Exports this model to a file.
+
+        @param filepath: File to be exported to.
+        @type filepath: str
+        """
+        xmldom = self.export_to_dom()
+        xmlstr = xmldom.toprettyxml(level_prefix, '\n',)
+
+
+        f = open(filepath, 'w')
+        f.write(xmlstr)
+        f.close()
+
     def resolve(self):
         """
         Resolves references in this model.

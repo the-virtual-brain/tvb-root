@@ -4,6 +4,9 @@ LEMS XML file format parser.
 @author: Gautham Ganapathy
 @organization: LEMS (http://neuroml.org/lems/, https://github.com/organizations/LEMS)
 @contact: gautham@lisphacker.org
+
+MAvdVlag: altered attributes for constants, state_variables, derived_variables, time_derivatives,
+conditional_derived_variable and exposures
 """
 
 import xml.etree.ElementTree as xe
@@ -17,10 +20,6 @@ from model.component import *
 
 # from lems.base.util import make_id
 
-# import sys
-# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
-# from model.component import *
-# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/')
 from model.dynamics import *
 
 

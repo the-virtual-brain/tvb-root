@@ -5,13 +5,12 @@ Expression parser
 @organization: LEMS (http://neuroml.org/lems/, https://github.com/organizations/LEMS)
 @contact: gautham@lisphacker.org
 
-MV: added pow(f,l) function for c translations
+MAvdVlag: added pow(f,l) function for c translations and ** for python power function. Removed H as a known function
 """
 
 from base.base import LEMSBase
 from base.stack import Stack
 
-# mv: removed H as a known function
 known_functions = ['exp', 'log', 'sqrt', 'sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh', 'abs', 'ceil', 'factorial', 'random', 'pow', 'powf', 'powl']
 
 class ExprNode(LEMSBase):
