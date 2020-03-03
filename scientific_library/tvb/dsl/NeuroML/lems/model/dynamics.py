@@ -4,16 +4,16 @@ Behavioral dynamics of component types.
 @author: Gautham Ganapathy
 @organization: LEMS (http://neuroml.org/lems/, https://github.com/organizations/LEMS)
 @contact: gautham@lisphacker.org
+
+MAvdVlag: altered attributes for state_variables, derived_variables, time_derivatives and
+conditional_derived_variable.
 """
 
 from base.base import LEMSBase
 from base.map import Map
 from base.errors import ModelError,ParseError
 
-import sys
-# sys.path.insert(0, '/home/michiel/Documents/TVB/dsl_datafitting/lems/parser')
 from parser.expr import ExprParser
-# from lems.parser.expr import ExprParser
 
 class StateVariable(LEMSBase):
     """

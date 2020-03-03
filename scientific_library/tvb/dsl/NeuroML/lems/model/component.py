@@ -4,19 +4,19 @@ Parameter, ComponentType and Component class definitions.
 @author: Gautham Ganapathy
 @organization: LEMS (http://neuroml.org/lems/, https://github.com/organizations/LEMS)
 @contact: gautham@lisphacker.org
+
+MAvdVlag: altered attributes for constants and exposures. Added type 'function for CUDA generation'
 """
 
 from base.base import LEMSBase
 from base.map import Map
-# from lems.base.errors import ModelError,ParseError
-#
+from base.errors import ModelError,ParseError
+
 from model.dynamics import Dynamics
 from model.structure import Structure
 from model.simulation import Simulation
 
-import sys
 from parser.expr import ExprParser
-# from lems.parser.expr import ExprParser
 
 class Parameter(LEMSBase):
     """

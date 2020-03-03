@@ -13,9 +13,13 @@ The T indicates that the model has been templated.
 # Files
 * dsl/LEMS2pyton.py 				: python script for initiating model code generation
 * dsl/NeuroML/XMLmodels				: directory containing LEMS based XML model files
-* dsl/NeuroML/lems                  : modified pyLEMS library tuned for TVB 
-* simulator/models           		: TVB default model directory for generated results
-* tmpl8_regTVB.py					: Mako template converting XML to python
+* dsl/tmpl8_regTVB.py				: Mako template converting XML to python
+* dsl/NeuroML/lems                  : modified pyLEMS library tuned for TVB
+* dsl/NeuroML/lems/component.py     : maintains _constants and _exposures
+* dsl/NeuroML/lems/dynamics.py      : maintains all _dynamic attributes
+* dsl/NeuroML/lems/LEMS.py          : LEMS XML file parser
+* dsl/NeuroML/lems/expr.py          : expression parser
+* tvb/simulator/models           	: TVB default model directory for generated results
 
 
 # Prerequisites
@@ -23,8 +27,8 @@ Mako templating
 
 
 # XML LEMS Definitions 
-Based on http://lems.github.io/LEMS/elements.html but tuned for TVB models. As an example an XML line and its translation
-to python are given.
+Based on http://lems.github.io/LEMS/elements.html but attributes are tuned for TVB models.
+As an example an XML line and its translation to python are given. 
 
 * Constants\
 If domain = 'none' no domain range will be added.\
