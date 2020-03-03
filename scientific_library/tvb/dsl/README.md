@@ -159,7 +159,7 @@ else:
     ydot0 = slope - x2 + 0.6 * (z - 4)**2
 ```
 
-*Time Derivatives
+*Time Derivatives\
 Used to define the models derivates functions solved numerically.\
 Syntax: dx[n] = {expression}. Name field is not used.
 ```xml
