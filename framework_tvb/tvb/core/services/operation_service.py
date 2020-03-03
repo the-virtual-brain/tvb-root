@@ -117,7 +117,7 @@ class OperationService:
         operations = self.prepare_operations(current_user.id, project, algo, algo_category,
                                              {}, visible, view_model=model_view, **kwargs)[0]
 
-        if isinstance(adapter_instance, ABCAsynchronous):
+        if isinstance(adapter_instance, ABCSynchronous):
             if len(operations) > 1:
                 raise LaunchException("Synchronous operations are not supporting ranges!")
             if len(operations) < 1:

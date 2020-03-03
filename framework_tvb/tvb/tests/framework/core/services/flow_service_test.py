@@ -40,7 +40,7 @@ from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
@@ -144,7 +144,7 @@ class TestFlowService(TransactionalTestCase):
         """
         test_adapter_factory()
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(adapter, ABCAsynchronous), "Something went wrong with valid data!"
+        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
 
     def test_build_adapter_invalid(self):
         """

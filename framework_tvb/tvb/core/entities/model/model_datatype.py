@@ -91,7 +91,7 @@ class DataType(HasTraitsIndex):
     visible = Column(Boolean, default=True)
     invalid = Column(Boolean, default=False)
     is_nan = Column(Boolean, default=False)
-    disk_size = Column(Integer)
+    disk_size = Column(Integer, default=0)
     user_tag_1 = Column(String)  # Name used by framework and perpetuated from a DataType to derived entities.
     user_tag_2 = Column(String)
     user_tag_3 = Column(String)

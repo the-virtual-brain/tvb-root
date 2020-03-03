@@ -75,7 +75,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
                                              "TestAdapterHugeMemoryRequired")
         form = TestAdapterHugeMemoryRequiredForm()
         adapter.submit_form(form)
-        data = {"test": 5}
+        data = {"gid": 5}
 
         operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
                                     json.dumps(data), json.dumps({}), status=model_operation.STATUS_STARTED)

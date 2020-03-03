@@ -82,7 +82,7 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter1(abcadapter.ABCAsynchronous):
+class TestAdapter1(abcadapter.ABCSynchronous):
     """
         This class is used for testing purposes.
     """
