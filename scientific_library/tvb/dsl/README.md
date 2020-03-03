@@ -14,8 +14,8 @@ The produced filename is a lower cased [model].py which contains a class named [
 * dsl/NeuroML/XMLmodels				: directory containing LEMS based XML model files
 * dsl/tmpl8_regTVB.py				: Mako template converting XML to python
 * dsl/NeuroML/lems                  : modified pyLEMS library tuned for TVB
-* dsl/NeuroML/lems/component.py     : maintains _constants and _exposures
-* dsl/NeuroML/lems/dynamics.py      : maintains all _dynamic attributes
+* dsl/NeuroML/lems/component.py     : maintains constants and exposures
+* dsl/NeuroML/lems/dynamics.py      : maintains all dynamic attributes
 * dsl/NeuroML/lems/LEMS.py          : LEMS XML file parser
 * dsl/NeuroML/lems/expr.py          : expression parser
 * tvb/simulator/models           	: TVB default model directory for generated results
