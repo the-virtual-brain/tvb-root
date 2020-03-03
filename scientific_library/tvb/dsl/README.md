@@ -103,21 +103,23 @@ The input derivatives and coupling arrays are reshaped. They will be float64[:] 
 derivative array.\
 The derivative array is translated into temp variables which match the expression in the time derivatives.
 
+Example for the epileptor dfun function signatures:
 ```python
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_EpileptorT(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, self.Iext, 
-            self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, self.tt, 
-            self.modification, local_coupling)
+        deriv = _numba_dfun_EpileptorT(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, 
+            self.Iext, self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, 
+            self.tt, self.modification, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
-@guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, 
-    float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], 
+@guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, 
+    float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, 
+    float64, float64[:])], 
     '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
-def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf, Ks, tt, 
-    modification, local_coupling, dx):
+def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf,
+    Ks, tt, modification, local_coupling, dx):
     "Gufunc for {modelname} model equations."
 
     x1 = vw[0]
@@ -128,7 +130,8 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext
     g = vw[5]
 ```
 
-Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula.\
+* Derived variables\
+DerivedVariables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula.\
 sytax: [name]=[expression].\
 Define for example global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling.\
             
@@ -140,6 +143,7 @@ translates to:
 c_pop1 = coupling[0]
 ```
 
+* Conditional Derived Variables\
 ConditionalDerivedVariables are used to created if, else constructs.\
 Use &lt(=); or &gt;(=) for less- or greater then (equal to).\
 Syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,).\
