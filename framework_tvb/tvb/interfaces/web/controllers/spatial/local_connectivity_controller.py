@@ -109,11 +109,11 @@ class LocalConnectivityController(SpatioTemporalController):
 
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
-        template_specification['inputList'] = configure_lcon_form
+        template_specification['inputList'] = self.get_template_dict(configure_lcon_form)
         template_specification['displayCreateLocalConnectivityBtn'] = True
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
-        template_specification['existentEntitiesInputList'] = existent_lcon_form
+        template_specification['existentEntitiesInputList'] = self.get_template_dict(existent_lcon_form)
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
         template_specification['localConnBaseUrl'] = '/spatial/localconnectivity'
@@ -140,7 +140,7 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn.equation = eq_class()
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

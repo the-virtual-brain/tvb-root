@@ -60,31 +60,30 @@ class TestNetworkxImporter(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import(self):
-
         count_before = self.count_all_entities(ConnectivityIndex)
-        assert 0  == count_before
+        assert 0 == count_before
 
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.networkx_importer',
                                               'NetworkxConnectivityImporter')
 
         form = NetworkxConnectivityImporterForm()
-        form.fill_from_post({'_data_file': Part(self.upload_file, HeaderMap({}), ''),
-                             '_key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT[0],
-                             '_key_edge_tract': NetworkxParser.KEY_EDGE_TRACT[0],
-                             '_key_node_coordinates': NetworkxParser.KEY_NODE_COORDINATES[0],
-                             '_key_node_label': NetworkxParser.KEY_NODE_LABEL[0],
-                             '_key_node_region': NetworkxParser.KEY_NODE_REGION[0],
-                             '_key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE[0],
-                             '_Data_Subject': 'John Doe'
-                            })
+        form.fill_from_post({'data_file': Part(self.upload_file, HeaderMap({}), ''),
+                             'key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT[0],
+                             'key_edge_tract': NetworkxParser.KEY_EDGE_TRACT[0],
+                             'key_node_coordinates': NetworkxParser.KEY_NODE_COORDINATES[0],
+                             'key_node_label': NetworkxParser.KEY_NODE_LABEL[0],
+                             'key_node_region': NetworkxParser.KEY_NODE_REGION[0],
+                             'key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE[0],
+                             'Data_Subject': 'John Doe'
+                             })
         view_model = form.get_view_model()()
         view_model.data_subject = 'John Doe'
         form.data_file.data = self.upload_file
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
         count_after = self.count_all_entities(ConnectivityIndex)
@@ -92,5 +91,3 @@ class TestNetworkxImporter(TransactionalTestCase):
 
         conn = self.get_all_entities(ConnectivityIndex)[0]
         assert 83 == conn.number_of_regions
-
-

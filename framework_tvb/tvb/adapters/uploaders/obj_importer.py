@@ -138,7 +138,6 @@ class ObjSurfaceImporter(ABCUploader):
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            self.generic_attributes.user_tag_1 = surface.surface_type
             return h5.store_complete(surface, self.storage_path)
 
         except ParseException as excep:

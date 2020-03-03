@@ -98,12 +98,12 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
                                               'CSVConnectivityImporter')
 
         form = CSVConnectivityImporterForm()
-        form.fill_from_post({'_weights': Part(weights_tmp, HeaderMap({}), ''),
-                             '_tracts': Part(tracts_tmp, HeaderMap({}), ''),
-                             '_weights_delimiter': list(DELIMITER_OPTIONS.keys())[0],
-                             '_tracts_delimiter': list(DELIMITER_OPTIONS.keys())[0],
-                             '_Data_Subject': subject,
-                             '_input_data': reference_connectivity_gid
+        form.fill_from_post({'weights': Part(weights_tmp, HeaderMap({}), ''),
+                             'tracts': Part(tracts_tmp, HeaderMap({}), ''),
+                             'weights_delimiter': list(DELIMITER_OPTIONS.keys())[0],
+                             'tracts_delimiter': list(DELIMITER_OPTIONS.keys())[0],
+                             'Data_Subject': subject,
+                             'input_data': reference_connectivity_gid
                             })
 
         form.weights.data = weights_tmp

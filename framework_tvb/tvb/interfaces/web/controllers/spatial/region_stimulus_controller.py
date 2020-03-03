@@ -117,7 +117,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=RegionStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
         #TODO: check eqPrefixes
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_temporal_param(self, **param):
@@ -148,8 +148,8 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step1_main'
         template_specification['isSingleMode'] = True
-        template_specification['regionStimSelectorForm'] = region_stim_selector_form
-        template_specification['regionStimCreatorForm'] = region_stim_creator_form
+        template_specification['regionStimSelectorForm'] = self.get_template_dict(region_stim_selector_form)
+        template_specification['regionStimCreatorForm'] = self.get_template_dict(region_stim_creator_form)
         template_specification['baseUrl'] = '/spatial/stimulus/region'
         self.plotted_equation_prefixes = {
             self.CONNECTIVITY_FIELD: region_stim_creator_form.connectivity.name,

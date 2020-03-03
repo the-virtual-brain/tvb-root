@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -28,26 +28,25 @@
 #
 #
 
-from sqlalchemy import Column, Integer, ForeignKey, String
-from tvb.core.entities.model.model_datatype import DataType
-from tvb.datatypes.sensors import Sensors
+import os
+import time
+
+import tvb_data
+from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 
 
-class SensorsIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-    number_of_sensors = Column(Integer, nullable=False)
-    sensors_type = Column(String, nullable=False)
+def compute_tvb_data_path(folder, filename):
+    return os.path.join(os.path.dirname(tvb_data.__file__), folder, filename)
 
-    def fill_from_has_traits(self, datatype):
-        # type: (Sensors)  -> None
-        super(SensorsIndex, self).fill_from_has_traits(datatype)
-        self.number_of_sensors = datatype.number_of_sensors
-        self.sensors_type = datatype.sensors_type
 
-    @property
-    def display_name(self):
-        """
-        Overwrite from superclass and add number of sensors and subtype
-        """
-        previous = "Sensors"
-        return previous + " [" + str(self.number_of_sensors) + "] - " + str(self.sensors_type)
+logger = get_logger(__name__)
+
+
+def monitor_operation(tvb_client, operation_gid):
+    while True:
+        status = tvb_client.get_operation_status(operation_gid)
+        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
+            break
+        time.sleep(5)
+    logger.info("Operation {} has finished with status: {}".format(operation_gid, status))

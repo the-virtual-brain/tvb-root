@@ -248,7 +248,7 @@ class FlowService:
             if len(datatypes):
                 datatype = datatypes[-1]
                 analyze_category = dao.get_launchable_categories(True)
-                _, inner_analyzers = self._get_launchable_algorithms(datatype.gid, analyze_category)
+                _, inner_analyzers, _ = self._get_launchable_algorithms(datatype.gid, analyze_category)
                 filtered_adapters.extend(inner_analyzers)
 
         categories_dict = dict()

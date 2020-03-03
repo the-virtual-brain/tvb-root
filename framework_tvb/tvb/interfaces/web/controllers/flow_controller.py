@@ -54,8 +54,9 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, using_template
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -453,18 +454,21 @@ class FlowController(BaseController):
 
         try:
             form = adapter_instance.get_form()(project_id=project_id)
-            form.fill_from_post(data)
+            if 'fill_defaults' in data:
+                form.fill_from_post_plus_defaults(data)
+            else:
+                form.fill_from_post(data)
             view_model = None
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
-                    raise formencode.Invalid("Could not find a model for this form!", {}, None,
-                                             error_dict=form.get_errors_dict())
+                    raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
+                                            error_dict=form.get_errors_dict())
             else:
-                raise formencode.Invalid("Could not fill algorithm from the given inputs!", {}, None,
-                                         error_dict=form.get_errors_dict())
+                raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
+                                        error_dict=form.get_errors_dict())
 
             adapter_instance.submit_form(form)
 
@@ -495,6 +499,10 @@ class FlowController(BaseController):
         except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
+        except InvalidFormValues as excep2:
+            message, errors = excep2.display_full_errors()
+            common.set_error_message(message)
+            self.logger.warning("%s \n %s" % (message, errors))
 
         previous_step = self.context.get_current_substep()
         should_reset = previous_step is None or data.get(common.KEY_ADAPTER) != previous_step
@@ -521,7 +529,7 @@ class FlowController(BaseController):
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, form=adapter_form, title=title)
+            template_specification = dict(submitLink=submit_url, form=self.get_template_dict(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
@@ -530,6 +538,10 @@ class FlowController(BaseController):
             self.logger.exception(oexc)
             common.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
         return None
+
+    @using_template('form_fields/form')
+    def get_template_dict(self, adapter_form):
+        return {'adapter_form': adapter_form}
 
     @cherrypy.expose
     @handle_error(redirect=False)

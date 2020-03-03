@@ -34,15 +34,15 @@ Service layer for saving/editing TVB settings.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 import os
-import sys
 import shutil
-import hashlib
+import sys
+
 from sqlalchemy import create_engine
-from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
-from tvb.core.utils import get_matlab_executable, hash_password
+from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.core.utils import get_matlab_executable, hash_password
 
 
 class SettingsService(object):
@@ -54,6 +54,7 @@ class SettingsService(object):
     KEY_ADMIN_PWD = stored.KEY_ADMIN_PWD
     KEY_ADMIN_EMAIL = stored.KEY_ADMIN_EMAIL
     KEY_STORAGE = stored.KEY_STORAGE
+    KEY_KC_CONFIG = stored.KEY_KC_CONFIGURATION
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
     KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
@@ -68,7 +69,8 @@ class SettingsService(object):
 
     # Display order for the keys. None means a separator/new line will be added
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
-                          KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB, KEY_DB_URL, None,
+                          KEY_KC_CONFIG, KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
+                          KEY_DB_URL, None,
                           KEY_PORT, KEY_URL_WEB, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
                           KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
@@ -78,6 +80,8 @@ class SettingsService(object):
         first_run = TvbProfile.is_first_run()
         storage = TvbProfile.current.TVB_STORAGE if not first_run else TvbProfile.current.DEFAULT_STORAGE
         self.configurable_keys = {
+            self.KEY_KC_CONFIG: {'label': 'Keycloak configuration file', 'value': TvbProfile.current.KEYCLOAK_CONFIG,
+                                 'readonly': False, 'type': 'text'},
             self.KEY_STORAGE: {'label': 'Root folder for all projects', 'value': storage,
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
@@ -125,7 +129,6 @@ class SettingsService(object):
                                    'value': TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                    'readonly': not first_run, 'type': 'text'}}
 
-
     def check_db_url(self, url):
         """Validate DB URL, that a connection can be done."""
         try:
@@ -135,7 +138,6 @@ class SettingsService(object):
         except Exception as excep:
             self.logger.exception(excep)
             raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
-
 
     @staticmethod
     def get_disk_free_space(storage_path):
@@ -158,7 +160,6 @@ class SettingsService(object):
             # Occupied memory would be:
             # bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
         return bytes_value / 2 ** 10
-
 
     def save_settings(self, **data):
         """

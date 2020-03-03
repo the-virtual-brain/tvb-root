@@ -76,7 +76,7 @@ class ProjectDto(BaseDto):
             self.gid = project.gid
             self.name = project.name
             self.description = project.description
-            self.gid = project.gid
+            self.last_updated = project.last_updated
             self.version = project.version
 
 
@@ -133,3 +133,5 @@ class DataTypeDto(BaseDto):
             self.gid = datatype.gid
             self.name = datatype.display_name
             self.type = datatype.display_type
+            self.create_date = datatype.create_date
+            self.subject = datatype.subject

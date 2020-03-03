@@ -30,6 +30,7 @@
 
 """
 Constants and functions used by all controllers
+Custom exceptions
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from copy import copy
@@ -225,3 +226,22 @@ class NotAuthenticated(NotAllowed):
     def __init__(self, message, redirect_url):
         NotAllowed.__init__(self, message, redirect_url)
         self.status = 401
+
+
+class InvalidFormValues(TVBException):
+    """
+    Exception to be thrown in case of existing
+    some invalid values in a form.
+    """
+
+    def __init__(self, message, error_dict=None):
+        TVBException.__init__(self, message)
+        self.error_dict = error_dict
+
+    def display_full_errors(self):
+        if self.error_dict:
+            result = {}
+            for name, item in self.error_dict.items():
+                result[name] = str(item)
+            return self.message, str(result).replace(',', ',\n')
+        return self.message

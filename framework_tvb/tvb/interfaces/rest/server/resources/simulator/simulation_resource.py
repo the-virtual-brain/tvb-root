@@ -29,6 +29,7 @@
 #
 
 import os
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -39,8 +40,10 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.interfaces.rest.server.security.authorization import get_current_user
 from tvb.simulator.simulator import Simulator
 
 
@@ -56,7 +59,8 @@ class FireSimulationResource(RestResource):
         """
         :start a simulation using a project id and a zip archive with the simulator data serialized
         """
-        file = self.extract_file_from_request(FilesHelper.TVB_ZIP_FILE_EXTENSION)
+        file = self.extract_file_from_request(request_file_key=RequestFileKey.SIMULATION_FILE_KEY.value,
+                                              file_extension=FilesHelper.TVB_ZIP_FILE_EXTENSION)
         destination_folder = RestResource.get_destination_folder()
         zip_path = RestResource.save_temporary_file(file, destination_folder)
 
@@ -68,7 +72,6 @@ class FireSimulationResource(RestResource):
         result = FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
         if len(result) == 0:
             raise InvalidInputException("Empty zip archive")
-        user_id = project.fk_admin
 
         folder_path = os.path.dirname(result[0])
         simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
@@ -80,7 +83,8 @@ class FireSimulationResource(RestResource):
             raise InvalidInputException('No Simulator h5 file found in the archive')
 
         try:
-            operation = self.simulator_service.prepare_simulation_on_server(user_id=user_id,
+            current_user = get_current_user()
+            operation = self.simulator_service.prepare_simulation_on_server(user_id=current_user.id,
                                                                             project=project,
                                                                             algorithm=simulator_algorithm,
                                                                             zip_folder_path=folder_path,

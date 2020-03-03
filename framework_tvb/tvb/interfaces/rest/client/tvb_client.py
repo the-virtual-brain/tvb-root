@@ -29,6 +29,7 @@
 #
 
 import tempfile
+from tvb.basic.neotraits.api import HasTraits
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
@@ -40,29 +41,67 @@ from tvb.interfaces.rest.commons.dtos import OperationDto
 
 class TVBClient:
     """
-    TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
+    TVB-BrainX3 client class which expose the whole API.
+    Initializing this class with the correct rest server url is mandatory.
+    The methods for loading datatypes are not intended to be used for datatypes with expandable fields (eg. TimeSeries).
+    Those should be loaded in chunks, because they might be to large to be loaded in memory at once.
     """
 
-    def __init__(self, server_url):
+    def __init__(self, server_url, auth_token=''):
         populate_datatypes_registry()
         self.temp_folder = tempfile.gettempdir()
-        self.user_api = UserApi(server_url)
-        self.project_api = ProjectApi(server_url)
-        self.datatype_api = DataTypeApi(server_url)
-        self.simulation_api = SimulationApi(server_url)
-        self.operation_api = OperationApi(server_url)
+        self.user_api = UserApi(server_url, auth_token)
+        self.project_api = ProjectApi(server_url, auth_token)
+        self.datatype_api = DataTypeApi(server_url, auth_token)
+        self.simulation_api = SimulationApi(server_url, auth_token)
+        self.operation_api = OperationApi(server_url, auth_token)
 
-    def get_users(self):
+    def login(self, username, password):
         """
-        Retrieve users list
+        Login in the keycloak system
         """
-        return self.user_api.get_users()
+        login_response = self.user_api.login(username, password)
+        self._update_token(login_response)
 
-    def get_project_list(self, username):
+    def logout(self):
         """
-        Given a username, this function will return all projects for the given user.
+        Logout user by invalidating the keycloak token
         """
-        return self.user_api.get_projects_list(username)
+        self.user_api.logout()
+
+    def update_auth_token(self, auth_token):
+        """
+        Set the authorization token for API requests. Use this method if you handle the login and token refreshing
+        processes by yourself.
+        :param auth_token:
+        """
+        self.user_api.authorization_token = auth_token
+        self.project_api.authorization_token = auth_token
+        self.datatype_api.authorization_token = auth_token
+        self.simulation_api.authorization_token = auth_token
+        self.operation_api.authorization_token = auth_token
+
+    def _update_token(self, response):
+        self.user_api.update_tokens(response)
+        self.project_api.update_tokens(response)
+        self.datatype_api.update_tokens(response)
+        self.simulation_api.update_tokens(response)
+        self.operation_api.update_tokens(response)
+
+    def get_project_list(self):
+        """
+        Return all projects for the current logged user.
+        """
+        return self.user_api.get_projects_list()
+
+    def create_project(self, project_name, project_description=''):
+        """
+        Create a new project which will be linked to the logged user
+        :param project_name: Project name (mandatory)
+        :param project_description: Project description
+        :return: GID of the new project
+        """
+        return self.user_api.create_project(project_name, project_description)
 
     def get_data_in_project(self, project_gid):
         """
@@ -86,13 +125,31 @@ class TVBClient:
 
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
 
-    def load_datatype(self, datatype_path):
+    def load_datatype_from_file(self, datatype_path):
         """
-        TODO: TO BE IMPLEMENTED
         Given a local H5 file location, where previously a valid H5 file has been downloaded from TVB server, load in
-        memory a HasTraits subclass instance (e.g. Connectivity, TimeSeriesRegion).
+        memory a HasTraits subclass instance (e.g. Connectivity).
         """
-        return self.datatype_api.load_datatype(datatype_path)
+        return self.datatype_api.load_datatype_from_file(datatype_path)
+
+    def load_datatype_with_full_references(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download the entire tree of dependencies and load them in memory.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with all references fully loaded
+        """
+        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder)
+
+    def load_datatype_with_links(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download only the corresponding H5 file and load it in memory.
+        Also, instantiate empty objects as its references only for the purpose to load the GIDs on them.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with correct GIDs for references
+        """
+        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder)
 
     def get_operations_for_datatype(self, datatype_gid):
         """

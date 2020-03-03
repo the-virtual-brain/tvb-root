@@ -39,7 +39,7 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.0a1"
+VERSION = "2.0.2a2"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
@@ -54,7 +54,8 @@ setuptools.setup(name="tvb-rest-client",
                  version=VERSION,
                  packages=setuptools.find_packages(
                      exclude=['tvb.interfaces.web', 'tvb.interfaces.web.*', 'tvb.interfaces.command',
-                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*']),
+                              'tvb.interfaces.command.*', 'tvb.tests', 'tvb.tests.*'],
+                     include=['README_rest_client.rst']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],

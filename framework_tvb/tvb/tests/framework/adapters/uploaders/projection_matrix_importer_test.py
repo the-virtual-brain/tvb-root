@@ -95,11 +95,11 @@ class TestProjectionMatrix(TransactionalTestCase):
                                  'projection_eeg_62_surface_16k.mat')
 
         form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'_projection_file': Part(file_path, HeaderMap({}), ''),
-                             '_dataset_name': 'ProjectionMatrix',
-                             '_sensors': self.sensors.gid,
-                             '_surface': self.surface.gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
+                             'dataset_name': 'ProjectionMatrix',
+                             'sensors': self.sensors.gid,
+                             'surface': self.surface.gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.projection_file.data = file_path
         view_model = form.get_view_model()()
@@ -121,11 +121,11 @@ class TestProjectionMatrix(TransactionalTestCase):
                                  'projection_eeg_65_surface_16k.npy')
 
         form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'_projection_file': Part(file_path, HeaderMap({}), ''),
-                             '_dataset_name': 'ProjectionMatrix',
-                             '_sensors': self.sensors.gid,
-                             '_surface': self.surface.gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
+                             'dataset_name': 'ProjectionMatrix',
+                             'sensors': self.sensors.gid,
+                             'surface': self.surface.gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.projection_file.data = file_path
         view_model = form.get_view_model()()

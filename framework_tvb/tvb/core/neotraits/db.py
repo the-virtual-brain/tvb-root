@@ -95,6 +95,10 @@ def ensure_float(data):
     return numpy.float64(data)
 
 
+def ensure_int(data):
+    return int(data)
+
+
 def from_ndarray(array):
     if array is None:
         return None

@@ -298,7 +298,7 @@ class TestProjectService(TransactionalTestCase):
 
         project2 = TestFactory.create_project(self.test_user, 'test_proj2')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject');
+        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject')
 
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
         assert projects[0].disk_size != projects[1].disk_size, "projects should have different size"

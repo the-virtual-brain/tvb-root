@@ -127,14 +127,6 @@ class Connectivity(HasTraits):
     saved_selection = List(of=int)
 
     @property
-    def display_name(self):
-        """
-        Overwrite from superclass and add number of regions field (as title on DataStructure tree)
-        """
-        previous = "Connectivity"
-        return previous + " " + str(self.number_of_regions)
-
-    @property
     def saved_selection_labels(self):
         """
         Taking the entity field saved_selection, convert indexes in that array

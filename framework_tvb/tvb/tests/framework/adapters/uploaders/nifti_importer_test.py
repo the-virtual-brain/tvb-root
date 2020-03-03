@@ -87,11 +87,11 @@ class TestNIFTIImporter(TransactionalTestCase):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.nifti_importer', 'NIFTIImporter')
 
         form = NIFTIImporterForm()
-        form.fill_from_post({'_data_file': Part(import_file_path, HeaderMap({}), ''),
-                             '_apply_corrections': 'True',
-                             '_connectivity': connectivity_gid,
-                             '_mappings_file': Part(self.TXT_FILE, HeaderMap({}), ''),
-                             '_Data_Subject': 'bla bla'
+        form.fill_from_post({'data_file': Part(import_file_path, HeaderMap({}), ''),
+                             'apply_corrections': 'True',
+                             'connectivity': connectivity_gid,
+                             'mappings_file': Part(self.TXT_FILE, HeaderMap({}), ''),
+                             'Data_Subject': 'bla bla'
                              })
         form.data_file.data = import_file_path
         form.mappings_file.data = self.TXT_FILE

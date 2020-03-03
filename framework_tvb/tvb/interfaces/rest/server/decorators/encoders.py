@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -27,27 +27,30 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from datetime import datetime, date
 
-from sqlalchemy import Column, Integer, ForeignKey, String
-from tvb.core.entities.model.model_datatype import DataType
-from tvb.datatypes.sensors import Sensors
+from flask.json import JSONEncoder
 
 
-class SensorsIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-    number_of_sensors = Column(Integer, nullable=False)
-    sensors_type = Column(String, nullable=False)
-
-    def fill_from_has_traits(self, datatype):
-        # type: (Sensors)  -> None
-        super(SensorsIndex, self).fill_from_has_traits(datatype)
-        self.number_of_sensors = datatype.number_of_sensors
-        self.sensors_type = datatype.sensors_type
-
-    @property
-    def display_name(self):
-        """
-        Overwrite from superclass and add number of sensors and subtype
-        """
-        previous = "Sensors"
-        return previous + " [" + str(self.number_of_sensors) + "] - " + str(self.sensors_type)
+class CustomFlaskEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return {
+                '__type__': 'datetime',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+                'hour': o.hour,
+                'minute': o.minute,
+                'second': o.second,
+                'microsecond': o.microsecond,
+                'tzinfo': o.tzinfo,
+            }
+        if isinstance(o, date):
+            return {
+                '__type__': 'date',
+                'year': o.year,
+                'month': o.month,
+                'day': o.day,
+            }
+        return super().default(o)

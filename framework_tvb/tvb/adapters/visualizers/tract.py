@@ -72,7 +72,7 @@ class TractViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_tracts'
+        return 'tracts'
 
     @staticmethod
     def get_filters():

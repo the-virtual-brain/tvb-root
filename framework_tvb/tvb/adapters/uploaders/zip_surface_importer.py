@@ -188,6 +188,4 @@ class ZIPSurfaceImporter(ABCUploader):
         surface.configure()
         self.logger.debug("Surface ready to be stored")
 
-        surf_idx = h5.store_complete(surface, self.storage_path)
-        self.generic_attributes.user_tag_1 = surface.surface_type
-        return surf_idx
+        return h5.store_complete(surface, self.storage_path)

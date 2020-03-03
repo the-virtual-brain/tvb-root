@@ -36,9 +36,9 @@ A Javascript displayer for connectivity, using hierarchical edge bundle diagrams
 """
 
 import json
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -66,7 +66,7 @@ class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity'
+        return 'connectivity'
 
     @staticmethod
     def get_filters():
@@ -94,7 +94,7 @@ class ConnectivityEdgeBundle(ABCDisplayer):
         connectivity = self.load_traited_by_gid(view_model.connectivity)
 
         pars = {"labels": json.dumps(connectivity.region_labels.tolist()),
-                "url_base": ABCDisplayer.paths2url(view_model.connectivity.hex,
+                "url_base": URLGenerator.paths2url(view_model.connectivity,
                                                    attribute_name="weights", flatten="True")
                 }
 

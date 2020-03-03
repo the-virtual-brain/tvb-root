@@ -35,11 +35,13 @@ Service layer for USER entities.
 """
 
 import os
+import random
+from random import randint
+
 import six
 import tvb_data
-from random import randint
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config import DEFAULT_PROJECT_GID
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, USER_ROLES
 from tvb.core.entities.storage import dao
@@ -84,7 +86,8 @@ class UserService:
         self.logger = get_logger(self.__class__.__module__)
 
     def create_user(self, username=None, password=None, password2=None,
-                    role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False):
+                    role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False,
+                    external_id=None, skip_sending_email=False):
         """
         Service Layer for creating a new user.
         """
@@ -99,14 +102,14 @@ class UserService:
 
         try:
             user_validated = (role == ROLE_ADMINISTRATOR) or validated
-            user = User(username, password, email, user_validated, role)
+            user = User(username, password, email, user_validated, role, external_id)
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
             admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
                          'user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
 
-            if role != ROLE_ADMINISTRATOR and email is not None:
+            if role != ROLE_ADMINISTRATOR and email is not None and not skip_sending_email:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
@@ -215,9 +218,9 @@ class UserService:
     def get_users_for_project(self, user_name, project_id, page=1):
         """
         Return tuple: (All Users except the project administrator, Project Members).
-        Parameter "user_name" is the current user. 
-        Parameter "user_name" is used for new projects (project_id is None). 
-        When "project_id" not None, parameter "user_name" is ignored.       
+        Parameter "user_name" is the current user.
+        Parameter "user_name" is used for new projects (project_id is None).
+        When "project_id" not None, parameter "user_name" is ignored.
         """
         try:
             admin_name = user_name
@@ -313,5 +316,20 @@ class UserService:
         return dao.get_user_by_name(username)
 
     @staticmethod
+    def get_user_by_external_id(external_id):
+        """
+        Retrieves a user by its external id.
+        """
+        return dao.get_user_by_external_id(external_id)
+
+    @staticmethod
     def compute_user_generated_disk_size(user_id):
         return dao.compute_user_generated_disk_size(user_id)
+
+    def create_external_service_user(self, user_data):
+        external_id = user_data['sub']
+        email = user_data['email'] if 'email' in user_data else None
+        self.create_user(external_id, hash_password(''.join(random.sample(external_id, len(external_id)))),
+                         external_id=external_id, email=email,
+                         validated=True, skip_sending_email=True)
+        return self.get_user_by_external_id(external_id)

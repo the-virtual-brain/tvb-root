@@ -32,7 +32,7 @@ from abc import abstractmethod
 
 from tvb.basic.exceptions import TVBException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_NOT_FOUND, \
-    HTTP_STATUS_SERVER_ERROR
+    HTTP_STATUS_SERVER_ERROR, HTTP_STATUS_DENIED
 
 
 class BaseRestException(TVBException):
@@ -67,6 +67,14 @@ class InvalidIdentifierException(BaseRestException):
 
     def get_default_message(self):
         return "No data found for the given identifier"
+
+
+class AuthorizationRequestException(BaseRestException):
+    def __init__(self, message=None, code=HTTP_STATUS_DENIED):
+        super(AuthorizationRequestException, self).__init__(message, code)
+
+    def get_default_message(self):
+        return "Token is missing."
 
 
 class InvalidInputException(BadRequestException):

@@ -69,7 +69,7 @@ class CrossCoherenceVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype'
+        return 'datatype'
 
     @staticmethod
     def get_filters():
