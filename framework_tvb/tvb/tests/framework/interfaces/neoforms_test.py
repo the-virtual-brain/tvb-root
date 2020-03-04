@@ -160,7 +160,7 @@ class View(object):
 
         barbaz = self._get_trait_instance()
         output = '\n'.join([str(barbaz), str(barbaz.bar), str(barbaz.baz)])
-        return jinja_env.get_template('test1.html').render(form=form, output=output)
+        return jinja_env.get_template('test1.html').render(adapter_form=form, output=output)
 
 
 def main():
