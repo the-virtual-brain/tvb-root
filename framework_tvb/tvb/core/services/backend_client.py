@@ -35,6 +35,7 @@
 """
 import json
 import os
+# import shutil
 import sys
 import signal
 import queue as queue
@@ -53,6 +54,7 @@ from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+# from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, \
@@ -460,6 +462,18 @@ class HPCSchedulerClient(object):
     @staticmethod
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
+        # operation = dao.get_operation_by_id(operation_identifier)
+        # is_group_launch = operation.fk_operation_group is not None
+        # input_gid = json.loads(operation.parameters)['gid']
+        #
+        # job_inputs = HPCSchedulerClient._prepare_input(operation, input_gid)
+        # input_hpc = os.path.join(os.getcwd(), 'input_hpc')
+        # os.makedirs(input_hpc)
+        # for input in job_inputs:
+        #     shutil.copy(input, input_hpc)
+        #
+        # do_operation_launch(input_gid, 1000, is_group_launch)
+
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = json.loads(operation.parameters)['gid']
@@ -486,6 +500,8 @@ class HPCSchedulerClient(object):
     def execute(operation_id, user_name_label, adapter_instance):
         # type: (int, None, None) -> None
         """Call the correct system command to submit a job to HPC."""
+        # HPCSchedulerClient._run_hpc_job(operation_id)
+
         thread = threading.Thread(target=HPCSchedulerClient._run_hpc_job,
                                   kwargs={'operation_identifier': operation_id})
         thread.start()
