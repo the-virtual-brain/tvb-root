@@ -49,6 +49,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
+    def get_output(self):
+        return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
+
     def load_traited_by_gid(self, data_gid, dt_class=None):
         # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
         """
@@ -114,6 +117,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
+    OUTPUT_FOLDER = 'output'
 
     def __init__(self, storage_path, input_time_series_index):
         super(HPCTimeseriesMetricsAdapter,self).__init__()
@@ -129,3 +133,16 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
+
+    def load_traited_by_gid(self, data_gid, dt_class=None):
+        # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
+        """
+        Load a generic HasTraits instance, specified by GID.
+        """
+        return h5.load_from_dir(os.path.join(self.storage_path, 'output'), data_gid, dt_class=dt_class)
+
+    def _get_output_path(self):
+        output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
+        if not os.path.isdir(output_path):
+            os.mkdir(output_path)
+        return output_path
