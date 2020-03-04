@@ -1,6 +1,42 @@
+# -*- coding: utf-8 -*-
+#
+#
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option)
+# any later version. This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details. You should have received a copy of the GNU
+#  General Public License along with this program.  If not,
+# see <http://www.gnu.org/licenses/>.
+#
+#
+# CITATION: When using The Virtual Brain for scientific publications, please
+# cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+
+"""
+Saggio codimension 3 Epileptor model
+
+.. moduleauthor:: Len Spek
+
+"""
+
 import numpy
 
-from simulator.models.base import ModelNumbaDfun
+from .base import ModelNumbaDfun
 from numba import guvectorize, float64, int_
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
@@ -11,16 +47,19 @@ class EpileptorCodim3(ModelNumbaDfun):
     *Fast–Slow Bursters in the Unfolding of a High Codimension Singularity
     and the Ultra-slow Transitions of Classes.* Journal of Mathematical
     Neuroscience. 2017;7:7. doi:10.1186/s13408-017-0050-8.
+
     .. The Epileptor codim 3 model is a neural mass model which contains two
     subsystems acting at different timescales. For the fast subsystem we use
     the unfolding of a degenerate Takens-Bogdanov bifucation of codimension
     3. The slow subsystem steers the fast one back and forth along paths
     leading to bursting behavior. The model is able to produce almost all the
     classes of bursting predicted for systems with a planar fast subsystem.
+
     .. In this implementation the model can produce Hysteresis-Loop bursters
     of classes c0, c0', c2s, c3s, c4s, c10s, c11s, c2b, c4b, c8b, c14b and
     c16b as classified by [Saggioetal_2017] Table 2. The default model
     parameters correspond to class c2s.
+
     """
 
     mu1_start = NArray(
@@ -137,26 +176,36 @@ class EpileptorCodim3(ModelNumbaDfun):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17
+
         The state variables x and y correspond to the fast subsystem and the
         state variable z corresponds to the slow subsystem.
+
             .. math::
                 \dot{x} &= -y \\
                 \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
                 \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)
+
         If the bool modification is True, then the equation for zdot will
         been modified to ensure stability for negative dstar
+
             .. math::
                     \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
         sphere of radius R parametrised by the unit vectors E and F.
+
             .. math::
                 \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
+
         And where :math:`x_s` is the x-coordinate of the resting state
         (stable equilibrium). This is computed by finding the solution of
+
             .. math::
                 x_s^3 - mu_2*x_s - mu_1 = 0
+
         And taking the branch which corresponds to the resting state.
         If :math:`x_s` is complex, we take the real part.
+
         """
 
         x = state_variables[0, :]
@@ -201,13 +250,17 @@ class EpileptorCodim3(ModelNumbaDfun):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqn. (7), page 17
+
         Here we parametrize the great arc which lies on a sphere of radius R
         between the points A and B, which are given by:
+
             .. math::
                 A &= \begin{pmatrix}\mu_{2,start} & -\mu_{1,start} & \nu_{start} \end{pmatrix} \\
                 B &= \begin{pmatrix}\mu_{2,stop} & -\mu_{1,stop} & \nu_{stop} \end{pmatrix}
+
         Then we parametrize this great arc with z as parameter by :math:`R(E \cos z + F \sin z)`
             where the unit vectors E and F are given by:
+
             .. math::
                 E &= A/\|A\| \\
                 F &= ((A \times B) \times A)/\|(A \times B) \times A\|
@@ -274,6 +327,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     *Fast–Slow Bursters in the Unfolding of a High Codimension Singularity
     and the Ultra-slow Transitions of Classes.* Journal of Mathematical
     Neuroscience. 2017;7:7. doi:10.1186/s13408-017-0050-8.
+
     .. The Epileptor codim 3 model is a neural mass model which contains two
     subsystems acting at different timescales. For the fast subsystem we use
     the unfolding of a degenerate Takens-Bogdanov bifucation of codimension
@@ -281,11 +335,13 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     paths leading to bursting behavior. The model is able to produce almost
     all the classes of bursting predicted for systems with a planar fast
     subsystem.
+
     .. In this implementation the model can produce Hysteresis-Loop bursters
     of classes c0, c0', c2s, c3s, c4s, c10s, c11s, c2b, c4b, c8b, c14b and
     c16b as classified by [Saggioetal_2017] Table 2. Through ultra-slow
     modulation of the path through the parameter space we can switch between
     different classes of bursters.
+
     """
 
     mu1_Ain = NArray(
@@ -446,39 +502,53 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17 and 21
+
         The state variables x and y correspond to the fast subsystem and the
         state variable z corresponds to the slow subsystem. The state
         variables uA and uB correspond to the transition of the offset and
         onset bifurcations.
+
             .. math::
                 \dot{x} &= -y \\
                 \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
                 \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)\\
                 \dot(uA) &= cA\\
                 \dot(uB) &= cB\\
+
         If the bool modification is True, then the equation for zdot will
         been modified to ensure stability for negative dstar
+
             .. math::
                     \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
         sphere of radius R parametrised by the unit vectors E and F.
+
             .. math::
                 \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
+
         Where the unit vectors E and F are given by:
+
             .. math::
                 E &= A/\|A\| \\
                 F &= ((A \times B) \times A)/\|(A \times B) \times A\|
+
         The vectors A and B transition across a great arc of the same sphere
         of radius R parametrised by G, H and L, M respectively.
+
             .. math::
                 A &= R(G \cos(uA) + H \sin(uA))
                 B &= R(L \cos(uB) + M \sin(uB))
+
         Finally :math:`x_s` is the x-coordinate of the resting state
         (stable equilibrium). This is computed by finding the solution of
+
             .. math::
                 x_s^3 - mu_2*x_s - mu_1 = 0
+
         And taking the branch which corresponds to the resting state.
         If :math:`x_s` is complex, we take the real part.
+
         """
         x = state_variables[0, :]
         y = state_variables[1, :]
@@ -539,15 +609,19 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         r"""
         The equations were adapted from [Saggioetal_2017]
         cf. Eqn. (7), page 17 and page 21
+
         We parametrize the great arc on the sphere of radius R between the
         points Ain and Aend with the vectors G and H. This great arc is used
         for the offset point of the burster, given by the vector A.
+
             .. math::
                 G &= Ain/\|Ain\| \\
                 H &= ((Ain \times Aend) \times Ain)/\|(Ain \times Aend) \times Ain\|
+
         We also parametrize the great arc on the sphere of radius R between the
         points Bin and Bend with the vectors L and M. This great arc is used
         for the onset point of the burster, given by the vector B.
+
             .. math::
                 L &= Bin/\|Bin\| \\
                 M &= ((Bin \times Bend) \times Bin)/\|(Bin \times Bend) \times Bin\|
