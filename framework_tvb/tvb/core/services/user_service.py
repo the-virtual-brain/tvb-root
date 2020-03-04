@@ -329,22 +329,39 @@ class UserService:
 
     def _create_external_service_user(self, user_data):
         external_id = user_data['sub']
-        email = user_data['email'] if 'email' in user_data else None
-        user_roles = user_data['roles'] if 'roles' in user_data else []
-        role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_roles else None
-        self.create_user(external_id, hash_password(''.join(random.sample(external_id, len(external_id)))),
+        username, email, role = self._extract_user_info(user_data)
+        if not self.is_username_valid(username):
+            username = external_id
+        self.create_user(username, hash_password(''.join(random.sample(external_id, len(external_id)))),
                          external_id=external_id, email=email,
                          validated=True, skip_sending_email=True, role=role, skip_import=True)
         return self.get_user_by_external_id(external_id)
 
-    def _update_external_serivce_user(self, current_user, new_data):
-        email = new_data['email'] if 'email' in new_data else None
-        user_roles = new_data['roles'] if 'roles' in new_data else []
+    def _update_external_service_user(self, current_user, new_data):
+        username, email, role = self._extract_user_info(new_data)
+
+        should_update = False
+        if current_user.email != email \
+                or current_user.role != role \
+                or current_user.username != username and self.is_username_valid(username):
+            current_user.email = email
+            current_user.role = role
+            current_user.username = username
+            should_update = True
+
+        if should_update:
+            dao.store_entity(current_user, True)
+            return self.get_user_by_external_id(current_user.external_id)
+        return current_user
+
+    @staticmethod
+    def _extract_user_info(keycloak_data):
+        email = keycloak_data['email'] if 'email' in keycloak_data else None
+        user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
         role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_roles else None
-        current_user.email = email
-        current_user.role = role
-        dao.store_entity(current_user, True)
-        return self.get_user_by_external_id(current_user.external_id)
+        username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
+            'sub']
+        return username, email, role
 
     def get_external_db_user(self, user_data):
         external_id = user_data['sub']
@@ -352,5 +369,5 @@ class UserService:
         if db_user is None:
             db_user = self._create_external_service_user(user_data)
         else:
-            db_user = self._update_external_serivce_user(db_user, user_data)
+            db_user = self._update_external_service_user(db_user, user_data)
         return db_user
