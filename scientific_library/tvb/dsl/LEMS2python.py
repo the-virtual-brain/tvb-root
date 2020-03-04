@@ -59,8 +59,8 @@ def regTVB_templating(model_filename):
                 elif ("_module_models = {") in line:
                     modulemodnum = num
             if doprint:
-                lines.insert(modelenumnum + 1, "\t" + model_filename.upper() + ' = ' + "\"" + model_filename + "\"\n")
-                lines.insert(modulemodnum + 2, "\t" + "'" + model_filename.lower() + "'" + ': '
+                lines.insert(modelenumnum + 1, "    " + model_filename.upper() + ' = ' + "\"" + model_filename + "\"\n")
+                lines.insert(modulemodnum + 2, "    " + "'" + model_filename.lower() + "'" + ': '
                              + "[ModelsEnum." + model_filename.upper() + "],\n")
                 f.truncate(0)
                 f.seek(0)
