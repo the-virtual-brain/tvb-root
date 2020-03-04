@@ -16,6 +16,7 @@ def regTVB_templating(model_filename):
 
     # file locations
     fp_xml = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/dsl/NeuroML/XMLmodels/',model_filename.lower(),'.xml')
+    print('fp_xml:', fp_xml)
     modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
 
     # instantiate LEMS lib
@@ -44,10 +45,25 @@ def regTVB_templating(model_filename):
         f.writelines(model_str)
 
     # write new model to init.py such it is familiar to TVB if not already present
-    doprint=True
-    with open("{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/__init__.py'), "r+") as f:
-        for line in f.readlines():
-            if ("from ." + model_filename.lower() + " import " + model_filename) in line:
-                doprint=False
-        if doprint:
-            f.writelines("\nfrom ." + model_filename.lower() + " import " + model_filename)
+    try:
+        doprint=True
+        modelenumnum=0
+        modulemodnum=0
+        with open("{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/__init__.py'), "r+") as f:
+            lines = f.readlines()
+            for num, line in enumerate(lines):
+                if (model_filename.upper() + ' = ' + "\"" + model_filename + "\"") in line:
+                    doprint=False
+                elif ("class ModelsEnum(Enum):") in line:
+                    modelenumnum = num
+                elif ("_module_models = {") in line:
+                    modulemodnum = num
+            if doprint:
+                lines.insert(modelenumnum + 1, "\t" + model_filename.upper() + ' = ' + "\"" + model_filename + "\"\n")
+                lines.insert(modulemodnum + 2, "\t" + "'" + model_filename.lower() + "'" + ': '
+                             + "[ModelsEnum." + model_filename.upper() + "],\n")
+                f.truncate(0)
+                f.seek(0)
+                f.writelines(lines)
+    except:
+        print('unable to add new model to __init__.py')
