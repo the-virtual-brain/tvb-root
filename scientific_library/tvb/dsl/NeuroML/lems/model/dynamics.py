@@ -13,7 +13,7 @@ from base.base import LEMSBase
 from base.map import Map
 from base.errors import ModelError,ParseError
 
-from parser.expr import ExprParser
+from tvb.dsl.NeuroML.lems.parser.expr import ExprParser
 
 class StateVariable(LEMSBase):
     """
