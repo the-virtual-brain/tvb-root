@@ -72,7 +72,7 @@ class TestDatatypeResource(TransactionalTestCase):
 
         assert type(result) is tuple
         assert result[1] is True
-        assert result[0] == result[2]
+        assert os.path.basename(result[0]) == result[2]
 
     def test_server_get_operations_for_datatype(self):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')

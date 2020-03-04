@@ -32,6 +32,7 @@ import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource, LoginUserResource
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager, set_current_user
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -45,8 +46,9 @@ class TestUserResource(TransactionalTestCase):
         self.users_resource = LoginUserResource()
         self.projects_list_resource = GetProjectsListResource()
 
-    def test_get_users(self):
-        result = self.users_resource.get()
+    def test_get_users(self, rest_app):
+        with rest_app.test_request_context():
+            result = self.users_resource.post()
         assert type(result) is list
         found = False
         for userDTO in result:
@@ -55,12 +57,10 @@ class TestUserResource(TransactionalTestCase):
                 break
         assert found
 
-    def test_get_project_invalid_username(self):
-        invalid_username = 'invalid-username'
-        with pytest.raises(InvalidIdentifierException): self.projects_list_resource.get()
-
-    def test_get_projects(self):
-        result = self.projects_list_resource.get()
+    def test_get_projects(self, rest_app):
+        with rest_app.test_request_context():
+            set_current_user(self.test_user)
+            result = self.projects_list_resource.get()
         assert type(result) is list
         assert len(result) == 1
 

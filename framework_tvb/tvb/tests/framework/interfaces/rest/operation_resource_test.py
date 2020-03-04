@@ -46,6 +46,7 @@ from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
+from tvb.interfaces.rest.server.security.authorization import set_current_user
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, OperationPossibleStatus
 from werkzeug.datastructures import FileStorage
@@ -124,7 +125,7 @@ class TestOperationResource(TransactionalTestCase):
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
-        request_mock.files = {'file': dummy_file}
+        request_mock.files = {'model_file': dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid, '', '')
 
@@ -134,12 +135,12 @@ class TestOperationResource(TransactionalTestCase):
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
-        request_mock.files = {'file': dummy_file}
+        request_mock.files = {'model_file': dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(self.test_project.gid,
                                                                                   inexistent_algorithm, '')
 
-    def test_server_launch_operation(self, mocker, time_series_index_factory):
+    def test_server_launch_operation(self, mocker, time_series_index_factory, rest_app):
         algorithm_module = "tvb.adapters.analyzers.fourier_adapter"
         algorithm_class = "FourierAdapter"
 
@@ -159,12 +160,15 @@ class TestOperationResource(TransactionalTestCase):
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
         fp = open(view_model_h5_path, 'rb')
-        request_mock.files = {'file': FileStorage(fp, os.path.basename(view_model_h5_path))}
+        request_mock.files = {'model_file': FileStorage(fp, os.path.basename(view_model_h5_path))}
 
         # Mock launch_operation() call
         mocker.patch.object(OperationService, 'launch_operation')
 
-        operation_gid, status = self.launch_resource.post(self.test_project.gid, algorithm_module, algorithm_class)
+        with rest_app.test_request_context():
+            set_current_user(self.test_user)
+            operation_gid, status = self.launch_resource.post(self.test_project.gid, algorithm_module, algorithm_class)
+
         fp.close()
 
         assert type(operation_gid) is str
