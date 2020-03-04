@@ -37,8 +37,8 @@ class ${dfunname}(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=(\
-%for i, itemJ in enumerate(exposures):
-%if i == 0:
+%for itemJ in exposures:
+%if {loop.first}:
 %for choice in (itemJ.choices):
 '${choice}', \
 %endfor
@@ -92,12 +92,12 @@ local_coupling, dx):
     % endfor
 
     ## derived variables
-    % for i, der_var in enumerate(dynamics.derived_variables):
+    % for der_var in dynamics.derived_variables:
     ${der_var.name} = ${der_var.expression}
     % endfor
 
     ## conditional variables
-    % for i, con_der in enumerate(dynamics.conditional_derived_variables):
+    % for con_der in dynamics.conditional_derived_variables:
     if (${con_der.condition}):
         % for case in (con_der.cases):
 % if (loop.first):
@@ -109,8 +109,8 @@ local_coupling, dx):
         % endfor
     % endfor \
 
-    % for i, itemH in enumerate(dynamics.time_derivatives):
-    dx[${i}] = ${itemH.expression}
+    % for j, itemH in enumerate(dynamics.time_derivatives):
+    dx[${j}] = ${itemH.expression}
     % endfor
     \
     \
