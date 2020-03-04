@@ -84,12 +84,8 @@ class SimulatorSerializer(object):
 
             sensors = ABCAdapter.load_traited_by_gid(sensors_gid)
 
-            if isinstance(simulator_in.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
+            sensors_class = simulator_in.monitors[0].get_sensors_and_projection_surface_classes()['sensors_class']
+            sensors = sensors_class.build_sensors_subclass(sensors)
 
             simulator_in.monitors[0].sensors = sensors
             region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)

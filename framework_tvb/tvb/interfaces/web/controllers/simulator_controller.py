@@ -724,16 +724,10 @@ class SimulatorController(BurstBaseController):
             projection_surface_index = ABCAdapter.load_entity_by_gid(data['_projection'])
             projection_surface = h5.load_from_index(projection_surface_index)
 
-            if isinstance(session_stored_simulator.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceEEG()
-            elif isinstance(session_stored_simulator.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceMEG()
-            elif isinstance(session_stored_simulator.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceSEEG()
+            sensors_and_projection_surface_dict = session_stored_simulator.monitors[0].get_sensors_and_projection_surface_classes()
+            sensors = sensors_and_projection_surface_dict['sensors_class'].build_sensors_subclass(sensors)
 
+            session_stored_simulator.monitors[0].projection = sensors_and_projection_surface_dict['projection_surface_class']()
             session_stored_simulator.monitors[0].sensors = sensors
             session_stored_simulator.monitors[0].projection.gid = projection_surface.gid
 
