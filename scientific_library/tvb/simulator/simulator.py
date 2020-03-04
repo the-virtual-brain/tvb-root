@@ -492,6 +492,7 @@ class Simulator(HasTraits):
             use_numba = False
             dfun = self.model._numpy_dfun
         else:
+            use_numba = True
             dfun = self.model.dfun
 
         # This is not necessary in most cases
