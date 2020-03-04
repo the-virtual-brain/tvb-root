@@ -16,7 +16,6 @@ def regTVB_templating(model_filename):
 
     # file locations
     fp_xml = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/dsl/NeuroML/XMLmodels/',model_filename.lower(),'.xml')
-    print('fp_xml:', fp_xml)
     modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
 
     # instantiate LEMS lib
