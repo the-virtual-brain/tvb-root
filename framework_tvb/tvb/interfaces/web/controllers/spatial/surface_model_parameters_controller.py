@@ -86,11 +86,6 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         self.equation_params.form = get_form_for_equation(type(trait))(self.NAME_EQATION_PARAMS_DIV)
         self.equation_params.form.fill_from_trait(trait)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
-                'equation_params_div': self.NAME_EQATION_PARAMS_DIV, 'legend': 'Selected parameter'}
-
 
 class EquationPlotForm(Form):
     def __init__(self):
@@ -105,10 +100,6 @@ class EquationPlotForm(Form):
             self.min_x.fill_from_post(form_data)
         if self.max_x.name in form_data:
             self.max_x.fill_from_post(form_data)
-
-    @using_template('form_fields/form')
-    def __str__(self):
-        return {'adapter_form': self}
 
 
 class SurfaceModelParametersController(SpatioTemporalController):
