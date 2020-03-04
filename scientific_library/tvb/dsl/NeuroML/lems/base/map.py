@@ -8,7 +8,9 @@ Map class.
 
 from base.base import LEMSBase
 
-class Map(dict, LEMSBase):
+from collections import OrderedDict
+
+class Map(OrderedDict, LEMSBase):
     """
     Map class.
 
@@ -19,8 +21,8 @@ class Map(dict, LEMSBase):
         """
         Constructor.
         """
-        
-        dict.__init__(self, *params, **key_params)
+
+        OrderedDict.__init__(self, *params, **key_params)
 
     def __iter__(self):
         """

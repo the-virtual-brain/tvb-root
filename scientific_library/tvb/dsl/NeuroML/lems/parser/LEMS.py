@@ -22,6 +22,8 @@ from model.component import *
 
 from model.dynamics import *
 
+from collections import OrderedDict
+
 
 def get_nons_tag_from_node(node):
     tag = node.tag
@@ -80,7 +82,7 @@ class LEMSFileParser(LEMSBase):
         """ List of directories to search for included files.
         @type: list(str) """
 
-        self.tag_parse_table = None
+        self.tag_parse_table = OrderedDict()
         """ Dictionary of xml tags to parse methods
         @type: dict(string -> function) """
 
