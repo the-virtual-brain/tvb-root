@@ -1940,4 +1940,14 @@
         <copyright-notice value="Copyright (c) 2012, Zope Foundation contributors"/>
         <description value="The IPython Notebook uses it"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="keycloak">
+        <full-name value="Keycloak Identity and Access Management"/>
+        <project-home value="https://www.keycloak.org/"/>
+        <version value="9.0.0"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_keycloak.txt"/>
+        <license-type value="Apache_ 2"/>
+        <copyright-notice value="Copyright 2016 Red Hat, Inc. and/or its affiliates"/>
+        <description value="It is used in the user authentication process"/>
+    </dependency>
 </tvb>
