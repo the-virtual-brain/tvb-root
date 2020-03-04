@@ -31,7 +31,12 @@
 import os
 import uuid
 import typing
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, choices, \
+    TimeseriesMetricsAdapter
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neocom import h5
 
@@ -83,3 +88,44 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
+
+    def launch(self, view_model):
+    # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
+        simulation_results = super(HPCSimulatorAdapter, self).launch(view_model)
+
+        if not self.is_group_launch:
+            return simulation_results
+
+        for dt in simulation_results:
+            if issubclass(type(dt), TimeSeriesIndex):
+                metric_result = self._compute_metrics_for_pse_launch(dt)
+                simulation_results.append(metric_result)
+
+        return simulation_results
+
+    def _compute_metrics_for_pse_launch(self, time_series_index):
+        # type: (TimeSeriesIndex) -> [DatatypeMeasureIndex]
+        metric_vm = TimeseriesMetricsAdapterModel()
+        metric_vm.time_series = time_series_index.gid
+        metric_vm.algorithms = tuple(choices.values())
+        metric_adapter = HPCTimeseriesMetricsAdapter(self.storage_path, time_series_index)
+        metric_result = metric_adapter.launch(metric_vm)
+        return metric_result
+
+
+class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
+
+    def __init__(self, storage_path, input_time_series_index):
+        super(HPCTimeseriesMetricsAdapter,self).__init__()
+        self.storage_path = storage_path
+        self.input_time_series_index = input_time_series_index
+
+    def configure(self, view_model):
+        # type: (TimeseriesMetricsAdapterModel) -> None
+        """
+        Store the input shape to be later used to estimate memory usage.
+        """
+        self.input_shape = (self.input_time_series_index.data_length_1d,
+                            self.input_time_series_index.data_length_2d,
+                            self.input_time_series_index.data_length_3d,
+                            self.input_time_series_index.data_length_4d)
