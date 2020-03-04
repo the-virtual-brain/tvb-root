@@ -405,13 +405,7 @@ class HPCSchedulerClient(object):
         operation.mark_complete(STATUS_FINISHED)
         dao.store_entity(operation)
 
-        # TODO: where to compute this?
-        if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname:
-            from tvb.core.services.operation_service import OperationService
-            operation_service = OperationService()
-            next_op = operation_service._prepare_metric_operation(operation)
-            operation_service.launch_operation(next_op.id)
-
+        # TODO: for PSE set FK towards datatype group on results
         return mesage
 
     @staticmethod
