@@ -16,7 +16,7 @@ from model.dynamics import Dynamics
 from model.structure import Structure
 from model.simulation import Simulation
 
-from parser.expr import ExprParser
+from tvb.dsl.NeuroML.lems.parser.expr import ExprParser
 
 class Parameter(LEMSBase):
     """
