@@ -154,7 +154,7 @@ class UserController(BaseController):
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
                 common.set_error_message("Could not save changes. Probably wrong old password!!")
         else:
-            #Update session user since disk size might have changed from last time to profile.
+            # Update session user since disk size might have changed from last time to profile.
             user = self.user_service.get_user_by_id(user.id)
             common.add2session(common.KEY_USER, user)
 
@@ -162,6 +162,10 @@ class UserController(BaseController):
             self.user_service.compute_user_generated_disk_size(user.id))
         return self.fill_default_attributes(template_specification)
 
+    @cherrypy.expose
+    @using_template('user/silent_check_sso')
+    def check_sso(self):
+        return {}
 
     @cherrypy.expose
     @handle_error(redirect=True)

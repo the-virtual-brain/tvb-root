@@ -334,7 +334,7 @@ class UserService:
         role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_roles else None
         self.create_user(external_id, hash_password(''.join(random.sample(external_id, len(external_id)))),
                          external_id=external_id, email=email,
-                         validated=True, skip_sending_email=True, role=role)
+                         validated=True, skip_sending_email=True, role=role, skip_import=True)
         return self.get_user_by_external_id(external_id)
 
     def _update_external_serivce_user(self, current_user, new_data):

@@ -30,6 +30,8 @@
 										.attr("value", keycloak.token)
 										.appendTo("#user_login_form");
 								$('#user_login_form').submit();
+							} else {
+								keycloak.login()
 							}
 						} else {
 							if (!keycloak_error) {
