@@ -29,7 +29,7 @@
 #
 import pytest
 from flask import Flask
-from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
+from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 
 
 @pytest.fixture(scope='session')

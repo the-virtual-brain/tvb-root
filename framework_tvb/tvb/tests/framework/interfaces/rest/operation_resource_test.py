@@ -34,7 +34,6 @@ from uuid import UUID
 import flask
 import pytest
 import tvb_data
-from flask import Flask
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.analyzers.fft import SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
@@ -42,9 +41,8 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.operation_service import OperationService
-from tvb.interfaces.rest.commons import Strings
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
-from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
+from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
