@@ -1,9 +1,12 @@
 from mako.template import Template
+import tvb
+import sys
+import os
+sys.path.append("{}{}".format(os.path.dirname(tvb.__file__),"/dsl/NeuroML/lems"))
 from model.model import Model
 
 def regTVB_templating(model_filename):
     """
-    function will start generation of regular TVB models according to fp_xml
     modelfile.py is placed results into tvb/simulator/models
     for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
     file_class_name is the name of the producedfile and also the class name
@@ -12,8 +15,8 @@ def regTVB_templating(model_filename):
     """
 
     # file locations
-    fp_xml = 'NeuroML/XMLmodels/' + model_filename.lower() + '.xml'
-    modelfile = "../simulator/models/" + model_filename.lower() + ".py"
+    fp_xml = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/dsl/NeuroML/XMLmodels/',model_filename.lower(),'.xml')
+    modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
 
     # instantiate LEMS lib
     model = Model()
@@ -27,7 +30,8 @@ def regTVB_templating(model_filename):
             continue
 
     # start templating
-    template = Template(filename='tmpl8_regTVB.py')
+    print("{}{}".format(os.path.dirname(tvb.__file__),'/dsl/tmpl8_regTVB.py'))
+    template = Template(filename="{}{}".format(os.path.dirname(tvb.__file__),'/dsl/tmpl8_regTVB.py'))
     model_str = template.render(
                             dfunname=model_filename,
                             const=model.component_types[model_filename].constants,
@@ -41,7 +45,7 @@ def regTVB_templating(model_filename):
 
     # write new model to init.py such it is familiar to TVB if not already present
     doprint=True
-    with open("../simulator/models/__init__.py", "r+") as f:
+    with open("{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/__init__.py'), "r+") as f:
         for line in f.readlines():
             if ("from ." + model_filename.lower() + " import " + model_filename) in line:
                 doprint=False

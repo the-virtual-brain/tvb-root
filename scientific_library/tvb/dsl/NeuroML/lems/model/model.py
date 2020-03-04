@@ -11,8 +11,8 @@ from os.path import dirname
 
 from base.base import LEMSBase
 from base.map import Map
-from parser.LEMS import LEMSFileParser
-from parser.LEMS import LEMSFileParser
+from tvb.dsl.NeuroML.lems.parser.LEMS import LEMSFileParser
+from tvb.dsl.NeuroML.lems.parser.LEMS import LEMSFileParser
 from base.util import merge_maps, merge_lists
 
 from base.errors import ModelError
