@@ -208,7 +208,7 @@ class TestProjectionMonitorsWithNoSubcortical(TestProjectionMonitorsWithSubcorti
 class TestAllAnalyticWithSubcortical(BaseTestCase):
     """Test correct gain matrix shape for all analytic with subcortical nodes."""
 
-    def test_gain_size(self):
+    def _build_test_sim(self):
         sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(
@@ -216,8 +216,23 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
                 region_mapping=RegionMapping.from_file('regionMapping_16k_192.txt')
             ),)
         ).configure()
+        return sim
 
+    def test_gain_size(self):
+        sim = self._build_test_sim()
         ieeg = sim.monitors[0]  # type: SensorsInternal
         n_sens, n_reg = ieeg.gain.shape
         assert ieeg.sensors.locations.shape[0] == n_sens
         assert sim.connectivity.number_of_regions == n_reg
+
+    def test_gain_config_idempotent(self):
+        "Check that rerunning the config doesn't increase matrix size"
+        sim = self._build_test_sim()
+        ieeg, = sim.monitors
+        initial_gain_shape = ieeg.gain.shape
+        ieeg.config_for_sim(sim)
+        reconfig_gain_shape = ieeg.gain.shape
+        assert initial_gain_shape == reconfig_gain_shape
+
+    def test_gain_order(self):
+        assert True
