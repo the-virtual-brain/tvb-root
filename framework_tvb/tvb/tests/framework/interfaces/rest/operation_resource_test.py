@@ -165,7 +165,7 @@ class TestOperationResource(TransactionalTestCase):
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
         fp = open(view_model_h5_path, 'rb')
-        request_mock.files = {'model_file': FileStorage(fp, os.path.basename(view_model_h5_path))}
+        request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: FileStorage(fp, os.path.basename(view_model_h5_path))}
 
         # Mock launch_operation() call and current_user
         mocker.patch.object(OperationService, 'launch_operation')
