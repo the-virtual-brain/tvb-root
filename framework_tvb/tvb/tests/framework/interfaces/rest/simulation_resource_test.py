@@ -58,7 +58,7 @@ class TestSimulationResource(TransactionalTestCase):
         dummy_file = FileStorage(BytesIO(b"test"), 'test.zip')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
-        request_mock.files = {'simulation_zip_file': dummy_file}
+        request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid)
 
