@@ -330,6 +330,7 @@ class UserService:
 
     def _create_external_service_user(self, user_data):
         external_id = user_data['sub']
+        self.logger.info('Create a new external user for external id {}'.format(external_id))
         username, email, role = self._extract_user_info(user_data)
         if not self.is_username_valid(username):
             username = external_id
@@ -355,12 +356,17 @@ class UserService:
             return self.get_user_by_external_id(current_user.external_id)
         return current_user
 
-    @staticmethod
-    def _extract_user_info(keycloak_data):
+    def _extract_user_info(self, keycloak_data):
         email = keycloak_data['email'] if 'email' in keycloak_data else None
+        if email is None:
+            self.logger.info("No email provided by the keycloak server")
+
         user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
         client_id = AuthorizationManager().get_keycloak_instance().client_id
         user_client_roles = user_roles[client_id] if client_id in user_roles else []
+        if len(user_roles) == 0:
+            self.logger.info("No client roles for client {}".format(client_id))
+
         role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
         username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
             'sub']
