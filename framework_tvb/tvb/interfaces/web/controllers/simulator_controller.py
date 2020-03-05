@@ -719,17 +719,15 @@ class SimulatorController(BurstBaseController):
             # load sensors and projection
             # TODO BIG review. I do not think the correct Projection Matrix entity is being used
             sensors_index = ABCAdapter.load_entity_by_gid(data['_sensors'])
-            sensors = h5.load_from_index(sensors_index)
+            sensors_class = session_stored_simulator.monitors[0].projection_class().sensors.field_type
+            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
             projection_surface_index = ABCAdapter.load_entity_by_gid(data['_projection'])
-            projection_surface = h5.load_from_index(projection_surface_index)
+            projection_class = session_stored_simulator.monitors[0].projection_class()
+            projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
 
-            sensors_and_projection_surface_dict = session_stored_simulator.monitors[0].get_sensors_and_projection_surface_classes()
-            sensors = sensors_and_projection_surface_dict['sensors_class'].build_sensors_subclass(sensors)
-
-            session_stored_simulator.monitors[0].projection = sensors_and_projection_surface_dict['projection_surface_class']()
             session_stored_simulator.monitors[0].sensors = sensors
-            session_stored_simulator.monitors[0].projection.gid = projection_surface.gid
+            session_stored_simulator.monitors[0].projection = projection
 
         next_form = SimulatorLengthFragment()
         next_form.fill_from_trait(session_stored_simulator)

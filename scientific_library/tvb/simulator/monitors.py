@@ -391,7 +391,7 @@ class Projection(Monitor):
         return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
 
     @classmethod
-    def _projection_class(cls):
+    def projection_class(cls):
         if hasattr(cls, 'projection'):
             return cls.projection.field_type
         else:
@@ -522,10 +522,6 @@ class Projection(Monitor):
             self._state[:] = 0.0
             return time, sample.T[..., numpy.newaxis] # for compatibility
 
-    @staticmethod
-    def get_sensors_and_projection_surface_classes():
-        return NotImplementedError
-
     _gain = None
 
     @property
@@ -643,11 +639,6 @@ class EEG(Projection):
                              sample_period=self.period,
                              title=' ' + self.__class__.__name__)
 
-    @staticmethod
-    def get_sensors_and_projection_surface_classes():
-        return {'sensors_class': sensors_module.SensorsEEG,
-                'projection_surface_class': projections_module.ProjectionSurfaceEEG}
-
 
 class MEG(Projection):
     "Forward solution monitor for magnetoencephalography (MEG)."
@@ -711,11 +702,6 @@ class MEG(Projection):
                              sample_period=self.period,
                              title=' ' + self.__class__.__name__)
 
-    @staticmethod
-    def get_sensors_and_projection_surface_classes():
-        return {'sensors_class': sensors_module.SensorsMEG,
-                'projection_surface_class': projections_module.ProjectionSurfaceMEG}
-
 
 class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
@@ -758,11 +744,6 @@ class iEEG(Projection):
         return TimeSeriesSEEG(sensors=self.sensors,
                               sample_period=self.period,
                               title=' ' + self.__class__.__name__)
-
-    @staticmethod
-    def get_sensors_and_projection_surface_classes():
-        return {'sensors_class': sensors_module.SensorsInternal,
-                'projection_surface_class': projections_module.ProjectionSurfaceSEEG}
 
 
 class Bold(Monitor):

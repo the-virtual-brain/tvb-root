@@ -80,15 +80,22 @@ class SimulatorSerializer(object):
 
             with monitor_h5_class(monitor_h5_path) as monitor_h5:
                 sensors_gid = monitor_h5.sensors.load()
+                projection_gid = monitor_h5.projection.load()
                 region_mapping_gid = monitor_h5.region_mapping.load()
 
-            sensors = ABCAdapter.load_traited_by_gid(sensors_gid)
+            sensors_index = ABCAdapter.load_entity_by_gid(sensors_gid.hex)
+            projection_index = ABCAdapter.load_entity_by_gid(projection_gid.hex)
 
-            sensors_class = simulator_in.monitors[0].get_sensors_and_projection_surface_classes()['sensors_class']
-            sensors = sensors_class.build_sensors_subclass(sensors)
+            sensors_class = simulator_in.monitors[0].projection_class().sensors.field_type
+            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
+
+            projection_class = simulator_in.monitors[0].projection_class()
+            projection = h5.load_from_index(projection_index, dt_class=projection_class)
+
+            region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
 
             simulator_in.monitors[0].sensors = sensors
-            region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
+            simulator_in.monitors[0].projection = projection
             simulator_in.monitors[0].region_mapping = region_mapping
 
         if simulator_in.surface:
