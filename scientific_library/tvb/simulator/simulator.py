@@ -54,6 +54,9 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
 class Simulator(HasTraits):
+
+    PRINT_PROGRESSION_MESSAGE = True
+
     """A Simulator assembles components required to perform simulations."""
 
     connectivity = Attr(
@@ -377,23 +380,43 @@ class Simulator(HasTraits):
         self.bound_and_clamp(history)
         # If there are non-state variables, they need to be updated for history:
         try:
-            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
-            # in the extreme case where all state variables are cvars as well, we set:
-            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], 1))
-            for i_time in range(history.shape[1]):
-                self.model.update_non_state_variables(history[:, i_time], node_coupling[:, 0], 0.0)
-            self.bound_and_clamp(history)
+            update_initial_conditions = self.model.update_initial_conditions_non_state_variables
         except:
-            pass
+            try:
+                update_initial_conditions = self.model.update_non_state_variables
+            except:
+                return
+        # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
+        # in the extreme case where all state variables are cvars as well, we set:
+        node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
+        for i_time in range(history.shape[1]):
+            update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0)
+        self.bound_and_clamp(history)
 
-    def update_state(self, state, node_coupling, local_coupling=0.0):
+    def update_state(self, state, node_coupling, local_coupling=0.0, use_numba=True):
         # If there are non-state variables, they need to be updated for the initial condition:
         try:
-            self.model.update_non_state_variables(state, node_coupling, local_coupling)
-            self.bound_and_clamp(state)
+            self.model.update_non_state_variables
         except:
-            # If not, the kwarg will fail and nothing will happen
-            pass
+            return
+        self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba)
+        self.bound_and_clamp(state)
+
+    def _print_progression_message(self, step, n_steps):
+        if step - self.current_step >= self._tic_point:
+            toc = time.time() - self._tic
+            if toc > 600:
+                if toc > 7200:
+                    time_string = "%0.1f hours" % (toc / 3600)
+                else:
+                    time_string = "%0.1f min" % (toc / 60)
+            else:
+                time_string = "%0.1f sec" % toc
+            print_this = "\r...%0.1f%% done in %s" % \
+                         (100.0 * (step - self.current_step) / n_steps, time_string)
+            sys.stdout.write(print_this)
+            sys.stdout.flush()
+            self._tic_point += self._tic_ratio * n_steps
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -429,9 +452,10 @@ class Simulator(HasTraits):
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        tic = time.time()
-        tic_ratio = 0.1
-        tic_point = tic_ratio * n_steps
+        if self.PRINT_PROGRESSION_MESSAGE:
+            self._tic = time.time()
+            self._tic_ratio = 0.1
+            self._tic_point = self._tic_ratio * n_steps
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # Integrate TVB to get the new TVB state
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
@@ -446,20 +470,8 @@ class Simulator(HasTraits):
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
-            if step - self.current_step >= tic_point:
-                toc = time.time() - tic
-                if toc > 600:
-                    if toc > 7200:
-                        time_string = "%0.1f hours" % (toc / 3600)
-                    else:
-                        time_string = "%0.1f min" % (toc / 60)
-                else:
-                    time_string = "%0.1f sec" % toc
-                print_this = "\r...%0.1f%% done in %s" % \
-                             (100.0 * (step - self.current_step) / n_steps, time_string)
-                sys.stdout.write(print_this)
-                sys.stdout.flush()
-                tic_point += tic_ratio * n_steps
+            if self.PRINT_PROGRESSION_MESSAGE:
+                self._print_progression_message(step, n_steps)
 
         self.current_state = state
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
@@ -783,6 +795,7 @@ class Simulator(HasTraits):
 
     def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data."""
+        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
