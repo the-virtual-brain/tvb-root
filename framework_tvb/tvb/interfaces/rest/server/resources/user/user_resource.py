@@ -28,7 +28,7 @@
 #
 #
 import formencode
-from flask import request
+import flask
 from flask_restplus import Resource
 from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons.dtos import ProjectDto
@@ -51,7 +51,7 @@ class LoginUserResource(Resource):
         :return a dict which contains user's tokens
         """
         try:
-            data = request.json
+            data = flask.request.json
             return AuthorizationManager.get_keycloak_instance().token(data[FormKeyInput.USERS_USERNAME.value],
                                                                       data[FormKeyInput.USERS_PASSWORD.value])
         except KeyError:
@@ -62,7 +62,7 @@ class LoginUserResource(Resource):
         Refresh user's token
         :return: new token
         """
-        data = request.json
+        data = flask.request.json
         try:
             refresh_token = data[FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value]
             return AuthorizationManager.get_keycloak_instance().refresh_token(refresh_token)
@@ -74,7 +74,7 @@ class LoginUserResource(Resource):
         Logout user. Invalidate token
         :return:
         """
-        data = request.json
+        data = flask.request.json
         try:
             refresh_token = data[FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value]
             return AuthorizationManager.get_keycloak_instance().logout(refresh_token)
@@ -96,7 +96,7 @@ class GetProjectsListResource(RestResource):
         """
         Create a new project linked to the current user
         """
-        input_data = request.json
+        input_data = flask.request.json
         try:
             project_name = input_data[FormKeyInput.CREATE_PROJECT_NAME.value]
             project_description = input_data[FormKeyInput.CREATE_PROJECT_DESCRIPTION.value] \

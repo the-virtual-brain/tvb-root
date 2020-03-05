@@ -29,6 +29,7 @@
 #
 
 import os
+import flask
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -68,25 +69,33 @@ class TestProjectResource(TransactionalTestCase):
         assert type(result) is list
         assert len(result) > 0
 
-    def test_server_get_operations_in_project_inexistent_gid(self, rest_app):
+    def test_server_get_operations_in_project_inexistent_gid(self, mocker):
         project_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException):
-            with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
-                self.operations_resource.get(project_gid)
 
-    def test_server_get_operations_in_project_empty(self, rest_app):
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid)
+
+    def test_server_get_operations_in_project_empty(self, mocker):
         project_gid = self.test_project_without_data.gid
-        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
-            response = self.operations_resource.get(project_gid)
-        assert type(response['operations']) is list
-        assert len(response['operations']) == 0
 
-    def test_get_operations_in_project(self, rest_app):
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        result = self.operations_resource.get(project_gid)
+        assert type(result) is dict
+        assert len(result['operations']) == 0
+
+    def test_get_operations_in_project(self, mocker):
         project_gid = self.test_project_with_data.gid
-        with rest_app.test_request_context(data={Strings.PAGE_NUMBER.value: 1}):
-            response = self.operations_resource.get(project_gid)
-        assert type(response['operations']) is list
-        assert len(response['operations']) > 0
+
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        result = self.operations_resource.get(project_gid)
+        assert type(result) is dict
+        assert len(result['operations']) > 0
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project_with_data.name)
