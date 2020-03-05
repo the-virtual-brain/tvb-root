@@ -28,11 +28,9 @@
 #
 #
 
-import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource, LoginUserResource
-from tvb.interfaces.rest.server.security.authorization import AuthorizationManager, set_current_user
+from tvb.interfaces.rest.server.security.authorization import set_current_user
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
