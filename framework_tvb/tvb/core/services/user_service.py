@@ -50,6 +50,7 @@ from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import hash_password
+from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -358,7 +359,9 @@ class UserService:
     def _extract_user_info(keycloak_data):
         email = keycloak_data['email'] if 'email' in keycloak_data else None
         user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
-        role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_roles else None
+        client_id = AuthorizationManager().get_keycloak_instance().client_id
+        user_client_roles = user_roles[client_id] if client_id in user_roles else []
+        role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
         username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
             'sub']
         return username, email, role
