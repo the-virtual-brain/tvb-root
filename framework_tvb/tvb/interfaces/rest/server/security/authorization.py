@@ -28,7 +28,7 @@
 #
 #
 
-from flask import g
+import flask
 from keycloak import KeycloakOpenID, json
 
 
@@ -88,11 +88,11 @@ class AuthorizationManager(metaclass=AuthorizationManagerMeta):
 
 
 def set_current_user(user):
-    g.current_user = user
+    flask.g.current_user = user
 
 
 def get_current_user():
     try:
-        return g.current_user
+        return flask.g.current_user
     except AttributeError:
         return None

@@ -204,7 +204,6 @@ class Attr(_Attr):
         else:
             return '{}'.format(type(self).__name__)
 
-
     def __str__(self):
         return '{}(field_type={}, default={!r}, required={})'.format(
             self._defined_on_str_helper(), self.field_type, self.default, self.required

@@ -27,7 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from flask import request
+
+import flask
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons.strings import Strings
@@ -67,7 +68,7 @@ class GetOperationsInProjectResource(RestResource):
         """
         :return a list of project's Operation entities
         """
-        page_number = request.args.get(Strings.PAGE_NUMBER.value)
+        page_number = flask.request.args.get(Strings.PAGE_NUMBER.value)
         if page_number is None:
             page_number = 1
         try:

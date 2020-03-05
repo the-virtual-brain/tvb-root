@@ -529,7 +529,7 @@ class FlowController(BaseController):
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, form=self.get_template_dict(adapter_form), title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.get_template_dict(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
