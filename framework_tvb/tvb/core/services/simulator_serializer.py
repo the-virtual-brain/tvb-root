@@ -72,7 +72,6 @@ class SimulatorSerializer(object):
             simulator_in.history_gid = simulator_in_h5.simulation_state.load()
 
         if isinstance(simulator_in.monitors[0], Projection):
-            # TODO: simplify this part
             with SimulatorH5(simulator_in_path) as simulator_in_h5:
                 monitor_h5_path = simulator_in_h5.get_reference_path(simulator_in.monitors[0].gid)
 
