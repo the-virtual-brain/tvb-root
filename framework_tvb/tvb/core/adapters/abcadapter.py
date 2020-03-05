@@ -330,7 +330,9 @@ class ABCAdapter(object):
 
     def _extract_operation_data(self, operation):
         self.meta_data.update(json.loads(operation.meta_data))
-        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        operation = dao.get_operation_by_id(operation.id)
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
