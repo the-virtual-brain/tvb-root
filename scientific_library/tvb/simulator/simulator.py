@@ -61,6 +61,7 @@ class Simulator(HasTraits):
     configure_spiking_simulator = None
     run_spiking_simulator = None
     _config = None
+    PRINT_PROGRESSION_MESSAGE = True
 
     """A Simulator assembles components required to perform simulations."""
 
@@ -458,6 +459,22 @@ class Simulator(HasTraits):
         self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba)
         self.bound_and_clamp(state)
 
+    def _print_progression_message(self, step, n_steps):
+        if step - self.current_step >= self._tic_point:
+            toc = time.time() - self._tic
+            if toc > 600:
+                if toc > 7200:
+                    time_string = "%0.1f hours" % (toc / 3600)
+                else:
+                    time_string = "%0.1f min" % (toc / 60)
+            else:
+                time_string = "%0.1f sec" % toc
+            print_this = "\r...%0.1f%% done in %s" % \
+                         (100.0 * (step - self.current_step) / n_steps, time_string)
+            sys.stdout.write(print_this)
+            sys.stdout.flush()
+            self._tic_point += self._tic_ratio * n_steps
+
     def __call__(self, simulation_length=None, random_state=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -510,9 +527,10 @@ class Simulator(HasTraits):
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        tic = time.time()
-        tic_ratio = 0.1
-        tic_point = tic_ratio * n_steps
+        if self.PRINT_PROGRESSION_MESSAGE:
+            self._tic = time.time()
+            self._tic_ratio = 0.1
+            self._tic_point = self._tic_ratio * n_steps
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
 
             # TODO: We could have another __call__method obviously when there is no co-simulation...
@@ -559,20 +577,8 @@ class Simulator(HasTraits):
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
-            if step - self.current_step >= tic_point:
-                toc = time.time() - tic
-                if toc > 600:
-                    if toc > 7200:
-                        time_string = "%0.1f hours" % (toc / 3600)
-                    else:
-                        time_string = "%0.1f min" % (toc / 60)
-                else:
-                    time_string = "%0.1f sec" % toc
-                print_this = "\r...%0.1f%% done in %s" % \
-                             (100.0 * (step - self.current_step) / n_steps, time_string)
-                sys.stdout.write(print_this)
-                sys.stdout.flush()
-                tic_point += tic_ratio * n_steps
+            if self.PRINT_PROGRESSION_MESSAGE:
+                self._print_progression_message(step, n_steps)
 
         self.current_state = state
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
@@ -904,6 +910,7 @@ class Simulator(HasTraits):
 
     def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data."""
+        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
