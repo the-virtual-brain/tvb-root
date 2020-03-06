@@ -78,9 +78,6 @@ class TestProjectionMatrix(TransactionalTestCase):
         self.sensors = TestFactory.get_entity(self.test_project, SensorsIndex)
         assert self.sensors is not None
 
-        self.importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
-                                                   'ProjectionMatrixSurfaceEEGImporter')
-
     def transactional_teardown_method(self):
         """
         Clean-up tests data
@@ -94,20 +91,9 @@ class TestProjectionMatrix(TransactionalTestCase):
         file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
                                  'projection_eeg_62_surface_16k.mat')
 
-        form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
-                             'dataset_name': 'ProjectionMatrix',
-                             'sensors': self.sensors.gid,
-                             'surface': self.surface.gid,
-                             'Data_Subject': 'John Doe'
-                             })
-        form.projection_file.data = file_path
-        view_model = form.get_view_model()()
-        form.fill_trait(view_model)
-        self.importer.submit_form(form)
-
         try:
-            FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, view_model=view_model)
+            TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
+                                                 self.surface.gid)
             raise AssertionError("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
         except OperationException:
             pass
@@ -117,23 +103,12 @@ class TestProjectionMatrix(TransactionalTestCase):
         Verifies the happy flow for importing a surface.
         """
         dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
+
         file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
                                  'projection_eeg_65_surface_16k.npy')
 
-        form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
-                             'dataset_name': 'ProjectionMatrix',
-                             'sensors': self.sensors.gid,
-                             'surface': self.surface.gid,
-                             'Data_Subject': 'John Doe'
-                             })
-        form.projection_file.data = file_path
-        view_model = form.get_view_model()()
-        view_model.subject = 'John Doe'
-        form.fill_trait(view_model)
-        self.importer.submit_form(form)
+        TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid, self.surface.gid)
 
-        FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, view_model=view_model)
         dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
 
         assert dt_count_before + 1 == dt_count_after
