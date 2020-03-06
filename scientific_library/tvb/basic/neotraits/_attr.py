@@ -35,10 +35,12 @@ import collections.abc
 import numpy
 import types
 import typing
-from ._core import HasTraits
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError
 from tvb.basic.logger.builder import get_logger
+
+if typing.TYPE_CHECKING:
+    from ._core import HasTraits
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
