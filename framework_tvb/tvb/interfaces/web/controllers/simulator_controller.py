@@ -717,11 +717,11 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].region_mapping = region_mapping
 
             # load sensors and projection
-            sensors_index = ABCAdapter.load_entity_by_gid(data['_sensors'])
+            sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
             sensors_class = session_stored_simulator.monitors[0].projection_class().sensors.field_type
             sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
-            projection_surface_index = ABCAdapter.load_entity_by_gid(data['_projection'])
+            projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
             projection_class = session_stored_simulator.monitors[0].projection_class()
             projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
 
