@@ -73,7 +73,7 @@ class SimulatorWizzardURLs(object):
     SET_MONITORS_URL = '/burst/set_monitors'
     SET_MONITOR_PARAMS_URL = '/burst/set_monitor_params'
     SET_MONITOR_EQUATION_URL = '/burst/set_monitor_equation'
-    SET_SIMULATION_LENGTH_URL = '/burst/set_simulation_length'
+    SET_LAUNCH_SIMULATION_URL = '/burst/launch_simulation'
     SETUP_PSE_URL = '/burst/setup_pse'
     SET_PSE_PARAMS_URL = '/burst/set_pse_params'
     LAUNCH_PSE_URL = '/burst/launch_pse'
@@ -663,17 +663,17 @@ class SimulatorController(BurstBaseController):
         form.fill_from_trait(monitor)
 
         if isinstance(monitor, TemporalAverage):
-            form = SimulatorLengthFragment()
+            form = SimulatorFinalFragment()
             form.fill_from_trait(session_stored_simulator)
-            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
-                                                              SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
-                                                              is_simulator_load, self.last_loaded_form_url,
-                                                              cherrypy.request.method)
+            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
+                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
+                                                          is_simulator_load, self.last_loaded_form_url,
+                                                          cherrypy.request.method, is_launch_fragment=True)
         else:
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
-                                                              SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
-                                                              is_simulator_load, self.last_loaded_form_url,
-                                                              cherrypy.request.method)
+                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
+                                                          is_simulator_load, self.last_loaded_form_url,
+                                                          cherrypy.request.method)
 
         return rendering_rules.to_dict()
 
@@ -695,7 +695,7 @@ class SimulatorController(BurstBaseController):
             if isinstance(monitor, Bold):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL)
             else:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL)
 
         if isinstance(monitor, Bold) and cherrypy.request.method == 'POST':
             next_form = get_form_for_equation(type(monitor.equation))()
@@ -728,10 +728,10 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].sensors = sensors
             session_stored_simulator.monitors[0].projection = projection
 
-        next_form = SimulatorLengthFragment()
+        next_form = SimulatorFinalFragment()
         next_form.fill_from_trait(session_stored_simulator)
 
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
+        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
                                                           SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method)
@@ -754,52 +754,12 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(monitor.hrf_kernel)
 
-        next_form = SimulatorLengthFragment()
+        next_form = SimulatorFinalFragment()
 
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
+        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
                                                           SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
                                                           is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method)
-        return rendering_rules.to_dict()
-
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
-    def set_simulation_length(self, **data):
-        session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
-        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
-        session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-
-        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
-                                                          SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
-                                                          is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method,
-                                                          is_launch_fragment=True)
-        if session_burst_config.name:
-            burst_name = session_burst_config.name
-            copy_prefix = 'Copy_'
-            if is_simulator_copy and burst_name.find(copy_prefix) < 0:
-                burst_name = copy_prefix + burst_name
-            next_form.simulation_name.data = burst_name
-
-        if cherrypy.request.method == 'POST':
-            is_simulator_load = False
-            rendering_rules._is_simulation_readonly_load = False
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
-            is_simulator_copy = False
-            fragment = SimulatorLengthFragment()
-            fragment.fill_from_post(data)
-            session_stored_simulator.simulation_length = fragment.length.value
-
-        if is_simulator_load or is_simulator_copy:
-            rendering_rules.form_action_url = ''
-            rendering_rules.is_launch_fragment = True
-
-        rendering_rules.is_simulation_copy = is_simulator_copy
+                                                          self.last_loaded_form_url, cherrypy.request.method, is_launch_fragment=True)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -809,7 +769,7 @@ class SimulatorController(BurstBaseController):
     def setup_pse(self, **data):
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
-                                                          SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
+                                                          SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
                                                           last_form_url=SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
         return rendering_rules.to_dict()
 
@@ -883,6 +843,10 @@ class SimulatorController(BurstBaseController):
             return {'error': e.message}
 
     @expose_json
+    @cherrypy.expose
+    @using_template("simulator_fragment")
+    @handle_error(redirect=False)
+    @check_user
     def launch_simulation(self, launch_mode, **data):
         current_form = SimulatorFinalFragment()
         try:
