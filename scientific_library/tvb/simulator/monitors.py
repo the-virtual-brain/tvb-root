@@ -407,7 +407,7 @@ class Projection(Monitor):
         """
         result = cls(period=period, **kwds)
         result.sensors = cls.sensors.field_type.from_file(sensors_fname)
-        result.projection = cls._projection_class().from_file(projection_fname)
+        result.projection = cls.projection_class().from_file(projection_fname)
         result.region_mapping = RegionMapping.from_file(rm_f_name)
         return result
 
