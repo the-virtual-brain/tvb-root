@@ -45,6 +45,7 @@ from tvb.simulator import monitors, models, coupling, integrators, noise, simula
 from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.datatypes.sensors import SensorsInternal
 
 
@@ -218,6 +219,19 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         ).configure()
         return sim
 
+    def _build_test_sim_eeg(self):
+        eeg_monitor = monitors.EEG()
+        eeg_monitor.sensors = sensors.SensorsEEG.from_file()
+        eeg_monitor.region_mapping = RegionMapping.from_file('regionMapping_16k_192.txt')
+        eeg_monitor.projection = ProjectionSurfaceEEG.from_file()
+
+        sim = simulator.Simulator(
+                connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
+                monitors=[eeg_monitor],
+                simulation_length=100
+        ).configure()
+        return sim
+
     def test_gain_size(self):
         sim = self._build_test_sim()
         ieeg = sim.monitors[0]  # type: SensorsInternal
@@ -227,12 +241,15 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
 
     def test_gain_config_idempotent(self):
         "Check that rerunning the config doesn't increase matrix size"
-        sim = self._build_test_sim()
-        ieeg, = sim.monitors
-        initial_gain_shape = ieeg.gain.shape
-        ieeg.config_for_sim(sim)
-        reconfig_gain_shape = ieeg.gain.shape
+        sim = self._build_test_sim_eeg()
+        eeg, = sim.monitors
+        initial_gain_shape = eeg.gain.shape
+        eeg.config_for_sim(sim)
+        reconfig_gain_shape = eeg.gain.shape
         assert initial_gain_shape == reconfig_gain_shape
+        eeg.config_for_sim(sim)
+        rereconfig_gain_shape = eeg.gain.shape
+        assert reconfig_gain_shape == rereconfig_gain_shape
 
     def test_gain_order(self):
         conn = connectivity.Connectivity()
