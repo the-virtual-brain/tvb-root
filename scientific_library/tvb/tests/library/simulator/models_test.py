@@ -259,8 +259,10 @@ class TestDSLModels(BaseTestCase):
         model_str = render_model(name)
         assert '_numba_dfun_EpileptorT' in model_str
 
-    # def test_eval_model_str(self):
-    #     name = 'EpileptorT'
-    #     module = {'__name__': name}
-    #     exec(render_model(name), module)
-    #     assert issubclass(module[name], Model)
+    def test_eval_model_str(self):
+        name = 'EpileptorT'
+        module = {}
+        exec(render_model(name), module)
+        assert issubclass(module[name], Model)
+        model = module[name]()
+        assert isinstance(model, Model)

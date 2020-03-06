@@ -109,6 +109,22 @@ _module_models = {
 }
 
 
+def _find_lems_models():
+    import os, tvb.dsl
+    dsl_path = os.path.dirname(os.path.abspath(tvb.dsl.__file__))
+    xml_folder = os.path.join(dsl_path, 'NeuroML', 'XMLmodels')
+    for xml_filename in os.listdir(xml_folder):
+        # try to get model name
+        fullfilename = os.path.join(xml_folder, xml_filename)
+        print(fullfilename)
+        with open(fullfilename, 'r') as fd:
+            for line in fd.readlines():
+                if '<ComponentType name=' in line:
+                    _, name_, *_ = line.strip().split()
+                    _, name, _ = name_.split("=")[1].split('"')
+                    break
+
+
 def _delay_import_one(mod, model):
     """Create getter thunk for module and model name.
     """
