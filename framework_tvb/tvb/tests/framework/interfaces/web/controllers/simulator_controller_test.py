@@ -36,7 +36,6 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.basic.profile import TvbProfile
 import numpy
 import tvb_data.surfaceData
 import tvb_data.regionMapping
@@ -74,7 +73,6 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         self.simulator_controller = SimulatorController()
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
-        TvbProfile.current.web.RENDER_HTML = False
         self.session_stored_simulator = SimulatorAdapterModel()
 
         self.sess_mock = RamSession()
@@ -202,7 +200,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.set_model(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.model, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()), "Model class is incorrect."
+        assert isinstance(self.session_stored_simulator.model,
+                          ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()), "Model class is incorrect."
 
     def test_set_model_params(self):
         self.sess_mock['tau'] = '[1.0]'
@@ -367,8 +366,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
-        eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_eeg_62_surface_16k.mat')
-        eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file, eeg_sensors.gid, surface.gid)
+        eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+                                        'projection_eeg_62_surface_16k.mat')
+        eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
+                                                               eeg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
@@ -403,8 +404,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
-        meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_meg_276_surface_16k.npy')
-        meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file, meg_sensors.gid, surface.gid)
+        meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+                                        'projection_meg_276_surface_16k.npy')
+        meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
+                                                               meg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
@@ -440,9 +443,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
         seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
-                                        'projection_seeg_588_surface_16k.npy')
+                                         'projection_seeg_588_surface_16k.npy')
         seeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
-                                                               seeg_sensors.gid, surface.gid)
+                                                                seeg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
