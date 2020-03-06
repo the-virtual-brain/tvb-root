@@ -60,10 +60,8 @@ from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesE
                                        TimeSeriesSurface)
 from tvb.simulator import noise
 import tvb.datatypes.sensors as sensors_module
-from tvb.datatypes.sensors import SensorsEEG
+import tvb.datatypes.projections as projections_module
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.projections import (ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG,
-                                       ProjectionSurfaceSEEG)
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import iround, numpy_add_at
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
@@ -393,11 +391,11 @@ class Projection(Monitor):
         return (gain.reshape((gain.shape[0], -1, 3)) * orient).sum(axis=-1)
 
     @classmethod
-    def _projection_class(cls):
+    def projection_class(cls):
         if hasattr(cls, 'projection'):
             return cls.projection.field_type
         else:
-            return ProjectionMatrix
+            return projections_module.ProjectionMatrix
 
     @classmethod
     def from_file(cls, sensors_fname, projection_fname, rm_f_name="regionMapping_16k_76.txt",
@@ -409,7 +407,7 @@ class Projection(Monitor):
         """
         result = cls(period=period, **kwds)
         result.sensors = cls.sensors.field_type.from_file(sensors_fname)
-        result.projection = cls._projection_class().from_file(projection_fname)
+        result.projection = cls.projection_class().from_file(projection_fname)
         result.region_mapping = RegionMapping.from_file(rm_f_name)
         return result
 
@@ -571,7 +569,7 @@ class EEG(Projection):
     _ui_name = "EEG"
 
     projection = Attr(
-        ProjectionSurfaceEEG,
+        projections_module.ProjectionSurfaceEEG,
         default=None, label='Projection matrix',  #order=2,
         doc='Projection matrix to apply to sources.')
 
@@ -582,7 +580,7 @@ class EEG(Projection):
             'apply an average reference. If none is provided, the '
             'produced time-series are the idealized or reference-free.')
 
-    sensors = Attr(SensorsEEG, required=True, label="EEG Sensors",  #order=1,
+    sensors = Attr(sensors_module.SensorsEEG, required=True, label="EEG Sensors",  #order=1,
                    doc='Sensors to use for this EEG monitor')
 
     sigma = Float(
@@ -647,7 +645,7 @@ class MEG(Projection):
     _ui_name = "MEG"
 
     projection = Attr(
-        ProjectionSurfaceMEG,
+        projections_module.ProjectionSurfaceMEG,
         default=None, label='Projection matrix', # order=2,
         doc='Projection matrix to apply to sources.')
 
@@ -711,7 +709,7 @@ class iEEG(Projection):
     _ui_name = "Intracerebral / Stereo EEG"
 
     projection = Attr(
-        ProjectionSurfaceSEEG,
+        projections_module.ProjectionSurfaceSEEG,
         default=None, label='Projection matrix',  #order=2,
         doc='Projection matrix to apply to sources.')
 

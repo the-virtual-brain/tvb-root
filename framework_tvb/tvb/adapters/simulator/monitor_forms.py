@@ -26,17 +26,18 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
-
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY as EEG_S
 from tvb.datatypes.sensors import MEG_POLYMORPHIC_IDENTITY as MEG_S
 from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY as SEEG_S
+from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY as EEG_P
+from tvb.datatypes.projections import MEG_POLYMORPHIC_IDENTITY as MEG_P
+from tvb.datatypes.projections import SEEG_POLYMORPHIC_IDENTITY as SEEG_P
 from tvb.simulator.monitors import *
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField
 
 
@@ -141,9 +142,12 @@ class EEGMonitorForm(ProjectionMonitorForm):
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[EEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[EEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=EEG.projection.label, doc=EEG.projection.label,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.reference = ScalarField(EEG.reference, self)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=EEG.sensors.label,
                                            doc=EEG.sensors.doc, conditions=sensor_filter)
@@ -158,9 +162,12 @@ class MEGMonitorForm(ProjectionMonitorForm):
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[MEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[MEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=MEG.projection.label, doc=MEG.projection.doc,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=MEG.sensors.label,
                                            doc=MEG.sensors.doc, conditions=sensor_filter)
 
@@ -173,9 +180,12 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SEEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[SEEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=iEEG.projection.label, doc=iEEG.projection.doc,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.sigma = ScalarField(iEEG.sigma, self)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=iEEG.sensors.label,
                                            doc=iEEG.sensors.doc, conditions=sensor_filter)

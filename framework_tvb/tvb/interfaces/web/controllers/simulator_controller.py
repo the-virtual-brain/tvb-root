@@ -717,25 +717,16 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].region_mapping = region_mapping
 
             # load sensors and projection
-            # TODO BIG review. I do not think the correct Projection Matrix entity is being used
-            sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
-            sensors = h5.load_from_index(sensors_index)
+            sensors_index = ABCAdapter.load_entity_by_gid(data['_sensors'])
+            sensors_class = session_stored_simulator.monitors[0].projection_class().sensors.field_type
+            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
-            projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
-            projection_surface = h5.load_from_index(projection_surface_index)
-
-            if isinstance(session_stored_simulator.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceEEG()
-            elif isinstance(session_stored_simulator.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceMEG()
-            elif isinstance(session_stored_simulator.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceSEEG()
+            projection_surface_index = ABCAdapter.load_entity_by_gid(data['_projection'])
+            projection_class = session_stored_simulator.monitors[0].projection_class()
+            projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
 
             session_stored_simulator.monitors[0].sensors = sensors
-            session_stored_simulator.monitors[0].projection.gid = projection_surface.gid
+            session_stored_simulator.monitors[0].projection = projection
 
         next_form = SimulatorLengthFragment()
         next_form.fill_from_trait(session_stored_simulator)
