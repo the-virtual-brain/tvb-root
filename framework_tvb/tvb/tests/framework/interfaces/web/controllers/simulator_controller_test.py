@@ -38,10 +38,10 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, Cort
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.basic.profile import TvbProfile
 import numpy
-import tvb_data
 import tvb_data.surfaceData
 import tvb_data.regionMapping
 import tvb_data.sensors
+import tvb_data.projectionMatrix
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 from cherrypy.test import helper
@@ -360,14 +360,20 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_eeg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        eeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
-        eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_file,
+        eeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
+        eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
+
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
+
+        eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_eeg_62_surface_16k.mat')
+        eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file, eeg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = eeg_sensors.gid
+        self.sess_mock['projection'] = eeg_projections.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = eeg_sensors.gid
 
@@ -390,14 +396,20 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_meg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        meg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
-        meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_file,
+        meg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_brainstorm_276.txt')
+        meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['MEG Sensors'])
+
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
+
+        meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__), 'projection_meg_276_surface_16k.npy')
+        meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file, meg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = meg_sensors.gid
+        self.sess_mock['projection'] = meg_projections.gid
         self.sess_mock['sigma'] = 1.0
         self.sess_mock['sensors'] = meg_sensors.gid
 
@@ -420,14 +432,22 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_seeg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        seeg_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_39.txt')
-        seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_file,
+        seeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_588.txt')
+        seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_sensors_file,
                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
+
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
+
+        seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
+                                        'projection_seeg_588_surface_16k.npy')
+        seeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
+                                                               seeg_sensors.gid, surface.gid)
 
         self.sess_mock['period'] = '0.75'
         self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = seeg_sensors.gid
+        self.sess_mock['projection'] = seeg_projections.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = seeg_sensors.gid
 
