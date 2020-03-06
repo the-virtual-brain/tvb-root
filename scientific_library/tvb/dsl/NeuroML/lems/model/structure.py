@@ -6,9 +6,9 @@ Structural properties of component types.
 @contact: gautham@lisphacker.org
 """
 
-from base.base import LEMSBase
-from base.map import Map
-from base.errors import ModelError
+from ..base.base import LEMSBase
+from ..base.map import Map
+from ..base.errors import ModelError
 
 class With(LEMSBase):
     """

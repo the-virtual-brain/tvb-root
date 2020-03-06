@@ -1,22 +1,35 @@
+# -*- coding: utf-8 -*-
+
+"""
+LEMS2python module implements a DSL code generation using a TVB-specific LEMS-based DSL.
+
+.. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>   
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
+
+"""
+
 from mako.template import Template
 import tvb
 import sys
 import os
-sys.path.append("{}{}".format(os.path.dirname(tvb.__file__),"/dsl/NeuroML/lems"))
-from model.model import Model
+from .NeuroML.lems.model.model import Model
 
-def regTVB_templating(model_filename):
-    """
-    modelfile.py is placed results into tvb/simulator/models
-    for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
-    file_class_name is the name of the producedfile and also the class name
 
-    .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
-    """
+def default_lems_folder():
+    here = os.path.dirname(os.path.abspath(__file__))
+    xmlpath = os.path.join(here, 'NeuroML', 'XMLmodels')
+    return xmlpath
 
-    # file locations
-    fp_xml = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/dsl/NeuroML/XMLmodels/',model_filename.lower(),'.xml')
-    modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
+
+def lems_file(model_name, folder=None):
+    folder = folder or default_lems_folder()
+    return os.path.join(folder, model_name.lower() + '.xml')
+
+
+def load_model(model_filename):
+    "Load model from filename"
+
+    fp_xml = lems_file(model_filename)
 
     # instantiate LEMS lib
     model = Model()
@@ -29,9 +42,17 @@ def regTVB_templating(model_filename):
             svboundaries = 1
             continue
 
-    # start templating
-    print("{}{}".format(os.path.dirname(tvb.__file__),'/dsl/tmpl8_regTVB.py'))
-    template = Template(filename="{}{}".format(os.path.dirname(tvb.__file__),'/dsl/tmpl8_regTVB.py'))
+    return model, svboundaries
+
+
+def default_template():
+    here = os.path.dirname(os.path.abspath(__file__))
+    tmp_filename = os.path.join(here, 'tmpl8_regTVB.py')
+    template = Template(filename=tmp_filename)
+
+
+def render_model(model: Model, svboundaries=0, template=None):
+    template = template or default_template()
     model_str = template.render(
                             dfunname=model_filename,
                             const=model.component_types[model_filename].constants,
@@ -39,6 +60,25 @@ def regTVB_templating(model_filename):
                             svboundaries=svboundaries,
                             exposures=model.component_types[model_filename].exposures
                             )
+    return model_str
+
+
+def regTVB_templating(model_filename):
+    """
+    modelfile.py is placed results into tvb/simulator/models
+    for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
+    file_class_name is the name of the produced file and also the class name
+
+    """
+
+    # file locations
+    modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
+
+    model, svboundaries = load_model(fp_xml)
+
+    # start templating
+    model_str = render_model(model, svboundaries, template=default_template())
+
     # write templated model to file
     with open(modelfile, "w") as f:
         f.writelines(model_str)

@@ -39,6 +39,9 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
+from tvb.dsl.LEMS2python import (
+    load_model as load_lems_model,
+    render_model)
 import numpy
 
 
@@ -242,3 +245,16 @@ class TestModels(BaseTestCase):
 
         model = models.ReducedWongWangExcInh()
         self._validate_initialization(model, 2)
+
+
+
+class TestDSLModels(BaseTestCase):
+
+    def test_load_model(self):
+        model, _ = load_lems_model('EpileptorT')
+        assert model is not None
+
+    def test_render_model(self):
+        model, _ = load_lems_model('EpileptorT')
+        model_str = render_model(model)
+        assert model_str == 'foo'

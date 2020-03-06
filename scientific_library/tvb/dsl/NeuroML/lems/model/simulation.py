@@ -6,9 +6,9 @@ Simulation specification classes.
 @contact: gautham@lisphacker.org
 """
 
-from base.base import LEMSBase
-from base.errors import ModelError
-from base.map import Map
+from ..base.base import LEMSBase
+from ..base.errors import ModelError
+from ..base.map import Map
 
 class Run(LEMSBase):
     """

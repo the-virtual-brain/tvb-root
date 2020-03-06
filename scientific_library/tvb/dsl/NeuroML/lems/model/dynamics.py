@@ -9,11 +9,11 @@ MAvdVlag: altered attributes for state_variables, derived_variables, time_deriva
 conditional_derived_variable.
 """
 
-from base.base import LEMSBase
-from base.map import Map
-from base.errors import ModelError,ParseError
+from ..base.base import LEMSBase
+from ..base.map import Map
+from ..base.errors import ModelError,ParseError
 
-from tvb.dsl.NeuroML.lems.parser.expr import ExprParser
+from ..parser.expr import ExprParser
 
 class StateVariable(LEMSBase):
     """

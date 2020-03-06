@@ -9,19 +9,19 @@ Model storage.
 import os
 from os.path import dirname
 
-from base.base import LEMSBase
-from base.map import Map
-from tvb.dsl.NeuroML.lems.parser.LEMS import LEMSFileParser
-from tvb.dsl.NeuroML.lems.parser.LEMS import LEMSFileParser
-from base.util import merge_maps, merge_lists
+from ..base.base import LEMSBase
+from ..base.map import Map
+from ..parser.LEMS import LEMSFileParser
+from ..parser.LEMS import LEMSFileParser
+from ..base.util import merge_maps, merge_lists
 
-from base.errors import ModelError
-from base.errors import SimBuildError
+from ..base.errors import ModelError
+from ..base.errors import SimBuildError
 
-from model.fundamental import Dimension,Unit,Include
-from model.component import Constant,ComponentType,Component,FatComponent
-from model.simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
-from model.structure import With,EventConnection,ChildInstance,MultiInstantiate
+from .fundamental import Dimension,Unit,Include
+from .component import Constant,ComponentType,Component,FatComponent
+from .simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
+from .structure import With,EventConnection,ChildInstance,MultiInstantiate
 
 import xml.dom.minidom as minidom
 

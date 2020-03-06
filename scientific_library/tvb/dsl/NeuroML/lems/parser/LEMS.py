@@ -11,16 +11,16 @@ conditional_derived_variable and exposures
 
 import xml.etree.ElementTree as xe
 
-from base.base import LEMSBase
+from ..base.base import LEMSBase
 # from lems.model.fundamental import *
-from model.component import *
+from ..model.component import *
 # from lems.model.dynamics import *
 # from lems.model.structure import *
 # from lems.model.simulation import *
 
 # from lems.base.util import make_id
 
-from model.dynamics import *
+from ..model.dynamics import *
 
 from collections import OrderedDict
 

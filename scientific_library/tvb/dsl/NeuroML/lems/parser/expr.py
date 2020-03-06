@@ -8,8 +8,8 @@ Expression parser
 MAvdVlag: added pow(f,l) function for c translations and ** for python power function. Removed H as a known function
 """
 
-from base.base import LEMSBase
-from base.stack import Stack
+from ..base.base import LEMSBase
+from ..base.stack import Stack
 
 known_functions = ['exp', 'log', 'sqrt', 'sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh', 'abs', 'ceil', 'factorial', 'random', 'pow', 'powf', 'powl']
 

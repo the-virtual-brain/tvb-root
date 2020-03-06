@@ -27,8 +27,8 @@
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
-            <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
-            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
+            <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
+            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
             <StateVariable name="V" default="-2.0, 4.0" boundaries=""/>
             <StateVariable name="W" default="-6.0, 6.0" />
 

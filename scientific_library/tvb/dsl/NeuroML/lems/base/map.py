@@ -6,7 +6,7 @@ Map class.
 @contact: gautham@lisphacker.org
 """
 
-from base.base import LEMSBase
+from .base import LEMSBase
 
 from collections import OrderedDict
 

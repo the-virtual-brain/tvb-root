@@ -21,13 +21,13 @@
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
-            <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
-            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
+            <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
+            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
             <StateVariable name="r" default="0., 2.0" boundaries="0.0, inf"/>
             <StateVariable name="V" default="-2.0, 1.5" boundaries=""/>
 
-            <!-- Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula -->
-            <!-- sytax: [name]=[expression] -->
+            <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
+            <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <DerivedVariable name="Coupling_global" expression="alpha * coupling[0]"/>
             <DerivedVariable name="Coupling_local" expression="(1-alpha) * local_coupling * r"/>

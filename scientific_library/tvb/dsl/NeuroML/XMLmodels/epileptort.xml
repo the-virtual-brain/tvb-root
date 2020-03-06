@@ -32,8 +32,8 @@
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
-            <!-- For each state variable a set of bondaries can be added to encompass the boundaries of the dynamic range -->
-            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, ie: "1.0, None" -->
+            <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
+            <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
             <StateVariable name="x1" default="-2., 1." boundaries=""/>
             <StateVariable name="y1" default="-20., 2." boundaries=""/>
             <StateVariable name="z" default="2.0, 5.0" boundaries=""/>
@@ -41,8 +41,8 @@
             <StateVariable name="y2" default="0., 2." boundaries=""/>
             <StateVariable name="g" default="-1, 1." boundaries=""/>
 
-            <!-- Derived variables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula -->
-            <!-- sytax: [name]=[expression] -->
+            <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
+            <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <DerivedVariable name="c_pop1" expression="coupling[0]"/>
             <DerivedVariable name="c_pop2" expression="coupling[1]"/>

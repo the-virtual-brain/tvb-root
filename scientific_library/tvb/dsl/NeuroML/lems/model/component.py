@@ -8,15 +8,15 @@ Parameter, ComponentType and Component class definitions.
 MAvdVlag: altered attributes for constants and exposures. Added type 'function for CUDA generation'
 """
 
-from base.base import LEMSBase
-from base.map import Map
-from base.errors import ModelError,ParseError
+from ..base.base import LEMSBase
+from ..base.map import Map
+from ..base.errors import ModelError,ParseError
 
-from model.dynamics import Dynamics
-from model.structure import Structure
-from model.simulation import Simulation
+from .dynamics import Dynamics
+from .structure import Structure
+from .simulation import Simulation
 
-from tvb.dsl.NeuroML.lems.parser.expr import ExprParser
+from ..parser.expr import ExprParser
 
 class Parameter(LEMSBase):
     """
