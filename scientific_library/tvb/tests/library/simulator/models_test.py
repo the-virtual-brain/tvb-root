@@ -255,6 +255,12 @@ class TestDSLModels(BaseTestCase):
         assert model is not None
 
     def test_render_model(self):
-        model, _ = load_lems_model('EpileptorT')
-        model_str = render_model(model)
-        assert model_str == 'foo'
+        name = 'EpileptorT'
+        model_str = render_model(name)
+        assert '_numba_dfun_EpileptorT' in model_str
+
+    # def test_eval_model_str(self):
+    #     name = 'EpileptorT'
+    #     module = {'__name__': name}
+    #     exec(render_model(name), module)
+    #     assert issubclass(module[name], Model)

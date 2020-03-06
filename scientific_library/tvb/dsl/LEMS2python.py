@@ -49,17 +49,20 @@ def default_template():
     here = os.path.dirname(os.path.abspath(__file__))
     tmp_filename = os.path.join(here, 'tmpl8_regTVB.py')
     template = Template(filename=tmp_filename)
+    return template
 
 
-def render_model(model: Model, svboundaries=0, template=None):
+def render_model(model_name, template=None):
+    model, svboundaries = load_model(model_name)
     template = template or default_template()
     model_str = template.render(
-                            dfunname=model_filename,
-                            const=model.component_types[model_filename].constants,
-                            dynamics=model.component_types[model_filename].dynamics,
+                            dfunname=model_name,
+                            const=model.component_types[model_name].constants,
+                            dynamics=model.component_types[model_name].dynamics,
                             svboundaries=svboundaries,
-                            exposures=model.component_types[model_filename].exposures
+                            exposures=model.component_types[model_name].exposures
                             )
+    # print(model_str)
     return model_str
 
 
@@ -74,10 +77,8 @@ def regTVB_templating(model_filename):
     # file locations
     modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
 
-    model, svboundaries = load_model(fp_xml)
-
     # start templating
-    model_str = render_model(model, svboundaries, template=default_template())
+    model_str = render_model(model_filename, svboundaries, template=default_template())
 
     # write templated model to file
     with open(modelfile, "w") as f:
