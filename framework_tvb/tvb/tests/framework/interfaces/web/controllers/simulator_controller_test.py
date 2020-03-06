@@ -88,9 +88,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        self.sess_mock['_connectivity'] = connectivity.gid
-        self.sess_mock['_conduction_speed'] = "3.0"
-        self.sess_mock['_coupling'] = "Sigmoidal"
+        self.sess_mock['connectivity'] = connectivity.gid
+        self.sess_mock['conduction_speed'] = "3.0"
+        self.sess_mock['coupling'] = "Sigmoidal"
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -101,8 +101,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert isinstance(self.session_stored_simulator.coupling, Sigmoidal), "Coupling was not set correctly."
 
     def test_set_coupling_params(self):
-        self.sess_mock['_a'] = '[0.00390625]'
-        self.sess_mock['_b'] = '[0.0]'
+        self.sess_mock['a'] = '[0.00390625]'
+        self.sess_mock['b'] = '[0.0]'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -116,7 +116,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
-        self.sess_mock['_surface'] = surface.gid
+        self.sess_mock['surface'] = surface.gid
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -146,9 +146,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         self.session_stored_simulator.surface = CortexViewModel()
 
-        self.sess_mock['_region_mapping'] = region_mapping.gid
-        self.sess_mock['_local_connectivity'] = 'explicit-None-value'
-        self.sess_mock['_coupling_strength'] = '[1.0]'
+        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['local_connectivity'] = 'explicit-None-value'
+        self.sess_mock['coupling_strength'] = '[1.0]'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -186,7 +186,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
                                      view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
-        self.sess_mock['_region_stimuli'] = UUID(region_stimulus_index.gid)
+        self.sess_mock['region_stimuli'] = UUID(region_stimulus_index.gid)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -196,7 +196,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Stimuli was not set correctly."
 
     def test_set_model(self):
-        self.sess_mock['_model'] = 'Generic 2d Oscillator'
+        self.sess_mock['model'] = 'Generic 2d Oscillator'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -205,19 +205,19 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert isinstance(self.session_stored_simulator.model, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()), "Model class is incorrect."
 
     def test_set_model_params(self):
-        self.sess_mock['_tau'] = '[1.0]'
-        self.sess_mock['_I'] = '[0.0]'
-        self.sess_mock['_a'] = '[-2.0]'
-        self.sess_mock['_b'] = '[-10.0]'
-        self.sess_mock['_c'] = '[0.0]'
-        self.sess_mock['_d'] = '[0.02]'
-        self.sess_mock['_e'] = '[3.0]'
-        self.sess_mock['_f'] = '[1.0]'
-        self.sess_mock['_g'] = '[0.0]'
-        self.sess_mock['_alpha'] = '[1.0]'
-        self.sess_mock['_beta'] = '[1.0]'
-        self.sess_mock['_gamma'] = '[1.0]'
-        self.sess_mock['_variables_of_interest'] = 'V'
+        self.sess_mock['tau'] = '[1.0]'
+        self.sess_mock['I'] = '[0.0]'
+        self.sess_mock['a'] = '[-2.0]'
+        self.sess_mock['b'] = '[-10.0]'
+        self.sess_mock['c'] = '[0.0]'
+        self.sess_mock['d'] = '[0.02]'
+        self.sess_mock['e'] = '[3.0]'
+        self.sess_mock['f'] = '[1.0]'
+        self.sess_mock['g'] = '[0.0]'
+        self.sess_mock['alpha'] = '[1.0]'
+        self.sess_mock['beta'] = '[1.0]'
+        self.sess_mock['gamma'] = '[1.0]'
+        self.sess_mock['variables_of_interest'] = 'V'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -239,7 +239,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "variables_of_interest has incorrect value."
 
     def test_set_integrator(self):
-        self.sess_mock['_integrator'] = 'Heun'
+        self.sess_mock['integrator'] = 'Heun'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -249,7 +249,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
                           HeunDeterministic), "Integrator was not set correctly."
 
     def test_set_integrator_params(self):
-        self.sess_mock['_dt'] = '0.01220703125'
+        self.sess_mock['dt'] = '0.01220703125'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -258,8 +258,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.integrator.dt == 0.01220703125, 'dt value was not set correctly.'
 
     def test_set_integrator_params_stochastic(self):
-        self.sess_mock['_dt'] = '0.01220703125'
-        self.sess_mock['_noise'] = 'Multiplicative'
+        self.sess_mock['dt'] = '0.01220703125'
+        self.sess_mock['noise'] = 'Multiplicative'
 
         self.session_stored_simulator.integrator = Dopri5Stochastic()
 
@@ -273,9 +273,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert isinstance(self.session_stored_simulator.integrator.noise, Multiplicative), 'Noise class is incorrect.'
 
     def test_set_noise_params(self):
-        self.sess_mock['_ntau'] = '0.0'
-        self.sess_mock['_noise_seed'] = '42'
-        self.sess_mock['_nsig'] = '[1.0]'
+        self.sess_mock['ntau'] = '0.0'
+        self.sess_mock['noise_seed'] = '42'
+        self.sess_mock['nsig'] = '[1.0]'
 
         self.session_stored_simulator.integrator = EulerStochastic()
 
@@ -289,10 +289,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.integrator.noise.nsig == [1.0], "nsig value was not set correctly."
 
     def test_set_noise_equation_params(self):
-        self.sess_mock['_low'] = '0.1'
-        self.sess_mock['_high'] = '1.0'
-        self.sess_mock['_midpoint'] = '1.0'
-        self.sess_mock['_sigma'] = '0.3'
+        self.sess_mock['low'] = '0.1'
+        self.sess_mock['high'] = '1.0'
+        self.sess_mock['midpoint'] = '1.0'
+        self.sess_mock['sigma'] = '0.3'
 
         self.session_stored_simulator.integrator = Dopri5Stochastic()
         self.session_stored_simulator.integrator.noise = Multiplicative()
@@ -312,7 +312,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "sigma value was not set correctly"
 
     def test_set_monitors(self):
-        self.sess_mock['_monitor'] = 'Temporal average'
+        self.sess_mock['monitor'] = 'Temporal average'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -330,8 +330,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Default for variables_of_interest is None"
 
     def test_set_monitor_params(self):
-        self.sess_mock['_period'] = '0.8'
-        self.sess_mock['_variables_of_interest'] = 'anything'
+        self.sess_mock['period'] = '0.8'
+        self.sess_mock['variables_of_interest'] = 'anything'
 
         self.session_stored_simulator.monitors = [SubSample()]
 
@@ -364,12 +364,12 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_file,
                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
 
-        self.sess_mock['_period'] = '0.75'
-        self.sess_mock['_variables_of_interest'] = '[0, 1]'
-        self.sess_mock['_region_mapping'] = region_mapping.gid
-        self.sess_mock['_projection'] = eeg_sensors.gid
-        self.sess_mock['_sigma'] = "1.0"
-        self.sess_mock['_sensors'] = eeg_sensors.gid
+        self.sess_mock['period'] = '0.75'
+        self.sess_mock['variables_of_interest'] = '[0, 1]'
+        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['projection'] = eeg_sensors.gid
+        self.sess_mock['sigma'] = "1.0"
+        self.sess_mock['sensors'] = eeg_sensors.gid
 
         self.session_stored_simulator.monitors = [EEG()]
 
@@ -394,12 +394,12 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_file,
                                                  SensorsImporterModel.OPTIONS['MEG Sensors'])
 
-        self.sess_mock['_period'] = '0.75'
-        self.sess_mock['_variables_of_interest'] = '[0, 1]'
-        self.sess_mock['_region_mapping'] = region_mapping.gid
-        self.sess_mock['_projection'] = meg_sensors.gid
-        self.sess_mock['_sigma'] = 1.0
-        self.sess_mock['_sensors'] = meg_sensors.gid
+        self.sess_mock['period'] = '0.75'
+        self.sess_mock['variables_of_interest'] = '[0, 1]'
+        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['projection'] = meg_sensors.gid
+        self.sess_mock['sigma'] = 1.0
+        self.sess_mock['sensors'] = meg_sensors.gid
 
         self.session_stored_simulator.monitors = [MEG()]
 
@@ -424,12 +424,12 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_file,
                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
 
-        self.sess_mock['_period'] = '0.75'
-        self.sess_mock['_variables_of_interest'] = '[0, 1]'
-        self.sess_mock['_region_mapping'] = region_mapping.gid
-        self.sess_mock['_projection'] = seeg_sensors.gid
-        self.sess_mock['_sigma'] = "1.0"
-        self.sess_mock['_sensors'] = seeg_sensors.gid
+        self.sess_mock['period'] = '0.75'
+        self.sess_mock['variables_of_interest'] = '[0, 1]'
+        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['projection'] = seeg_sensors.gid
+        self.sess_mock['sigma'] = "1.0"
+        self.sess_mock['sensors'] = seeg_sensors.gid
 
         self.session_stored_simulator.monitors = [iEEG()]
 
@@ -448,9 +448,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Projection wasn't stored correctly."
 
     def test_set_bold_monitor_params(self):
-        self.sess_mock['_period'] = '2000.0'
-        self.sess_mock['_variables_of_interest'] = ''
-        self.sess_mock['_equation'] = 'HRF kernel: Volterra Kernel'
+        self.sess_mock['period'] = '2000.0'
+        self.sess_mock['variables_of_interest'] = ''
+        self.sess_mock['equation'] = 'HRF kernel: Volterra Kernel'
 
         self.session_stored_simulator.monitors = [Bold()]
 
@@ -463,10 +463,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Variables of interest should have not been added."
 
     def test_set_monitor_equation(self):
-        self.sess_mock['_tau_s'] = '0.8'
-        self.sess_mock['_tau_f'] = '0.4'
-        self.sess_mock['_k_1'] = '5.6'
-        self.sess_mock['_V_0'] = '0.02'
+        self.sess_mock['tau_s'] = '0.8'
+        self.sess_mock['tau_f'] = '0.4'
+        self.sess_mock['k_1'] = '5.6'
+        self.sess_mock['V_0'] = '0.02'
 
         self.session_stored_simulator.monitors = [Bold()]
         self.session_stored_simulator.monitors[0].equation = FirstOrderVolterra()
@@ -487,7 +487,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_simulation_length(self):
         burst_config = BurstConfiguration(self.test_project.id)
 
-        self.sess_mock['_simulation_length'] = '1000.0'
+        self.sess_mock['simulation_length'] = '1000.0'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -499,7 +499,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_simulation_length_with_burst_config_name(self):
         burst_config = BurstConfiguration(self.test_project.id)
         burst_config.name = "Test Burst Config"
-        self.sess_mock['_simulation_length'] = '1000.0'
+        self.sess_mock['simulation_length'] = '1000.0'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -528,9 +528,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        self.sess_mock['_connectivity'] = connectivity.gid
-        self.sess_mock['_conduction_speed'] = "3.0"
-        self.sess_mock['_coupling'] = "Sigmoidal"
+        self.sess_mock['connectivity'] = connectivity.gid
+        self.sess_mock['conduction_speed'] = "3.0"
+        self.sess_mock['coupling'] = "Sigmoidal"
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -627,9 +627,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         burst = dao.get_bursts_for_project(self.test_project.id)
 
         self.sess_mock['burst_id'] = str(burst[0].id)
-        self.sess_mock['_connectivity'] = connectivity.gid
-        self.sess_mock['_conduction_speed'] = "3.0"
-        self.sess_mock['_coupling'] = "Sigmoidal"
+        self.sess_mock['connectivity'] = connectivity.gid
+        self.sess_mock['conduction_speed'] = "3.0"
+        self.sess_mock['coupling'] = "Sigmoidal"
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -671,9 +671,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         burst = dao.get_bursts_for_project(self.test_project.id)
 
         self.sess_mock['burst_id'] = str(burst[0].id)
-        self.sess_mock['_connectivity'] = connectivity.gid
-        self.sess_mock['_conduction_speed'] = "3.0"
-        self.sess_mock['_coupling'] = "Sigmoidal"
+        self.sess_mock['connectivity'] = connectivity.gid
+        self.sess_mock['conduction_speed'] = "3.0"
+        self.sess_mock['coupling'] = "Sigmoidal"
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -699,7 +699,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert last_loaded_form_url == '/burst/setup_pse', "Incorrect last form URL!"
 
     def test_launch_simulation_with_default_parameters(self):
-        self.sess_mock['_input-simulation-name-id'] = 'HappySimulation'
+        self.sess_mock['input-simulation-name-id'] = 'HappySimulation'
         launch_mode = 'new'
 
         burst_config = BurstConfiguration(self.test_project.id)

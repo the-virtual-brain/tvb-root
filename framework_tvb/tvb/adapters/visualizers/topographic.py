@@ -213,7 +213,7 @@ class TopographicViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_data_0'
+        return 'data_0'
 
     @staticmethod
     def get_filters():

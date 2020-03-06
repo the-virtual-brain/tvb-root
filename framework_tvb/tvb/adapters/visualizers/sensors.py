@@ -75,7 +75,7 @@ def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapt
     """
 
     if eeg_cap:
-        sensor_locations = URLGenerator.build_url(sensors.gid, 'sensors_to_surface', adapter_id=adapter_id,
+        sensor_locations = URLGenerator.build_url(adapter_id, 'sensors_to_surface', sensors.gid,
                                                   parameter='surface_to_map_gid=' + eeg_cap.gid)
         sensor_no = sensors.number_of_sensors
         sensor_labels = URLGenerator.build_h5_url(sensors.gid, 'get_labels')
@@ -135,7 +135,7 @@ class SensorsViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_sensors'
+        return 'sensors'
 
     @staticmethod
     def get_filters():

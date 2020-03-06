@@ -36,9 +36,9 @@
 """
 import json
 import numpy
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import ComplexCoherenceSpectrum
@@ -69,7 +69,7 @@ class ImaginaryCoherenceDisplayForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_input_data'
+        return 'input_data'
 
     @staticmethod
     def get_filters():
@@ -123,7 +123,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
                       spectrum_list=input_data_h5_class.spectrum_types,
                       xscale="Linear",
                       spectrum=input_data_h5_class.spectrum_types[0],
-                      url_base=self.build_h5_url(view_model.input_data.hex, 'get_spectrum_data', parameter=""),
+                      url_base=URLGenerator.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
                       # TODO investigate the static xmin and xmax values
                       xmin=0.02,
                       xmax=0.8)

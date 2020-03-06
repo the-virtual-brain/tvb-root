@@ -63,24 +63,24 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_bold(self):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.mat_timeseries_importer', 'RegionTimeSeriesImporter')
 
         form = RegionMatTimeSeriesImporterForm()
-        form.fill_from_post({ '_data_file': Part(self.bold_path, HeaderMap({}), ''),
-                              '_dataset_name': 'QL_20120824_DK_BOLD_timecourse',
-                              '_structure_path': '',
-                              '_slice': '',
-                              '_start_time': '0',
-                              '_Data_Subject': 'QL',
-                              '_datatype': self.connectivity
+        form.fill_from_post({ 'data_file': Part(self.bold_path, HeaderMap({}), ''),
+                              'dataset_name': 'QL_20120824_DK_BOLD_timecourse',
+                              'structure_path': '',
+                              'slice': '',
+                              'start_time': '0',
+                              'Data_Subject': 'QL',
+                              'datatype': self.connectivity
                             })
         form.data_file.data = self.bold_path
         view_model = form.get_view_model()()
         form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
+        # Launch import Operation
         FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
         tsr = TestFactory.get_entity(self.test_project, TimeSeriesRegionIndex)

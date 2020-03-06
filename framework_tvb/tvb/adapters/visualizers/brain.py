@@ -84,7 +84,7 @@ class BrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():
@@ -135,7 +135,8 @@ class BrainViewer(ABCSurfaceDisplayer):
         time_series_h5.close()
 
         if self.surface_h5 and self.region_map_gid:
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_gid,
+            surface_gid = self.surface_h5.gid.load().hex
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, self.region_map_gid,
                                                                              self.stored_adapter.id)
         else:
             boundary_url = ''
@@ -253,7 +254,8 @@ class BrainViewer(ABCSurfaceDisplayer):
         state_variables = time_series.get_labels_for_dimension(1)
 
         if self.surface_h5 and self.region_map_gid:
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(self.surface_h5, self.region_map_gid,
+            surface_gid = self.surface_h5.gid.load().hex
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, self.region_map_gid,
                                                                              self.stored_adapter.id)
         else:
             boundary_url = ''
@@ -398,7 +400,7 @@ class DualBrainViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():

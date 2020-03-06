@@ -90,7 +90,7 @@ class ICAForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype'
+        return 'datatype'
 
 
 class ICA(MappedArraySVGVisualizerMixin):

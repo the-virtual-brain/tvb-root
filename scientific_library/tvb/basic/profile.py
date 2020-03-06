@@ -65,7 +65,7 @@ class TvbProfile(object):
 
     CURRENT_PROFILE_NAME = None
 
-    current = BaseSettingsProfile(False)
+    current = BaseSettingsProfile()
     env = Environment()
 
     @classmethod

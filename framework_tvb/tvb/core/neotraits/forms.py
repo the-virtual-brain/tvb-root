@@ -52,7 +52,10 @@ jinja_env = None
 
 
 def prepare_prefixed_name_for_field(prefix, name):
-    return '{}_{}'.format(prefix, name)
+    if prefix != "":
+        return '{}_{}'.format(prefix, name)
+    else:
+        return name
 
 
 class Field(object):

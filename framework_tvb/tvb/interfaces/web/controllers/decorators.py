@@ -57,6 +57,7 @@ env.filters['type'] = type
 env.filters['xrange'] = range
 
 # Inject Jinja environment in classes using it
+# TODO: maybe get rod of this backwards dependency?
 tvb.core.neotraits.forms.jinja_env = env
 
 # some of these decorators could be cherrypy tools

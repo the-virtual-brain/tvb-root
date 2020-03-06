@@ -647,7 +647,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            if data['_monitor'] == 'Temporal average':
+            if data['monitor'] == 'Temporal average':
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
@@ -712,7 +712,7 @@ class SimulatorController(BurstBaseController):
 
         if isinstance(session_stored_simulator.monitors[0], Projection) and cherrypy.request.method == 'POST':
             # load region mapping
-            region_mapping_index = ABCAdapter.load_entity_by_gid(data['_region_mapping'])
+            region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
             region_mapping = h5.load_from_index(region_mapping_index)
             session_stored_simulator.monitors[0].region_mapping = region_mapping
 
