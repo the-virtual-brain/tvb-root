@@ -235,4 +235,30 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         assert initial_gain_shape == reconfig_gain_shape
 
     def test_gain_order(self):
-        assert True
+        conn = connectivity.Connectivity()
+        conn.generate_surrogate_connectivity(4)
+        conn.centres /= 100.0
+        conn.cortical = numpy.array([1, 0, 1, 1], numpy.bool)
+        seeg_sensors = SensorsInternal(
+            locations=conn.centres,
+            labels=conn.region_labels)
+        region_mapping = RegionMapping(
+            array_data=numpy.r_[:conn.number_of_regions],
+            connectivity=conn)
+        seeg_monitor = monitors.iEEG(
+            sensors=seeg_sensors,
+            region_mapping=region_mapping,
+            )
+        sim = simulator.Simulator(
+            connectivity=conn,
+            monitors=[seeg_monitor],
+        )
+        sim.configure()
+        # NB: each sensor above is on one node, in same order
+        # they must create NaN values in gain matrix
+        # we zero NaNs
+        # order of zeros by tell us order of node-sensor pairs
+        zero_mask = seeg_monitor.gain == 0.0
+        row, col = numpy.where(zero_mask)
+        assert (row == col).all()
+
