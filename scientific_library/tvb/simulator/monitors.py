@@ -564,7 +564,7 @@ class Projection(Monitor):
             self.log.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
-        nan_mask = numpy.isfinite(self.gain).all(axis=1)
+        nan_mask = numpy.isfinite(self.gain)
         self.gain[~nan_mask] = 0.0
         self.log.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
