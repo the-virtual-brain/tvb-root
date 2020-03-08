@@ -71,7 +71,11 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         self.simulator_controller = SimulatorController()
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project)
+        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+
         self.session_stored_simulator = SimulatorAdapterModel()
+        self.session_stored_simulator.connectivity = UUID(connectivity.gid)
 
         self.sess_mock = RamSession()
         self.sess_mock[KEY_USER] = self.test_user

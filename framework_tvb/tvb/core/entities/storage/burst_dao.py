@@ -91,6 +91,7 @@ class BurstDAO(RootDAO):
         """Get the BurstConfiguration entity with the given id"""
         try:
             burst = self.session.query(BurstConfiguration).filter_by(id=burst_id).one()
+            burst.project
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             burst = None
