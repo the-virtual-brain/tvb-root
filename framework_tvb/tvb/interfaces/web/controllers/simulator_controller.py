@@ -29,11 +29,8 @@
 #
 import threading
 from cherrypy.lib.static import serve_file
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.core.services.simulator_serializer import SimulatorSerializer
-from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
-from tvb.simulator.noise import Additive
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
@@ -43,20 +40,22 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
-from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
+from tvb.simulator.integrators import IntegratorStochastic
+from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
+from tvb.simulator.noise import Additive
 
 
 class SimulatorWizzardURLs(object):
@@ -962,17 +961,11 @@ class SimulatorController(BurstBaseController):
         try:
             burst_config = dao.get_burst_by_id(burst_config_id)
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
-
-            simulator_index = dao.get_generic_entity(SimulatorIndex, burst_config.id, 'fk_parent_burst')[0]
-            simulator_gid = simulator_index.gid
-
             project = common.get_current_project()
-            storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
+            storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation_id))
+            simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
 
-            simulator = SimulatorSerializer().deserialize_simulator(simulator_gid, storage_path)
-
-            session_stored_simulator = simulator
-            common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
+            common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
             common.add2session(common.KEY_IS_SIMULATOR_LOAD, True)
             common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
             common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SETUP_PSE_URL)
@@ -982,8 +975,8 @@ class SimulatorController(BurstBaseController):
                                                               is_simulation_readonly_load=True, is_first_fragment=True)
             return rendering_rules.to_dict()
         except Exception:
-            ### Most probably Burst was removed. Delete it from session, so that client
-            ### has a good chance to get a good response on refresh
+            # Most probably Burst was removed. Delete it from session, so that client
+            # has a good chance to get a good response on refresh
             self.logger.exception("Error loading burst")
             common.remove_from_session(common.KEY_BURST_CONFIG)
             raise
@@ -995,17 +988,13 @@ class SimulatorController(BurstBaseController):
     def copy_simulator_configuration(self, burst_config_id):
         burst_config = dao.get_burst_by_id(burst_config_id)
         common.add2session(common.KEY_BURST_CONFIG, burst_config)
-
-        simulator_index = dao.get_generic_entity(SimulatorIndex, burst_config.id, 'fk_parent_burst')[0]
-        simulator_gid = simulator_index.gid
-
         project = common.get_current_project()
-        storage_path = self.files_helper.get_project_folder(project, str(simulator_index.fk_from_operation))
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation_id))
+        simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
+        simulator.gid = uuid.uuid4()
+        # Generate a new GUID, as it needs to be unique
 
-        simulator = SimulatorSerializer().deserialize_simulator(simulator_gid, storage_path)
-
-        session_stored_simulator = simulator
-        common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
+        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
         self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)

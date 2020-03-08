@@ -86,7 +86,7 @@ class TestSimulationResource(TransactionalTestCase):
         simulator = Simulator()
         simulator.connectivity = connectivity_factory()
         sim_serializer = SimulatorSerializer()
-        sim_serializer.serialize_simulator(simulator, simulator.gid.hex, None, sim_dir)
+        sim_serializer.serialize_simulator(simulator, None, sim_dir)
 
         zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
         FilesHelper().zip_folder(zip_filename, sim_dir)

@@ -48,12 +48,10 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
@@ -605,20 +603,15 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert dao.get_bursts_for_project(self.test_project.id)[0].name == new_name, "Name wasn't actually changed."
 
     def test_export(self):
-        op = TestFactory.create_operation()
-        simulator_index = SimulatorIndex()
-        simulator_index.fill_from_has_traits(self.session_stored_simulator)
-
-        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
+        op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
+        burst_config = BurstConfiguration(self.test_project.id)
+        burst_config.fk_simulation_id = op.id
+        burst_config.simulator_gid = self.session_stored_simulator.gid.hex
         burst_config = dao.store_entity(burst_config)
 
-        simulator_index.fk_from_operation = op.id
-        simulator_index = dao.store_entity(simulator_index)
-        simulator_index.fk_parent_burst = burst_config.id
-        simulator_index = dao.store_entity(simulator_index)
-
-        simulator_h5 = h5.path_for_stored_index(simulator_index)
-        with SimulatorH5(simulator_h5) as h5_file:
+        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        h5_path = h5.path_for(storage_path, SimulatorH5, self.session_stored_simulator.gid)
+        with SimulatorH5(h5_path) as h5_file:
             h5_file.store(self.session_stored_simulator)
 
         burst = dao.get_bursts_for_project(self.test_project.id)
@@ -636,20 +629,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        simulator_index = SimulatorIndex()
-        simulator_index.fill_from_has_traits(self.session_stored_simulator)
-
-        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
+        op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
+        burst_config = BurstConfiguration(self.test_project.id)
+        burst_config.fk_simulation_id = op.id
+        burst_config.simulator_gid = self.session_stored_simulator.gid.hex
         burst_config = dao.store_entity(burst_config)
 
-        simulator_index.fk_from_operation = burst_config.id
-        simulator_index = dao.store_entity(simulator_index)
-        simulator_index.fk_parent_burst = burst_config.id
-        simulator_index = dao.store_entity(simulator_index)
-
-        burst = dao.get_bursts_for_project(self.test_project.id)
-
-        self.sess_mock['burst_id'] = str(burst[0].id)
+        self.sess_mock['burst_id'] = str(burst_config.id)
         self.sess_mock['connectivity'] = connectivity.gid
         self.sess_mock['conduction_speed'] = "3.0"
         self.sess_mock['coupling'] = "Sigmoidal"
@@ -659,19 +645,14 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
-        simulator_service = SimulatorService()
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None,
-                                                  storage_path)
+        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, None, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            self.simulator_controller.copy_simulator_configuration(str(burst[0].id))
+            self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
             is_simulator_load = common.get_from_session(KEY_IS_SIMULATOR_LOAD)
             is_simulator_copy = common.get_from_session(KEY_IS_SIMULATOR_COPY)
 
-        database_simulator = dao.get_generic_entity(SimulatorIndex, burst_config.id, 'fk_parent_burst')[0]
-
-        assert simulator_index.gid == database_simulator.gid, "Simulator was not added correctly!"
         assert not is_simulator_load, "Simulator Load Flag should be True!"
         assert is_simulator_copy, "Simulator Copy Flag should be False!"
 
@@ -680,20 +661,13 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        simulator_index = SimulatorIndex()
-        simulator_index.fill_from_has_traits(self.session_stored_simulator)
-
-        burst_config = BurstConfiguration(self.test_project.id, simulator_index.id)
+        op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
+        burst_config = BurstConfiguration(self.test_project.id)
+        burst_config.fk_simulation_id = op.id
+        burst_config.simulator_gid = self.session_stored_simulator.gid.hex
         burst_config = dao.store_entity(burst_config)
 
-        simulator_index.fk_from_operation = burst_config.id
-        simulator_index = dao.store_entity(simulator_index)
-        simulator_index.fk_parent_burst = burst_config.id
-        simulator_index = dao.store_entity(simulator_index)
-
-        burst = dao.get_bursts_for_project(self.test_project.id)
-
-        self.sess_mock['burst_id'] = str(burst[0].id)
+        self.sess_mock['burst_id'] = str(burst_config.id)
         self.sess_mock['connectivity'] = connectivity.gid
         self.sess_mock['conduction_speed'] = "3.0"
         self.sess_mock['coupling'] = "Sigmoidal"
@@ -703,20 +677,15 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(simulator_index.fk_from_operation))
-        simulator_service = SimulatorService()
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, simulator_index.gid, None,
-                                                  storage_path)
+        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, None, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            self.simulator_controller.load_burst_read_only(str(burst[0].id))
+            self.simulator_controller.load_burst_read_only(str(burst_config.id))
             is_simulator_load = common.get_from_session(KEY_IS_SIMULATOR_LOAD)
             is_simulator_copy = common.get_from_session(KEY_IS_SIMULATOR_COPY)
             last_loaded_form_url = common.get_from_session(KEY_LAST_LOADED_FORM_URL)
 
-        database_simulator = dao.get_generic_entity(SimulatorIndex, burst_config.id, 'fk_parent_burst')[0]
-
-        assert simulator_index.gid == database_simulator.gid, "Simulator was not added correctly!"
         assert is_simulator_load, "Simulator Load Flag should be True!"
         assert not is_simulator_copy, "Simulator Copy Flag should be False!"
         assert last_loaded_form_url == '/burst/setup_pse', "Incorrect last form URL!"

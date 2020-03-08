@@ -39,26 +39,18 @@ from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.simulator.monitors import Projection, EEG, MEG, iEEG
 
 
 class SimulatorSerializer(object):
 
     @staticmethod
-    def serialize_simulator(simulator, simulator_gid, simulation_state_gid, storage_path):
-        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
-
+    def serialize_simulator(simulator, simulation_state_gid, storage_path):
+        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator.gid)
         with SimulatorH5(simulator_path) as simulator_h5:
-            simulator_h5.gid.store(uuid.UUID(simulator_gid))
             simulator_h5.store(simulator)
-            simulator_h5.connectivity.store(simulator.connectivity)
-            if simulator.stimulus:
-                simulator_h5.stimulus.store(simulator.stimulus)
             if simulation_state_gid:
                 simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
-
-        return simulator_gid
 
     @staticmethod
     def deserialize_simulator(simulator_gid, storage_path):
