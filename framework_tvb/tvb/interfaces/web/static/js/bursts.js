@@ -1121,8 +1121,8 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const titleSimulation = $("#title-simulation");
     const titlePortlets = $("#title-visualizers");
 
-    if (addPrefix && burstName.indexOf('Copy of ') < 0) {
-        burstName = "Copy of " + burstName;
+    if (addPrefix && burstName.indexOf('Copy_') < 0) {
+        burstName = "Copy_" + burstName;
     }
 
     titleSimulation.empty();

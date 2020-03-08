@@ -781,7 +781,7 @@ class SimulatorController(BurstBaseController):
                                                           is_launch_fragment=True)
         if session_burst_config.name:
             burst_name = session_burst_config.name
-            copy_prefix = 'Copy of '
+            copy_prefix = 'Copy_'
             if is_simulator_copy and burst_name.find(copy_prefix) < 0:
                 burst_name = copy_prefix + burst_name
             next_form.simulation_name.data = burst_name
