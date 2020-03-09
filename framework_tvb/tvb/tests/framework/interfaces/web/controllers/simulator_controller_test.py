@@ -509,30 +509,6 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert self.session_stored_simulator.monitors[0].equation.parameters[
                    'V_0'] == 0.02, "V_0 value was not set correctly."
 
-    def test_set_simulation_length(self):
-        burst_config = BurstConfiguration(self.test_project.id)
-
-        self.sess_mock['simulation_length'] = '1000.0'
-
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
-
-        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
-
-    def test_set_simulation_length_with_burst_config_name(self):
-        burst_config = BurstConfiguration(self.test_project.id)
-        burst_config.name = "Test Burst Config"
-        self.sess_mock['simulation_length'] = '1000.0'
-
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
-
-        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
-
     def test_load_burst_history(self):
         burst_config1 = BurstConfiguration(self.test_project.id)
         burst_config2 = BurstConfiguration(self.test_project.id)
