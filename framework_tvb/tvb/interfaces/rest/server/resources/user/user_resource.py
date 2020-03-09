@@ -27,16 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import formencode
 import flask
+import formencode
 from flask_restplus import Resource
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons.dtos import ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import FormKeyInput
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.security.authorization import get_current_user, AuthorizationManager
+from tvb.interfaces.rest.server.request_helper import get_current_user
 
 USERS_PAGE_SIZE = 1000
 

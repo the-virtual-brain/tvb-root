@@ -1,0 +1,38 @@
+<script type="text/javascript" src="/static/js/keycloak.js"></script>
+<script>
+    function invalidate_session() {
+        doAjaxCall({
+            async: false,
+            type: 'GET',
+            url: '/user/logout'
+        });
+    }
+
+    let keycloak_initialized = false;
+    let keycloak_error = false;
+
+    const keycloak = new Keycloak('/user/keycloak_web_config');
+    keycloak.onAuthRefreshError = invalidate_session;
+    keycloak.onAuthError = invalidate_session;
+
+    keycloak.init({
+        onLoad: 'check-sso',
+        silentCheckSsoRedirectUri: window.location.origin + '/user/check_sso',
+        promiseType: 'native'
+    }).then(() => {
+        keycloak_initialized = true
+    }).catch(function () {
+        keycloak_error = true;
+    });
+
+    function keycloak_logout() {
+        keycloak.logout({
+            redirectUri: window.location.origin + '/user/logout'
+        });
+        return false;
+    }
+
+    function keycloak_account_management() {
+        keycloak.accountManagement()
+    }
+</script>

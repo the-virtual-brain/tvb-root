@@ -43,7 +43,7 @@ from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.security.authorization import get_current_user
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.simulator.simulator import Simulator
 
 

@@ -36,6 +36,7 @@ from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.commons.strings import RestNamespace, RestLink, LinkPlaceholder, Strings
 from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
@@ -48,7 +49,6 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetOpe
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource
 from tvb.interfaces.rest.server.rest_api import RestApi
-from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 

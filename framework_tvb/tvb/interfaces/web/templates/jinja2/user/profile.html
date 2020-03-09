@@ -9,19 +9,26 @@
 			}
 		});
 	</script>
-
+	{% if keycloakConfigWebFile is not defined%}
     <form method="post">
+	{% endif %}
 	    <aside class="header-component toolbar can-extend auto-extends">
 	    	<h3>User Profile</h3>
 		  <div class="extension">
 		   <div class="dropdown-pane">
 	        <ul>
-	            <li class="action-dismiss"><button type="submit" name="logout" value="logout" class="action action-cancel" tabindex="50">Logout</button></li>
+				{% if keycloakConfigWebFile is defined%}
+					<li class="action-dismiss"><button onclick="keycloak_logout()" class="action action-cancel" tabindex="50">Logout</button></li>
+				{% else %}
+		            <li class="action-dismiss"><button type="submit" name="logout" value="logout" class="action action-cancel" tabindex="50">Logout</button></li>
+				{% endif %}
 	        </ul>
 	       </div>
 	      </div>
 	    </aside>
+	{% if keycloakConfigWebFile is not defined%}
     </form>
+	{% endif %}
 
     <section class="profile">
         <h2><mark>User</mark> details</h2>
@@ -33,13 +40,15 @@
             	<dt>Username</dt>
             	<dd>{{ user.username }}</dd>
 
+				{% if user.role %}
             	<dt>Role</dt>
             	<dd tabindex='3' onkeypress="redirectToHrefChild(this)">
             		{{ user.role | lower }}
-					{% if user.is_administrator() %}
+					{% if keycloakConfigWebFile is not defined and user.is_administrator() %}
                 		<a href="/user/usermanagement" tabindex="-1"><u>manage other users</u></a>
 					{% endif %}
             	</dd>
+				{% endif %}
 
 				{% if user.is_administrator() %}
             		<dt>Settings</dt>
@@ -58,6 +67,7 @@
             		{{ user_used_disk_human }}
            	 	</dd>
 
+				{% if keycloakConfigWebFile is not defined%}
             	<dt>E-Mail</dt>
             	<dd class='shouldHide' id='email_display'>
             		<div id='email_label'>{{ user.email }}</div>
@@ -112,7 +122,12 @@
             	<dd tabindex='10' onkeypress="redirectToHrefChild(this)">
                	 <a href="/user/switch_online_help" tabindex="-1"><u>{{ 'deactivate' if user.is_online_help_active() else 'activate' }}</u></a>
             	</dd>
-
+				{% else %}
+				<dt>Account</dt>
+            	<dd>
+            		<a href='#' onclick='keycloak_account_management()' tabindex="-1"><u>Account management console</u></a>
+           	 	</dd>
+				{% endif %}
         	</dl>
         </form>
     </section>
