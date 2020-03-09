@@ -648,7 +648,7 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method == 'POST':
             if data['monitor'] == 'Temporal average':
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
             is_simulator_copy = False
@@ -750,7 +750,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL)
+            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL)
             is_simulator_copy = False
             form = get_form_for_equation(type(monitor.equation))()
             form.fill_from_post(data)
