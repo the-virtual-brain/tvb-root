@@ -48,13 +48,13 @@ import tvb.interfaces.web
 from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list
 from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT, \
     KEY_AUTH_TOKEN
 from tvb.core.utils import format_bytes_human, hash_password
-from tvb.interfaces.rest.server.security.authorization import AuthorizationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
@@ -207,12 +207,10 @@ class UserController(BaseController):
         self.user_service.edit_user(user)
         raise cherrypy.HTTPRedirect("/user/profile")
 
-
     @expose_json
     def get_viewer_color_scheme(self):
         user = common.get_logged_user()
         return user.get_viewers_color_scheme()
-
 
     @expose_json
     def set_viewer_color_scheme(self, color_scheme_name):
@@ -220,13 +218,11 @@ class UserController(BaseController):
         user.set_viewers_color_scheme(color_scheme_name)
         self.user_service.edit_user(user)
 
-
     @expose_json
     def get_color_schemes_json(self):
         cherrypy.response.headers['Cache-Control'] = 'max-age=86400'  # cache for a day
         pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'coloring', 'color_schemes.png')
         return color_texture_to_list(pth, 256, 8)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -255,12 +251,11 @@ class UserController(BaseController):
                 redirect = False
 
         if redirect:
-            #Redirect to login page, with some success message to display
+            # Redirect to login page, with some success message to display
             raise cherrypy.HTTPRedirect('/user')
         else:
-            #Stay on the same page
+            # Stay on the same page
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -295,7 +290,6 @@ class UserController(BaseController):
             raise cherrypy.HTTPRedirect('/user/usermanagement')
         else:
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -333,7 +327,6 @@ class UserController(BaseController):
                                       data={})
         return self.fill_default_attributes(template_specification)
 
-
     @cherrypy.expose
     @handle_error(redirect=True)
     @using_template('user/base_user')
@@ -361,12 +354,11 @@ class UserController(BaseController):
                 common.set_error_message(excep1.message)
                 redirect = False
         if redirect:
-            #Redirect to login page, with some success message to display
+            # Redirect to login page, with some success message to display
             raise cherrypy.HTTPRedirect('/user')
         else:
-            #Stay on the same page
+            # Stay on the same page
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -379,7 +371,6 @@ class UserController(BaseController):
             time.sleep(2)
 
         return dict(message=FilesUpdateManager.MESSAGE, status=FilesUpdateManager.STATUS)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -397,7 +388,6 @@ class UserController(BaseController):
             common.set_info_message("User Validated successfully and notification email sent!")
         raise cherrypy.HTTPRedirect('/tvb')
 
-
     def _create_user(self, email_msg=None, validated=False, **data):
         """
         Just create a user given the data input. Do form validation beforehand.
@@ -407,7 +397,6 @@ class UserController(BaseController):
         data[KEY_PASSWORD] = hash_password(data[KEY_PASSWORD])
         data['password2'] = hash_password(data['password2'])
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
-
 
     def fill_default_attributes(self, template_dictionary):
         """
@@ -421,7 +410,6 @@ class UserController(BaseController):
         template_dictionary[KEY_STORAGE_IN_UPDATE] = (TvbProfile.current.version.DATA_CHECKED_TO_VERSION <
                                                       TvbProfile.current.version.DATA_VERSION)
         return template_dictionary
-
 
     def _populate_version(self, template_dictionary):
         """
@@ -444,7 +432,6 @@ class UserController(BaseController):
         template_dictionary[KEY_SERVER_VERSION] = self.version_info
         template_dictionary[KEY_CURRENT_VERSION_FULL] = TvbProfile.current.version.CURRENT_VERSION
         return template_dictionary
-
 
 
 class LoginForm(formencode.Schema):
@@ -476,7 +463,6 @@ class UniqueUsername(formencode.FancyValidator):
         return value
 
 
-
 class RegisterForm(formencode.Schema):
     """
     Validate Register Form
@@ -490,14 +476,12 @@ class RegisterForm(formencode.Schema):
     chained_validators = [validators.FieldsMatch('password', 'password2')]
 
 
-
 class RecoveryForm(formencode.Schema):
     """
     Validate Recover Password Form
     """
     email = validators.Email(not_empty=True)
     username = validators.String(not_empty=False)
-
 
 
 class EditUserForm(formencode.Schema):
@@ -510,5 +494,3 @@ class EditUserForm(formencode.Schema):
     email = validators.Email(if_missing=None)
     chained_validators = [validators.FieldsMatch('password', 'password2'),
                           validators.RequireIfPresent('password', present='old_password')]
-
-
