@@ -775,6 +775,7 @@ class SimulatorController(BurstBaseController):
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
 
         if cherrypy.request.method == 'POST':
+            common.add2session(common.KEY_SIMULATION_NAME, data[common.KEY_SIMULATION_NAME])
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
             is_simulator_copy = False
 
@@ -819,13 +820,8 @@ class SimulatorController(BurstBaseController):
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         burst_config.start_time = datetime.now()
-        # if burst_name != 'none_undefined':
-        #     burst_config.name = burst_name
-
-        # TODO: branch simulation name is different
-        if burst_config.name is None:
-            new_id = dao.get_max_burst_id() + 1
-            burst_config.name = 'simulation_' + str(new_id)
+        simulation_name = common.get_from_session(common.KEY_SIMULATION_NAME)
+        burst_config.name = simulation_name
 
         operation_group = OperationGroup(project.id, ranges=[range_param1.to_json(), range_param2.to_json()])
         operation_group = dao.store_entity(operation_group)

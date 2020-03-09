@@ -89,6 +89,7 @@ KEY_CACHED_SIMULATOR_TREE = 'simulator_input_tree'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
+KEY_SIMULATION_NAME = "input_simulation_name_id"
 
 # Overlay specific keys
 KEY_OVERLAY_TITLE = "overlay_title"

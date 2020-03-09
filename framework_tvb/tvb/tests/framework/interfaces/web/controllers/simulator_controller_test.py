@@ -671,7 +671,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert last_loaded_form_url == '/burst/setup_pse', "Incorrect last form URL!"
 
     def test_launch_simulation_with_default_parameters(self):
-        self.sess_mock['input-simulation-name-id'] = 'HappySimulation'
+        self.sess_mock['input_simulation_name_id'] = 'HappySimulation'
         launch_mode = 'new'
 
         burst_config = BurstConfiguration(self.test_project.id)
