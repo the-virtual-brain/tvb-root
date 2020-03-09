@@ -665,10 +665,11 @@ class SimulatorController(BurstBaseController):
         if isinstance(monitor, TemporalAverage):
             form = SimulatorFinalFragment()
             form.fill_from_trait(session_stored_simulator)
-            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
-                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
-                                                          is_simulator_load, self.last_loaded_form_url,
-                                                          cherrypy.request.method, is_launch_fragment=True)
+            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SETUP_PSE_URL,
+                                                              SimulatorWizzardURLs.SET_MONITORS_URL,
+                                                              is_simulator_copy, is_simulator_load,
+                                                              self.last_loaded_form_url, cherrypy.request.method,
+                                                              is_launch_fragment=True)
         else:
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                           SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
@@ -731,10 +732,11 @@ class SimulatorController(BurstBaseController):
         next_form = SimulatorFinalFragment()
         next_form.fill_from_trait(session_stored_simulator)
 
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
+        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method)
+                                                          self.last_loaded_form_url, cherrypy.request.method,
+                                                          is_launch_fragment=True)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -756,10 +758,11 @@ class SimulatorController(BurstBaseController):
 
         next_form = SimulatorFinalFragment()
 
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
+        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
                                                           is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method, is_launch_fragment=True)
+                                                          self.last_loaded_form_url, cherrypy.request.method,
+                                                          is_launch_fragment=True)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -767,10 +770,18 @@ class SimulatorController(BurstBaseController):
     @handle_error(redirect=False)
     @check_user
     def setup_pse(self, **data):
+        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
+        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
+
+        if cherrypy.request.method == 'POST':
+            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
+            is_simulator_copy = False
+
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
-                                                          SimulatorWizzardURLs.SET_LAUNCH_SIMULATION_URL,
-                                                          last_form_url=SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
+                                                          SimulatorWizzardURLs.SETUP_PSE_URL,
+                                                          is_simulator_copy, is_simulator_load,
+                                                          self.last_loaded_form_url, cherrypy.request.method)
         return rendering_rules.to_dict()
 
     @cherrypy.expose
@@ -844,7 +855,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_json
     @cherrypy.expose
-    @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
     def launch_simulation(self, launch_mode, **data):

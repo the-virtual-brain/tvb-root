@@ -1208,6 +1208,8 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
+    var config_launch_button = previous_form.elements.namedItem('launch_simulation');
+    var config_pse_button = previous_form.elements.namedItem('setup_pse');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -1225,6 +1227,12 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_noise_button != null) {
         config_noise_button.style.visibility = 'visible';
     }
+    if (config_launch_button != null){
+        config_launch_button.style.visibility = 'visible';
+    }
+    if (config_pse_button != null){
+        config_pse_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
@@ -1238,6 +1246,8 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
+    var config_launch_button = currentForm.elements.namedItem('launch_simulation');
+    var config_pse_button = currentForm.elements.namedItem('setup_pse');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -1262,6 +1272,12 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 if (config_noise_button != null) {
                     config_noise_button.style.visibility = 'hidden';
+                }
+                if (config_launch_button != null){
+                    config_launch_button.style.visibility = 'hidden';
+                }
+                if (config_pse_button != null){
+                    config_pse_button.style.visibility = 'hidden';
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
