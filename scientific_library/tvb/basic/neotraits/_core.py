@@ -183,10 +183,8 @@ class HasTraits(object):
 
         self.log = get_logger(self.__class__.__module__)
 
-
     def __str__(self):
         return trait_object_str(self)
-
 
     def _repr_html_(self):
         return trait_object_repr_html(self)

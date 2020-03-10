@@ -31,8 +31,6 @@ import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.simulator_serializer import SimulatorSerializer
-from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
 from tvb.simulator.noise import Additive
@@ -564,7 +562,8 @@ class SimulatorController(BurstBaseController):
                                                               is_noise_fragment=True)
             return rendering_rules.to_dict()
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id,
+                                                    session_stored_simulator.is_surface_simulation)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -593,7 +592,8 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL)
 
         if isinstance(session_stored_simulator.integrator.noise, Additive):
-            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
+            monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id,
+                                                        session_stored_simulator.is_surface_simulation)
             monitor_fragment.fill_from_trait(session_stored_simulator)
 
             rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -628,7 +628,8 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator.noise.b)
 
-        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id, session_stored_simulator.is_surface_simulation)
+        monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id,
+                                                    session_stored_simulator.is_surface_simulation)
         monitor_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -666,14 +667,14 @@ class SimulatorController(BurstBaseController):
             form = SimulatorLengthFragment()
             form.fill_from_trait(session_stored_simulator)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_SIMULATION_LENGTH_URL,
-                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
-                                                          is_simulator_load, self.last_loaded_form_url,
-                                                          cherrypy.request.method)
+                                                              SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
+                                                              is_simulator_load, self.last_loaded_form_url,
+                                                              cherrypy.request.method)
         else:
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
-                                                          SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
-                                                          is_simulator_load, self.last_loaded_form_url,
-                                                          cherrypy.request.method)
+                                                              SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
+                                                              is_simulator_load, self.last_loaded_form_url,
+                                                              cherrypy.request.method)
 
         return rendering_rules.to_dict()
 
@@ -717,25 +718,16 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].region_mapping = region_mapping
 
             # load sensors and projection
-            # TODO BIG review. I do not think the correct Projection Matrix entity is being used
             sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
-            sensors = h5.load_from_index(sensors_index)
+            sensors_class = session_stored_simulator.monitors[0].projection_class().sensors.field_type
+            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
             projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
-            projection_surface = h5.load_from_index(projection_surface_index)
-
-            if isinstance(session_stored_simulator.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceEEG()
-            elif isinstance(session_stored_simulator.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceMEG()
-            elif isinstance(session_stored_simulator.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
-                session_stored_simulator.monitors[0].projection = ProjectionSurfaceSEEG()
+            projection_class = session_stored_simulator.monitors[0].projection_class()
+            projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
 
             session_stored_simulator.monitors[0].sensors = sensors
-            session_stored_simulator.monitors[0].projection.gid = projection_surface.gid
+            session_stored_simulator.monitors[0].projection = projection
 
         next_form = SimulatorLengthFragment()
         next_form.fill_from_trait(session_stored_simulator)

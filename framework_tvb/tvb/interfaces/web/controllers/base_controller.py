@@ -57,7 +57,6 @@ class BaseController(object):
     This class contains the methods served at the root of the Web site.
     """
 
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
 
@@ -121,7 +120,6 @@ class BaseController(object):
         else:
             files_list.append(file_name)
 
-
     def _mark_selected(self, project):
         """
         Set the project passed as parameter as the selected project.
@@ -144,7 +142,6 @@ class BaseController(object):
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
 
-
     @staticmethod
     def get_url_adapter(step_key, adapter_id, back_page=None):
         """
@@ -156,7 +153,6 @@ class BaseController(object):
             result_url = result_url + "?back_page=" + str(back_page)
         return result_url
 
-
     @cherrypy.expose
     def index(self):
         """
@@ -164,7 +160,6 @@ class BaseController(object):
         Redirects to /tvb
         """
         raise cherrypy.HTTPRedirect('/user')
-
 
     @cherrypy.expose()
     @using_template('user/base_user')
@@ -181,7 +176,6 @@ class BaseController(object):
             common.remove_from_session(common.KEY_IS_RESTART)
         return self.fill_default_attributes(template_dictionary, error)
 
-
     @cherrypy.expose
     @using_template('user/base_user')
     def error(self, **data):
@@ -189,7 +183,6 @@ class BaseController(object):
         template_specification = dict(mainContent="error", title="Error page", data=data)
         template_specification = self._fill_user_specific_attributes(template_specification)
         return self.fill_default_attributes(template_specification)
-
 
     def _populate_user_and_project(self, template_dictionary, escape_db_operations=False):
         """
@@ -206,7 +199,6 @@ class BaseController(object):
             self.update_operations_count()
         return template_dictionary
 
-
     @staticmethod
     def _populate_message(template_dictionary):
         """
@@ -218,6 +210,12 @@ class BaseController(object):
         template_dictionary.update(msg)
         return template_dictionary
 
+    @staticmethod
+    def _populate_web_keycloak_config(template_dictionary):
+        if common.KEY_KEYCLOAK_WEB not in template_dictionary and TvbProfile.current.KEYCLOAK_LOGIN_ENABLED \
+                and TvbProfile.current.KEYCLOAK_WEB_CONFIG:
+            template_dictionary[common.KEY_KEYCLOAK_WEB] = TvbProfile.current.KEYCLOAK_WEB_CONFIG
+        return template_dictionary
 
     def _populate_menu(self, template_dictionary):
         """
@@ -232,7 +230,6 @@ class BaseController(object):
         template_dictionary[common.KEY_SECTION_TITLES] = WebStructure.WEB_SECTION_TITLES
         template_dictionary[common.KEY_SUBSECTION_TITLES] = WebStructure.WEB_SUBSECTION_TITLES
         return template_dictionary
-
 
     def _populate_section(self, algorithm, result_template, is_burst=True):
         """
@@ -273,7 +270,6 @@ class BaseController(object):
             result_template[common.KEY_SUB_SECTION] = algorithm.subsection_name
             result_template[common.KEY_SUBMENU_LIST] = self.analyze_adapters
 
-
     def _fill_user_specific_attributes(self, template_dictionary):
         """
         Attributes needed for base_user template.
@@ -284,7 +280,6 @@ class BaseController(object):
 
         return template_dictionary
 
-
     def fill_default_attributes(self, template_dictionary, escape_db_operations=False):
         """
         Fill into 'template_dictionary' data that we want to have ready in UI.
@@ -292,6 +287,7 @@ class BaseController(object):
         template_dictionary = self._populate_user_and_project(template_dictionary, escape_db_operations)
         template_dictionary = self._populate_message(template_dictionary)
         template_dictionary = self._populate_menu(template_dictionary)
+        template_dictionary = self._populate_web_keycloak_config(template_dictionary)
 
         if common.KEY_ERRORS not in template_dictionary:
             template_dictionary[common.KEY_ERRORS] = {}
@@ -305,7 +301,6 @@ class BaseController(object):
         template_dictionary[common.KEY_CURRENT_VERSION] = TvbProfile.current.version.BASE_VERSION
         template_dictionary[common.KEY_CURRENT_JS_VERSION] = TvbProfile.current.version.BASE_VERSION.replace(".", "")
         return template_dictionary
-
 
     def fill_overlay_attributes(self, template_dictionary, title, description, content_template,
                                 css_class, tabs_horizontal=None, overlay_indexes=None, tabs_vertical=None):
@@ -337,7 +332,6 @@ class BaseController(object):
 
         return template_dictionary
 
-
     @cherrypy.expose
     @using_template('overlay_blocker')
     def showBlockerOverlay(self, **data):
@@ -345,7 +339,6 @@ class BaseController(object):
         Returns the content of the blocking overlay (covers entire page and do not allow any action)
         """
         return self.fill_default_attributes(dict(data))
-
 
     def update_operations_count(self):
         """
@@ -360,8 +353,7 @@ class BaseController(object):
             project.operations_canceled = canceled
             project.operations_pending = pending
             common.add2session(common.KEY_PROJECT, project)
-            
-                    
-            
-            
-            
+
+
+
+

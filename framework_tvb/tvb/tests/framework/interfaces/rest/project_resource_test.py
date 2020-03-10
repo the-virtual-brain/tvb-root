@@ -29,10 +29,12 @@
 #
 
 import os
+import flask
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -67,21 +69,33 @@ class TestProjectResource(TransactionalTestCase):
         assert type(result) is list
         assert len(result) > 0
 
-    def test_server_get_operations_in_project_inexistent_gid(self):
+    def test_server_get_operations_in_project_inexistent_gid(self, mocker):
         project_gid = "inexistent-gid"
+
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
         with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid)
 
-    def test_server_get_operations_in_project_empty(self):
+    def test_server_get_operations_in_project_empty(self, mocker):
         project_gid = self.test_project_without_data.gid
-        result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) == 0
 
-    def test_get_operations_in_project(self):
-        project_gid = self.test_project_with_data.gid
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
         result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) > 0
+        assert type(result) is dict
+        assert len(result['operations']) == 0
+
+    def test_get_operations_in_project(self, mocker):
+        project_gid = self.test_project_with_data.gid
+
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        result = self.operations_resource.get(project_gid)
+        assert type(result) is dict
+        assert len(result['operations']) > 0
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project_with_data.name)

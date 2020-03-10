@@ -750,7 +750,7 @@ class FormField(Field):
         return self.form.validate()
 
     def __str__(self):
-        return jinja_env.get_template(self.template).render(form=self.form)
+        return jinja_env.get_template(self.template).render(adapter_form=self.form)
 
 
 class Form(object):

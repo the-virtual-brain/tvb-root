@@ -347,6 +347,7 @@ class DatatypeDAO(RootDAO):
                 dt.parent_operation.project
                 dt.parent_operation.operation_group
                 dt.parent_operation.user
+                dt.display_name
 
         except Exception as excep:
             self.logger.exception(excep)

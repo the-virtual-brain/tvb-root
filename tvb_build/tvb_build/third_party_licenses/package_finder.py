@@ -106,7 +106,8 @@ EXTRA_MODULES = {
     'bct': '2017',
     'python': PYTHON_VERSION,
     'zlib': '1.0',
-    'mathjax': '2.0'
+    'mathjax': '2.0',
+    'keycloak': '9.0.0'
 }
 
 ANACONDA_VERSION = "4.2"

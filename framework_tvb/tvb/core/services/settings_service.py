@@ -55,6 +55,8 @@ class SettingsService(object):
     KEY_ADMIN_EMAIL = stored.KEY_ADMIN_EMAIL
     KEY_STORAGE = stored.KEY_STORAGE
     KEY_KC_CONFIG = stored.KEY_KC_CONFIGURATION
+    KEY_KC_WEB_CONFIG = stored.KEY_KC_WEB_CONFIGURATION
+    KEY_ENABLE_KC_LOGIN = stored.KEY_ENABLE_KC_LOGIN
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
     KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
@@ -69,7 +71,8 @@ class SettingsService(object):
 
     # Display order for the keys. None means a separator/new line will be added
     KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
-                          KEY_KC_CONFIG, KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
+                          KEY_KC_CONFIG, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIG, None, KEY_STORAGE,
+                          KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
                           KEY_DB_URL, None,
                           KEY_PORT, KEY_URL_WEB, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
@@ -80,8 +83,15 @@ class SettingsService(object):
         first_run = TvbProfile.is_first_run()
         storage = TvbProfile.current.TVB_STORAGE if not first_run else TvbProfile.current.DEFAULT_STORAGE
         self.configurable_keys = {
-            self.KEY_KC_CONFIG: {'label': 'Keycloak configuration file', 'value': TvbProfile.current.KEYCLOAK_CONFIG,
+            self.KEY_KC_CONFIG: {'label': 'Rest API Keycloak configuration file',
+                                 'value': TvbProfile.current.KEYCLOAK_CONFIG,
                                  'readonly': False, 'type': 'text'},
+            self.KEY_ENABLE_KC_LOGIN: {'label': 'Enable Keycloak login',
+                                       'value': TvbProfile.current.KEYCLOAK_LOGIN_ENABLED,
+                                       'readonly': False, 'type': 'boolean'},
+            self.KEY_KC_WEB_CONFIG: {'label': 'Web Keycloak configuration file',
+                                     'value': TvbProfile.current.KEYCLOAK_WEB_CONFIG,
+                                     'readonly': False, 'type': 'text'},
             self.KEY_STORAGE: {'label': 'Root folder for all projects', 'value': storage,
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',

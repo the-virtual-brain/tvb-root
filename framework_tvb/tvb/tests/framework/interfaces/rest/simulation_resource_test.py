@@ -29,7 +29,6 @@
 #
 
 import os
-import shutil
 from io import BytesIO
 import flask
 import pytest
@@ -38,6 +37,7 @@ from tvb.core.entities.model.model_operation import Operation
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
+from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -58,7 +58,7 @@ class TestSimulationResource(TransactionalTestCase):
         dummy_file = FileStorage(BytesIO(b"test"), 'test.zip')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
-        request_mock.files = {'file': dummy_file}
+        request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid)
 
@@ -73,7 +73,7 @@ class TestSimulationResource(TransactionalTestCase):
         dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
-        request_mock.files = {'file': dummy_file}
+        request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: dummy_file}
 
         with pytest.raises(BadRequestException): self.simulation_resource.post('')
 
@@ -88,18 +88,21 @@ class TestSimulationResource(TransactionalTestCase):
         sim_serializer = SimulatorSerializer()
         sim_serializer.serialize_simulator(simulator, simulator.gid.hex, None, sim_dir)
 
-        zip_filename = shutil.make_archive(sim_dir, 'zip', input_folder)
+        zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
+        FilesHelper().zip_folder(zip_filename, sim_dir)
 
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
         fp = open(zip_filename, 'rb')
-        request_mock.files = {'file': FileStorage(fp, os.path.basename(zip_filename))}
+        request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: FileStorage(fp, os.path.basename(zip_filename))}
 
         def launch_sim(self, user_id, project, algorithm, zip_folder_path, simulator_file):
             return Operation('', '', '', {})
 
-        # Mock simulation launch
+        # Mock simulation launch and current user
         mocker.patch.object(SimulatorService, 'prepare_simulation_on_server', launch_sim)
+        request_mock = mocker.patch.object(flask, 'g')
+        request_mock.current_user = self.test_user
 
         operation_gid, status = self.simulation_resource.post(self.test_project.gid)
         fp.close()

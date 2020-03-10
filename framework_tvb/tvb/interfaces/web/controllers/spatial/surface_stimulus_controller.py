@@ -76,10 +76,6 @@ class EquationTemporalPlotForm(Form):
         if self.max_tmp_x.name in form_data:
             self.max_tmp_x.fill_from_post(form_data)
 
-    @using_template('form_fields/form')
-    def __str__(self):
-        return {'adapter_form': self}
-
 
 class EquationSpatialPlotForm(Form):
     def __init__(self):
@@ -94,10 +90,6 @@ class EquationSpatialPlotForm(Form):
             self.min_space_x.fill_from_post(form_data)
         if self.max_space_x.name in form_data:
             self.max_space_x.fill_from_post(form_data)
-
-    @using_template('form_fields/form')
-    def __str__(self):
-        return {'adapter_form': self}
 
 
 class SurfaceStimulusController(SpatioTemporalController):

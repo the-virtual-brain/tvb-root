@@ -63,6 +63,8 @@ class BaseSettingsProfile(object):
 
         # Actual storage of all TVB related files
         self.KEYCLOAK_CONFIG = self.manager.get_attribute(stored.KEY_KC_CONFIGURATION, '')
+        self.KEYCLOAK_LOGIN_ENABLED = self.manager.get_attribute(stored.KEY_ENABLE_KC_LOGIN, False, bool)
+        self.KEYCLOAK_WEB_CONFIG = self.manager.get_attribute(stored.KEY_KC_WEB_CONFIGURATION, '')
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")

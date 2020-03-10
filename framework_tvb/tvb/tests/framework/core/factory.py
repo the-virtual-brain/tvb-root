@@ -43,7 +43,9 @@ import random
 import tvb_data
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterForm
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.utils import hash_password
@@ -80,7 +82,8 @@ class TestFactory(object):
         """
 
         data_types = FlowService().get_available_datatypes(project.id,
-                                                           expected_data.__module__ + "." + expected_data.__name__, filters)[0]
+                                                           expected_data.__module__ + "." + expected_data.__name__,
+                                                           filters)[0]
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
         return entity
 
@@ -239,7 +242,7 @@ class TestFactory(object):
     def import_surface_gifti(user, project, path):
         """
         This method is used for importing data in GIFIT format
-        :param import_file_path: absolute path of the file to be imported
+        :param path: absolute path of the file to be imported
         """
 
         # Retrieve Adapter instance
@@ -251,7 +254,7 @@ class TestFactory(object):
                              'data_file_part2': Part('', HeaderMap({}), ''),
                              'should_center': 'False',
                              'Data_Subject': 'John Doe',
-                            })
+                             })
         form.data_file.data = path
         view_model = form.get_view_model()()
         form.fill_trait(view_model)
@@ -326,9 +329,9 @@ class TestFactory(object):
     @staticmethod
     def import_sensors(user, project, zip_path, sensors_type):
         """
-                This method is used for importing sensors
-                :param import_file_path: absolute path of the file to be imported
-                """
+        This method is used for importing sensors
+        :param zip_path: absolute path of the file to be imported
+        """
 
         # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
@@ -345,16 +348,41 @@ class TestFactory(object):
         importer.submit_form(form)
 
         # Launch import Operation
-
         FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
         assert 1 == len(data_types), "Project should contain only one data type = Sensors."
+        sensors = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert sensors is not None, "Sensors instance should not be none"
+        return sensors
 
-        time_series = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert time_series is not None, "Sensors instance should not be none"
+    @staticmethod
+    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid):
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
+                                              'ProjectionMatrixSurfaceEEGImporter')
 
-        return time_series
+        form = ProjectionMatrixImporterForm()
+
+        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
+                             'dataset_name': 'ProjectionMatrix',
+                             'sensors': sensors_gid,
+                             'surface': surface_gid,
+                             'Data_Subject': 'John Doe'
+                             })
+        form.projection_file.data = file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
+        importer.submit_form(form)
+
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
+
+        data_types = FlowService().get_available_datatypes(project.id, ProjectionMatrixIndex)[0]
+        assert 1 == len(data_types), "Project should contain only one data type = Projection Matrix."
+
+        projection_matrix = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert projection_matrix is not None, "Projection Matrix instance should not be none"
+
+        return projection_matrix
 
     @staticmethod
     def import_zip_connectivity(user, project, zip_path, subject=DataTypeMetaData.DEFAULT_SUBJECT):

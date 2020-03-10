@@ -27,16 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import flask
 import formencode
-from flask import request
 from flask_restplus import Resource
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.project_service import ProjectService
 from tvb.interfaces.rest.commons.dtos import ProjectDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import FormKeyInput
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.security.authorization import get_current_user, AuthorizationManager
+from tvb.interfaces.rest.server.request_helper import get_current_user
 
 USERS_PAGE_SIZE = 1000
 
@@ -51,7 +52,7 @@ class LoginUserResource(Resource):
         :return a dict which contains user's tokens
         """
         try:
-            data = request.json
+            data = flask.request.json
             return AuthorizationManager.get_keycloak_instance().token(data[FormKeyInput.USERS_USERNAME.value],
                                                                       data[FormKeyInput.USERS_PASSWORD.value])
         except KeyError:
@@ -62,7 +63,7 @@ class LoginUserResource(Resource):
         Refresh user's token
         :return: new token
         """
-        data = request.json
+        data = flask.request.json
         try:
             refresh_token = data[FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value]
             return AuthorizationManager.get_keycloak_instance().refresh_token(refresh_token)
@@ -74,7 +75,7 @@ class LoginUserResource(Resource):
         Logout user. Invalidate token
         :return:
         """
-        data = request.json
+        data = flask.request.json
         try:
             refresh_token = data[FormKeyInput.KEYCLOAK_REFRESH_TOKEN.value]
             return AuthorizationManager.get_keycloak_instance().logout(refresh_token)
@@ -96,7 +97,7 @@ class GetProjectsListResource(RestResource):
         """
         Create a new project linked to the current user
         """
-        input_data = request.json
+        input_data = flask.request.json
         try:
             project_name = input_data[FormKeyInput.CREATE_PROJECT_NAME.value]
             project_description = input_data[FormKeyInput.CREATE_PROJECT_DESCRIPTION.value] \

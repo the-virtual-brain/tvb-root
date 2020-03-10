@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-run'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-tests'
         LATEST_TAG = 'latest'
     }
 
@@ -10,8 +10,7 @@ pipeline {
         stage ('Build docker image') {
             steps {
                 script {
-                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
-                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-run tvb_build/docker")
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-test tvb_build/docker")
                     dockerImage.push('${LATEST_TAG}')
                 }
             }

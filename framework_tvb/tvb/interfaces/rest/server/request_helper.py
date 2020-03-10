@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -27,6 +27,15 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import flask
 
-from tvb.tests.framework.conftest import connectivity_factory, time_series_factory, user_factory, project_factory, \
-    operation_factory, time_series_index_factory
+
+def set_current_user(user):
+    flask.g.current_user = user
+
+
+def get_current_user():
+    try:
+        return flask.g.current_user
+    except AttributeError:
+        return None

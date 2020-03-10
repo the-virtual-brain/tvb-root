@@ -36,27 +36,29 @@ but also user related annotation (checked-logged).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import os
 import json
-import time
+import os
 import ssl
+import time
+from urllib.request import urlopen
+
 import cherrypy
 import formencode
-from urllib.request import urlopen
-from formencode import validators
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
-from tvb.basic.profile import TvbProfile
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import UsernameException
-from tvb.core.utils import format_bytes_human, hash_password
 import tvb.interfaces.web
+from formencode import validators
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.core.services.authorization import AuthorizationManager
+from tvb.core.services.exceptions import UsernameException
+from tvb.core.services.project_service import ProjectService
+from tvb.core.services.texture_to_json import color_texture_to_list
+from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT, \
+    KEY_AUTH_TOKEN
+from tvb.core.utils import format_bytes_human, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
-from tvb.core.services.texture_to_json import color_texture_to_list
-
+from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
@@ -72,7 +74,6 @@ class UserController(BaseController):
         BaseController.__init__(self)
         self.version_info = None
 
-
     @cherrypy.expose
     @handle_error(redirect=True)
     @using_template('user/base_user')
@@ -83,16 +84,24 @@ class UserController(BaseController):
         """
         template_specification = dict(mainContent="user/login", title="Login", data=data)
         if cherrypy.request.method == 'POST':
-            form = LoginForm()
+            keycloak_login = TvbProfile.current.KEYCLOAK_LOGIN_ENABLED
+            form = LoginForm() if not keycloak_login else KeycloakLoginForm()
+
             try:
                 data = form.to_python(data)
-                username = data[KEY_USERNAME]
-                password = data[KEY_PASSWORD]
-                user = self.user_service.check_login(username, password)
+                if keycloak_login:
+                    auth_token = data[KEY_AUTH_TOKEN]
+                    kc_user_info = AuthorizationManager(
+                        TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().userinfo(auth_token)
+                    user = self.user_service.get_external_db_user(kc_user_info)
+                else:
+                    username = data[KEY_USERNAME]
+                    password = data[KEY_PASSWORD]
+                    user = self.user_service.check_login(username, password)
                 if user is not None:
                     common.add2session(common.KEY_USER, user)
-                    common.set_info_message('Welcome ' + username)
-                    self.logger.debug("User " + username + " has just logged in!")
+                    common.set_info_message('Welcome ' + user.username)
+                    self.logger.debug("User " + user.username + " has just logged in!")
                     if user.selected_project is not None:
                         prj = user.selected_project
                         prj = ProjectService().find_project(prj)
@@ -100,12 +109,11 @@ class UserController(BaseController):
                     raise cherrypy.HTTPRedirect('/user/profile')
                 else:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
-                    self.logger.debug("Wrong username " + username + " !!!")
+                    self.logger.debug("Wrong username " + user.username + " !!!")
             except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
 
         return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -146,7 +154,7 @@ class UserController(BaseController):
                 common.add2session(common.KEY_USER, self.user_service.get_user_by_id(user.id))
                 common.set_error_message("Could not save changes. Probably wrong old password!!")
         else:
-            #Update session user since disk size might have changed from last time to profile.
+            # Update session user since disk size might have changed from last time to profile.
             user = self.user_service.get_user_by_id(user.id)
             common.add2session(common.KEY_USER, user)
 
@@ -154,6 +162,10 @@ class UserController(BaseController):
             self.user_service.compute_user_generated_disk_size(user.id))
         return self.fill_default_attributes(template_specification)
 
+    @cherrypy.expose
+    @using_template('user/silent_check_sso')
+    def check_sso(self):
+        return {}
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -173,6 +185,13 @@ class UserController(BaseController):
         common.expire_session()
         raise cherrypy.HTTPRedirect("/user")
 
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @jsonify
+    def keycloak_web_config(self):
+        file_path = TvbProfile.current.KEYCLOAK_WEB_CONFIG
+        with open(file_path) as f:
+            return json.load(f)
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -188,12 +207,10 @@ class UserController(BaseController):
         self.user_service.edit_user(user)
         raise cherrypy.HTTPRedirect("/user/profile")
 
-
     @expose_json
     def get_viewer_color_scheme(self):
         user = common.get_logged_user()
         return user.get_viewers_color_scheme()
-
 
     @expose_json
     def set_viewer_color_scheme(self, color_scheme_name):
@@ -201,13 +218,11 @@ class UserController(BaseController):
         user.set_viewers_color_scheme(color_scheme_name)
         self.user_service.edit_user(user)
 
-
     @expose_json
     def get_color_schemes_json(self):
         cherrypy.response.headers['Cache-Control'] = 'max-age=86400'  # cache for a day
         pth = os.path.join(os.path.dirname(tvb.interfaces.web.__file__), 'static', 'coloring', 'color_schemes.png')
         return color_texture_to_list(pth, 256, 8)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -236,12 +251,11 @@ class UserController(BaseController):
                 redirect = False
 
         if redirect:
-            #Redirect to login page, with some success message to display
+            # Redirect to login page, with some success message to display
             raise cherrypy.HTTPRedirect('/user')
         else:
-            #Stay on the same page
+            # Stay on the same page
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -276,7 +290,6 @@ class UserController(BaseController):
             raise cherrypy.HTTPRedirect('/user/usermanagement')
         else:
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -314,7 +327,6 @@ class UserController(BaseController):
                                       data={})
         return self.fill_default_attributes(template_specification)
 
-
     @cherrypy.expose
     @handle_error(redirect=True)
     @using_template('user/base_user')
@@ -342,12 +354,11 @@ class UserController(BaseController):
                 common.set_error_message(excep1.message)
                 redirect = False
         if redirect:
-            #Redirect to login page, with some success message to display
+            # Redirect to login page, with some success message to display
             raise cherrypy.HTTPRedirect('/user')
         else:
-            #Stay on the same page
+            # Stay on the same page
             return self.fill_default_attributes(template_specification)
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -360,7 +371,6 @@ class UserController(BaseController):
             time.sleep(2)
 
         return dict(message=FilesUpdateManager.MESSAGE, status=FilesUpdateManager.STATUS)
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -378,7 +388,6 @@ class UserController(BaseController):
             common.set_info_message("User Validated successfully and notification email sent!")
         raise cherrypy.HTTPRedirect('/tvb')
 
-
     def _create_user(self, email_msg=None, validated=False, **data):
         """
         Just create a user given the data input. Do form validation beforehand.
@@ -388,7 +397,6 @@ class UserController(BaseController):
         data[KEY_PASSWORD] = hash_password(data[KEY_PASSWORD])
         data['password2'] = hash_password(data['password2'])
         return self.user_service.create_user(email_msg=email_msg, validated=validated, **data)
-
 
     def fill_default_attributes(self, template_dictionary):
         """
@@ -402,7 +410,6 @@ class UserController(BaseController):
         template_dictionary[KEY_STORAGE_IN_UPDATE] = (TvbProfile.current.version.DATA_CHECKED_TO_VERSION <
                                                       TvbProfile.current.version.DATA_VERSION)
         return template_dictionary
-
 
     def _populate_version(self, template_dictionary):
         """
@@ -427,7 +434,6 @@ class UserController(BaseController):
         return template_dictionary
 
 
-
 class LoginForm(formencode.Schema):
     """
     Validate for Login UI Form
@@ -436,6 +442,13 @@ class LoginForm(formencode.Schema):
     username = validators.UnicodeString(not_empty=True, use_builtins_gettext=False, messages={'empty': empty_msg})
     password = validators.UnicodeString(not_empty=True, use_builtins_gettext=False, messages={'empty': empty_msg})
 
+
+class KeycloakLoginForm(formencode.Schema):
+    """
+        Validate for Login UI Form
+    """
+    empty_msg = 'Please enter a value'
+    auth_token = validators.UnicodeString(not_empty=True, use_builtins_gettext=False, messages={'empty': empty_msg})
 
 
 class UniqueUsername(formencode.FancyValidator):
@@ -448,7 +461,6 @@ class UniqueUsername(formencode.FancyValidator):
         if not UserService().is_username_valid(value):
             raise formencode.Invalid('Please choose another user-name, this one is already in use!', value, state)
         return value
-
 
 
 class RegisterForm(formencode.Schema):
@@ -464,14 +476,12 @@ class RegisterForm(formencode.Schema):
     chained_validators = [validators.FieldsMatch('password', 'password2')]
 
 
-
 class RecoveryForm(formencode.Schema):
     """
     Validate Recover Password Form
     """
     email = validators.Email(not_empty=True)
     username = validators.String(not_empty=False)
-
 
 
 class EditUserForm(formencode.Schema):
@@ -484,5 +494,3 @@ class EditUserForm(formencode.Schema):
     email = validators.Email(if_missing=None)
     chained_validators = [validators.FieldsMatch('password', 'password2'),
                           validators.RequireIfPresent('password', present='old_password')]
-    
-    
