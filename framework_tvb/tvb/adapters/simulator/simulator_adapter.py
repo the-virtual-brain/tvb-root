@@ -179,6 +179,10 @@ class SimulatorAdapter(ABCAsynchronous):
     def get_form_class(self):
         return SimulatorAdapterForm
 
+    @staticmethod
+    def get_view_model():
+        return SimulatorAdapterModel
+
     def get_output(self):
         """
         :returns: list of classes for possible results of the Simulator.

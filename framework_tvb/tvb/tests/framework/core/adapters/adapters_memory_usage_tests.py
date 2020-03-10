@@ -64,7 +64,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         """
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        assert 42 == adapter.get_required_memory_size()
+        assert 42 == adapter.get_required_memory_size(adapter.get_view_model()())
 
     def test_adapter_huge_memory_requirement(self, test_adapter_factory):
         """

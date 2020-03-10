@@ -31,10 +31,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+from os import path
 
 import pytest
 from copy import copy
+
+import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -112,38 +116,34 @@ class TestSimulatorAdapter(TransactionalTestCase):
 
         SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
 
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **SIMULATOR_PARAMETERS)
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, self.simulator_with_connectivity_model())
         sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
         assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
-    def _estimate_hdd(self, new_parameters_dict):
-        """ Private method, to return HDD estimation for a given set of input parameters"""
-        filtered_params = self.simulator_adapter.prepare_ui_inputs(new_parameters_dict)
-        self.simulator_adapter.configure(**filtered_params)
-        return self.simulator_adapter.get_required_disk_size(**filtered_params)
+    def simulator_with_connectivity_model(self):
+        simulator_adapter_model = self.simulator_adapter.get_view_model()()
+
+        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, 'John Doe')
+        simulator_adapter_model.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex).gid
+
+        return simulator_adapter_model
+
+    def _estimate_hdd(self):
+        """ Private method, to return HDD estimation for a given a model"""
+
+        self.simulator_adapter.configure(self.simulator_with_connectivity_model())
+        return self.simulator_adapter.get_required_disk_size(self.simulator_with_connectivity_model())
 
     def test_estimate_hdd(self, connectivity_factory):
         """
         Test that occupied HDD estimation for simulation results considers simulation length.
         """
-        factor = 5
-        simulation_parameters = copy(SIMULATOR_PARAMETERS)
-        ## Estimate HDD with default simulation parameters
-        estimate1 = self._estimate_hdd(simulation_parameters)
+        self.test_user = TestFactory.create_user("Simulator_Adapter_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Simulator_Adapter_Project")
+
+        estimate1 = self._estimate_hdd()
         assert estimate1 > 1
-
-        ## Change simulation length and monitor period, we expect a direct proportial increase in estimated HDD
-        simulation_parameters['simulation_length'] = float(simulation_parameters['simulation_length']) * factor
-        period = float(simulation_parameters['monitors_parameters_option_TemporalAverage_period'])
-        simulation_parameters['monitors_parameters_option_TemporalAverage_period'] = period / factor
-        estimate2 = self._estimate_hdd(simulation_parameters)
-        assert estimate1 == estimate2 / factor / factor
-
-        ## Change number of nodes in connectivity. Expect HDD estimation increase.
-        large_conn_gid = connectivity_factory(self.CONNECTIVITY_NODES * factor).gid
-        simulation_parameters['connectivity'] = large_conn_gid
-        estimate3 = self._estimate_hdd(simulation_parameters)
-        assert estimate2 == estimate3 / factor
 
     def test_estimate_execution_time(self):
         """
