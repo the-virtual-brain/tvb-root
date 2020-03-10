@@ -31,9 +31,11 @@
 import flask
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
-from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.commons.dtos import OperationDto, DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException
+from tvb.interfaces.rest.commons.strings import Strings
+from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
+from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
@@ -45,6 +47,7 @@ class GetDataInProjectResource(RestResource):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
+    @check_permission(ProjectAccessPermission, 'project_gid')
     def get(self, project_gid):
         """
         :return a list of DataType instances (subclasses) associated with the current project
@@ -64,6 +67,7 @@ class GetOperationsInProjectResource(RestResource):
         super().__init__(*args, **kwargs)
         self.project_service = ProjectService()
 
+    @check_permission(ProjectAccessPermission, 'project_gid')
     def get(self, project_gid):
         """
         :return a list of project's Operation entities
