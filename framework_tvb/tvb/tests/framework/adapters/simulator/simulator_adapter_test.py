@@ -38,7 +38,7 @@ from copy import copy
 
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -121,7 +121,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
 
     def simulator_with_connectivity_model(self):
-        simulator_adapter_model = self.simulator_adapter.get_view_model()()
+        simulator_adapter_model = SimulatorAdapterModel()
 
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, 'John Doe')
