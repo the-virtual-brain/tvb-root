@@ -37,6 +37,7 @@ Later on, this project will be available from the web-interface.
 
 if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
+
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 from tvb.core.entities import model
@@ -45,9 +46,7 @@ from tvb.core.services.import_service import ImportService
 from sys import argv
 
 
-
 def run_import(project_path):
-
     ## If we would know a UserID to have as admin, next step would not be necessary.
     ## Make sure at least one user exists in TVB DB:
     user_service = UserService()
@@ -57,7 +56,7 @@ def run_import(project_path):
         admin = admins[0]
     else:
         ## No Admin user was found, we will create one
-        user_service.create_user("admin", "pass", role=model.ROLE_ADMINISTRATOR,
+        user_service.create_user("admin", 'display name', "pass", role=model.ROLE_ADMINISTRATOR,
                                  email="info@thevirtualbrain.org", validated=True, skip_import=True)
         admin = user_service.get_administrators()[0]
 
@@ -79,6 +78,3 @@ if __name__ == '__main__':
     print("We will try to import project at path " + PROJECT_PATH)
 
     run_import(PROJECT_PATH)
-
-
-

@@ -56,10 +56,8 @@ class UserDto(BaseDto):
         """
         self.update(kwargs)
         if user is not None:
-            self.username = user.username
+            self.gid = user.gid
             self.email = user.email
-            self.validated = user.validated
-            self.role = user.role
 
 
 class ProjectDto(BaseDto):

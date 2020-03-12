@@ -67,7 +67,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         Tests for a valid redirect on user login
         """
-        user = User('valid_user', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
+        user = User('valid_user', 'name', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
@@ -235,7 +235,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         data = {"email": self.test_user.email,
                 "username": self.test_user.username,
-               }
+                }
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
             "Info message informing successfull reset should be present"
