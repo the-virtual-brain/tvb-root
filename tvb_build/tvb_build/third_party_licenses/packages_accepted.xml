@@ -830,6 +830,16 @@
         <copyright-notice value="Copyright (c) 2012, Michael Williamson"/>
         <description value="File-based locks for Python for Linux and Windows"/>
     </dependency>
+    <dependency env="[win,mac,linux]" name="mako">
+        <full-name value="Mako"/>
+        <project-home value="https://pypi.org/project/Mako/"/>
+        <version value="[1.1.2]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_mako.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2006-2020 the Mako authors and contributors <see AUTHORS file>"/>
+        <description value="dependency for TVB DSL"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="markupsafe">
         <full-name value="MarkupSafe"/>
         <project-home value="https://pypi.python.org/pypi/MarkupSafe"/>
