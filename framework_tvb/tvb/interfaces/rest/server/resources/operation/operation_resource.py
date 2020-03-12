@@ -45,15 +45,18 @@ from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
+from tvb.interfaces.rest.server.access_permissions.permissions import OperationAccessPermission, \
+    ProjectAccessPermission
+from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.request_helper import get_current_user
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
 
 
 class GetOperationStatusResource(RestResource):
-
+    @check_permission(OperationAccessPermission, 'operation_gid')
     def get(self, operation_gid):
         """
         :return status of an operation
@@ -67,6 +70,7 @@ class GetOperationStatusResource(RestResource):
 
 class GetOperationResultsResource(RestResource):
 
+    @check_permission(OperationAccessPermission, 'operation_gid')
     def get(self, operation_gid):
         """
         :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
@@ -93,6 +97,7 @@ class LaunchOperationResource(RestResource):
         self.user_service = UserService()
         self.files_helper = FilesHelper()
 
+    @check_permission(ProjectAccessPermission, 'project_gid')
     def post(self, project_gid, algorithm_module, algorithm_classname):
         """
         :generic method of launching Analyzers

@@ -35,6 +35,8 @@ from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.server.access_permissions.permissions import DataTypeAccessPermission
+from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredResource
 
 INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
@@ -42,6 +44,7 @@ INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 class RetrieveDatatypeResource(SecuredResource):
 
+    @check_permission(DataTypeAccessPermission, 'datatype_gid')
     def get(self, datatype_gid):
         """
         :given a guid, this function will download the H5 full data
@@ -61,6 +64,7 @@ class GetOperationsForDatatypeResource(RestResource):
         super().__init__(*args, **kwargs)
         self.flow_service = FlowService()
 
+    @check_permission(DataTypeAccessPermission, 'datatype_gid')
     def get(self, datatype_gid):
         """
         :return the available operations for that datatype, as a list of Algorithm instances
