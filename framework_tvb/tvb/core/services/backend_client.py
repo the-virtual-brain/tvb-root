@@ -44,6 +44,7 @@ from subprocess import Popen, PIPE
 from time import sleep
 import pyunicore.client as unicore_client
 from pyunicore.client import Storage, Job
+from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
@@ -52,6 +53,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 # from tvb.core.operation_hpc_launcher import do_operation_launch
@@ -373,17 +375,32 @@ class HPCSchedulerClient(object):
         """
         burst_service = BurstService()
         index_list = []
+
+        LOGGER.info("Marking operation {} as finished...".format(operation.id))
+        operation.mark_complete(STATUS_FINISHED)
+        dao.store_entity(operation)
+
         for filename in result_filenames:
             index = h5.index_for_h5_file(filename)()
-            # TODO: don't load full TS in memory
-            datatype, ga = h5.load_with_references(filename)
-            index.fill_from_has_traits(datatype)
-            index.fill_from_generic_attributes(ga)
+            # TODO: don't load full TS in memory and make this read nicer
+            try:
+                datatype, ga = h5.load_with_references(filename)
+                index.fill_from_has_traits(datatype)
+                index.fill_from_generic_attributes(ga)
+            except TypeError:
+                with DatatypeMeasureH5(filename) as dti_h5:
+                    index.metrics = json.dumps(dti_h5.metrics.load())
+                    index.source_gid = dti_h5.analyzed_datatype.load().hex
             index.fk_from_operation = operation.id
+            if operation.fk_operation_group:
+                datatype_group = \
+                dao.get_generic_entity(DataTypeGroup, operation.fk_operation_group, 'fk_operation_group')[0]
+                index.fk_datatype_group = datatype_group.id
 
             # TODO: update status during operation run
             if operation.fk_operation_group:
-                parent_burst = dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
+                parent_burst = \
+                dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
                 operations_in_group = dao.get_operations_in_group(operation.fk_operation_group)
                 if parent_burst.metric_operation_group_id:
                     operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
@@ -404,8 +421,6 @@ class HPCSchedulerClient(object):
 
         sim_adapter = SimulatorAdapter()
         mesage, _ = sim_adapter.fill_existing_indexes(operation, index_list)
-        operation.mark_complete(STATUS_FINISHED)
-        dao.store_entity(operation)
 
         # TODO: for PSE set FK towards datatype group on results
         return mesage
