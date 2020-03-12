@@ -1,4 +1,4 @@
-﻿# TVB_DSL XML (LEMS) to CUDA code generation
+﻿# TVB model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to TVB Python format.
 The LEMS format PR has been adopted and altered to match TVB model names. 
 In LEMS2python.py the function "regTVB_templating('Model')" will start the code generation.
