@@ -29,9 +29,11 @@
 #
 from abc import abstractmethod
 
+from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.storage import CaseDAO, DatatypeDAO
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.request_helper import get_current_user
 
 
@@ -62,8 +64,8 @@ class ProjectAccessPermission(ResourceAccessPermission):
     def _check_permission(self, logged_user_id):
         try:
             project = self.project_dao.get_project_lazy_by_gid(self.resource_identifier)
-        except ProjectServiceException:
-            return False
+        except (ProjectServiceException, NoResultFound):
+            raise InvalidIdentifierException()
         return self.check_project_permission(logged_user_id, project.id)
 
     def check_project_permission(self, logged_user_id, project_id):
@@ -78,7 +80,7 @@ class OperationAccessPermission(ProjectAccessPermission):
     def _check_permission(self, logged_user_id):
         operation = ProjectService.load_operation_by_gid(self.resource_identifier)
         if operation is None:
-            return False
+            raise InvalidIdentifierException()
         return self.check_project_permission(logged_user_id, operation.fk_launched_in)
 
 
@@ -90,8 +92,8 @@ class DataTypeAccessPermission(ProjectAccessPermission):
     def _check_permission(self, logged_user_id):
         datatype = self.datatype_dao.get_datatype_by_gid(self.resource_identifier)
         if datatype is None:
-            return False
-        if logged_user_id in self.project_dao.get_members_of_project(datatype.parent_operation.fk_launched_in):
+            raise InvalidIdentifierException()
+        if self.check_project_permission(logged_user_id, datatype.parent_operation.fk_launched_in):
             return True
         links = self.datatype_dao.get_links_for_datatype(datatype.id)
         if links is not None:
