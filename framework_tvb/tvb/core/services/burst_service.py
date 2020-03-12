@@ -157,3 +157,10 @@ class BurstService(object):
 
     def cancel_or_remove_burst(self, burst_id):
         raise NotImplementedError
+
+    @staticmethod
+    def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
+        burst = dao.get_burst_by_id(burst_id)
+        burst.fk_simulation_id = op_simulation_id
+        burst.simulator_gid = simulation_gid.hex
+        dao.store_entity(burst)

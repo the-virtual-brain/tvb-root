@@ -140,7 +140,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         assert estimate1 == estimate2 / factor / factor
 
         ## Change number of nodes in connectivity. Expect HDD estimation increase.
-        large_conn_gid = connectivity_factory(self.CONNECTIVITY_NODES * factor)[1].gid
+        large_conn_gid = connectivity_factory(self.CONNECTIVITY_NODES * factor).gid
         simulation_parameters['connectivity'] = large_conn_gid
         estimate3 = self._estimate_hdd(simulation_parameters)
         assert estimate2 == estimate3 / factor

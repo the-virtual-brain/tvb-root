@@ -385,8 +385,10 @@ class TestFactory(object):
         return projection_matrix
 
     @staticmethod
-    def import_zip_connectivity(user, project, zip_path, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT):
 
+        if zip_path is None:
+            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
                                               'ZIPConnectivityImporter')
 
