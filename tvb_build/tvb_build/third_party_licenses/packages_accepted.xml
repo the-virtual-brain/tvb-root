@@ -847,7 +847,7 @@
         <usage value="dynamic linking"/>
         <license value="LICENSE_mako.txt"/>
         <license-type value="MIT_"/>
-        <copyright-notice value="Copyright (c) 2006-2020 the Mako authors and contributors <see AUTHORS file>"/>
+        <copyright-notice value="Copyright (c) 2006-2020 the Mako authors and contributors (see AUTHORS file)"/>
         <description value="Dependency for TVB DSL"/>
     </dependency>
     <dependency env="[win,mac,linux]" name="markupsafe">
