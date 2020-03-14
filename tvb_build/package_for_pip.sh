@@ -5,12 +5,11 @@ cd ..
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("framework_tvb" "scientific_library" "externals/tvb_gdist")
+declare -a folders2pack=("framework_tvb" "scientific_library")
 if [[ "$1" != "" ]]; then
     echo "Received param: " "$1"
     folders2pack=("$1")
 fi
-
 
 for pipPackage in "${folders2pack[@]}"; do
 
@@ -22,20 +21,10 @@ for pipPackage in "${folders2pack[@]}"; do
     python setup.py sdist
     python setup.py bdist_wheel
 
-    if [ -d "../dist/" ]; then
-        mv dist/* ../dist/
-    else
-        mv dist/* ../../dist/
-    fi
-
+    mv dist/* ../dist/
     rm -R dist
     rm -R build
-
-    if [ -d "../dist/" ]; then
-        cd ..
-    else
-        cd ../..
-    fi
+    cd ..
 done
 
 ## Now package tvb-rest-client
