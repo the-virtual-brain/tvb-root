@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -27,29 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
 import flask
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
 
-class TestUserResource(RestResourceTest):
-
-    def transactional_setup_method(self):
-        self.username = 'Rest_User'
-        self.test_user = TestFactory.create_user(self.username)
-        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
-        self.projects_list_resource = GetProjectsListResource()
-
-    def test_get_projects(self, mocker):
-        self._mock_user(mocker)
-
-        result = self.projects_list_resource.get()
-        assert type(result) is list
-        assert len(result) == 1
-
-    def transactional_teardown_method(self):
-        FilesHelper().remove_project_structure(self.test_project.name)
+class RestResourceTest(TransactionalTestCase):
+    def _mock_user(self, mocker):
+        request_mock = mocker.patch.object(flask, 'g')
+        request_mock.current_user = self.test_user
