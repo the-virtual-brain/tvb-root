@@ -104,7 +104,7 @@ EXTRA_MODULES = {
     'jit': '2.0.1',
     'd3': '3',
     'bct': '2017',
-    'LEMS': "unknown",
+    'lems': "unknown",
     'python': PYTHON_VERSION,
     'zlib': '1.0',
     'mathjax': '2.0',
@@ -172,7 +172,7 @@ def _find_extra_modules(extra, modules_dict, excludes):
         if excludes is not None and module in excludes:
             continue
         modules_dict[module.lower()] = _get_module_version(module)
-        if modules_dict[module] == 'unknown':
+        if modules_dict[module.lower()] == 'unknown':
             modules_dict[module.lower()] = extra[module]
 
 
