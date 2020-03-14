@@ -38,9 +38,14 @@ for pipPackage in "${folders2pack[@]}"; do
     fi
 done
 
+## Now package tvb-rest-client
 cd framework_tvb
-python setup_rest_client.py sdist
-python setup_rest_client.py bdist_wheel
+mv setup.py setup_bck.py
+mv setup_rest_client.py setup.py
+python setup.py sdist
+python setup.py bdist_wheel
+mv setup.py setup_rest_client.py
+mv setup_bck.py setup.py
 mv dist/* ../dist/
 rm -R dist
 rm -R build
