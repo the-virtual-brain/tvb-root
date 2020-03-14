@@ -3,7 +3,7 @@
     <dependency env="[win,mac,linux]" name="allensdk">
         <full-name value="AllenSDK"/>
         <project-home value="https://github.com/AllenInstitute/AllenSDK"/>
-        <version value="0.16.2"/>
+        <version value="1.5.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_allen.txt"/>
         <license-type value="BSD_ 2nd clause"/>
@@ -33,7 +33,7 @@
     <dependency env="[mac,linux]" name="attr">
         <full-name value="Attr"/>
         <project-home value="https://pypi.python.org/pypi/attrs"/>
-        <version value="[17.3.0,19.1.0]"/>
+        <version value="[19.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_attrs.txt"/>
         <license-type value="MIT_"/>
@@ -43,7 +43,7 @@
     <dependency env="[win,linux]" name="attrs">
         <full-name value="Attrs"/>
         <project-home value="https://pypi.python.org/pypi/attrs"/>
-        <version value="[17.3.0,19.1.0]"/>
+        <version value="[19.3.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_attrs.txt"/>
         <license-type value="MIT_"/>
@@ -73,7 +73,7 @@
     <dependency env="[win,linux]" name="beautifulsoup4">
         <full-name value="Beautiful Soup (BS4)"/>
         <project-home value="http://www.crummy.com/software/BeautifulSoup"/>
-        <version value="[4.3.2,4.6.0,4.7.1]"/>
+        <version value="[4.8.2]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bs4.txt"/>
         <license-type value="MIT_"/>
@@ -83,7 +83,7 @@
     <dependency env="[win,linux]" name="bleach">
         <full-name value="Bleach"/>
         <project-home value="https://pypi.python.org/pypi/bleach"/>
-        <version value="[2.1.1,3.1.0]"/>
+        <version value="[3.1.1]"/>
         <usage value="static linking"/>
         <license value="LICENSE_bleach.txt"/>
         <license-type value="Apache_"/>
@@ -113,7 +113,7 @@
     <dependency env="[win,mac,linux]" name="certifi">
         <full-name value="Certifi"/>
         <project-home value="http://certifi.io/en/latest/"/>
-        <version value="[2017.11.5,2017.11.05,2019.3.9]"/>
+        <version value="[2019.11.28]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_certifi.txt"/>
         <license-type value="ISC_"/>
@@ -223,7 +223,7 @@
     <dependency env="[win,linux]" name="coverage">
         <full-name value="Coverage"/>
         <project-home value="https://pypi.python.org/pypi/coverage"/>
-        <version value="[4.4.2,4.5.3]"/>
+        <version value="[5.0]"/>
         <usage value="unit tests"/>
         <license value="LICENSE_coverage.txt"/>
         <license-type value="BSD_"/>
@@ -253,7 +253,7 @@
     <dependency env="[win,linux]" name="cython">
         <full-name value="Cython"/>
         <project-home value="http://cython.org/"/>
-        <version value="[0.27.3,0.29.7]"/>
+        <version value="[0.29.15]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_cython.txt"/>
         <license-type value="Apache_ 2"/>
@@ -283,7 +283,7 @@
     <dependency env="[win,mac,linux]" name="dateutil">
         <full-name value="python-dateutil"/>
         <project-home value="https://dateutil.readthedocs.org/en/latest/"/>
-        <version value="[2.6.1,2.8.0]"/>
+        <version value="[2.8.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_dateutil.txt"/>
         <license-type value="BSD_"/>
@@ -293,7 +293,7 @@
     <dependency env="[win,linux]" name="decorator">
         <full-name value="Decorator module"/>
         <project-home value="https://github.com/micheles/decorator"/>
-        <version value="[4.1.2,4.4.0]"/>
+        <version value="[4.4.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_decorator.txt"/>
         <license-type value="BSD_"/>
@@ -873,7 +873,7 @@
     <dependency env="[win,mac,linux]" name="matplotlib">
         <full-name value="MatPlotLib"/>
         <project-home value="http://matplotlib.sourceforge.net/users/license.html"/>
-        <version value="[1.5.3,2.1.0]"/>
+        <version value="[3.1.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_matplotlib.txt"/>
         <license-type value="BSD_ (PSF_ based)"/>
@@ -973,7 +973,7 @@
     <dependency env="[win,mac,linux]" name="networkx">
         <full-name value="NetworkX"/>
         <project-home value="http://networkx.lanl.gov/reference/legal.html"/>
-        <version value="[2.0,2.2]"/>
+        <version value="[2.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_networkx_1.4.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -983,7 +983,7 @@
     <dependency env="[win,mac,linux]" name="nibabel">
         <full-name value="Nibabel"/>
         <project-home value="http://nipy.sourceforge.net/nibabel/"/>
-        <version value="[2.2.1,2.4.0]"/>
+        <version value="[3.0.2]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_nibabel.txt"/>
         <license-type value="MIT_"/>
@@ -1063,7 +1063,7 @@
     <dependency env="[win,mac,linux]" name="numexpr">
         <full-name value="NumExpr"/>
         <project-home value="http://code.google.com/p/numexpr/"/>
-        <version value="[2.6.4,2.6.9]"/>
+        <version value="[2.7.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numexpr.txt"/>
         <license-type value="MIT_"/>
@@ -1073,7 +1073,7 @@
     <dependency env="[win,mac,linux]" name="numpy">
         <full-name value="Numpy"/>
         <project-home value="http://numpy.scipy.org/license.html#license"/>
-        <version value="1.16.3"/>
+        <version value="1.18.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_numpy.txt"/>
         <license-type value="BSD_"/>
@@ -1113,7 +1113,7 @@
     <dependency env="[win,mac,linux]" name="pandas">
         <full-name value="Pandas"/>
         <project-home value="http://pandas.pydata.org/"/>
-        <version value="0.24.2"/>
+        <version value="0.25.3"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pandas.txt"/>
         <license-type value="BSD_"/>
@@ -1193,7 +1193,7 @@
     <dependency env="[win,mac,linux]" name="pil">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[4.3.0,6.0.0]"/>
+        <version value="[7.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -1203,7 +1203,7 @@
     <dependency env="[win,linux]" name="pillow">
         <full-name value="Pillow Library"/>
         <project-home value="https://pillow.readthedocs.org/"/>
-        <version value="[4.3.0,6.0.0]"/>
+        <version value="[7.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_PIL.txt"/>
         <license-type value="MIT_"/>
@@ -1273,7 +1273,7 @@
     <dependency env="[win,mac,linux]" name="psycopg2">
         <full-name value="Psycopg2"/>
         <project-home value="http://initd.org/psycopg/"/>
-        <version value="[2.7.5,2.7.1 (dt dec pq3 ext lo64),2.7.6.1]"/>
+        <version value="[2.8.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_psycopg.txt"/>
         <license-type value="ZPL-License"/>
@@ -1393,7 +1393,7 @@
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>
-        <version value="2.7.16"/>
+        <version value="3.7.6"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_python.txt"/>
         <license-type value="PSF_"/>
@@ -1423,7 +1423,7 @@
     <dependency env="[win,linux]" name="pywavelets">
         <full-name value="Python wavelet transforms module"/>
         <project-home value="https://pypi.org/project/PyWavelets/"/>
-        <version value="[1.0.1,1.0.3]"/>
+        <version value="[1.1.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_pywavelets.txt"/>
         <license-type value="MIT_"/>
@@ -1433,7 +1433,7 @@
     <dependency env="[win,linux]" name="pyzmq">
         <full-name value="zeromq"/>
         <project-home value="http://zguide.zeromq.org"/>
-        <version value="[16.0.3,18.0.0]"/>
+        <version value="[19.0.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_zmq.txt"/>
         <license-type value="LGPLv3_"/>
@@ -1523,7 +1523,7 @@
     <dependency env="[win,linux,mac]" name="scikit-learn">
         <full-name value="Scikits Learn"/>
         <project-home value="http://scikit-learn.org/"/>
-        <version value="[0.19.1,0.20.3]"/>
+        <version value="[0.22.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scikits_learn.txt"/>
         <license-type value="BSD_ 3rd clause"/>
@@ -1543,7 +1543,7 @@
     <dependency env="[win,mac,linux]" name="scipy">
         <full-name value="Scipy"/>
         <project-home value="http://www.scipy.org/scipylib/faq.html#what-are-scipy-s-licensing-terms"/>
-        <version value="[1.0.0,1.2.1]"/>
+        <version value="[1.4.1]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_scipy.txt"/>
         <license-type value="BSD_"/>
@@ -1563,7 +1563,7 @@
     <dependency env="[win,mac,linux]" name="simplejson">
         <full-name value="Simple JSON"/>
         <project-home value="https://github.com/simplejson"/>
-        <version value="[3.13.2,3.16.0]"/>
+        <version value="[3.17.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_simplejson.txt"/>
         <license-type value="MIT_ or PSF_"/>
@@ -1593,7 +1593,7 @@
     <dependency env="[win,linux, Mac]" name="six">
         <full-name value="six"/>
         <project-home value="https://pypi.python.org/pypi/six/"/>
-        <version value="[1.11.0,1.12.0]"/>
+        <version value="[1.14.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_six.txt"/>
         <license-type value="MIT_"/>
@@ -1743,7 +1743,7 @@
     <dependency env="[linux,mac]" name="terminado">
         <full-name value="Terminado"/>
         <project-home value="https://pypi.python.org/pypi/terminado"/>
-        <version value="[0.8.1,0.8.2]"/>
+        <version value="[0.8.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_terminado.txt"/>
         <license-type value="BSD_"/>
@@ -1763,7 +1763,7 @@
     <dependency env="[mac,linux]" name="traitlets">
         <full-name value="Traitlets"/>
         <project-home value="http://ipython.org/"/>
-        <version value="4.3.2"/>
+        <version value="[4.3.3]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_ipython.txt"/>
         <license-type value="BSD_ revised"/>
@@ -1773,7 +1773,7 @@
     <dependency env="[win,linux]" name="toolz">
         <full-name value="ToolZ"/>
         <project-home value="https://pypi.python.org/pypi/toolz"/>
-        <version value="[0.8.2,0.9.0]"/>
+        <version value="[0.10.0]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_toolz.txt"/>
         <license-type value="BSD_"/>
@@ -1783,7 +1783,7 @@
     <dependency env="[win,mac,linux]" name="tornado">
         <full-name value="Tornado"/>
         <project-home value="http://www.tornadoweb.org/en/stable/"/>
-        <version value="[4.5.2,5.1.1]"/>
+        <version value="[6.0.4]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_tornado.txt"/>
         <license-type value="Apache_ 2"/>
@@ -1813,7 +1813,7 @@
     <dependency env="[win,linux,mac]" name="urllib3">
         <full-name value="urllib3"/>
         <project-home value="https://urllib3.readthedocs.io/en/latest/"/>
-        <version value="[1.25.2,1.22,1.24.3]"/>
+        <version value="[1.25.8]"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_urllib3.txt"/>
         <license-type value="MIT_"/>
@@ -1873,7 +1873,7 @@
     <dependency env="[win,linux]" name="wheel">
         <full-name value="A built-package format for Python."/>
         <project-home value="https://bitbucket.org/pypa/wheel"/>
-        <version value="[0.33.4,0.33.2]"/>
+        <version value="[0.34.2]"/>
         <usage value="packaging"/>
         <license value="LICENSE_wheel.txt"/>
         <license-type value="MIT_"/>

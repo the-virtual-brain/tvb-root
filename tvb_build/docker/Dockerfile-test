@@ -9,7 +9,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 
 USER root
 RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx cython pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
