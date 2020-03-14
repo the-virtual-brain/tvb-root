@@ -10,7 +10,7 @@ RUN service postgresql start && createdb -O postgres tvb-test && psql --command 
 USER root
 RUN conda update -n base -c defaults conda
 
-RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx cython pip numexpr psutil
+RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
@@ -20,7 +20,7 @@ RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing BeautifulSoup4 sub
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
 
 RUN conda update -n base -c defaults conda
-RUN conda create -y --name tvb-run python=3.7 nomkl numba scipy numpy networkx cython pip numexpr psutil
+RUN conda create -y --name tvb-run python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent

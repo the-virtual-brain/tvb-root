@@ -46,8 +46,8 @@ TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, P
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "flask", "flask-restplus", "formencode",
                             "gevent", "h5py", "Jinja2", "networkx", "nibabel", "numpy", "Pillow", "psutil",
-                            "python-keycloak", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate",
-                            "tvb-data", "tvb-gdist", "tvb-library"]
+                            "python-keycloak", "scikit-learn", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate"
+                            , "tvb-data", "tvb-gdist", "tvb-library"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
