@@ -91,8 +91,9 @@ class User(Base):
         self.gid = gid
 
     def __repr__(self):
-        return "<USER('%s','%s','%s','%s','%s', %s)>" % (self.username, self.password, self.email, self.validated,
-                                                         self.role, str(self.selected_project))
+        return "<USER('%s','%s','%s','%s','%s','%s', %s)>" % (self.username, self.display_name, self.password,
+                                                              self.email, self.validated, self.role,
+                                                              str(self.selected_project))
 
     def is_administrator(self):
         """Return a boolean, saying if current user has role Administrator"""

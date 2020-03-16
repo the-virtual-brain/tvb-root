@@ -57,6 +57,7 @@ class UserDto(BaseDto):
         self.update(kwargs)
         if user is not None:
             self.gid = user.gid
+            self.display_name = user.display_name
             self.email = user.email
 
 

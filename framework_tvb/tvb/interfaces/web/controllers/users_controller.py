@@ -100,16 +100,16 @@ class UserController(BaseController):
                     user = self.user_service.check_login(username, password)
                 if user is not None:
                     common.add2session(common.KEY_USER, user)
-                    common.set_info_message('Welcome ' + user.username)
+                    common.set_info_message('Welcome ' + user.display_name)
                     self.logger.debug("User " + user.username + " has just logged in!")
                     if user.selected_project is not None:
                         prj = user.selected_project
                         prj = ProjectService().find_project(prj)
                         self._mark_selected(prj)
                     raise cherrypy.HTTPRedirect('/user/profile')
-                else:
+                elif not keycloak_login:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
-                    self.logger.debug("Wrong username " + user.username + " !!!")
+                    self.logger.debug("Wrong username " + username + " !!!")
             except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
 
@@ -468,6 +468,7 @@ class RegisterForm(formencode.Schema):
     Validate Register Form
     """
     username = formencode.All(validators.UnicodeString(not_empty=True), validators.PlainText(), UniqueUsername())
+    display_name = validators.UnicodeString(not_empty=True)
     password = validators.UnicodeString(not_empty=True)
     password2 = validators.UnicodeString(not_empty=True)
     email = validators.Email(not_empty=True)

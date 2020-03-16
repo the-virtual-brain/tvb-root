@@ -283,6 +283,9 @@ class WebAdminSettings(object):
         # Give name for the Admin user, first created.
         self.ADMINISTRATOR_NAME = manager.get_attribute(stored.KEY_ADMIN_NAME, 'admin')
 
+        # Give display name for the Admin user, first created.
+        self.ADMINISTRATOR_DISPLAY_NAME = manager.get_attribute(stored.KEY_ADMIN_DISPLAY_NAME, 'Administrator')
+
         # Admin's password used when creating first user (default is MD5 for 'pass')
         self.ADMINISTRATOR_PASSWORD = manager.get_attribute(stored.KEY_ADMIN_PWD, '1a1dc91c907325c69271ddf0c944bc72')
 

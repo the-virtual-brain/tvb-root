@@ -137,6 +137,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         cherrypy.request.method = "POST"
         data = dict(username="registered_user",
+                    display_name="display_name",
                     password="pass",
                     password2="pass",
                     email="email@email.com",
@@ -171,6 +172,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         Test that a valid create new post will actually create a new user in database.
         """
         data = dict(username="registered_user",
+                    display_name="display_name",
                     password="pass",
                     password2="pass",
                     email="email@email.com",

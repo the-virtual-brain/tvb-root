@@ -99,7 +99,7 @@ def initialize(skip_import=False):
                 User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, TvbProfile.current.web.admin.SYSTEM_USER_NAME, None,
                      None, True, None))
             UserService().create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
-                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=ROLE_ADMINISTRATOR, skip_import=skip_import)

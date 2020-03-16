@@ -73,7 +73,7 @@ class TestUserService(TransactionalTestCase):
         self.clean_database()
         self.user_service = UserService()
         self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
-                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=model_project.ROLE_ADMINISTRATOR, skip_import=True)
