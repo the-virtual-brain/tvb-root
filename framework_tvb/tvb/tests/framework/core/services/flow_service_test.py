@@ -172,8 +172,7 @@ class TestFlowService(TransactionalTestCase):
         Test preparation of an adapter and launch mechanism.
         """
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        data = {"gid": 5}
-        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, view_model=adapter.get_view_model()(), **data)
+        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, view_model=adapter.get_view_model()())
         assert result.endswith("has finished."), "Operation fail"
 
     def test_get_filtered_by_column(self):

@@ -31,6 +31,8 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+#TODO: tests for methods like: build_adapter_from_class, build_adapter, load_with_references, __check_integrity
+#TODO: will be implemented in the future
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 class TestAdapterABC(TransactionalTestCase):

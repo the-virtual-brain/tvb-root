@@ -52,7 +52,7 @@ from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters import constants
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous, ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration

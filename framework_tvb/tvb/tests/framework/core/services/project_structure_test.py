@@ -512,17 +512,17 @@ class TestProjectStructure(TransactionalTestCase):
         group = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
                                             'NDimensionArrayAdapter')
         adapter_instance = ABCAdapter.build_adapter(group)
-        data = {'param_1': 'some value'}
+        view_model = adapter_instance.get_view_model()()
         # create 3 data types
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
+        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         assert count == 1
 
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
+        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
         count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
         assert count == 2
 
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, **data)
+        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
         array_wrappers, count = self.flow_service.get_available_datatypes(project_id,
                                                                           "tvb.datatypes.arrays.MappedArray")
         assert count == 3
