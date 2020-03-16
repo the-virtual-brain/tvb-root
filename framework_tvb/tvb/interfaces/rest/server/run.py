@@ -45,9 +45,10 @@ from tvb.interfaces.rest.server.resources.datatype.datatype_resource import Retr
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
-    GetDataInProjectResource
+    GetDataInProjectResource, ProjectMembersResource
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource
+from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
+    GetUsersResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -85,6 +86,7 @@ def initialize_flask():
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
+    name_space_users.add_resource(GetUsersResource, "/")
     name_space_users.add_resource(LoginUserResource, RestLink.LOGIN.compute_url())
     name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS.compute_url())
 
@@ -94,6 +96,8 @@ def initialize_flask():
     name_space_projects.add_resource(GetDataInProjectResource, RestLink.DATA_IN_PROJECT.compute_url(
         values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
     name_space_projects.add_resource(GetOperationsInProjectResource, RestLink.OPERATIONS_IN_PROJECT.compute_url(
+        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+    name_space_projects.add_resource(ProjectMembersResource, RestLink.PROJECT_MEMBERS.compute_url(
         values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
 
     # Datatypes namepsace

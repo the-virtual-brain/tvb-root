@@ -31,7 +31,7 @@
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.dtos import ProjectDto
-from tvb.interfaces.rest.commons.strings import RestLink, FormKeyInput
+from tvb.interfaces.rest.commons.strings import RestLink, FormKeyInput, RestNamespace
 
 
 class UserApi(MainApi):
@@ -54,6 +54,10 @@ class UserApi(MainApi):
     def get_projects_list(self):
         response = self.secured_request().get(self.build_request_url(RestLink.PROJECTS.compute_url(True)))
         return response, ProjectDto
+
+    @handle_response
+    def get_users(self):
+        return self.secured_request().get(self.build_request_url(RestNamespace.USERS.value))
 
     @handle_response
     def create_project(self, project_name, project_description):
