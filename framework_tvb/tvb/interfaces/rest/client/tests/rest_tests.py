@@ -30,8 +30,6 @@
 import os
 import tempfile
 from uuid import UUID
-
-import tvb_data
 import tvb_data.sensors as demo_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
@@ -73,11 +71,9 @@ class TestRestService(TransactionalTestCase):
 
     def test_fire_simulation(self):
         simulation_api = SimulationApi(self.base_url)
-
         session_stored_simulator = SimulatorAdapterModel()
 
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project)
         connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         session_stored_simulator.connectivity = UUID(connectivity.gid)
 

@@ -5,15 +5,6 @@
 # set up external dependencies that we maintain as distutils packages in externals/
 cd ..
 
-# Temporarily comment tvb-gdist install, as it has bugs.
-#cd externals/tvb_gdist
-#python setup.py install
-#rm -rf build
-#rm -rf dist
-#rm -rf tvb_gdist.egg-info
-#rm -f gdist.cpp
-#cd ../..
-
 cd framework_tvb
 python setup.py develop --no-deps
 cd ..

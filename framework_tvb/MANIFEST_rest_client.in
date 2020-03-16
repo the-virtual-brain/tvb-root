@@ -1,4 +1,5 @@
 include LICENSE
+include README_rest_client.rst
 include tvb/config/logger/*.conf
 recursive-include tvb *
 recursive-exclude tvb *.pyc
@@ -6,3 +7,6 @@ prune tvb/interfaces/rest/server
 prune tvb/interfaces/web
 prune tvb/interfaces/command
 prune tvb/tests
+prune README.rst
+prune MANIFEST_rest_client.in
+prune setup_bck.py

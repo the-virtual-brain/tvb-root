@@ -40,14 +40,12 @@ from datetime import datetime
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
+from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
-from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
@@ -58,7 +56,6 @@ KEY_DT_GID = 'gid'
 KEY_OPERATION_ID = 'operation'
 KEY_BURST_ID = 'burst'
 KEY_DT_DATE = "dt_date"
-
 
 
 class ExportManager:
@@ -248,7 +245,7 @@ class ExportManager:
         considered_op_ids = []
 
         if optimize_size:
-            ## take only the DataType with visibility flag set ON
+            # take only the DataType with visibility flag set ON
             for dt in project_datatypes:
                 if dt[KEY_OPERATION_ID] not in considered_op_ids:
                     to_be_exported_folders.append({'folder': files_helper.get_project_folder(project,
@@ -320,18 +317,16 @@ class ExportManager:
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        simulator_from_burst = dao.get_generic_entity(SimulatorIndex, burst.id, 'fk_parent_burst')[0]
-        simulator_h5 = h5.path_for_stored_index(simulator_from_burst)
-        simulator_config_folder = os.path.dirname(simulator_h5)
+        op_folder = FilesHelper().get_project_folder(burst.project, str(burst.fk_simulation_id))
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
-        tmp_export_folder = self._build_data_export_folder(simulator_from_burst)
+        tmp_export_folder = self._build_data_export_folder(burst)
         result_path = os.path.join(tmp_export_folder, zip_file_name)
 
         with TvbZip(result_path, "w") as zip_file:
-            for filename in os.listdir(simulator_config_folder):
-                zip_file.write(os.path.join(simulator_config_folder, filename), filename)
+            for filename in os.listdir(op_folder):
+                zip_file.write(os.path.join(op_folder, filename), filename)
 
         return result_path

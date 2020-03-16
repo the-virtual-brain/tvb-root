@@ -49,12 +49,11 @@ class DataTypeApi(MainApi):
         response = self.secured_request().get(self.build_request_url(
             RestLink.GET_DATATYPE.compute_url(True,
                                               {LinkPlaceholder.DATATYPE_GID.value: datatype_gid})), stream=True)
-        content_disposition = response.headers['Content-Disposition']
-        value, params = cgi.parse_header(content_disposition)
-        file_name = params['filename']
-        file_path = os.path.join(download_folder, os.path.basename(file_name))
-
         if response.ok:
+            content_disposition = response.headers['Content-Disposition']
+            value, params = cgi.parse_header(content_disposition)
+            file_name = params['filename']
+            file_path = os.path.join(download_folder, os.path.basename(file_name))
             return save_file(file_path, response)
 
         error_response = json.loads(response.content.decode('utf-8'))

@@ -33,19 +33,19 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
 
-class TestUserResource(TransactionalTestCase):
+class TestUserResource(RestResourceTest):
 
     def transactional_setup_method(self):
         self.username = 'Rest_User'
         self.test_user = TestFactory.create_user(self.username)
-        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
         self.projects_list_resource = GetProjectsListResource()
 
     def test_get_projects(self, mocker):
-        request_mock = mocker.patch.object(flask, 'g')
-        request_mock.current_user = self.test_user
+        self._mock_user(mocker)
 
         result = self.projects_list_resource.get()
         assert type(result) is list

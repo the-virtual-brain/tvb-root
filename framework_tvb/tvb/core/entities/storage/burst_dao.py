@@ -32,7 +32,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
@@ -91,6 +91,7 @@ class BurstDAO(RootDAO):
         """Get the BurstConfiguration entity with the given id"""
         try:
             burst = self.session.query(BurstConfiguration).filter_by(id=burst_id).one()
+            burst.project
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             burst = None
@@ -100,8 +101,8 @@ class BurstDAO(RootDAO):
         burst = None
         try:
             burst = self.session.query(BurstConfiguration
-                                       ).join(SimulatorIndex, SimulatorIndex.fk_parent_burst == BurstConfiguration.id
-                                              ).filter(SimulatorIndex.fk_from_operation == operation_id).one()
+                                       ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.id
+                                              ).filter(DataType.fk_from_operation == operation_id).first()
         except NoResultFound:
             self.logger.debug("No burst found for operation id = %s" % (operation_id,))
         except SQLAlchemyError as excep:

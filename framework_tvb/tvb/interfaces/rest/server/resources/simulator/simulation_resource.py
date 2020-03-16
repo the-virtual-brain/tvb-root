@@ -41,9 +41,11 @@ from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
+from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
+from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.simulator.simulator import Simulator
 
 
@@ -55,6 +57,7 @@ class FireSimulationResource(RestResource):
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 
+    @check_permission(ProjectAccessPermission, 'project_gid')
     def post(self, project_gid):
         """
         :start a simulation using a project id and a zip archive with the simulator data serialized

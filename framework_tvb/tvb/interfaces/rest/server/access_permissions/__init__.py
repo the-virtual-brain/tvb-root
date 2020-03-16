@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -27,16 +27,3 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from sqlalchemy import Column, Integer, ForeignKey
-from tvb.core.entities.model.model_datatype import DataType
-
-# TODO TVB-2568 remove this class and move content of
-#  tvb.core.entities.model.simmulator.burst_configuration into tvb.core.entities.model.model_burst
-
-
-class SimulatorIndex(DataType):
-    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-
-    def __init__(self, gid=None, **kwargs):
-        super(SimulatorIndex, self).__init__(gid, **kwargs)
-        self.visible = False

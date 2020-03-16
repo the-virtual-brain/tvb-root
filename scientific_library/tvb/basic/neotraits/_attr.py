@@ -31,22 +31,19 @@
 """
 This private module implements concrete declarative attributes
 """
-import types
-import collections
+import collections.abc
 import numpy
-import logging
-from ._declarative_base import _Attr
+import types
+import typing
+from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError
-import sys
+from tvb.basic.logger.builder import get_logger
 
-if sys.version_info[0] == 3:
-    import typing
-    if typing.TYPE_CHECKING:
-        from ._core import HasTraits
-        from tvb.basic.neotraits._declarative_base import MetaType
+if typing.TYPE_CHECKING:
+    from ._core import HasTraits
 
 # a logger for the whole traits system
-log = logging.getLogger('tvb.traits')
+log = get_logger('tvb.traits')
 
 
 class Attr(_Attr):
@@ -246,7 +243,7 @@ class List(Attr):
     def __init__(self, of=object, default=(), doc='', label='', final=False, choices=None):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
         super(List, self).__init__(
-            field_type=collections.Sequence,
+            field_type=collections.abc.Sequence,
             default=default,
             doc=doc,
             label=label,
@@ -472,7 +469,7 @@ class NArray(Attr):
                 if d is not Dim.any and type(d) != Dim:
                     raise TraitValueError("shape elements must be Dim's not {}".format(type(d)), attr=self)
             self.ndim = len(self.shape)
-        elif self.dim_names:   # no shape but dim_names
+        elif self.dim_names:  # no shape but dim_names
             self.ndim = len(self.dim_names)
         else:
             self.ndim = None

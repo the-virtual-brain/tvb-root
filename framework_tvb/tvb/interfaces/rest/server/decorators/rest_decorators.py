@@ -29,14 +29,17 @@
 #
 import json
 from functools import wraps
+from typing import Any
 
 from flask import current_app, request
 from flask.json import dumps
 from keycloak.exceptions import KeycloakError
+from tvb.basic.logger.builder import get_logger
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.commons.exceptions import AuthorizationRequestException
+from tvb.interfaces.rest.commons.strings import Strings
+from tvb.interfaces.rest.server.access_permissions.permissions import ResourceAccessPermission
 from tvb.interfaces.rest.server.request_helper import set_current_user
 
 
@@ -90,3 +93,29 @@ def secured(func):
         return func(*a, **b)
 
     return deco
+
+
+def check_permission(resource_access_permission_class, requested_resource_identifier_name):
+    # type: (ResourceAccessPermission.__subclasses__(), str) -> Any
+    """
+    Decorator which is used to check if the logged user has access to the requested resource
+    :param resource_access_permission_class: ResourceAccessPermission subclass
+    :param requested_resource_identifier_name: resource identifier parameter name
+    :return: continue execution if user has access, raise an exception otherwise
+    """
+
+    def dec(func):
+        @wraps(func)
+        def deco(*a, **b):
+            try:
+                identifier = b[requested_resource_identifier_name]
+                access_permission_instance = resource_access_permission_class(identifier)
+                if access_permission_instance.has_access():
+                    return func(*a, **b)
+            except KeyError:
+                get_logger().warn("Invalid identifier name")
+            raise AuthorizationRequestException("You cannot access this resource")
+
+        return deco
+
+    return dec

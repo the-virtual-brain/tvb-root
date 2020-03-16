@@ -30,10 +30,8 @@
 
 import os
 import tempfile
-
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
@@ -45,13 +43,11 @@ class SimulationApi(MainApi):
 
     @handle_response
     def fire_simulation(self, project_gid, session_stored_simulator, temp_folder):
-        simulator_index = SimulatorIndex()
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
         destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
         simulation_state_gid = None
 
-        SimulatorSerializer().serialize_simulator(session_stored_simulator, simulator_index.gid,
-                                                  simulation_state_gid, destination_folder)
+        SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, destination_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
         FilesHelper().zip_folder(zip_folder_path, destination_folder)
 

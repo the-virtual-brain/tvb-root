@@ -39,6 +39,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
@@ -105,7 +106,8 @@ def fire_simulation(project_id, simulator):
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()
-    launched_operation = simulator_service.async_launch_and_prepare_simulation(None, project.administrator, project,
+    launched_operation = simulator_service.async_launch_and_prepare_simulation(BurstConfiguration(project.id),
+                                                                               project.administrator, project,
                                                                                cached_simulator_algorithm, simulator,
                                                                                None)
     LOG.info("Operation launched ....")

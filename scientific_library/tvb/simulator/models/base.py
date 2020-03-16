@@ -30,17 +30,12 @@
 This module defines the common imports and abstract base class for model definitions.
 
 """
-import sys
 import abc
 import numpy
+import typing
 from tvb.basic.neotraits.api import HasTraits
-if sys.version_info[0] == 3:
-    import typing
 
-import sys
 
-if sys.version_info[0] == 3:
-    import typing
 
 
 class Model(HasTraits):

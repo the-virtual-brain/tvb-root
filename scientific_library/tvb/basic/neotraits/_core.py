@@ -32,18 +32,16 @@
 This module implements neotraits.
 It is private only to shield public usage of the imports and logger.
 """
-import sys
+
 import uuid
 import numpy
+import typing
 from six import add_metaclass
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
 from .ex import TraitAttributeError, TraitTypeError, TraitError
 from tvb.basic.logger.builder import get_logger
-
-if sys.version_info[0] == 3:
-    import typing
 
 
 

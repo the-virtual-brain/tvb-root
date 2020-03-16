@@ -16,3 +16,5 @@ RUN cd /opt \
  && python3 setup.py develop
 
 RUN pip install h5py>=2.10 tvb-gdist pytest-xdist
+
+RUN pip install mako
