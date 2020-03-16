@@ -1,0 +1,31 @@
+{
+  "kind": "ImageStream",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "thevirtualbrain",
+    "labels": {
+      "application": "thevirtualbrain"
+    }
+  },
+  "spec": {
+    "strategy": {
+      "customStrategy": {
+        "from": {
+          "kind": "DockerImage",
+          "name": "thevirtualbrain/tvb-run:hbp_openshift"
+        }
+      }
+    },
+    "output": {
+      "to": {
+        "kind": "ImageStreamTag",
+        "name": "tvb-run"
+      }
+    },
+    "triggers": [
+      {
+        "type": "ImageChange"
+      }
+    ]
+  }
+}
