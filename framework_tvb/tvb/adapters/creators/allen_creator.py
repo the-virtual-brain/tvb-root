@@ -40,12 +40,15 @@ data using their SDK.
 import os.path
 import numpy as np
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Float, Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.entities.storage import dao
+from tvb.core.neotraits.forms import ScalarField, SelectField
+from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.volumes import Volume
@@ -55,8 +58,66 @@ from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 
 LOGGER = get_logger(__name__)
 
+RESOLUTION_OPTIONS = {
+    '25': '25',
+    '50': '50',
+    '100': '100'
+}
+
+WEIGHTS_OPTIONS = {
+    '(projection density)/(injection density)': '1',
+    'projection density': '2',
+    'projection energy': '3'
+}
+
+# WEIGHTS_OPTIONS = {
+#     '1' : '1',
+#     '2' : '2',
+#     '3' : '3'
+# }
+
+class AllenConnectModel(ViewModel):
+
+    resolution = Attr(
+        field_type=str,
+        label="Spatial resolution (micron)",
+        choices=tuple(RESOLUTION_OPTIONS),
+        required=True,
+        doc="""Definition of the weights of the connectivity :""")
+
+    weighting = Attr(
+        field_type=str,
+        label="Definition of the weights of the connectivity :",
+        choices=tuple(WEIGHTS_OPTIONS),
+        required=True,
+        doc="""""")
+
+    inj_f_thresh = Float(
+        label="Injected percentage of voxels in the inj site",
+        default=80,
+        required=True,
+        doc="""To build the volume and the connectivity select only the areas that have a volume 
+        greater than (micron^3): """)
+
+    vol_thresh = Float(
+        label="Min volume",
+        default=1000000000,
+        required=True,
+        doc="""To build the connectivity select only the experiment where the percentage of infected voxels 
+        in the injection structure is greater than: """)
 
 class AllenConnectomeBuilderForm(ABCAdapterForm):
+
+    def __init__(self, prefix='', project_id=None):
+        super(AllenConnectomeBuilderForm, self).__init__(prefix, project_id)
+        self.resolution = SelectField(AllenConnectModel.resolution, self)
+        self.weighting = SelectField(AllenConnectModel.weighting, self)
+        self.inj_f_thresh = ScalarField(AllenConnectModel.inj_f_thresh, self)
+        self.vol_thresh = ScalarField(AllenConnectModel.vol_thresh, self)
+
+    @staticmethod
+    def get_view_model():
+        return AllenConnectModel
 
     @staticmethod
     def get_required_datatype():
@@ -126,11 +187,11 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         return [ConnectivityIndex, VolumeIndex, RegionVolumeMappingIndex, StructuralMRIIndex]
 
 
-    def launch(self, resolution, weighting, inj_f_thresh, vol_thresh):
-        resolution = int(resolution)
-        weighting = int(weighting)
-        inj_f_thresh = float(inj_f_thresh)/100.
-        vol_thresh = float(vol_thresh)
+    def launch(self, view_model):
+        resolution = int(view_model.resolution)
+        weighting = int(view_model.weighting)
+        inj_f_thresh = float(view_model.inj_f_thresh)/100.
+        vol_thresh = float(view_model.vol_thresh)
 
         project = dao.get_project_by_id(self.current_project_id)
         manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
@@ -211,10 +272,10 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         result_template.volume = result_volume
         return [result_connectivity, result_volume, result_rvm, result_template]
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         return -1
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         return -1
 
 
