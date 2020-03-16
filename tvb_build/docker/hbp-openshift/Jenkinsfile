@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    environment {
+        FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
+        HBP_TAG='hbp_openshift'
+    }
+
+    stages {
+        stage ('Build docker image') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/hbp-openshift/Dockerfile tvb_build/docker/hbp-openshift")
+                    dockerImage.push('${HBP_TAG}')
+                }
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'paula.popa@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}
