@@ -90,6 +90,8 @@ KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
 KEY_SIMULATION_NAME = "input_simulation_name_id"
+KEY_PSE_PARAM_1 = "pse_param1"
+KEY_PSE_PARAM_2 = "pse_param2"
 
 # Overlay specific keys
 KEY_OVERLAY_TITLE = "overlay_title"

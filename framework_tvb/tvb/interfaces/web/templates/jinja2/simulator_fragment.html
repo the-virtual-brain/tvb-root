@@ -66,4 +66,9 @@
         <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary"
                 onclick="wizzard_submit(this.parentElement)">Setup PSE</button>
     {% endif %}
+
+    {% if renderer.include_launch_pse_button %}
+        <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary"
+                onclick="launchNewPSEBurst()">Launch PSE</button>
+    {% endif %}
 </form>

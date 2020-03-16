@@ -280,3 +280,10 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
                                               SimulatorPSEParamRangeFragment._prepare_pse_uuid_list(param2_range_str))
 
         return param1_range, param2_range
+
+
+class SimulatorPSEFinalFragment(ABCAdapterForm):
+    def __init__(self, prefix='', project_id=None):
+        super(SimulatorPSEFinalFragment, self).__init__(prefix, project_id)
+        self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration', label='Number of simulations'),
+                                           self, name='number_of_simulations', disabled=True)

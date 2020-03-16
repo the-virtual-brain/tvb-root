@@ -1147,21 +1147,20 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     user_edited_title = false;
 }
 
-function setupPSE() {
+function launchNewPSEBurst() {
     doAjaxCall({
         type: "POST",
-        url: '/burst/setup_pse/',
+        url: '/burst/launch_pse/',
         traditional: true,
         success: function (r) {
-            // TODO: update history
-            // loadBurstHistory();
-            // const result = $.parseJSON(r);
-            // if ('id' in result) {
-            //     changeBurstHistory(result.id);
-            // }
-            // if ('error' in result) {
-            //     displayMessage(result.error, "errorMessage");
-            // }
+            loadBurstHistory();
+            const result = $.parseJSON(r);
+            if ('id' in result) {
+                changeBurstHistory(result.id);
+            }
+            if ('error' in result) {
+                displayMessage(result.error, "errorMessage");
+            }
         },
         error: function () {
             displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
@@ -1210,6 +1209,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
     var config_launch_button = previous_form.elements.namedItem('launch_simulation');
     var config_pse_button = previous_form.elements.namedItem('setup_pse');
+    var config_launch_pse_button = previous_form.elements.namedItem('launch_pse');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -1233,6 +1233,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_pse_button != null){
         config_pse_button.style.visibility = 'visible';
     }
+    if (config_launch_pse_button != null){
+        config_launch_pse_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
@@ -1248,6 +1251,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
     var config_launch_button = currentForm.elements.namedItem('launch_simulation');
     var config_pse_button = currentForm.elements.namedItem('setup_pse');
+    var config_launch_pse_button = currentForm.elements.namedItem('launch_pse');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -1278,6 +1282,9 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 if (config_pse_button != null){
                     config_pse_button.style.visibility = 'hidden';
+                }
+                if(config_launch_pse_button != null){
+                    config_launch_pse_button.style.visibility = 'hidden';
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
