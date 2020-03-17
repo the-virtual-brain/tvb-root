@@ -34,6 +34,7 @@
 """
 
 import urllib.request, urllib.parse, urllib.error
+import uuid
 import cherrypy
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.storage import dao
@@ -135,11 +136,11 @@ class ParameterExplorationController(BaseController):
             color_metric = None
         if size_metric == 'None':
             size_metric = None
-
+        datatype_group_gid = uuid.UUID(datatype_group_gid)
         algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
                                                                         IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
-        if self._is_compatible(algorithm, datatype_group_gid):
+        if self._is_compatible(algorithm, datatype_group_gid.hex):
             try:
                 pse_context = adapter.prepare_parameters(datatype_group_gid, backPage, color_metric, size_metric)
                 return dict(series_array=pse_context.series_array,
