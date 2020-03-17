@@ -58,7 +58,9 @@ class TestSettingsController(BaseTransactionalControllerTest):
                        if TvbProfile.current.db.SELECTED_DB == 'sqlite'
                        else TvbProfile.current.db.DB_URL)
 
-    VALID_SETTINGS = {'TVB_STORAGE': "TestFolder",
+    VALID_SETTINGS = {'KEYCLOAK_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-config.json',
+                      'KEYCLOAK_WEB_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-web-config.json',
+                      'TVB_STORAGE': "TestFolder",
                       'USR_DISK_SPACE': 1,
                       'MAXIMUM_NR_OF_THREADS': 6,
                       'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 142,
@@ -74,6 +76,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'WEB_SERVER_PORT': 9999,
 
                       'ADMINISTRATOR_NAME': 'test_admin',
+                      'ADMINISTRATOR_DISPLAY_NAME': 'test_Administrator',
                       'ADMINISTRATOR_PASSWORD': "test_pass",
                       'ADMINISTRATOR_EMAIL': 'admin@test.test'}
 
@@ -152,7 +155,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         assert self.was_reset
-        assert 17 == len(TvbProfile.current.manager.stored_settings)
+        assert len(TvbProfile.current.manager.stored_settings) == 21
 
         assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
         assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE
