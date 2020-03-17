@@ -36,13 +36,11 @@ from datetime import datetime
 import numpy
 from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
-from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
 # This setting is injected.
@@ -416,12 +414,9 @@ class TraitDataTypeSelectField(TraitField):
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
         else:
-            type_to_query = trait_attribute.field_type
+            type_to_query = REGISTRY.get_index_for_datatype(trait_attribute.field_type)
 
-        if issubclass(type_to_query, HasTraitsIndex):
-            self.datatype_index = type_to_query
-        else:
-            self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
+        self.datatype_index = type_to_query
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.dynamic_conditions = dynamic_conditions
