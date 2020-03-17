@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: thevirtualbrain
+  annotations:
+    description: "Description"
+    tags: "tvb"
+objects:
+  - kind: "PersistentVolumeClaim"
+    apiVersion: "v1"
+    metadata:
+      name: "claim1"
+      annotations:
+        volume.beta.kubernetes.io/storage-class: managed-nfs-storage
+        volume.beta.kubernetes.io/storage-provisioner: fuseim.pri/ifs
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "1Mi"
+  - kind: "PersistentVolumeClaim"
+    apiVersion: "v1"
+    metadata:
+      name: "claim2"
+      annotations:
+        volume.beta.kubernetes.io/storage-class: managed-nfs-storage
+        volume.beta.kubernetes.io/storage-provisioner: fuseim.pri/ifs
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: "1Ti"
+  - kind: Pod
+    apiVersion: v1
+    metadata:
+      name: tvb
+      labels:
+        app: tvb
+    spec:
+      containers:
+        - env:
+          image: thevirtualbrain/tvb-run:hbp_openshift
+          imagePullPolicy: Always
+          name: tvb
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /home/tvb_user/keycloak_config
+              name: keycloak-config
+            - mountPath: /home/tvb_user/TVB_STORAGE/
+              name: tvb-storage
+      volumes:
+          - name: keycloak-config
+            persistentVolumeClaim:
+              claimName: "claim1"
+          - name: tvb-storage
+            persistentVolumeClaim:
+              claimName: "claim2"
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: "thevirtualbrain"
+      annotations:
+        description: "Exposes the application pods"
+    spec:
+      ports:
+        - name: "web"
+          port: 8080
+          targetPort: 8080
+      selector:
+        # The label selector identifies all pods with the app=tvb label attached as its backing pods.
+        app: "tvb"
+  - kind: Route
+    apiVersion: v1
+    metadata:
+      name: route-unsecured
+    spec:
+      host: thevirtualbrain.apps-dev.hbp.eu
+      to:
+        kind: Service
+        name: thevirtualbrain
+        port:
+          targetPort: 8080-tcp
+labels:
+  tvb: tvb
