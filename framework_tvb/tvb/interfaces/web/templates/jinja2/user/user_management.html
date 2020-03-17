@@ -21,6 +21,7 @@
 		<table class="contentTable" summary="Manage Users">
 			<thead><tr><td colspan='4'><h2><mark>Users</mark> management</h2></td></tr></thead>
 			<tr>
+				<td>User display name</td>
 				<td>User name</td>
             	<td>User email</td>
 				<td>Role</td>
@@ -31,6 +32,7 @@
 				{% with %}
 					{% set tabindex = 3 %}
 					<tr>
+						<td>{{ user.display_name }}</td>
 						<td><i>{{ user.username }}</i></td>
 						<td>{{ user.email }}</td>
 						<td>

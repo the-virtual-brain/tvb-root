@@ -37,6 +37,7 @@ Here we define entities related to user and project.
 """
 
 import datetime
+import uuid
 
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -66,8 +67,9 @@ class User(Base):
     __tablename__ = 'USERS'
 
     id = Column(Integer, primary_key=True)
-    external_id = Column(String, nullable=True, unique=True)
+    gid = Column(String, unique=True)
     username = Column(String, unique=True)
+    display_name = Column(String)
     password = Column(String)
     email = Column(String, nullable=True)
     role = Column(String)
@@ -77,17 +79,21 @@ class User(Base):
     preferences = association_proxy('user_preferences', 'value',
                                     creator=lambda k, v: UserPreferences(key=k, value=v))
 
-    def __init__(self, login, password, email=None, validated=True, role=ROLE_RESEARCHER, external_id=None):
+    def __init__(self, login, display_name, password, email=None, validated=True, role=ROLE_RESEARCHER, gid=None):
         self.username = login
+        self.display_name = display_name
         self.password = password
         self.email = email
         self.validated = validated
         self.role = role
-        self.external_id = external_id
+        if gid is None:
+            gid = uuid.uuid4().hex
+        self.gid = gid
 
     def __repr__(self):
-        return "<USER('%s','%s','%s','%s','%s', %s)>" % (self.username, self.password, self.email, self.validated,
-                                                         self.role, str(self.selected_project))
+        return "<USER('%s','%s','%s','%s','%s','%s', %s)>" % (self.username, self.display_name, self.password,
+                                                              self.email, self.validated, self.role,
+                                                              str(self.selected_project))
 
     def is_administrator(self):
         """Return a boolean, saying if current user has role Administrator"""

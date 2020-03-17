@@ -37,7 +37,10 @@
 		{% endif %}
         <form method="post">
         	<dl>
-            	<dt>Username</dt>
+            	<dt>Display name</dt>
+            	<dd>{{ user.display_name }}</dd>
+
+				<dt>Username</dt>
             	<dd>{{ user.username }}</dd>
 
 				{% if user.role %}

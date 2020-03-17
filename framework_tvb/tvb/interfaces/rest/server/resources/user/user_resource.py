@@ -32,12 +32,13 @@ import formencode
 from flask_restplus import Resource
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.project_service import ProjectService
-from tvb.interfaces.rest.commons.dtos import ProjectDto
+from tvb.core.services.user_service import UserService
+from tvb.interfaces.rest.commons.dtos import ProjectDto, UserDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import FormKeyInput
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 from tvb.interfaces.rest.server.request_helper import get_current_user
+from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 USERS_PAGE_SIZE = 1000
 
@@ -81,6 +82,15 @@ class LoginUserResource(Resource):
             return AuthorizationManager.get_keycloak_instance().logout(refresh_token)
         except KeyError:
             raise InvalidInputException("Invalid refresh token input.")
+
+
+class GetUsersResource(RestResource):
+    def get(self):
+        """
+        :return: a list of TVB users
+        """
+        user_list, pages_no = UserService.retrieve_all_users(get_current_user().username)
+        return {"users": [UserDto(user) for user in user_list], "pages_no": pages_no}
 
 
 class GetProjectsListResource(RestResource):

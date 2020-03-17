@@ -51,6 +51,7 @@ class SettingsService(object):
     """
 
     KEY_ADMIN_NAME = stored.KEY_ADMIN_NAME
+    KEY_ADMIN_DISPLAY_NAME = stored.KEY_ADMIN_DISPLAY_NAME
     KEY_ADMIN_PWD = stored.KEY_ADMIN_PWD
     KEY_ADMIN_EMAIL = stored.KEY_ADMIN_EMAIL
     KEY_STORAGE = stored.KEY_STORAGE
@@ -70,7 +71,7 @@ class SettingsService(object):
     KEY_MAX_NR_SURFACE_VERTEX = stored.KEY_MAX_NR_SURFACE_VERTEX
 
     # Display order for the keys. None means a separator/new line will be added
-    KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
+    KEYS_DISPLAY_ORDER = [KEY_ADMIN_DISPLAY_NAME, KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
                           KEY_KC_CONFIG, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIG, None, KEY_STORAGE,
                           KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
                           KEY_DB_URL, None,
@@ -126,6 +127,10 @@ class SettingsService(object):
             self.KEY_CLUSTER_SCHEDULER: {'label': 'Cluster Scheduler', 'readonly': False,
                                          'value': TvbProfile.current.cluster.CLUSTER_SCHEDULER, 'type': 'select',
                                          'options': TvbProfile.current.cluster.ACCEPTED_SCHEDULERS},
+            self.KEY_ADMIN_DISPLAY_NAME: {'label': 'Administrator Display Name',
+                                  'value': TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
+                                  'type': 'text', 'readonly': not first_run},
+
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                   'type': 'text', 'readonly': not first_run,
