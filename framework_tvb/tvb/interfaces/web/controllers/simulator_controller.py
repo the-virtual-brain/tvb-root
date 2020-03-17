@@ -671,7 +671,8 @@ class SimulatorController(BurstBaseController):
         form.fill_from_trait(monitor)
 
         if isinstance(monitor, TemporalAverage):
-            form = SimulatorFinalFragment()
+            simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
+            form = SimulatorFinalFragment(simulation_number=simulation_number)
             form.fill_from_trait(session_stored_simulator)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                               SimulatorWizzardURLs.SET_MONITORS_URL,
@@ -737,7 +738,8 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].sensors = sensors
             session_stored_simulator.monitors[0].projection = projection
 
-        next_form = SimulatorFinalFragment()
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
+        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
         next_form.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
@@ -764,7 +766,8 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(monitor.hrf_kernel)
 
-        next_form = SimulatorFinalFragment()
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
+        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
