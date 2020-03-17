@@ -37,6 +37,7 @@ import json
 import os
 import shutil
 import uuid
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
@@ -166,11 +167,11 @@ class SimulatorService(object):
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    ranges = {range_param1.name: param1_value[0]}
+                    ranges = {range_param1.name: param1_value[0] if type(param1_value) is numpy.ndarray else param1_value}
 
                     if param2_value:
                         self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
-                        ranges[range_param2.name] = param2_value[0]
+                        ranges[range_param2.name] = param2_value[0] if type(param2_value) is numpy.ndarray else param2_value
 
                     ranges = json.dumps(ranges)
 
