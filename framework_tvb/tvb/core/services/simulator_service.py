@@ -155,19 +155,24 @@ class SimulatorService(object):
             operation_group = burst_config.operation_group
             metric_operation_group = burst_config.metric_operation_group
             operations = []
-            range_param2_values = []
+            range_param2_values = [None]
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
-            for param1_value in range_param1.get_range_values():
-                for param2_value in range_param2_values:
+
+            for param2_value in range_param2_values:
+                for param1_value in range_param1.get_range_values():
                     # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                    ranges = {range_param1.name: param1_value[0]}
 
-                    ranges = json.dumps({range_param1.name: param1_value[0], range_param2.name: param2_value[0]})
+                    if param2_value:
+                        self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                        ranges[range_param2.name] = param2_value[0]
+
+                    ranges = json.dumps(ranges)
 
                     operation = self._prepare_operation(project.id, user.id, simulator_id, simulator.gid,
                                                         algo_category, operation_group,
