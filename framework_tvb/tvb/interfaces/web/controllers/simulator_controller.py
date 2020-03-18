@@ -804,16 +804,22 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
-        form.fill_from_post(data)
 
         if cherrypy.request.method == 'POST':
             is_simulator_copy = False
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_RANGE_PARAMS_URL)
+            form.fill_from_post(data)
 
-        param1 = form.pse_param1.value
-        param2 = None
-        if not form.pse_param2.value == form.pse_param2.missing_value:
-            param2 = form.pse_param2.value
+            param1 = form.pse_param1.value
+            param2 = None
+            if not form.pse_param2.value == form.pse_param2.missing_value:
+                param2 = form.pse_param2.value
+        else:
+            burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
+            all_range_parameters = self.range_parameters.get_all_range_parameters()
+            param1 = all_range_parameters.get(json.loads(operation_group.range1)[0])
+            param2 = all_range_parameters.get(json.loads(operation_group.range2)[0])
 
         project_id = common.get_current_project().id
         next_form = SimulatorPSEParamRangeFragment(param1, param2, project_id=project_id)
@@ -840,8 +846,10 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_PSE_PARAM_1, range_param1)
             common.add2session(common.KEY_PSE_PARAM_2, range_param2)
         else:
-            range_param1 = common.get_from_session(common.KEY_PSE_PARAM_1)
-            range_param2 = common.get_from_session(common.KEY_PSE_PARAM_2)
+            burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
+            range_param1 = all_range_parameters.get(json.loads(operation_group.range1)[0])
+            range_param2 = all_range_parameters.get(json.loads(operation_group.range2)[0])
 
         number_of_simulations = len(range_param1.get_range_values())
 
