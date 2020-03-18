@@ -3,13 +3,13 @@ kind: Template
 metadata:
   name: thevirtualbrain
   annotations:
-    description: "Description"
-    tags: "tvb"
+    description: "Template to deploy TVB web GUI on HBP Openshift"
+    tags: "tvb, thevirtualbrain, hbp"
 objects:
   - kind: "PersistentVolumeClaim"
     apiVersion: "v1"
     metadata:
-      name: "claim1"
+      name: claim-keycloak-config
       annotations:
         volume.beta.kubernetes.io/storage-class: managed-nfs-storage
         volume.beta.kubernetes.io/storage-provisioner: fuseim.pri/ifs
@@ -22,7 +22,7 @@ objects:
   - kind: "PersistentVolumeClaim"
     apiVersion: "v1"
     metadata:
-      name: "claim2"
+      name: claim-tvb-storage
       annotations:
         volume.beta.kubernetes.io/storage-class: managed-nfs-storage
         volume.beta.kubernetes.io/storage-provisioner: fuseim.pri/ifs
@@ -31,11 +31,11 @@ objects:
         - "ReadWriteOnce"
       resources:
         requests:
-          storage: "1Ti"
+          storage: "2Ti"
   - kind: Pod
     apiVersion: v1
     metadata:
-      name: tvb
+      name: thevirtualbrain
       labels:
         app: tvb
     spec:
@@ -43,7 +43,7 @@ objects:
         - env:
           image: thevirtualbrain/tvb-run:hbp_openshift
           imagePullPolicy: Always
-          name: tvb
+          name: tvb-gui
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -55,34 +55,36 @@ objects:
       volumes:
           - name: keycloak-config
             persistentVolumeClaim:
-              claimName: "claim1"
+              claimName: claim-keycloak-config
           - name: tvb-storage
             persistentVolumeClaim:
-              claimName: "claim2"
+              claimName: claim-tvb-storage
   - kind: Service
     apiVersion: v1
     metadata:
-      name: "thevirtualbrain"
+      name: thevirtualbrain
       annotations:
-        description: "Exposes the application pods"
+        description: "Exposes and load balances the application pods"
     spec:
       ports:
-        - name: "web"
-          port: 8080
+        - name: tvb-gui
+          port: 443
           targetPort: 8080
       selector:
         # The label selector identifies all pods with the app=tvb label attached as its backing pods.
-        app: "tvb"
+        app: tvb
   - kind: Route
     apiVersion: v1
     metadata:
-      name: route-unsecured
+      name: route-edge-secured
     spec:
-      host: thevirtualbrain.apps-dev.hbp.eu
+      # Use domain: apps-dev.hbp.eu for DEV platform and apps.hbp.eu for PRD platform
+      host: thevirtualbrain.apps.hbp.eu
       to:
         kind: Service
         name: thevirtualbrain
-        port:
-          targetPort: 8080-tcp
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
 labels:
   tvb: tvb
