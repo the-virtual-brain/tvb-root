@@ -169,7 +169,7 @@ class SimulatorService(object):
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
                     ranges = {range_param1.name: param1_value[0] if type(param1_value) is numpy.ndarray else param1_value}
 
-                    if param2_value:
+                    if param2_value is not None:
                         self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
                         ranges[range_param2.name] = param2_value[0] if type(param2_value) is numpy.ndarray else param2_value
 
