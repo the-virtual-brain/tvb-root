@@ -990,7 +990,7 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
         success: function (response) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
-            _renderAllSimulatorForms(first_wizzard_form_url);
+            _renderAllSimulatorForms(first_wizzard_form_url, '/burst/launch_pse');
             displayMessage("The simulation configuration was loaded for you!");
         },
         error: function () {
