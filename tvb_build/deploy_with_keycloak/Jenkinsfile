@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
-        DEPLOY_TAG='deploy_with_keycloak'
+        DEPLOY_TAG='keycloak'
     }
 
     stages {
