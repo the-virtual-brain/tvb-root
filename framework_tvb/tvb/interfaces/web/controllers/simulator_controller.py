@@ -654,6 +654,8 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id)
+
         if cherrypy.request.method == 'POST':
             if data['monitor'] == 'Temporal average':
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_SIMULATION_URL)
@@ -666,12 +668,13 @@ class SimulatorController(BurstBaseController):
 
             session_stored_simulator.monitors = [fragment.monitor.value()]
 
+            simulation_number = simulation_number + 1
+
         monitor = session_stored_simulator.monitors[0]
         form = get_form_for_monitor(type(monitor))('', common.get_current_project().id)
         form.fill_from_trait(monitor)
 
         if isinstance(monitor, TemporalAverage):
-            simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
             form = SimulatorFinalFragment(simulation_number=simulation_number)
             form.fill_from_trait(session_stored_simulator)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SETUP_PSE_URL,
@@ -697,11 +700,16 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id)
+
         if cherrypy.request.method == 'POST':
             is_simulator_copy = False
             form = get_form_for_monitor(type(monitor))()
             form.fill_from_post(data)
             form.fill_trait(monitor)
+
+            simulation_number = simulation_number + 1
+
             if isinstance(monitor, Bold):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL)
             else:
@@ -738,7 +746,6 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].sensors = sensors
             session_stored_simulator.monitors[0].projection = projection
 
-        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
         next_form = SimulatorFinalFragment(simulation_number=simulation_number)
         next_form.fill_from_trait(session_stored_simulator)
 
@@ -759,14 +766,16 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
+        simulation_number = dao.get_number_of_bursts(common.get_current_project().id)
+
         if cherrypy.request.method == 'POST':
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_SIMULATION_URL)
             is_simulator_copy = False
             form = get_form_for_equation(type(monitor.equation))()
             form.fill_from_post(data)
             form.fill_trait(monitor.hrf_kernel)
+            simulation_number = simulation_number + 1
 
-        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
         next_form = SimulatorFinalFragment(simulation_number=simulation_number)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SETUP_PSE_URL,
@@ -789,6 +798,9 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_SIMULATION_NAME, data[common.KEY_SIMULATION_NAME])
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
             is_simulator_copy = False
+        else:
+            param1, param2 = self._handle_range_params_at_loading()
+            next_form.fill_from_post({'pse_param1': param1, 'pse_param2': param2})
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
                                                           SimulatorWizzardURLs.SETUP_PSE_URL,
