@@ -3,19 +3,19 @@ pipeline {
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
-        HBP_TAG='hbp_openshift'
+        DEPLOY_TAG='deploy_with_keycloak'
     }
 
     stages {
-        stage ('Build docker image') {
+        stage ('Build docker image which we use to deploy TVB for both VBC and HBP Openshift') {
             steps {
                 script {
                     LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
-                        def dockerContext = "tvb_build/hbp-openshift"
+                        def dockerContext = "tvb_build/deploy_with_keycloak"
                         def dockerFile = "${dockerContext}/Dockerfile"
                         def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
-                        dockerImage.push('${HBP_TAG}')
+                        dockerImage.push('${DEPLOY_TAG}')
                     }
                 }
             }

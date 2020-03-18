@@ -41,7 +41,7 @@ objects:
     spec:
       containers:
         - env:
-          image: thevirtualbrain/tvb-run:hbp_openshift
+          image: thevirtualbrain/tvb-run:deploy_with_keycloak
           imagePullPolicy: Always
           name: tvb-gui
           ports:
