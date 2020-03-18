@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    environment {
+        FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
+        DEPLOY_TAG='keycloak'
+    }
+
+    stages {
+        stage ('Build docker image which we use to deploy TVB for both VBC and HBP Openshift') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
+                        def dockerContext = "tvb_build/deploy_with_keycloak"
+                        def dockerFile = "${dockerContext}/Dockerfile"
+                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        dockerImage.push('${DEPLOY_TAG}')
+                    }
+                }
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'paula.popa@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}
