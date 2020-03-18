@@ -796,6 +796,27 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method)
         return rendering_rules.to_dict()
 
+    def _load_range_param(self, range):
+        all_range_parameters = self.range_parameters.get_all_range_parameters()
+        range_json = json.loads(range)
+        param = all_range_parameters.get(range_json[0])
+        param.range_definition.lo = range_json[1][0]
+        param.range_definition.step = range_json[1][1]
+        param.range_definition.hi = range_json[1][2]
+
+        return param
+
+    def _handle_range_params_at_loading(self):
+        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
+        param1 = self._load_range_param(operation_group.range1)
+        if operation_group.range2 is not None:
+            param2 = self._load_range_param(operation_group.range2)
+        else:
+            param2 = None
+
+        return param1, param2
+
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
@@ -815,11 +836,7 @@ class SimulatorController(BurstBaseController):
             if not form.pse_param2.value == form.pse_param2.missing_value:
                 param2 = form.pse_param2.value
         else:
-            burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
-            all_range_parameters = self.range_parameters.get_all_range_parameters()
-            param1 = all_range_parameters.get(json.loads(operation_group.range1)[0])
-            param2 = all_range_parameters.get(json.loads(operation_group.range2)[0])
+            param1, param2 = self._handle_range_params_at_loading()
 
         project_id = common.get_current_project().id
         next_form = SimulatorPSEParamRangeFragment(param1, param2, project_id=project_id)
@@ -846,10 +863,7 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_PSE_PARAM_1, range_param1)
             common.add2session(common.KEY_PSE_PARAM_2, range_param2)
         else:
-            burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
-            range_param1 = all_range_parameters.get(json.loads(operation_group.range1)[0])
-            range_param2 = all_range_parameters.get(json.loads(operation_group.range2)[0])
+            range_param1, range_param2 = self._handle_range_params_at_loading()
 
         number_of_simulations = len(range_param1.get_range_values())
 
