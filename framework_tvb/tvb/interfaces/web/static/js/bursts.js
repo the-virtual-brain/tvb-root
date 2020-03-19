@@ -102,7 +102,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
 
-            _renderAllSimulatorForms(first_wizzard_form_url);
+            _renderAllSimulatorForms([first_wizzard_form_url]);
             displayMessage("A copy of previous simulation was prepared for you!");
         },
         error: function () {
@@ -113,7 +113,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
 }
 
 function _renderAllSimulatorForms(url, stop_at_url = '') {
-    if (url != stop_at_url) {
+    if (!stop_at_url.includes(url)) {
         doAjaxCall({
             type: "GET",
             url: url,
@@ -990,7 +990,7 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
         success: function (response) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
-            _renderAllSimulatorForms(first_wizzard_form_url, '/burst/launch_pse');
+            _renderAllSimulatorForms(first_wizzard_form_url, ['/burst/launch_simulation', '/burst/launch_pse']);
             displayMessage("The simulation configuration was loaded for you!");
         },
         error: function () {
