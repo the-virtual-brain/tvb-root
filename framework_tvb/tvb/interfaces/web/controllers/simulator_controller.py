@@ -800,7 +800,7 @@ class SimulatorController(BurstBaseController):
             is_simulator_copy = False
         else:
             param1, param2 = self._handle_range_params_at_loading()
-            next_form.fill_from_post({'pse_param1': param1, 'pse_param2': param2})
+            next_form.fill_from_post({'pse_param1': param1.name, 'pse_param2': param2.name})
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
                                                           SimulatorWizzardURLs.SETUP_PSE_URL,
