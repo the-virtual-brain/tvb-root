@@ -38,6 +38,8 @@ data using their SDK.
 """
 
 import os.path
+
+import numpy
 import numpy as np
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Float, Attr
@@ -70,25 +72,19 @@ WEIGHTS_OPTIONS = {
     'projection energy': '3'
 }
 
-# WEIGHTS_OPTIONS = {
-#     '1' : '1',
-#     '2' : '2',
-#     '3' : '3'
-# }
-
 class AllenConnectModel(ViewModel):
 
     resolution = Attr(
         field_type=str,
         label="Spatial resolution (micron)",
-        choices=tuple(RESOLUTION_OPTIONS),
+        choices=RESOLUTION_OPTIONS.values(),
         required=True,
         doc="""Definition of the weights of the connectivity :""")
 
     weighting = Attr(
         field_type=str,
         label="Definition of the weights of the connectivity :",
-        choices=tuple(WEIGHTS_OPTIONS),
+        choices=WEIGHTS_OPTIONS.values(),
         required=True,
         doc="""""")
 
@@ -110,8 +106,8 @@ class AllenConnectomeBuilderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(AllenConnectomeBuilderForm, self).__init__(prefix, project_id)
-        self.resolution = SelectField(AllenConnectModel.resolution, self)
-        self.weighting = SelectField(AllenConnectModel.weighting, self)
+        self.resolution = SelectField(AllenConnectModel.resolution, self, choices=RESOLUTION_OPTIONS)
+        self.weighting = SelectField(AllenConnectModel.weighting, self, choices=WEIGHTS_OPTIONS)
         self.inj_f_thresh = ScalarField(AllenConnectModel.inj_f_thresh, self)
         self.vol_thresh = ScalarField(AllenConnectModel.vol_thresh, self)
 
@@ -248,29 +244,39 @@ class AllenConnectomeBuilder(ABCAsynchronous):
 
         # results: Connectivity, Volume & RegionVolumeMapping
         # Connectivity
-        result_connectivity = Connectivity(storage_path=self.storage_path)
+        result_connectivity = Connectivity()
         result_connectivity.centres = centres
-        result_connectivity.region_labels = names
+        result_connectivity.region_labels = numpy.array(names)
         result_connectivity.weights = structural_conn
         result_connectivity.tract_lengths = tract_lengths
         # Volume
-        result_volume = Volume(storage_path=self.storage_path)
-        result_volume.origin = [[0.0, 0.0, 0.0]]
-        result_volume.voxel_size = [resolution, resolution, resolution]
+        result_volume = Volume()
+        result_volume.origin = numpy.array([[0.0, 0.0, 0.0]])
+        result_volume.voxel_size = numpy.array([resolution, resolution, resolution])
         # result_volume.voxel_unit= micron
         # Region Volume Mapping
-        result_rvm = RegionVolumeMapping(storage_path=self.storage_path)
+        result_rvm = RegionVolumeMapping()
         result_rvm.volume = result_volume
         result_rvm.array_data = vol_parcel
         result_rvm.connectivity = result_connectivity
         result_rvm.title = "Volume mouse brain "
         result_rvm.dimensions_labels = ["X", "Y", "Z"]
         # Volume template
-        result_template = StructuralMRI(storage_path=self.storage_path)
+        result_template = StructuralMRI()
         result_template.array_data = template
         result_template.weighting = 'T1'
         result_template.volume = result_volume
-        return [result_connectivity, result_volume, result_rvm, result_template]
+
+        connectivity_index = ConnectivityIndex()
+        connectivity_index.fill_from_has_traits(result_connectivity)
+        volume_index = VolumeIndex()
+        volume_index.fill_from_has_traits(result_volume)
+        rvm_index = RegionVolumeMappingIndex()
+        rvm_index.fill_from_has_traits(result_rvm)
+        template_index = StructuralMRIIndex()
+        template_index.fill_from_has_traits(result_template)
+
+        return [connectivity_index, volume_index, rvm_index, template_index]
 
     def get_required_memory_size(self, view_model):
         return -1
@@ -338,7 +344,7 @@ def pms_cleaner(projmaps):
 
     sis0 = get_structure_id_set(projmaps[502])
     # 1) All the target sites are the same for all the injection sites? If not remove those injection sites
-    for inj_id in projmaps:
+    for inj_id in list(projmaps):
         sis_i = get_structure_id_set(projmaps[inj_id])
         if len(sis0.difference(sis_i)) != 0:
             projmaps.pop(inj_id, None)
@@ -371,7 +377,7 @@ def pms_cleaner(projmaps):
         nan_inj_max = 0
         while list(nan_id)[0] != nan_inj_max:
             len_max = 0
-            for inj_id in nan_id:
+            for inj_id in list(nan_id):
                 if len(nan_id[inj_id]) > len_max:
                     nan_inj_max = inj_id
                     len_max = len(nan_id[inj_id])
@@ -422,7 +428,7 @@ def areas_volume_threshold(tvb_mcc, projmaps, vol_thresh, resolution):
         if tot_voxels > threshold:
             id_ok.append(ID)
             # Remove areas that are not in id_ok from the injection list
-    for checkid in projmaps:
+    for checkid in list(projmaps):
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
     # Remove areas that are not in id_ok from target list (columns+matrix)
@@ -455,7 +461,7 @@ def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
         if len(exp_not_accepted)<len(projmaps[ID]['rows']):
             id_ok.append(ID)
             projmaps[ID]['rows']= list(set(projmaps[ID]['rows']).difference(set(exp_not_accepted)))
-    for checkid in projmaps:
+    for checkid in list(projmaps):
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
     # Remove areas that are not in id_ok from target list (columns+matrix)
@@ -524,8 +530,8 @@ def construct_structural_conn(projmaps, order, key_ord):
                     if target[index]['hemisphere_id'] == 1:
                         structural_conn[row, col + len_right] = matrix[index]
     # save the complete matrix (both left and right inj):
-    first_quarter = structural_conn[:, :(structural_conn.shape[1] / 2)]
-    second_quarter = structural_conn[:, (structural_conn.shape[1] / 2):]
+    first_quarter = structural_conn[:, :(structural_conn.shape[1] // 2)]
+    second_quarter = structural_conn[:, (structural_conn.shape[1] // 2):]
     sc_down = np.concatenate((second_quarter, first_quarter), axis=1)
     structural_conn = np.concatenate((structural_conn, sc_down), axis=0)
     structural_conn = structural_conn / (np.amax(structural_conn))  # normalize the matrix
@@ -542,7 +548,7 @@ def construct_centres(tvb_mcc, order, key_ord):
         coord = [0, 0, 0]
         mask, _ = tvb_mcc.get_structure_mask(node_id)
         mask = rotate_reference(mask)
-        mask_r = mask[:mask.shape[0] / 2, :, :]
+        mask_r = mask[:mask.shape[0] // 2, :, :]
         xyz = np.where(mask_r)
         if xyz[0].shape[0] > 0:  # Check if the area is in the annotation volume
             coord[0] = np.mean(xyz[0])
@@ -568,7 +574,7 @@ def construct_centres(tvb_mcc, order, key_ord):
 
 # the method returns the tract lengths between the brain areas in the selected parcellation
 def construct_tract_lengths(centres):
-    len_right = len(centres) / 2
+    len_right = len(centres) // 2
     tracts = np.zeros((len_right, len(centres)), dtype=float)
     for inj in range(len_right):
         center_inj = centres[inj]
@@ -580,8 +586,8 @@ def construct_tract_lengths(centres):
             tracts[inj, targ + len_right] = np.sqrt(
                 (center_inj[0] - targ_l[0]) ** 2 + (center_inj[1] - targ_l[1]) ** 2 + (center_inj[2] - targ_l[2]) ** 2)
     # Save the complete matrix (both left and right inj):
-    first_quarter = tracts[:, :(tracts.shape[1] / 2)]
-    second_quarter = tracts[:, (tracts.shape[1] / 2):]
+    first_quarter = tracts[:, :(tracts.shape[1] // 2)]
+    second_quarter = tracts[:, (tracts.shape[1] // 2):]
     tracts_down = np.concatenate((second_quarter, first_quarter), axis=1)
     tracts = np.concatenate((tracts, tracts_down), axis=0)
     return tracts
@@ -645,12 +651,12 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
     indexed_vec = indexed_vec * (10 ** (-(1 + int(np.log10(tot_areas)))))
     # vec indexed between 0 and 0,N (now all the entries of vec_indexed are < 1 in order to not create confusion
     # with the entry of Vol (always greater than 1)
-    vol_r = vol[:, :, :(vol.shape[2] / 2)]
+    vol_r = vol[:, :, :(vol.shape[2] // 2)]
     vol_r = vol_r.astype(np.float64)
-    vol_l = vol[:, :, (vol.shape[2] / 2):]
+    vol_l = vol[:, :, (vol.shape[2] // 2):]
     vol_l = vol_l.astype(np.float64)
     index_vec = 0  # this is the index of the vector
-    left = len(indexed_vec) / 2
+    left = len(indexed_vec) // 2
     for graph_ord_inj in key_ord:
         node_id = order[graph_ord_inj][0]
         if node_id in vol_r:  # check if the area is in the annotation volume
@@ -672,9 +678,9 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
     bool_idx = (vol_parcel > np.amax(indexed_vec))
     # Find the elements of vol_parcel that are yet not associated to a value of the indexed_vec in the parcellation
     not_assigned = np.unique(vol_parcel[bool_idx])
-    vol_r = vol_parcel[:, :, :(vol.shape[2] / 2)]
+    vol_r = vol_parcel[:, :, :(vol.shape[2] // 2)]
     vol_r = vol_r.astype(np.float64)
-    vol_l = vol_parcel[:, :, (vol.shape[2] / 2):]
+    vol_l = vol_parcel[:, :, (vol.shape[2] // 2):]
     vol_l = vol_l.astype(np.float64)
 
     for node_id in not_assigned:
@@ -696,9 +702,9 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
     bool_idx = (vol_parcel > np.amax(indexed_vec))
     # Find the elements of vol_parcel that are yet not associated to a value of the indexed_vec in the parcellation
     not_assigned = np.unique(vol_parcel[bool_idx])
-    vol_r = vol_parcel[:, :, :(vol.shape[2] / 2)]
+    vol_r = vol_parcel[:, :, :(vol.shape[2] // 2)]
     vol_r = vol_r.astype(np.float64)
-    vol_l = vol_parcel[:, :, (vol.shape[2] / 2):]
+    vol_l = vol_parcel[:, :, (vol.shape[2] // 2):]
     vol_l = vol_l.astype(np.float64)
     for node_id in not_assigned:
         node_id = int(node_id)
@@ -729,12 +735,12 @@ def mouse_brain_visualizer(vol, order, key_ord, unique_parents, unique_grandpare
 # the relation between the different reference system is: x1=z2, y1=x2, z1=y2
 def rotate_reference(allen):
     # first rotation in order to obtain: x1=x2, y1=z2, z1=y2
-    vol_trans = np.zeros((allen.shape[0], allen.shape[2], allen.shape[1]), dtype=float)
+    vol_trans = np.zeros((allen.shape[0], allen.shape[2], allen.shape[1]), dtype=int)
     for x in range(allen.shape[0]):
         vol_trans[x, :, :] = (allen[x, :, :][::-1]).transpose()
 
     # second rotation in order to obtain: x1=z2, y1=x1, z1=y2
-    allen_rotate = np.zeros((allen.shape[2], allen.shape[0], allen.shape[1]), dtype=float)
+    allen_rotate = np.zeros((allen.shape[2], allen.shape[0], allen.shape[1]), dtype=int)
     for y in range(allen.shape[1]):
         allen_rotate[:, :, y] = (vol_trans[:, :, y]).transpose()
     return allen_rotate
