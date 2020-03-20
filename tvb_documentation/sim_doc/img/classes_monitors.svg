@@ -17,7 +17,7 @@
 <text text-anchor="start" x="1344.5" y="-371.3" font-family="Times,serif" font-size="14.00">hemodynamic_response_function</text>
 <text text-anchor="start" x="1344.5" y="-356.3" font-family="Times,serif" font-size="14.00">hrf_length : Float</text>
 <text text-anchor="start" x="1344.5" y="-341.3" font-family="Times,serif" font-size="14.00">period : Float</text>
-<text text-anchor="start" x="1344.5" y="-326.3" font-family="Times,serif" font-size="14.00">hrf_kernel : HRFKernelEquation</text>
+<text text-anchor="start" x="1344.5" y="-326.3" font-family="Times,serif" font-size="14.00">equation : HRFKernelEquation</text>
 <text text-anchor="start" x="1344.5" y="-311.3" font-family="Times,serif" font-size="14.00">hemodynamic_response_function : NoneType</text>
 <polyline fill="none" stroke="black" points="1336.5,-303.5 1611.5,-303.5 "/>
 <text text-anchor="start" x="1344.5" y="-288.3" font-family="Times,serif" font-size="14.00">config_for_sim()</text>
