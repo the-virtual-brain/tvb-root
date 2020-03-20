@@ -32,33 +32,43 @@ objects:
       resources:
         requests:
           storage: "2Ti"
-  - kind: Pod
+  - kind: "DeploymentConfig"
     apiVersion: v1
     metadata:
       name: thevirtualbrain
-      labels:
-        app: tvb
     spec:
-      containers:
-        - env:
-          image: thevirtualbrain/tvb-run:keycloak
-          imagePullPolicy: Always
-          name: tvb-gui
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-          volumeMounts:
-            - mountPath: /home/tvb_user/keycloak_config
-              name: keycloak-config
-            - mountPath: /home/tvb_user/TVB_STORAGE/
-              name: tvb-storage
-      volumes:
-          - name: keycloak-config
-            persistentVolumeClaim:
-              claimName: claim-keycloak-config
-          - name: tvb-storage
-            persistentVolumeClaim:
-              claimName: claim-tvb-storage
+      template:
+        metadata:
+          labels:
+            app: tvb
+        spec:
+          containers:
+            - name: tvb-gui
+              image: thevirtualbrain/tvb-run:keycloak
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              volumeMounts:
+                - mountPath: /home/tvb_user/keycloak_config
+                  name: keycloak-config
+                - mountPath: /home/tvb_user/TVB_STORAGE/
+                  name: tvb-storage
+          volumes:
+            - name: keycloak-config
+              persistentVolumeClaim:
+                claimName: claim-keycloak-config
+            - name: tvb-storage
+              persistentVolumeClaim:
+                claimName: claim-tvb-storage
+      replicas: 1
+      triggers:
+        - type: "ConfigChange"
+      strategy:
+        type: "Rolling"
+      paused: false
+      revisionHistoryLimit: 5
+      minReadySeconds: 0
   - kind: Service
     apiVersion: v1
     metadata:
