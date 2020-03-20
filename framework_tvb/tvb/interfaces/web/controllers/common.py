@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -90,6 +90,7 @@ KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
 KEY_SIMULATION_NAME = "input_simulation_name_id"
+KEY_SIMULATION_LENGTH = "simulation_length"
 KEY_PSE_PARAM_1 = "pse_param1"
 KEY_PSE_PARAM_2 = "pse_param2"
 
