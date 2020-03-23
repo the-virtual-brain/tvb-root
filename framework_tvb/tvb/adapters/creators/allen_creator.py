@@ -42,13 +42,14 @@ import os.path
 import numpy
 import numpy as np
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Float, Attr
+from tvb.basic.neotraits.api import Float, Attr, Int
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, SelectField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
@@ -61,29 +62,29 @@ from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 LOGGER = get_logger(__name__)
 
 RESOLUTION_OPTIONS = {
-    '25': '25',
-    '50': '50',
-    '100': '100'
+    '25': 25,
+    '50': 50,
+    '100': 100
 }
 
 WEIGHTS_OPTIONS = {
-    '(projection density)/(injection density)': '1',
-    'projection density': '2',
-    'projection energy': '3'
+    '(projection density)/(injection density)': 1,
+    'projection density': 2,
+    'projection energy': 3
 }
 
 class AllenConnectModel(ViewModel):
 
-    resolution = Attr(
-        field_type=str,
+    resolution = Int(
         label="Spatial resolution (micron)",
+        default=list(RESOLUTION_OPTIONS.values())[2],
         choices=RESOLUTION_OPTIONS.values(),
         required=True,
         doc="""Definition of the weights of the connectivity :""")
 
-    weighting = Attr(
-        field_type=str,
+    weighting = Int(
         label="Definition of the weights of the connectivity :",
+        default=list(WEIGHTS_OPTIONS.values())[0],
         choices=WEIGHTS_OPTIONS.values(),
         required=True,
         doc="""""")
@@ -184,10 +185,10 @@ class AllenConnectomeBuilder(ABCAsynchronous):
 
 
     def launch(self, view_model):
-        resolution = int(view_model.resolution)
-        weighting = int(view_model.weighting)
-        inj_f_thresh = float(view_model.inj_f_thresh)/100.
-        vol_thresh = float(view_model.vol_thresh)
+        resolution = view_model.resolution
+        weighting = view_model.weighting
+        inj_f_thresh = view_model.inj_f_thresh/100.
+        vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
         manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
@@ -249,6 +250,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         result_connectivity.region_labels = numpy.array(names)
         result_connectivity.weights = structural_conn
         result_connectivity.tract_lengths = tract_lengths
+        result_connectivity.configure()
         # Volume
         result_volume = Volume()
         result_volume.origin = numpy.array([[0.0, 0.0, 0.0]])
@@ -267,14 +269,10 @@ class AllenConnectomeBuilder(ABCAsynchronous):
         result_template.weighting = 'T1'
         result_template.volume = result_volume
 
-        connectivity_index = ConnectivityIndex()
-        connectivity_index.fill_from_has_traits(result_connectivity)
-        volume_index = VolumeIndex()
-        volume_index.fill_from_has_traits(result_volume)
-        rvm_index = RegionVolumeMappingIndex()
-        rvm_index.fill_from_has_traits(result_rvm)
-        template_index = StructuralMRIIndex()
-        template_index.fill_from_has_traits(result_template)
+        connectivity_index = h5.store_complete(result_connectivity, self.storage_path)
+        volume_index = h5.store_complete(result_volume, self.storage_path)
+        rvm_index = h5.store_complete(result_rvm, self.storage_path)
+        template_index = h5.store_complete(result_template, self.storage_path)
 
         return [connectivity_index, volume_index, rvm_index, template_index]
 
