@@ -475,7 +475,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_bold_monitor_params(self):
         self.sess_mock['period'] = '2000.0'
         self.sess_mock['variables_of_interest'] = ''
-        self.sess_mock['equation'] = 'HRF kernel: Volterra Kernel'
+        self.sess_mock['hrf_kernel'] = 'HRF kernel: Volterra Kernel'
 
         self.session_stored_simulator.monitors = [Bold()]
 
