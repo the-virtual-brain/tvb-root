@@ -733,8 +733,8 @@ class SimulatorController(BurstBaseController):
             form_url = self._get_form_url_after_monitors()
 
         if isinstance(monitor, Bold):
-            next_form = get_form_for_equation(type(monitor.equation))()
-            next_form.fill_from_trait(session_stored_simulator.monitors[0].equation)
+            next_form = get_form_for_equation(type(monitor.hrf_kernel))()
+            next_form.fill_from_trait(session_stored_simulator.monitors[0].hrf_kernel)
 
             rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
                                                               SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
@@ -791,9 +791,9 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == 'POST':
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_SIMULATION_URL)
             is_simulator_copy = False
-            form = get_form_for_equation(type(monitor.equation))()
+            form = get_form_for_equation(type(monitor.hrf_kernel))()
             form.fill_from_post(data)
-            form.fill_trait(monitor.equation)
+            form.fill_trait(monitor.hrf_kernel)
 
             form_url = SimulatorWizzardURLs.SETUP_PSE_URL
         else:
@@ -990,7 +990,6 @@ class SimulatorController(BurstBaseController):
 
         burst_name = current_form.simulation_name.value
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
-        session_stored_simulator.simulation_length = float(data['simulation_length'])
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
 
         project = common.get_current_project()

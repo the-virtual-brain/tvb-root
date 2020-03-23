@@ -753,7 +753,7 @@ class Bold(Monitor):
 
     **Attributes**
 
-        equation: the haemodynamic response function (HRF) used to compute
+        hrf_kernel: the haemodynamic response function (HRF) used to compute
                     the BOLD (Blood Oxygenation Level Dependent) signal.
 
         length    : duration of the hrf in seconds.
@@ -796,7 +796,7 @@ class Bold(Monitor):
         an integral multiple of 500. Typical measurment interval (repetition
         time TR) is between 1-3 s. If TR is 2s, then Bold period is 2000ms.""")
 
-    equation = Attr(
+    hrf_kernel = Attr(
         equations.HRFKernelEquation,
         label="Haemodynamic Response Function",
         default=equations.FirstOrderVolterra(),
@@ -833,7 +833,7 @@ class Bold(Monitor):
         self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
         self.log.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)
         #Compute the HRF kernel
-        G = self.equation.evaluate(self._stock_time)
+        G = self.hrf_kernel.evaluate(self._stock_time)
         #Reverse it, need it into the past for matrix-multiply of stock
         G = G[::-1]
         self.hemodynamic_response_function = G[numpy.newaxis, :]
@@ -869,8 +869,8 @@ class Bold(Monitor):
             hrf = numpy.roll(self.hemodynamic_response_function,
                              ((step//self._interim_istep % self._stock_steps) - 1),
                              axis=1)
-            if isinstance(self.equation, equations.FirstOrderVolterra):
-                k1_V0 = self.equation.parameters["k_1"] * self.equation.parameters["V_0"]
+            if isinstance(self.hrf_kernel, equations.FirstOrderVolterra):
+                k1_V0 = self.hrf_kernel.parameters["k_1"] * self.hrf_kernel.parameters["V_0"]
                 bold = (numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3))) - 1.0) * k1_V0
             else:
                 bold = numpy.dot(hrf, self._stock.transpose((1, 2, 0, 3)))

@@ -161,8 +161,8 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
-            for param2_value in range_param2_values:
-                for param1_value in range_param1.get_range_values():
+            for param1_value in range_param1.get_range_values():
+                for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()

@@ -132,7 +132,7 @@ class BoldH5(MonitorH5):
     def __init__(self, path):
         super(BoldH5, self).__init__(path)
         self.period = Scalar(Bold.period, self)
-        self.equation = EquationScalar(Bold.equation, self)
+        self.hrf_kernel = EquationScalar(Bold.hrf_kernel, self)
         self.hrf_length = Scalar(Bold.hrf_length, self)
 
 
