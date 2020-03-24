@@ -467,7 +467,12 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
     def launch(self, view_model):
         # type: (RegionVolumeMappingVisualiserModel) -> dict
-        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+
+        connectivity_measure_index = None
+        if view_model.connectivity_measure:
+            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+
+        connectivity_measure_index = self.load_entity_by_gid(connectivity_measure_index)
         region_mapping_volume_index = None
         background_volume_index = None
 
