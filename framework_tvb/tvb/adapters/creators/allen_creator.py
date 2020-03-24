@@ -138,48 +138,6 @@ class AllenConnectomeBuilder(ABCAsynchronous):
     def get_form_class(self):
         return AllenConnectomeBuilderForm
 
-    # TRANSGENIC_OPTIONS = [
-    #    {'name': 'No', 'value': 'False'},
-    #    {'name': 'Yes', 'value': 'True'}
-    # ]
-
-    RESOLUTION_OPTIONS = [
-        {'name': '25', 'value': '25'},
-        {'name': '50', 'value': '50'},
-        {'name': '100', 'value': '100'}
-    ]
-
-    WEIGHTS_OPTIONS = [
-        {'name': '(projection density)/(injection density)', 'value': '1'},
-        {'name': 'projection density', 'value': '2'},
-        {'name': 'projection energy', 'value': '3'},
-    ]
-
-    def get_input_tree(self):
-        return [  # {'name': 'TransgenicLine', 'type': 'select', 'label': 'Transgenic line :',
-            # 'required': True, 'options': self.TRANSGENIC_OPTIONS, 'default': 'False'},
-
-            {'name': 'resolution', 'type': 'select',
-             'label': 'Spatial resolution (micron)',
-             'description': 'Resolution of the data that you want to download to construct the volume '
-                            'and the connectivity (micron) :',
-             'required': True, 'options': self.RESOLUTION_OPTIONS, 'default': '100'},
-
-            {'name': 'weighting', 'type': 'select', 'label': 'Definition of the weights of the connectivity :',
-             'required': True, 'options': self.WEIGHTS_OPTIONS, 'default': '1'},
-
-            {'name': 'inj_f_thresh', 'type': 'float',
-             'label': 'Injected percentage of voxels in the inj site',
-             'description': 'To build the connectivity select only the experiment where the percentage of infected '
-                            'voxels in the injection structure is greater than: ',
-             'required': True, 'default': '80'},
-
-            {'name': 'vol_thresh', 'type': 'float',
-             'label': 'Min volume',
-             'description': 'To build the volume and the connectivity select only the areas that have a '
-                            'volume greater than (micron^3): ',
-             'required': True, 'default': '1000000000'}]
-
     def get_output(self):
         return [ConnectivityIndex, VolumeIndex, RegionVolumeMappingIndex, StructuralMRIIndex]
 
