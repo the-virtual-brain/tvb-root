@@ -50,6 +50,7 @@ from tvb.interfaces.rest.server.resources.simulator.simulation_resource import F
 from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
     GetUsersResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -79,6 +80,7 @@ def build_path(namespace):
 def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     app.json_encoder = CustomFlaskEncoder
 
     # creating an API object
