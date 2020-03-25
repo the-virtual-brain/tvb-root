@@ -47,7 +47,7 @@ class TestsTransactional(BaseTestCase):
     This class contains tests for the tvb.core.entities.modelmanager module.
     """
     session = SessionMaker()
-    
+
     def setup_method(self):
         """
         Set-up the environment for testing; clean the database and save events
@@ -87,8 +87,8 @@ class TestsTransactional(BaseTestCase):
         except Exception:
             pass
         final_user_count = dao.get_all_users(is_count=True)
-        assert initial_user_count == final_user_count,"Transaction should have rolled back due to exception."\
-                         "Expected %s but got %s" % (initial_user_count, final_user_count)
+        assert initial_user_count == final_user_count, "Transaction should have rolled back due to exception." \
+                                                       "Expected %s but got %s" % (initial_user_count, final_user_count)
 
     def test_add_entity_forget_commit(self):
         """
@@ -98,9 +98,9 @@ class TestsTransactional(BaseTestCase):
         initial_user_count = len(all_users) if all_users is not None else 0
         self._dao_add_user_forget_commit()
         final_user_count = dao.get_all_users(is_count=True)
-        assert initial_user_count + 1 == final_user_count, "Commit should have been done automatically and one "\
-                                                                   "more user expected. Expected %s but got %s" % (
-                                                                   initial_user_count, final_user_count)
+        assert initial_user_count + 1 == final_user_count, "Commit should have been done automatically and one " \
+                                                           "more user expected. Expected %s but got %s" % (
+                                                               initial_user_count, final_user_count)
 
     def test_edit_entity_forget_commit(self):
         """
@@ -110,8 +110,8 @@ class TestsTransactional(BaseTestCase):
         user_id = stored_user.id
         self._dao_change_user_forget_commit(user_id, 'new_name')
         edited_user = dao.get_user_by_id(user_id)
-        assert edited_user.username == 'new_name',\
-                         "User should be edited but it is not. Expected 'new_name' got %s" % edited_user.username
+        assert edited_user.username == 'new_name', \
+            "User should be edited but it is not. Expected 'new_name' got %s" % edited_user.username
 
     def test_delete_entity_forget_commit(self):
         """
@@ -139,11 +139,11 @@ class TestsTransactional(BaseTestCase):
         n_of_users_per_thread = 4
         self._run_transaction_multiple_threads(n_of_threads, n_of_users_per_thread)
         final_user_count = dao.get_all_users(is_count=True)
-        assert initial_user_count + n_of_threads * n_of_users_per_thread == final_user_count,\
-                         "Each thread should have created %s more users to a total of 16."\
-                         "Expected %s but got %s" % (n_of_threads * n_of_users_per_thread,
-                                                     initial_user_count + n_of_threads * n_of_users_per_thread,
-                                                     final_user_count)
+        assert initial_user_count + n_of_threads * n_of_users_per_thread == final_user_count, \
+            "Each thread should have created %s more users to a total of 16." \
+            "Expected %s but got %s" % (n_of_threads * n_of_users_per_thread,
+                                        initial_user_count + n_of_threads * n_of_users_per_thread,
+                                        final_user_count)
 
     def test_multi_threaded_access_overflow_db_connection(self):
         """
@@ -156,11 +156,11 @@ class TestsTransactional(BaseTestCase):
         n_of_users_per_thread = 6
         self._run_transaction_multiple_threads(n_of_threads, n_of_users_per_thread)
         final_user_count = dao.get_all_users(is_count=True)
-        assert initial_user_count + n_of_threads * n_of_users_per_thread == final_user_count,\
-                         "Each of %s threads should have created %s more users to a total of %s. "\
-                         "Expected %s but got %s" % (
-                         n_of_threads, n_of_users_per_thread, n_of_threads * n_of_users_per_thread,
-                         initial_user_count + n_of_threads * n_of_users_per_thread, final_user_count)
+        assert initial_user_count + n_of_threads * n_of_users_per_thread == final_user_count, \
+            "Each of %s threads should have created %s more users to a total of %s. " \
+            "Expected %s but got %s" % (
+                n_of_threads, n_of_users_per_thread, n_of_threads * n_of_users_per_thread,
+                initial_user_count + n_of_threads * n_of_users_per_thread, final_user_count)
 
     @transactional_test
     def test_transaction_nested(self):
@@ -168,7 +168,7 @@ class TestsTransactional(BaseTestCase):
         A case of nested transaction. Check that if the ALLOW_NESTED_TRANSACTIONS is set to false,
         an exception is raised when a nested transaction is attempted. This will be default behaviour in TVB, only
         overwritten for transactional tests.
-        """    
+        """
         TvbProfile.current.db.ALLOW_NESTED_TRANSACTIONS = False
         try:
             with pytest.raises(NestedTransactionUnsupported):
@@ -184,7 +184,7 @@ class TestsTransactional(BaseTestCase):
             th = threading.Thread(target=self._store_users_happy_flow, args=(n_of_users_per_thread,),
                                   kwargs={'prefix': str(idx)})
             th.start()
-            
+
         for t in threading.enumerate():
             if t is threading.currentThread():
                 continue
@@ -195,8 +195,8 @@ class TestsTransactional(BaseTestCase):
         """
         Test use case where you add user but forget to commit. This should be handled automatically.
         """
-        self.session.add(model_project.User('username', 'password', 'mail', True, 'role'))
-        
+        self.session.add(model_project.User('username', 'name', 'password', 'mail', True, 'role'))
+
     @add_session
     def _dao_change_user_forget_commit(self, user_id, new_name):
         """
@@ -204,7 +204,7 @@ class TestsTransactional(BaseTestCase):
         """
         user = self.session.query(model_project.User).filter(model_project.User.id == user_id).one()
         user.username = new_name
-        
+
     @add_session
     def _dao_delete_user_forget_commit(self, user_id):
         """
@@ -228,7 +228,7 @@ class TestsTransactional(BaseTestCase):
             TestFactory.create_user('test_user_nested' + str(idx), 'pass', 'test@test.test', True, 'test')
         inner_trans_func(n_users)
         raise Exception("This is just so transactional kicks in and a rollback should be done.")
-    
+
     @transactional
     def _store_users_happy_flow(self, n_users, prefix=""):
         """

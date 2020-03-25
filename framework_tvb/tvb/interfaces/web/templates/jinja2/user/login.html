@@ -31,7 +31,9 @@
 										.appendTo("#user_login_form");
 								$('#user_login_form').submit();
 							} else {
-								keycloak.login()
+								keycloak.login({
+									scope: 'profile email'
+								})
 							}
 						} else {
 							if (!keycloak_error) {

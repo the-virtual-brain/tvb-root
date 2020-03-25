@@ -50,6 +50,8 @@ class FormKeyInput(Enum):
     USERS_USERNAME = 'username'
     USERS_PASSWORD = 'password'
     KEYCLOAK_REFRESH_TOKEN = 'refresh_token'
+    NEW_MEMBERS_GID = 'new_members_gid'
+
 
 class RestNamespace(Enum):
     USERS = "/users"
@@ -76,6 +78,7 @@ class RestLink(Enum):
     # PROJECTS
     DATA_IN_PROJECT = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/data"
     OPERATIONS_IN_PROJECT = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/operations"
+    PROJECT_MEMBERS = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/members"
 
     # DATATYPES
     GET_DATATYPE = "/{" + LinkPlaceholder.DATATYPE_GID.value + "}"
@@ -104,7 +107,7 @@ class RestLink(Enum):
 
 _namespace_url_dict = {
     RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS],
-    RestNamespace.PROJECTS: [RestLink.DATA_IN_PROJECT, RestLink.OPERATIONS_IN_PROJECT],
+    RestNamespace.PROJECTS: [RestLink.DATA_IN_PROJECT, RestLink.OPERATIONS_IN_PROJECT, RestLink.PROJECT_MEMBERS],
     RestNamespace.DATATYPES: [RestLink.GET_DATATYPE, RestLink.DATATYPE_OPERATIONS],
     RestNamespace.OPERATIONS: [RestLink.LAUNCH_OPERATION, RestLink.OPERATION_STATUS, RestLink.OPERATION_RESULTS],
     RestNamespace.SIMULATION: [RestLink.FIRE_SIMULATION]

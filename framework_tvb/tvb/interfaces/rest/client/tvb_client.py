@@ -29,6 +29,7 @@
 #
 
 import tempfile
+
 from tvb.basic.neotraits.api import HasTraits
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
@@ -36,7 +37,7 @@ from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
-from tvb.interfaces.rest.commons.dtos import OperationDto
+from tvb.interfaces.rest.commons.dtos import OperationDto, UserDto
 
 
 class TVBClient:
@@ -88,6 +89,14 @@ class TVBClient:
         self.simulation_api.update_tokens(response)
         self.operation_api.update_tokens(response)
 
+    def get_users(self):
+        """
+        Return all TVB users
+        """
+        response = self.user_api.get_users()
+        user_list, pages_no = response
+        return [UserDto(**user) for user in response[user_list]], response[pages_no]
+
     def get_project_list(self):
         """
         Return all projects for the current logged user.
@@ -102,6 +111,15 @@ class TVBClient:
         :return: GID of the new project
         """
         return self.user_api.create_project(project_name, project_description)
+
+    def add_members_to_project(self, project_gid, new_members_gid):
+        # type: (str, []) -> None
+        """
+        Add members to the given project. Logged user must be the project administrator
+        :param project_gid: Given project GID
+        :param new_members_gid: List of user which will be project members
+        """
+        self.project_api.add_members_to_project(project_gid, new_members_gid)
 
     def get_data_in_project(self, project_gid):
         """

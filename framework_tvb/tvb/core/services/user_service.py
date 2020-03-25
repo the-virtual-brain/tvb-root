@@ -87,14 +87,16 @@ class UserService:
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
 
-    def create_user(self, username=None, password=None, password2=None,
+    def create_user(self, username=None, display_name=None, password=None, password2=None,
                     role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False,
-                    external_id=None, skip_sending_email=False):
+                    gid=None, skip_sending_email=False):
         """
         Service Layer for creating a new user.
         """
         if (username is None) or len(username) < 1:
             raise UsernameException("Empty UserName!")
+        if (display_name is None) or len(display_name) < 1:
+            raise UsernameException("Empty display name!")
         if (password is None) or len(password) < 1:
             raise UsernameException("Empty password!")
         if password2 is None:
@@ -104,7 +106,7 @@ class UserService:
 
         try:
             user_validated = (role == ROLE_ADMINISTRATOR) or validated
-            user = User(username, password, email, user_validated, role, external_id)
+            user = User(username, display_name, password, email, user_validated, role, gid)
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
             admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
@@ -318,42 +320,44 @@ class UserService:
         return dao.get_user_by_name(username)
 
     @staticmethod
-    def get_user_by_external_id(external_id):
+    def get_user_by_gid(gid):
         """
-        Retrieves a user by its external id.
+        Retrieves a user by its gid.
         """
-        return dao.get_user_by_external_id(external_id)
+        return dao.get_user_by_gid(gid)
 
     @staticmethod
     def compute_user_generated_disk_size(user_id):
         return dao.compute_user_generated_disk_size(user_id)
 
     def _create_external_service_user(self, user_data):
-        external_id = user_data['sub']
-        self.logger.info('Create a new external user for external id {}'.format(external_id))
-        username, email, role = self._extract_user_info(user_data)
+        gid = user_data['sub']
+        self.logger.info('Create a new external user for external id {}'.format(gid))
+        username, name, email, role = self._extract_user_info(user_data)
         if not self.is_username_valid(username):
-            username = external_id
-        self.create_user(username, hash_password(''.join(random.sample(external_id, len(external_id)))),
-                         external_id=external_id, email=email,
+            username = gid
+        self.create_user(username, name, hash_password(''.join(random.sample(gid, len(gid)))),
+                         gid=gid, email=email,
                          validated=True, skip_sending_email=True, role=role, skip_import=True)
-        return self.get_user_by_external_id(external_id)
+        return self.get_user_by_gid(gid)
 
     def _update_external_service_user(self, current_user, new_data):
-        username, email, role = self._extract_user_info(new_data)
+        username, display_name, email, role = self._extract_user_info(new_data)
 
         should_update = False
         if current_user.email != email \
                 or current_user.role != role \
+                or current_user.display_name != display_name \
                 or current_user.username != username and self.is_username_valid(username):
             current_user.email = email
             current_user.role = role
             current_user.username = username
+            current_user.display_name = display_name
             should_update = True
 
         if should_update:
             dao.store_entity(current_user, True)
-            return self.get_user_by_external_id(current_user.external_id)
+            return self.get_user_by_gid(current_user.gid)
         return current_user
 
     def _extract_user_info(self, keycloak_data):
@@ -370,11 +374,12 @@ class UserService:
         role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
         username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
             'sub']
-        return username, email, role
+        name = keycloak_data['name'] if 'name' in keycloak_data else keycloak_data['sub']
+        return username, name, email, role
 
     def get_external_db_user(self, user_data):
-        external_id = user_data['sub']
-        db_user = UserService.get_user_by_external_id(external_id)
+        gid = user_data['sub']
+        db_user = UserService.get_user_by_gid(gid)
         if db_user is None:
             db_user = self._create_external_service_user(user_data)
         else:

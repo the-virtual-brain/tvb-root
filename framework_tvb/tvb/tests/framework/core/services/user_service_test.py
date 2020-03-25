@@ -33,14 +33,14 @@
 """
 
 import pytest
-from tvb.core.utils import hash_password
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.model import model_project
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.model import model_project
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
-from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
 from tvb.core.services.project_service import ProjectService
+from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
+from tvb.core.utils import hash_password
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class MainSenderDummy(object):
@@ -73,6 +73,7 @@ class TestUserService(TransactionalTestCase):
         self.clean_database()
         self.user_service = UserService()
         self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=model_project.ROLE_ADMINISTRATOR, skip_import=True)
@@ -91,7 +92,7 @@ class TestUserService(TransactionalTestCase):
         Standard flow for creating a user.
         """
         initial_user_count = dao.get_all_users()
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         final_user_count = dao.get_all_users()
@@ -106,7 +107,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty password field.
         """
-        data = dict(username="test_user", password="", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="test_user", display_name="test_name", password="", email="test_user@tvb.org", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -114,7 +116,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with no password data.
         """
-        data = dict(username="test_user", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="test_user", display_name="test_name", email="test_user@tvb.org", role="user", comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -122,7 +124,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty username field.
         """
-        data = dict(username="", password="test_pass", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="", display_name="test_name", password="test_pass", email="test_user@tvb.org", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -130,7 +133,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with no username data.
         """
-        data = dict(password="test_pass", email="test_user@tvb.org", role="user", comment="")
+        data = dict(password="test_pass", display_name="test_name", email="test_user@tvb.org", role="user", comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -138,7 +141,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty email field.
         """
-        data = dict(username="test_username", password="test_password", email="", role="user", comment="")
+        data = dict(username="test_username", display_name="test_name", password="test_password", email="", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -146,7 +150,7 @@ class TestUserService(TransactionalTestCase):
         """
         Test method for the reset password method. Happy flow.
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
@@ -161,7 +165,7 @@ class TestUserService(TransactionalTestCase):
         Test method for the reset password method. Email is not valid,
         should raise exception
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
@@ -192,7 +196,7 @@ class TestUserService(TransactionalTestCase):
 
     def _prepare_user_for_change_pwd(self):
         """Private method to prepare password change operation"""
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         self.user_service.validate_user("test_user")
@@ -206,7 +210,7 @@ class TestUserService(TransactionalTestCase):
         Test the method that checks if a userName is valid or not (if it already exists
         in the database the userName is not valid).
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert not self.user_service.is_username_valid("test_user"), "Should be False but got True"
         assert self.user_service.is_username_valid("test_user2"), "Should be True but got False"
@@ -215,7 +219,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard flow for a validate user action.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert self.user_service.validate_user("test_user"), "Validation failed when it shouldn't have."
 
@@ -223,7 +227,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that was already validated.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user"), "Validation invalid."
 
@@ -231,7 +235,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that doesn't exist in the database.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent"
 
@@ -239,7 +243,8 @@ class TestUserService(TransactionalTestCase):
         """
         Standard login flow with a valid username and password.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -249,7 +254,8 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid password.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_user_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -259,7 +265,8 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid username.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -269,15 +276,15 @@ class TestUserService(TransactionalTestCase):
         """
         Get all members of a project except the current user.
         """
-        user_1 = model_project.User("test_user1", "test_pass", "test_mail1@tvb.org", False, "user")
+        user_1 = model_project.User("test_user1", "test_name1", "test_pass", "test_mail1@tvb.org", False, "user")
         dao.store_entity(user_1)
-        user_2 = model_project.User("test_user2", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_2 = model_project.User("test_user2", "test_name2", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_2)
-        user_3 = model_project.User("test_user3", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_3 = model_project.User("test_user3", "test_name3", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_3)
-        user_4 = model_project.User("test_user4", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_4 = model_project.User("test_user4", "test_name4", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_4)
-        user_5 = model_project.User("test_user5", "test_pass", "test_mail2@tvb.org", False, "user")
+        user_5 = model_project.User("test_user5", "test_name5", "test_pass", "test_mail2@tvb.org", False, "user")
         dao.store_entity(user_5)
         admin = dao.get_user_by_name("test_user1")
         member1 = dao.get_user_by_name("test_user2")
@@ -347,7 +354,7 @@ class TestUserService(TransactionalTestCase):
         """
         Test the method of editing a user.
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")

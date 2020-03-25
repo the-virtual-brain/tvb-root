@@ -30,9 +30,9 @@
 
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons.strings import Strings, RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
+from tvb.interfaces.rest.commons.strings import Strings, RestLink, LinkPlaceholder, FormKeyInput
 
 
 class ProjectApi(MainApi):
@@ -53,3 +53,11 @@ class ProjectApi(MainApi):
             LinkPlaceholder.PROJECT_GID.value: project_gid
         })), params={Strings.PAGE_NUMBER.value: page_number})
         return response
+
+    @handle_response
+    def add_members_to_project(self, project_gid, new_members_gid):
+        if type(new_members_gid) is not list:
+            raise ClientException("New members gid parameter must be a list.")
+        return self.secured_request().put(self.build_request_url(RestLink.PROJECT_MEMBERS.compute_url(True, {
+            LinkPlaceholder.PROJECT_GID.value: project_gid
+        })), json={FormKeyInput.NEW_MEMBERS_GID.value: new_members_gid})

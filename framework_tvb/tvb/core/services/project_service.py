@@ -439,12 +439,12 @@ class ProjectService:
             no_of_op_in_group = 1
             count_result = dao.count_resulted_datatypes(operation.id)
 
-        username = dao.get_user_by_id(operation.fk_launched_by).username
+        user_display_name = dao.get_user_by_id(operation.fk_launched_by).display_name
         burst = dao.get_burst_for_operation_id(operation.id)
         datatypes_param, all_special_params = self._review_operation_inputs(operation.gid)
 
         op_pid = dao.get_operation_process_for_operation(operation.id)
-        op_details = OperationOverlayDetails(operation, username, len(datatypes_param),
+        op_details = OperationOverlayDetails(operation, user_display_name, len(datatypes_param),
                                              count_result, burst, no_of_op_in_group, op_pid)
 
         # Add all parameter which are set differently by the user on this Operation.
