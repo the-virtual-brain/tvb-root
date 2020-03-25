@@ -38,10 +38,12 @@ Here we define entities for Operations and Algorithms.
 
 import json
 import datetime
+import numpy
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.simulator.range_parameter import RangeParameter
+from tvb.basic.neotraits._attr import Range
 from tvb.config import TVB_IMPORTER_CLASS, TVB_IMPORTER_MODULE
 from tvb.core.neotraits.db import Base
 from tvb.core.utils import string2date, generate_guid
@@ -235,9 +237,9 @@ class OperationGroup(Base, Exportable):
     @staticmethod
     def load_range_numbers(range_value):
         """
-        Parse the range values for a given json-like string.
+        Parse the range values(hi, low, step) for a given json-like string.
 
-        :returns: Boolean_are_all_numbers, range_field_name, array_range_values)
+        :returns: (Boolean_are_all_numbers, range_field_name, array_range_values)
         """
         if range_value is None:
             return None, RANGE_MISSING_STRING, [RANGE_MISSING_VALUE]
@@ -255,6 +257,35 @@ class OperationGroup(Base, Exportable):
                 range_values[idx] = entry
         return are_all_numbers, range_name, range_values
 
+    @staticmethod
+    def load_range_interval_numbers(range_value):
+        """
+        Parse the range interval values for a give json-like string.
+
+        :returns: (Boolean_are_all_numbers, range_field_name, array_range_values)
+        """
+
+        if range_value is None:
+            return None, RANGE_MISSING_STRING, [RANGE_MISSING_VALUE]
+
+        # TODO: This is only true for range parameters that don't have gids. The logic for setting these parameters
+        #  should be written, once PSE simulation will be able to be launched with those kind of range parameters as well
+        are_all_numbers = True
+
+        loaded_json = json.loads(range_value)
+        range_name = loaded_json[0]
+        range_value = loaded_json[1]
+
+        # TODO: Logic has to be extended to work with GUID params as well
+        range_definition = Range(range_value[0], range_value[2], range_value[1])
+        range_param = RangeParameter(range_name, float, range_definition, True)
+        range_values = range_param.get_range_values()
+
+        if type(range_values[0]) is numpy.ndarray:
+            for idx in range(len(range_values)):
+                range_values[idx] = range_values[idx][0]
+
+        return are_all_numbers, range_name, range_values
 
 # Possible values for Operation.status field
 STATUS_FINISHED = "5-FINISHED"

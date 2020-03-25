@@ -52,8 +52,8 @@ class PseIsoModel(object):
     def __init__(self, range1, range2, apriori_data, metrics, datatype_gids):
         self.log = get_logger(self.__class__.__name__)
         # ranges
-        all_numbers_range1, self.range1_name, self.range1 = OperationGroup.load_range_numbers(range1)
-        all_numbers_range2, self.range2_name, self.range2 = OperationGroup.load_range_numbers(range2)
+        all_numbers_range1, self.range1_name, self.range1 = OperationGroup.load_range_interval_numbers(range1)
+        all_numbers_range2, self.range2_name, self.range2 = OperationGroup.load_range_interval_numbers(range2)
 
         # Data from which to interpolate larger 2-D space
         self.apriori_x = self._prepare_axes(self.range1, all_numbers_range1)
