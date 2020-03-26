@@ -48,7 +48,7 @@ from tvb.interfaces.rest.server.resources.project.project_resource import GetOpe
     GetDataInProjectResource, ProjectMembersResource
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
 from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
-    GetUsersResource
+    GetUsersResource, LinksResource
 from tvb.interfaces.rest.server.rest_api import RestApi
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -91,6 +91,7 @@ def initialize_flask():
     name_space_users.add_resource(GetUsersResource, "/")
     name_space_users.add_resource(LoginUserResource, RestLink.LOGIN.compute_url())
     name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS.compute_url())
+    name_space_users.add_resource(LinksResource, RestLink.USEFUL_URLS.compute_url())
 
     # Projects namespace
     name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),

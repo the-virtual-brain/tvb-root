@@ -27,23 +27,32 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 
 from flask_restplus import Api
+from keycloak.exceptions import KeycloakError
 from tvb.basic.exceptions import TVBException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_SERVER_ERROR
 
 
 class RestApi(Api):
     def handle_error(self, e):
-        if not isinstance(e, TVBException):
+        if not isinstance(e, (TVBException, KeycloakError)):
             super().handle_error(e)
 
+        # TVBException handling
         code = getattr(e, 'code', HTTP_STATUS_SERVER_ERROR)
         message = getattr(e, 'message', 'Internal Server Error')
         to_dict = getattr(e, 'to_dict', None)
+
+        # KeycloakError handling
+        code = getattr(e, 'response_code', code)
+        error_message = getattr(e, 'error_message', None)
 
         if to_dict:
             data = to_dict()
         else:
             data = {'message': message}
+        if error_message is not None:
+            data['message'] = json.loads(error_message.decode())['error_description']
         return self.make_response(data, code)
