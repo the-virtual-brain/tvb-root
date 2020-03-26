@@ -89,8 +89,6 @@ KEY_CACHED_SIMULATOR_TREE = 'simulator_input_tree'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
-KEY_SIMULATION_NAME = "input_simulation_name_id"
-KEY_SIMULATION_LENGTH = "simulation_length"
 KEY_PSE_PARAM_1 = "pse_param1"
 KEY_PSE_PARAM_2 = "pse_param2"
 

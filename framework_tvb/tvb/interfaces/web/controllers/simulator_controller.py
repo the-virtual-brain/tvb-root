@@ -824,8 +824,10 @@ class SimulatorController(BurstBaseController):
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
 
         if cherrypy.request.method == 'POST':
-            common.add2session(common.KEY_SIMULATION_NAME, data[common.KEY_SIMULATION_NAME])
-            common.add2session(common.KEY_SIMULATION_LENGTH, data[common.KEY_SIMULATION_LENGTH])
+            session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+            session_stored_simulator.simulation_length = float(data['simulation_length'])
+            burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+            burst_config.name = data['input_simulation_name_id']
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_PARAMS_URL)
             is_simulator_copy = False
         else:
@@ -932,15 +934,12 @@ class SimulatorController(BurstBaseController):
     @check_user
     def launch_pse(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
-        session_stored_simulator.simulation_length = float(common.get_from_session(common.KEY_SIMULATION_LENGTH))
 
         project = common.get_current_project()
         user = common.get_logged_user()
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         burst_config.start_time = datetime.now()
-        simulation_name = common.get_from_session(common.KEY_SIMULATION_NAME)
-        burst_config.name = simulation_name
 
         range_param1 = common.get_from_session(common.KEY_PSE_PARAM_1)
         range_param2 = common.get_from_session(common.KEY_PSE_PARAM_2)
@@ -990,6 +989,7 @@ class SimulatorController(BurstBaseController):
 
         burst_name = current_form.simulation_name.value
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        session_stored_simulator.simulation_length = current_form.simulation_length.value
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
 
         project = common.get_current_project()
