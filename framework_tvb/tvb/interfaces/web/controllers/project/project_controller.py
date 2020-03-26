@@ -175,20 +175,22 @@ class ProjectController(BaseController):
         is_create = False
         if project_id is None or not int(project_id):
             is_create = True
-            data["administrator"] = current_user.username
+            data["administrator"] = current_user.display_name
+            admin_username = current_user.username
         else:
             current_project = self.project_service.find_project(project_id)
             if not save:
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
                 data = dict(name=current_project.name, description=current_project.description)
-            data["administrator"] = current_project.administrator.username
+            data["administrator"] = current_project.administrator.display_name
+            admin_username = current_project.administrator.username
             self._mark_selected(current_project)
         data["project_id"] = project_id
 
         template_specification = dict(mainContent="project/editone", data=data, isCreate=is_create,
                                       title="Create new project" if is_create else "Edit " + data["name"],
-                                      editUsersEnabled=(current_user.username == data['administrator']))
+                                      editUsersEnabled=(current_user.username == admin_username))
         try:
             if cherrypy.request.method == 'POST' and save:
                 common.remove_from_session(common.KEY_PROJECT)

@@ -73,13 +73,13 @@ class CaseDAO(RootDAO):
             self.logger.debug("Could not retrieve user for name " + str(name))
         return user
 
-    def get_user_by_external_id(self, external_id):
-        """Retrieve USER entity by external id."""
+    def get_user_by_gid(self, gid):
+        """Retrieve USER entity by gid."""
         user = None
         try:
-            user = self.session.query(User).filter_by(external_id=external_id).one()
+            user = self.session.query(User).filter_by(gid=gid).one()
         except SQLAlchemyError:
-            self.logger.debug("Could not retrieve user for external_id " + external_id)
+            self.logger.debug("Could not retrieve user for gid= " + gid)
         return user
 
     def get_system_user(self):

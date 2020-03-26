@@ -2,6 +2,15 @@
 	<table class="contentTable" summary="Register New User">
 		<thead><tr><td colspan='2'><h2>{{ title }}</h2></td></tr></thead>
 		<tr>
+			<td><label for="display_name">Display name *</label></td>
+			<td><input tabindex='1' id="display_name" type="textField" name="display_name" value="{{ data.display_name if ('display_name' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'display_name' in errors %}
+					<span class=errorMessage">{{ errors.display_name }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
 			<td><label for="username">Username *</label></td>
 			<td><input tabindex='1' id="username" type="textField" name="username" value="{{ data.username if ('username' in data) else '' }}" class="inputField"/>
 				<br/>

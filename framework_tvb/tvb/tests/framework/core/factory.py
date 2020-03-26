@@ -97,14 +97,14 @@ class TestFactory(object):
         return dao.count_datatypes(project.id, datatype.__class__)
 
     @staticmethod
-    def create_user(username='test_user', password='test_pass',
+    def create_user(username='test_user', display_name='test_display_name', password='test_pass',
                     mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
 
         :returns: User entity after persistence.
         """
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     @staticmethod
@@ -445,7 +445,7 @@ class ExtremeTestFactory(object):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
             password = hash_password("test")
-            new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
+            new_user = User("gen" + str(i), "name" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))
             ExtremeTestFactory.VALIDATION_DICT[new_user.id] = 0

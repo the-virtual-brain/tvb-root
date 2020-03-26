@@ -270,6 +270,7 @@ class SettingsForm(formencode.Schema):
     """
 
     ADMINISTRATOR_NAME = formencode.All(validators.UnicodeString(not_empty=True), validators.PlainText())
+    ADMINISTRATOR_DISPLAY_NAME = formencode.All(validators.UnicodeString(not_empty=True), validators.PlainText())
     ADMINISTRATOR_PASSWORD = validators.UnicodeString(not_empty=True)
     ADMINISTRATOR_EMAIL = validators.Email(not_empty=True)
 

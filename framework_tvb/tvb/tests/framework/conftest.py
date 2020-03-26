@@ -110,7 +110,7 @@ def session(db_engine):
 
 @pytest.fixture
 def user_factory():
-    def build(username='test_user', password='test_pass',
+    def build(username='test_user', display_name='test_name', password='test_pass',
               mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
@@ -120,7 +120,7 @@ def user_factory():
         if existing_user is not None:
             return existing_user
 
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     return build

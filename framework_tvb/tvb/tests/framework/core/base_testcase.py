@@ -35,11 +35,12 @@
 """
 
 import os
-import sys
 import shutil
-import decorator
+import sys
 from functools import wraps
 from types import FunctionType
+
+import decorator
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
@@ -136,7 +137,9 @@ class BaseTestCase(object):
         # Now if the database is clean we can delete also project folders on disk
         if delete_folders:
             self.delete_project_folders()
-        dao.store_entity(User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+        dao.store_entity(
+            User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, TvbProfile.current.web.admin.SYSTEM_USER_NAME, None,
+                 None, True, None))
 
     def cancel_all_operations(self):
         """
