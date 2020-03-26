@@ -76,7 +76,6 @@ class SimulatorWizzardURLs(object):
     LAUNCH_SIMULATION_URL = '/burst/launch_simulation'
     SETUP_PSE_URL = '/burst/setup_pse'
     SET_PSE_PARAMS_URL = '/burst/set_pse_params'
-    SET_PSE_RANGE_PARAMS_URL = '/burst/set_pse_range_params'
     LAUNCH_PSE_URL = '/burst/launch_pse'
 
 
@@ -877,7 +876,7 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method == 'POST':
             is_simulator_copy = False
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_PSE_RANGE_PARAMS_URL)
+            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_PSE_URL)
             form.fill_from_post(data)
 
             param1 = form.pse_param1.value
@@ -890,40 +889,8 @@ class SimulatorController(BurstBaseController):
         project_id = common.get_current_project().id
         next_form = SimulatorPSEParamRangeFragment(param1, param2, project_id=project_id)
 
-        rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_PSE_RANGE_PARAMS_URL,
-                                                          SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
-                                                          is_simulator_copy, is_simulator_load,
-                                                          last_form_url=self.last_loaded_form_url)
-        return rendering_rules.to_dict()
-
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
-    def set_pse_range_params(self, **data):
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
-        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
-        all_range_parameters = self.range_parameters.get_all_range_parameters()
-
-        if cherrypy.request.method == 'POST':
-            is_simulator_copy = False
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_PSE_URL)
-            range_param1, range_param2 = SimulatorPSEParamRangeFragment.fill_from_post(all_range_parameters, **data)
-            common.add2session(common.KEY_PSE_PARAM_1, range_param1)
-            common.add2session(common.KEY_PSE_PARAM_2, range_param2)
-        else:
-            range_param1, range_param2 = self._handle_range_params_at_loading()
-
-        number_of_simulations = len(range_param1.get_range_values())
-
-        if range_param2:
-            number_of_simulations = number_of_simulations * len(range_param2.get_range_values())
-
-        next_form = SimulatorPSEFinalFragment()
-        next_form.fill_from_post({'number_of_simulations': str(number_of_simulations)})
-
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.LAUNCH_PSE_URL,
-                                                          SimulatorWizzardURLs.SET_PSE_RANGE_PARAMS_URL,
+                                                          SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
                                                           last_form_url=self.last_loaded_form_url,
                                                           is_launch_pse_fragment=True)
@@ -933,6 +900,8 @@ class SimulatorController(BurstBaseController):
     @handle_error(redirect=False)
     @check_user
     def launch_pse(self, **data):
+        all_range_parameters = self.range_parameters.get_all_range_parameters()
+        range_param1, range_param2 = SimulatorPSEParamRangeFragment.fill_from_post(all_range_parameters, **data)
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
 
         project = common.get_current_project()
@@ -940,9 +909,6 @@ class SimulatorController(BurstBaseController):
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         burst_config.start_time = datetime.now()
-
-        range_param1 = common.get_from_session(common.KEY_PSE_PARAM_1)
-        range_param2 = common.get_from_session(common.KEY_PSE_PARAM_2)
 
         if range_param2:
             ranges = [range_param1.to_json(), range_param2.to_json()]

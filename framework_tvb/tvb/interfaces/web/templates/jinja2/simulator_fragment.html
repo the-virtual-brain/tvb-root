@@ -69,6 +69,6 @@
 
     {% if renderer.include_launch_pse_button %}
         <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary"
-                onclick="launchNewPSEBurst()">Launch PSE</button>
+                onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
     {% endif %}
 </form>

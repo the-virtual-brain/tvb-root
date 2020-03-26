@@ -1147,10 +1147,13 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     user_edited_title = false;
 }
 
-function launchNewPSEBurst() {
+function launchNewPSEBurst(currentForm) {
+    var form_data = $(currentForm).serialize();
+
     doAjaxCall({
         type: "POST",
         url: '/burst/launch_pse/',
+        data: form_data,
         traditional: true,
         success: function (r) {
             loadBurstHistory();
