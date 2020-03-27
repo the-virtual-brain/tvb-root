@@ -936,6 +936,54 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     $("#div-burst-tree").show();
 }
 
+function displayPseSimulationMessage(simulation_mesage){
+    pse_param1_lo = $("#pse_param1_lo")[0].valueAsNumber;
+    pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
+    pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
+
+    param1_difference = pse_param1_hi - pse_param1_lo;
+    pse_param1_number = Math.floor( param1_difference / pse_param1_step);
+    remainder_param1 = param1_difference % pse_param1_step;
+    if(remainder_param1 !== 0){
+        pse_param1_number = pse_param1_number + 1;
+    }
+
+    pse_param2_lo = $("#pse_param2_lo");
+
+    if(pse_param2_lo.length !== 0) {
+        pse_param2_lo = pse_param2_lo[0].valueAsNumber;
+        pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
+        pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
+
+        param2_difference = pse_param2_hi - pse_param2_lo;
+        pse_param2_number = Math.floor(param2_difference / pse_param2_step);
+        remainder_param2 = param2_difference % pse_param2_step;
+        if (remainder_param2 !== 0) {
+            pse_param2_number = pse_param2_number + 1;
+        }
+    }else{
+        pse_param2_number = 1;
+    }
+
+    simulations_number = pse_param1_number * pse_param2_number;
+
+    displayMessage(simulation_mesage.concat(simulations_number).concat("!"));
+
+}
+
+function setPseRangeParameters(){
+    document.addEventListener('change', function(e){
+        if(e.target && (e.target.id === 'pse_param1_lo' ||
+        e.target.id === 'pse_param1_hi' ||
+        e.target.id === 'pse_param1_step' ||
+        e.target.id === 'pse_param2_lo' ||
+        e.target.id === 'pse_param2_hi' ||
+        e.target.id === 'pse_param2_step')){
+            displayPseSimulationMessage("Number of simulations that are about to be launched: ");
+        }
+    });
+}
+
 /*************************************************************************************************************************
  *            GENERIC FUNCTIONS
  *************************************************************************************************************************/
@@ -944,6 +992,8 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
  * If a burst is stored in session then load from there. Called on coming to burst page from a valid session.
  */
 function initBurstConfiguration(sessionPortlets, selectedTab) {
+    setPseRangeParameters();
+
     //Get the selected burst from session and store it to be used further ....
     doAjaxCall({
         type: "POST",
@@ -1148,6 +1198,7 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
 }
 
 function launchNewPSEBurst(currentForm) {
+    displayPseSimulationMessage("Number of simulations that were launched: ");
     var form_data = $(currentForm).serialize();
 
     doAjaxCall({
