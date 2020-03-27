@@ -405,8 +405,13 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                            operation_factory):
     def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
 
-        range_1 = ["row1", [1, 2, 3]]
+        # there store the name and the (hi, lo, step) value of the range parameters
+        range_1 = ["row1", [1, 2, 10]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        # there are the actual numbers in the interval
+        range_values_1 = [1, 3, 5, 7, 9]
+        range_values_2 = [0.1, 0.4]
 
         user = user_factory()
 
@@ -444,8 +449,8 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
-        for range_val1 in range_1[1]:
-            for range_val2 in range_2[1]:
+        for range_val1 in range_values_1:
+            for range_val2 in range_values_2:
                 op = Operation(user.id, project.id, algorithm.id, 'test parameters',
                                meta=json.dumps(meta), status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
