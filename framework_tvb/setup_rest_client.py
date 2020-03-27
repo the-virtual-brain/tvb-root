@@ -34,6 +34,7 @@ This is used to package the tvb-rest-client separately.
 
 import os
 import shutil
+
 import setuptools
 from setuptools.command.egg_info import manifest_maker
 
@@ -43,7 +44,8 @@ VERSION = "2.0.2a3"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "requests", "scipy",
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil",
+                            "requests", "scipy",
                             "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
 
 # Packaging tvb-rest-client
