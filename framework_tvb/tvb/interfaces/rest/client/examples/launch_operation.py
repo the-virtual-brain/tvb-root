@@ -48,8 +48,8 @@ if __name__ == '__main__':
     logger.info("Preparing client...")
     tvb_client = TVBClient("http://localhost:9090")
 
-    logger.info("Login with default user...")
-    tvb_client.login("tvb_user", "pass")
+    logger.info("Attempt to login")
+    tvb_client.browser_login()
 
     logger.info("Requesting projects for logged user")
     projects_of_user = tvb_client.get_project_list()
