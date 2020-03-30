@@ -936,17 +936,23 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     $("#div-burst-tree").show();
 }
 
+function calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
+    param_difference = pse_param_hi - pse_param_lo;
+    pse_param_number = Math.floor(param_difference / pse_param_step);
+    remainder_param = param_difference % pse_param_step;
+    if(remainder_param !== 0){
+        pse_param_number = pse_param_number + 1;
+    }
+
+    return pse_param_number;
+}
+
 function displayPseSimulationMessage(simulation_mesage){
     pse_param1_lo = $("#pse_param1_lo")[0].valueAsNumber;
     pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
     pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
 
-    param1_difference = pse_param1_hi - pse_param1_lo;
-    pse_param1_number = Math.floor( param1_difference / pse_param1_step);
-    remainder_param1 = param1_difference % pse_param1_step;
-    if(remainder_param1 !== 0){
-        pse_param1_number = pse_param1_number + 1;
-    }
+    pse_param1_number = calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
 
     pse_param2_lo = $("#pse_param2_lo");
 
@@ -955,12 +961,7 @@ function displayPseSimulationMessage(simulation_mesage){
         pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
         pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
 
-        param2_difference = pse_param2_hi - pse_param2_lo;
-        pse_param2_number = Math.floor(param2_difference / pse_param2_step);
-        remainder_param2 = param2_difference % pse_param2_step;
-        if (remainder_param2 !== 0) {
-            pse_param2_number = pse_param2_number + 1;
-        }
+        pse_param2_number = calculateValuesInRage(pse_param2_lo, pse_param2_hi, pse_param2_step);
     }else{
         pse_param2_number = 1;
     }
@@ -968,7 +969,6 @@ function displayPseSimulationMessage(simulation_mesage){
     simulations_number = pse_param1_number * pse_param2_number;
 
     displayMessage(simulation_mesage.concat(simulations_number).concat("!"));
-
 }
 
 function setPseRangeParameters(){
