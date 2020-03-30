@@ -70,7 +70,7 @@ else:
 
     if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
         # use for speed, but without crash safety; use only in development
-        LOGGER.warn("TRADE_CRASH_SAFETY_FOR_SPEED is on")
+        LOGGER.warning("TRADE_CRASH_SAFETY_FOR_SPEED is on")
         event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
     else:
         event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
