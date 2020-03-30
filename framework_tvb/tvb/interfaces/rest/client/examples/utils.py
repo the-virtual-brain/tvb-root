@@ -29,11 +29,22 @@
 #
 
 import os
+import sys
 import time
 
 import tvb_data
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
+
+
+def compute_rest_url():
+    rest_url = "https://tvb-sim3.scai.fraunhofer.de"
+    if len(sys.argv) > 0:
+        for i in range(0, len(sys.argv)):
+            if "--rest-url=" in sys.argv[i]:
+                rest_url = sys.argv[i].split("=")[1]
+
+    return rest_url
 
 
 def compute_tvb_data_path(folder, filename):
