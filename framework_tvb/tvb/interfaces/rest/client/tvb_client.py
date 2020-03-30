@@ -27,8 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import socket
 import tempfile
+import webbrowser
 
 from tvb.basic.neotraits.api import HasTraits
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
@@ -38,6 +39,7 @@ from tvb.interfaces.rest.client.project.project_api import ProjectApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
 from tvb.interfaces.rest.commons.dtos import OperationDto, UserDto
+from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
 class TVBClient:
@@ -48,21 +50,47 @@ class TVBClient:
     Those should be loaded in chunks, because they might be to large to be loaded in memory at once.
     """
 
-    def __init__(self, server_url, auth_token=''):
+    def __init__(self, server_url, auth_token='', login_callback_port=8888):
+        # type: (str,str,int) -> None
+        """
+        TVBClient init method
+        :param server_url: REST server URL
+        :param auth_token: Authorization Bearer token (optional). It is required if you do an external login
+        :param login_callback_port: Port where cherrypy login callback server will run on 127.0.0.1
+        """
         populate_datatypes_registry()
+        self._test_free_port(login_callback_port)
         self.temp_folder = tempfile.gettempdir()
+        self.login_callback_port = login_callback_port
         self.user_api = UserApi(server_url, auth_token)
         self.project_api = ProjectApi(server_url, auth_token)
         self.datatype_api = DataTypeApi(server_url, auth_token)
         self.simulation_api = SimulationApi(server_url, auth_token)
         self.operation_api = OperationApi(server_url, auth_token)
 
-    def login(self, username, password):
-        """
-        Login in the keycloak system
-        """
-        login_response = self.user_api.login(username, password)
+    @staticmethod
+    def _test_free_port(login_callback_port):
+        try:
+            test_socket = socket.socket()
+            test_socket.connect(("127.0.0.1", login_callback_port))
+            test_socket.close()
+            raise ClientException("Port {} is already in use.".format(login_callback_port))
+        except socket.error:
+            return
+
+    def browser_login(self):
+        login_response = self.user_api.browser_login(self.login_callback_port, self.open_browser)
         self._update_token(login_response)
+
+    @staticmethod
+    def open_browser(url):
+        """
+        Open given URL in a browser. If you want to open the URL in an embedded browser for example you will have to
+        override this method
+        :param url: URL to open
+        """
+        web = webbrowser.get()
+        web.open_new(url)
 
     def logout(self):
         """

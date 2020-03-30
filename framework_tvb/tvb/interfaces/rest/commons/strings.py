@@ -36,6 +36,8 @@ class Strings(Enum):
     BASE_PATH = "api"
     BEARER = "Bearer "
     AUTH_HEADER = "Authorization"
+    AUTH_URL = "auth_url"
+    ACCOUNT_URL = "account_url"
 
 
 class RequestFileKey(Enum):
@@ -47,8 +49,8 @@ class RequestFileKey(Enum):
 class FormKeyInput(Enum):
     CREATE_PROJECT_NAME = 'project_name'
     CREATE_PROJECT_DESCRIPTION = 'project_description'
-    USERS_USERNAME = 'username'
-    USERS_PASSWORD = 'password'
+    CODE = 'code'
+    REDIRECT_URI = 'redirect_uri'
     KEYCLOAK_REFRESH_TOKEN = 'refresh_token'
     NEW_MEMBERS_GID = 'new_members_gid'
 
@@ -74,6 +76,7 @@ class RestLink(Enum):
     # USERS
     LOGIN = "/login"
     PROJECTS = "/logged/projects"
+    USEFUL_URLS = "/kc-urls"
 
     # PROJECTS
     DATA_IN_PROJECT = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/data"
@@ -106,7 +109,7 @@ class RestLink(Enum):
 
 
 _namespace_url_dict = {
-    RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS],
+    RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS, RestLink.USEFUL_URLS],
     RestNamespace.PROJECTS: [RestLink.DATA_IN_PROJECT, RestLink.OPERATIONS_IN_PROJECT, RestLink.PROJECT_MEMBERS],
     RestNamespace.DATATYPES: [RestLink.GET_DATATYPE, RestLink.DATATYPE_OPERATIONS],
     RestNamespace.OPERATIONS: [RestLink.LAUNCH_OPERATION, RestLink.OPERATION_STATUS, RestLink.OPERATION_RESULTS],

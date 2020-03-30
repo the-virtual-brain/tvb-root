@@ -36,7 +36,7 @@ from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import ProjectDto, UserDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
-from tvb.interfaces.rest.commons.strings import FormKeyInput
+from tvb.interfaces.rest.commons.strings import FormKeyInput, Strings
 from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
@@ -54,8 +54,10 @@ class LoginUserResource(Resource):
         """
         try:
             data = flask.request.json
-            return AuthorizationManager.get_keycloak_instance().token(data[FormKeyInput.USERS_USERNAME.value],
-                                                                      data[FormKeyInput.USERS_PASSWORD.value])
+            return AuthorizationManager.get_keycloak_instance().token(code=data[FormKeyInput.CODE.value],
+                                                                      grant_type=["authorization_code"],
+                                                                      redirect_uri=data[
+                                                                          FormKeyInput.REDIRECT_URI.value])
         except KeyError:
             raise InvalidInputException("Invalid input.")
 
@@ -120,3 +122,20 @@ class GetProjectsListResource(RestResource):
                 raise InvalidInputException(excep.msg)
         except KeyError:
             raise InvalidInputException("Invalid create project input.")
+
+
+class LinksResource(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def get(self):
+        redirect_uri = flask.request.args.get(FormKeyInput.REDIRECT_URI.value)
+        if redirect_uri is None:
+            raise InvalidInputException(message="Invalid redirect uri")
+        keycloak_instance = AuthorizationManager.get_keycloak_instance()
+        auth_url = keycloak_instance.auth_url(redirect_uri) + "&scope=openid profile email"
+        account_url = keycloak_instance.connection.base_url + "realms/{}/account".format(keycloak_instance.realm_name)
+        return {
+            Strings.AUTH_URL.value: auth_url,
+            Strings.ACCOUNT_URL.value: account_url
+        }

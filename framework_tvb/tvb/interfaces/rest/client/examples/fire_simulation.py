@@ -37,7 +37,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
-from tvb.interfaces.rest.client.examples.utils import monitor_operation
+from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
@@ -45,11 +45,10 @@ if __name__ == '__main__':
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
-    tvb_client = TVBClient("http://localhost:9090")
+    tvb_client = TVBClient(compute_rest_url())
 
     logger.info("Attempt to login")
-    tvb_client.login('tvb_user', 'pass')
-
+    tvb_client.browser_login()
     logger.info("Requesting projects for logged user")
     projects_of_user = tvb_client.get_project_list()
     assert len(projects_of_user) > 0

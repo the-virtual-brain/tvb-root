@@ -58,4 +58,22 @@ When creating a new TVB set of release packages you should:
     
     
      
- 
+ TVB REST CLIENT release procedure:
+    Usually, we need to:
+        1. Release the tvb-rest-client package on Pypi:
+            - it is mandatory to take the package from a Jenkins build
+            - make sure you keep 'forever' that build and give it a significant name (eg: Release ​tvb-rest-client ​2.0.2)
+            - download on your local machine the package from Jenkins
+            - install it in a new environment and run the examples (eg: fire_simulation.py) to ensure it works correctly
+            - upload it on Pypi
+
+        2. Update the REST server docker image:
+            Currently, we have 2 images:
+                - thevirtualbrain/tvb-run:keycloak - it is built and uploaded by Jenkins. We have to mount the proper
+                                                     Keycloak configuration files inside the container.
+                - thevirtualbrain/tvb-run:tvb-rest - it comes with a Keycloak client configuration. For deploy, we have
+                                                     to COPY the Keycloak configuration files inside the image at build
+                                                     time. Thus, the build is done locally.
+
+    If there are changes in tvb-library that affect the tvb-rest-client, we need to release that, too.
+    Make sure the version number is kept in sync for all of tvb-library, tvb-rest-client and tvb-framework.
