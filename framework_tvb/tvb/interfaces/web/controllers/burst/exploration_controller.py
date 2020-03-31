@@ -141,7 +141,6 @@ class ParameterExplorationController(BaseController):
                                                                         IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
-            datatype_group_gid = uuid.UUID(datatype_group_gid)
             try:
                 pse_context = adapter.prepare_parameters(datatype_group_gid, backPage, color_metric, size_metric)
                 return dict(series_array=pse_context.series_array,
