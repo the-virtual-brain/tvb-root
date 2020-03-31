@@ -24,7 +24,7 @@
                     {% endif %}
 
                     <form id="{{ algorithm.id }}">
-                        {{ gatf.generateDisplay(algorithm.input_tree, false, "") }}
+                        {{ algorithm.form | safe }}
                         <button class="action action-confirm" onclick="submitParentForm('{{ algorithm.id }}', '{{ algorithm.link }}');return false;">Launch</button>
                     </form>
                 </fieldset>

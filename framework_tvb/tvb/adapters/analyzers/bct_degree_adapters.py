@@ -27,10 +27,10 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
-from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description
-
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description, BaseBCTForm
+from tvb.core.neocom import h5
 
 BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms",
                                            "Brain Connectivity Toolbox", "bctdegree")
@@ -48,11 +48,14 @@ class Degree(BaseBCT):
     _matlab_code = "deg = degrees_und(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree")
-        return [measure]
+        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        return [measure_index]
 
 
 class DegreeIOD(Degree):
@@ -65,13 +68,18 @@ class DegreeIOD(Degree):
     _matlab_code = "[id,od,deg] = degrees_dir(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure1 = self.build_connectivity_measure(result, 'id', connectivity, "Node indegree")
+        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
         measure2 = self.build_connectivity_measure(result, 'od', connectivity, "Node outdegree")
+        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         measure3 = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree (indegree + outdegree)")
-        return [measure1, measure2, measure3]
+        measure_index3 = self.load_entity_by_gid(measure3.gid.hex)
+        return [measure_index1, measure_index2, measure_index3]
 
 
 class JointDegree(Degree):
@@ -84,16 +92,19 @@ class JointDegree(Degree):
     _matlab_code = "[J,J_od,J_id,J_bl] = jdegree(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure = self.build_connectivity_measure(result, 'J', connectivity,
                                                   "'Joint Degree JOD= ' +str(result['J_od'])+ ', JID= ' +str(result['J_id'])+ ', JBL= ' +str(result['J_bl'])",
                                                   "Connectivity Nodes", "Connectivity Nodes")
+        measure_index = self.load_entity_by_gid(measure.gid.hex)
         value1 = self.build_int_value_wrapper(result, 'J_od', "Number of vertices with od &gt; id")
         value2 = self.build_int_value_wrapper(result, 'J_id', "Number of vertices with id &gt; od")
         value3 = self.build_int_value_wrapper(result, 'J_bl', "Number of vertices with id = od")
-        return [measure, value1, value2, value3]
+        return [measure_index, value1, value2, value3]
 
 
 class MatchingIndex(Degree):
@@ -106,15 +117,20 @@ class MatchingIndex(Degree):
     _matlab_code = "[Min,Mout,Mall] = matching_ind(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure1 = self.build_connectivity_measure(result, 'Min', connectivity,
                                                    "Matching index for incoming connections")
+        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
         measure2 = self.build_connectivity_measure(result, 'Mout', connectivity,
                                                    "Matching index for outgoing connections")
+        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         measure3 = self.build_connectivity_measure(result, 'Mall', connectivity, "Matching index for all connections")
-        return [measure1, measure2, measure3]
+        measure_index3 = self.load_entity_by_gid(measure3.gid.hex)
+        return [measure_index1, measure_index2, measure_index3]
 
 
 class Strength(Degree):
@@ -127,11 +143,14 @@ class Strength(Degree):
     _matlab_code = "strength = strengths_und(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure = self.build_connectivity_measure(result, 'strength', connectivity, "Node strength")
-        return [measure]
+        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        return [measure_index]
 
 
 class StrengthISOS(Strength):
@@ -142,14 +161,19 @@ class StrengthISOS(Strength):
     _matlab_code = "[is,os,strength] = strengths_dir(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure1 = self.build_connectivity_measure(result, 'is', connectivity, "Node instrength")
+        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
         measure2 = self.build_connectivity_measure(result, 'os', connectivity, "Node outstrength")
+        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         measure3 = self.build_connectivity_measure(result, 'strength', connectivity,
                                                    "Node strength (instrength + outstrength)")
-        return [measure1, measure2, measure3]
+        measure_index3 = self.load_entity_by_gid(measure3.gid.hex)
+        return [measure_index1, measure_index2, measure_index3]
 
 
 class StrengthWeights(Strength):
@@ -160,14 +184,18 @@ class StrengthWeights(Strength):
     _matlab_code = "[Spos,Sneg,vpos,vneg] = strengths_und_sign(CIJ);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['CIJ'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CIJ', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure1 = self.build_connectivity_measure(result, 'Spos', connectivity, "Nodal strength of positive weights")
+        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
         measure2 = self.build_connectivity_measure(result, 'Sneg', connectivity, "Nodal strength of negative weights")
+        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         value1 = self.build_float_value_wrapper(result, 'vpos', "Total positive weight")
         value2 = self.build_float_value_wrapper(result, 'vneg', "Total negative weight")
-        return [measure1, measure2, value1, value2]
+        return [measure_index1, measure_index2, value1, value2]
 
 
 class DensityDirected(BaseBCT):
@@ -181,9 +209,11 @@ class DensityDirected(BaseBCT):
     _matlab_code = "[kden,N,K]  = density_dir(A);"
 
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('A', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         value1 = self.build_float_value_wrapper(result, 'kden', title="Density")
         value2 = self.build_int_value_wrapper(result, 'N', title="Number of vertices")
         value3 = self.build_int_value_wrapper(result, 'K', title="Number of edges")

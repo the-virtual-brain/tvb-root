@@ -38,8 +38,11 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.utils import extract_matlab_doc_string
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -60,12 +63,18 @@ LABEL_CONN_WEIGHTED_UNDIRECTED = "Weighted undirected connection matrix"
 def bct_description(mat_file_name):
     return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
 
+class BaseBCTModel(ViewModel):
+
+    connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label='Connectivity',
+    )
 
 class BaseBCTForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, draw_ranges=True):
         super(BaseBCTForm, self).__init__(prefix, project_id, draw_ranges)
-        self.connectivity = TraitDataTypeSelectField(Attr(field_type=Connectivity, label=self.get_connectivity_label()),
-                                                     self, name="connectivity", conditions=self.get_filters(),
+        self.connectivity = TraitDataTypeSelectField(BaseBCTModel.connectivity, self,
+                                                     name="connectivity", conditions=self.get_filters(),
                                                      has_all_option=True)
 
     @staticmethod
@@ -78,11 +87,15 @@ class BaseBCTForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "_connectivity"
+        return "connectivity"
 
     @staticmethod
     def get_connectivity_label():
         return "Connection matrix:"
+
+    @staticmethod
+    def get_view_model():
+        return BaseBCTModel
 
 
 class BaseUnidirectedBCTForm(BaseBCTForm):
@@ -116,17 +129,21 @@ class BaseBCT(ABCAsynchronous):
     def get_output(self):
         return [ConnectivityMeasureIndex, ValueWrapperIndex]
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         # We do not know how much memory is needed.
         return -1
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         return 0
 
-    def execute_matlab(self, matlab_code, **kwargs):
+    def get_connectivity(self, view_model):
+        conn_index = load_entity_by_gid(view_model.connectivity.hex)
+        return h5.load_from_index(conn_index)
+
+    def execute_matlab(self, matlab_code, data):
         self.matlab_worker.add_to_path(BCT_PATH)
         self.log.info("Starting execution of MATLAB code:" + matlab_code)
-        runcode, matlablog, result = self.matlab_worker.matlab(matlab_code, kwargs)
+        runcode, matlablog, result = self.matlab_worker.matlab(matlab_code, data=data)
         self.log.debug("Code run in MATLAB: " + str(runcode))
         self.log.debug("MATLAB log: " + str(matlablog))
         self.log.debug("Finished MATLAB execution:" + str(result))
@@ -157,7 +174,7 @@ class BaseBCT(ABCAsynchronous):
         return value
 
     @abstractmethod
-    def launch(self, connectivity, **kwargs):
+    def launch(self, view_model):
         pass
 
 
@@ -169,7 +186,7 @@ class BaseUndirected(BaseBCT):
         return BaseUnidirectedBCTForm
 
     @abstractmethod
-    def launch(self, connectivity, **kwargs):
+    def launch(self, view_model):
         pass
 
 
@@ -183,11 +200,13 @@ class ModularityOCSM(BaseBCT):
     _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
 
-    def launch(self, connectivity, **kwargs):
+    def launch(self, view_model):
         # Prepare parameters
-        kwargs['CW'] = connectivity.weights
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('CW', connectivity.weights)])
+
         # Execute the matlab code
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+        result = self.execute_matlab(self._matlab_code, data=data)
         # Gather results
         measure = self.build_connectivity_measure(result, 'Ci', connectivity, "Optimal Community Structure")
         value = self.build_float_value_wrapper(result, 'Q', title="Maximized Modularity")
@@ -211,9 +230,11 @@ class DistanceDBIN(BaseBCT):
     _ui_description = bct_description("distance_bin.m")
     _matlab_code = "D = distance_bin(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('A', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         measure = self.build_connectivity_measure(result, 'D', connectivity, "Distance matrix")
         return [measure]
 
@@ -234,9 +255,11 @@ class DistanceRDM(DistanceDBIN):
     _ui_description = bct_description("breadthdist.m")
     _matlab_code = "[R,D] = breadthdist(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('A', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
 
         measure1 = self.build_connectivity_measure(result, 'R', connectivity, "Reachability matrix")
         measure2 = self.build_connectivity_measure(result, 'D', connectivity, "Distance matrix")
@@ -258,9 +281,11 @@ class DistanceNETW(DistanceDBIN):
     _ui_description = bct_description("findwalks.m")
     _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = dict([('A', connectivity.weights)])
+
+        result = self.execute_matlab(self._matlab_code, data=data)
 
         measure1 = self.build_connectivity_measure(result, 'Wq', connectivity, "3D matrix")
         measure2 = self.build_connectivity_measure(result, 'wlq', connectivity, "Walk length distribution")
