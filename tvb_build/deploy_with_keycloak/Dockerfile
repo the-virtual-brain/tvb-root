@@ -50,6 +50,7 @@ RUN cd tvb-root; \
 
 #
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
+COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/framework_tvb/tvb/interfaces/web/static/help
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER

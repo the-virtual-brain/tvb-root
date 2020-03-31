@@ -32,7 +32,7 @@
 
     <section class="profile">
         <h2><mark>User</mark> details</h2>
-		{% if showOnlineHelp %}
+		{% if showOnlineHelp and keycloakConfigWebFile is not defined %}
 			<a class="helper-hook" title="Click here to open Online-Help" href="#" onClick="showHelpOverlay('user')">?</a>
 		{% endif %}
         <form method="post">
