@@ -937,38 +937,46 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
 }
 
 function calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
-    param_difference = pse_param_hi - pse_param_lo;
-    pse_param_number = Math.floor(param_difference / pse_param_step);
-    remainder_param = param_difference % pse_param_step;
+    const param_difference = pse_param_hi - pse_param_lo;
+    let pse_param_number = Math.floor(param_difference / pse_param_step);
+    const remainder_param = param_difference % pse_param_step;
     if(remainder_param !== 0){
         pse_param_number = pse_param_number + 1;
     }
-
     return pse_param_number;
 }
 
-function displayPseSimulationMessage(simulation_mesage){
-    pse_param1_lo = $("#pse_param1_lo")[0].valueAsNumber;
-    pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
-    pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
+function displayPseSimulationMessage() {
+    const THREASHOLD_WARNING = 500;
+    const THREASHOLD_ERROR = 50000;
 
-    pse_param1_number = calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
+    const pse_param1_lo = $("#pse_param1_lo")[0].valueAsNumber;
+    const pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
+    const pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
+    const pse_param1_number = calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
 
-    pse_param2_lo = $("#pse_param2_lo");
-
+    let pse_param2_lo = $("#pse_param2_lo");
+    let pse_param2_number = 1;
     if(pse_param2_lo.length !== 0) {
         pse_param2_lo = pse_param2_lo[0].valueAsNumber;
-        pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
-        pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
-
+        const pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
+        const pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
         pse_param2_number = calculateValuesInRage(pse_param2_lo, pse_param2_hi, pse_param2_step);
-    }else{
-        pse_param2_number = 1;
     }
 
-    simulations_number = pse_param1_number * pse_param2_number;
+    let nrOps = pse_param1_number * pse_param2_number;
+    let className = "infoMessage";
 
-    displayMessage(simulation_mesage.concat(simulations_number).concat("!"));
+    if (nrOps > THREASHOLD_WARNING) {
+        className = "warningMessage";
+    }
+    if (nrOps > THREASHOLD_ERROR) {
+        className = "errorMessage";
+    }
+    if (nrOps > 1) {
+        // Unless greater than 1, it is not a range, so do not display a possible confusing message.
+        displayMessage("Range configuration: " + nrOps + " operations.", className);
+    }
 }
 
 function setPseRangeParameters(){
@@ -979,7 +987,7 @@ function setPseRangeParameters(){
         e.target.id === 'pse_param2_lo' ||
         e.target.id === 'pse_param2_hi' ||
         e.target.id === 'pse_param2_step')){
-            displayPseSimulationMessage("Number of simulations that are about to be launched: ");
+            displayPseSimulationMessage();
         }
     });
 }
@@ -1198,7 +1206,7 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
 }
 
 function launchNewPSEBurst(currentForm) {
-    displayPseSimulationMessage("Number of simulations that were launched: ");
+    displayPseSimulationMessage();
     var form_data = $(currentForm).serialize();
 
     doAjaxCall({
