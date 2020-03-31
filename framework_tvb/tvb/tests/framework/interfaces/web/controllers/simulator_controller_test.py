@@ -672,6 +672,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_launch_simulation_with_default_parameters(self):
         self.sess_mock['input_simulation_name_id'] = 'HappySimulation'
+        self.sess_mock['simulation_length'] = '10'
         launch_mode = 'new'
 
         burst_config = BurstConfiguration(self.test_project.id)
