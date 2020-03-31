@@ -107,7 +107,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         """
         Launch the visualizer.
         """
-        pse_context = self.prepare_parameters(view_model.datatype_group, '')
+        pse_context = self.prepare_parameters(view_model.datatype_group.hex, '')
         pse_context.prepare_individual_jsons()
 
         return self.build_display_result('pse_discrete/view', pse_context,
@@ -159,7 +159,7 @@ class DiscretePSEAdapter(ABCDisplayer):
         :returns: `ContextDiscretePSE`
         :raises Exception: when `datatype_group_id` is invalid (not in database)
         """
-        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid.hex)
+        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
         if datatype_group is None:
             raise Exception("Selected DataTypeGroup is no longer present in the database. "
                             "It might have been remove or the specified id is not the correct one.")

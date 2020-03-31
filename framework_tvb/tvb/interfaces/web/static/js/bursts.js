@@ -102,7 +102,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
 
-            _renderAllSimulatorForms(first_wizzard_form_url);
+            _renderAllSimulatorForms([first_wizzard_form_url]);
             displayMessage("A copy of previous simulation was prepared for you!");
         },
         error: function () {
@@ -113,7 +113,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
 }
 
 function _renderAllSimulatorForms(url, stop_at_url = '') {
-    if (url != stop_at_url) {
+    if (!stop_at_url.includes(url)) {
         doAjaxCall({
             type: "GET",
             url: url,
@@ -936,6 +936,54 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     $("#div-burst-tree").show();
 }
 
+function calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
+    param_difference = pse_param_hi - pse_param_lo;
+    pse_param_number = Math.floor(param_difference / pse_param_step);
+    remainder_param = param_difference % pse_param_step;
+    if(remainder_param !== 0){
+        pse_param_number = pse_param_number + 1;
+    }
+
+    return pse_param_number;
+}
+
+function displayPseSimulationMessage(simulation_mesage){
+    pse_param1_lo = $("#pse_param1_lo")[0].valueAsNumber;
+    pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
+    pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
+
+    pse_param1_number = calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
+
+    pse_param2_lo = $("#pse_param2_lo");
+
+    if(pse_param2_lo.length !== 0) {
+        pse_param2_lo = pse_param2_lo[0].valueAsNumber;
+        pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
+        pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
+
+        pse_param2_number = calculateValuesInRage(pse_param2_lo, pse_param2_hi, pse_param2_step);
+    }else{
+        pse_param2_number = 1;
+    }
+
+    simulations_number = pse_param1_number * pse_param2_number;
+
+    displayMessage(simulation_mesage.concat(simulations_number).concat("!"));
+}
+
+function setPseRangeParameters(){
+    document.addEventListener('change', function(e){
+        if(e.target && (e.target.id === 'pse_param1_lo' ||
+        e.target.id === 'pse_param1_hi' ||
+        e.target.id === 'pse_param1_step' ||
+        e.target.id === 'pse_param2_lo' ||
+        e.target.id === 'pse_param2_hi' ||
+        e.target.id === 'pse_param2_step')){
+            displayPseSimulationMessage("Number of simulations that are about to be launched: ");
+        }
+    });
+}
+
 /*************************************************************************************************************************
  *            GENERIC FUNCTIONS
  *************************************************************************************************************************/
@@ -944,6 +992,8 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
  * If a burst is stored in session then load from there. Called on coming to burst page from a valid session.
  */
 function initBurstConfiguration(sessionPortlets, selectedTab) {
+    setPseRangeParameters();
+
     //Get the selected burst from session and store it to be used further ....
     doAjaxCall({
         type: "POST",
@@ -990,7 +1040,7 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
         success: function (response) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
-            _renderAllSimulatorForms(first_wizzard_form_url);
+            _renderAllSimulatorForms(first_wizzard_form_url, ['/burst/launch_simulation', '/burst/launch_pse']);
             displayMessage("The simulation configuration was loaded for you!");
         },
         error: function () {
@@ -1147,21 +1197,24 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
     user_edited_title = false;
 }
 
-function setupPSE() {
+function launchNewPSEBurst(currentForm) {
+    displayPseSimulationMessage("Number of simulations that were launched: ");
+    var form_data = $(currentForm).serialize();
+
     doAjaxCall({
         type: "POST",
-        url: '/burst/setup_pse/',
+        url: '/burst/launch_pse/',
+        data: form_data,
         traditional: true,
         success: function (r) {
-            // TODO: update history
-            // loadBurstHistory();
-            // const result = $.parseJSON(r);
-            // if ('id' in result) {
-            //     changeBurstHistory(result.id);
-            // }
-            // if ('error' in result) {
-            //     displayMessage(result.error, "errorMessage");
-            // }
+            loadBurstHistory();
+            const result = $.parseJSON(r);
+            if ('id' in result) {
+                changeBurstHistory(result.id);
+            }
+            if ('error' in result) {
+                displayMessage(result.error, "errorMessage");
+            }
         },
         error: function () {
             displayMessage("Error when launching simulation. Please check te logs or contact your administrator.", "errorMessage");
@@ -1208,6 +1261,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     var config_region_param_button = previous_form.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = previous_form.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = previous_form.elements.namedItem('configNoiseValues');
+    var config_launch_button = previous_form.elements.namedItem('launch_simulation');
+    var config_pse_button = previous_form.elements.namedItem('setup_pse');
+    var config_launch_pse_button = previous_form.elements.namedItem('launch_pse');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -1225,6 +1281,15 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_noise_button != null) {
         config_noise_button.style.visibility = 'visible';
     }
+    if (config_launch_button != null){
+        config_launch_button.style.visibility = 'visible';
+    }
+    if (config_pse_button != null){
+        config_pse_button.style.visibility = 'visible';
+    }
+    if (config_launch_pse_button != null){
+        config_launch_pse_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
@@ -1238,6 +1303,9 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
     var config_surface_param_button = currentForm.elements.namedItem('configSurfaceModelParam');
     var config_noise_button = currentForm.elements.namedItem('configNoiseValues');
+    var config_launch_button = currentForm.elements.namedItem('launch_simulation');
+    var config_pse_button = currentForm.elements.namedItem('setup_pse');
+    var config_launch_pse_button = currentForm.elements.namedItem('launch_pse');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -1262,6 +1330,15 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 if (config_noise_button != null) {
                     config_noise_button.style.visibility = 'hidden';
+                }
+                if (config_launch_button != null){
+                    config_launch_button.style.visibility = 'hidden';
+                }
+                if (config_pse_button != null){
+                    config_pse_button.style.visibility = 'hidden';
+                }
+                if(config_launch_pse_button != null){
+                    config_launch_pse_button.style.visibility = 'hidden';
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);

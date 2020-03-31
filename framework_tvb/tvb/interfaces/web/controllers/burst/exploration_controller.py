@@ -34,6 +34,7 @@
 """
 
 import urllib.request, urllib.parse, urllib.error
+import uuid
 import cherrypy
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.storage import dao

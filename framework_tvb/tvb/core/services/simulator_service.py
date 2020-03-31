@@ -37,6 +37,7 @@ import json
 import os
 import shutil
 import uuid
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
@@ -155,19 +156,24 @@ class SimulatorService(object):
             operation_group = burst_config.operation_group
             metric_operation_group = burst_config.metric_operation_group
             operations = []
-            range_param2_values = []
+            range_param2_values = [None]
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
+
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                    ranges = {range_param1.name: param1_value[0] if type(param1_value) is numpy.ndarray else param1_value}
 
-                    ranges = json.dumps({range_param1.name: param1_value[0], range_param2.name: param2_value[0]})
+                    if param2_value is not None:
+                        self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                        ranges[range_param2.name] = param2_value[0] if type(param2_value) is numpy.ndarray else param2_value
+
+                    ranges = json.dumps(ranges)
 
                     operation = self._prepare_operation(project.id, user.id, simulator_id, simulator.gid,
                                                         algo_category, operation_group,

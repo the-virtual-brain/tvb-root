@@ -475,7 +475,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
     def test_set_bold_monitor_params(self):
         self.sess_mock['period'] = '2000.0'
         self.sess_mock['variables_of_interest'] = ''
-        self.sess_mock['equation'] = 'HRF kernel: Volterra Kernel'
+        self.sess_mock['hrf_kernel'] = 'HRF kernel: Volterra Kernel'
 
         self.session_stored_simulator.monitors = [Bold()]
 
@@ -508,30 +508,6 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
                    'k_1'] == 5.6, "k_1 value was not set correctly."
         assert self.session_stored_simulator.monitors[0].equation.parameters[
                    'V_0'] == 0.02, "V_0 value was not set correctly."
-
-    def test_set_simulation_length(self):
-        burst_config = BurstConfiguration(self.test_project.id)
-
-        self.sess_mock['simulation_length'] = '1000.0'
-
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
-
-        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
-
-    def test_set_simulation_length_with_burst_config_name(self):
-        burst_config = BurstConfiguration(self.test_project.id)
-        burst_config.name = "Test Burst Config"
-        self.sess_mock['simulation_length'] = '1000.0'
-
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            self.simulator_controller.set_simulation_length(**self.sess_mock._data)
-
-        assert self.session_stored_simulator.simulation_length == 1000.0, "simulation_length was not set correctly."
 
     def test_load_burst_history(self):
         burst_config1 = BurstConfiguration(self.test_project.id)
@@ -695,7 +671,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert last_loaded_form_url == '/burst/setup_pse', "Incorrect last form URL!"
 
     def test_launch_simulation_with_default_parameters(self):
-        self.sess_mock['input-simulation-name-id'] = 'HappySimulation'
+        self.sess_mock['input_simulation_name_id'] = 'HappySimulation'
         launch_mode = 'new'
 
         burst_config = BurstConfiguration(self.test_project.id)

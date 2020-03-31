@@ -196,13 +196,13 @@ class BoldMonitorForm(MonitorForm):
     def __init__(self, prefix='', project_id=None):
         super(BoldMonitorForm, self).__init__(prefix, project_id)
         self.period = ScalarField(Bold.period, self)
-        self.equation_choices = get_ui_name_to_monitor_equation_dict()
-        self.equation = SimpleSelectField(self.equation_choices, self, name='equation', required=True, label='Equation')
+        self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
+        self.hrf_kernel = SimpleSelectField(self.hrf_kernel_choices, self, name='hrf_kernel', required=True, label='Equation')
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
-        datatype.equation = self.equation.data()
+        datatype.hrf_kernel = self.hrf_kernel.data()
 
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):
