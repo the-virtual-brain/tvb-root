@@ -91,7 +91,7 @@ class BaseBCTForm(ABCAdapterForm):
 
     @staticmethod
     def get_connectivity_label():
-        return "Connection matrix:"
+        return "Connection matrix"
 
     @staticmethod
     def get_view_model():
@@ -106,7 +106,7 @@ class BaseUnidirectedBCTForm(BaseBCTForm):
 
     @staticmethod
     def get_connectivity_label():
-        return "Undirected connection matrix:"
+        return "Undirected connection matrix"
 
 
 class BaseBCT(ABCAsynchronous):
@@ -189,6 +189,10 @@ class BaseUndirected(BaseBCT):
     def launch(self, view_model):
         pass
 
+class ModularityOCSMForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return "Directed (weighted or binary) connection matrix"
 
 class ModularityOCSM(BaseBCT):
     """
@@ -199,6 +203,9 @@ class ModularityOCSM(BaseBCT):
     _ui_name = "Optimal Community Structure and Modularity"
     _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
+
+    def get_form_class(self):
+        return ModularityOCSMForm
 
     def launch(self, view_model):
         # Prepare parameters

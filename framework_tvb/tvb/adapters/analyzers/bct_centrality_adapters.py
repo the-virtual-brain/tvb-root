@@ -28,13 +28,18 @@
 #
 #
 
-from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, LABEL_CONNECTIVITY_BINARY
+from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, LABEL_CONNECTIVITY_BINARY, \
+    BaseBCTForm
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.neocom import h5
 
 BCT_GROUP_CENTRALITY = AlgorithmTransientGroup("Centrality Algorithms", "Brain Connectivity Toolbox", "bctcentrality")
 
+class CentralityNodeBinaryForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return LABEL_CONNECTIVITY_BINARY
 
 class CentralityNodeBinary(BaseBCT):
     """
@@ -46,6 +51,8 @@ class CentralityNodeBinary(BaseBCT):
     _ui_description = bct_description("betweenness_bin.m")
     _matlab_code = "C = betweenness_bin(A);"
 
+    def get_form_class(self):
+        return CentralityNodeBinaryForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -57,17 +64,22 @@ class CentralityNodeBinary(BaseBCT):
         measure_index = self.load_entity_by_gid(measure.gid.hex)
         return [measure_index]
 
+class CentralityNodeWeightedForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return "Weighted (directed/undirected)  connection matrix"
 
 class CentralityNodeWeighted(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-    _ui_connectivity_label = "Weighted (directed/undirected)  connection matrix:"
 
     _ui_name = "Node Betweenness Centrality Weighted"
     _ui_description = bct_description("betweenness_wei.m")
     _matlab_code = "C = betweenness_wei(A);"
 
+    def get_form_class(self):
+        return CentralityNodeWeightedForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -139,6 +151,10 @@ class CentralityEigenVector(BaseUndirected):
         measure_index = self.load_entity_by_gid(measure.gid.hex)
         return [measure_index]
 
+class CentralityKCorenessForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return LABEL_CONNECTIVITY_BINARY
 
 class CentralityKCoreness(BaseUndirected):
     """
@@ -150,6 +166,8 @@ class CentralityKCoreness(BaseUndirected):
     _ui_description = bct_description("kcoreness_centrality_bu.m")
     _matlab_code = "[coreness, kn] = kcoreness_centrality_bu(CIJ);"
 
+    def get_form_class(self):
+        return CentralityKCorenessForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -182,16 +200,21 @@ class CentralityKCorenessBD(CentralityNodeBinary):
         measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         return [measure_index1, measure_index2]
 
+class CentralityShortcutsForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return "Binary directed connection matrix"
 
 class CentralityShortcuts(CentralityNodeBinary):
     """
     """
-    _ui_connectivity_label = "Binary directed connection matrix:"
 
     _ui_name = "Centrality Shortcuts"
     _ui_description = bct_description("erange.m")
     _matlab_code = "[Erange,eta,Eshort,fs]  = erange(A);"
 
+    def get_form_class(self):
+        return CentralityShortcutsForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -230,17 +253,22 @@ class FlowCoefficients(CentralityNodeBinary):
         measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         return [measure_index1, value1, measure_index2]
 
+class ParticipationCoefficientForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return "Binary/weighted, directed/undirected connection matrix"
 
 class ParticipationCoefficient(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CENTRALITY
-    _ui_connectivity_label = "Binary/weighted, directed/undirected connection matrix"
 
     _ui_name = "Participation Coefficient"
     _ui_description = bct_description("participation_coef.m")
     _matlab_code = "[Ci, Q]=modularity_dir(W); P = participation_coef(W, Ci);"
 
+    def get_form_class(self):
+        return ParticipationCoefficientForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -275,16 +303,21 @@ class ParticipationCoefficientSign(ParticipationCoefficient):
         measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         return [measure_index1, measure_index2]
 
+class SubgraphCentralityForm(BaseBCTForm):
+    @staticmethod
+    def get_connectivity_label():
+        return "Adjacency matrix (binary)"
 
 class SubgraphCentrality(CentralityNodeBinary):
     """
     """
-    _ui_connectivity_label = "Adjacency matrix (binary)"
 
     _ui_name = "Subgraph centrality of a network"
     _ui_description = bct_description("subgraph_centrality.m")
     _matlab_code = "Cs = subgraph_centrality(CIJ);"
 
+    def get_form_class(self):
+        return SubgraphCentralityForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
