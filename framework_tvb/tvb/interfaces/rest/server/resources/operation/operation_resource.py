@@ -28,28 +28,14 @@
 #
 #
 
-import os
-import shutil
-
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neotraits.h5 import ViewModelH5
-from tvb.core.services.exceptions import ProjectServiceException
-from tvb.core.services.flow_service import FlowService
-from tvb.core.services.operation_service import OperationService
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.commons.dtos import DataTypeDto
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.access_permissions.permissions import OperationAccessPermission, \
     ProjectAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
-from tvb.interfaces.rest.server.request_helper import get_current_user
-from tvb.interfaces.rest.server.resources.project.project_resource import INVALID_PROJECT_GID_MESSAGE
+from tvb.interfaces.rest.server.facades.operation_facade import OperationFacade
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
@@ -61,11 +47,7 @@ class GetOperationStatusResource(RestResource):
         """
         :return status of an operation
         """
-        operation = ProjectService.load_operation_by_gid(operation_gid)
-        if operation is None:
-            raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
-
-        return operation.status
+        return OperationFacade.get_operation_status(operation_gid)
 
 
 class GetOperationResultsResource(RestResource):
@@ -76,15 +58,7 @@ class GetOperationResultsResource(RestResource):
         :return list of DataType instances (subclasses), representing the results of that operation if it has finished and
         None, if the operation is still running, has failed or simply has no results.
         """
-        operation = ProjectService.load_operation_lazy_by_gid(operation_gid)
-        if operation is None:
-            raise InvalidIdentifierException(INVALID_OPERATION_GID_MESSAGE % operation_gid)
-
-        data_types = ProjectService.get_results_for_operation(operation.id)
-        if data_types is None:
-            return []
-
-        return [DataTypeDto(datatype) for datatype in data_types]
+        return OperationFacade.get_operations_results(operation_gid)
 
 
 class LaunchOperationResource(RestResource):
@@ -92,10 +66,7 @@ class LaunchOperationResource(RestResource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = get_logger(self.__class__.__module__)
-        self.operation_service = OperationService()
-        self.project_service = ProjectService()
-        self.user_service = UserService()
-        self.files_helper = FilesHelper()
+        self.operation_facade = OperationFacade()
 
     @check_permission(ProjectAccessPermission, 'project_gid')
     def post(self, project_gid, algorithm_module, algorithm_classname):
@@ -104,45 +75,9 @@ class LaunchOperationResource(RestResource):
         """
         model_file = self.extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value)
         destination_folder = RestResource.get_destination_folder()
-        h5_path = RestResource.save_temporary_file(model_file, destination_folder)
+        h5_path = FilesHelper.save_temporary_file(model_file, destination_folder)
+        operation_gid = self.operation_facade.launch_operation(destination_folder, h5_path, project_gid,
+                                                               algorithm_module,
+                                                               algorithm_classname, self.extract_file_from_request)
 
-        try:
-            project = self.project_service.find_project_lazy_by_gid(project_gid)
-        except ProjectServiceException:
-            raise InvalidIdentifierException(INVALID_PROJECT_GID_MESSAGE % project_gid)
-
-        algorithm = FlowService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
-        if algorithm is None:
-            raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
-
-        try:
-            adapter_instance = ABCAdapter.build_adapter(algorithm)
-            view_model = adapter_instance.get_view_model_class()()
-
-            view_model_h5 = ViewModelH5(h5_path, view_model)
-            view_model_gid = view_model_h5.gid.load()
-
-            current_user = get_current_user()
-            operation = self.operation_service.prepare_operation(current_user.id, project.id, algorithm.id,
-                                                                 algorithm.algorithm_category, view_model_gid.hex, None,
-                                                                 {})
-            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-
-            if isinstance(adapter_instance, ABCUploader):
-                for key, value in adapter_instance.get_form_class().get_upload_information().items():
-                    data_file = self.extract_file_from_request(request_file_key=key, file_extension=value)
-                    data_file_path = RestResource.save_temporary_file(data_file, destination_folder)
-                    file_name = os.path.basename(data_file_path)
-                    upload_field = getattr(view_model_h5, key)
-                    upload_field.store(os.path.join(storage_path, file_name))
-                    shutil.move(data_file_path, storage_path)
-
-            shutil.move(h5_path, storage_path)
-            os.rmdir(destination_folder)
-            view_model_h5.close()
-            OperationService().launch_operation(operation.id, True)
-        except Exception as excep:
-            self.logger.error(excep, exc_info=True)
-            raise ServiceException(str(excep))
-
-        return operation.gid, HTTP_STATUS_CREATED
+        return operation_gid, HTTP_STATUS_CREATED
