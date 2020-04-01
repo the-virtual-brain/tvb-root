@@ -64,14 +64,6 @@ class RestResource(SecuredResource):
         return file
 
     @staticmethod
-    def save_temporary_file(file, destination_folder):
-        filename = secure_filename(file.filename)
-        full_path = os.path.join(destination_folder, filename)
-        file.save(full_path)
-
-        return full_path
-
-    @staticmethod
     def get_destination_folder():
         temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
         destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
