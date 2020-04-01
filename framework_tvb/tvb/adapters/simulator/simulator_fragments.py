@@ -34,6 +34,7 @@ from formencode import validators
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.neotraits.api import Attr, Range
 from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
@@ -52,9 +53,10 @@ from tvb.core.neocom import h5
 class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
-        # TODO: should show only corticals
+        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                                 values=[CORTICAL])
         self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=False,
-                                           label=Simulator.surface.label, doc=Simulator.surface.doc)
+                                           label=Simulator.surface.label, doc=Simulator.surface.doc, conditions=conditions)
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
