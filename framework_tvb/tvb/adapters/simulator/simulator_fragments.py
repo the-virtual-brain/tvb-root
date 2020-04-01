@@ -218,7 +218,7 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
 
         else:
             self.pse_param1_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param1.type), self,
-                                                     name='pse_param1', required=True, label='pse_param1',
+                                                     name='pse_param1_guid', required=True, label='pse_param1_guid',
                                                      dynamic_conditions=pse_param1.range_definition,
                                                      has_all_option=True)
 
@@ -234,7 +234,7 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
                                                         default=pse_param2.range_definition.step)
             else:
                 self.pse_param2_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param2.type), self,
-                                                         name='pse_param2', required=True, label='pse_param2',
+                                                         name='pse_param2_guid', required=True, label='pse_param2_guid',
                                                          dynamic_conditions=pse_param2.range_definition,
                                                          has_all_option=True)
 
@@ -258,8 +258,7 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
                                           Range(float(pse_param1_lo), float(pse_param1_hi), float(pse_param1_step)),
                                           is_array=pse_param1.is_array)
         else:
-            param1_range_str = data.get('pse_param1')
-            pse_param1_name += '.gid'
+            param1_range_str = data.get('pse_param1_guid')
             param1_range = RangeParameter(pse_param1_name, pse_param1.type,
                                           SimulatorPSEParamRangeFragment._prepare_pse_uuid_list(param1_range_str))
 
@@ -274,9 +273,8 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
                                               Range(float(pse_param2_lo), float(pse_param2_hi), float(pse_param2_step)),
                                               is_array=pse_param2.is_array)
             else:
-                param2_range_str = data.get('pse_param2')
-                pse_param2_name += '.gid'
-                param2_range = RangeParameter(pse_param2_name, pse_param1.type,
+                param2_range_str = data.get('pse_param2_guid')
+                param2_range = RangeParameter(pse_param2_name, pse_param2.type,
                                               SimulatorPSEParamRangeFragment._prepare_pse_uuid_list(param2_range_str))
 
         return param1_range, param2_range

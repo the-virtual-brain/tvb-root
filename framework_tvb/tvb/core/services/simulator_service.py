@@ -167,11 +167,22 @@ class SimulatorService(object):
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    ranges = {range_param1.name: param1_value[0] if type(param1_value) is numpy.ndarray else param1_value}
+                    if type(param1_value) is numpy.ndarray:
+                        ranges = {range_param1.name: param1_value[0]}
+                    elif isinstance(param1_value, uuid.UUID):
+                        ranges = {range_param1.name: param1_value.hex}
+                    else:
+                        ranges = {range_param1.name: param1_value}
 
                     if param2_value is not None:
                         self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
-                        ranges[range_param2.name] = param2_value[0] if type(param2_value) is numpy.ndarray else param2_value
+
+                        if type(param2_value) is numpy.ndarray:
+                            ranges[range_param2.name] = param2_value[0]
+                        elif isinstance(param2_value, uuid.UUID):
+                            ranges[range_param2.name] = param2_value.hex
+                        else:
+                            ranges[range_param2.name] = param2_value
 
                     ranges = json.dumps(ranges)
 
@@ -180,7 +191,7 @@ class SimulatorService(object):
                                                         {DataTypeMetaData.KEY_BURST: burst_config.id}, ranges)
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-                    SimulatorSerializer().serialize_simulator(simulator,  None, storage_path)
+                    SimulatorSerializer().serialize_simulator(simulator, None, storage_path)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
