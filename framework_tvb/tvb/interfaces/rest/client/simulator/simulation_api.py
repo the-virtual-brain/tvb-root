@@ -29,6 +29,7 @@
 #
 
 import os
+import shutil
 import tempfile
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -43,13 +44,13 @@ class SimulationApi(MainApi):
 
     @handle_response
     def fire_simulation(self, project_gid, session_stored_simulator, temp_folder):
-        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
-        destination_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+        temporary_folder = FilesHelper.create_temp_folder()
         simulation_state_gid = None
 
-        SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, destination_folder)
+        SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, temporary_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        FilesHelper().zip_folder(zip_folder_path, destination_folder)
+        FilesHelper().zip_folder(zip_folder_path, temporary_folder)
+        shutil.rmtree(temporary_folder)
 
         file_obj = open(zip_folder_path, 'rb')
         return self.secured_request().post(self.build_request_url(RestLink.FIRE_SIMULATION.compute_url(True, {

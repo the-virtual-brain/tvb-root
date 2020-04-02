@@ -34,6 +34,7 @@ from tvb.interfaces.rest.commons.strings import Strings, FormKeyInput
 from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.facades.project_facade import ProjectFacade
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_PROJECT_GID_MESSAGE = 'No project found for GID: %s'
@@ -92,4 +93,4 @@ class ProjectMembersResource(RestResource):
         if len(new_members_gid) == 0:
             raise InvalidInputException("Empty users list.")
 
-        self.project_facade.add_members_to_project(project_gid, new_members_gid)
+        self.project_facade.add_members_to_project(get_current_user().id, project_gid, new_members_gid)

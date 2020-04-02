@@ -37,7 +37,6 @@ from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
-from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.simulator.simulator import Simulator
 
 
@@ -47,7 +46,7 @@ class SimulationFacade:
         self.simulator_service = SimulatorService()
         self.project_service = ProjectService()
 
-    def launch_simulation(self, zip_directory, project_gid):
+    def launch_simulation(self, current_user_id, zip_directory, project_gid):
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except ProjectServiceException:
@@ -62,8 +61,7 @@ class SimulationFacade:
         try:
             simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
                                                                                   SimulatorAdapter.__name__)
-            current_user = get_current_user()
-            simulation = self.simulator_service.prepare_simulation_on_server(user_id=current_user.id,
+            simulation = self.simulator_service.prepare_simulation_on_server(user_id=current_user_id,
                                                                              project=project,
                                                                              algorithm=simulator_algorithm,
                                                                              zip_folder_path=zip_directory,

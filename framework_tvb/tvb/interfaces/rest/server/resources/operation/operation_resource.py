@@ -29,13 +29,13 @@
 #
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.access_permissions.permissions import OperationAccessPermission, \
     ProjectAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.facades.operation_facade import OperationFacade
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 INVALID_OPERATION_GID_MESSAGE = "No operation found for GID: %s"
@@ -74,9 +74,8 @@ class LaunchOperationResource(RestResource):
         :generic method of launching Analyzers
         """
         model_file = self.extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value)
-        destination_folder = RestResource.get_destination_folder()
-        h5_path = FilesHelper.save_temporary_file(model_file, destination_folder)
-        operation_gid = self.operation_facade.launch_operation(destination_folder, h5_path, project_gid,
+        current_user = get_current_user()
+        operation_gid = self.operation_facade.launch_operation(current_user.id, model_file, project_gid,
                                                                algorithm_module,
                                                                algorithm_classname, self.extract_file_from_request)
 

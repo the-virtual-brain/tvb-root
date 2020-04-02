@@ -40,9 +40,9 @@ from tvb.basic.logger.builder import get_logger
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
-if __name__ == '__main__':
+logger = get_logger(__name__)
 
-    logger = get_logger(__name__)
+if __name__ == '__main__':
 
     logger.info("Preparing client...")
     tvb_client = TVBClient(compute_rest_url())

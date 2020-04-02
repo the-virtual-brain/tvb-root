@@ -34,7 +34,6 @@ from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import ProjectDto, DataTypeDto, OperationDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, AuthorizationRequestException, \
     InvalidInputException
-from tvb.interfaces.rest.server.request_helper import get_current_user
 
 
 class ProjectFacade:
@@ -44,12 +43,11 @@ class ProjectFacade:
         self.project_dao = CaseDAO()
 
     @staticmethod
-    def retrieve_logged_user_projects():
-        projects = ProjectService.retrieve_all_user_projects(user_id=get_current_user().id)
+    def retrieve_logged_user_projects(logged_user_id):
+        projects = ProjectService.retrieve_all_user_projects(user_id=logged_user_id)
         return [ProjectDto(project) for project in projects]
 
-    def create_project(self, project_name, project_description):
-        logged_user = get_current_user()
+    def create_project(self, logged_user, project_name, project_description):
         self.project_service.store_project(logged_user, True, None, name=project_name,
                                            description=project_description, users=[logged_user.id])
 
@@ -71,13 +69,13 @@ class ProjectFacade:
         _, _, operations, pages = self.project_service.retrieve_project_full(project.id, current_page=int(page_number))
         return [OperationDto(operation) for operation in operations], pages
 
-    def add_members_to_project(self, project_gid, new_members_gid):
+    def add_members_to_project(self, current_user_id, project_gid, new_members_gid):
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
         except Exception:
             raise InvalidIdentifierException("Invalid project identifier.")
 
-        if get_current_user().id != project.fk_admin:
+        if current_user_id != project.fk_admin:
             raise AuthorizationRequestException("Your are not allowed to edit given project")
 
         new_members_id = []

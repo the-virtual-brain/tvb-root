@@ -29,11 +29,10 @@
 #
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import UserDto
-from tvb.interfaces.rest.server.request_helper import get_current_user
 
 
 class UserFacade:
     @staticmethod
-    def get_users():
-        user_list, pages_no = UserService.retrieve_all_users(get_current_user().username)
+    def get_users(except_username):
+        user_list, pages_no = UserService.retrieve_all_users(except_username)
         return [UserDto(user) for user in user_list], pages_no
