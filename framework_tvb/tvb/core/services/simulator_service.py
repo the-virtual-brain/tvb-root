@@ -148,6 +148,15 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
 
+    @staticmethod
+    def _set_range_param_in_dict(param_value):
+        if type(param_value) is numpy.ndarray:
+            return param_value[0]
+        elif isinstance(param_value, uuid.UUID):
+            return param_value.hex
+        else:
+            return param_value
+
     def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
                                      session_stored_simulator):
         try:
@@ -167,22 +176,12 @@ class SimulatorService(object):
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    if type(param1_value) is numpy.ndarray:
-                        ranges = {range_param1.name: param1_value[0]}
-                    elif isinstance(param1_value, uuid.UUID):
-                        ranges = {range_param1.name: param1_value.hex}
-                    else:
-                        ranges = {range_param1.name: param1_value}
+
+                    ranges = {range_param1.name: self._set_range_param_in_dict(param1_value)}
 
                     if param2_value is not None:
                         self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
-
-                        if type(param2_value) is numpy.ndarray:
-                            ranges[range_param2.name] = param2_value[0]
-                        elif isinstance(param2_value, uuid.UUID):
-                            ranges[range_param2.name] = param2_value.hex
-                        else:
-                            ranges[range_param2.name] = param2_value
+                        ranges[range_param2.name] = self._set_range_param_in_dict(param2_value)
 
                     ranges = json.dumps(ranges)
 
