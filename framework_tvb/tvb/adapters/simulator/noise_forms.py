@@ -61,12 +61,6 @@ class NoiseForm(FormWithRanges):
         # TODO: should we display something for random_stream?
         # self.random_stream = ScalarField(Noise.random_stream)
 
-    def fill_from_trait(self, trait):
-        # type: (Noise) -> None
-        # super(NoiseForm, self).fill_from_trait(trait)
-        self.ntau.data = trait.ntau
-        self.noise_seed.data = trait.noise_seed
-        self.nsig.data = trait.nsig
 
 class AdditiveNoiseForm(NoiseForm):
 
@@ -94,3 +88,8 @@ class MultiplicativeNoiseForm(NoiseForm):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
         datatype.nsig = self.nsig.data
         datatype.b = self.equation.data()
+
+    def fill_from_trait(self, trait):
+        # type: (Noise) -> None
+        super(MultiplicativeNoiseForm, self).fill_from_trait(trait)
+        self.equation.data = trait.b.__class__

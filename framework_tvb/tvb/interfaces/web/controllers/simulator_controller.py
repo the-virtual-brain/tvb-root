@@ -610,6 +610,7 @@ class SimulatorController(BurstBaseController):
 
         equation_form = get_form_for_equation(type(session_stored_simulator.integrator.noise.b))()
         equation_form.equation.data = session_stored_simulator.integrator.noise.b.__class__.__name__
+        equation_form.fill_from_trait(session_stored_simulator.integrator.noise.b)
 
         rendering_rules = SimulatorFragmentRenderingRules(equation_form,
                                                           SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL,
