@@ -38,6 +38,7 @@ from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.facades.simulation_facade import SimulationFacade
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 
@@ -55,8 +56,7 @@ class FireSimulationResource(RestResource):
         """
         file = self.extract_file_from_request(request_file_key=RequestFileKey.SIMULATION_FILE_KEY.value,
                                               file_extension=FilesHelper.TVB_ZIP_FILE_EXTENSION)
-        destination_folder = RestResource.get_destination_folder()
-        zip_path = FilesHelper.save_temporary_file(file, destination_folder)
+        zip_path = FilesHelper.save_temporary_file(file)
         result = FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
 
         if len(result) == 0:
@@ -65,4 +65,5 @@ class FireSimulationResource(RestResource):
 
         zip_directory = os.path.dirname(result[0])
 
-        return self.simulation_facade.launch_simulation(zip_directory, project_gid), HTTP_STATUS_CREATED
+        simulation_gid = self.simulation_facade.launch_simulation(get_current_user().id, zip_directory, project_gid)
+        return simulation_gid, HTTP_STATUS_CREATED

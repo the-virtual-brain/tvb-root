@@ -35,6 +35,7 @@
 import json
 import os
 import shutil
+import tempfile
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
@@ -470,12 +471,21 @@ class FilesHelper(object):
         return 0
 
     @staticmethod
-    def save_temporary_file(file, destination_folder):
+    def save_temporary_file(file, destination_folder=None):
         filename = secure_filename(file.filename)
+        if destination_folder is None:
+            destination_folder = FilesHelper.create_temp_folder()
         full_path = os.path.join(destination_folder, filename)
         file.save(full_path)
 
         return full_path
+
+    @staticmethod
+    def create_temp_folder():
+        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+        folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+
+        return folder
 
 
 class TvbZip(ZipFile):

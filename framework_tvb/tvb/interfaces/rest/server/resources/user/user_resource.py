@@ -36,6 +36,7 @@ from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import FormKeyInput, Strings
 from tvb.interfaces.rest.server.facades.project_facade import ProjectFacade
 from tvb.interfaces.rest.server.facades.user_facade import UserFacade
+from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
 USERS_PAGE_SIZE = 1000
@@ -90,7 +91,7 @@ class GetUsersResource(RestResource):
         """
         :return: a list of TVB users
         """
-        user_dto_list, pages_no = UserFacade.get_users()
+        user_dto_list, pages_no = UserFacade.get_users(get_current_user().username)
         return {"users": user_dto_list, "pages_no": pages_no}
 
 
@@ -100,7 +101,7 @@ class GetProjectsListResource(RestResource):
         """
         :return a list of logged user's projects
         """
-        return ProjectFacade.retrieve_logged_user_projects()
+        return ProjectFacade.retrieve_logged_user_projects(get_current_user().id)
 
     def post(self):
         """
@@ -112,7 +113,7 @@ class GetProjectsListResource(RestResource):
             project_description = input_data[FormKeyInput.CREATE_PROJECT_DESCRIPTION.value] \
                 if FormKeyInput.CREATE_PROJECT_DESCRIPTION.value in input_data else ""
             try:
-                project_gid = ProjectFacade().create_project(project_name, project_description)
+                project_gid = ProjectFacade().create_project(get_current_user(), project_name, project_description)
                 return project_gid, HTTP_STATUS_CREATED
             except formencode.Invalid as exception:
                 raise InvalidInputException(exception.msg)
