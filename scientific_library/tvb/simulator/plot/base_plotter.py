@@ -44,7 +44,7 @@ matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
 from matplotlib import pyplot
 pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
 
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from tvb.simulator.plot.utils import ensure_list, generate_region_labels
 
 
@@ -63,7 +63,7 @@ class BasePlotter(object):
         else:
             # mp.use('Agg')
             pyplot.ioff()
-            pyplot.close()
+            pyplot.close('all')
 
     @staticmethod
     def _figure_filename(fig=None, figure_name=None):
