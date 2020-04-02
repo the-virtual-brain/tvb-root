@@ -31,7 +31,6 @@
 import os
 from abc import abstractmethod
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
-from tvb.basic.neotraits.api import Attr
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
@@ -90,10 +89,6 @@ class BaseBCTForm(ABCAdapterForm):
         return "connectivity"
 
     @staticmethod
-    def get_connectivity_label():
-        return "Connection matrix"
-
-    @staticmethod
     def get_view_model():
         return BaseBCTModel
 
@@ -103,11 +98,6 @@ class BaseUnidirectedBCTForm(BaseBCTForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.undirected'], operations=["=="], values=['1'])
-
-    @staticmethod
-    def get_connectivity_label():
-        return "Undirected connection matrix"
-
 
 class BaseBCT(ABCAsynchronous):
     """
@@ -188,23 +178,15 @@ class BaseUndirected(BaseBCT):
     def launch(self, view_model):
         pass
 
-class ModularityOCSMForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Directed (weighted or binary) connection matrix"
-
 class ModularityOCSM(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_MODULARITY
     _ui_connectivity_label = "Directed (weighted or binary) connection matrix:"
 
-    _ui_name = "Optimal Community Structure and Modularity"
+    _ui_name = "Optimal Community Structure and Modularity: Directed (weighted or binary) connection matrix"
     _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
-
-    def get_form_class(self):
-        return ModularityOCSMForm
 
     def launch(self, view_model):
         # Prepare parameters
@@ -222,7 +204,7 @@ class ModularityOCSM(BaseBCT):
 class ModularityOpCSMU(ModularityOCSM):
     """
     """
-    _ui_name = "Optimal Community Structure and Modularity (Undirected)"
+    _ui_name = "Optimal Community Structure and Modularity (Undirected): Connection matrix"
     _ui_description = bct_description("modularity_und.m")
     _matlab_code = "[Ci,Q] = modularity_und(CW);"
 
@@ -232,7 +214,7 @@ class DistanceDBIN(BaseBCT):
     """
     _ui_group = BCT_GROUP_DISTANCE
 
-    _ui_name = "Distance binary matrix"
+    _ui_name = "Distance binary matrix: Connection matrix"
     _ui_description = bct_description("distance_bin.m")
     _matlab_code = "D = distance_bin(A);"
 
@@ -248,8 +230,7 @@ class DistanceDBIN(BaseBCT):
 class DistanceDWEI(DistanceDBIN):
     """
     """
-    _ui_connectivity_label = "Weighted (directed/undirected) connection matrix:"
-    _ui_name = "Distance weighted matrix"
+    _ui_name = "Distance weighted matrix: Weighted (directed/undirected) connection matrix"
     _ui_description = bct_description("distance_wei.m")
     _matlab_code = "D = distance_wei(A);"
 
@@ -257,7 +238,7 @@ class DistanceDWEI(DistanceDBIN):
 class DistanceRDM(DistanceDBIN):
     """
     """
-    _ui_name = "Reachability and distance matrices (Breadth-first search)"
+    _ui_name = "Reachability and distance matrices (Breadth-first search): Connection Matrix"
     _ui_description = bct_description("breadthdist.m")
     _matlab_code = "[R,D] = breadthdist(A);"
 
@@ -275,7 +256,7 @@ class DistanceRDM(DistanceDBIN):
 class DistanceRDA(DistanceRDM):
     """
     """
-    _ui_name = "Reachability and distance matrices (Algebraic path count)"
+    _ui_name = "Reachability and distance matrices (Algebraic path count): Connection matrix"
     _ui_description = bct_description("reachdist.m")
     _matlab_code = "[R,D] = reachdist(A);"
 
@@ -283,7 +264,7 @@ class DistanceRDA(DistanceRDM):
 class DistanceNETW(DistanceDBIN):
     """
     """
-    _ui_name = "Network walks"
+    _ui_name = "Network walks: Connection Matrix"
     _ui_description = bct_description("findwalks.m")
     _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
 

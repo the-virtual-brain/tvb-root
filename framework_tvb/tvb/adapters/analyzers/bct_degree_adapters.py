@@ -27,32 +27,22 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, bct_description, BaseBCTForm
-from tvb.core.neocom import h5
 
 BCT_GROUP_DEGREE = AlgorithmTransientGroup("Degree and Similarity Algorithms",
                                            "Brain Connectivity Toolbox", "bctdegree")
 BCT_GROUP_DENSITY = AlgorithmTransientGroup("Density Algorithms", "Brain Connectivity Toolbox", "bctdensity")
 
 
-class DegreeForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Undirected (binary/weighted) connection matrix"
-
 class Degree(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DEGREE
 
-    _ui_name = "Degree"
+    _ui_name = "Degree: Undirected (binary/weighted) connection matrix"
     _ui_description = bct_description("degrees_und.m")
     _matlab_code = "deg = degrees_und(CIJ);"
-
-    def get_form_class(self):
-        return DegreeForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -62,21 +52,13 @@ class Degree(BaseBCT):
         measure_index = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree")
         return [measure_index]
 
-class DegreeIODForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Directed (binary/weighted) connection matrix"
-
 class DegreeIOD(Degree):
     """
     """
 
-    _ui_name = "Indegree and outdegree"
+    _ui_name = "Indegree and outdegree: Directed (binary/weighted) connection matrix"
     _ui_description = bct_description("degrees_dir.m")
     _matlab_code = "[id,od,deg] = degrees_dir(CIJ);"
-
-    def get_form_class(self):
-        return DegreeIODForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -88,21 +70,12 @@ class DegreeIOD(Degree):
         measure_index3 = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree (indegree + outdegree)")
         return [measure_index1, measure_index2, measure_index3]
 
-class JointDegreeForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Connection Matrix"
-
 class JointDegree(Degree):
     """
     """
-
-    _ui_name = "Joint Degree"
+    _ui_name = "Joint Degree: Connection Matrix"
     _ui_description = bct_description("jdegree.m")
     _matlab_code = "[J,J_od,J_id,J_bl] = jdegree(CIJ);"
-
-    def get_form_class(self):
-        return JointDegreeForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -117,21 +90,12 @@ class JointDegree(Degree):
         value3 = self.build_int_value_wrapper(result, 'J_bl', "Number of vertices with id = od")
         return [measure_index, value1, value2, value3]
 
-class MatchingIndexForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Connection/adjacency matrix"
-
 class MatchingIndex(Degree):
     """
     """
-
-    _ui_name = "Matching Index"
+    _ui_name = "Matching Index: Connection/adjacency matrix"
     _ui_description = bct_description("matching_ind.m")
     _matlab_code = "[Min,Mout,Mall] = matching_ind(CIJ);"
-
-    def get_form_class(self):
-        return MatchingIndexForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -149,9 +113,7 @@ class MatchingIndex(Degree):
 class Strength(Degree):
     """
     """
-    _ui_connectivity_label = "Directed weighted connection matrix"
-
-    _ui_name = "Strength"
+    _ui_name = "Strength: Directed weighted connection matrix"
     _ui_description = bct_description("strengths_und.m")
     _matlab_code = "strength = strengths_und(CIJ);"
 
@@ -168,7 +130,7 @@ class Strength(Degree):
 class StrengthISOS(Strength):
     """
     """
-    _ui_name = "Instrength and Outstrength"
+    _ui_name = "Instrength and Outstrength: Connection matrix"
     _ui_description = bct_description("strengths_dir.m")
     _matlab_code = "[is,os,strength] = strengths_dir(CIJ);"
 
@@ -188,7 +150,7 @@ class StrengthISOS(Strength):
 class StrengthWeights(Strength):
     """
     """
-    _ui_name = "Strength and Weight"
+    _ui_name = "Strength and Weight: Connection matrix"
     _ui_description = bct_description("strengths_und_sign.m")
     _matlab_code = "[Spos,Sneg,vpos,vneg] = strengths_und_sign(CIJ);"
 
@@ -204,22 +166,14 @@ class StrengthWeights(Strength):
         value2 = self.build_float_value_wrapper(result, 'vneg', "Total negative weight")
         return [measure_index1, measure_index2, value1, value2]
 
-class DensityDirectedForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "(weighted/binary) connection matrix"
-
 class DensityDirected(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_DENSITY
 
-    _ui_name = "Density Directed"
+    _ui_name = "Density Directed: Directed (weighted/binary) connection matrix"
     _ui_description = bct_description("density_dir.m")
     _matlab_code = "[kden,N,K]  = density_dir(A);"
-
-    def get_form_class(self):
-        return DensityDirectedForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -235,8 +189,6 @@ class DensityDirected(BaseBCT):
 class DensityUndirected(DensityDirected):
     """
     """
-    _ui_connectivity_label = "Undirected (weighted/binary) connection matrix:"
-
-    _ui_name = "Density Unirected"
+    _ui_name = "Density Unirected: Undirected (weighted/binary) connection matrix"
     _ui_description = bct_description("density_und.m")
     _matlab_code = "[kden,N,K]  = density_und(A);"

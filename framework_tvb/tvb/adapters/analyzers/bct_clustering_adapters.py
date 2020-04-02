@@ -27,31 +27,20 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, \
-    LABEL_CONN_WEIGHTED_UNDIRECTED, LABEL_CONN_WEIGHTED_DIRECTED, BaseBCTForm
-from tvb.core.neocom import h5
+    LABEL_CONN_WEIGHTED_UNDIRECTED, LABEL_CONN_WEIGHTED_DIRECTED
 
 BCT_GROUP_CLUSTERING = AlgorithmTransientGroup("Clustering Algorithms", "Brain Connectivity Toolbox", "bctclustering")
-
-class ClusteringCoefficientForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Binary directed connection matrix"
 
 class ClusteringCoefficient(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
 
-    _ui_name = "Clustering Coefficient BD"
+    _ui_name = "Clustering Coefficient BD: Binary directed connection matrix"
     _ui_description = bct_description("clustering_coef_bd.m")
     _matlab_code = "C = clustering_coef_bd(A);"
-
-    def get_form_class(self):
-        return ClusteringCoefficientForm
-
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -67,7 +56,7 @@ class ClusteringCoefficientBU(BaseUndirected):
     """
     _ui_group = BCT_GROUP_CLUSTERING
 
-    _ui_name = "Clustering Coefficient BU"
+    _ui_name = "Clustering Coefficient BU: Connection matrix"
     _ui_description = bct_description("clustering_coef_bu.m")
     _matlab_code = "C = clustering_coef_bu(A);"
 
@@ -79,23 +68,14 @@ class ClusteringCoefficientBU(BaseUndirected):
         measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BU")
         return [measure_index]
 
-class ClusteringCoefficientWUForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return LABEL_CONN_WEIGHTED_UNDIRECTED
-
 class ClusteringCoefficientWU(BaseUndirected):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_UNDIRECTED
 
-    _ui_name = "Clustering Coeficient WU"
+    _ui_name = "Clustering Coeficient WU: " + LABEL_CONN_WEIGHTED_UNDIRECTED
     _ui_description = bct_description("clustering_coef_wu.m")
     _matlab_code = "C = clustering_coef_wu(A);"
-
-    def get_form_class(self):
-        return ClusteringCoefficientWUForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -105,22 +85,12 @@ class ClusteringCoefficientWU(BaseUndirected):
         measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WU")
         return [measure_index]
 
-class ClusteringCoefficientWDForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return LABEL_CONN_WEIGHTED_DIRECTED
-
 class ClusteringCoefficientWD(ClusteringCoefficient):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_DIRECTED
-
-    _ui_name = "Clustering Coeficient WD"
+    _ui_name = "Clustering Coeficient WD: " + LABEL_CONN_WEIGHTED_DIRECTED
     _ui_description = bct_description("clustering_coef_wd.m")
     _matlab_code = "C = clustering_coef_wd(A);"
-
-    def get_form_class(self):
-        return ClusteringCoefficientWDForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -130,23 +100,14 @@ class ClusteringCoefficientWD(ClusteringCoefficient):
         measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WD")
         return [measure_index]
 
-class TransitivityBinaryDirectedForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return "Binary directed connection matrix"
-
 class TransitivityBinaryDirected(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
-    _ui_connectivity_label = "Binary directed connection matrix:"
 
-    _ui_name = "Transitivity Binary Directed"
+    _ui_name = "Transitivity Binary Directed: Binary directed connection matrix"
     _ui_description = bct_description("transitivity_bd.m")
     _matlab_code = "T = transitivity_bd(A);"
-
-    def get_form_class(self):
-        return TransitivityBinaryDirectedForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -156,22 +117,12 @@ class TransitivityBinaryDirected(BaseBCT):
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Directed")
         return [value]
 
-class TransitivityWeightedDirectedForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return LABEL_CONN_WEIGHTED_DIRECTED
-
 class TransitivityWeightedDirected(TransitivityBinaryDirected):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_DIRECTED
-
-    _ui_name = "Transitivity Weighted Directed"
+    _ui_name = "Transitivity Weighted Directed: " + LABEL_CONN_WEIGHTED_DIRECTED
     _ui_description = bct_description("transitivity_wd.m")
     _matlab_code = "T = transitivity_wd(A);"
-
-    def get_form_class(self):
-        return TransitivityWeightedDirectedForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -187,7 +138,7 @@ class TransitivityBinaryUnDirected(BaseUndirected):
     """
     _ui_group = BCT_GROUP_CLUSTERING
 
-    _ui_name = "Transitivity Binary Undirected"
+    _ui_name = "Transitivity Binary Undirected: Connection matrix"
     _ui_description = bct_description("transitivity_bu.m")
     _matlab_code = "T = transitivity_bu(A);"
 
@@ -199,22 +150,12 @@ class TransitivityBinaryUnDirected(BaseUndirected):
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Undirected")
         return [value]
 
-class TransitivityWeightedUnDirectedForm(BaseBCTForm):
-    @staticmethod
-    def get_connectivity_label():
-        return LABEL_CONN_WEIGHTED_UNDIRECTED
-
 class TransitivityWeightedUnDirected(TransitivityBinaryUnDirected):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_UNDIRECTED
-
-    _ui_name = "Transitivity Weighted undirected"
+    _ui_name = "Transitivity Weighted undirected: " + LABEL_CONN_WEIGHTED_UNDIRECTED
     _ui_description = bct_description("transitivity_wu.m")
     _matlab_code = "T = transitivity_wu(A);"
-
-    def get_form_class(self):
-        return TransitivityWeightedUnDirectedForm
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
