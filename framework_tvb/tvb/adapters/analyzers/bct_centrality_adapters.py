@@ -56,12 +56,11 @@ class CentralityNodeBinary(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity,
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity,
                                                   "Node Betweenness Centrality Binary", "Nodes")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
         return [measure_index]
 
 class CentralityNodeWeightedForm(BaseBCTForm):
@@ -83,12 +82,11 @@ class CentralityNodeWeighted(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity,
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity,
                                                   "Node Betweenness Centrality Weighted", "Nodes")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
         return [measure_index]
 
 
@@ -102,13 +100,11 @@ class CentralityEdgeBinary(CentralityNodeBinary):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
-        measure2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
+        measure_index2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
         return [measure_index1, measure_index2]
 
 
@@ -122,13 +118,11 @@ class CentralityEdgeWeighted(CentralityNodeWeighted):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
-        measure2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'EBC', connectivity, "Edge Betweenness Centrality Matrix")
+        measure_index2 = self.build_connectivity_measure(result, 'BC', connectivity, "Node Betweenness Centrality Vector")
         return [measure_index1, measure_index2]
 
 
@@ -144,11 +138,10 @@ class CentralityEigenVector(BaseUndirected):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CIJ', connectivity.weights)])
+        data = {'CIJ': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'v', connectivity, "Eigen vector centrality")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'v', connectivity, "Eigen vector centrality")
         return [measure_index]
 
 class CentralityKCorenessForm(BaseBCTForm):
@@ -171,13 +164,11 @@ class CentralityKCoreness(BaseUndirected):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CIJ', connectivity.binarized_weights)])
+        data = {'CIJ': connectivity.binarized_weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BU")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
-        measure2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BU")
+        measure_index2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
         return [measure_index1, measure_index2]
 
 
@@ -191,13 +182,11 @@ class CentralityKCorenessBD(CentralityNodeBinary):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CIJ', connectivity.binarized_weights)])
+        data = {'CIJ': connectivity.binarized_weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BD")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
-        measure2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'coreness', connectivity, "Node coreness BD")
+        measure_index2 = self.build_connectivity_measure(result, 'kn', connectivity, "Size of k-core")
         return [measure_index1, measure_index2]
 
 class CentralityShortcutsForm(BaseBCTForm):
@@ -218,15 +207,13 @@ class CentralityShortcuts(CentralityNodeBinary):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.binarized_weights)])
+        data = {'A': connectivity.binarized_weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
-        measure1 = self.build_connectivity_measure(result, 'Erange', connectivity, "Range for each edge")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'Erange', connectivity, "Range for each edge")
         value1 = self.build_int_value_wrapper(result, 'eta', "Average range for entire graph")
-        measure2 = self.build_connectivity_measure(result, 'Eshort', connectivity, "Shortcut edges")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
+        measure_index2 = self.build_connectivity_measure(result, 'Eshort', connectivity, "Shortcut edges")
         value2 = self.build_float_value_wrapper(result, 'fs', "Fraction of shortcuts in the graph")
         return [measure_index1, value1, measure_index2, value2]
 
@@ -241,16 +228,14 @@ class FlowCoefficients(CentralityNodeBinary):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CIJ', connectivity.binarized_weights)])
+        data = {'CIJ': connectivity.binarized_weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
-        measure1 = self.build_connectivity_measure(result, 'fc', connectivity, "Flow coefficient for each node")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
+        measure_index1 = self.build_connectivity_measure(result, 'fc', connectivity, "Flow coefficient for each node")
         value1 = self.build_float_value_wrapper(result, 'FC', "Average flow coefficient over the network")
-        measure2 = self.build_connectivity_measure(result, 'total_flo', connectivity,
+        measure_index2 = self.build_connectivity_measure(result, 'total_flo', connectivity,
                                                    "Number of paths that flow across the central node")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         return [measure_index1, value1, measure_index2]
 
 class ParticipationCoefficientForm(BaseBCTForm):
@@ -272,12 +257,11 @@ class ParticipationCoefficient(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('W', connectivity.weights)])
+        data = {'W': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
-        measure = self.build_connectivity_measure(result, 'P', connectivity, "Participation Coefficient")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'P', connectivity, "Participation Coefficient")
         return [measure_index]
 
 
@@ -291,16 +275,14 @@ class ParticipationCoefficientSign(ParticipationCoefficient):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('W', connectivity.weights)])
+        data = {'W': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
-        measure1 = self.build_connectivity_measure(result, 'Ppos', connectivity,
+        measure_index1 = self.build_connectivity_measure(result, 'Ppos', connectivity,
                                                    "Participation Coefficient from positive weights")
-        measure_index1 = self.load_entity_by_gid(measure1.gid.hex)
-        measure2 = self.build_connectivity_measure(result, 'Pneg', connectivity,
+        measure_index2 = self.build_connectivity_measure(result, 'Pneg', connectivity,
                                                    "Participation Coefficient from negative weights")
-        measure_index2 = self.load_entity_by_gid(measure2.gid.hex)
         return [measure_index1, measure_index2]
 
 class SubgraphCentralityForm(BaseBCTForm):
@@ -321,10 +303,9 @@ class SubgraphCentrality(CentralityNodeBinary):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CIJ', connectivity.binarized_weights)])
+        data = {'CIJ': connectivity.binarized_weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
-        measure = self.build_connectivity_measure(result, 'Cs', connectivity, "Subgraph Centrality")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'Cs', connectivity, "Subgraph Centrality")
         return [measure_index]

@@ -55,11 +55,10 @@ class ClusteringCoefficient(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BD")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BD")
         return [measure_index]
 
 
@@ -74,11 +73,10 @@ class ClusteringCoefficientBU(BaseUndirected):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BU")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BU")
         return [measure_index]
 
 class ClusteringCoefficientWUForm(BaseBCTForm):
@@ -101,11 +99,10 @@ class ClusteringCoefficientWU(BaseUndirected):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.scaled_weights())])
+        data = {'A': connectivity.scaled_weights()}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WU")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WU")
         return [measure_index]
 
 class ClusteringCoefficientWDForm(BaseBCTForm):
@@ -127,11 +124,10 @@ class ClusteringCoefficientWD(ClusteringCoefficient):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.scaled_weights())])
+        data = {'A': connectivity.scaled_weights()}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WD")
-        measure_index = self.load_entity_by_gid(measure.gid.hex)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WD")
         return [measure_index]
 
 class TransitivityBinaryDirectedForm(BaseBCTForm):
@@ -153,7 +149,8 @@ class TransitivityBinaryDirected(BaseBCT):
         return TransitivityBinaryDirectedForm
 
     def launch(self, view_model):
-        data = dict([('A', self.get_connectivity(view_model).weights)])
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Directed")
@@ -177,7 +174,8 @@ class TransitivityWeightedDirected(TransitivityBinaryDirected):
         return TransitivityWeightedDirectedForm
 
     def launch(self, view_model):
-        data = dict([('A', self.get_connectivity(view_model).scaled_weights())])
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
 
         result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Weighted Directed")
@@ -194,7 +192,8 @@ class TransitivityBinaryUnDirected(BaseUndirected):
     _matlab_code = "T = transitivity_bu(A);"
 
     def launch(self, view_model):
-        data = dict([('A', self.get_connectivity(view_model).weights)])
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Undirected")
@@ -218,7 +217,8 @@ class TransitivityWeightedUnDirected(TransitivityBinaryUnDirected):
         return TransitivityWeightedUnDirectedForm
 
     def launch(self, view_model):
-        data = dict([('A', self.get_connectivity(view_model).scaled_weights())])
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
 
         result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Weighted Undirected")

@@ -150,14 +150,13 @@ class BaseBCT(ABCAsynchronous):
         return result
 
     def build_connectivity_measure(self, result, key, connectivity, title="", label_x="", label_y=""):
-        # TODO H5
         measure = ConnectivityMeasure()
         measure.array_data = result[key]
         measure.connectivity = connectivity
         measure.title = title
         measure.label_x = label_x
         measure.label_y = label_y
-        return measure
+        return h5.store_complete(measure, self.storage_path)
 
     def build_float_value_wrapper(self, result, key, title=""):
         value = ValueWrapperIndex()
@@ -210,7 +209,7 @@ class ModularityOCSM(BaseBCT):
     def launch(self, view_model):
         # Prepare parameters
         connectivity = self.get_connectivity(view_model)
-        data = dict([('CW', connectivity.weights)])
+        data = {'CW': connectivity.weights}
 
         # Execute the matlab code
         result = self.execute_matlab(self._matlab_code, data=data)
@@ -239,7 +238,7 @@ class DistanceDBIN(BaseBCT):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
         measure = self.build_connectivity_measure(result, 'D', connectivity, "Distance matrix")
@@ -264,7 +263,7 @@ class DistanceRDM(DistanceDBIN):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
@@ -290,7 +289,7 @@ class DistanceNETW(DistanceDBIN):
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
-        data = dict([('A', connectivity.weights)])
+        data = {'A': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
 
