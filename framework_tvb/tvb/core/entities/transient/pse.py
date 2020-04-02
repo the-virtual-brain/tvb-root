@@ -40,8 +40,112 @@ The purpose of this entities is to be used in Jinja2 UI, or for populating visua
 import json
 import math
 import six
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
+from tvb.core.entities.storage import dao
+
+
+class PSEModel(object):
+    def __init__(self, operation):
+        self.operation = operation
+        self.datatype_measure = self.determine_operation_result()
+        # TODO: raise excep if dt measure is None
+        self.metrics = json.loads(self.datatype_measure.metrics)
+        self.ranges = json.loads(self.operation.range_values)
+        self.node_info = self.prepare_node_info()
+
+    def get_range1_key(self):
+        return list(self.ranges.keys())[0]
+
+    def get_range2_key(self):
+        return list(self.ranges.keys())[1]
+
+    def _determine_type_and_label(self, value):
+        try:
+            value = float(value)
+            label = value
+        except ValueError:
+            label = dao.get_datatype_by_gid(value).display_name
+
+        return value, label
+
+    def get_range1_value_and_label(self):
+        return self._determine_type_and_label(self.ranges[self.get_range1_key()])
+
+    def get_range2_value_and_label(self):
+        return self._determine_type_and_label(self.ranges[self.get_range2_key()])
+
+    def prepare_node_info(self):
+        node_info = dict()
+        node_info[self.datatype_measure.gid] = dict(operation_id=self.operation.id,
+                                                    datatype_gid=self.datatype_measure.gid,
+                                                    datatype_type=self.datatype_measure.type,
+                                                    datatype_subject=self.datatype_measure.subject,
+                                                    datatype_invalid=self.datatype_measure.invalid)
+        return node_info
+
+    def determine_operation_result(self):
+        datatype_measure = None
+        if self.operation.status == STATUS_FINISHED:
+            datatypes = dao.get_results_for_operation(self.operation.id)
+            if len(datatypes) > 0:
+                datatype = datatypes[0]
+                if datatype.type == "DatatypeMeasureIndex":
+                    # Load proper entity class from DB.
+                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid)
+                else:
+                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
+                if len(measures) > 0:
+                    datatype_measure = measures[0]
+        return datatype_measure
+
+
+class PSEGroupModel(object):
+    def __init__(self, datatype_group_gid):
+        self.datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
+
+        if self.datatype_group is None:
+            raise Exception("Selected DataTypeGroup is no longer present in the database. "
+                            "It might have been remove or the specified id is not the correct one.")
+
+        self.operation_group = dao.get_operationgroup_by_id(self.datatype_group.fk_operation_group)
+        self.operations = dao.get_operations_in_group(self.operation_group.id)
+        self.pse_model_list = self.parse_pse_data_for_display()
+
+    def parse_pse_data_for_display(self):
+        pse_model_list = []
+        for operation in self.operations:
+            pse_model = PSEModel(operation)
+            pse_model_list.append(pse_model)
+        return pse_model_list
+
+    def get_range1_interval(self):
+        return [pse_model.get_range1_value_and_label()[0] for pse_model in self.pse_model_list]
+
+    def get_range1_labels(self):
+        return [pse_model.get_range1_value_and_label()[1] for pse_model in self.pse_model_list]
+
+    def get_range2_interval(self):
+        return [pse_model.get_range2_value_and_label()[0] for pse_model in self.pse_model_list]
+
+    def get_range2_labels(self):
+        return [pse_model.get_range2_value_and_label()[1] for pse_model in self.pse_model_list]
+
+    def get_all_node_info(self):
+        all_node_info = dict()
+        for pse_model in self.pse_model_list:
+            all_node_info.update(pse_model.prepare_node_info())
+        return all_node_info
+
+    def get_all_metrics(self):
+        all_metrics = dict()
+        for pse_model in self.pse_model_list:
+            all_metrics.update({pse_model.datatype_measure.gid: pse_model.metrics})
+        return all_metrics
+
+    def get_available_metric_keys(self):
+        return list(self.pse_model_list[0].metrics)
 
 
 class ContextDiscretePSE(EnhancedDictionary):
@@ -53,7 +157,6 @@ class ContextDiscretePSE(EnhancedDictionary):
     KEY_OPERATION_ID = "operationId"
     KEY_TOOLTIP = "tooltip"
     LINE_SEPARATOR = "<br/>"
-
 
     def __init__(self, datatype_group_gid, color_metric, size_metric, back_page):
 
@@ -75,7 +178,6 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.size_metric = size_metric
         self.pse_back_page = back_page
 
-
     def setRanges(self, title_x, values_x, labels_x, title_y, values_y, labels_y, only_numbers):
         self.title_x = title_x
         self.values_x = values_x
@@ -85,7 +187,6 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.values_y = values_y
         self.labels_y = labels_y
         self.only_numbers = only_numbers
-
 
     def prepare_individual_jsons(self):
         """
@@ -98,13 +199,11 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.d3_data = json.dumps(self.d3_data)
         self.has_started_ops = json.dumps(self.has_started_ops)
 
-
     def prepare_full_json(self):
         """
         Apply JSON.dumps on full dictionary.
         """
         return json.dumps(self)
-
 
     def build_node_info(self, operation, datatype):
         """
@@ -131,7 +230,6 @@ class ContextDiscretePSE(EnhancedDictionary):
             tooltip = "No result available. Operation is in status: %s" % operation.status.split('-')[1]
             node_info[self.KEY_TOOLTIP] = tooltip
         return node_info
-
 
     def prepare_metrics_datatype(self, measures, datatype):
         """
@@ -166,7 +264,6 @@ class ContextDiscretePSE(EnhancedDictionary):
                     self.max_shape_size = size_value
                 dt_info[self.size_metric] = size_value
         self.datatypes_dict[datatype.gid] = dt_info
-
 
     def fill_object(self, final_dict):
         """ Populate current entity with attributes required for visualizer"""
@@ -211,7 +308,6 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.series_array = self.__build_series_json(all_series)
         self.status = 'started' if self.has_started_ops else 'finished'
 
-
     @staticmethod
     def __build_series_json(list_of_series):
         """ Given a list with all the data points, build the final FLOT JSON. """
@@ -222,7 +318,6 @@ class ContextDiscretePSE(EnhancedDictionary):
             final_json += value
         final_json += "]"
         return final_json
-
 
     @staticmethod
     def __get_node_json(symbol, radius, coords):
@@ -235,7 +330,6 @@ class ContextDiscretePSE(EnhancedDictionary):
         series += '"radius": ' + str(radius) + '}, '
         series += '"coords": ' + coords + '}'
         return series
-
 
     @staticmethod
     def __get_color_weight(datatype_indexes, datatype_gid, metric):
@@ -264,7 +358,6 @@ class ContextDiscretePSE(EnhancedDictionary):
             else:
                 return 0, "cross"
         return 0, None
-
 
     def __get_node_size(self, datatype_indexes, datatype_gid, range1_length, range2_length, metric):
         """
@@ -300,7 +393,6 @@ class ContextDiscretePSE(EnhancedDictionary):
             else:
                 return max_size / 2.0, "cross"
         return max_size / 2.0, None
-
 
     @staticmethod
     def __get_boundaries(range1_length, range2_length):

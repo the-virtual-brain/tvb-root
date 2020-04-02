@@ -37,7 +37,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, STATUS_FINISHED, RANGE_MISSING_VALUE
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.pse import ContextDiscretePSE
+from tvb.core.entities.transient.pse import ContextDiscretePSE, PSEGroupModel
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
@@ -101,12 +101,12 @@ class DiscretePSEAdapter(ABCDisplayer):
         # Don't know how much memory is needed.
         return -1
 
-    # TODO: migrate to neotraits
     def launch(self, view_model):
         # type: (DiscretePSEAdapterModel) -> dict
         """
         Launch the visualizer.
         """
+        pse_group_model = PSEGroupModel(view_model.datatype_group.hex)
         pse_context = self.prepare_parameters(view_model.datatype_group.hex, '')
         pse_context.prepare_individual_jsons()
 
