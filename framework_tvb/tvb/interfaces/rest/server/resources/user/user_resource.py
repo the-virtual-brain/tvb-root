@@ -31,12 +31,11 @@ import flask
 import formencode
 from flask_restplus import Resource
 from tvb.core.services.authorization import AuthorizationManager
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.user_service import UserService
-from tvb.interfaces.rest.commons.dtos import ProjectDto, UserDto
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import FormKeyInput, Strings
+from tvb.interfaces.rest.server.facades.project_facade import ProjectFacade
+from tvb.interfaces.rest.server.facades.user_facade import UserFacade
 from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
@@ -54,10 +53,11 @@ class LoginUserResource(Resource):
         """
         try:
             data = flask.request.json
-            return AuthorizationManager.get_keycloak_instance().token(code=data[FormKeyInput.CODE.value],
+            code = data[FormKeyInput.CODE.value]
+            redirect_uri = data[FormKeyInput.REDIRECT_URI.value]
+            return AuthorizationManager.get_keycloak_instance().token(code=code,
                                                                       grant_type=["authorization_code"],
-                                                                      redirect_uri=data[
-                                                                          FormKeyInput.REDIRECT_URI.value])
+                                                                      redirect_uri=redirect_uri)
         except KeyError:
             raise InvalidInputException("Invalid input.")
 
@@ -91,8 +91,8 @@ class GetUsersResource(RestResource):
         """
         :return: a list of TVB users
         """
-        user_list, pages_no = UserService.retrieve_all_users(get_current_user().username)
-        return {"users": [UserDto(user) for user in user_list], "pages_no": pages_no}
+        user_dto_list, pages_no = UserFacade.get_users(get_current_user().username)
+        return {"users": user_dto_list, "pages_no": pages_no}
 
 
 class GetProjectsListResource(RestResource):
@@ -101,9 +101,7 @@ class GetProjectsListResource(RestResource):
         """
         :return a list of logged user's projects
         """
-        user = get_current_user()
-        projects = ProjectService.retrieve_all_user_projects(user_id=user.id)
-        return [ProjectDto(project) for project in projects]
+        return ProjectFacade.retrieve_logged_user_projects(get_current_user().id)
 
     def post(self):
         """
@@ -115,12 +113,12 @@ class GetProjectsListResource(RestResource):
             project_description = input_data[FormKeyInput.CREATE_PROJECT_DESCRIPTION.value] \
                 if FormKeyInput.CREATE_PROJECT_DESCRIPTION.value in input_data else ""
             try:
-                db_project = ProjectService().store_project(get_current_user(), True, None, name=project_name,
-                                                            description=project_description, users=[])
-                return db_project.gid, HTTP_STATUS_CREATED
-            except formencode.Invalid as excep:
-                raise InvalidInputException(excep.msg)
+                project_gid = ProjectFacade().create_project(get_current_user(), project_name, project_description)
+                return project_gid, HTTP_STATUS_CREATED
+            except formencode.Invalid as exception:
+                raise InvalidInputException(exception.msg)
         except KeyError:
+
             raise InvalidInputException("Invalid create project input.")
 
 

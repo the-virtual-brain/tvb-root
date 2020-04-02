@@ -27,19 +27,13 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import os
 
 import flask
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.storage import dao
-from tvb.core.neocom.h5 import h5_file_for_index
-from tvb.core.services.flow_service import FlowService
-from tvb.interfaces.rest.commons.dtos import AlgorithmDto
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.access_permissions.permissions import DataTypeAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
+from tvb.interfaces.rest.server.facades.datatype_facade import DatatypeFacade
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredResource
-
-INVALID_DATATYPE_GID_MESSAGE = 'No datatype found for GID: {}'
 
 
 class RetrieveDatatypeResource(SecuredResource):
@@ -49,29 +43,20 @@ class RetrieveDatatypeResource(SecuredResource):
         """
         :given a guid, this function will download the H5 full data
         """
-        index = ABCAdapter.load_entity_by_gid(datatype_gid)
-        if index is None:
-            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE.format(datatype_gid))
-        h5_file = h5_file_for_index(index)
-        last_index = h5_file.path.rfind('\\')
-        file_name = h5_file.path[last_index + 1:]
-        return flask.send_file(h5_file.path, as_attachment=True, attachment_filename=file_name)
+        h5_file_path = DatatypeFacade.get_dt_h5_path(datatype_gid)
+        file_name = os.path.basename(h5_file_path)
+        return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
 
 
 class GetOperationsForDatatypeResource(RestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.flow_service = FlowService()
+        self.datatypes_facade = DatatypeFacade()
 
     @check_permission(DataTypeAccessPermission, 'datatype_gid')
     def get(self, datatype_gid):
         """
         :return the available operations for that datatype, as a list of Algorithm instances
         """
-        categories = dao.get_launchable_categories()
-        datatype = dao.get_datatype_by_gid(datatype_gid)
-        if datatype is None:
-            raise InvalidIdentifierException(INVALID_DATATYPE_GID_MESSAGE.format(datatype_gid))
-        _, filtered_adapters, _ = self.flow_service.get_launchable_algorithms_for_datatype(datatype, categories)
-        return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]
+        return self.datatypes_facade.get_datatype_operations(datatype_gid)
