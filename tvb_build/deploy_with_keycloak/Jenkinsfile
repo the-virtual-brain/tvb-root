@@ -7,8 +7,26 @@ pipeline {
     }
 
     stages {
+        stage('Copy Step 1') {
+             steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
+                 step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
+                 sh '''#!/bin/bash
+                       ls -all tvb_build/build
+                 '''
+                 stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
+             }
+        }
+
         stage ('Build docker image which we use to deploy TVB for both VBC and HBP Openshift') {
             steps {
+                unstash 'step1'
+                unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/deploy_with_keycloak/step1'
                 script {
                     LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
@@ -23,7 +41,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'paula.popa@codemart.ro',
+            mail to: 'paula.popa@codemart.ro bogdan.valean@codemart.ro lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
