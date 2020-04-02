@@ -211,32 +211,32 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
         super(SimulatorPSEParamRangeFragment, self).__init__(prefix, project_id)
         self.pse_param1_name = SimpleHiddenField(self, name='pse_param1_name', default=pse_param1.name)
         if pse_param1.type is float:
-            self.pse_param1_lo = SimpleFloatField(self, name='pse_param1_lo', required=True, label='pse_param1_lo',
+            self.pse_param1_lo = SimpleFloatField(self, name='pse_param1_lo', required=True, label='PSE param1 lo',
                                                   default=pse_param1.range_definition.lo)
-            self.pse_param1_hi = SimpleFloatField(self, name='pse_param1_hi', required=True, label='pse_param1_hi',
+            self.pse_param1_hi = SimpleFloatField(self, name='pse_param1_hi', required=True, label='PSE param1 hi',
                                                   default=pse_param1.range_definition.hi)
             self.pse_param1_step = SimpleFloatField(self, name='pse_param1_step', required=True,
-                                                    label='pse_param1_step', default=pse_param1.range_definition.step)
+                                                    label='PSE param1 step', default=pse_param1.range_definition.step)
 
         else:
             self.pse_param1_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param1.type), self,
-                                                     name='pse_param1_guid', required=True, label='pse_param1_guid',
+                                                     name='pse_param1_guid', required=True, label='PSE param1 guid',
                                                      dynamic_conditions=pse_param1.range_definition,
                                                      has_all_option=True)
 
         if pse_param2:
             self.pse_param2_name = SimpleHiddenField(self, name='pse_param2_name', default=pse_param2.name)
             if pse_param2.type is float:
-                self.pse_param2_lo = SimpleFloatField(self, name='pse_param2_lo', required=True, label='pse_param2_lo',
+                self.pse_param2_lo = SimpleFloatField(self, name='pse_param2_lo', required=True, label='PSE param2 lo',
                                                       default=pse_param2.range_definition.lo)
-                self.pse_param2_hi = SimpleFloatField(self, name='pse_param2_hi', required=True, label='pse_param2_hi',
+                self.pse_param2_hi = SimpleFloatField(self, name='pse_param2_hi', required=True, label='PSE param2 hi',
                                                       default=pse_param2.range_definition.hi)
                 self.pse_param2_step = SimpleFloatField(self, name='pse_param2_step', required=True,
-                                                        label='pse_param2_step',
+                                                        label='PSE param2 step',
                                                         default=pse_param2.range_definition.step)
             else:
                 self.pse_param2_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param2.type), self,
-                                                         name='pse_param2_guid', required=True, label='pse_param2_guid',
+                                                         name='pse_param2_guid', required=True, label='PSE param2 guid',
                                                          dynamic_conditions=pse_param2.range_definition,
                                                          has_all_option=True)
 

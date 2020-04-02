@@ -936,7 +936,7 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     $("#div-burst-tree").show();
 }
 
-function calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
+function _calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
     const param_difference = pse_param_hi - pse_param_lo;
     let pse_param_number = Math.floor(param_difference / pse_param_step);
     const remainder_param = param_difference % pse_param_step;
@@ -946,7 +946,17 @@ function calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
     return pse_param_number;
 }
 
-function displayPseSimulationMessage() {
+function _getRangeValueForGuidParameter(pse_param_guid){
+    pse_param_guid = pse_param_guid[0];
+
+    if(pse_param_guid.options.selectedIndex === pse_param_guid.options.length - 1){
+        return pse_param_guid.options.length - 1;
+    }
+
+    return 1;
+}
+
+function _displayPseSimulationMessage() {
     const THREASHOLD_WARNING = 500;
     const THREASHOLD_ERROR = 50000;
 
@@ -957,12 +967,12 @@ function displayPseSimulationMessage() {
         pse_param1_lo = pse_param1_lo[0].valueAsNumber;
         const pse_param1_hi = $("#pse_param1_hi")[0].valueAsNumber;
         const pse_param1_step = $("#pse_param1_step")[0].valueAsNumber;
-        pse_param1_number = calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
+        pse_param1_number = _calculateValuesInRage(pse_param1_lo, pse_param1_hi, pse_param1_step);
     }else{
         // We have range parameter with guid
-        let pse_param1_guid = $("#pse_param1_guid")[0];
-        if(pse_param1_guid.options.selectedIndex === pse_param1_guid.options.length - 1){
-            pse_param1_number = pse_param1_guid.options.length - 1;
+        let pse_param1_guid = $("#pse_param1_guid");
+        if(pse_param1_guid.length !== 0){
+            pse_param1_number = _getRangeValueForGuidParameter(pse_param1_guid);
         }
     }
 
@@ -973,14 +983,11 @@ function displayPseSimulationMessage() {
         pse_param2_lo = pse_param2_lo[0].valueAsNumber;
         const pse_param2_hi = $("#pse_param2_hi")[0].valueAsNumber;
         const pse_param2_step = $("#pse_param2_step")[0].valueAsNumber;
-        pse_param2_number = calculateValuesInRage(pse_param2_lo, pse_param2_hi, pse_param2_step);
+        pse_param2_number = _calculateValuesInRage(pse_param2_lo, pse_param2_hi, pse_param2_step);
     }else{
         let pse_param2_guid = $("#pse_param2_guid");
         if(pse_param2_guid.length !== 0){
-            pse_param2_guid = pse_param2_guid[0];
-            if(pse_param2_guid.options.selectedIndex === pse_param2_guid.options.length - 1){
-                pse_param2_number = pse_param2_guid.options.length - 1;
-            }
+           pse_param2_number = _getRangeValueForGuidParameter(pse_param2_guid)
         }
     }
 
@@ -1009,7 +1016,7 @@ function setPseRangeParameters(){
         e.target.id === 'pse_param2_step' ||
         e.target.id === 'pse_param1_guid' ||
         e.target.id === 'pse_param2_guid')){
-            displayPseSimulationMessage();
+            _displayPseSimulationMessage();
         }
     });
 }
@@ -1228,7 +1235,7 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
 }
 
 function launchNewPSEBurst(currentForm) {
-    displayPseSimulationMessage();
+    _displayPseSimulationMessage();
     var form_data = $(currentForm).serialize();
 
     doAjaxCall({
