@@ -224,7 +224,7 @@ class WebSettings(object):
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
 
         # Compute PUBLIC reference towards the current web application, valid FROM outside
-        self.BASE_URL = manager.get_attribute(stored.KEY_URL_WEB, self.BASE_LOCAL_URL)
+        self.BASE_URL = ""
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"

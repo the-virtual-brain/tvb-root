@@ -119,7 +119,7 @@ function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
             "theme": "default",
             "dots": true,
             "icons": true,
-            "url": baseUrl + "static/jquery/jstree-theme/style.css"
+            "url": baseUrl + "/static/jquery/jstree-theme/style.css"
         },
         "json_data": {
             "ajax": { url: url,
