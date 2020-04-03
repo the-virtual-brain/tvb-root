@@ -109,7 +109,7 @@ class SpatialAverageMonitorForm(MonitorForm):
     def __init__(self, prefix='', project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
-        self.default_mask = ScalarField(SpatialAverage.default_mask, self, disabled=True)
+        self.default_mask = ScalarField(SpatialAverage.default_mask, self)
 
 
 class GlobalAverageMonitorForm(MonitorForm):
@@ -203,6 +203,10 @@ class BoldMonitorForm(MonitorForm):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
         datatype.hrf_kernel = self.hrf_kernel.data()
+
+    def fill_from_trait(self, trait):
+        super(BoldMonitorForm, self).fill_from_trait(trait)
+        self.hrf_kernel.data = trait.hrf_kernel.__class__
 
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):

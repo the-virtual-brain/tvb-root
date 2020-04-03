@@ -609,7 +609,7 @@ class SimulatorController(BurstBaseController):
             return rendering_rules.to_dict()
 
         equation_form = get_form_for_equation(type(session_stored_simulator.integrator.noise.b))()
-        equation_form.equation.data = session_stored_simulator.integrator.noise.b.__class__.__name__
+        equation_form.equation.data = session_stored_simulator.integrator.noise.b.equation
         equation_form.fill_from_trait(session_stored_simulator.integrator.noise.b)
 
         rendering_rules = SimulatorFragmentRenderingRules(equation_form,
