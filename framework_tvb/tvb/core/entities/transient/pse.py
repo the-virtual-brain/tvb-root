@@ -98,6 +98,12 @@ class PSEModel(object):
                     measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
                 if len(measures) > 0:
                     datatype_measure = measures[0]
+
+        # if dt_measure:
+        #     return json.loads(dt_measure.metrics)
+        # else:
+        #     raise LaunchException("No datatypes were generated due to simulation errors. Nothing to display.")
+
         return datatype_measure
 
 
@@ -116,9 +122,18 @@ class PSEGroupModel(object):
     def parse_pse_data_for_display(self):
         pse_model_list = []
         for operation in self.operations:
+            # if operation.status == STATUS_STARTED:
+            #     raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
+
             pse_model = PSEModel(operation)
             pse_model_list.append(pse_model)
         return pse_model_list
+
+    def get_range1_key(self):
+        return self.pse_model_list[0].get_range1_key()
+
+    def get_range2_key(self):
+        return self.pse_model_list[0].get_range2_key()
 
     def get_range1_interval(self):
         return [pse_model.get_range1_value_and_label()[0] for pse_model in self.pse_model_list]

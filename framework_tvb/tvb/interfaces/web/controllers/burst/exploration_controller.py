@@ -179,8 +179,7 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.get_metric_matrix(datatype_group, metric_name)
+                return adapter.get_metric_matrix(datatype_group_gid, metric_name)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
@@ -198,8 +197,7 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.prepare_node_data(datatype_group)
+                return adapter.prepare_node_data(datatype_group_gid)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
