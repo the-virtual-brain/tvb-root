@@ -234,7 +234,6 @@ class SimulatorController(BurstBaseController):
     def index(self):
         """Get on burst main page"""
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
-                                      baseUrl=TvbProfile.current.web.BASE_URL,
                                       includedResources='project/included_resources')
         project = common.get_current_project()
 
