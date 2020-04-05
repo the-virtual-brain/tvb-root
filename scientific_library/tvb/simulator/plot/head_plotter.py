@@ -118,8 +118,8 @@ class HeadPlotter(BasePlotter):
         else:
             order = numpy.argsort(order_by)
             if order.shape[0] != connectivity.number_of_regions:
-                self.logger.error("Ordering vector doesn't have length number_of_regions")
-                self.logger.error("Check ordering length and that connectivity is configured")
+                self.logger.warning("Ordering vector doesn't have length number_of_regions")
+                self.logger.warning("Check ordering length and that connectivity is configured")
                 return
 
         # Assumes order is shape (number_of_regions, )
