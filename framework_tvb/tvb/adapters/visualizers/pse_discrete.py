@@ -35,8 +35,6 @@
 """
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, RANGE_MISSING_VALUE
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.pse import PSEDiscreteGroupModel
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.filters.chain import FilterChain
@@ -111,39 +109,6 @@ class DiscretePSEAdapter(ABCDisplayer):
 
         return self.build_display_result('pse_discrete/view', pse_context,
                                          pages=dict(controlPage="pse_discrete/controls"))
-
-    @staticmethod
-    def prepare_range_labels(operation_group, range_json):
-        """
-        Prepare Range labels for display in UI.
-        When the current range_json is empty, returns None, [RANGE_MISSING_STRING], [RANGE_MISSING_STRING]
-
-        :param operation_group: model.OperationGroup instance
-        :param range_json: Stored JSON for for a given range
-        :return: String with current range label, Array of ranged numbers, Array of labels for current range
-        """
-        contains_numbers, range_name, range_values = operation_group.load_range_numbers(range_json)
-
-        if contains_numbers is None:
-            return None, range_values, [RANGE_MISSING_STRING], False
-
-        if contains_numbers:
-            range_labels = range_values
-        else:
-            # when datatypes are in range, get the display name for those and use as labels.
-            range_labels = []
-            for data_gid in range_values:
-                range_labels.append(dao.get_datatype_by_gid(data_gid).display_name)
-
-        return range_name, range_values, range_labels, contains_numbers
-
-    @staticmethod
-    def get_value_on_axe(op_range, only_numbers, range_param_name, fake_numbers):
-        if range_param_name is None:
-            return RANGE_MISSING_VALUE
-        if only_numbers:
-            return op_range[range_param_name]
-        return fake_numbers[op_range[range_param_name]]
 
     @staticmethod
     def prepare_parameters(datatype_group_gid, back_page, color_metric=None, size_metric=None):

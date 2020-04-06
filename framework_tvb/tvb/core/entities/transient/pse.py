@@ -56,15 +56,11 @@ class PSEModel(object):
         self.metrics = dict()
         if self.datatype_measure:
             self.metrics = json.loads(self.datatype_measure.metrics)
-
         self.range1_key = None
         self.range1_value = None
-
         self.range2_key = None
-        self.range2_value = None
-
+        self.range2_value = 0
         self._extract_range_values()
-        self.node_info = self.prepare_node_info()
 
     def _extract_range_values(self):
         ranges = json.loads(self.operation.range_values)
@@ -79,41 +75,32 @@ class PSEModel(object):
     def __is_float(self, value):
         is_float = True
         try:
-            value = float(value)
+            float(value)
         except ValueError:
             is_float = False
-        return is_float, value
+        return is_float
 
     def is_range1_float(self):
-        return self.__is_float(self.range1_value)[0]
+        return self.__is_float(self.range1_value)
 
     def is_range2_float(self):
         if not self.range2_key:
             return False
-        return self.__is_float(self.range2_value)[0]
-
-    def get_range1_key(self):
-        return self.range1_key
-
-    def get_range2_key(self):
-        if not self.range2_key:
-            return ''
-        return self.range2_key
+        return self.__is_float(self.range2_value)
 
     def _determine_type_and_label(self, value):
-        is_float, value = self.__is_float(value)
-        if is_float:
-            return value, value
+        if self.__is_float(value):
+            return value
 
         label = dao.get_datatype_by_gid(value).display_name
-        return value, label
+        return label
 
-    def get_range1_value_and_label(self):
+    def get_range1_label(self):
         return self._determine_type_and_label(self.range1_value)
 
-    def get_range2_value_and_label(self):
+    def get_range2_label(self):
         if not self.range2_key:
-            return None, ''
+            return ''
         return self._determine_type_and_label(self.range2_value)
 
     def prepare_node_info(self):
@@ -132,7 +119,7 @@ class PSEModel(object):
         else:
             tooltip = "No result available. Operation is in status: %s" % self.operation.status.split('-')[1]
             node_info[KEY_TOOLTIP] = tooltip
-        return {self.operation.gid: node_info}
+        return node_info
 
     def _prepare_node_text(self):
         """
@@ -159,11 +146,6 @@ class PSEModel(object):
                 if len(measures) > 0:
                     datatype_measure = measures[0]
 
-        # if dt_measure:
-        #     return json.loads(dt_measure.metrics)
-        # else:
-        #     raise LaunchException("No datatypes were generated due to simulation errors. Nothing to display.")
-
         return datatype_measure
 
 
@@ -178,41 +160,46 @@ class PSEGroupModel(object):
         self.operation_group = dao.get_operationgroup_by_id(self.datatype_group.fk_operation_group)
         self.operations = dao.get_operations_in_group(self.operation_group.id)
         self.pse_model_list = self.parse_pse_data_for_display()
+        self._prepare_ranges_data()
 
-    def _ensure_correct_context_for_launch(self, operation):
-        pass
+    @property
+    def range1_values(self):
+        if self.pse_model_list[0].is_range1_float():
+            return self.range1_orig_values
+        return list(range(len(self.range1_orig_values)))
+
+    @property
+    def range2_values(self):
+        if self.pse_model_list[0].is_range2_float():
+            return self.range2_orig_values
+        return list(range(len(self.range2_orig_values)))
 
     def parse_pse_data_for_display(self):
         pse_model_list = []
         for operation in self.operations:
-            self._ensure_correct_context_for_launch(operation)
             pse_model = PSEModel(operation)
             pse_model_list.append(pse_model)
         return pse_model_list
 
     def get_range1_key(self):
-        return self.pse_model_list[0].get_range1_key()
+        return self.pse_model_list[0].range1_key
 
     def get_range2_key(self):
-        return self.pse_model_list[0].get_range2_key()
+        return self.pse_model_list[0].range2_key
 
-    def get_range1_interval(self):
-        return [pse_model.get_range1_value_and_label()[0] for pse_model in self.pse_model_list]
-
-    def get_range1_labels(self):
-        return [pse_model.get_range1_value_and_label()[1] for pse_model in self.pse_model_list]
-
-    def get_range2_interval(self):
-        return [pse_model.get_range2_value_and_label()[0] for pse_model in self.pse_model_list]
-
-    def get_range2_labels(self):
-        return [pse_model.get_range2_value_and_label()[1] for pse_model in self.pse_model_list]
-
-    def get_all_node_info(self):
-        all_node_info = dict()
+    def _prepare_ranges_data(self):
+        value_to_label1 = dict()
+        value_to_label2 = dict()
         for pse_model in self.pse_model_list:
-            all_node_info.update(pse_model.node_info)
-        return all_node_info
+            label1 = pse_model.get_range1_label()
+            value_to_label1.update({pse_model.range1_value: label1})
+            label2 = pse_model.get_range2_label()
+            value_to_label2.update({pse_model.range2_value: label2})
+
+        self.range1_orig_values = list(value_to_label1.keys())
+        self.range1_labels = list(value_to_label1.values())
+        self.range2_orig_values = list(value_to_label2.keys())
+        self.range2_labels = list(value_to_label2.values())
 
     def get_all_metrics(self):
         all_metrics = dict()
@@ -266,17 +253,16 @@ class PSEDiscreteGroupModel(PSEGroupModel):
         self.fill_pse_context()
         self.prepare_display_data()
 
-    def get_interval_to_dt_measure(self):
-        dd = dict()
+    def get_all_node_info(self):
+        all_node_info = dict()
         for pse_model in self.pse_model_list:
-            range1 = list(set(super(PSEDiscreteGroupModel, self).get_range1_interval())).index(
-                pse_model.get_range1_value_and_label()[0])
-            range2 = list(set(super(PSEDiscreteGroupModel, self).get_range2_interval())).index(
-                pse_model.get_range2_value_and_label()[0])
-            if range1 not in dd:
-                dd[range1] = {}
-            dd[range1][range2] = pse_model.operation.gid
-        return dd
+            node_info = pse_model.prepare_node_info()
+            range1_val = self.range1_values[self.range1_orig_values.index(pse_model.range1_value)]
+            range2_val = self.range2_values[self.range2_orig_values.index(pse_model.range2_value)]
+            if not range1_val in all_node_info:
+                all_node_info[range1_val] = {}
+            all_node_info[range1_val][range2_val] = node_info
+        return all_node_info
 
     def determine_default_metrics(self):
         if self.color_metric is None and self.size_metric is None:
@@ -286,56 +272,35 @@ class PSEDiscreteGroupModel(PSEGroupModel):
             if len(metrics) >= 2:
                 self.size_metric = metrics[1]
 
-    def get_range1_interval(self):
-        interval = super(PSEDiscreteGroupModel, self).get_range1_interval()
-        unique = list(set(interval))
-        if self.pse_model_list[0].is_range1_float():
-            return unique
-        return list(range(len(unique)))
-
-    def get_range2_interval(self):
-        interval = super(PSEDiscreteGroupModel, self).get_range2_interval()
-        unique = list(set(interval))
-        if self.pse_model_list[0].is_range2_float():
-            return unique
-        return list(range(len(unique)))
-
     def fill_pse_context(self):
         sizes_array = [metrics[self.size_metric] for metrics in self.get_all_metrics().values()]
         colors_array = [metrics[self.color_metric] for metrics in self.get_all_metrics().values()]
-        self.pse_context.min_shape_size = numpy.min(sizes_array)
-        self.pse_context.max_shape_size = numpy.max(sizes_array)
-        self.pse_context.min_color = numpy.min(colors_array)
-        self.pse_context.max_color = numpy.max(colors_array)
+        if len(sizes_array) > 0:
+            self.pse_context.min_shape_size = numpy.min(sizes_array)
+            self.pse_context.max_shape_size = numpy.max(sizes_array)
+            self.pse_context.min_color = numpy.min(colors_array)
+            self.pse_context.max_color = numpy.max(colors_array)
         self.pse_context.available_metrics = self.get_available_metric_keys()
         self.pse_context.title_x = self.get_range1_key()
         self.pse_context.title_y = self.get_range2_key()
-        self.pse_context.values_x = self.get_range1_interval()
-        self.pse_context.values_y = self.get_range2_interval()
-        self.pse_context.labels_x = list(set(self.get_range1_labels()))
-        self.pse_context.labels_y = list(set(self.get_range2_labels()))
+        self.pse_context.values_x = self.range1_values
+        self.pse_context.values_y = self.range2_values
+        self.pse_context.labels_x = self.range1_labels
+        self.pse_context.labels_y = self.range2_labels
 
     def _prepare_coords_json(self, val1, val2):
         return '{"x":' + str(val1) + ', "y":' + str(val2) + '}'
 
     def prepare_display_data(self):
-        d3_data = dict()
+        d3_data = self.get_all_node_info()
         series_array = []
-        unique_range1 = self.get_range1_interval()
-        unique_range2 = self.get_range2_interval()
-        ranges_to_dts = self.get_interval_to_dt_measure()
-        node_info = self.get_all_node_info()
+        unique_range1 = self.range1_values
+        unique_range2 = self.range2_values
 
         for idx1, val1 in enumerate(unique_range1):
             for idx2, val2 in enumerate(unique_range2):
-                op_gid = ranges_to_dts[idx1][idx2]
-                if val1 not in d3_data:
-                    d3_data[val1] = {}
-                d3_data[val1][val2] = node_info[op_gid]
-
-                coords = self._prepare_coords_json(val1, val2)
-
                 current = d3_data[val1][val2]
+                coords = self._prepare_coords_json(val1, val2)
                 datatype_gid = None
                 if KEY_GID in current:
                     # This means the operation was finished
@@ -382,8 +347,6 @@ class PSEDiscreteGroupModel(PSEGroupModel):
     def __get_node_size(self, datatype_gid, range1_length, range2_length):
         """
         Computes the size of the shape used for representing the dataType with GID given.
-        :param: datatype_gid - It should exists into the 'datatype_indexes' dict.
-
         """
         min_size, max_size = self.__get_boundaries(range1_length, range2_length)
         if datatype_gid is None:
@@ -413,13 +376,8 @@ class PSEDiscreteGroupModel(PSEGroupModel):
 
     def __get_color_weight(self, datatype_gid):
         """
-        Returns the color weight of the shape used for representing the dataType with id equal to 'datatype_id'.
-
-        :param: datatype_indexes -  a dictionary which contains as keys a dataType GID and as values
-                            the index corresponding to the dataType into the list of
-                            dataTypes resulted from the same operation group
+        Returns the color weight of the shape used for representing the dataType which id equal to 'datatype_gid'.
         :param: datatype_gid - It should exists into the 'datatype_indexes' dictionary.
-        :param: metric - current metric key.
         """
         if datatype_gid is None:
             return 0, "cross"

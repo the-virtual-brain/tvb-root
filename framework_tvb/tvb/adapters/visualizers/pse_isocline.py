@@ -40,7 +40,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.transient.pse import PSEGroupModel
+from tvb.core.entities.transient.pse import PSEGroupModel, PSEModel
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
@@ -48,24 +48,28 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 class PSEIsoGroupModel(PSEGroupModel):
     def __init__(self, datatype_group_gid):
         super(PSEIsoGroupModel, self).__init__(datatype_group_gid)
-        self.apriori_x = self._prepare_axes(self.get_range1_interval())
-        self.apriori_y = self._prepare_axes(self.get_range2_interval())
+        self.apriori_x = self.range1_values
+        self.apriori_y = self.range2_values
 
         self.apriori_data = dict()
         self._fill_apriori_data()
 
-    def _ensure_correct_context_for_launch(self, operation):
-        if not operation.has_finished:
-            raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
+    def parse_pse_data_for_display(self):
+        pse_model_list = []
+        op_has_results = True
+        for operation in self.operations:
+            if not operation.has_finished:
+                raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
+            pse_model = PSEModel(operation)
+            pse_model_list.append(pse_model)
 
-    def _prepare_axes(self, range_interval):
-        unique_range_interval = list(set(range_interval))
-        if type(unique_range_interval[0]) is str:
-            axe_interval = numpy.arange(len(unique_range_interval))
-            return axe_interval
+            if not pse_model.datatype_measure:
+                op_has_results = False
 
-        axe_interval = numpy.array(unique_range_interval)
-        return axe_interval
+        if not op_has_results:
+            raise LaunchException("No datatypes were generated due to simulation errors. Nothing to display.")
+
+        return pse_model_list
 
     def _fill_apriori_data(self):
         """ Gather apriori data from the operations. Also gather the datatype gid's"""
@@ -75,11 +79,16 @@ class PSEIsoGroupModel(PSEGroupModel):
         self.datatypes_gids = numpy.reshape(list(self.get_all_metrics().keys()), array_2d_shape).tolist()
 
         for metric_key in self.get_available_metric_keys():
-            # TODO: check this or numpy.NaN
             metric_values = [metric_value[metric_key] or numpy.NaN for metric_value in
                              list(self.get_all_metrics().values())]
             metric_values = numpy.reshape(metric_values, array_2d_shape)
             self.apriori_data.update({metric_key: metric_values})
+
+    def get_all_node_info(self):
+        all_node_info = dict()
+        for pse_model in self.pse_model_list:
+            all_node_info.update({pse_model.datatype_measure.gid: pse_model.prepare_node_info()})
+        return all_node_info
 
 
 class IsoclinePSEAdapterModel(ViewModel):
