@@ -34,6 +34,7 @@ from formencode import validators
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.neotraits.api import Attr, Range
 from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
@@ -52,9 +53,10 @@ from tvb.core.neocom import h5
 class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
-        # TODO: should show only corticals
+        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                                 values=[CORTICAL])
         self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=False,
-                                           label=Simulator.surface.label, doc=Simulator.surface.doc)
+                                           label=Simulator.surface.label, doc=Simulator.surface.doc, conditions=conditions)
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -159,20 +161,14 @@ class SimulatorMonitorFragment(ABCAdapterForm):
         self.monitor.data = trait.monitors[0].__class__
 
 
-class SimulatorLengthFragment(ABCAdapterForm):
-
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorLengthFragment, self).__init__(prefix, project_id)
-        self.length = ScalarField(Simulator.simulation_length, self)
-
-
 class SimulatorFinalFragment(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None, simulation_number=1):
         super(SimulatorFinalFragment, self).__init__(prefix, project_id)
         default_simulation_name = "simulation_" + str(simulation_number)
+        self.simulation_length = ScalarField(Simulator.simulation_length, self)
         self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration', default=default_simulation_name,
-                                                label='Simulation name'), self, name='input-simulation-name-id')
+                                                label='Simulation name'), self, name='input_simulation_name_id')
 
     def fill_from_post(self, form_data):
         super(SimulatorFinalFragment, self).fill_from_post(form_data)
@@ -215,32 +211,32 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
         super(SimulatorPSEParamRangeFragment, self).__init__(prefix, project_id)
         self.pse_param1_name = SimpleHiddenField(self, name='pse_param1_name', default=pse_param1.name)
         if pse_param1.type is float:
-            self.pse_param1_lo = SimpleFloatField(self, name='pse_param1_lo', required=True, label='pse_param1_lo',
+            self.pse_param1_lo = SimpleFloatField(self, name='pse_param1_lo', required=True, label='PSE param1 lo',
                                                   default=pse_param1.range_definition.lo)
-            self.pse_param1_hi = SimpleFloatField(self, name='pse_param1_hi', required=True, label='pse_param1_hi',
+            self.pse_param1_hi = SimpleFloatField(self, name='pse_param1_hi', required=True, label='PSE param1 hi',
                                                   default=pse_param1.range_definition.hi)
             self.pse_param1_step = SimpleFloatField(self, name='pse_param1_step', required=True,
-                                                    label='pse_param1_step', default=pse_param1.range_definition.step)
+                                                    label='PSE param1 step', default=pse_param1.range_definition.step)
 
         else:
             self.pse_param1_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param1.type), self,
-                                                     name='pse_param1', required=True, label='pse_param1',
+                                                     name='pse_param1_guid', required=True, label='PSE param1 guid',
                                                      dynamic_conditions=pse_param1.range_definition,
                                                      has_all_option=True)
 
         if pse_param2:
             self.pse_param2_name = SimpleHiddenField(self, name='pse_param2_name', default=pse_param2.name)
             if pse_param2.type is float:
-                self.pse_param2_lo = SimpleFloatField(self, name='pse_param2_lo', required=True, label='pse_param2_lo',
+                self.pse_param2_lo = SimpleFloatField(self, name='pse_param2_lo', required=True, label='PSE param2 lo',
                                                       default=pse_param2.range_definition.lo)
-                self.pse_param2_hi = SimpleFloatField(self, name='pse_param2_hi', required=True, label='pse_param2_hi',
+                self.pse_param2_hi = SimpleFloatField(self, name='pse_param2_hi', required=True, label='PSE param2 hi',
                                                       default=pse_param2.range_definition.hi)
                 self.pse_param2_step = SimpleFloatField(self, name='pse_param2_step', required=True,
-                                                        label='pse_param2_step',
+                                                        label='PSE param2 step',
                                                         default=pse_param2.range_definition.step)
             else:
                 self.pse_param2_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(pse_param2.type), self,
-                                                         name='pse_param2', required=True, label='pse_param2',
+                                                         name='pse_param2_guid', required=True, label='PSE param2 guid',
                                                          dynamic_conditions=pse_param2.range_definition,
                                                          has_all_option=True)
 
@@ -252,20 +248,19 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
 
     @staticmethod
     def fill_from_post(all_range_parameters, **data):
-        pse_param1_name = data.get('_pse_param1_name')
-        pse_param2_name = data.get('_pse_param2_name')
+        pse_param1_name = data.get('pse_param1_name')
+        pse_param2_name = data.get('pse_param2_name')
 
         pse_param1 = all_range_parameters.get(pse_param1_name)
         if pse_param1.type is float:
-            pse_param1_lo = data.get('_pse_param1_lo')
-            pse_param1_hi = data.get('_pse_param1_hi')
-            pse_param1_step = data.get('_pse_param1_step')
+            pse_param1_lo = data.get('pse_param1_lo')
+            pse_param1_hi = data.get('pse_param1_hi')
+            pse_param1_step = data.get('pse_param1_step')
             param1_range = RangeParameter(pse_param1_name, pse_param1.type,
                                           Range(float(pse_param1_lo), float(pse_param1_hi), float(pse_param1_step)),
                                           is_array=pse_param1.is_array)
         else:
-            param1_range_str = data.get('_pse_param1')
-            pse_param1_name += '.gid'
+            param1_range_str = data.get('pse_param1_guid')
             param1_range = RangeParameter(pse_param1_name, pse_param1.type,
                                           SimulatorPSEParamRangeFragment._prepare_pse_uuid_list(param1_range_str))
 
@@ -273,16 +268,16 @@ class SimulatorPSEParamRangeFragment(ABCAdapterForm):
         if pse_param2_name:
             pse_param2 = all_range_parameters.get(pse_param2_name)
             if pse_param2.type is float:
-                pse_param2_lo = data.get('_pse_param2_lo')
-                pse_param2_hi = data.get('_pse_param2_hi')
-                pse_param2_step = data.get('_pse_param2_step')
+                pse_param2_lo = data.get('pse_param2_lo')
+                pse_param2_hi = data.get('pse_param2_hi')
+                pse_param2_step = data.get('pse_param2_step')
                 param2_range = RangeParameter(pse_param2_name, float,
                                               Range(float(pse_param2_lo), float(pse_param2_hi), float(pse_param2_step)),
                                               is_array=pse_param2.is_array)
             else:
-                param2_range_str = data.get('_pse_param2')
-                pse_param2_name += '.gid'
-                param2_range = RangeParameter(pse_param2_name, pse_param1.type,
+                param2_range_str = data.get('pse_param2_guid')
+                param2_range = RangeParameter(pse_param2_name, pse_param2.type,
                                               SimulatorPSEParamRangeFragment._prepare_pse_uuid_list(param2_range_str))
 
         return param1_range, param2_range
+

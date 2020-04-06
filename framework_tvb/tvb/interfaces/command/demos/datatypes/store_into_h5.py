@@ -27,36 +27,35 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import os
 
-import flask
-from tvb.interfaces.rest.server.access_permissions.permissions import DataTypeAccessPermission
-from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
-from tvb.interfaces.rest.server.facades.datatype_facade import DatatypeFacade
-from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredResource
+"""
+Demo script on how to use tvb-framework default read/write capabilities
 
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+"""
 
-class RetrieveDatatypeResource(SecuredResource):
+from tvb.core.neocom import h5
+from tvb.basic.profile import TvbProfile
+from tvb.datatypes.connectivity import Connectivity
+from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 
-    @check_permission(DataTypeAccessPermission, 'datatype_gid')
-    def get(self, datatype_gid):
-        """
-        :given a guid, this function will download the H5 full data
-        """
-        h5_file_path = DatatypeFacade.get_dt_h5_path(datatype_gid)
-        file_name = os.path.basename(h5_file_path)
-        return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
+if __name__ == '__main__':
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
+    # Read from a ZIP
+    conn_ht = Connectivity.from_file()
+    conn_ht.configure()
 
-class GetOperationsForDatatypeResource(RestResource):
+    # Store in a given folder the HasTraits entity
+    PATH = "."
+    h5.store_complete(conn_ht, PATH)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.datatypes_facade = DatatypeFacade()
+    # Reproduce the just written file name containing GUID
+    file_name = h5.path_for(PATH, ConnectivityH5, conn_ht.gid)
 
-    @check_permission(DataTypeAccessPermission, 'datatype_gid')
-    def get(self, datatype_gid):
-        """
-        :return the available operations for that datatype, as a list of Algorithm instances
-        """
-        return self.datatypes_facade.get_datatype_operations(datatype_gid)
+    # Load back from a file name a HasTraits instance
+    conn_back = h5.load(file_name)
+
+    # Check that the loaded and written entities are correct
+    assert conn_ht.number_of_regions == 76
+    assert conn_ht.number_of_regions == conn_back.number_of_regions

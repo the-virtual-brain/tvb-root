@@ -171,7 +171,7 @@ class TestProjectStructure(TransactionalTestCase):
         """ Test that counting dataTypes is correct. Happy flow."""
         group = datatype_group_factory()
         count = dao.count_datatypes_in_group(group.id)
-        assert count == 9
+        assert count == 10
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
         count = dao.count_datatypes_in_group(datatypes[0].id)
         assert count == 0, "There should be no dataType."
@@ -240,7 +240,7 @@ class TestProjectStructure(TransactionalTestCase):
         group = datatype_group_factory()
         exp_datatypes = dao.get_datatypes_from_datatype_group(group.id)
         datatypes = self.project_service.get_datatypes_from_datatype_group(group.id)
-        assert len(datatypes) == 9, "There should be 9 datatypes into the datatype group."
+        assert len(datatypes) == 10, "There should be 10 datatypes into the datatype group."
         expected_dict = {exp_datatypes[0].id: exp_datatypes[0], exp_datatypes[1].id: exp_datatypes[1]}
         actual_dict = {datatypes[0].id: datatypes[0], datatypes[1].id: datatypes[1]}
 
@@ -592,7 +592,7 @@ class TestProjectStructure(TransactionalTestCase):
 
         # groups
         ops_group = dao.get_operations_in_group(datatype_group.fk_from_operation)
-        assert 9 == len(ops_group)
+        assert 10 == len(ops_group)
         ops_group[0].parameters = parameters
         ops_group[0] = dao.store_entity(ops_group[0])
         ops_group[1].visible = False

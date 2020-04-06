@@ -42,6 +42,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
+from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
 # This setting is injected.
@@ -417,7 +418,10 @@ class TraitDataTypeSelectField(TraitField):
         else:
             type_to_query = trait_attribute.field_type
 
-        self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
+        if issubclass(type_to_query, HasTraitsIndex):
+            self.datatype_index = type_to_query
+        else:
+            self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.dynamic_conditions = dynamic_conditions

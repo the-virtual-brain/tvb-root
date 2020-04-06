@@ -37,6 +37,7 @@ import json
 import os
 import shutil
 import uuid
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
@@ -147,6 +148,15 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
 
+    @staticmethod
+    def _set_range_param_in_dict(param_value):
+        if type(param_value) is numpy.ndarray:
+            return param_value[0]
+        elif isinstance(param_value, uuid.UUID):
+            return param_value.hex
+        else:
+            return param_value
+
     def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
                                      session_stored_simulator):
         try:
@@ -155,26 +165,32 @@ class SimulatorService(object):
             operation_group = burst_config.operation_group
             metric_operation_group = burst_config.metric_operation_group
             operations = []
-            range_param2_values = []
+            range_param2_values = [None]
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
+
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
 
-                    ranges = json.dumps({range_param1.name: param1_value[0], range_param2.name: param2_value[0]})
+                    ranges = {range_param1.name: self._set_range_param_in_dict(param1_value)}
+
+                    if param2_value is not None:
+                        self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                        ranges[range_param2.name] = self._set_range_param_in_dict(param2_value)
+
+                    ranges = json.dumps(ranges)
 
                     operation = self._prepare_operation(project.id, user.id, simulator_id, simulator.gid,
                                                         algo_category, operation_group,
                                                         {DataTypeMetaData.KEY_BURST: burst_config.id}, ranges)
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-                    SimulatorSerializer().serialize_simulator(simulator,  None, storage_path)
+                    SimulatorSerializer().serialize_simulator(simulator, None, storage_path)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator

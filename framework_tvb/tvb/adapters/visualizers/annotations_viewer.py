@@ -217,7 +217,7 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
             elif ann_obj.parent_id in annotations_map:
                 annotations_map[ann_obj.parent_id].add_child(ann_obj)
             else:
-                self.logger.warn("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
+                self.logger.warning("Order of processing invalid parent %s child %s" % (ann_obj.parent_id, ann_obj.id))
 
         left_nodes, right_nodes = [], []
         activation_patterns = self._get_activation_pattern_labels(annotations)

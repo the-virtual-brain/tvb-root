@@ -130,7 +130,7 @@ def expose_rest_api():
         flask_process = Popen(run_params, stderr=PIPE)
         stdout, stderr = flask_process.communicate()
         if flask_process.returncode != 0:
-            LOGGER.warn("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
+            LOGGER.warning("Failed to start the Flask server with REST API. Stderr: {}".format(stderr))
         else:
             LOGGER.info("Finished starting Flask server with REST API...")
 

@@ -151,14 +151,14 @@ class HelpConfig:
         if key in self._mappings:
             return self.HELP_PAGE_PATH + "/" + self._mappings[key]
         else:
-            self.logger.warn("There is no help mapping for section: %s and subsection: %s" % (section, subsection))
+            self.logger.warning("There is no help mapping for section: %s and subsection: %s" % (section, subsection))
 
             # If no mapping found for pair section/subsection, try to find for section
             sect_key = self._generate_key(section, None)
             if sect_key in self._mappings:
                 return self.HELP_PAGE_PATH + "/" + self._mappings[sect_key]
             else:
-                self.logger.warn("and also there is no help mapping for section: %s." % section)
+                self.logger.warning("and also there is no help mapping for section: %s." % section)
                 # If not found, show to user MAIN page.
                 return self.HELP_PAGE_PATH + "/" + self.MAIN_HELP_PAGE
 

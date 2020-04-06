@@ -27,37 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
-import os
-import sys
-import time
-
-import tvb_data
-from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
+from tvb.core.services.user_service import UserService
+from tvb.interfaces.rest.commons.dtos import UserDto
 
 
-def compute_rest_url():
-    rest_url = "https://tvb-sim3.scai.fraunhofer.de"
-    if len(sys.argv) > 0:
-        for i in range(0, len(sys.argv)):
-            if "--rest-url=" in sys.argv[i]:
-                rest_url = sys.argv[i].split("=")[1]
-
-    return rest_url
-
-
-def compute_tvb_data_path(folder, filename):
-    return os.path.join(os.path.dirname(tvb_data.__file__), folder, filename)
-
-
-logger = get_logger(__name__)
-
-
-def monitor_operation(tvb_client, operation_gid):
-    while True:
-        status = tvb_client.get_operation_status(operation_gid)
-        if status in [STATUS_FINISHED, STATUS_CANCELED, STATUS_ERROR]:
-            break
-        time.sleep(5)
-    logger.info("Operation {} has finished with status: {}".format(operation_gid, status))
+class UserFacade:
+    @staticmethod
+    def get_users(except_username):
+        user_list, pages_no = UserService.retrieve_all_users(except_username)
+        return [UserDto(user) for user in user_list], pages_no

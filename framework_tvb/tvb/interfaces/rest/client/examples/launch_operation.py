@@ -39,17 +39,17 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation
+from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 if __name__ == '__main__':
     logger = get_logger(__name__)
 
     logger.info("Preparing client...")
-    tvb_client = TVBClient("http://localhost:9090")
+    tvb_client = TVBClient(compute_rest_url())
 
-    logger.info("Login with default user...")
-    tvb_client.login("tvb_user", "pass")
+    logger.info("Attempt to login")
+    tvb_client.browser_login()
 
     logger.info("Requesting projects for logged user")
     projects_of_user = tvb_client.get_project_list()

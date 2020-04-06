@@ -34,12 +34,13 @@ This is used to package the tvb-rest-client separately.
 
 import os
 import shutil
+
 import setuptools
 from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.0.2a3"
+VERSION = "2.0.3a1"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 

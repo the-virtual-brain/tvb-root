@@ -353,7 +353,7 @@ class ImportService(object):
         figure_dict = XMLReader(file_name).read_metadata()
         new_path = os.path.join(os.path.split(file_name)[0], os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(new_path):
-            self.logger.warn("Expected to find image path %s .Skipping" % new_path)
+            self.logger.warning("Expected to find image path %s .Skipping" % new_path)
 
         op = dao.get_operation_by_gid(figure_dict['fk_from_operation'])
         figure_dict['fk_op_id'] = op.id if op is not None else None

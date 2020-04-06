@@ -243,7 +243,7 @@ class ProjectService:
                         if dt_loaded:
                             result['results'].append(dt_loaded)
                         else:
-                            self.logger.warn("Could not retrieve datatype %s" % str(dt))
+                            self.logger.warning("Could not retrieve datatype %s" % str(dt))
 
                     operation_figures = dao.get_figures_for_operation(result['id'])
 

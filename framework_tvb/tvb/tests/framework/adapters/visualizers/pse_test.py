@@ -59,7 +59,7 @@ class TestPSE(TransactionalTestCase):
                          'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
         for key in expected_keys:
             assert key in result
-        assert group.gid == result["datatype_group_gid"].hex
+        assert group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
     def test_launch_isocline(self, datatype_group_factory):
