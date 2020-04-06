@@ -115,7 +115,7 @@ class PSEModel(object):
             return None, ''
         return self._determine_type_and_label(self.range2_value)
 
-    def prepare_discrete_node_info(self):
+    def prepare_node_info(self):
         """
         Build a dictionary with all the required information to be displayed for a given node.
         """
@@ -123,36 +123,27 @@ class PSEModel(object):
         KEY_NODE_TYPE = "dataType"
         KEY_OPERATION_ID = "operationId"
 
-        node_info = {}
+        node_info = dict()
         if self.operation.status == STATUS_FINISHED and self.datatype_measure is not None:
-            ### Prepare attributes to be able to show overlay and launch further analysis.
             node_info[KEY_GID] = self.datatype_measure.gid
             node_info[KEY_NODE_TYPE] = self.datatype_measure.type
             node_info[KEY_OPERATION_ID] = self.datatype_measure.id
-            ### Prepare tooltip for quick display.
-            datatype_tooltip = str("Operation id: " + str(self.operation.id) + LINE_SEPARATOR +
-                                   "Datatype gid: " + str(self.datatype_measure.gid) + LINE_SEPARATOR +
-                                   "Datatype type: " + str(self.datatype_measure.type) + LINE_SEPARATOR +
-                                   "Datatype subject: " + str(self.datatype_measure.subject) + LINE_SEPARATOR +
-                                   "Datatype invalid: " + str(self.datatype_measure.invalid))
-            ### Add scientific report to the quick details.
-            # if hasattr(datatype, 'summary_info') and datatype.summary_info is not None:
-            #     for key, value in six.iteritems(datatype.summary_info):
-            #         datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
-            node_info[KEY_TOOLTIP] = datatype_tooltip
+            node_info[KEY_TOOLTIP] = self._prepare_node_text()
         else:
             tooltip = "No result available. Operation is in status: %s" % self.operation.status.split('-')[1]
             node_info[KEY_TOOLTIP] = tooltip
         return {self.datatype_measure.gid: node_info}
 
-    def prepare_node_info(self):
-        node_info = dict()
-        node_info[self.datatype_measure.gid] = dict(operation_id=self.operation.id,
-                                                    datatype_gid=self.datatype_measure.gid,
-                                                    datatype_type=self.datatype_measure.type,
-                                                    datatype_subject=self.datatype_measure.subject,
-                                                    datatype_invalid=self.datatype_measure.invalid)
-        return node_info
+    def _prepare_node_text(self):
+        """
+        Prepare text to display as tooltip for a PSE circle
+        :return: str
+        """
+        return str("Operation id: " + str(self.operation.id) + LINE_SEPARATOR +
+                   "Datatype gid: " + str(self.datatype_measure.gid) + LINE_SEPARATOR +
+                   "Datatype type: " + str(self.datatype_measure.type) + LINE_SEPARATOR +
+                   "Datatype subject: " + str(self.datatype_measure.subject) + LINE_SEPARATOR +
+                   "Datatype invalid: " + str(self.datatype_measure.invalid))
 
     def determine_operation_result(self):
         datatype_measure = None
@@ -219,7 +210,7 @@ class PSEGroupModel(object):
     def get_all_node_info(self):
         all_node_info = dict()
         for pse_model in self.pse_model_list:
-            all_node_info.update(pse_model.prepare_node_info())
+            all_node_info.update(pse_model.node_info)
         return all_node_info
 
     def get_all_metrics(self):
@@ -362,7 +353,7 @@ class PSEDiscreteGroupModel(PSEGroupModel):
     def get_all_node_info(self):
         all_node_info = dict()
         for pse_model in self.pse_model_list:
-            all_node_info.update(pse_model.prepare_discrete_node_info())
+            all_node_info.update(pse_model.prepare_node_info())
         return all_node_info
 
     @staticmethod
