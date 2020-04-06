@@ -37,6 +37,7 @@ import numpy
 import json
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.pse import PSEGroupModel
@@ -52,6 +53,10 @@ class PSEIsoGroupModel(PSEGroupModel):
 
         self.apriori_data = dict()
         self._fill_apriori_data()
+
+    def _ensure_correct_context_for_launch(self, operation):
+        if not operation.has_finished:
+            raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
 
     def _prepare_axes(self, range_interval):
         unique_range_interval = list(set(range_interval))

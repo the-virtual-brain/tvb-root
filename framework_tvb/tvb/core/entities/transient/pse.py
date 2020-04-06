@@ -42,9 +42,9 @@ import math
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.config.utils import EnhancedDictionary
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 
+KEY_GID = "Gid"
 KEY_TOOLTIP = "tooltip"
 LINE_SEPARATOR = "<br/>"
 
@@ -53,8 +53,9 @@ class PSEModel(object):
     def __init__(self, operation):
         self.operation = operation
         self.datatype_measure = self.determine_operation_result()
-        # TODO: raise excep if dt measure is None
-        self.metrics = json.loads(self.datatype_measure.metrics)
+        self.metrics = dict()
+        if self.datatype_measure:
+            self.metrics = json.loads(self.datatype_measure.metrics)
 
         self.range1_key = None
         self.range1_value = None
@@ -119,12 +120,11 @@ class PSEModel(object):
         """
         Build a dictionary with all the required information to be displayed for a given node.
         """
-        KEY_GID = "Gid"
         KEY_NODE_TYPE = "dataType"
         KEY_OPERATION_ID = "operationId"
 
         node_info = dict()
-        if self.operation.status == STATUS_FINISHED and self.datatype_measure is not None:
+        if self.operation.has_finished and self.datatype_measure is not None:
             node_info[KEY_GID] = self.datatype_measure.gid
             node_info[KEY_NODE_TYPE] = self.datatype_measure.type
             node_info[KEY_OPERATION_ID] = self.datatype_measure.id
@@ -132,7 +132,7 @@ class PSEModel(object):
         else:
             tooltip = "No result available. Operation is in status: %s" % self.operation.status.split('-')[1]
             node_info[KEY_TOOLTIP] = tooltip
-        return {self.datatype_measure.gid: node_info}
+        return {self.operation.gid: node_info}
 
     def _prepare_node_text(self):
         """
@@ -147,7 +147,7 @@ class PSEModel(object):
 
     def determine_operation_result(self):
         datatype_measure = None
-        if self.operation.status == STATUS_FINISHED:
+        if self.operation.has_finished:
             datatypes = dao.get_results_for_operation(self.operation.id)
             if len(datatypes) > 0:
                 datatype = datatypes[0]
@@ -179,12 +179,13 @@ class PSEGroupModel(object):
         self.operations = dao.get_operations_in_group(self.operation_group.id)
         self.pse_model_list = self.parse_pse_data_for_display()
 
+    def _ensure_correct_context_for_launch(self, operation):
+        pass
+
     def parse_pse_data_for_display(self):
         pse_model_list = []
         for operation in self.operations:
-            # if operation.status == STATUS_STARTED:
-            #     raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
-
+            self._ensure_correct_context_for_launch(operation)
             pse_model = PSEModel(operation)
             pse_model_list.append(pse_model)
         return pse_model_list
@@ -216,7 +217,8 @@ class PSEGroupModel(object):
     def get_all_metrics(self):
         all_metrics = dict()
         for pse_model in self.pse_model_list:
-            all_metrics.update({pse_model.datatype_measure.gid: pse_model.metrics})
+            if pse_model.datatype_measure:
+                all_metrics.update({pse_model.datatype_measure.gid: pse_model.metrics})
         return all_metrics
 
     def get_available_metric_keys(self):
@@ -273,7 +275,7 @@ class PSEDiscreteGroupModel(PSEGroupModel):
                 pse_model.get_range2_value_and_label()[0])
             if range1 not in dd:
                 dd[range1] = {}
-            dd[range1][range2] = pse_model.datatype_measure.gid
+            dd[range1][range2] = pse_model.operation.gid
         return dd
 
     def determine_default_metrics(self):
@@ -313,6 +315,9 @@ class PSEDiscreteGroupModel(PSEGroupModel):
         self.pse_context.labels_x = list(set(self.get_range1_labels()))
         self.pse_context.labels_y = list(set(self.get_range2_labels()))
 
+    def _prepare_coords_json(self, val1, val2):
+        return '{"x":' + str(val1) + ', "y":' + str(val2) + '}'
+
     def prepare_display_data(self):
         d3_data = dict()
         series_array = []
@@ -323,25 +328,26 @@ class PSEDiscreteGroupModel(PSEGroupModel):
 
         for idx1, val1 in enumerate(unique_range1):
             for idx2, val2 in enumerate(unique_range2):
-                dt_gid = ranges_to_dts[idx1][idx2]
+                op_gid = ranges_to_dts[idx1][idx2]
                 if val1 not in d3_data:
                     d3_data[val1] = {}
-                d3_data[val1][val2] = node_info[dt_gid]
+                d3_data[val1][val2] = node_info[op_gid]
 
-                coords = '{"x":' + str(val1) + ', "y":' + str(val2) + '}'
-                color_weight, shape_type_1 = self.__get_color_weight(dt_gid)
+                coords = self._prepare_coords_json(val1, val2)
 
-                # current = d3_data[val1][key_2]
-                # if self.KEY_GID in current:
-                #     # This means the operation was finished
-                #     datatype_gid = current[self.KEY_GID]
-                if (shape_type_1 is not None) and (dt_gid is not None):
+                current = d3_data[val1][val2]
+                datatype_gid = None
+                if KEY_GID in current:
+                    # This means the operation was finished
+                    datatype_gid = current[KEY_GID]
+
+                color_weight, shape_type_1 = self.__get_color_weight(datatype_gid)
+                if (shape_type_1 is not None) and (datatype_gid is not None):
                     d3_data[val1][val2][KEY_TOOLTIP] += LINE_SEPARATOR + " Color metric has NaN values"
-                d3_data_color = d3_data[val1][val2]
-                d3_data_color['color_weight'] = color_weight
+                current['color_weight'] = color_weight
 
-                radius, shape_type_2 = self.__get_node_size(dt_gid, len(unique_range1), len(unique_range2))
-                if (shape_type_2 is not None) and (dt_gid is not None):
+                radius, shape_type_2 = self.__get_node_size(datatype_gid, len(unique_range1), len(unique_range2))
+                if (shape_type_2 is not None) and (datatype_gid is not None):
                     d3_data[val1][val2][KEY_TOOLTIP] += LINE_SEPARATOR + " Size metric has NaN values"
                 symbol = shape_type_1 or shape_type_2
 
@@ -349,12 +355,6 @@ class PSEDiscreteGroupModel(PSEGroupModel):
 
         self.pse_context.d3_data = d3_data
         self.pse_context.series_array = self.__build_series_json(series_array)
-
-    def get_all_node_info(self):
-        all_node_info = dict()
-        for pse_model in self.pse_model_list:
-            all_node_info.update(pse_model.prepare_node_info())
-        return all_node_info
 
     @staticmethod
     def __build_series_json(list_of_series):
