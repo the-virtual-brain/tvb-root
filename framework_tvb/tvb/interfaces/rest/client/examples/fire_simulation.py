@@ -42,21 +42,16 @@ from tvb.interfaces.rest.client.tvb_client import TVBClient
 
 logger = get_logger(__name__)
 
-if __name__ == '__main__':
 
-    logger.info("Preparing client...")
-    tvb_client = TVBClient(compute_rest_url())
-
-    logger.info("Attempt to login")
-    tvb_client.browser_login()
+def fire_simulation_example(tvb_client_instance):
     logger.info("Requesting projects for logged user")
-    projects_of_user = tvb_client.get_project_list()
+    projects_of_user = tvb_client_instance.get_project_list()
     assert len(projects_of_user) > 0
     logger.info("TVB has {} projects for this user".format(len(projects_of_user)))
 
     project_gid = projects_of_user[0].gid
     logger.info("Requesting datatypes from project {}...".format(project_gid))
-    data_in_project = tvb_client.get_data_in_project(project_gid)
+    data_in_project = tvb_client_instance.get_data_in_project(project_gid)
     logger.info("We have {} datatypes".format(len(data_in_project)))
 
     connectivity_gid = None
@@ -74,13 +69,13 @@ if __name__ == '__main__':
         simulator.simulation_length = 100
 
         logger.info("Starting the simulation...")
-        operation_gid = tvb_client.fire_simulation(project_gid, simulator)
+        operation_gid = tvb_client_instance.fire_simulation(project_gid, simulator)
 
         logger.info("Monitoring the simulation operation...")
-        monitor_operation(tvb_client, operation_gid)
+        monitor_operation(tvb_client_instance, operation_gid)
 
         logger.info("Requesting the results of the simulation...")
-        simulation_results = tvb_client.get_operation_results(operation_gid)
+        simulation_results = tvb_client_instance.get_operation_results(operation_gid)
         datatype_names = []
         for datatype in simulation_results:
             datatype_names.append(datatype.name)
@@ -88,11 +83,11 @@ if __name__ == '__main__':
 
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
-        time_series_path = tvb_client.retrieve_datatype(time_series_gid, tvb_client.temp_folder)
+        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid, tvb_client_instance.temp_folder)
         logger.info("The time series file location is: {}".format(time_series_path))
 
         logger.info("Requesting algorithms to run on time series...")
-        algos = tvb_client.get_operations_for_datatype(time_series_gid)
+        algos = tvb_client_instance.get_operations_for_datatype(time_series_gid)
         algo_names = [algo.displayname for algo in algos]
         logger.info("Possible algorithms are {}".format(algo_names))
 
@@ -101,15 +96,15 @@ if __name__ == '__main__':
         fourier_model.time_series = time_series_gid
         fourier_model.window_function = 'hamming'
 
-        operation_gid = tvb_client.launch_operation(project_gid, FourierAdapter, fourier_model)
+        operation_gid = tvb_client_instance.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
 
         logger.info("Download the connectivity file...")
-        connectivity_path = tvb_client.retrieve_datatype(connectivity_gid, tvb_client.temp_folder)
+        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
         logger.info("Loading an entire Connectivity datatype in memory...")
-        connectivity = tvb_client.load_datatype_from_file(connectivity_path)
+        connectivity = tvb_client_instance.load_datatype_from_file(connectivity_path)
         logger.info("Info on current Connectivity: {}".format(connectivity.summary_info()))
 
         logger.info("Loading a chuck from the time series H5 file, as this can be very large...")
@@ -122,3 +117,12 @@ if __name__ == '__main__':
         assert chunk.shape[1] == data_shape[1]
         assert chunk.shape[2] == data_shape[2]
         assert chunk.shape[3] == data_shape[3]
+
+
+if __name__ == '__main__':
+    logger.info("Preparing client...")
+    tvb_client = TVBClient(compute_rest_url())
+
+    logger.info("Attempt to login")
+    tvb_client.browser_login()
+    fire_simulation_example(tvb_client)
