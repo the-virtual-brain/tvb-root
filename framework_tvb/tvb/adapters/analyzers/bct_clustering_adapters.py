@@ -56,7 +56,7 @@ class ClusteringCoefficientBU(BaseUndirected):
     """
     _ui_group = BCT_GROUP_CLUSTERING
 
-    _ui_name = "Clustering Coefficient BU: Connection matrix"
+    _ui_name = "Clustering Coefficient BU"
     _ui_description = bct_description("clustering_coef_bu.m")
     _matlab_code = "C = clustering_coef_bu(A);"
 
@@ -138,7 +138,7 @@ class TransitivityBinaryUnDirected(BaseUndirected):
     """
     _ui_group = BCT_GROUP_CLUSTERING
 
-    _ui_name = "Transitivity Binary Undirected: Connection matrix"
+    _ui_name = "Transitivity Binary Undirected"
     _ui_description = bct_description("transitivity_bu.m")
     _matlab_code = "T = transitivity_bu(A);"
 

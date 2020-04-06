@@ -73,7 +73,7 @@ class CentralityNodeWeighted(BaseBCT):
 class CentralityEdgeBinary(CentralityNodeBinary):
     """
     """
-    _ui_name = "Edge Betweenness Centrality Weighted: Connection matrix"
+    _ui_name = "Edge Betweenness Centrality Weighted"
     _ui_description = bct_description("edge_betweenness_bin.m")
     _matlab_code = "[EBC,BC] = edge_betweenness_bin(A);"
 
@@ -91,7 +91,7 @@ class CentralityEdgeBinary(CentralityNodeBinary):
 class CentralityEdgeWeighted(CentralityNodeWeighted):
     """
     """
-    _ui_name = "Edge Betweenness Centrality Weighted: Connection matrix"
+    _ui_name = "Edge Betweenness Centrality Weighted"
     _ui_description = bct_description("edge_betweenness_wei.m")
     _matlab_code = "[EBC,BC] = edge_betweenness_wei(A);"
 
@@ -111,7 +111,7 @@ class CentralityEigenVector(BaseUndirected):
     """
     _ui_group = BCT_GROUP_CENTRALITY
 
-    _ui_name = "EigenVector Centrality: Connection matrix"
+    _ui_name = "EigenVector Centrality"
     _ui_description = bct_description("eigenvector_centrality_und.m")
     _matlab_code = "v = eigenvector_centrality_und(CIJ)"
 
@@ -146,7 +146,7 @@ class CentralityKCoreness(BaseUndirected):
 class CentralityKCorenessBD(CentralityNodeBinary):
     """
     """
-    _ui_name = "K-coreness centrality BD: Connection matrix"
+    _ui_name = "K-coreness centrality BD"
     _ui_description = bct_description("kcoreness_centrality_bd.m")
     _matlab_code = "[coreness, kn] = kcoreness_centrality_bd(CIJ);"
 
@@ -184,7 +184,7 @@ class CentralityShortcuts(CentralityNodeBinary):
 class FlowCoefficients(CentralityNodeBinary):
     """
     """
-    _ui_name = "Node-wise flow coefficients: Connection matrix"
+    _ui_name = "Node-wise flow coefficients"
     _ui_description = bct_description("flow_coef_bd.m")
     _matlab_code = "[fc,FC,total_flo] = flow_coef_bd(CIJ);"
 
@@ -222,7 +222,7 @@ class ParticipationCoefficient(BaseBCT):
 class ParticipationCoefficientSign(ParticipationCoefficient):
     """
     """
-    _ui_name = "Participation Coefficient Sign: Connection matrix"
+    _ui_name = "Participation Coefficient Sign"
     _ui_description = bct_description("participation_coef_sign.m")
     _matlab_code = "[Ci, Q]=modularity_dir(W); [Ppos, Pneg] = participation_coef_sign(W, Ci);"
 

@@ -182,9 +182,8 @@ class ModularityOCSM(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_MODULARITY
-    _ui_connectivity_label = "Directed (weighted or binary) connection matrix:"
 
-    _ui_name = "Optimal Community Structure and Modularity: Directed (weighted or binary) connection matrix"
+    _ui_name = "Compute optimal Community Structure and Modularity from a Directed (weighted or binary) connection matrix:"
     _ui_description = bct_description("modularity_dir.m")
     _matlab_code = "[Ci,Q] = modularity_dir(CW);"
 
@@ -204,7 +203,7 @@ class ModularityOCSM(BaseBCT):
 class ModularityOpCSMU(ModularityOCSM):
     """
     """
-    _ui_name = "Optimal Community Structure and Modularity (Undirected): Connection matrix"
+    _ui_name = "Optimal Community Structure and Modularity (Undirected):"
     _ui_description = bct_description("modularity_und.m")
     _matlab_code = "[Ci,Q] = modularity_und(CW);"
 
@@ -214,7 +213,7 @@ class DistanceDBIN(BaseBCT):
     """
     _ui_group = BCT_GROUP_DISTANCE
 
-    _ui_name = "Distance binary matrix: Connection matrix"
+    _ui_name = "Distance binary matrix"
     _ui_description = bct_description("distance_bin.m")
     _matlab_code = "D = distance_bin(A);"
 
@@ -230,7 +229,7 @@ class DistanceDBIN(BaseBCT):
 class DistanceDWEI(DistanceDBIN):
     """
     """
-    _ui_name = "Distance weighted matrix: Weighted (directed/undirected) connection matrix"
+    _ui_name = "Distance weighted matrix over a Weighted (directed/undirected) connection matrix"
     _ui_description = bct_description("distance_wei.m")
     _matlab_code = "D = distance_wei(A);"
 
@@ -238,7 +237,7 @@ class DistanceDWEI(DistanceDBIN):
 class DistanceRDM(DistanceDBIN):
     """
     """
-    _ui_name = "Reachability and distance matrices (Breadth-first search): Connection Matrix"
+    _ui_name = "Reachability and distance matrices (Breadth-first search)"
     _ui_description = bct_description("breadthdist.m")
     _matlab_code = "[R,D] = breadthdist(A);"
 
@@ -256,7 +255,7 @@ class DistanceRDM(DistanceDBIN):
 class DistanceRDA(DistanceRDM):
     """
     """
-    _ui_name = "Reachability and distance matrices (Algebraic path count): Connection matrix"
+    _ui_name = "Reachability and distance matrices (Algebraic path count)"
     _ui_description = bct_description("reachdist.m")
     _matlab_code = "[R,D] = reachdist(A);"
 
@@ -264,7 +263,7 @@ class DistanceRDA(DistanceRDM):
 class DistanceNETW(DistanceDBIN):
     """
     """
-    _ui_name = "Network walks: Connection Matrix"
+    _ui_name = "Network walks"
     _ui_description = bct_description("findwalks.m")
     _matlab_code = "[Wq,twalk,wlq]  = findwalks(A);"
 

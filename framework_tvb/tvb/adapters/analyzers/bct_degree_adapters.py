@@ -73,7 +73,7 @@ class DegreeIOD(Degree):
 class JointDegree(Degree):
     """
     """
-    _ui_name = "Joint Degree: Connection Matrix"
+    _ui_name = "Joint Degree"
     _ui_description = bct_description("jdegree.m")
     _matlab_code = "[J,J_od,J_id,J_bl] = jdegree(CIJ);"
 
@@ -130,7 +130,7 @@ class Strength(Degree):
 class StrengthISOS(Strength):
     """
     """
-    _ui_name = "Instrength and Outstrength: Connection matrix"
+    _ui_name = "Instrength and Outstrength"
     _ui_description = bct_description("strengths_dir.m")
     _matlab_code = "[is,os,strength] = strengths_dir(CIJ);"
 
@@ -150,7 +150,7 @@ class StrengthISOS(Strength):
 class StrengthWeights(Strength):
     """
     """
-    _ui_name = "Strength and Weight: Connection matrix"
+    _ui_name = "Strength and Weight"
     _ui_description = bct_description("strengths_und_sign.m")
     _matlab_code = "[Spos,Sneg,vpos,vneg] = strengths_und_sign(CIJ);"
 
