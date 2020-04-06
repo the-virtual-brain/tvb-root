@@ -35,11 +35,10 @@
 """
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, STATUS_FINISHED, RANGE_MISSING_VALUE
+from tvb.core.entities.model.model_operation import RANGE_MISSING_STRING, RANGE_MISSING_VALUE
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.pse import ContextDiscretePSE, PSEGroupModel
+from tvb.core.entities.transient.pse import PSEDiscreteGroupModel
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -106,8 +105,8 @@ class DiscretePSEAdapter(ABCDisplayer):
         """
         Launch the visualizer.
         """
-        pse_group_model = PSEGroupModel(view_model.datatype_group.hex)
-        pse_context = self.prepare_parameters(view_model.datatype_group.hex, '')
+        pse_model = PSEDiscreteGroupModel(view_model.datatype_group.hex, None, None, '')
+        pse_context = pse_model.pse_context
         pse_context.prepare_individual_jsons()
 
         return self.build_display_result('pse_discrete/view', pse_context,
@@ -148,70 +147,5 @@ class DiscretePSEAdapter(ABCDisplayer):
 
     @staticmethod
     def prepare_parameters(datatype_group_gid, back_page, color_metric=None, size_metric=None):
-        """
-        We suppose that there are max 2 ranges and from each operation results exactly one dataType.
-
-        :param datatype_group_gid: the group id for the `DataType` to be visualised
-        :param back_page: Page where back button will direct
-        :param color_metric: String referring to metric to apply on colors
-        :param size_metric:  String referring to metric to apply on sizes
-
-        :returns: `ContextDiscretePSE`
-        :raises Exception: when `datatype_group_id` is invalid (not in database)
-        """
-        datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-        if datatype_group is None:
-            raise Exception("Selected DataTypeGroup is no longer present in the database. "
-                            "It might have been remove or the specified id is not the correct one.")
-
-        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-
-        name1, values1, labels1, only_numbers1 = DiscretePSEAdapter.prepare_range_labels(operation_group,
-                                                                                         operation_group.range1)
-        name2, values2, labels2, only_numbers2 = DiscretePSEAdapter.prepare_range_labels(operation_group,
-                                                                                         operation_group.range2)
-
-        pse_context = ContextDiscretePSE(datatype_group_gid, color_metric, size_metric, back_page)
-        pse_context.setRanges(name1, values1, labels1, name2, values2, labels2,
-                              only_numbers1 and only_numbers2)
-        final_dict = {}
-        operations = dao.get_operations_in_group(operation_group.id)
-
-        fake_numbers1 = dict(list(zip(values1, list(range(len(list(values1)))))))
-        fake_numbers2 = dict(list(zip(values2, list(range(len(list(values2)))))))
-
-        for operation_ in operations:
-            if not operation_.has_finished:
-                pse_context.has_started_ops = True
-            range_values = eval(operation_.range_values)
-            key_1 = DiscretePSEAdapter.get_value_on_axe(range_values, only_numbers1, name1, fake_numbers1)
-            key_2 = DiscretePSEAdapter.get_value_on_axe(range_values, only_numbers2, name2, fake_numbers2)
-
-            datatype = None
-            if operation_.status == STATUS_FINISHED:
-                pse_filter = FilterChain(fields=[FilterChain.datatype + '.type'], operations=['!='],
-                                         values=['SimulatorIndex'])
-                datatypes = dao.get_results_for_operation(operation_.id, pse_filter)
-                if len(datatypes) > 0:
-                    datatype = datatypes[0]
-                    if datatype.type == "DatatypeMeasureIndex":
-                        # Load proper entity class from DB.
-                        measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid)
-                    else:
-                        measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
-                    pse_context.prepare_metrics_datatype(measures, datatype)
-
-            if key_1 not in final_dict:
-                final_dict[key_1] = {}
-
-            final_dict[key_1][key_2] = pse_context.build_node_info(operation_, datatype)
-
-        pse_context.fill_object(final_dict)
-        # datatypes_dict is not actually used in the drawing of the PSE and actually
-        # causes problems in case of NaN values, so just remove it before creating the json
-        pse_context.datatypes_dict = {}
-        if not only_numbers1:
-            pse_context.values_x = list(range(len(list(values1))))
-        if not only_numbers2:
-            pse_context.values_y = list(range(len(list(values2))))
-        return pse_context
+        pse_model = PSEDiscreteGroupModel(datatype_group_gid, color_metric, size_metric, back_page)
+        return pse_model.pse_context
