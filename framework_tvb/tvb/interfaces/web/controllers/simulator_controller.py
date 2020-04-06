@@ -680,7 +680,8 @@ class SimulatorController(BurstBaseController):
             form_url = self._get_form_url_after_monitors()
 
         monitor = session_stored_simulator.monitors[0]
-        form = get_form_for_monitor(type(monitor))('', common.get_current_project().id)
+        variables_of_interest = session_stored_simulator.model.variables_of_interest
+        form = get_form_for_monitor(type(monitor))('', common.get_current_project().id, variables_of_interest)
         form.fill_from_trait(monitor)
 
         simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
@@ -719,7 +720,8 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method == 'POST':
             is_simulator_copy = False
-            form = get_form_for_monitor(type(monitor))()
+            variables_of_interest = session_stored_simulator.model.variables_of_interest
+            form = get_form_for_monitor(type(monitor))(variables_of_interest=variables_of_interest)
             form.fill_from_post(data)
             form.fill_trait(monitor)
 
