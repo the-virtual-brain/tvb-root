@@ -275,7 +275,6 @@ class SettingsForm(formencode.Schema):
     ADMINISTRATOR_EMAIL = validators.Email(not_empty=True)
 
     WEB_SERVER_PORT = PortValidator()
-    URL_WEB = validators.URL(not_empty=True, require_tld=False)
 
     SELECTED_DB = validators.UnicodeString(not_empty=True)
     URL_VALUE = validators.UnicodeString(not_empty=True)

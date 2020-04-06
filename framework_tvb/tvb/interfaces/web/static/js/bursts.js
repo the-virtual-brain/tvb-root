@@ -911,7 +911,7 @@ function changeBurstTile(selectedHref) {
 /**
  * Hide portlet DIVs and display Burst-Tree section.
  */
-function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
+function displayBurstTree(selectedHref, selectedProjectID) {
     _clearAllTimeouts();
     // returnToSessionPortletConfiguration();
 
@@ -929,7 +929,7 @@ function displayBurstTree(selectedHref, selectedProjectID, baseURL) {
     if (filterValue.value === '') {
         filterValue = {'type': 'from_burst', 'value': "0"};
     }
-    updateTree("#treeOverlay", selectedProjectID, baseURL, JSON.stringify(filterValue));
+    updateTree("#treeOverlay", selectedProjectID, JSON.stringify(filterValue));
     $("#portlets-display").hide();
     $("#portlets-configure").hide();
     $("#portlet-param-config").hide();

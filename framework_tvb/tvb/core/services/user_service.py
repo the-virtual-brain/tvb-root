@@ -110,7 +110,7 @@ class UserService:
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
             admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
-                         'user/validate/' + username + '\n\n"' + str(comment) + '"')
+                         '/user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
 
             if role != ROLE_ADMINISTRATOR and email is not None and not skip_sending_email:
@@ -200,7 +200,7 @@ class UserService:
             user = dao.store_entity(user)
             self.logger.debug("Sending validation email for userName=" + name + " to address=" + user.email)
             email_sender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
-                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "user/")
+                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "/user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
         except Exception as excep:

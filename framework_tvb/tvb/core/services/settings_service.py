@@ -61,7 +61,6 @@ class SettingsService(object):
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
     KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
-    KEY_URL_WEB = stored.KEY_URL_WEB
     KEY_SELECTED_DB = stored.KEY_SELECTED_DB
     KEY_DB_URL = stored.KEY_DB_URL
     KEY_CLUSTER = stored.KEY_CLUSTER
@@ -75,7 +74,7 @@ class SettingsService(object):
                           KEY_KC_CONFIG, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIG, None, KEY_STORAGE,
                           KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
                           KEY_DB_URL, None,
-                          KEY_PORT, KEY_URL_WEB, None,
+                          KEY_PORT, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
                           KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
 
@@ -110,8 +109,6 @@ class SettingsService(object):
 
             self.KEY_PORT: {'label': 'Port to run Cherrypy on',
                             'value': TvbProfile.current.web.SERVER_PORT, 'dtype': 'primitive', 'type': 'text'},
-            self.KEY_URL_WEB: {'label': 'URL for accessing web',
-                               'value': TvbProfile.current.web.BASE_URL, 'type': 'text', 'dtype': 'primitive'},
 
             self.KEY_MAX_NR_THREADS: {'label': 'Maximum no. of threads for local installations', 'type': 'text',
                                       'value': TvbProfile.current.MAX_THREADS_NUMBER, 'dtype': 'primitive'},
