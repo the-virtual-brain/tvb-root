@@ -38,7 +38,7 @@ from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELE
 
 
 def compute_rest_url():
-    rest_url = "https://tvb-sim3.scai.fraunhofer.de"
+    rest_url = "https://tvb-api.scai.fraunhofer.de"
     if len(sys.argv) > 0:
         for i in range(0, len(sys.argv)):
             if "--rest-url=" in sys.argv[i]:

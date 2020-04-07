@@ -362,16 +362,14 @@ class UserService:
 
     def _extract_user_info(self, keycloak_data):
         email = keycloak_data['email'] if 'email' in keycloak_data else None
-        if email is None:
-            self.logger.info("No email provided by the keycloak server")
-
         user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
         client_id = AuthorizationManager().get_keycloak_instance().client_id
         user_client_roles = user_roles[client_id] if client_id in user_roles else []
-        if len(user_roles) == 0:
-            self.logger.info("No client roles for client {}".format(client_id))
 
         role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
+        if role == ROLE_ADMINISTRATOR:
+            self.logger.info("Administrator logged in")
+
         username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
             'sub']
         name = keycloak_data['name'] if 'name' in keycloak_data else keycloak_data['sub']
