@@ -27,10 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import os
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.neocom._h5loader import DirLoader
+from tvb.core.services.import_service import ImportService
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
@@ -47,14 +51,14 @@ from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.exceptions import BurstServiceException
+from tvb.core.services.exceptions import BurstServiceException, ServicesBaseException
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, Raw
+from tvb.simulator.monitors import Bold, Projection, Raw
 from tvb.simulator.noise import Additive
 
 
@@ -1122,3 +1126,41 @@ class SimulatorController(BurstBaseController):
 
         result_name = "tvb_simulation_" + str(burst_id) + ".zip"
         return serve_file(export_zip, "application/x-download", "attachment", result_name)
+
+    @expose_fragment("overlay")
+    def get_upload_overlay(self):
+        template_specification = self.fill_overlay_attributes(None, "Upload", "Simulation JSON",
+                                                              "burst/upload_burst_overlay", "dialog-upload")
+        template_specification['first_fragment_url'] = SimulatorWizzardURLs.SET_CONNECTIVITY_URL
+        return self.fill_default_attributes(template_specification)
+
+    @cherrypy.expose
+    @handle_error(redirect=True)
+    @check_user
+    @settings
+    def load_simulator_configuration_from_zip(self, **data):
+        """Upload Simulator from previously exported ZIP file"""
+        self.logger.debug("Uploading ..." + str(data))
+
+        try:
+            upload_param = "uploadedfile"
+            if upload_param in data and data[upload_param]:
+                import_service = ImportService()
+                simulator_folder = import_service.import_simulator_configuration_zip(data[upload_param], common.get_current_project().id)
+
+                project = common.get_current_project()
+                simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
+                with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
+                    simulator_gid = sim_h5.gid.load()
+
+                simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
+
+                common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
+                common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
+                common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+        except ServicesBaseException as excep:
+            self.logger.warning(excep.message)
+            common.set_error_message(excep.message)
+
+        raise cherrypy.HTTPRedirect('/burst/')

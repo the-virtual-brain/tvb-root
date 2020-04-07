@@ -482,3 +482,25 @@ class ImportService(object):
 
         burst_entity = BurstConfiguration(project_id)
         return burst_entity
+
+    def import_simulator_configuration_zip(self, zip_file, project_id):
+        # Now compute the name of the folder where to explode uploaded ZIP file
+        temp_folder = self._compute_unpack_path()
+        uq_file_name = temp_folder + ".zip"
+
+        if isinstance(zip_file, FieldStorage) or isinstance(zip_file, Part):
+            if not zip_file.file:
+                #TODO: proper exceptions
+                raise Exception("Please select the archive that contains a simulator configuration.")
+
+            with open(uq_file_name, 'wb') as file_obj:
+                self.files_helper.copy_file(zip_file.file, file_obj)
+        else:
+            shutil.copy2(zip_file, uq_file_name)
+
+        try:
+            self.files_helper.unpack_zip(uq_file_name, temp_folder)
+            return temp_folder
+        except FileStructureException as excep:
+            self.logger.exception(excep)
+            raise Exception("Bad ZIP archive provided. A simulator configuration is expected")
