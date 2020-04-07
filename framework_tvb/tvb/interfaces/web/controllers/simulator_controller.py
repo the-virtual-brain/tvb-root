@@ -628,14 +628,17 @@ class SimulatorController(BurstBaseController):
         return rendering_rules.to_dict()
 
     @staticmethod
-    def _get_form_url_after_monitors():
+    def _get_form_url_after_monitors(loading=False):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
 
         if operation_group is not None:
-            return SimulatorWizzardURLs.SETUP_PSE_URL
-        else:
-            return SimulatorWizzardURLs.LAUNCH_SIMULATION_URL
+            if loading is False:
+                return SimulatorWizzardURLs.SETUP_PSE_URL
+            else:
+                return SimulatorWizzardURLs.LAUNCH_PSE_URL
+
+        return SimulatorWizzardURLs.LAUNCH_SIMULATION_URL
 
     @staticmethod
     def _get_variables_of_interest_indexes(all_variables, chosen_variables):
@@ -683,6 +686,8 @@ class SimulatorController(BurstBaseController):
 
             if cherrypy.request.method != 'POST':
                 simulation_name = common.get_from_session(common.KEY_BURST_CONFIG).name
+                if simulation_name is None:
+                    simulation_name = 'simulation_' + str(simulation_number)
                 form.fill_from_post({'input_simulation_name_id': simulation_name,
                                      'simulation_length': str(session_stored_simulator.simulation_length)})
 
@@ -764,6 +769,8 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method != 'POST':
             simulation_name = common.get_from_session(common.KEY_BURST_CONFIG).name
+            if simulation_name is None:
+                simulation_name = 'simulation_' + str(simulation_number)
             next_form.fill_from_post({'input_simulation_name_id': simulation_name,
                                       'simulation_length': str(session_stored_simulator.simulation_length)})
 
@@ -800,6 +807,8 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method != 'POST':
             simulation_name = common.get_from_session(common.KEY_BURST_CONFIG).name
+            if simulation_name is None:
+                simulation_name = 'simulation_' + str(simulation_number)
             next_form.fill_from_post({'input_simulation_name_id': simulation_name,
                                       'simulation_length': str(session_stored_simulator.simulation_length)})
 
@@ -965,9 +974,6 @@ class SimulatorController(BurstBaseController):
         burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
         if launch_mode == self.simulator_service.LAUNCH_NEW:
-            if session_burst_config.name is None:
-                new_id = dao.get_max_burst_id() + 1
-                session_burst_config.name = 'simulation_' + str(new_id)
             if is_simulator_copy:
                 burst_config_to_store = session_burst_config.clone()
         else:
@@ -1028,7 +1034,8 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
             common.add2session(common.KEY_IS_SIMULATOR_LOAD, True)
             common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
-            common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SETUP_PSE_URL)
+            form_url = self._get_form_url_after_monitors(loading=True)
+            common.add2session(common.KEY_LAST_LOADED_FORM_URL, form_url)
 
             form = self.prepare_first_fragment()
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
