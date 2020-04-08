@@ -111,13 +111,16 @@ def store_complete(datatype, base_dir):
     return index_inst
 
 
-def store(datatype, destination):
+def store(datatype, destination, recursive=False):
     # type: (HasTraits, str) -> None
     """
     Stores the given datatype in a tvb h5 file at the given path
     """
-    loader = Loader(REGISTRY)
-    return loader.store(datatype, destination)
+    if not recursive:
+        loader = Loader(REGISTRY)
+        return loader.store(datatype, destination)
+    else:
+        return store_to_dir(datatype, destination, True)
 
 
 def load_from_dir(base_dir, gid, recursive=False):
@@ -134,7 +137,7 @@ def load_from_dir(base_dir, gid, recursive=False):
     return loader.load(gid)
 
 
-def store_to_dir(base_dir, datatype, recursive=False):
+def store_to_dir(datatype, base_dir, recursive=False):
     # type: (str, HasTraits, bool) -> None
     """
     Stores the given datatype in the given directory.
