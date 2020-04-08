@@ -31,6 +31,7 @@
 import os
 import uuid
 import typing
+from uuid import UUID
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -38,6 +39,15 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
+
+H5_EXTENSION = '.h5'
+
+H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
+
+
+def get_h5_filename(class_name, gid):
+    # type: (str, UUID) -> str
+    return H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
 
 
 class Loader(object):
@@ -65,7 +75,6 @@ class Loader(object):
             f.store(datatype)
 
 
-
 class DirLoader(object):
     """
     A simple recursive loader. Stores all files in a directory.
@@ -74,8 +83,12 @@ class DirLoader(object):
 
     def __init__(self, base_dir, registry, recursive=False):
         # type: (str, Registry, bool) -> None
+        self.base_file = None
         if not os.path.isdir(base_dir):
-            raise IOError('not a directory {}'.format(base_dir))
+            self.base_file = base_dir
+            base_dir = os.path.dirname(base_dir)
+            if not os.path.isdir(base_dir):
+                raise IOError('not a directory {}'.format(base_dir))
 
         self.base_dir = base_dir
         self.recursive = recursive
@@ -84,7 +97,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + '.h5'):
+            if fname.endswith(gid.hex + H5_EXTENSION):
                 return fname
         raise IOError('could not locate h5 with gid {}'.format(gid))
 
@@ -112,15 +125,18 @@ class DirLoader(object):
 
         for traited_attr, sub_gid in sub_dt_refs:
             subdt = self.load(sub_gid)
-            if subdt is not None:
-                setattr(datatype, traited_attr.field_name, subdt)
+            setattr(datatype, traited_attr.field_name, subdt)
 
         return datatype
 
     def store(self, datatype):
         # type: (HasTraits) -> None
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
-        path = self.path_for(h5file_cls, datatype.gid)
+        if self.base_file is None:
+            path = self.path_for(h5file_cls, datatype.gid)
+        else:
+            path = self.base_file
+            self.base_file = None
 
         sub_dt_refs = []
 
@@ -144,12 +160,23 @@ class DirLoader(object):
         datatype_cls = self.registry.get_datatype_for_h5file(h5_file_class)
         return self.path_for_has_traits(datatype_cls, gid)
 
+    def _get_has_traits_classname(self, has_traits_class):
+        return has_traits_class.__name__
+
     def path_for_has_traits(self, has_traits_class, gid):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = '{}_{}.h5'.format(has_traits_class.__name__, gid.hex)
+        fname = get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
+
+    def find_file_for_has_traits_type(self, has_traits_class):
+
+        filename_prefix = self._get_has_traits_classname(has_traits_class)
+        for fname in os.listdir(self.base_dir):
+            if fname.startswith(filename_prefix) and fname.endswith(H5_EXTENSION):
+                return fname
+        raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
 
 class TVBLoader(object):
@@ -166,14 +193,14 @@ class TVBLoader(object):
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = '{}_{}.h5'.format(h5_file_class.file_name_base(), gid.hex)
+        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 
     def path_for(self, operation_dir, h5_file_class, gid):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = '{}_{}.h5'.format(h5_file_class.file_name_base(), gid.hex)
+        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
         return os.path.join(operation_dir, fname)
 
     def load_from_index(self, dt_index, dt_class=None):
@@ -186,8 +213,8 @@ class TVBLoader(object):
             f.load_into(result_dt)
         return result_dt
 
-    def load_with_references(self, file_path):
-        # type: (str) -> (HasTraits, GenericAttributes)
+    def load_complete_by_function(self, file_path, load_ht_function):
+        # type: (str, callable) -> (HasTraits, GenericAttributes)
         with H5File.from_file(file_path) as f:
             datatype_cls = self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
@@ -198,8 +225,23 @@ class TVBLoader(object):
         for traited_attr, sub_gid in sub_dt_refs:
             if sub_gid is None:
                 continue
-            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
-            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            ref_ht = load_ht_function(sub_gid, traited_attr)
             setattr(datatype, traited_attr.field_name, ref_ht)
 
         return datatype, ga
+
+    def load_with_references(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
+            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)
+
+    def load_with_links(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_ht = traited_attr.field_type()
+            ref_ht.gid = sub_gid
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)

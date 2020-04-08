@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import uuid
 import typing
 from tvb.basic.neotraits.api import HasTraits
@@ -82,6 +83,15 @@ def load_with_references(source_path):
     return loader.load_with_references(source_path)
 
 
+def load_with_links(source_path):
+    # type: (str) -> (HasTraits, GenericAttributes)
+    """
+    Load a datatype stored in the tvb h5 file found at the given path, but also create empty linked entities to hold GID
+    """
+    loader = TVBLoader(REGISTRY)
+    return loader.load_with_links(source_path)
+
+
 def store_complete(datatype, base_dir):
     # type: (HasTraits, str) -> DataType
     """
@@ -101,13 +111,16 @@ def store_complete(datatype, base_dir):
     return index_inst
 
 
-def store(datatype, destination):
+def store(datatype, destination, recursive=False):
     # type: (HasTraits, str) -> None
     """
     Stores the given datatype in a tvb h5 file at the given path
     """
-    loader = Loader(REGISTRY)
-    return loader.store(datatype, destination)
+    if not recursive:
+        loader = Loader(REGISTRY)
+        return loader.store(datatype, destination)
+    else:
+        return store_to_dir(datatype, destination, True)
 
 
 def load_from_dir(base_dir, gid, recursive=False):
@@ -124,7 +137,7 @@ def load_from_dir(base_dir, gid, recursive=False):
     return loader.load(gid)
 
 
-def store_to_dir(base_dir, datatype, recursive=False):
+def store_to_dir(datatype, base_dir, recursive=False):
     # type: (str, HasTraits, bool) -> None
     """
     Stores the given datatype in the given directory.
