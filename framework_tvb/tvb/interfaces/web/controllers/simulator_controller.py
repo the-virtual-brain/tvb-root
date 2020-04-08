@@ -494,23 +494,6 @@ class SimulatorController(BurstBaseController):
                                                           cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    # TODO: add state_variables selection step
-    # @cherrypy.expose
-    # @using_template("simulator_fragment")
-    # @handle_error(redirect=False)
-    # @check_user
-    # def set_model_variables_to_monitor(self, data):
-    #     session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
-    #     form = get_form_for_model(type(session_stored_simulator.model.variables))()
-    #     form.fill_from_post(data)
-    #
-    #     form.fill_trait(session_stored_simulator.model)
-    #
-    #     integrator_fragment = SimulatorIntegratorFragment('', common.get_current_project().id)
-    #
-    #     return {'form': integrator_fragment, 'action': '/burst/set_integrator',
-    #             'previous_action': '/burst/set_model_variables_to_monitor'}
-
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
@@ -655,6 +638,13 @@ class SimulatorController(BurstBaseController):
         else:
             return SimulatorWizzardURLs.LAUNCH_SIMULATION_URL
 
+    @staticmethod
+    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
+        indexes = {}
+        for variable in chosen_variables:
+            indexes[variable] = all_variables.index(variable)
+        return indexes
+
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
@@ -680,8 +670,10 @@ class SimulatorController(BurstBaseController):
             form_url = self._get_form_url_after_monitors()
 
         monitor = session_stored_simulator.monitors[0]
-        variables_of_interest = session_stored_simulator.model.variables_of_interest
-        form = get_form_for_monitor(type(monitor))('', common.get_current_project().id, variables_of_interest)
+        chosen_variables = session_stored_simulator.model.variables_of_interest
+        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+        indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+        form = get_form_for_monitor(type(monitor))('', common.get_current_project().id, indexes)
         form.fill_from_trait(monitor)
 
         simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
@@ -720,8 +712,10 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method == 'POST':
             is_simulator_copy = False
-            variables_of_interest = session_stored_simulator.model.variables_of_interest
-            form = get_form_for_monitor(type(monitor))(variables_of_interest=variables_of_interest)
+            chosen_variables = data['variables_of_interest']
+            all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+            indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+            form = get_form_for_monitor(type(monitor))(variables_of_interest_indexes=indexes)
             form.fill_from_post(data)
             form.fill_trait(monitor)
 
