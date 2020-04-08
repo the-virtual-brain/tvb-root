@@ -135,13 +135,16 @@ class DirLoader(object):
 
         with h5file_cls(path) as f:
             f.store(datatype)
+            # Store empty Generic Attributes, so that TVBLoader.load_complete_by_function can be still used
+            f.store_generic_attributes(GenericAttributes())
 
             if self.recursive:
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
             subdt = getattr(datatype, traited_attr.field_name)
-            self.store(subdt)
+            if subdt is not None:  # Because a non required reference may be not populated
+                self.store(subdt)
 
     def path_for(self, h5_file_class, gid):
         """
