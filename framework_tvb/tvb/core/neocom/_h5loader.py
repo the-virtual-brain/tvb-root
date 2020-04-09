@@ -147,8 +147,6 @@ class DirLoader(object):
 
             if self.recursive:
                 sub_dt_refs = f.gather_references()
-                if self.recursive != "deep":  # usually we don't want to store twice the same references
-                    self.recusrive = False
 
         for traited_attr, sub_gid in sub_dt_refs:
             subdt = getattr(datatype, traited_attr.field_name)
