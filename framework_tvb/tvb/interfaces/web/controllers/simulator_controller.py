@@ -669,10 +669,11 @@ class SimulatorController(BurstBaseController):
         else:
             form_url = self._get_form_url_after_monitors()
 
-        monitor = session_stored_simulator.monitors[0]
-        chosen_variables = session_stored_simulator.model.variables_of_interest
         all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+        chosen_variables = session_stored_simulator.model.variables_of_interest
         indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+
+        monitor = session_stored_simulator.monitors[0]
         form = get_form_for_monitor(type(monitor))('', common.get_current_project().id, indexes)
         form.fill_from_trait(monitor)
 

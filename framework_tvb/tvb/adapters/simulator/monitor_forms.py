@@ -41,6 +41,7 @@ from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField, \
     MultiSelectField
 from tvb.basic.neotraits.api import List
+import numpy
 
 
 def get_monitor_to_form_dict():
@@ -94,8 +95,16 @@ class MonitorForm(Form):
                                                       choices=tuple(variables_of_interest_indexes.keys())),
                                                       self, name='variables_of_interest')
 
+    def fill_from_trait(self, trait):
+        super(MonitorForm, self).fill_from_trait(trait)
+        if trait.variables_of_interest is not None:
+            self.variables_of_interest.data = [list(self.variables_of_interest_indexes.keys())[idx]
+                                               for idx in trait.variables_of_interest]
+
     def fill_trait(self, datatype):
-        datatype.variables_of_interest = self.variables_of_interest_indexes.values()
+        super(MonitorForm, self).fill_trait(datatype)
+        datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
+
 
 class RawMonitorForm(MonitorForm):
 
@@ -204,7 +213,8 @@ class BoldMonitorForm(MonitorForm):
         super(BoldMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
         self.period = ScalarField(Bold.period, self)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
-        self.hrf_kernel = SimpleSelectField(self.hrf_kernel_choices, self, name='hrf_kernel', required=True, label='Equation')
+        self.hrf_kernel = SimpleSelectField(self.hrf_kernel_choices, self, name='hrf_kernel',
+                                            required=True, label='Equation')
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
