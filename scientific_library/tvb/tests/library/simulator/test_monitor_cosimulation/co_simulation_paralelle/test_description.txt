@@ -1,0 +1,10 @@
+modify_wongwang_2 : test for compare the version in tvb and the modified version
+modify_wongwang_3 : test for compare the version in tvb and the modified version
+update_function : test the function of function_tvb
+proxy_precision : compare the result between simulation with one proxy and whithout proxy
+proxy_precision_delay : compare the result between simulation with one proxy and whithout proxy and different delay
+proxy_precision_multy : compare the result between simulation with 1-3 proxies and whithout proxy
+double_proxy_precision_simple : test the transmission of information between two model with proxy in simple case
+double_proxy_precision_simple : test the transmission of information between two model with proxy in most complexe case
+
+function_tvb : function for run tvb more easily for the test
