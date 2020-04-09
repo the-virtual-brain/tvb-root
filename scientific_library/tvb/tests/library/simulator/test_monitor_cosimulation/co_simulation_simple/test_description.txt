@@ -1,0 +1,11 @@
+modify_wongwang : test for compare the version in tvb and the modified version
+modify_wongwang_2 : test for compare the version in tvb and the modified version
+modify_wongwang_3 : test for compare the version in tvb and the modified version
+update_function : test the function of function_tvb
+proxy_precision : compare the result between simulation with one proxy and whithout proxy
+proxy_precision_delay : compare the result between simulation with one proxy and whithout proxy and different delay
+proxy_precision_multy : compare the result between simulation with 1-3 proxies and whithout proxy
+double_proxy_precision_simple : test the transmission of information between two model with proxy in simple case
+double_proxy_precision_simple : test the transmission of information between two model with proxy in most complexe case
+multy_processing : test the transmission of firing rate with MPI 
+multy_processing_translator : use the translator to send information to Nest
