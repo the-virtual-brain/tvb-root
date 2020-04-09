@@ -105,6 +105,7 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
 
+    #TODO: We should review the code her, we could probably reduce the number of  classes that are used here
 
 class RawMonitorForm(MonitorForm):
 
