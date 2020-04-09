@@ -34,6 +34,8 @@ Here, we upload two independent datatypes: a connectivity and a surface from ZIP
 Then, we upload a region mapping that depends on both connectivity and surface to exist in TVB storage.
 """
 
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
+from tvb.adapters.analyzers.bct_degree_adapters import Degree
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
@@ -109,6 +111,17 @@ def launch_operation_examples(tvb_client_instance):
     local_region_mapping_with_links = tvb_client_instance.load_datatype_from_file(region_mapping_path)
     logger.info("3.This region mapping is linked to a connectivity with GID={}".format(
         local_region_mapping_with_links.connectivity.gid))
+
+    # --- Launch operation to run a Degree Analyzer over the Connectivity ---
+
+    bct_model = BaseBCTModel()
+    bct_model.connectivity = connectivity_dto.gid
+    operation_gid = tvb_client_instance.launch_operation(project_gid, Degree, bct_model)
+    monitor_operation(tvb_client_instance, operation_gid)
+
+    logger.info("Get the result of BCT...")
+    bct_dto = tvb_client_instance.get_operation_results(operation_gid)[0]
+    logger.info("The resulted BCT has GID={}".format(bct_dto.gid))
 
 
 if __name__ == '__main__':
