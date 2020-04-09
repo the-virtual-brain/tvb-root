@@ -34,29 +34,29 @@
 """
 
 import os
-import numpy
-from tvb.basic.logger.builder import get_logger
-from tvb.simulator.plot.config import CONFIGURED
 
 import matplotlib
-matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
-
+import numpy
 from matplotlib import pyplot
-pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
-
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from tvb.simulator.plot.utils import ensure_list, generate_region_labels
+from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
+from tvb.simulator.plot.utils.data_structures_utils import generate_region_labels, ensure_list
+from tvb.simulator.plot.utils.log_error_utils import initialize_logger, warning
+
+matplotlib.use(FiguresConfig().MATPLOTLIB_BACKEND)
+
+pyplot.rcParams["font.size"] = FiguresConfig.FONTSIZE
 
 
 class BasePlotter(object):
 
     def __init__(self, config=CONFIGURED):
         self.config = config
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = initialize_logger(self.__class__.__name__, self.config.out.FOLDER_LOGS)
         self.print_regions_indices = True
 
     def _check_show(self):
-        if self.config.SHOW_FLAG:
+        if self.config.figures.SHOW_FLAG:
             # mp.use('TkAgg')
             pyplot.ion()
             pyplot.show()
@@ -66,25 +66,23 @@ class BasePlotter(object):
             pyplot.close()
 
     @staticmethod
-    def _figure_filename(fig=None, figure_name=None):
-        if fig is None:
-            fig = pyplot.gcf()
+    def _figure_filename(fig=pyplot.gcf(), figure_name=None):
         if figure_name is None:
             figure_name = fig.get_label()
         figure_name = figure_name.replace(": ", "_").replace(" ", "_").replace("\t", "_").replace(",", "")
         return figure_name
 
-    def _save_figure(self, fig, figure_name=None):
-        if self.config.SAVE_FLAG:
+    def _save_figure(self, fig=pyplot.gcf(), figure_name=None):
+        if self.config.figures.SAVE_FLAG:
             figure_name = self._figure_filename(fig, figure_name)
-            figure_name = figure_name[:numpy.min([100, len(figure_name)])] + '.' + self.config.FIG_FORMAT
-            figure_dir = self.config.FOLDER_FIGURES
+            figure_name = figure_name[:numpy.min([100, len(figure_name)])] + '.' + self.config.figures.FIG_FORMAT
+            figure_dir = self.config.out.FOLDER_FIGURES
             if not (os.path.isdir(figure_dir)):
                 os.mkdir(figure_dir)
             pyplot.savefig(os.path.join(figure_dir, figure_name))
 
     @staticmethod
-    def rect_subplot_shape(self, n, mode="col"):
+    def rect_subplot_shape(n, mode="col"):
         nj = int(numpy.ceil(numpy.sqrt(n)))
         ni = int(numpy.ceil(1.0 * n / nj))
         if mode.find("row") >= 0:
@@ -96,7 +94,7 @@ class BasePlotter(object):
         ax = pyplot.subplot(subplot, sharey=sharey)
         pyplot.title(title)
         n_vector = labels.shape[0]
-        y_ticks = numpy.array(list(range(n_vector)), dtype=numpy.int32)
+        y_ticks = numpy.array(range(n_vector), dtype=numpy.int32)
         color = 'k'
         colors = numpy.repeat([color], n_vector)
         coldif = False
@@ -130,7 +128,7 @@ class BasePlotter(object):
         ax = pyplot.subplot(subplot, sharey=sharey)
         pyplot.title(title)
         n_violins = dataset.shape[1]
-        y_ticks = numpy.array(list(range(n_violins)), dtype=numpy.int32)
+        y_ticks = numpy.array(range(n_violins), dtype=numpy.int32)
         # the vector plot
         coldif = False
         if indices_red is None:
@@ -201,7 +199,7 @@ class BasePlotter(object):
         nticks = []
         for ii, (n, tick) in enumerate(zip([nx, ny], ticks)):
             if len(tick) == 0:
-                ticks[ii] = numpy.array(list(range(n)), dtype=numpy.int32)
+                ticks[ii] = numpy.array(range(n), dtype=numpy.int32)
             nticks.append(len(ticks[ii]))
         cmap = pyplot.set_cmap(cmap)
         img = pyplot.imshow(matrix[ticks[0]][:, ticks[1]].T, cmap=cmap, vmin=vmin, vmax=vmax, interpolation='none')
@@ -213,10 +211,10 @@ class BasePlotter(object):
                 labels[ii] = generate_region_labels(len(tick), numpy.array(lbls)[tick], ". ",
                                                     self.print_regions_indices, tick)
                 # labels[ii] = numpy.array(["%d. %s" % l for l in zip(tick, lbls[tick])])
-                getattr(pyplot, xy + "ticks")(numpy.array(list(range(ntick))), labels[ii], rotation=rot)
+                getattr(pyplot, xy + "ticks")(numpy.array(range(ntick)), labels[ii], rotation=rot)
             else:
                 labels[ii] = numpy.array(["%d." % l for l in tick])
-                getattr(pyplot, xy + "ticks")(numpy.array(list(range(ntick))), labels[ii])
+                getattr(pyplot, xy + "ticks")(numpy.array(range(ntick)), labels[ii])
             if ind_red is not None:
                 tck = tick.tolist()
                 ticklabels = getattr(ax, xy + "axis").get_ticklabels()
@@ -239,7 +237,7 @@ class BasePlotter(object):
                                  x_ticks, y_ticks, indices_red_x, indices_red_y, sharex, sharey, cmap, vmin, vmax)
 
     def _set_axis_labels(self, fig, sub, n_regions, region_labels, indices2emphasize, color='k', position='left'):
-        y_ticks = list(range(n_regions))
+        y_ticks = range(n_regions)
         # region_labels = numpy.array(["%d. %s" % l for l in zip(y_ticks, region_labels)])
         region_labels = generate_region_labels(len(y_ticks), region_labels, ". ", self.print_regions_indices, y_ticks)
         big_ax = fig.add_subplot(sub, frameon=False)
@@ -262,7 +260,7 @@ class BasePlotter(object):
                         right_ax_focus_indices=[], description="", title="", figure_name=None,
                         figsize=None, **kwargs):
         if not isinstance(figsize, (tuple, list)):
-            figsize = self.config.VERY_LARGE_SIZE
+            figsize = self.config.figures.VERY_LARGE_SIZE
         fig = pyplot.figure(title, frameon=False, figsize=figsize)
         fig.suptitle(description)
         n_subplots = len(data_dict_list)
@@ -311,7 +309,7 @@ class BasePlotter(object):
     def plots(self, data_dict, shape=None, transpose=False, skip=0, xlabels={}, xscales={}, yscales={}, title='Plots',
               lgnd={}, figure_name=None, figsize=None):
         if not isinstance(figsize, (tuple, list)):
-            figsize = self.config.VERY_LARGE_SIZE
+            figsize = self.config.figures.VERY_LARGE_SIZE
         if shape is None:
             shape = (1, len(data_dict))
         fig, axes = pyplot.subplots(shape[0], shape[1], figsize=figsize)
@@ -343,7 +341,7 @@ class BasePlotter(object):
             return tuple(data)
 
         if not isinstance(figsize, (tuple, list)):
-            figsize = self.config.VERY_LARGE_SIZE
+            figsize = self.config.figures.VERY_LARGE_SIZE
 
         if subtitles is None:
             subtitles = keys
@@ -433,7 +431,7 @@ class BasePlotter(object):
 
         if fig is None:
             if not isinstance(figsize, (tuple, list)):
-                figsize = self.config.VERY_LARGE_SIZE
+                figsize = self.config.figures.VERY_LARGE_SIZE
             fig, ax = pyplot.subplots(1, 1, figsize=figsize)
             show_and_save = True
         else:
@@ -442,8 +440,8 @@ class BasePlotter(object):
                 ax = pyplot.gca()
         if isinstance(data, (list, tuple)):  # If, there are many groups, data is a list:
             # Fill in with nan in case that not all groups have the same number of elements
-            from itertools import zip_longest
-            data = numpy.array(list(zip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
+            from itertools import izip_longest
+            data = numpy.array(list(izip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
         elif data.ndim == 1:  # This is the case where there is only one group...
             data = numpy.expand_dims(data, axis=1).T
         n_groups, n_elements = data.shape
@@ -452,8 +450,8 @@ class BasePlotter(object):
         n_groups_names = len(group_names)
         if n_groups_names != n_groups:
             if n_groups_names != 0:
-                self.logger.warning("Ignoring group_names because their number (" + str(n_groups_names) +
-                                    ") is not equal to the number of groups (" + str(n_groups) + ")!")
+                warning("Ignoring group_names because their number (" + str(n_groups_names) +
+                        ") is not equal to the number of groups (" + str(n_groups) + ")!")
             group_names = n_groups * [""]
         colorcycle = pyplot.rcParams['axes.prop_cycle'].by_key()['color']
         n_colors = len(colorcycle)
@@ -479,7 +477,7 @@ class BasePlotter(object):
             self._check_show()
         return fig, ax
 
-    def plot(self, plot_fun_name, *args, **kwargs):
+    def tvb_plot(self, plot_fun_name, *args, **kwargs):
         import tvb.simulator.plot.tools as TVB_plot_tools
         getattr(TVB_plot_tools, plot_fun_name)(*args, **kwargs)
         fig = pyplot.gcf()
