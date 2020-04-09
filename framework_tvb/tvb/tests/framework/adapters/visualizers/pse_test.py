@@ -33,7 +33,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
@@ -48,28 +47,31 @@ class TestPSE(TransactionalTestCase):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
+        dt_group = datatype_group_factory()
+
         viewer = DiscretePSEAdapter()
         view_model = viewer.get_view_model_class()()
-        group = datatype_group_factory()
-        view_model.datatype_group = UUID(hex=group.gid)
+        view_model.datatype_group = dt_group.gid
         result = viewer.launch(view_model)
 
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
-                         'has_started_ops', 'datatype_group_gid', 'datatypes_dict', 'color_metric']
+                         'has_started_ops', 'datatype_group_gid', 'color_metric']
         for key in expected_keys:
             assert key in result
-        assert group.gid == result["datatype_group_gid"]
+        assert dt_group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
     def test_launch_isocline(self, datatype_group_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
+        dt_group = datatype_group_factory()
+
         viewer = IsoclinePSEAdapter()
         view_model = viewer.get_view_model_class()()
-        group = datatype_group_factory()
-        view_model.datatype_group = UUID(hex=group.gid)
+        view_model.datatype_group = dt_group.gid
         result = viewer.launch(view_model)
+
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])
