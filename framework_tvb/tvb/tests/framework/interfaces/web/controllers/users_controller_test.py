@@ -63,12 +63,11 @@ class TestUsersController(BaseTransactionalControllerTest):
         self.cleanup()
         self.clean_database()
 
-
     def test_index_valid_post(self):
         """
         Tests for a valid redirect on user login
         """
-        user = User('valid_user', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
+        user = User('valid_user', 'name', hash_password('valid_pass'), 'mail@mail.com', True, 'CLINICIAN')
         dao.store_entity(user)
         login_data = {'username': 'valid_user', 'password': 'valid_pass'}
         cherrypy.request.method = "POST"
@@ -138,6 +137,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         """
         cherrypy.request.method = "POST"
         data = dict(username="registered_user",
+                    display_name="display_name",
                     password="pass",
                     password2="pass",
                     email="email@email.com",
@@ -172,6 +172,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         Test that a valid create new post will actually create a new user in database.
         """
         data = dict(username="registered_user",
+                    display_name="display_name",
                     password="pass",
                     password2="pass",
                     email="email@email.com",
@@ -236,7 +237,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         cherrypy.request.method = "POST"
         data = {"email": self.test_user.email,
                 "username": self.test_user.username,
-               }
+                }
         self._expect_redirect("/user", self.user_c.recoverpassword, **data)
         assert cherrypy.session[common.KEY_MESSAGE_TYPE] == common.TYPE_INFO, \
             "Info message informing successfull reset should be present"

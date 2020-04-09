@@ -41,7 +41,8 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterForm
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterForm, \
+    DELIMITER_OPTIONS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.flow_service import FlowService
@@ -97,19 +98,22 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
                                               'CSVConnectivityImporter')
 
         form = CSVConnectivityImporterForm()
-        form.fill_from_post({'_weights': Part(weights_tmp, HeaderMap({}), ''),
-                             '_tracts': Part(tracts_tmp, HeaderMap({}), ''),
-                             '_weights_delimiter': 'comma',
-                             '_tracts_delimiter': 'comma',
-                             '_Data_Subject': subject,
-                             '_input_data': reference_connectivity_gid
+        form.fill_from_post({'weights': Part(weights_tmp, HeaderMap({}), ''),
+                             'tracts': Part(tracts_tmp, HeaderMap({}), ''),
+                             'weights_delimiter': list(DELIMITER_OPTIONS.keys())[0],
+                             'tracts_delimiter': list(DELIMITER_OPTIONS.keys())[0],
+                             'Data_Subject': subject,
+                             'input_data': reference_connectivity_gid
                             })
 
         form.weights.data = weights_tmp
         form.tracts.data = tracts_tmp
+        view_model = form.get_view_model()()
+        view_model.data_subject = subject
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
     def test_happy_flow_import(self):
         """
@@ -149,7 +153,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
 
     def test_bad_reference(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         field = FilterChain.datatype + '.subject'
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])
         bad_reference_connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)

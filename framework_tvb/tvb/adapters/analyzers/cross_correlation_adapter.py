@@ -42,7 +42,6 @@ import numpy
 from scipy.signal.signaltools import correlate
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
-from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
@@ -52,13 +51,12 @@ from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.graph import CorrelationCoefficients
-
-LOG = get_logger(__name__)
 
 
 class CrossCorrelate(HasTraits):
@@ -72,14 +70,26 @@ class CrossCorrelate(HasTraits):
         doc="""The time-series for which the cross correlation sequences are calculated.""")
 
 
+class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the cross correlation sequences are calculated."""
+    )
+
+
 class CrossCorrelateAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=CrossCorrelate.time_series.label,
-                                               doc=CrossCorrelate.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self,
+                                                    name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+
+    @staticmethod
+    def get_view_model():
+        return CrossCorrelateAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -106,19 +116,21 @@ class CrossCorrelateAdapter(ABCAsynchronous):
     def get_output(self):
         return [CrossCorrelationIndex]
 
-    def configure(self, time_series):
+    def configure(self, view_model):
+        # type: (CrossCorrelateAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
 
         :param time_series: the input time-series index for which cross correlation should be computed
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (CrossCorrelateAdapterModel) -> int
         """
         Returns the required memory to be able to run the adapter.
         """
@@ -128,14 +140,16 @@ class CrossCorrelateAdapter(ABCAsynchronous):
         output_size = self._result_size(used_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (CrossCorrelateAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
         return self.array_size2kb(self._result_size(used_shape))
 
-    def launch(self, time_series):
+    def launch(self, view_model):
+        # type: (CrossCorrelateAdapterModel) -> [CrossCorrelationIndex]
         """ 
         Launch algorithm and build results.
         Compute the node-pairwise cross-correlation of the source 4D TimeSeries represented by the index given as input.
@@ -193,7 +207,7 @@ class CrossCorrelateAdapter(ABCAsynchronous):
         """
         # (tpts, nodes, nodes, state-variables, modes)
         result_shape = self._result_shape(small_ts.data.shape)
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -209,8 +223,8 @@ class CrossCorrelateAdapter(ABCAsynchronous):
                     for n2 in range(result_shape[2]):
                         result[:, n1, n2, var, mode] = correlate(data[:, n1], data[:, n2], mode="same")
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         offset = (small_ts.sample_period *
                   numpy.arange(-numpy.floor(result_shape[0] / 2.0), numpy.ceil(result_shape[0] / 2.0)))
@@ -258,16 +272,29 @@ class CorrelationCoefficient(HasTraits):
         doc=""" End time point (ms) """)
 
 
+class PearsonCorrelationCoefficientAdapterModel(ViewModel, CorrelationCoefficient):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the cross correlation matrices are
+            calculated."""
+    )
+
+
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=CorrelationCoefficient.time_series.label,
-                                               doc=CorrelationCoefficient.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
-        self.t_start = ScalarField(CorrelationCoefficient.t_start, self)
-        self.t_end = ScalarField(CorrelationCoefficient.t_end, self)
+        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series, self,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self)
+        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self)
+
+    @staticmethod
+    def get_view_model():
+        return PearsonCorrelationCoefficientAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -298,7 +325,8 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
     def get_output(self):
         return [CorrelationCoefficientsIndex]
 
-    def configure(self, time_series, t_start, t_end):
+    def configure(self, view_model):
+        # type: (PearsonCorrelationCoefficientAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
 
@@ -306,16 +334,17 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         :param t_start: the physical time interval start for the analysis
         :param t_end: physical time, interval end
         """
-        if t_start >= t_end or t_start < 0:
+        if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
 
-        self.input_time_series_index = time_series
-        self.input_shape = (int((t_end - t_start) / time_series.sample_period),
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_shape = (int((view_model.t_end - view_model.t_start) / self.input_time_series_index.sample_period),
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (PearsonCorrelationCoefficientAdapterModel) -> int
         """
         Returns the required memory to be able to run this adapter.
         """
@@ -324,14 +353,16 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         output_size = self._result_size(self.input_shape)
         return input_size + output_size
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (PearsonCorrelationCoefficientAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
         output_size = self._result_size(self.input_shape)
         return self.array_size2kb(output_size)
 
-    def launch(self, time_series, t_start, t_end):
+    def launch(self, view_model):
+        # type: (PearsonCorrelationCoefficientAdapterModel) -> [CorrelationCoefficientsIndex]
         """
         Launch algorithm and build results.
         Compute the node-pairwise pearson correlation coefficient of the given input 4D TimeSeries  datatype.
@@ -344,12 +375,13 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         :returns: the correlation coefficient for the given time series
         :rtype: `CorrelationCoefficients`
         """
-        with h5.h5_file_for_index(time_series) as ts_h5:
+        with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             ts_labels_ordering = ts_h5.labels_ordering.load()
-            result = self._compute_correlation_coefficients(ts_h5, t_start, t_end)
+            result = self._compute_correlation_coefficients(ts_h5, view_model.t_start, view_model.t_end)
 
-        if isinstance(time_series, TimeSeriesEEGIndex) or isinstance(time_series, TimeSeriesMEGIndex) or isinstance(
-                time_series, TimeSeriesSEEGIndex):
+        if isinstance(self.input_time_series_index, TimeSeriesEEGIndex) \
+                or isinstance(self.input_time_series_index, TimeSeriesMEGIndex) \
+                or isinstance(self.input_time_series_index, TimeSeriesSEEGIndex):
             labels_ordering = ["Sensor", "Sensor", "1", "1"]
         else:
             labels_ordering = list(CorrelationCoefficients.labels_ordering.default)
@@ -360,12 +392,13 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         corr_coef_h5_path = h5.path_for(self.storage_path, CorrelationCoefficientsH5, corr_coef_index.gid)
         with CorrelationCoefficientsH5(corr_coef_h5_path) as corr_coef_h5:
             corr_coef_h5.array_data.store(result)
-            corr_coef_h5.source.store(uuid.UUID(time_series.gid))
+            corr_coef_h5.source.store(view_model.time_series)
             corr_coef_h5.labels_ordering.store(json.dumps(tuple(labels_ordering)))
             corr_coef_h5.gid.store(uuid.UUID(corr_coef_index.gid))
             ts_array_metadata = corr_coef_h5.array_data.get_cached_metadata()
+            corr_coef_index.ndim = len(corr_coef_h5.array_data.shape)
 
-        corr_coef_index.source_gid = time_series.gid
+        corr_coef_index.source_gid = self.input_time_series_index.gid
         corr_coef_index.subtype = type(corr_coef_index).__name__
         corr_coef_index.labels_ordering = json.dumps(labels_ordering)
         corr_coef_index.array_data_min = ts_array_metadata.min
@@ -387,7 +420,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         # (nodes, nodes, state-variables, modes)
         input_shape = ts_h5.data.shape
         result_shape = self._result_shape(input_shape)
-        LOG.info("result shape will be: %s" % str(result_shape))
+        self.log.info("result shape will be: %s" % str(result_shape))
 
         result = numpy.zeros(result_shape)
 
@@ -406,8 +439,8 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
                 data = ts_h5.data[current_slice].squeeze()
                 result[:, :, var, mode] = numpy.corrcoef(data.T)
 
-        LOG.debug("result")
-        LOG.debug(narray_describe(result))
+        self.log.debug("result")
+        self.log.debug(narray_describe(result))
 
         return result
 

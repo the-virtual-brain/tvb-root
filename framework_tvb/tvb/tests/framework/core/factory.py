@@ -43,12 +43,13 @@ import random
 import tvb_data
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterForm
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
@@ -81,7 +82,8 @@ class TestFactory(object):
         """
 
         data_types = FlowService().get_available_datatypes(project.id,
-                                                           expected_data.__module__ + "." + expected_data.__name__, filters)[0]
+                                                           expected_data.__module__ + "." + expected_data.__name__,
+                                                           filters)[0]
         entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
         return entity
 
@@ -95,14 +97,14 @@ class TestFactory(object):
         return dao.count_datatypes(project.id, datatype.__class__)
 
     @staticmethod
-    def create_user(username='test_user', password='test_pass',
+    def create_user(username='test_user', display_name='test_display_name', password='test_pass',
                     mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
 
         :returns: User entity after persistence.
         """
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     @staticmethod
@@ -171,7 +173,7 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -192,10 +194,9 @@ class TestFactory(object):
         """
         Build and persist BurstConfiguration entity.
         """
-        burst = BurstConfiguration2(project_id)
+        burst = BurstConfiguration(project_id)
         if simulator_config is not None:
             burst.simulator_configuration = simulator_config
-        burst.prepare_before_save()
         return dao.store_entity(burst)
 
     @staticmethod
@@ -220,16 +221,18 @@ class TestFactory(object):
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
                                               'RegionMappingImporter')
         form = RegionMappingImporterForm()
-        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
-                             '_surface': surface_gid,
-                             '_connectivity': connectivity_gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'mapping_file': Part(import_file_path, HeaderMap({}), ''),
+                             'surface': surface_gid,
+                             'connectivity': connectivity_gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.mapping_file.data = import_file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         # Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_dict())
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
 
@@ -239,24 +242,26 @@ class TestFactory(object):
     def import_surface_gifti(user, project, path):
         """
         This method is used for importing data in GIFIT format
-        :param import_file_path: absolute path of the file to be imported
+        :param path: absolute path of the file to be imported
         """
 
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
 
         form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
-                             '_data_file': Part(path, HeaderMap({}), ''),
-                             '_data_file_part2': Part('', HeaderMap({}), ''),
-                             '_should_center': 'False',
-                             '_Data_Subject': 'John Doe',
-                            })
+        form.fill_from_post({'file_type': form.get_view_model().KEY_OPTION_READ_METADATA,
+                             'data_file': Part(path, HeaderMap({}), ''),
+                             'data_file_part2': Part('', HeaderMap({}), ''),
+                             'should_center': 'False',
+                             'Data_Subject': 'John Doe',
+                             })
         form.data_file.data = path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         surface = CorticalSurface
         data_types = FlowService().get_available_datatypes(project.id,
@@ -270,21 +275,23 @@ class TestFactory(object):
 
     @staticmethod
     def import_surface_zip(user, project, zip_path, surface_type, zero_based='True'):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
 
         form = ZIPSurfaceImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_zero_based_triangles': zero_based,
-                             '_should_center': 'True',
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'uploaded': Part(zip_path, HeaderMap({}), ''),
+                             'zero_based_triangles': zero_based,
+                             'should_center': 'True',
+                             'surface_type': surface_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -296,19 +303,21 @@ class TestFactory(object):
 
     @staticmethod
     def import_surface_obj(user, project, obj_path, surface_type):
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
 
         form = ObjSurfaceImporterForm()
-        form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'data_file': Part(obj_path, HeaderMap({}), ''),
+                             'surface_type': surface_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.data_file.data = obj_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
         assert 1, len(data_types) == "Project should contain only one data type."
@@ -320,50 +329,83 @@ class TestFactory(object):
     @staticmethod
     def import_sensors(user, project, zip_path, sensors_type):
         """
-                This method is used for importing sensors
-                :param import_file_path: absolute path of the file to be imported
-                """
+        This method is used for importing sensors
+        :param zip_path: absolute path of the file to be imported
+        """
 
-        ### Retrieve Adapter instance
+        # Retrieve Adapter instance
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
 
         form = SensorsImporterForm()
-        form.fill_from_post({'_sensors_file': Part(zip_path, HeaderMap({}), ''),
-                             '_sensors_type': sensors_type,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'sensors_file': Part(zip_path, HeaderMap({}), ''),
+                             'sensors_type': sensors_type,
+                             'Data_Subject': 'John Doe'
                              })
         form.sensors_file.data = zip_path
         form.sensors_type.data = sensors_type
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch import Operation
-
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        # Launch import Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
         data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
         assert 1 == len(data_types), "Project should contain only one data type = Sensors."
-
-        time_series = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert time_series is not None, "Sensors instance should not be none"
-
-        return time_series
+        sensors = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert sensors is not None, "Sensors instance should not be none"
+        return sensors
 
     @staticmethod
-    def import_zip_connectivity(user, project, zip_path, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid):
+        importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
+                                              'ProjectionMatrixSurfaceEEGImporter')
 
+        form = ProjectionMatrixImporterForm()
+
+        form.fill_from_post({'projection_file': Part(file_path, HeaderMap({}), ''),
+                             'dataset_name': 'ProjectionMatrix',
+                             'sensors': sensors_gid,
+                             'surface': surface_gid,
+                             'Data_Subject': 'John Doe'
+                             })
+        form.projection_file.data = file_path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
+        importer.submit_form(form)
+
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
+
+        data_types = FlowService().get_available_datatypes(project.id, ProjectionMatrixIndex)[0]
+        assert 1 == len(data_types), "Project should contain only one data type = Projection Matrix."
+
+        projection_matrix = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        assert projection_matrix is not None, "Projection Matrix instance should not be none"
+
+        return projection_matrix
+
+    @staticmethod
+    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+
+        if zip_path is None:
+            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
         importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
                                               'ZIPConnectivityImporter')
 
         form = ZIPConnectivityImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_project_id': {1},
-                             '_Data_Subject': subject
+        form.fill_from_post({'uploaded': Part(zip_path, HeaderMap({}), ''),
+                             'normalization': None,
+                             'project_id': {1},
+                             'Data_Subject': subject
                              })
         form.uploaded.data = zip_path
+        view_model = form.get_view_model()()
+        view_model.data_subject = subject
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
-        ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+        # Launch Operation
+        FlowService().fire_operation(importer, user, project.id, view_model=view_model)
 
 
 class ExtremeTestFactory(object):
@@ -403,7 +445,7 @@ class ExtremeTestFactory(object):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
             password = hash_password("test")
-            new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
+            new_user = User("gen" + str(i), "name" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))
             ExtremeTestFactory.VALIDATION_DICT[new_user.id] = 0

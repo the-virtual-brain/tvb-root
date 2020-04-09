@@ -71,16 +71,18 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)
 
         form = ConnectivityMeasureImporterForm()
-        form.fill_from_post({'_data_file': Part(path, HeaderMap({}), ''),
-                             '_dataset_name': 'M',
-                             '_connectivity': self.connectivity.gid,
-                             '_Data_Subject': 'John Doe'
+        form.fill_from_post({'data_file': Part(path, HeaderMap({}), ''),
+                             'dataset_name': 'M',
+                             'connectivity': self.connectivity.gid,
+                             'Data_Subject': 'John Doe'
                              })
         form.data_file.data = path
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
         importer.submit_form(form)
 
         ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, **form.get_dict())
+        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
 
     def test_happy_flow(self):
         assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex())

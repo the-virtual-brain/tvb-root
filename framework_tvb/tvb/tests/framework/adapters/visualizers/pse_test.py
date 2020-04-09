@@ -33,6 +33,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
@@ -47,9 +48,11 @@ class TestPSE(TransactionalTestCase):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
-        group = datatype_group_factory()
         viewer = DiscretePSEAdapter()
-        result = viewer.launch(group)
+        view_model = viewer.get_view_model_class()()
+        group = datatype_group_factory()
+        view_model.datatype_group = UUID(hex=group.gid)
+        result = viewer.launch(view_model)
 
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
@@ -64,7 +67,9 @@ class TestPSE(TransactionalTestCase):
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
         viewer = IsoclinePSEAdapter()
+        view_model = viewer.get_view_model_class()()
         group = datatype_group_factory()
-        result = viewer.launch(group)
+        view_model.datatype_group = UUID(hex=group.gid)
+        result = viewer.launch(view_model)
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])

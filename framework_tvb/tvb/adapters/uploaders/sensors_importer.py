@@ -37,24 +37,49 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import UploadField, SimpleSelectField
+from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
-class SensorsImporterForm(ABCUploaderForm):
-    options = {'EEG Sensors': SensorsEEG.sensors_type.default,
+class SensorsImporterModel(UploaderViewModel):
+    OPTIONS = {'EEG Sensors': SensorsEEG.sensors_type.default,
                'MEG Sensors': SensorsMEG.sensors_type.default,
                'Internal Sensors': SensorsInternal.sensors_type.default}
+
+    sensors_file = Str(
+        label='Please upload sensors file (txt or bz2 format)',
+        doc='Expected a text/bz2 file containing sensor measurements.'
+    )
+
+    sensors_type = Str(
+        label='Sensors type: ',
+        choices=tuple(OPTIONS.values()),
+        default=tuple(OPTIONS.values())[0]
+    )
+
+
+class SensorsImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SensorsImporterForm, self).__init__(prefix, project_id)
 
-        self.sensors_file = UploadField('text/plain, .bz2', self, name='sensors_file', required=True,
-                                        label='Please upload sensors file (txt or bz2 format)',
-                                        doc='Expected a text/bz2 file containing sensor measurements.')
-        self.sensors_type = SimpleSelectField(self.options, self, name='sensors_type', required=True,
-                                              label='Sensors type: ', default=list(self.options)[0])
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), self,
+                                             name='sensors_file')
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type',
+                                        choices=SensorsImporterModel.OPTIONS)
+
+    @staticmethod
+    def get_view_model():
+        return SensorsImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'sensors_file': ('.txt', '.bz2')
+        }
 
 
 class SensorsImporter(ABCUploader):
@@ -73,13 +98,10 @@ class SensorsImporter(ABCUploader):
     def get_output(self):
         return [SensorsIndex]
 
-    def launch(self, sensors_file, sensors_type):
+    def launch(self, view_model):
+        # type: (SensorsImporterModel) -> [SensorsIndex]
         """
         Creates required sensors from the uploaded file.
-
-        :param sensors_file: the file containing sensor data
-        :param sensors_type: a string from "EEG Sensors", "MEG sensors", "Internal Sensors"
-
         :returns: a list of sensors instances of the specified type
 
         :raises LaunchException: when
@@ -87,33 +109,33 @@ class SensorsImporter(ABCUploader):
                     * sensors_type is invalid (not one of the mentioned options)
                     * sensors_type is "MEG sensors" and no orientation is specified
         """
-        if sensors_file is None:
+        if view_model.sensors_file is None:
             raise LaunchException("Please select sensors file which contains data to import")
 
         self.logger.debug("Create sensors instance")
-        if sensors_type == SensorsEEG.sensors_type.default:
+        if view_model.sensors_type == SensorsEEG.sensors_type.default:
             sensors_inst = SensorsEEG()
-        elif sensors_type == SensorsMEG.sensors_type.default:
+        elif view_model.sensors_type == SensorsMEG.sensors_type.default:
             sensors_inst = SensorsMEG()
-        elif sensors_type == SensorsInternal.sensors_type.default:
+        elif view_model.sensors_type == SensorsInternal.sensors_type.default:
             sensors_inst = SensorsInternal()
         else:
-            exception_str = "Could not determine sensors type (selected option %s)" % sensors_type
+            exception_str = "Could not determine sensors type (selected option %s)" % view_model.sensors_type
             raise LaunchException(exception_str)
 
-        locations = self.read_list_data(sensors_file, usecols=[1, 2, 3])
+        locations = self.read_list_data(view_model.sensors_file, usecols=[1, 2, 3])
 
         # NOTE: TVB has the nose pointing -y and left ear pointing +x
         # If the sensors are in CTF coordinates : nose pointing +x left ear +y
         # to rotate the sensors by -90 along z uncomment below
         # locations = numpy.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]).dot(locations.T).T
         sensors_inst.locations = locations
-        sensors_inst.labels = self.read_list_data(sensors_file, dtype=MEMORY_STRING, usecols=[0])
+        sensors_inst.labels = self.read_list_data(view_model.sensors_file, dtype=MEMORY_STRING, usecols=[0])
         sensors_inst.number_of_sensors = sensors_inst.labels.size
 
         if isinstance(sensors_inst, SensorsMEG):
             try:
-                sensors_inst.orientations = self.read_list_data(sensors_file, usecols=[4, 5, 6])
+                sensors_inst.orientations = self.read_list_data(view_model.sensors_file, usecols=[4, 5, 6])
                 sensors_inst.has_orientation = True
             except IndexError:
                 raise LaunchException("Uploaded file does not contains sensors orientation.")
@@ -121,6 +143,4 @@ class SensorsImporter(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        sensors_idx = h5.store_complete(sensors_inst, self.storage_path)
-        self.generic_attributes.user_tag_1 = sensors_inst.sensors_type
-        return sensors_idx
+        return h5.store_complete(sensors_inst, self.storage_path)

@@ -39,6 +39,9 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
+from tvb.dsl.LEMS2python import (
+    load_model as load_lems_model,
+    render_model)
 import numpy
 
 
@@ -87,14 +90,14 @@ class TestModels(BaseTestCase):
     """
 
     @staticmethod
-    def _validate_initialization(model, expected_sv, expected_models=1):
+    def _validate_initialization(model, expected_sv, expected_modes=1):
 
         model.configure()
         dt = 2 ** -4
         history_shape = (1, model._nvar, 1, model.number_of_modes)
         model_ic = model.initial(dt, history_shape)
         assert expected_sv == model._nvar
-        assert expected_models == model.number_of_modes
+        assert expected_modes == model.number_of_modes
 
         svr = model.state_variable_range
         sv = model.state_variables
@@ -120,6 +123,18 @@ class TestModels(BaseTestCase):
              "x4": numpy.array([min_float, max_float])}
         for sv, sv_bounds in state_variable_boundaries.items():
             assert numpy.allclose(sv_bounds, model.state_variable_boundaries[sv], min_positive)
+
+    def test_stvar_init(self):
+        model = TestBoundsModel()
+        model.configure()
+        numpy.testing.assert_array_equal(model.stvar, model.cvar)
+
+        model = TestBoundsModel()
+        model.stvar=numpy.r_[1,3]
+        model.configure()
+        numpy.testing.assert_array_equal(model.stvar, numpy.r_[1,3])
+
+        
 
     def test_wilson_cowan(self):
         """
@@ -230,3 +245,24 @@ class TestModels(BaseTestCase):
 
         model = models.ReducedWongWangExcInh()
         self._validate_initialization(model, 2)
+
+
+
+class TestDSLModels(BaseTestCase):
+
+    def test_load_model(self):
+        model, _ = load_lems_model('EpileptorT')
+        assert model is not None
+
+    def test_render_model(self):
+        name = 'EpileptorT'
+        model_str = render_model(name)
+        assert '_numba_dfun_EpileptorT' in model_str
+
+    def test_eval_model_str(self):
+        name = 'EpileptorT'
+        module = {}
+        exec(render_model(name), module)
+        assert issubclass(module[name], Model)
+        model = module[name]()
+        assert isinstance(model, Model)

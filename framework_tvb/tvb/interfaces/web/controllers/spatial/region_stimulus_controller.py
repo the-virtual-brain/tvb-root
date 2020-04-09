@@ -38,19 +38,14 @@ import uuid
 import cherrypy
 import numpy
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorForm, RegionStimulusCreator, \
-    StimulusRegionSelectorForm
+    StimulusRegionSelectorForm, RegionStimulusCreatorModel
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation, \
-    get_ui_name_for_equation
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import prepare_prefixed_name_for_field
-from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
@@ -100,9 +95,8 @@ class RegionStimulusController(SpatioTemporalController):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id).connectivity
         connectivity_form_field.fill_from_post(param)
-        current_region_stim.connectivity = Connectivity()
-        current_region_stim.connectivity.gid = uuid.UUID(connectivity_form_field.value)
-        conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value)
+        current_region_stim.connectivity = connectivity_form_field.value
+        conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value.hex)
         current_region_stim.weight = StimuliRegion.get_default_weights(conn_index.number_of_regions)
 
     @cherrypy.expose
@@ -123,7 +117,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=RegionStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
         #TODO: check eqPrefixes
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_temporal_param(self, **param):
@@ -147,16 +141,15 @@ class RegionStimulusController(SpatioTemporalController):
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             current_connectivity_in_form = region_stim_creator_form.connectivity._get_values_from_db()[0]
             region_stim_creator_form.connectivity.data = current_connectivity_in_form[2]
-            current_stimuli_region.connectivity = Connectivity()
-            current_stimuli_region.connectivity.gid = uuid.UUID(region_stim_creator_form.connectivity.value)
+            current_stimuli_region.connectivity = uuid.UUID(region_stim_creator_form.connectivity.value)
 
         region_stim_creator_form.fill_from_trait(current_stimuli_region)
 
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step1_main'
         template_specification['isSingleMode'] = True
-        template_specification['regionStimSelectorForm'] = region_stim_selector_form
-        template_specification['regionStimCreatorForm'] = region_stim_creator_form
+        template_specification['regionStimSelectorForm'] = self.get_template_dict(region_stim_selector_form)
+        template_specification['regionStimCreatorForm'] = self.get_template_dict(region_stim_creator_form)
         template_specification['baseUrl'] = '/spatial/stimulus/region'
         self.plotted_equation_prefixes = {
             self.CONNECTIVITY_FIELD: region_stim_creator_form.connectivity.name,
@@ -186,12 +179,12 @@ class RegionStimulusController(SpatioTemporalController):
 
         default_weights = current_region_stimulus.weight
         if len(default_weights) == 0:
-            selected_connectivity = ABCAdapter.load_entity_by_gid(current_region_stimulus.connectivity.gid.hex)
+            selected_connectivity = ABCAdapter.load_entity_by_gid(current_region_stimulus.connectivity.hex)
             default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
 
         template_specification['node_weights'] = json.dumps(default_weights.tolist())
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
-        template_specification.update(self.display_connectivity(current_region_stimulus.connectivity.gid.hex))
+        template_specification.update(self.display_connectivity(current_region_stimulus.connectivity.hex))
         return self.fill_default_attributes(template_specification)
 
     def do_step(self, step_idx, from_step=None):
@@ -211,7 +204,7 @@ class RegionStimulusController(SpatioTemporalController):
             return self.step_1()
 
     def _reset_region_stimulus(self):
-        new_region_stimulus = StimuliRegion()
+        new_region_stimulus = RegionStimulusCreatorModel()
         new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal()
         # TODO: proper init
         new_region_stimulus.weight = numpy.array([])
@@ -254,26 +247,14 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification.update(connectivity_viewer_params)
         return template_specification
 
-    def _prepare_operation_params(self, stimului_region):
-        params_dict = {RegionStimulusCreator.KEY_CONNECTIVITY: stimului_region.connectivity.gid.hex,
-                       RegionStimulusCreator.KEY_WEIGHT: stimului_region.weight.tolist(),
-                       RegionStimulusCreator.KEY_TEMPORAL: get_ui_name_for_equation(type(stimului_region.temporal)),
-                       DataTypeMetaData.KEY_TAG_1: common.get_from_session(KEY_REGION_STIMULUS_NAME)
-                       }
-        for param_key, param_val in stimului_region.temporal.parameters.items():
-            param_full_key = prepare_prefixed_name_for_field(RegionStimulusCreator.KEY_TEMPORAL, param_key)
-            params_dict.update({param_full_key: str(param_val)})
-        return params_dict
-
     def create_stimulus(self):
         """
         Creates a stimulus from the given data.
         """
         current_stimulus_region = common.get_from_session(KEY_REGION_STIMULUS)
         region_stimulus_creator = ABCAdapter.build_adapter_from_class(RegionStimulusCreator)
-        params_dict = self._prepare_operation_params(current_stimulus_region)
         self.flow_service.fire_operation(region_stimulus_creator, common.get_logged_user(),
-                                         common.get_current_project().id, **params_dict)
+                                         common.get_current_project().id, view_model=current_stimulus_region)
         common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
     @cherrypy.expose
@@ -323,15 +304,14 @@ class RegionStimulusController(SpatioTemporalController):
 
     def _load_existent_region_stimuli(self, region_stimulus_gid):
         existent_region_stimulus_index = dao.get_datatype_by_gid(region_stimulus_gid)
-        stimuli_region = StimuliRegion()
+        stimuli_region = RegionStimulusCreatorModel()
 
         stimuli_region_path = h5.path_for_stored_index(existent_region_stimulus_index)
         with StimuliRegionH5(stimuli_region_path) as stimuli_region_h5:
             stimuli_region_h5.load_into(stimuli_region)
 
-        dummy_connectivity = Connectivity()
-        dummy_connectivity.gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)
-        stimuli_region.connectivity = dummy_connectivity
+        dummy_gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)
+        stimuli_region.connectivity = dummy_gid
 
         common.add2session(KEY_REGION_STIMULUS, stimuli_region)
         common.add2session(KEY_REGION_STIMULUS_NAME, existent_region_stimulus_index.user_tag_1)

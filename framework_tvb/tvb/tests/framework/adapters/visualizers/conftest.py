@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import pytest
 import numpy
 from tvb.adapters.datatypes.db import graph
@@ -76,6 +77,7 @@ def covariance_factory(time_series_index_factory, operation_factory):
 
     return build
 
+
 @pytest.fixture()
 def cross_coherence_factory(time_series_index_factory, operation_factory):
     def build():
@@ -124,6 +126,7 @@ def cross_correlation_factory(time_series_index_factory, operation_factory):
         return cross_correlation_index
 
     return build
+
 
 @pytest.fixture()
 def ica_factory(operation_factory, time_series_index_factory):

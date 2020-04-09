@@ -35,20 +35,22 @@ Service layer for USER entities.
 """
 
 import os
+import random
+from random import randint
+
 import six
 import tvb_data
-from random import randint
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config import DEFAULT_PROJECT_GID
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, USER_ROLES
 from tvb.core.entities.storage import dao
 from tvb.core.services import email_sender
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import hash_password
-
 
 FROM_ADDRESS = 'donotreply@thevirtualbrain.org'
 SUBJECT_REGISTER = '[TVB] Registration Confirmation'
@@ -68,6 +70,7 @@ TEXT_CREATE_TO_ADMIN = 'New member requires validation. Go to this url to valida
 TEXT_VALIDATED = ',\n\nYour registration has been validated by TVB Administrator, Please proceed with the login at '
 KEY_USERNAME = "username"
 KEY_PASSWORD = "password"
+KEY_AUTH_TOKEN = "auth_token"
 KEY_EMAIL = "email"
 KEY_ROLE = "role"
 KEY_COMMENT = "comment"
@@ -84,13 +87,16 @@ class UserService:
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
 
-    def create_user(self, username=None, password=None, password2=None,
-                    role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False):
+    def create_user(self, username=None, display_name=None, password=None, password2=None,
+                    role=None, email=None, comment=None, email_msg=None, validated=False, skip_import=False,
+                    gid=None, skip_sending_email=False):
         """
         Service Layer for creating a new user.
         """
         if (username is None) or len(username) < 1:
             raise UsernameException("Empty UserName!")
+        if (display_name is None) or len(display_name) < 1:
+            raise UsernameException("Empty display name!")
         if (password is None) or len(password) < 1:
             raise UsernameException("Empty password!")
         if password2 is None:
@@ -100,14 +106,14 @@ class UserService:
 
         try:
             user_validated = (role == ROLE_ADMINISTRATOR) or validated
-            user = User(username, password, email, user_validated, role)
+            user = User(username, display_name, password, email, user_validated, role, gid)
             if email_msg is None:
                 email_msg = 'Hello ' + username + TEXT_CREATE
             admin_msg = (TEXT_CREATE_TO_ADMIN + username + ' :\n ' + TvbProfile.current.web.BASE_URL +
-                         'user/validate/' + username + '\n\n"' + str(comment) + '"')
+                         '/user/validate/' + username + '\n\n"' + str(comment) + '"')
             self.logger.info("Registering user " + username + " !")
 
-            if role != ROLE_ADMINISTRATOR and email is not None:
+            if role != ROLE_ADMINISTRATOR and email is not None and not skip_sending_email:
                 admins = UserService.get_administrators()
                 admin = admins[randint(0, len(admins) - 1)]
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
@@ -194,7 +200,7 @@ class UserService:
             user = dao.store_entity(user)
             self.logger.debug("Sending validation email for userName=" + name + " to address=" + user.email)
             email_sender.send(FROM_ADDRESS, user.email, SUBJECT_VALIDATE,
-                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "user/")
+                              "Hello " + name + TEXT_VALIDATED + TvbProfile.current.web.BASE_URL + "/user/")
             self.logger.info("User:" + name + " was validated successfully" + " and notification email sent!")
             return True
         except Exception as excep:
@@ -216,9 +222,9 @@ class UserService:
     def get_users_for_project(self, user_name, project_id, page=1):
         """
         Return tuple: (All Users except the project administrator, Project Members).
-        Parameter "user_name" is the current user. 
-        Parameter "user_name" is used for new projects (project_id is None). 
-        When "project_id" not None, parameter "user_name" is ignored.       
+        Parameter "user_name" is the current user.
+        Parameter "user_name" is used for new projects (project_id is None).
+        When "project_id" not None, parameter "user_name" is ignored.
         """
         try:
             admin_name = user_name
@@ -243,6 +249,13 @@ class UserService:
         user_list = dao.get_all_users(username, start_idx, USERS_PAGE_SIZE)
         pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
         return user_list, pages_no
+
+    @staticmethod
+    def fetch_all_users(page_start=0, page_size=USERS_PAGE_SIZE):
+        """
+        Return all users from the database without pagination
+        """
+        return dao.get_all_users(page_size=page_size, page_start=page_start)
 
     def edit_user(self, edited_user, old_password=None):
         """
@@ -300,5 +313,73 @@ class UserService:
         return dao.get_user_by_id(user_id)
 
     @staticmethod
+    def get_user_by_name(username):
+        """
+        Retrieves a user by its username.
+        """
+        return dao.get_user_by_name(username)
+
+    @staticmethod
+    def get_user_by_gid(gid):
+        """
+        Retrieves a user by its gid.
+        """
+        return dao.get_user_by_gid(gid)
+
+    @staticmethod
     def compute_user_generated_disk_size(user_id):
         return dao.compute_user_generated_disk_size(user_id)
+
+    def _create_external_service_user(self, user_data):
+        gid = user_data['sub']
+        self.logger.info('Create a new external user for external id {}'.format(gid))
+        username, name, email, role = self._extract_user_info(user_data)
+        if not self.is_username_valid(username):
+            username = gid
+        self.create_user(username, name, hash_password(''.join(random.sample(gid, len(gid)))),
+                         gid=gid, email=email,
+                         validated=True, skip_sending_email=True, role=role, skip_import=True)
+        return self.get_user_by_gid(gid)
+
+    def _update_external_service_user(self, current_user, new_data):
+        username, display_name, email, role = self._extract_user_info(new_data)
+
+        should_update = False
+        if current_user.email != email \
+                or current_user.role != role \
+                or current_user.display_name != display_name \
+                or current_user.username != username and self.is_username_valid(username):
+            current_user.email = email
+            current_user.role = role
+            current_user.username = username
+            current_user.display_name = display_name
+            should_update = True
+
+        if should_update:
+            dao.store_entity(current_user, True)
+            return self.get_user_by_gid(current_user.gid)
+        return current_user
+
+    def _extract_user_info(self, keycloak_data):
+        email = keycloak_data['email'] if 'email' in keycloak_data else None
+        user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
+        client_id = AuthorizationManager().get_keycloak_instance().client_id
+        user_client_roles = user_roles[client_id] if client_id in user_roles else []
+
+        role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
+        if role == ROLE_ADMINISTRATOR:
+            self.logger.info("Administrator logged in")
+
+        username = keycloak_data['preferred_username'] if 'preferred_username' in keycloak_data else keycloak_data[
+            'sub']
+        name = keycloak_data['name'] if 'name' in keycloak_data else keycloak_data['sub']
+        return username, name, email, role
+
+    def get_external_db_user(self, user_data):
+        gid = user_data['sub']
+        db_user = UserService.get_user_by_gid(gid)
+        if db_user is None:
+            db_user = self._create_external_service_user(user_data)
+        else:
+            db_user = self._update_external_service_user(db_user, user_data)
+        return db_user

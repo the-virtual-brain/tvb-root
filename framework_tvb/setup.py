@@ -40,25 +40,27 @@ import os
 import shutil
 import setuptools
 
+VERSION = "2.0.3a1"
 
-VERSION = "2.0a0"
+TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Sansz Leon, Marmaduke Woodman"
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "flask", "flask-restplus", "formencode",
+                            "gevent", "h5py", "Jinja2", "networkx", "nibabel", "numpy", "Pillow", "psutil",
+                            "python-keycloak", "scikit-learn", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate"
+                            , "tvb-data", "tvb-gdist", "tvb-library"]
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "formencode", "Jinja2",
-                            "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "scipy",
-                            "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
-
+# Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name="tvb-framework",
                  version=VERSION,
-                 packages=setuptools.find_packages(),
+                 packages=setuptools.find_packages(
+                     exclude=['tvb.interfaces.rest.client', 'tvb.interfaces.rest.client.*']),
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
-                                 'test': ["pytest", "pytest-benchmark"]},
+                                 'test': ["pytest", "pytest-benchmark", "pytest-mock"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
                  license="GPL v3",

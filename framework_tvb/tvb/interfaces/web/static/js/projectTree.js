@@ -83,13 +83,10 @@ function select_tree_node(treeId) {
 /**
  * Used for updating the tree structure.
  */
-function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
+function updateTree(treeSelector, projectId, visibilityFilter) {
 
     if (!projectId) {
         projectId = $("#hiddenProjectId").val();
-    }
-    if (!baseUrl) {
-        baseUrl = $("#hiddenBaseURL").val();
     }
     if (!visibilityFilter) {
         visibilityFilter = _getSelectedVisibilityFilter();
@@ -119,7 +116,7 @@ function updateTree(treeSelector, projectId, baseUrl, visibilityFilter) {
             "theme": "default",
             "dots": true,
             "icons": true,
-            "url": baseUrl + "static/jquery/jstree-theme/style.css"
+            "url": "/static/jquery/jstree-theme/style.css"
         },
         "json_data": {
             "ajax": { url: url,
@@ -430,6 +427,7 @@ function tvbSubmitPageAsync(action, params){
 function launchAdapter(adapter_url, param_name, param_val, back_page_link, launchAsync){
     var params = {};
     params[param_name] = param_val;
+    params['fill_defaults'] = true;
 
     if (launchAsync){
         tvbSubmitPageAsync(adapter_url, params);
@@ -443,7 +441,7 @@ function launchAdapter(adapter_url, param_name, param_val, back_page_link, launc
  *
  * @param projectId a project id.
  */
-function changedVisibilityFilter(projectId, baseUrl, filterElemId) {
+function changedVisibilityFilter(projectId, filterElemId) {
     // Activate visibility filter
     $("#visibilityFiltersId > li[class='active']").each(function () {
         $(this).removeClass('active');
@@ -454,7 +452,7 @@ function changedVisibilityFilter(projectId, baseUrl, filterElemId) {
     TREE_lastSelectedNode = undefined;
     TREE_lastSelectedNodeType = undefined;
     update_workflow_graph('workflowCanvasDiv', TREE_lastSelectedNode, TREE_lastSelectedNodeType);
-    updateTree('#treeStructure', projectId, baseUrl);
+    updateTree('#treeStructure', projectId);
 }
 
 function _getSelectedVisibilityFilter() {

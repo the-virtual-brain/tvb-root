@@ -33,6 +33,7 @@
 """
 
 import json
+import uuid
 import numpy
 from abc import ABCMeta
 from six import add_metaclass
@@ -44,14 +45,18 @@ from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import Surface, FACE
 
 LOG = get_logger(__name__)
 
 
-def ensure_shell_surface(project_id, shell_surface=None, preferred_type='Face Surface'):
+def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
     if shell_surface is None:
         shell_surface = dao.try_load_last_surface_of_type(project_id, preferred_type)
 
@@ -116,10 +121,32 @@ class SurfaceURLGenerator(URLGenerator):
         return vertices, normals, triangles
 
     @staticmethod
-    def get_url_for_region_boundaries(surface_h5, region_mapping_gid, adapter_id):
-        surface_gid = surface_h5.gid.load().hex
-        return URLGenerator.build_url(surface_gid, 'generate_region_boundaries', adapter_id=adapter_id,
+    def get_url_for_region_boundaries(surface_gid, region_mapping_gid, adapter_id):
+        return URLGenerator.build_url(adapter_id, 'generate_region_boundaries', surface_gid,
                                       parameter='region_mapping_gid=' + region_mapping_gid)
+
+
+class BaseSurfaceViewerModel(ViewModel):
+    region_map = DataTypeGidAttr(
+        linked_datatype=RegionMapping,
+        required=False,
+        label='Region mapping',
+        doc='A region map'
+    )
+
+    connectivity_measure = DataTypeGidAttr(
+        linked_datatype=ConnectivityMeasure,
+        required=False,
+        label='Connectivity measure',
+        doc='A connectivity measure'
+    )
+
+    shell_surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        required=False,
+        label='Shell Surface',
+        doc='Face surface to be displayed semi-transparently, for orientation only.'
+    )
 
 
 @add_metaclass(ABCMeta)
@@ -127,17 +154,23 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
-        self.region_map = DataTypeSelectField(RegionMappingIndex, self, name='region_map', label='Region mapping',
-                                              doc='A region map')
-        self.connectivity_measure = DataTypeSelectField(ConnectivityMeasureIndex, self, name='connectivity_measure',
-                                                        label='Connectivity measure', doc='A connectivity measure')
-        self.shell_surface = DataTypeSelectField(SurfaceIndex, self, name='shell_surface', label='Shell Surface',
-                                                 doc='Face surface to be displayed semi-transparently, '
-                                                     'for orientation only.')
+        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
+                                                             name='connectivity_measure')
+        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_filters():
         return None
+
+
+class SurfaceViewerModel(BaseSurfaceViewerModel):
+    title = 'Surface Visualizer'
+
+    surface = DataTypeGidAttr(
+        linked_datatype=Surface,
+        label='Brain surface'
+    )
 
 
 class SurfaceViewerForm(BaseSurfaceViewerForm):
@@ -149,8 +182,11 @@ class SurfaceViewerForm(BaseSurfaceViewerForm):
         # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
 
         super(SurfaceViewerForm, self).__init__(prefix, project_id)
-        self.surface = DataTypeSelectField(self.get_required_datatype(), self, name='surface',
-                                           required=True, label='Brain surface')
+        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self, name='surface')
+
+    @staticmethod
+    def get_view_model():
+        return SurfaceViewerModel
 
     @staticmethod
     def get_required_datatype():
@@ -158,7 +194,7 @@ class SurfaceViewerForm(BaseSurfaceViewerForm):
 
     @staticmethod
     def get_input_name():
-        return '_surface'
+        return 'surface'
 
 
 @add_metaclass(ABCMeta)
@@ -322,7 +358,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         hemisphere_chunk_mask = surface_h5.get_slices_to_hemisphere_mask()
         return dict(biHemispheric=bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
-    def _compute_measure_points_param(self, surface_h5, region_map_gid=None, connectivity_gid=None):
+    def _compute_measure_points_param(self, surface_gid, region_map_gid=None, connectivity_gid=None):
         if region_map_gid is None:
             measure_points_no = 0
             url_measure_points = ''
@@ -335,7 +371,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             url_measure_points = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_centres')
             url_measure_points_labels = SurfaceURLGenerator.build_h5_url(connectivity_gid, 'get_region_labels')
 
-            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_h5, region_map_gid,
+            boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, region_map_gid,
                                                                              self.stored_adapter.id)
 
         return dict(noOfMeasurePoints=measure_points_no, urlMeasurePoints=url_measure_points,
@@ -365,20 +401,28 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
 
-    def launch(self, surface, region_map=None, connectivity_measure=None, shell_surface=None,
-               title="Surface Visualizer"):
+    def launch(self, view_model):
+        # type: (SurfaceViewerModel) -> dict
+        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        connectivity_measure_index = None
+        region_map_index = None
 
-        surface_h5 = h5.h5_file_for_index(surface)
-        cm_h5 = h5.h5_file_for_index(connectivity_measure) if connectivity_measure is not None else None
-        region_map_gid = region_map.gid if region_map is not None else None
-        connectivity_gid = region_map.connectivity_gid if region_map is not None else None
+        if view_model.connectivity_measure:
+            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        if view_model.region_map:
+            region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+
+        surface_h5 = h5.h5_file_for_index(surface_index)
+        cm_h5 = h5.h5_file_for_index(connectivity_measure_index) if connectivity_measure_index is not None else None
+        region_map_gid = region_map_index.gid if region_map_index is not None else None
+        connectivity_gid = region_map_index.connectivity_gid if region_map_index is not None else None
         assert isinstance(surface_h5, SurfaceH5)
 
-        params = dict(title=title, extended_view=False,
-                      isOneToOneMapping=False, hasRegionMap=region_map is not None)
+        params = dict(title=surface_index.display_name, extended_view=False,
+                      isOneToOneMapping=False, hasRegionMap=region_map_index is not None)
         params.update(self._compute_surface_params(surface_h5, region_map_gid))
         params.update(self._compute_hemispheric_param(surface_h5))
-        params.update(self._compute_measure_points_param(surface_h5, region_map_gid, connectivity_gid))
+        params.update(self._compute_measure_points_param(surface_index.gid, region_map_gid, connectivity_gid))
         params.update(self._compute_measure_param(cm_h5, params['noOfMeasurePoints']))
 
         surface_h5.close()
@@ -386,7 +430,12 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             cm_h5.close()
 
         params['shelfObject'] = None
-        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
+
+        shell_surface_index = None
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
 
         if shell_surface:
             shell_h5 = h5.h5_file_for_index(shell_surface)
@@ -398,7 +447,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 
-    def get_required_memory_size(self):
+    def get_required_memory_size(self, view_model):
         return -1
 
 
@@ -409,12 +458,16 @@ class RegionMappingViewerForm(BaseSurfaceViewerForm):
         self.region_map.required = True
 
     @staticmethod
+    def get_view_model():
+        return BaseSurfaceViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return RegionMappingIndex
 
     @staticmethod
     def get_input_name():
-        return '_region_map'
+        return 'region_map'
 
 
 class RegionMappingViewer(SurfaceViewer):
@@ -428,12 +481,18 @@ class RegionMappingViewer(SurfaceViewer):
     def get_form_class(self):
         return RegionMappingViewerForm
 
-    def launch(self, region_map, connectivity_measure=None, shell_surface=None):
-        surface_gid = region_map.surface_gid
-        surface_index = dao.get_datatype_by_gid(surface_gid)
+    def launch(self, view_model):
+        # type: (BaseSurfaceViewerModel) -> dict
+        region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+        surface_gid = region_map_index.surface_gid
 
-        return SurfaceViewer.launch(self, surface_index, region_map, connectivity_measure, shell_surface,
-                                    title=RegionMappingViewer._ui_name)
+        surface_viewer_model = SurfaceViewerModel(surface=uuid.UUID(surface_gid),
+                                                  region_map=view_model.region_map,
+                                                  connectivity_measure=view_model.connectivity_measure,
+                                                  shell_surface=view_model.shell_surface)
+        surface_viewer_model.title = RegionMappingViewer._ui_name
+
+        return SurfaceViewer.launch(self, surface_viewer_model)
 
 
 class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
@@ -443,12 +502,16 @@ class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
         self.connectivity_measure.required = True
 
     @staticmethod
+    def get_view_model():
+        return BaseSurfaceViewerModel
+
+    @staticmethod
     def get_required_datatype():
         return ConnectivityMeasureIndex
 
     @staticmethod
     def get_input_name():
-        return '_connectivity_measure'
+        return 'connectivity_measure'
 
 
 class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
@@ -462,27 +525,32 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
     def get_form_class(self):
         return ConnectivityMeasureOnSurfaceViewerForm
 
-    def launch(self, connectivity_measure, region_map=None, shell_surface=None):
-        cm_connectivity_gid = connectivity_measure.connectivity_gid
+    def _load_proper_region_mapping(self, view_model):
+        return
+
+    def launch(self, view_model):
+        # type: (BaseSurfaceViewerModel) -> dict
+
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        cm_connectivity_gid = connectivity_measure_index.connectivity_gid
         cm_connectivity_index = dao.get_datatype_by_gid(cm_connectivity_gid)
 
-        surface_index = None
-
-        if not region_map:
-            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
-            if region_maps:
-                region_map = region_maps[0]
-
-        if region_map:
-            rm_connectivity_gid = region_map.connectivity_gid
+        region_map_index = None
+        rm_connectivity_index = None
+        if view_model.region_map:
+            region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+            rm_connectivity_gid = region_map_index.connectivity_gid
             rm_connectivity_index = dao.get_datatype_by_gid(rm_connectivity_gid)
-            surface_gid = region_map.surface_gid
-            surface_index = dao.get_datatype_by_gid(surface_gid)
 
-            if rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
-                region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_id')
-                if region_maps:
-                    region_map = region_maps[0]
+        if not region_map_index or rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
+            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_gid')
+            if region_maps:
+                region_map_index = region_maps[0]
 
-        return SurfaceViewer.launch(self, surface_index, region_map, connectivity_measure, shell_surface,
-                                    title=self._ui_name)
+        surface_gid = region_map_index.surface_gid
+        surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
+                                                  region_map=region_map_index.gid,
+                                                  connectivity_measure=view_model.connectivity_measure,
+                                                  shell_surface=view_model.shell_surface)
+        surface_viewer_model.title = self._ui_name
+        return SurfaceViewer.launch(self, surface_viewer_model)

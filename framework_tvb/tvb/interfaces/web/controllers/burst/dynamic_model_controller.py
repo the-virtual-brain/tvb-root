@@ -241,7 +241,7 @@ class DynamicModelController(BurstBaseController):
 
             for t in trajectories:
                 if not numpy.isfinite(t).all():
-                    self.logger.warn('Denaturated point %s on a trajectory')
+                    self.logger.warning('Denaturated point %s on a trajectory')
                     return {'finite':False}
 
             return {'trajectories': trajectories, 'signals': signals, 'finite':True}
@@ -258,7 +258,7 @@ class DynamicModelController(BurstBaseController):
             attr = getattr(type(model), name)
             ranger = attr.domain
             if ranger is None:
-                DynamicModelController.LOGGER.warn("Param %s doesn't have a domain specified" % (name))
+                DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % (name))
                 continue
             default = float(attr.default)
 

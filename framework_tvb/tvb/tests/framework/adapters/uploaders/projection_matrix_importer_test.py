@@ -45,7 +45,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.sensors
 import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
@@ -66,7 +66,7 @@ class TestProjectionMatrix(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterForm.options['EEG Sensors'])
+        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterModel.OPTIONS['EEG Sensors'])
 
         zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
@@ -77,9 +77,6 @@ class TestProjectionMatrix(TransactionalTestCase):
         assert self.surface is not None
         self.sensors = TestFactory.get_entity(self.test_project, SensorsIndex)
         assert self.sensors is not None
-
-        self.importer = TestFactory.create_adapter('tvb.adapters.uploaders.projection_matrix_importer',
-                                                   'ProjectionMatrixSurfaceEEGImporter')
 
     def transactional_teardown_method(self):
         """
@@ -94,18 +91,9 @@ class TestProjectionMatrix(TransactionalTestCase):
         file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
                                  'projection_eeg_62_surface_16k.mat')
 
-        form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'_projection_file': Part(file_path, HeaderMap({}), ''),
-                             '_dataset_name': 'ProjectionMatrix',
-                             '_sensors': self.sensors.gid,
-                             '_surface': self.surface.gid,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.projection_file.data = file_path
-        self.importer.submit_form(form)
-
         try:
-            FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **form.get_dict())
+            TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
+                                                 self.surface.gid)
             raise AssertionError("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
         except OperationException:
             pass
@@ -115,20 +103,12 @@ class TestProjectionMatrix(TransactionalTestCase):
         Verifies the happy flow for importing a surface.
         """
         dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
+
         file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
                                  'projection_eeg_65_surface_16k.npy')
 
-        form = ProjectionMatrixImporterForm()
-        form.fill_from_post({'_projection_file': Part(file_path, HeaderMap({}), ''),
-                             '_dataset_name': 'ProjectionMatrix',
-                             '_sensors': self.sensors.gid,
-                             '_surface': self.surface.gid,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.projection_file.data = file_path
-        self.importer.submit_form(form)
+        TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid, self.surface.gid)
 
-        FlowService().fire_operation(self.importer, self.test_user, self.test_project.id, **form.get_dict())
         dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
 
         assert dt_count_before + 1 == dt_count_after

@@ -1,8 +1,6 @@
 <fieldset>
     <dl>
-        {% if urlVertices is defined %}
-            {% include 'flow/color_scheme.html' %}
-        {% endif %}
+        {% include 'flow/color_scheme.html' %}
         <dt>Toggle</dt>
         <dd>
             <input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();"

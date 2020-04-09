@@ -43,11 +43,10 @@ from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.entities.model.model_datatype import DataType , DataTypeGroup, Links, MeasurePointsSelection, \
-    StoredPSEFilter
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 from tvb.core.neotraits.db import Base
 
 
@@ -120,6 +119,13 @@ class DatatypeDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
+    def get_number_of_bursts(self, project_id):
+        try:
+            bursts = self.session.query(BurstConfiguration).filter_by(project_id=project_id)
+            return bursts.count()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
 
     def get_disk_size_for_operation(self, operation_id):
         """
@@ -215,7 +221,7 @@ class DatatypeDAO(RootDAO):
         return count
 
 
-    def get_all_datatypes(self, page_start=0, page_size=20):
+    def get_all_datatypes(self, page_start=0, page_size=DEFAULT_PAGE_SIZE):
         """
         Return a list with all of the datatypes currently available in TVB. Is used by 
         the file storage update manager to upgrade from version to the next.
@@ -294,9 +300,9 @@ class DatatypeDAO(RootDAO):
                         ).join(Algorithm).join(AlgorithmCategory
                         ).outerjoin((Links, and_(Links.fk_from_datatype == DataType.id,
                                                        Links.fk_to_project == project_id))
-                        ).outerjoin(BurstConfiguration2,
-                                    DataType.fk_parent_burst == BurstConfiguration2.id
-                        ).filter(DataType.fk_datatype_group == None
+                        ).outerjoin(BurstConfiguration,
+                                    DataType.fk_parent_burst == BurstConfiguration.id
+                                    ).filter(DataType.fk_datatype_group == None
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
 
@@ -319,9 +325,9 @@ class DatatypeDAO(RootDAO):
                                                   Links.fk_to_project == project_id))
                         ).outerjoin(links, and_(links.fk_from_datatype == DataType.fk_datatype_group,
                                                 links.fk_to_project == project_id)
-                        ).outerjoin(BurstConfiguration2,
-                                    DataType.fk_parent_burst == BurstConfiguration2.id
-                        ).filter(DataType.fk_datatype_group != None
+                        ).outerjoin(BurstConfiguration,
+                                    DataType.fk_parent_burst == BurstConfiguration.id
+                                    ).filter(DataType.fk_datatype_group != None
                         ).filter(links.id == None)
 
             if visibility_filter:
@@ -341,6 +347,7 @@ class DatatypeDAO(RootDAO):
                 dt.parent_operation.project
                 dt.parent_operation.operation_group
                 dt.parent_operation.user
+                dt.display_name
 
         except Exception as excep:
             self.logger.exception(excep)
@@ -366,7 +373,7 @@ class DatatypeDAO(RootDAO):
                    Operation.user_group.ilike('%' + filter_string + '%'),
                    AlgorithmCategory.displayname.ilike('%' + filter_string + '%'),
                    Algorithm.displayname.ilike('%' + filter_string + '%'),
-                   BurstConfiguration2.name.ilike('%' + filter_string + '%'))
+                   BurstConfiguration.name.ilike('%' + filter_string + '%'))
 
 
     def get_datatype_details(self, datatype_gid):

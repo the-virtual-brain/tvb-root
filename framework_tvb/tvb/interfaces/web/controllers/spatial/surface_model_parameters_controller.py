@@ -86,11 +86,6 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         self.equation_params.form = get_form_for_equation(type(trait))(self.NAME_EQATION_PARAMS_DIV)
         self.equation_params.form.fill_from_trait(trait)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
-                'equation_params_div': self.NAME_EQATION_PARAMS_DIV, 'legend': 'Selected parameter'}
-
 
 class EquationPlotForm(Form):
     def __init__(self):
@@ -105,10 +100,6 @@ class EquationPlotForm(Form):
             self.min_x.fill_from_post(form_data)
         if self.max_x.name in form_data:
             self.max_x.fill_from_post(form_data)
-
-    @using_template('form_fields/form')
-    def __str__(self):
-        return {'form': self}
 
 
 class SurfaceModelParametersController(SpatioTemporalController):
@@ -181,7 +172,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         config_form = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices)
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
-        template_specification.update({'form': config_form})
+        template_specification.update({'adapter_form': config_form})
 
         parameters_equation_plot_form = EquationPlotForm()
         template_specification.update({'parametersEquationPlotForm': parameters_equation_plot_form})
@@ -193,7 +184,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         Main method, to initialize Model-Parameter visual-set.
         """
         model, cortex = self.get_data_from_burst_configuration()
-        surface_gid = cortex.region_mapping_data.surface.gid
+        surface_gid = cortex.surface_gid
         surface_index = dao.get_datatype_by_gid(surface_gid.hex)
 
         self.model_params_dict = self._prepare_model_params_dict(model)
@@ -203,7 +194,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
-        template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data.gid))
+        template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
         dummy_form_for_initialization = SurfaceModelParametersForm({}, {})
         self.plotted_equation_prefixes = {
@@ -237,7 +228,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         context.current_equation = eq_class()
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=SurfaceModelParametersForm.NAME_EQATION_PARAMS_DIV)
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

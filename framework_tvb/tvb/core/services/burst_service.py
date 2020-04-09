@@ -32,11 +32,12 @@ from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
+
 
 class BurstService(object):
 
@@ -54,19 +55,19 @@ class BurstService(object):
         :param error_message: If given, set the status to error and perpetuate the message.
         """
         if burst_status is None:
-            burst_status = BurstConfiguration2.BURST_FINISHED
+            burst_status = BurstConfiguration.BURST_FINISHED
         if error_message is not None:
-            burst_status = BurstConfiguration2.BURST_ERROR
+            burst_status = BurstConfiguration.BURST_ERROR
 
         try:
-            ### If there are any DataType Groups in current Burst, update their counter.
+            # If there are any DataType Groups in current Burst, update their counter.
             burst_dt_groups = dao.get_generic_entity(DataTypeGroup, burst_entity.id, "fk_parent_burst")
             for dt_group in burst_dt_groups:
                 dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
                 dt_group.disk_size, dt_group.subject = dao.get_summary_for_group(dt_group.id)
                 dao.store_entity(dt_group)
 
-            ### Update actual Burst entity fields
+            # Update actual Burst entity fields
             burst_entity.datatypes_number = dao.count_datatypes_in_burst(burst_entity.id)
 
             burst_entity.status = burst_status
@@ -156,3 +157,10 @@ class BurstService(object):
 
     def cancel_or_remove_burst(self, burst_id):
         raise NotImplementedError
+
+    @staticmethod
+    def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
+        burst = dao.get_burst_by_id(burst_id)
+        burst.fk_simulation_id = op_simulation_id
+        burst.simulator_gid = simulation_gid.hex
+        dao.store_entity(burst)

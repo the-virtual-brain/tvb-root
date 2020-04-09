@@ -47,6 +47,7 @@ import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
 from tvb.basic.profile import TvbProfile
+from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
 
 
@@ -330,9 +331,9 @@ def prepare_py2app_dist():
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-    jupyter_command = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/python2.7:' \
-                      '../tvb.app/Contents/Resources/lib/python2.7/site-packages.zip:' \
-                      '../tvb.app/Contents/Resources/lib/python2.7/lib-dynload\n' \
+    jupyter_command = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + ':' \
+                      '../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + '/site-packages.zip:' \
+                      '../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + '/lib-dynload\n' \
                       '../tvb.app/Contents/MacOS/python -m tvb_bin.run_jupyter notebook '
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
@@ -343,7 +344,7 @@ def prepare_py2app_dist():
         if os.path.exists(path):
             os.remove(path)
 
-    destination_sources = os.path.join("tvb.app", "Contents", "Resources", "lib", "python2.7")
+    destination_sources = os.path.join("tvb.app", "Contents", "Resources", "lib", Environment.PYTHON_FOLDER)
     _generate_distribution("TVB_MacOS", destination_sources, VERSION)
 
     # cleanup after install

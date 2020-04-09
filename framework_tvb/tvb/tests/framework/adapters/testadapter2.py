@@ -35,10 +35,9 @@ Created on Jul 21, 2011
 """
 
 from time import sleep
-from tvb.core.adapters.abcadapter import ABCAdapter
 import tvb.core.adapters.abcadapter as abcadapter
 from tvb.core.neotraits.forms import SimpleIntField
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestAdapter2Form(abcadapter.ABCAdapterForm):
@@ -48,7 +47,7 @@ class TestAdapter2Form(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapter2Form, self).__init__(prefix, project_id)
-        self.test = SimpleIntField(self, name="test", default=0);
+        self.test = SimpleIntField(self, name="test", default=0)
 
     @staticmethod
     def get_required_datatype():

@@ -39,13 +39,13 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.0.0"
+LIBRARY_VERSION = "2.0.3"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
 LIBRARY_REQUIRED_PACKAGES = ["matplotlib", "networkx", "numba", "numexpr", "numpy", "scipy", "typing"]
 
-LIBRARY_REQUIRED_EXTRA = ["h5py", "mayavi", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
+LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()

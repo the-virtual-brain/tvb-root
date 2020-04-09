@@ -34,7 +34,7 @@
 
 from tvb.core.adapters import abcadapter
 from tvb.core.neotraits.forms import SimpleIntField
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestAdapter3Form(abcadapter.ABCAdapterForm):

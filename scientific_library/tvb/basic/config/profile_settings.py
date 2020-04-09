@@ -35,6 +35,7 @@ Prepare TVB settings to be grouped under various profile classes.
 """
 import os
 import sys
+
 from tvb.basic.config import stored
 from tvb.basic.config.environment import Environment
 from tvb.basic.config.settings import ClusterSettings, DBSettings, VersionSettings, WebSettings
@@ -56,18 +57,21 @@ class BaseSettingsProfile(object):
     # Number used for estimation of TVB used storage space
     MAGIC_NUMBER = 9
 
-    def __init__(self, web_enabled=True):
+    def __init__(self):
 
         self.manager = stored.SettingsManager(self.TVB_CONFIG_FILE)
 
         # Actual storage of all TVB related files
+        self.KEYCLOAK_CONFIG = self.manager.get_attribute(stored.KEY_KC_CONFIGURATION, '')
+        self.KEYCLOAK_LOGIN_ENABLED = self.manager.get_attribute(stored.KEY_ENABLE_KC_LOGIN, False, eval)
+        self.KEYCLOAK_WEB_CONFIG = self.manager.get_attribute(stored.KEY_KC_WEB_CONFIGURATION, '')
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")
 
         self.env = Environment()
         self.cluster = ClusterSettings(self.manager)
-        self.web = WebSettings(self.manager, web_enabled)
+        self.web = WebSettings(self.manager)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
 
@@ -175,7 +179,7 @@ class LibrarySettingsProfile(BaseSettingsProfile):
     LOGGER_CONFIG_FILE_NAME = "library_logger.conf"
 
     def __init__(self):
-        super(LibrarySettingsProfile, self).__init__(False)
+        super(LibrarySettingsProfile, self).__init__()
 
 
 class TestLibraryProfile(LibrarySettingsProfile):

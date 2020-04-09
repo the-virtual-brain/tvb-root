@@ -33,7 +33,7 @@ Surface relates DataTypes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 import scipy.sparse
@@ -380,7 +380,7 @@ class Surface(HasTraits):
                 vert_norms[k, :] = self.vertices[k] / numpy.sqrt(self.vertices[k].dot(self.vertices[k]))
                 bad_normal_count += 1
         if bad_normal_count:
-            self.logger.warn(" %d vertices have bad normals" % bad_normal_count)
+            self.logger.warning(" %d vertices have bad normals" % bad_normal_count)
         self.vertex_normals = vert_norms
         self.log.debug("vertex_normals")
         self.log.debug(narray_describe(self.vertex_normals))

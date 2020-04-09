@@ -35,10 +35,12 @@ import json
 import os
 from threading import Lock
 from abc import ABCMeta
+from uuid import UUID
 from six import add_metaclass
 from tvb.core.adapters.abcadapter import ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel
 
 LOCK_CREATE_FIGURE = Lock()
 
@@ -55,7 +57,9 @@ class URLGenerator(object):
         return url_regex.format(URLGenerator.FLOW, URLGenerator.H5_FILE, entity_gid)
 
     @staticmethod
-    def build_url(entity_gid, method_name, adapter_id, parameter=None):
+    def build_url(adapter_id, method_name, entity_gid, parameter=None):
+        if isinstance(entity_gid, UUID):
+            entity_gid = entity_gid.hex
         url_regex = '/{}/{}/{}/{}/{}'
         url = url_regex.format(URLGenerator.FLOW, URLGenerator.INVOKE_ADAPTER, adapter_id, method_name, entity_gid)
 
@@ -64,10 +68,11 @@ class URLGenerator(object):
 
         return url
 
-
     @staticmethod
     def build_h5_url(entity_gid, method_name, flatten=False, datatype_kwargs=None, parameter=None):
         json_kwargs = json.dumps(datatype_kwargs)
+        if isinstance(entity_gid, UUID):
+            entity_gid = entity_gid.hex
 
         url_regex = '/{}/{}/{}/{}/{}/{}'
         url = url_regex.format(URLGenerator.FLOW, URLGenerator.H5_FILE, entity_gid, method_name, flatten, json_kwargs)
@@ -77,12 +82,13 @@ class URLGenerator(object):
 
         return url
 
-
     @staticmethod
     def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
         """
         Prepare a File System Path for passing into an URL.
         """
+        if isinstance(datatype_gid, UUID):
+            datatype_gid = datatype_gid.hex
         url_regex = '/{}/{}/{}/{}/{}'
         url = url_regex.format(URLGenerator.FLOW, URLGenerator.DATATYPE_ATTRIBUTE,
                                datatype_gid, attribute_name, flatten)
@@ -98,39 +104,32 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
     """
     KEY_CONTENT = "mainContent"
     KEY_IS_ADAPTER = "isAdapter"
-    PARAM_FIGURE_SIZE = 'figure_size'
     VISUALIZERS_ROOT = ''
-    VISUALIZERS_URL_PREFIX = ''
-
 
     def get_output(self):
         return []
 
-
-    def generate_preview(self, **kwargs):
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (ViewModel, (int,int)) -> dict
         """
         Should be implemented by all visualizers that can be used by portlets.
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
 
-
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Shortcut in case of visualization calls.
         """
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
         self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        return self.launch(view_model=view_model), 0
 
-        return self.launch(**kwargs), 0
-
-
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Visualizers should no occupy any additional disk space.
         """
         return 0
-
 
     def build_display_result(self, template, parameters, pages=None):
         """
@@ -154,7 +153,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
 
         return parameters
 
-
     @staticmethod
     def get_one_dimensional_list(list_of_elements, expected_size, error_msg):
         """
@@ -175,34 +173,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
                 raise LaunchException(error_msg)
             return list_of_elements[:expected_size]
 
-    # TODO: remove methods that build urls
-    def build_url(self, method_name, entity_gid, parameter=None):
-        url = '/flow/invoke_adapter/' + str(self.stored_adapter.id) + '/' + method_name + '/' + entity_gid
-
-        if parameter is not None:
-            url += "?" + str(parameter)
-
-        return url
-
-    def build_h5_url(self, entity_gid, method_name, parameter=None):
-        url = '/flow/read_from_h5_file/' + entity_gid + '/' + method_name
-
-        if parameter is not None:
-            url += "?" + str(parameter)
-
-        return url
-
-    @staticmethod
-    def paths2url(datatype_gid, attribute_name, flatten=False, parameter=None):
-        """
-        Prepare a File System Path for passing into an URL.
-        """
-        url = ABCDisplayer.VISUALIZERS_URL_PREFIX + datatype_gid + '/' + attribute_name + '/' + str(flatten)
-
-        if parameter is not None:
-            url += "?" + str(parameter)
-        return url
-
     @staticmethod
     def dump_with_precision(xs, precision=3):
         """
@@ -211,7 +181,6 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    # TODO review usages
     def _load_h5_of_gid(self, entity_gid):
         entity_index = self.load_entity_by_gid(entity_gid)
         entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))

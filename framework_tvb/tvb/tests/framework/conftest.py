@@ -36,13 +36,10 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.basic.profile import TvbProfile
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
-from tvb.tests.framework.test_datatype2_index import DummyDataType2Index
-from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
@@ -53,11 +50,14 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
-from tvb.tests.framework.test_datatype import DummyDataType
-from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 
 
 def pytest_addoption(parser):
@@ -85,12 +85,12 @@ def tmph5factory(tmpdir):
 
 @pytest.fixture(scope='session')
 def db_engine(tmpdir_factory, profile):
-    if profile == 'TEST_SQLITE_PROFILE':
+    if profile == TvbProfile.TEST_SQLITE_PROFILE:
         tmpdir = tmpdir_factory.mktemp('tmp')
         path = os.path.join(str(tmpdir), 'tmp.sqlite')
         conn_string = r'sqlite:///' + path
-    elif profile == 'TEST_POSTGRES_PROFILE':
-        conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+    elif profile == TvbProfile.TEST_POSTGRES_PROFILE:
+        conn_string = TvbProfile.current.db.DB_URL
     else:
         raise ValueError('bad test profile {}'.format(profile))
 
@@ -110,7 +110,7 @@ def session(db_engine):
 
 @pytest.fixture
 def user_factory():
-    def build(username='test_user', password='test_pass',
+    def build(username='test_user', display_name='test_name', password='test_pass',
               mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
@@ -120,7 +120,7 @@ def user_factory():
         if existing_user is not None:
             return existing_user
 
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     return build
@@ -274,6 +274,7 @@ def region_simulation_factory(connectivity_factory):
 
     return build
 
+
 @pytest.fixture()
 def time_series_factory():
     def build(data=None):
@@ -283,11 +284,13 @@ def time_series_factory():
             data = numpy.zeros((time.size, 1, 3, 1))
             data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
             data[:, 0, 1, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 200)
-            data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
+            data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(
+                2 * numpy.pi * time / 1000.0 * 300)
 
         return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
 
     return build
+
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
@@ -315,7 +318,7 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 @pytest.fixture()
 def time_series_region_index_factory(operation_factory):
-    def build(connectivity, region_mapping):
+    def build(connectivity, region_mapping, test_user=None, test_project=None):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
@@ -323,9 +326,10 @@ def time_series_region_index_factory(operation_factory):
         data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + \
                            numpy.sin(2 * numpy.pi * time / 1000.0 * 300)
 
-        ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity, region_mapping=region_mapping)
+        ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity,
+                              region_mapping=region_mapping)
 
-        op = operation_factory()
+        op = operation_factory(test_user=test_user, test_project=test_project)
 
         ts_db = TimeSeriesRegionIndex()
         ts_db.fk_from_operation = op.id
@@ -339,6 +343,7 @@ def time_series_region_index_factory(operation_factory):
 
         ts_db = dao.store_entity(ts_db)
         return ts_db
+
     return build
 
 
@@ -346,6 +351,7 @@ def time_series_region_index_factory(operation_factory):
 def dummy_datatype_factory():
     def build():
         return DummyDataType()
+
     return build
 
 
@@ -353,6 +359,7 @@ def dummy_datatype_factory():
 def dummy_datatype2_index_factory():
     def build(subject=None, state=None):
         return DummyDataType2Index(subject=subject, state=state)
+
     return build
 
 
@@ -383,7 +390,6 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 @pytest.fixture()
 def datatype_measure_factory(operation_factory):
     def build(analyzed_entity):
-
         measure = DatatypeMeasureIndex()
         measure.metrics = '{"v": 3}'
         measure.source = analyzed_entity
@@ -395,11 +401,17 @@ def datatype_measure_factory(operation_factory):
 
 
 @pytest.fixture()
-def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory, operation_factory):
+def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory,
+                           operation_factory):
     def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
 
-        range_1 = ["row1", [1, 2, 3]]
+        # there store the name and the (hi, lo, step) value of the range parameters
+        range_1 = ["row1", [1, 2, 10]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        # there are the actual numbers in the interval
+        range_values_1 = [1, 3, 5, 7, 9]
+        range_values_2 = [0.1, 0.4]
 
         user = user_factory()
 
@@ -437,8 +449,8 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
-        for range_val1 in range_1[1]:
-            for range_val2 in range_2[1]:
+        for range_val1 in range_values_1:
+            for range_val2 in range_values_2:
                 op = Operation(user.id, project.id, algorithm.id, 'test parameters',
                                meta=json.dumps(meta), status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
@@ -496,4 +508,5 @@ def test_adapter_factory():
             stored_adapter.id = inst_from_db.id
 
         dao.store_entity(stored_adapter, inst_from_db is not None)
+
     return build

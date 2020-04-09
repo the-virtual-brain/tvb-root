@@ -69,7 +69,7 @@ class ConnectivityCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_original_connectivity'
+        return 'original_connectivity'
 
 
 class ConnectivityCreator(ABCAsynchronous):

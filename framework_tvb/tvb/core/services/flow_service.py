@@ -163,9 +163,8 @@ class FlowService:
         link = dao.get_link(dt_id, project_id)
         if link is not None:
             dao.remove_entity(Links, link.id)
-    
 
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, **data):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
         """
         Launch an operation, specified by AdapterInstance, for CurrentUser, 
         Current Project and a given set of UI Input Data.
@@ -175,7 +174,8 @@ class FlowService:
             self.logger.info("Starting operation " + operation_name)
             project = dao.get_project_by_id(project_id)
 
-            result = OperationService().initiate_operation(current_user, project.id, adapter_instance, visible, **data)
+            result = OperationService().initiate_operation(current_user, project, adapter_instance, visible,
+                                                           model_view=view_model, **data)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 
@@ -239,7 +239,7 @@ class FlowService:
         :return: dict(category_name: List AlgorithmTransientGroup)
         """
         categories = dao.get_launchable_categories()
-        datatype_instance, filtered_adapters = self._get_launchable_algorithms(datatype_gid, categories)
+        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid, categories)
 
         if isinstance(datatype_instance, DataTypeGroup):
             # If part of a group, update also with specific analyzers of the child datatype
@@ -248,20 +248,21 @@ class FlowService:
             if len(datatypes):
                 datatype = datatypes[-1]
                 analyze_category = dao.get_launchable_categories(True)
-                _, inner_analyzers = self._get_launchable_algorithms(datatype.gid, analyze_category)
+                _, inner_analyzers, _ = self._get_launchable_algorithms(datatype.gid, analyze_category)
                 filtered_adapters.extend(inner_analyzers)
 
         categories_dict = dict()
         for c in categories:
             categories_dict[c.id] = c.displayname
 
-        return self._group_adapters_by_category(filtered_adapters, categories_dict)
-
+        return self._group_adapters_by_category(filtered_adapters, categories_dict), has_operations_warning
 
     def _get_launchable_algorithms(self, datatype_gid, categories):
-
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
-        data_class = datatype_instance.__class__
+        return self.get_launchable_algorithms_for_datatype(datatype_instance, categories)
+
+    def get_launchable_algorithms_for_datatype(self, datatype, categories):
+        data_class = datatype.__class__
         all_compatible_classes = [data_class.__name__]
         for one_class in getmro(data_class):
             # from tvb.basic.traits.types_mapped import MappedType
@@ -274,12 +275,16 @@ class FlowService:
         launchable_adapters = dao.get_applicable_adapters(all_compatible_classes, categories_ids)
 
         filtered_adapters = []
+        has_operations_warning = False
         for stored_adapter in launchable_adapters:
             filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
-            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype_instance):
-                filtered_adapters.append(stored_adapter)
+            try:
+                if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
+                    filtered_adapters.append(stored_adapter)
+            except TypeError:
+                has_operations_warning = True
 
-        return datatype_instance, filtered_adapters
+        return datatype, filtered_adapters, has_operations_warning
 
 
     def _group_adapters_by_category(self, stored_adapters, categories):

@@ -40,7 +40,7 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestConnectivityZip(TransactionalTestCase):
+class TestConnectivityZipImporter(TransactionalTestCase):
     """
     Unit-tests for CFF-importer.
     """

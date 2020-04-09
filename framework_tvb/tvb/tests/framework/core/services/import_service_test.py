@@ -72,7 +72,7 @@ class TestImportService(TransactionalTestCase):
         self.operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         self.adapter_instance = TestFactory.create_adapter()
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path);
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         self.zip_path = None 
         
 

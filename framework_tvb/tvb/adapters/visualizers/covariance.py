@@ -31,22 +31,34 @@
 """
 A displayer for covariance.
 
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
 from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import Covariance
+
+
+class CovarianceVisualizerModel(ViewModel):
+    datatype = DataTypeGidAttr(
+        linked_datatype=Covariance,
+        label='Covariance'
+    )
 
 
 class CovarianceVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CovarianceVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = DataTypeSelectField(self.get_required_datatype(), self, name='datatype', required=True,
-                                            label='Covariance')
+        self.datatype = TraitDataTypeSelectField(CovarianceVisualizerModel.datatype, self, name='datatype')
+
+    @staticmethod
+    def get_view_model():
+        return CovarianceVisualizerModel
 
     @staticmethod
     def get_required_datatype():
@@ -54,7 +66,7 @@ class CovarianceVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype'
+        return 'datatype'
 
     @staticmethod
     def get_filters():
@@ -67,9 +79,11 @@ class CovarianceVisualizer(MappedArrayVisualizer):
     def get_form_class(self):
         return CovarianceVisualizerForm
 
-    def launch(self, datatype):
+    def launch(self, view_model):
+        # type: (CovarianceVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
         # get data from corr datatype
-        labels, matrix = self._extract_labels_and_data_matrix(datatype)
+        time_series_index = self.load_entity_by_gid(view_model.datatype.hex)
+        labels, matrix = self._extract_labels_and_data_matrix(time_series_index)
         pars = self.compute_params(matrix, 'Covariance matrix plot', labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

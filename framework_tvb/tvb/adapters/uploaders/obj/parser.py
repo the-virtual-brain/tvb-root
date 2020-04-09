@@ -103,7 +103,7 @@ class ObjParser(object):
                 if datatype_parser is not None:
                     datatype_parser(tokens[1:])
                 else:
-                    self.logger.warn("Unsupported token type %s" % data_type)
+                    self.logger.warning("Unsupported token type %s" % data_type)
         except ValueError as ex:
             raise ValueError("%s at line %d" % (ex, line_nr))
 

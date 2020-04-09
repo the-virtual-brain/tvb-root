@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -30,6 +30,7 @@
 
 """
 Constants and functions used by all controllers
+Custom exceptions
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from copy import copy
@@ -47,6 +48,7 @@ TYPE_WARNING = "WARNING"
 TYPE_INFO = "INFO"
 TYPE_IMPORTANT = "IMPORTANT"
 
+KEY_KEYCLOAK_WEB = "keycloakConfigWebFile"
 KEY_CURRENT_VERSION = "currentVersion"
 KEY_CURRENT_JS_VERSION = "currentVersionJS"
 KEY_SESSION = "session"
@@ -225,3 +227,22 @@ class NotAuthenticated(NotAllowed):
     def __init__(self, message, redirect_url):
         NotAllowed.__init__(self, message, redirect_url)
         self.status = 401
+
+
+class InvalidFormValues(TVBException):
+    """
+    Exception to be thrown in case of existing
+    some invalid values in a form.
+    """
+
+    def __init__(self, message, error_dict=None):
+        TVBException.__init__(self, message)
+        self.error_dict = error_dict
+
+    def display_full_errors(self):
+        if self.error_dict:
+            result = {}
+            for name, item in self.error_dict.items():
+                result[name] = str(item)
+            return self.message, str(result).replace(',', ',\n')
+        return self.message

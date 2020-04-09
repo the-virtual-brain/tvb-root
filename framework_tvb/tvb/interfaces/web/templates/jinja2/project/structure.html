@@ -4,10 +4,10 @@
 <div id="main" class="columnized colscheme-2-1st-narrow">
     <script type="text/javascript" src="/static/js/jit-tvb.js"></script>
 
-    {% macro drawLevelSelect(level_index, data, default_selected, project_id, baseUrl) -%}
+    {% macro drawLevelSelect(level_index, data, default_selected, project_id) -%}
         <label for="levelTree_{{ level_index }}" id="label_levelTree_{{ level_index }}">Level {{ level_index }}:</label>
         <select id="levelTree_{{ level_index }}" name='levelTree_{{ level_index }}'
-                onchange="updateTree('#treeStructure', {{ project_id }}, '{{ baseUrl }}');" autocomplete="off">
+                onchange="updateTree('#treeStructure', {{ project_id }});" autocomplete="off">
             {% for entry in data %}
                 {% for key in entry %}
                     <option value="{{ key }}" {{ 'selected' if key == default_selected }}>
@@ -42,12 +42,12 @@
                 {% if f.selected %}
                     <li id="{{ f.display_name }}" class="active">
                         <a href="#" title="'Disable this filter ...' if f.selected else 'Enable this filter ...'"
-                           onclick="changedVisibilityFilter({{ project.id }}, '{{ baseUrl }}', '{{ f.display_name }}')">{{ f.display_name }}</a>
+                           onclick="changedVisibilityFilter({{ project.id }}, '{{ f.display_name }}')">{{ f.display_name }}</a>
                     </li>
                 {% else %}
                     <li id="{{ f.display_name }}">
                         <a href="#" title="'Disable this filter ...' if f.selected else 'Enable this filter ...'"
-                           onclick="changedVisibilityFilter({{ project.id }}, '{{ baseUrl }}', '{{ f.display_name }}')">{{ f.display_name }}</a>
+                           onclick="changedVisibilityFilter({{ project.id }}, '{{ f.display_name }}')">{{ f.display_name }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
@@ -56,7 +56,7 @@
                 <input id="filterInput" name="filter_input" type="text" value="{{ filterInputValue }}"
                        placeholder="Search text here"/>
                 <button type="button" class="action action-small action-confirm"
-                        onclick="updateTree('#treeStructure', {{ project.id }}, '{{ baseUrl }}');">Filter
+                        onclick="updateTree('#treeStructure', {{ project.id }});">Filter
                 </button>
             </li>
         </ul>
@@ -67,7 +67,6 @@
         <h4><mark>View</mark> TVB Results</h4>
         <input id="lastVisibleTab" name="last_selected_tab" type="hidden" value="{{ lastSelectedTab }}"/>
         <input id="hiddenProjectId" type="hidden" value="{{ project.id }}"/>
-        <input id="hiddenBaseURL" type="hidden" value="{{ baseUrl }}"/>
 
         <ul class="view-switcher tabswitcher">
             <li id="treeTab" class="active"><a href="#" onclick="showTree()">Tree</a></li>
@@ -78,10 +77,10 @@
             <div id="tabTree" class="hide-element">
                 <ul class="toolbar-inline">
                     <li>
-                        {{ drawLevelSelect(1, data, firstLevelSelection, project.id, baseUrl) }}
+                        {{ drawLevelSelect(1, data, firstLevelSelection, project.id) }}
                     </li>
                     <li>
-                        {{ drawLevelSelect(2, data, secondLevelSelection, project.id, baseUrl) }}
+                        {{ drawLevelSelect(2, data, secondLevelSelection, project.id) }}
                     </li>
                 </ul>
 
@@ -105,7 +104,7 @@
         <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">
             displaySelectedTab();
-            updateTree('#treeStructure', {{ project.id }}, '{{ baseUrl }}');
+            updateTree('#treeStructure', {{ project.id }});
         </script>
     </section>
 </div>

@@ -35,9 +35,11 @@ Created on Jul 21, 2011
 """
 
 import tvb.core.adapters.abcadapter as abcadapter
-from tvb.core.neotraits.forms import SimpleIntField, DataTypeSelectField
+from tvb.basic.neotraits.api import Attr
+from tvb.core.neotraits.forms import SimpleIntField, TraitDataTypeSelectField
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestAdapter1Form(abcadapter.ABCAdapterForm):
@@ -111,7 +113,7 @@ class TestAdapterDatatypeInputForm(abcadapter.ABCAdapterForm):
     """
     def __init__(self, prefix='', project_id=None):
         super(TestAdapterDatatypeInputForm, self).__init__(prefix, project_id)
-        self.test1_dt_input = DataTypeSelectField(self.get_required_datatype(), self, name="test1_dt_input")
+        self.test1_dt_input = TraitDataTypeSelectField(Attr(DummyDataType), self, name="test1_dt_input")
         self.test1_non_dt_input = SimpleIntField(self, name='test1_non_dt_input', default=0)
 
     @staticmethod

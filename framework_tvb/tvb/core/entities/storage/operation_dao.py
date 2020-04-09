@@ -40,12 +40,9 @@ from sqlalchemy import func as func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import case as case_, desc
-
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.model.model_operation import Operation, ResultFigure, Algorithm, AlgorithmCategory, \
-    OperationGroup, STATUS_FINISHED, STATUS_STARTED, STATUS_ERROR, STATUS_CANCELED, STATUS_PENDING, \
-    OperationProcessIdentifier
-from tvb.core.entities.storage.root_dao import RootDAO
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
 class OperationDAO(RootDAO):
@@ -90,6 +87,14 @@ class OperationDAO(RootDAO):
             operation.operation_group
             operation.algorithm.algorithm_category
             return operation
+        except SQLAlchemyError:
+            self.logger.exception("When fetching gid %s" % operation_gid)
+            return None
+
+    def get_operation_lazy_by_gid(self, operation_gid):
+        """Retrieve OPERATION entity for a given gid."""
+        try:
+            return self.session.query(Operation).filter_by(gid=operation_gid).one()
         except SQLAlchemyError:
             self.logger.exception("When fetching gid %s" % operation_gid)
             return None
@@ -186,7 +191,8 @@ class OperationDAO(RootDAO):
         return expected_hdd_size or 0
 
 
-    def get_filtered_operations(self, project_id, filter_chain, page_start=0, page_size=20, is_count=False):
+    def get_filtered_operations(self, project_id, filter_chain, page_start=0,
+                                page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """
         :param project_id: current project ID
         :param filter_chain: instance of FilterChain
@@ -246,6 +252,8 @@ class OperationDAO(RootDAO):
                     query = query.filter(eval(filter_str))
             query = query.order_by(DataType.id)
             result = query.all()
+            for dt in result:
+                dt.display_name
 
             return result
         except SQLAlchemyError as excep:

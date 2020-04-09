@@ -49,7 +49,7 @@ from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULA
 
 class TestFlowController(BaseControllersTest):
     """ Unit tests for FlowController """
-    
+
     def setup_method(self):
         """
         Sets up the environment for testing;
@@ -72,7 +72,7 @@ class TestFlowController(BaseControllersTest):
             self.burst_c.index()
             connectivity = connectivity_factory()
             launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-            launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
+            launch_params['connectivity'] = connectivity.gid.hex
             launch_params['simulation_length'] = '10000'
             if is_range:
                 launch_params['conduction_speed'] = '[10,15,20]'
@@ -96,8 +96,8 @@ class TestFlowController(BaseControllersTest):
         page has it's title given by category name.
         """
         result_dict = self.flow_c.step_analyzers()
-        assert common.KEY_SUBMENU_LIST in result_dict,\
-                        "Expect to have a submenu with available algorithms for category."
+        assert common.KEY_SUBMENU_LIST in result_dict, \
+            "Expect to have a submenu with available algorithms for category."
         assert result_dict["section_name"] == 'analyze'
 
     def test_step_connectivity(self):
@@ -168,9 +168,11 @@ class TestFlowController(BaseControllersTest):
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()
-        assert type(result['form']) == type(expected_interface)
-        assert result['form'].test1_val1.value == expected_interface.test1_val1.value
-        assert result['form'].test1_val2.value == expected_interface.test1_val2.value
+        found_form = result['adapter_form']['adapter_form']
+        assert isinstance(result['adapter_form'], dict)
+        assert isinstance(found_form, TestAdapter1Form)
+        assert found_form.test1_val1.value == expected_interface.test1_val1.value
+        assert found_form.test1_val2.value == expected_interface.test1_val2.value
 
     def _wait_for_burst_ops(self, burst_config):
         """ sleeps until some operation of the burst is created"""
@@ -228,7 +230,7 @@ class TestFlowController(BaseControllersTest):
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
                                                                   algo_category, {}, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations

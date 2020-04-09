@@ -39,15 +39,15 @@ from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 
 
 class ABCUploaderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
-        self.subject_field = SimpleStrField(self, name=DataTypeMetaData.KEY_SUBJECT, required=True, label='Subject',
-                                            default=DataTypeMetaData.DEFAULT_SUBJECT)
+        self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
         self.temporary_files = []
 
     @staticmethod
@@ -69,35 +69,28 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
     """
     LOGGER = get_logger(__name__)
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
-        if DataTypeMetaData.KEY_SUBJECT in kwargs:
-            subject = kwargs.pop(DataTypeMetaData.KEY_SUBJECT)
-        else:
-            subject = DataTypeMetaData.DEFAULT_SUBJECT
 
-        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: subject})
-        self.generic_attributes.subject = subject
+        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: view_model.data_subject})
+        self.generic_attributes.subject = view_model.data_subject
 
-        return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, **kwargs)
+        return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 
-
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         As it is an upload algorithm and we do not have information about data, we can not approximate this.
         """
         return -1
 
-
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         As it is an upload algorithm and we do not have information about data, we can not approximate this.
         """
         return 0
-
 
     @staticmethod
     def read_list_data(full_path, dimensions=None, dtype=numpy.float64, skiprows=0, usecols=None):
@@ -116,7 +109,6 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
             file_ending = os.path.split(full_path)[1]
             exc.args = (exc.args[0] + " In file: " + file_ending,)
             raise
-
 
     @staticmethod
     def read_matlab_data(path, matlab_data_name=None):
@@ -139,3 +131,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
             available = [s for s in matlab_data if not double__(s)]
             raise KeyError("Could not find dataset named %s. Available datasets: %s" % (matlab_data_name, available))
+
+    @staticmethod
+    def get_upload_information():
+        return NotImplementedError

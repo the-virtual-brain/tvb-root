@@ -48,7 +48,7 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.services.exceptions import ProjectImportException
@@ -176,7 +176,7 @@ class ImportService(object):
 
         # for old_burst_id in bursts_dict:
             # burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
-            # burst_entity = BurstConfiguration2(project_entity.id)
+            # burst_entity = BurstConfiguration(project_entity.id)
             # burst_entity.from_dict(burst_information.data)
             # burst_entity = dao.store_entity(burst_entity)
             # burst_ids_mapping[int(old_burst_id)] = burst_entity.id
@@ -353,7 +353,7 @@ class ImportService(object):
         figure_dict = XMLReader(file_name).read_metadata()
         new_path = os.path.join(os.path.split(file_name)[0], os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(new_path):
-            self.logger.warn("Expected to find image path %s .Skipping" % new_path)
+            self.logger.warning("Expected to find image path %s .Skipping" % new_path)
 
         op = dao.get_operation_by_gid(figure_dict['fk_from_operation'])
         figure_dict['fk_op_id'] = op.id if op is not None else None
@@ -480,5 +480,5 @@ class ImportService(object):
         :return: BurstConfiguration  filled from JSON
         """
 
-        burst_entity = BurstConfiguration2(project_id)
+        burst_entity = BurstConfiguration(project_id)
         return burst_entity
