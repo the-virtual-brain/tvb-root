@@ -953,13 +953,18 @@ class SimulatorController(BurstBaseController):
     @check_user
     def launch_simulation(self, launch_mode, **data):
         current_form = SimulatorFinalFragment()
-        try:
-            current_form.fill_from_post(data)
-        except Exception as exc:
-            self.logger.exception(exc)
-            return {'error': str(exc)}
+        session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
-        burst_name = current_form.simulation_name.value
+        if session_burst_config.name is None:
+            try:
+                current_form.fill_from_post(data)
+            except Exception as exc:
+                self.logger.exception(exc)
+                return {'error': str(exc)}
+            burst_name = current_form.simulation_name.value
+        else:
+            burst_name = session_burst_config.name
+
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         session_stored_simulator.simulation_length = current_form.simulation_length.value
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
@@ -967,7 +972,6 @@ class SimulatorController(BurstBaseController):
         project = common.get_current_project()
         user = common.get_logged_user()
 
-        session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         if burst_name != 'none_undefined':
             session_burst_config.name = burst_name
 
@@ -979,7 +983,7 @@ class SimulatorController(BurstBaseController):
         else:
             burst_config_to_store = session_burst_config.clone()
             count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.project_id)
-            session_burst_config.name = session_burst_config.name + "_" + launch_mode + str(count)
+            burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
                                                             session_burst_config.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
