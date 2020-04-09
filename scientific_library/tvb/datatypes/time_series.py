@@ -161,10 +161,10 @@ class TimeSeries(HasTraits):
 
     def __getattr__(self, attr_name):
         if self.labels_ordering[1] in self.labels_dimensions.keys():
-            if attr_name in self.variables_labels:
+            if attr_name in self.labels_dimensions[self.labels_ordering[1]]:
                 return self.get_state_variable(attr_name)
         if self.labels_ordering[2] in self.labels_dimensions.keys():
-            if attr_name in self.space_labels:
+            if attr_name in self.labels_dimensions[self.labels_ordering[2]]:
                 return self.get_subspace_by_labels([attr_name])
         raise AttributeError("%r object has no attribute %r" % (self.__class__.__name__, attr_name))
 
