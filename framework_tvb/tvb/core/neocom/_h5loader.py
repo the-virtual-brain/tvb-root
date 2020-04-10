@@ -105,9 +105,19 @@ class DirLoader(object):
         fname = self._locate(gid)
         return fname
 
-    def load(self, gid):
-        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        fname = self.find_file_name(gid)
+    def load(self, gid=None, fname=None):
+        # type: (typing.Union[uuid.UUID, str], str) -> HasTraits
+        """
+        Load from file a HasTraits entity. Either gid or fname should be given, or else an error is raised.
+
+        :param gid: optional entity GUID to search for it under self.base_dir
+        :param fname: optional file name to search for it under self.base_dir.
+        :return: HasTraits instance read from the given location
+        """
+        if fname is None:
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
+            fname = self.find_file_name(gid)
 
         sub_dt_refs = []
 
@@ -120,27 +130,34 @@ class DirLoader(object):
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
-            subdt = self.load(sub_gid)
-            setattr(datatype, traited_attr.field_name, subdt)
+            if sub_gid is not None:
+                subdt = self.load(sub_gid)
+                setattr(datatype, traited_attr.field_name, subdt)
 
         return datatype
 
-    def store(self, datatype):
-        # type: (HasTraits) -> None
+    def store(self, datatype, fname=None):
+        # type: (HasTraits, str) -> None
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
-        path = self.path_for(h5file_cls, datatype.gid)
+        if fname is None:
+            path = self.path_for(h5file_cls, datatype.gid)
+        else:
+            path = os.path.join(self.base_dir, fname)
 
         sub_dt_refs = []
 
         with h5file_cls(path) as f:
             f.store(datatype)
+            # Store empty Generic Attributes, so that TVBLoader.load_complete_by_function can be still used
+            f.store_generic_attributes(GenericAttributes())
 
             if self.recursive:
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
             subdt = getattr(datatype, traited_attr.field_name)
-            self.store(subdt)
+            if subdt is not None:  # Because a non required reference may be not populated
+                self.store(subdt)
 
     def path_for(self, h5_file_class, gid):
         """
