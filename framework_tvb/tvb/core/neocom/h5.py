@@ -28,6 +28,7 @@
 #
 #
 
+import os
 import uuid
 import typing
 from tvb.basic.neotraits.api import HasTraits
@@ -65,13 +66,17 @@ def load_from_index(dt_index, dt_class=None):
     return loader.load_from_index(dt_index, dt_class)
 
 
-def load(source_path):
-    # type: (str) -> HasTraits
+def load(source_path, with_references=False):
+    # type: (str, bool) -> HasTraits
     """
     Load a datatype stored in the tvb h5 file found at the given path
     """
-    loader = Loader(REGISTRY)
-    return loader.load(source_path)
+    if with_references:
+        loader = DirLoader(os.path.dirname(source_path), REGISTRY, with_references)
+        return loader.load(fname=os.path.basename(source_path))
+    else:
+        loader = Loader(REGISTRY)
+        return loader.load(source_path)
 
 
 def load_with_references(source_path):
@@ -112,15 +117,16 @@ def store_complete(datatype, base_dir):
 
 
 def store(datatype, destination, recursive=False):
-    # type: (HasTraits, str) -> None
+    # type: (HasTraits, str, bool) -> None
     """
     Stores the given datatype in a tvb h5 file at the given path
     """
-    if not recursive:
-        loader = Loader(REGISTRY)
-        return loader.store(datatype, destination)
+    if recursive:
+        loader = DirLoader(os.path.dirname(destination), REGISTRY, recursive)
+        loader.store(datatype, os.path.basename(destination))
     else:
-        return store_to_dir(datatype, destination, True)
+        loader = Loader(REGISTRY)
+        loader.store(datatype, destination)
 
 
 def load_from_dir(base_dir, gid, recursive=False):
@@ -138,7 +144,7 @@ def load_from_dir(base_dir, gid, recursive=False):
 
 
 def store_to_dir(datatype, base_dir, recursive=False):
-    # type: (str, HasTraits, bool) -> None
+    # type: (HasTraits, str, bool) -> None
     """
     Stores the given datatype in the given directory.
     The name and location of the stored file(s) is chosen for you by this function.

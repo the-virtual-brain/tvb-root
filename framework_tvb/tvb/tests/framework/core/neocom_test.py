@@ -43,7 +43,7 @@ def test_store_load(tmpdir, connectivity_factory):
 def test_store_load_rec(tmpdir, connectivity_factory, region_mapping_factory):
     connectivity = connectivity_factory(2)
     region_mapping = region_mapping_factory(connectivity=connectivity)
-    store_to_dir(str(tmpdir), region_mapping, recursive=True)
+    store_to_dir(region_mapping, str(tmpdir), recursive=True)
 
     rmap = load_from_dir(str(tmpdir), region_mapping.gid, recursive=True)
     numpy.testing.assert_equal(connectivity.weights, rmap.connectivity.weights)
