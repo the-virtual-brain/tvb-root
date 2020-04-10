@@ -411,7 +411,6 @@ class ProjectController(BaseController):
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
-        template_specification['baseUrl'] = TvbProfile.current.web.BASE_URL
         template_specification = FlowController().fill_default_attributes(template_specification)
         if has_operations_warning:
             template_specification[common.KEY_MESSAGE] = 'Not all operations could be loaded for this input DataType. Contact the admin to check the logs!'
@@ -540,7 +539,7 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
-        template_specification = dict(mainContent="project/structure", baseUrl=TvbProfile.current.web.BASE_URL,
+        template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       lastSelectedTab=last_selected_tab, firstLevelSelection=first_level,

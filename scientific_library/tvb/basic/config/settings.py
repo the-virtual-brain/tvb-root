@@ -37,6 +37,7 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 
 import os
 from subprocess import Popen, PIPE
+
 from tvb.basic.config import stored
 
 
@@ -223,8 +224,8 @@ class WebSettings(object):
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
 
-        # Compute PUBLIC reference towards the current web application, valid FROM outside
-        self.BASE_URL = manager.get_attribute(stored.KEY_URL_WEB, self.BASE_LOCAL_URL)
+        # Compute PUBLIC reference towards the current web application, it will be used in the emails text
+        self.BASE_URL = ""
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"

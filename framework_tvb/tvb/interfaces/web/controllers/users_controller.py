@@ -83,6 +83,7 @@ class UserController(BaseController):
         Login page (with or without messages).
         """
         template_specification = dict(mainContent="user/login", title="Login", data=data)
+        self._set_base_url()
         if cherrypy.request.method == 'POST':
             keycloak_login = TvbProfile.current.KEYCLOAK_LOGIN_ENABLED
             form = LoginForm() if not keycloak_login else KeycloakLoginForm()
@@ -432,6 +433,11 @@ class UserController(BaseController):
         template_dictionary[KEY_SERVER_VERSION] = self.version_info
         template_dictionary[KEY_CURRENT_VERSION_FULL] = TvbProfile.current.version.CURRENT_VERSION
         return template_dictionary
+
+    @staticmethod
+    def _set_base_url():
+        if not TvbProfile.current.web.BASE_URL:
+            TvbProfile.current.web.BASE_URL = cherrypy.request.base
 
 
 class LoginForm(formencode.Schema):

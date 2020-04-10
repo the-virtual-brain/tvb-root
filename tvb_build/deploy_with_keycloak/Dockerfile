@@ -40,15 +40,16 @@ RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_
     /opt/conda/envs/tvb-run/bin/python setup.py develop
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
+USER $TVB_USER
 RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
 
+USER root
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
     cd tvb_build; \
     /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"
 
-#
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/framework_tvb/tvb/interfaces/web/static/help
 RUN chown $TVB_USER:$TVB_USER $USER_HOME

@@ -549,7 +549,7 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
 
         surface_gid = region_map_index.surface_gid
         surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
-                                                  region_map=view_model.region_map,
+                                                  region_map=region_map_index.gid,
                                                   connectivity_measure=view_model.connectivity_measure,
                                                   shell_surface=view_model.shell_surface)
         surface_viewer_model.title = self._ui_name

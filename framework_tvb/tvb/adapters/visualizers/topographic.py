@@ -80,7 +80,7 @@ class TopographyCalculations(object):
     def _spiral(array):
         x_length = array.shape[0] - 2
         y_length = array.shape[1] - 2
-        r = x_length / 2
+        r = x_length // 2
         x = y = 0
         dx = 0
         dy = -1

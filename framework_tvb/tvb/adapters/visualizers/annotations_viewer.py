@@ -155,7 +155,6 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
             surface_h5, region_mapping_index.gid)
 
         params = dict(title="Connectivity Annotations Visualizer",
-                      baseUrl=TvbProfile.current.web.BASE_URL,
                       annotationsTreeUrl=URLGenerator.build_url(self.stored_adapter.id, 'tree_json',
                                                                 view_model.annotations_index),
                       urlTriangleToRegion=URLGenerator.build_url(self.stored_adapter.id, "get_triangles_mapping",

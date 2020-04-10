@@ -4,6 +4,7 @@ pipeline {
     environment {
         FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
         LATEST_TAG = 'latest'
+        REST_CONTAINER = 'rest-server'
     }
 
     stages {
@@ -48,6 +49,37 @@ pipeline {
                 archiveArtifacts artifacts: 'dist/*'
             }
         }
+        stage ('Start rest server') {
+            steps {
+                sh 'docker ps -f name=${REST_CONTAINER} -q | xargs --no-run-if-empty docker container stop'
+                sh 'docker container ls -a -fname=${REST_CONTAINER} -q | xargs -r docker container rm'
+                writeFile file: 'keycloak/keycloak_rest.json', text: params.KC_CONFIG
+                sh 'docker run -p 9090:9090 -d -v "/opt/jenkins_home/workspace/$JOB_NAME/keycloak/":/root/keycloak/ --name ${REST_CONTAINER} ${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG} /bin/bash -c "source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"'
+                //wait for REST server initialization
+                sh 'sleep 60'
+            }
+        }
+        stage ('Run REST client tests') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
+                    args '--link=${REST_CONTAINER}'
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                    source activate tvb-run
+                    rm -rf TEST_OUTPUT
+                    mkdir TEST_OUTPUT
+                    cd framework_tvb
+                    python setup_rest_client.py develop --no-deps
+                    cd ..
+                    pytest --pyargs tvb.interfaces.rest.client.tests.rest_tests  --junitxml=TEST_OUTPUT/results_REST-client.xml > TEST_OUTPUT/results_REST-client.out 2>&1
+                    exit 0
+                '''
+                 junit 'TEST_OUTPUT/results_*.xml'
+            }
+        }
         stage ('Compute coverage') {
             agent {
                 docker {
@@ -73,8 +105,12 @@ pipeline {
         }
     }
     post {
+        always {
+           sh 'docker ps -f name=${REST_CONTAINER} -q | xargs --no-run-if-empty docker container stop'
+           sh 'docker container ls -a -fname=${REST_CONTAINER} -q | xargs -r docker container rm'
+        }
         changed {
-            mail to: 'lia.domide@codemart.ro',
+            mail to: 'lia.domide@codemart.ro bogdan.valean@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
