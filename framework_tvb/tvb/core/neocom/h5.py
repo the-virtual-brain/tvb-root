@@ -112,7 +112,7 @@ def store_complete(datatype, base_dir):
 
 
 def store(datatype, destination, recursive=False):
-    # type: (HasTraits, str) -> None
+    # type: (HasTraits, str, bool) -> None
     """
     Stores the given datatype in a tvb h5 file at the given path
     """
@@ -138,7 +138,7 @@ def load_from_dir(base_dir, gid, recursive=False):
 
 
 def store_to_dir(datatype, base_dir, recursive=False):
-    # type: (str, HasTraits, bool) -> None
+    # type: (HasTraits, str, bool) -> None
     """
     Stores the given datatype in the given directory.
     The name and location of the stored file(s) is chosen for you by this function.
