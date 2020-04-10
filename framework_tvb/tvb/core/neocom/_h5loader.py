@@ -107,7 +107,10 @@ class DirLoader(object):
 
     def load(self, gid=None, fname=None):
         # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        fname = self.find_file_name(gid)
+        if fname is None:
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
+            fname = self.find_file_name(gid)
 
         sub_dt_refs = []
 
