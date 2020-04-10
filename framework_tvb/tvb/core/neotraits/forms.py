@@ -199,20 +199,6 @@ class SimpleSelectField(Field):
         self.data = self.choices.get(self.data)
 
 
-class MultipleSelectField(SimpleSelectField):
-    template = 'form_fields/checkbox_field.html'
-
-    def fill_from_post(self, post_data):
-        super(SimpleSelectField, self).fill_from_post(post_data)
-        if self.data is not None:
-            if not isinstance(self.data, list):
-                self.data = [self.data]
-            data = list()
-            for choice in self.data:
-                data.append(self.choices.get(choice))
-            self.data = data
-
-
 class SimpleArrayField(Field):
     template = 'form_fields/str_field.html'
 
