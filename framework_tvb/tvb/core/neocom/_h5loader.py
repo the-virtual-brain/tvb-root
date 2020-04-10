@@ -88,10 +88,7 @@ class DirLoader(object):
         self.base_file = None
 
         if not os.path.isdir(base_dir):
-            self.base_file = base_dir
-            base_dir = os.path.dirname(base_dir)
-            if not os.path.isdir(base_dir):
-                raise IOError('not a directory {}'.format(base_dir))
+            raise IOError('not a directory {}'.format(base_dir))
 
         self.base_dir = base_dir
         self.recursive = recursive
@@ -147,11 +144,7 @@ class DirLoader(object):
         # type: (HasTraits, str) -> None
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
         if fname is None:
-            if self.base_file is None:
-                path = self.path_for(h5file_cls, datatype.gid)
-            else:
-                path = self.base_file
-                self.base_file = None
+            path = self.path_for(h5file_cls, datatype.gid)
         else:
             path = os.path.join(self.base_dir, fname)
 
