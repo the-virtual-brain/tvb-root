@@ -86,13 +86,13 @@ def get_form_for_monitor(monitor_class):
 
 class MonitorForm(Form):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest_indexes=None):
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
         super(MonitorForm, self).__init__(prefix)
         self.project_id = project_id
         self.period = ScalarField(Monitor.period, self)
         self.variables_of_interest_indexes = variables_of_interest_indexes
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
-                                                      choices=tuple(variables_of_interest_indexes.keys())),
+                                                      choices=tuple(self.variables_of_interest_indexes.keys())),
                                                       self, name='variables_of_interest')
 
     def fill_from_trait(self, trait):
@@ -107,44 +107,45 @@ class MonitorForm(Form):
 
     #TODO: We should review the code her, we could probably reduce the number of  classes that are used here
 
+
 class RawMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(RawMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(RawMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.period = ScalarField(Raw.period, self, disabled=False)
         self.variables_of_interest = ArrayField(Raw.variables_of_interest, self, disabled=False)
 
 
 class SubSampleMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(SubSampleMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(SubSampleMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(SpatialAverageMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(SpatialAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
         self.default_mask = ScalarField(SpatialAverage.default_mask, self)
 
 
 class GlobalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(GlobalAverageMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(GlobalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class TemporalAverageMonitorForm(Form):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(TemporalAverageMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(TemporalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest_indexes=None):
-        super(ProjectionMonitorForm, self).__init__(prefix, project_id, variables_of_interest_indexes)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(ProjectionMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.region_mapping = DataTypeSelectField(RegionMappingIndex, self, name='region_mapping', required=True,
                                                   label=Projection.region_mapping.label,
                                                   doc=Projection.region_mapping.doc)
@@ -153,8 +154,8 @@ class ProjectionMonitorForm(MonitorForm):
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest_indexes=None):
-        super(EEGMonitorForm, self).__init__(prefix, project_id, variables_of_interest_indexes)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(EEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[EEG_S])
@@ -173,8 +174,8 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(MEGMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[MEG_S])
@@ -191,8 +192,8 @@ class MEGMonitorForm(ProjectionMonitorForm):
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(iEEGMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(iEEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SEEG_S])
@@ -210,8 +211,8 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(BoldMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(BoldMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.period = ScalarField(Bold.period, self)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         self.hrf_kernel = SimpleSelectField(self.hrf_kernel_choices, self, name='hrf_kernel',
@@ -229,5 +230,5 @@ class BoldMonitorForm(MonitorForm):
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):
 
-    def __init__(self, prefix='', project_id=None, variables_of_interest=None):
-        super(BoldRegionROIMonitorForm, self).__init__(prefix, project_id, variables_of_interest)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(BoldRegionROIMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
