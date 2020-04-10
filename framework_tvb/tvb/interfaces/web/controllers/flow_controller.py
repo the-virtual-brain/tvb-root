@@ -464,6 +464,7 @@ class FlowController(BaseController):
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
+                    self.logger.exception("Form and/or ViewModel not fully implemented for " + str(form))
                     raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
                                             error_dict=form.get_errors_dict())
             else:
