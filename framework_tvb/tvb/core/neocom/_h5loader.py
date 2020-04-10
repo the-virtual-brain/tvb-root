@@ -123,8 +123,9 @@ class DirLoader(object):
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
-            subdt = self.load(sub_gid)
-            setattr(datatype, traited_attr.field_name, subdt)
+            if sub_gid is not None:
+                subdt = self.load(sub_gid)
+                setattr(datatype, traited_attr.field_name, subdt)
 
         return datatype
 
