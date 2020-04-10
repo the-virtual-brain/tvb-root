@@ -40,7 +40,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.transient.pse import PSEGroupModel, PSEModel
+from tvb.core.entities.transient.pse import PSEGroupModel, PSEModel, KEY_GID
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
@@ -71,17 +71,27 @@ class PSEIsoGroupModel(PSEGroupModel):
 
         return pse_model_list
 
+    def _prepare_sorted_metrics(self, metric_key):
+        coords_to_node_info = super(PSEIsoGroupModel, self).get_all_node_info()
+        metric_values = numpy.zeros((len(self.apriori_x), len(self.apriori_y)), object)
+        self.datatypes_gids = numpy.zeros((len(self.apriori_x), len(self.apriori_y)), object)
+
+        for idx1, val1 in enumerate(self.apriori_x):
+            for idx2, val2 in enumerate(self.apriori_y):
+                try:
+                    dt_gid = coords_to_node_info[val1][val2][KEY_GID]
+                    metric_values[idx1][idx2] = self.get_all_metrics()[dt_gid][metric_key]
+                except KeyError:
+                    dt_gid = None
+                    # TODO: handle nan values on JS side
+                    metric_values[idx1][idx2] = numpy.NaN
+                self.datatypes_gids[idx1][idx2] = dt_gid
+        return metric_values
+
     def _fill_apriori_data(self):
         """ Gather apriori data from the operations. Also gather the datatype gid's"""
-
-        # An 2D array of GIDs which is used later to launch overlay for a DataType
-        array_2d_shape = (len(self.apriori_x), len(self.apriori_y))
-        self.datatypes_gids = numpy.reshape(list(self.get_all_metrics().keys()), array_2d_shape).tolist()
-
         for metric_key in self.get_available_metric_keys():
-            metric_values = [metric_value[metric_key] or numpy.NaN for metric_value in
-                             list(self.get_all_metrics().values())]
-            metric_values = numpy.reshape(metric_values, array_2d_shape)
+            metric_values = self._prepare_sorted_metrics(metric_key)
             self.apriori_data.update({metric_key: metric_values})
 
     def get_all_node_info(self):

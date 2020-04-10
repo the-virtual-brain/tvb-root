@@ -33,6 +33,8 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import json
+from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
@@ -56,9 +58,54 @@ class TestPSE(TransactionalTestCase):
 
         expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
                          'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
-                         'has_started_ops', 'datatype_group_gid', 'color_metric']
+                         'has_started_ops', 'datatype_group_gid', 'color_metric', 'values_x', 'values_y']
         for key in expected_keys:
             assert key in result
+        assert json.loads(result['values_x']) == [1, 3, 5, 7, 9]
+        assert json.loads(result['values_y']) == [0.1, 0.4]
+        assert dt_group.gid == result["datatype_group_gid"]
+        assert 'false' == result["has_started_ops"]
+
+    def _add_extra_operation_in_group(self, dt_group, operation_factory, time_series_index_factory,
+                                      datatype_measure_factory):
+        extra_operation = operation_factory(range_values=json.dumps({'row1': 2, 'row2': 0.1}))
+        extra_operation.fk_operation_group = dt_group.fk_operation_group
+        extra_operation = dao.store_entity(extra_operation)
+
+        datatype = time_series_index_factory(op=extra_operation)
+        datatype.fk_datatype_group = dt_group.id
+        datatype.operation_id = extra_operation.id
+        dao.store_entity(datatype)
+
+        extra_operation_ms = operation_factory(range_values=json.dumps({'row1': 2, 'row2': 0.1}))
+        extra_operation_ms.fk_operation_group = dt_group.fk_operation_group
+        extra_operation_ms = dao.store_entity(extra_operation_ms)
+        datatype_measure_factory(datatype, extra_operation_ms, dt_group, '{"v": 4}')
+
+    def test_launch_discrete_order_operations(self, datatype_group_factory, operation_factory,
+                                              time_series_index_factory, datatype_measure_factory):
+        """
+        Check that all required keys are present in output from PSE Discrete Adapter launch.
+        """
+        dt_group = datatype_group_factory()
+        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_index_factory,
+                                           datatype_measure_factory)
+
+        viewer = DiscretePSEAdapter()
+        view_model = viewer.get_view_model_class()()
+        view_model.datatype_group = dt_group.gid
+        result = viewer.launch(view_model)
+
+        expected_keys = ['status', 'size_metric', 'series_array', 'min_shape_size', 'min_color', 'd3_data',
+                         'max_shape_size', 'max_color', 'mainContent', 'labels_y', 'labels_x', 'isAdapter',
+                         'has_started_ops', 'datatype_group_gid', 'color_metric', 'values_x', 'values_y']
+        for key in expected_keys:
+            assert key in result
+        assert json.loads(result['values_x']) == [1, 2, 3, 5, 7, 9]
+        assert json.loads(result['values_y']) == [0.1, 0.4]
+        d3_data = json.loads(result['d3_data'])
+        assert d3_data['3']['0.1']['color_weight'] == 3
+        assert d3_data['2']['0.1']['color_weight'] == 4
         assert dt_group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
@@ -75,3 +122,19 @@ class TestPSE(TransactionalTestCase):
 
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])
+
+    def test_launch_isocline_order_operations(self, datatype_group_factory, operation_factory,
+                                              time_series_index_factory, datatype_measure_factory):
+        dt_group = datatype_group_factory()
+        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_index_factory,
+                                           datatype_measure_factory)
+
+        viewer = IsoclinePSEAdapter()
+        view_model = viewer.get_view_model_class()()
+        view_model.datatype_group = dt_group.gid
+        result = viewer.launch(view_model)
+
+        assert viewer._ui_name == result["title"]
+        assert 1 == len(result["available_metrics"])
+        assert '4' in result["matrix_data"]
+        assert 'nan' in result["matrix_data"]

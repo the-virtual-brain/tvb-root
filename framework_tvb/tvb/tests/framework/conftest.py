@@ -389,12 +389,12 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 
 @pytest.fixture()
 def datatype_measure_factory():
-    def build(analyzed_entity, operation):
+    def build(analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
         measure = DatatypeMeasureIndex()
-        measure.metrics = '{"v": 3}'
+        measure.metrics = metrics
         measure.source = analyzed_entity
         measure.fk_from_operation = operation.id
-        measure.fk_datatype_group = analyzed_entity.fk_datatype_group
+        measure.fk_datatype_group = datatype_group.id
         measure = dao.store_entity(measure)
 
         return measure
@@ -474,7 +474,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(datatype, op_ms)
+                datatype_measure_factory(datatype, op_ms, dt_group_ms)
 
         return datatype_group
 
