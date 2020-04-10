@@ -67,7 +67,7 @@ def load_from_index(dt_index, dt_class=None):
 
 
 def load(source_path, with_references=False):
-    # type: (str) -> HasTraits
+    # type: (str, bool) -> HasTraits
     """
     Load a datatype stored in the tvb h5 file found at the given path
     """
@@ -117,7 +117,7 @@ def store_complete(datatype, base_dir):
 
 
 def store(datatype, destination, recursive=False):
-    # type: (HasTraits, str) -> None
+    # type: (HasTraits, str, bool) -> None
     """
     Stores the given datatype in a tvb h5 file at the given path
     """
