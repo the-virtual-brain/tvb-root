@@ -106,7 +106,14 @@ class DirLoader(object):
         return fname
 
     def load(self, gid=None, fname=None):
-        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+        # type: (typing.Union[uuid.UUID, str], str) -> HasTraits
+        """
+        Load from file a HasTraits entity. Either gid or fname should be given, or else an error is raised.
+
+        :param gid: optional entity GUID to search for it under self.base_dir
+        :param fname: optional file name to search for it under self.base_dir.
+        :return: HasTraits instance read from the given location
+        """
         if fname is None:
             if gid is None:
                 raise ValueError("Neither gid nor filename is provided to load!")
