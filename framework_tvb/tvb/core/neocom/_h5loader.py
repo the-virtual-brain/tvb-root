@@ -117,13 +117,11 @@ class DirLoader(object):
         if fname is None:
             if gid is None:
                 raise ValueError("Neither gid nor filename is provided to load!")
-            path = self.find_file_name(gid)
-        else:
-            path = os.path.join(self.base_dir, fname)
+            fname = self.find_file_name(gid)
 
         sub_dt_refs = []
 
-        with H5File.from_file(os.path.join(self.base_dir, path)) as f:
+        with H5File.from_file(os.path.join(self.base_dir, fname)) as f:
             datatype_cls = self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
             f.load_into(datatype)
