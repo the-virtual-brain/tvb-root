@@ -83,12 +83,8 @@ class DirLoader(object):
 
     def __init__(self, base_dir, registry, recursive=False):
         # type: (str, Registry, bool) -> None
-        self.base_file = None
         if not os.path.isdir(base_dir):
-            self.base_file = base_dir
-            base_dir = os.path.dirname(base_dir)
-            if not os.path.isdir(base_dir):
-                raise IOError('not a directory {}'.format(base_dir))
+            raise IOError('not a directory {}'.format(base_dir))
 
         self.base_dir = base_dir
         self.recursive = recursive
@@ -109,9 +105,12 @@ class DirLoader(object):
         fname = self._locate(gid)
         return fname
 
-    def load(self, gid):
+    def load(self, gid=None, fname=None):
         # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        fname = self.find_file_name(gid)
+        if fname is None:
+            fname = self.find_file_name(gid)
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
 
         sub_dt_refs = []
 
@@ -129,14 +128,13 @@ class DirLoader(object):
 
         return datatype
 
-    def store(self, datatype):
+    def store(self, datatype, fname=None):
         # type: (HasTraits) -> None
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
-        if self.base_file is None:
+        if fname is None:
             path = self.path_for(h5file_cls, datatype.gid)
         else:
-            path = self.base_file
-            self.base_file = None
+            path = os.path.join(self.base_dir, fname)
 
         sub_dt_refs = []
 
