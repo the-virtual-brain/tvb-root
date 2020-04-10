@@ -529,7 +529,7 @@ class FlowController(BaseController):
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, adapter_form=self.get_template_dict(adapter_form), title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
@@ -538,10 +538,6 @@ class FlowController(BaseController):
             self.logger.exception(oexc)
             common.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
         return None
-
-    @using_template('form_fields/form')
-    def get_template_dict(self, adapter_form):
-        return {'adapter_form': adapter_form}
 
     @cherrypy.expose
     @handle_error(redirect=False)

@@ -355,5 +355,8 @@ class BaseController(object):
             common.add2session(common.KEY_PROJECT, project)
 
 
+    @using_template('form_fields/form')
+    def render_adapter_form(self, adapter_form):
+        return {'adapter_form': adapter_form}
 
 

@@ -109,11 +109,11 @@ class LocalConnectivityController(SpatioTemporalController):
 
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
-        template_specification['inputList'] = self.get_template_dict(configure_lcon_form)
+        template_specification['inputList'] = self.render_spatial_form(configure_lcon_form)
         template_specification['displayCreateLocalConnectivityBtn'] = True
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
-        template_specification['existentEntitiesInputList'] = self.get_template_dict(existent_lcon_form)
+        template_specification['existentEntitiesInputList'] = self.render_spatial_form(existent_lcon_form)
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
         template_specification['localConnBaseUrl'] = '/spatial/localconnectivity'
