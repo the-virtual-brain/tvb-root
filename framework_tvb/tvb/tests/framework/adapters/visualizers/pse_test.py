@@ -34,6 +34,7 @@
 """
 
 import json
+import numpy
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
@@ -136,5 +137,9 @@ class TestPSE(TransactionalTestCase):
 
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])
-        assert '4' in result["matrix_data"]
-        assert 'nan' in result["matrix_data"]
+        matrix_shape = json.loads(result['matrix_shape'])
+        matrix_data = json.loads(result['matrix_data'])
+        matrix_data = numpy.reshape(matrix_data, matrix_shape)
+        assert matrix_data[0][1] == 4
+        # We replace NaN with vmin-1, which is 2 in this case:
+        assert matrix_data[1][1] == 2

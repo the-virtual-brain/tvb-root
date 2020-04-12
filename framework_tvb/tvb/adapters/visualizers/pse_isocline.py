@@ -73,7 +73,7 @@ class PSEIsoGroupModel(PSEGroupModel):
 
     def _prepare_sorted_metrics(self, metric_key):
         coords_to_node_info = super(PSEIsoGroupModel, self).get_all_node_info()
-        metric_values = numpy.zeros((len(self.apriori_x), len(self.apriori_y)), object)
+        metric_values = numpy.zeros((len(self.apriori_x), len(self.apriori_y)))
         self.datatypes_gids = numpy.zeros((len(self.apriori_x), len(self.apriori_y)), object)
 
         for idx1, val1 in enumerate(self.apriori_x):
@@ -83,7 +83,6 @@ class PSEIsoGroupModel(PSEGroupModel):
                     metric_values[idx1][idx2] = self.get_all_metrics()[dt_gid][metric_key]
                 except KeyError:
                     dt_gid = None
-                    # TODO: handle nan values on JS side
                     metric_values[idx1][idx2] = numpy.NaN
                 self.datatypes_gids[idx1][idx2] = dt_gid
         return metric_values
@@ -174,6 +173,10 @@ class IsoclinePSEAdapter(ABCDisplayer):
         data_matrix = pse_iso.apriori_data[selected_metric]
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
+        vmin = numpy.nanmin(data_matrix)
+        vmax = numpy.nanmax(data_matrix)
+        # TODO: We replace NaN values here. To be addressed by task TVB-2660.
+        data_matrix[numpy.isnan(data_matrix)] = vmin - 1
         matrix_data = ABCDisplayer.dump_with_precision(data_matrix.flat)
         matrix_guids = pse_iso.datatypes_gids
         matrix_guids = numpy.rot90(matrix_guids)
@@ -182,8 +185,6 @@ class IsoclinePSEAdapter(ABCDisplayer):
         x_max = pse_iso.apriori_x[-1]
         y_min = pse_iso.apriori_y[0]
         y_max = pse_iso.apriori_y[-1]
-        vmin = data_matrix.min()
-        vmax = data_matrix.max()
         return dict(matrix_data=matrix_data,
                     matrix_guids=json.dumps(matrix_guids.flatten().tolist()),
                     matrix_shape=matrix_shape,
