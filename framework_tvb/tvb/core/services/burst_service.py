@@ -28,12 +28,15 @@
 #
 #
 
+import os
 from datetime import datetime
+from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -74,12 +77,14 @@ class BurstService(object):
             burst_entity.error_message = error_message
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
+            self.update_burst_configuration_h5(burst_entity)
         except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
             burst_entity.status = burst_status
             burst_entity.error_message = "Error when updating Burst Status"
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
+            self.update_burst_configuration_h5(burst_entity)
 
     def persist_operation_state(self, operation, operation_status, message=None):
         """
@@ -98,8 +103,7 @@ class BurstService(object):
     def get_burst_for_operation_id(self, operation_id):
         return dao.get_burst_for_operation_id(operation_id)
 
-    @staticmethod
-    def rename_burst(burst_id, new_name):
+    def rename_burst(self, burst_id, new_name):
         """
         Rename the burst given by burst_id, setting it's new name to
         burst_name.
@@ -107,6 +111,7 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
+        self.update_burst_configuration_h5(burst)
 
     @staticmethod
     def get_available_bursts(project_id):
@@ -164,7 +169,16 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.fk_simulation_id = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
-        dao.store_entity(burst)
+        burst = dao.store_entity(burst)
+        return burst
+
+    def update_burst_configuration_h5(self, burst_configuration):
+        # type: (BurstConfiguration) -> None
+        project = dao.get_project_by_id(burst_configuration.project_id)
+        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
+        bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_configuration.gid)
+        with BurstConfigurationH5(os.path.join(storage_path, bc_path)) as bc_h5:
+            bc_h5.store_index(burst_configuration)
 
     def load_burst_configuration(self, burst_config_id):
         # type: (int) -> BurstConfiguration

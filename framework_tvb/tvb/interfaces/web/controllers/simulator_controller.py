@@ -31,9 +31,10 @@ import os
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
+from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
-from tvb.core.neocom._h5loader import DirLoader
+from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
@@ -902,6 +903,11 @@ class SimulatorController(BurstBaseController):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         burst_config.start_time = datetime.now()
 
+        burst_config.range1 = range_param1.to_json()
+        if range_param2:
+            burst_config.range2 = range_param2.to_json()
+
+        # TODO: move these to a service
         if range_param2:
             ranges = [range_param1.to_json(), range_param2.to_json()]
         else:
@@ -1155,6 +1161,12 @@ class SimulatorController(BurstBaseController):
 
                 simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
 
+                bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
+                burst_config = BurstConfiguration(project.id)
+                with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
+                    bc_h5.load_into_index(burst_config)
+
+                common.add2session(common.KEY_BURST_CONFIG, burst_config)
                 common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
                 common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
                 common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)

@@ -38,6 +38,7 @@ import os
 import shutil
 import uuid
 import numpy
+from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
@@ -45,6 +46,7 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
@@ -101,7 +103,10 @@ class SimulatorService(object):
                                                 algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, storage_path)
-            BurstService.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
+            burst_config = BurstService.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
+            bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
+            with BurstConfigurationH5(bc_path) as bc_h5:
+                bc_h5.store_index(burst_config)
 
             wf_errs = 0
             try:
@@ -196,7 +201,11 @@ class SimulatorService(object):
                         first_simulator = simulator
 
             first_operation = operations[0]
-            BurstService.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
+            storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
+            burst_config = BurstService.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
+            bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
+            with BurstConfigurationH5(bc_path) as bc_h5:
+                bc_h5.store_index(burst_config)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
                                            fk_parent_burst=burst_config.id,
                                            state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])

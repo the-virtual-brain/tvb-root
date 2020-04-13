@@ -142,6 +142,10 @@ class BurstConfiguration(HasTraitsIndex):
     nr_of_tabs = 0
     selected_tab = -1
     is_group = False
+
+    range1 = None
+    range2 = None
+
     datatypes_number = Column(Integer)
     dynamic_ids = Column(String, default='[]', nullable=False)
 
