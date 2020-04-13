@@ -38,7 +38,7 @@ import matplotlib
 import numpy
 from matplotlib import pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from itertools import izip_longest
+from itertools import zip_longest
 from tvb.basic.logger.builder import get_logger
 import tvb.simulator.plot.tools as TVB_plot_tools
 from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
@@ -440,7 +440,7 @@ class BasePlotter(object):
                 ax = pyplot.gca()
         if isinstance(data, (list, tuple)):  # If, there are many groups, data is a list:
             # Fill in with nan in case that not all groups have the same number of elements
-            data = numpy.array(list(izip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
+            data = numpy.array(list(zip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
         elif data.ndim == 1:  # This is the case where there is only one group...
             data = numpy.expand_dims(data, axis=1).T
         n_groups, n_elements = data.shape

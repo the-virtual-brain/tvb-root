@@ -44,9 +44,11 @@ Usage
     tsr = tvb.datatypes.time_series.TimeSeriesRegion()
     tsr.data = data
     tsr.sample_period = period
+    from tvb.datatypes.connectivity import Connectivity
+    tsr.connectivity = Connectivity.from_file()
 
     #Create and launch the interactive visualiser
-    import tvb.simulator.timeseries_interactive as ts_int
+    import tvb.simulator.plot.timeseries_interactive as ts_int
     tsi = ts_int.TimeSeriesInteractive(time_series=tsr)
     tsi.configure()
     tsi.show()
