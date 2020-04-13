@@ -34,10 +34,11 @@
 """
 
 import numpy as np
-from scipy.signal import welch, periodogram, spectrogram
 from scipy.interpolate import interp1d, griddata
-from tvb.simulator.plot.config import CONFIGURED
+from scipy.signal import welch, periodogram, spectrogram
+from six import string_types
 from tvb.basic.logger.builder import get_logger
+from tvb.simulator.plot.config import CONFIGURED
 
 LOG = get_logger(__name__)
 
@@ -138,6 +139,16 @@ def ensure_list(arg):
     return arg
 
 
+def ensure_string(arg):
+    if not (isinstance(arg, string_types)):
+        if arg is None:
+            return ""
+        else:
+            return ensure_list(arg)[0]
+    else:
+        return arg
+
+
 def generate_region_labels(n_regions, labels=[], str=". ", numbering=True, numbers=[]):
     if len(numbers) != n_regions:
         numbers = list(range(n_regions))
@@ -173,3 +184,25 @@ def normalize_weights(weights, percentile=CONFIGURED.WEIGHTS_NORM_PERCENT, remov
         return normalized_w
     else:
         return np.array([])
+
+
+def raise_value_error(msg, logger=None):
+    if logger is not None:
+        logger.error("\n\nValueError: " + msg + "\n")
+    raise ValueError(msg)
+
+
+def rotate_n_list_elements(lst, n):
+    lst = ensure_list(lst)
+    n_lst = len(lst)
+    if n_lst != n and n_lst != 0:
+        if n_lst == 1:
+            lst *= n
+        elif n_lst > n:
+            lst = lst[:n]
+        else:
+            old_lst = list(lst)
+            while n_lst < n:
+                lst += old_lst[0]
+                old_lst = old_lst[1:] + old_lst[:1]
+    return lst

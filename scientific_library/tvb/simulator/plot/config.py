@@ -32,10 +32,10 @@
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 .. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 """
-
 import os
-import numpy as np
 from datetime import datetime
+
+from tvb.basic.profile import TvbProfile
 
 
 class FiguresConfig(object):
@@ -44,26 +44,15 @@ class FiguresConfig(object):
     SUPER_LARGE_SIZE = (80, 40)
     LARGE_SIZE = (20, 15)
     SMALL_SIZE = (15, 10)
-    NOTEBOOK_SIZE = (10, 7)
+    NOTEBOOK_SIZE = (20, 10)
     FIG_FORMAT = 'png'
     SAVE_FLAG = True
     SHOW_FLAG = False
     MOUSE_HOOVER = False
     MATPLOTLIB_BACKEND = "Agg"  # "Qt4Agg"
     FONTSIZE = 10
-    WEIGHTS_NORM_PERCENT = 99
-    MAX_SINGLE_VALUE = np.finfo("single").max
-    MAX_INT_VALUE = np.iinfo(np.int64).max
-
-    def __init__(self, out_base=None, separate_by_run=False):
-        print(out_base)
-        print(separate_by_run)
-        """
-        :param work_folder: Base folder where logs/figures/results should be kept
-        :param separate_by_run: Set TRUE, when you want logs/results/figures to be in different files / each run
-        """
-        self._out_base = out_base or os.path.join(os.getcwd(), "outputs")
-        self._separate_by_run = separate_by_run
+    SMALL_FONTSIZE = 8
+    LARGE_FONTSIZE = 12
 
     def largest_size(self):
         import sys
@@ -75,23 +64,13 @@ class FiguresConfig(object):
         else:
             return self.LARGE_SIZE
 
-    @property
-    def FOLDER_LOGS(self):
-        folder = os.path.join(self._out_base, "logs")
-        if self._separate_by_run:
-            folder = folder + datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M')
-        if not (os.path.isdir(folder)):
-            os.makedirs(folder)
-        return folder
-
-    @property
-    def FOLDER_RES(self):
-        folder = os.path.join(self._out_base, "res")
-        if self._separate_by_run:
-            folder = folder + datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M')
-        if not (os.path.isdir(folder)):
-            os.makedirs(folder)
-        return folder
+    def __init__(self, out_base=None, separate_by_run=False):
+        """
+        :param out_base: Base folder where figures should be kept
+        :param separate_by_run: Set TRUE, when you want figures to be in different files / each run
+        """
+        self._out_base = out_base or TvbProfile.current.TVB_STORAGE or os.path.join(os.getcwd(), "outputs")
+        self._separate_by_run = separate_by_run
 
     @property
     def FOLDER_FIGURES(self):
