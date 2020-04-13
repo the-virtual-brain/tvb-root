@@ -28,16 +28,21 @@
 #
 #
 
-"""
-We want tvb package to extend over 3 folders:
-simulator_library, tvb_framework and simulator_library/contrib.
-"""
+import shutil
+import setuptools
 
-from pkgutil import extend_path
+TVB_VERSION = "2.0.3"
 
-try:
-    __path__ = extend_path(__path__, __name__)
+setuptools.setup(name='tvb-contrib',
+                 version=TVB_VERSION,
+                 packages=setuptools.find_packages(),
+                 include_package_data=True,
+                 install_requires=["tvb-library"],
+                 description='A package with TVB contributed additions to the simulator, useful for scripting.',
+                 license="GPL v3",
+                 author_email='tvb.admin@thevirtualbrain.org',
+                 url='http://www.thevirtualbrain.org',
+                 download_url='https://github.com/the-virtual-brain/tvb-root',
+                 keywords='tvb brain simulator neuroscience contrib')
 
-except NameError:
-    # Ignore __path__ not defined when called from sphinx
-    __path__ = [__name__]
+shutil.rmtree('tvb_contrib.egg-info', True)
