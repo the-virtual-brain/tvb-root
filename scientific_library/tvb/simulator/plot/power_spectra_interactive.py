@@ -54,21 +54,15 @@ Usage
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-#TODO: There are fence-posts...
-#TODO: add a save button, for current powerspectra view (data more than fig)
-#TODO: channel/region selection, with surface time-series vertex slection 
-#      grouped by region 
 
 import numpy
 import pylab
 import matplotlib.widgets as widgets
-
-#The Virtual Brain
 from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
 import tvb.datatypes.time_series as time_series_datatypes
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
+
+LOG = get_logger(__name__)
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
 BACKGROUNDCOLOUR = "slategrey"

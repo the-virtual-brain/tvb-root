@@ -34,18 +34,18 @@
 """
 
 import os
-
 import matplotlib
 import numpy
 from matplotlib import pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from itertools import izip_longest
 from tvb.basic.logger.builder import get_logger
+import tvb.simulator.plot.tools as TVB_plot_tools
 from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
 from tvb.simulator.plot.utils import generate_region_labels, ensure_list
 
-matplotlib.use(FiguresConfig().MATPLOTLIB_BACKEND)
-
-pyplot.rcParams["font.size"] = FiguresConfig.FONTSIZE
+matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
+pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
 
 
 class BasePlotter(object):
@@ -440,7 +440,6 @@ class BasePlotter(object):
                 ax = pyplot.gca()
         if isinstance(data, (list, tuple)):  # If, there are many groups, data is a list:
             # Fill in with nan in case that not all groups have the same number of elements
-            from itertools import izip_longest
             data = numpy.array(list(izip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
         elif data.ndim == 1:  # This is the case where there is only one group...
             data = numpy.expand_dims(data, axis=1).T
@@ -478,7 +477,6 @@ class BasePlotter(object):
         return fig, ax
 
     def tvb_plot(self, plot_fun_name, *args, **kwargs):
-        import tvb.simulator.plot.tools as TVB_plot_tools
         getattr(TVB_plot_tools, plot_fun_name)(*args, **kwargs)
         fig = pyplot.gcf()
         self._save_figure(fig)

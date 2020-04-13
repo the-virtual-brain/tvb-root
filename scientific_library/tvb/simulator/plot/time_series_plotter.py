@@ -40,6 +40,8 @@ from six import string_types
 from tvb.basic.logger.builder import get_logger
 from tvb.datatypes.time_series import TimeSeries
 from tvb.simulator.plot.base_plotter import BasePlotter
+from tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractivePlotter
+from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
 from tvb.simulator.plot.utils import ensure_string, generate_region_labels, ensure_list, isequal_string, \
     time_spectral_analysis, raise_value_error
 
@@ -432,7 +434,6 @@ class TimeSeriesPlotter(BasePlotter):
 
     @staticmethod
     def plot_tvb_time_series_interactive(time_series, first_n=-1, **kwargs):
-        from tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractivePlotter
         interactive_plotter = TimeSeriesInteractivePlotter(time_series=time_series, first_n=first_n)
         interactive_plotter.configure()
         block = kwargs.pop("block", True)
@@ -457,7 +458,6 @@ class TimeSeriesPlotter(BasePlotter):
 
     @staticmethod
     def plot_tvb_power_spectra_interactive(time_series, spectral_props, **kwargs):
-        from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
         interactive_plotters = PowerSpectraInteractive(time_series=time_series, **spectral_props)
         interactive_plotters.configure()
         block = kwargs.pop("block", True)
