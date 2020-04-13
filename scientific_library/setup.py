@@ -37,6 +37,7 @@ Execute:
 
 import os
 import shutil
+
 import setuptools
 
 LIBRARY_VERSION = "2.0.3"
@@ -50,9 +51,21 @@ LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
+
+def scientific_library_packages():
+    packages = setuptools.find_packages()
+    print(packages)
+    contrib_packages = setuptools.find_packages(where="contrib")
+    print(contrib_packages)
+    packages.extend(contrib_packages)
+
+    return packages
+
+
 setuptools.setup(name='tvb-library',
                  version=LIBRARY_VERSION,
-                 packages=setuptools.find_packages(),
+                 packages=scientific_library_packages(),
+                 package_dir={"tvb.contrib": "contrib/tvb/contrib"},
                  include_package_data=True,
                  install_requires=LIBRARY_REQUIRED_PACKAGES,
                  extras_require={"test": LIBRARY_REQUIRED_EXTRA},
