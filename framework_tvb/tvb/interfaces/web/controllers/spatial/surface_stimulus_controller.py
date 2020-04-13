@@ -185,8 +185,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
 
         template_specification = dict(title="Spatio temporal - Surface stimulus")
-        template_specification['surfaceStimulusSelectForm'] = self.get_template_dict(surface_stim_selector_form)
-        template_specification['surfaceStimulusCreateForm'] = self.get_template_dict(surface_stim_creator_form)
+        template_specification['surfaceStimulusSelectForm'] = self.render_spatial_form(surface_stim_selector_form)
+        template_specification['surfaceStimulusCreateForm'] = self.render_spatial_form(surface_stim_creator_form)
         self.plotted_equation_prefixes = {
             self.SURFACE_FIELD: surface_stim_creator_form.surface.name,
             self.SPATIAL_FIELD: surface_stim_creator_form.spatial.name,
@@ -213,7 +213,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form = StimulusSurfaceSelectorForm(common.get_current_project().id)
         surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
-        template_specification['surfaceStimulusSelectForm'] = FlowController().get_template_dict(surface_stim_selector_form)
+        template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
         template_specification['next_step_url'] = '/spatial/stimulus/surface/step_2_submit'
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
@@ -366,7 +366,6 @@ class SurfaceStimulusController(SpatioTemporalController):
         except Exception as ex:
             return {'allSeries': 'error', 'errorMsg': ex}
 
-
     def fill_default_attributes(self, template_specification):
         """
         Add some entries that are used in both steps then fill the default required attributes.
@@ -452,14 +451,11 @@ class SurfaceStimulusController(SpatioTemporalController):
             self.logger.exception(ex)
             return {'allSeries': None, 'errorMsg': ex}
 
-    @staticmethod
-    def _add_extra_fields_to_interface(input_list):
+    def _add_extra_fields_to_interface(self, input_list):
         """
         The fields that have to be added to the existent
         adapter interface should be added in this method.
         """
-        input_list['spatialPlotInputList'] = FlowController().get_template_dict(EquationSpatialPlotForm())
-        input_list['temporalPlotInputList'] = FlowController().get_template_dict(EquationTemporalPlotForm())
+        input_list['spatialPlotInputList'] = self.render_adapter_form(EquationSpatialPlotForm())
+        input_list['temporalPlotInputList'] = self.render_adapter_form(EquationTemporalPlotForm())
         return input_list
-    
-    
