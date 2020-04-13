@@ -418,8 +418,8 @@ class TimeSeriesPlotter(BasePlotter):
                                 subtitles=subtitles, offset=offset, title=title, figure_name=figure_name,
                                 figsize=figsize)
         else:
-            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series),
+            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: [TimeSeries "
+                              "(tvb-contrib), TimeSeries (tvb-library), numpy.ndarray, dict]" % str(time_series),
                               LOGGER)
 
     def plot_raster(self, time_series, subplots=None, special_idx=[], subtitles=[],
@@ -452,8 +452,8 @@ class TimeSeriesPlotter(BasePlotter):
             time_series = TimeSeries(data=ts, labels_dimensions={"State Variable": time_series.keys()})
             self.plot_tvb_time_series_interactive(time_series, first_n, **kwargs)
         else:
-            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeriesTVB (TVB), numpy.ndarray, dict, list, tuple]" %
+            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: [TimeSeries "
+                              "(tvb-contrib), TimeSeriesTVB (tvb-library), numpy.ndarray, dict, list, tuple]" %
                               str(time_series), LOGGER)
 
     @staticmethod
@@ -603,6 +603,6 @@ class TimeSeriesPlotter(BasePlotter):
                                                          figsize=figsize)
         else:
             raise_value_error("Input time_series: %s \n"
-                              "is not on of one of the following types: "
-                              "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series),
+                              "is not on of one of the following types: [TimeSeries (tvb-contrib), "
+                              "TimeSeries (tvb-library), numpy.ndarray, dict]" % str(time_series),
                               LOGGER)
