@@ -34,18 +34,18 @@
 """
 
 import os
-import numpy
-from tvb.basic.logger.builder import get_logger
-from tvb.simulator.plot.config import CONFIGURED
-
 import matplotlib
-matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
-
+import numpy
 from matplotlib import pyplot
-pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
-
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from tvb.simulator.plot.utils import ensure_list, generate_region_labels
+from itertools import zip_longest
+from tvb.basic.logger.builder import get_logger
+import tvb.simulator.plot.tools as TVB_plot_tools
+from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
+from tvb.simulator.plot.utils import generate_region_labels, ensure_list
+
+matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
+pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
 
 
 class BasePlotter(object):
@@ -66,15 +66,13 @@ class BasePlotter(object):
             pyplot.close()
 
     @staticmethod
-    def _figure_filename(fig=None, figure_name=None):
-        if fig is None:
-            fig = pyplot.gcf()
+    def _figure_filename(fig=pyplot.gcf(), figure_name=None):
         if figure_name is None:
             figure_name = fig.get_label()
         figure_name = figure_name.replace(": ", "_").replace(" ", "_").replace("\t", "_").replace(",", "")
         return figure_name
 
-    def _save_figure(self, fig, figure_name=None):
+    def _save_figure(self, fig=pyplot.gcf(), figure_name=None):
         if self.config.SAVE_FLAG:
             figure_name = self._figure_filename(fig, figure_name)
             figure_name = figure_name[:numpy.min([100, len(figure_name)])] + '.' + self.config.FIG_FORMAT
@@ -84,7 +82,7 @@ class BasePlotter(object):
             pyplot.savefig(os.path.join(figure_dir, figure_name))
 
     @staticmethod
-    def rect_subplot_shape(self, n, mode="col"):
+    def rect_subplot_shape(n, mode="col"):
         nj = int(numpy.ceil(numpy.sqrt(n)))
         ni = int(numpy.ceil(1.0 * n / nj))
         if mode.find("row") >= 0:
@@ -96,7 +94,7 @@ class BasePlotter(object):
         ax = pyplot.subplot(subplot, sharey=sharey)
         pyplot.title(title)
         n_vector = labels.shape[0]
-        y_ticks = numpy.array(list(range(n_vector)), dtype=numpy.int32)
+        y_ticks = numpy.array(range(n_vector), dtype=numpy.int32)
         color = 'k'
         colors = numpy.repeat([color], n_vector)
         coldif = False
@@ -130,7 +128,7 @@ class BasePlotter(object):
         ax = pyplot.subplot(subplot, sharey=sharey)
         pyplot.title(title)
         n_violins = dataset.shape[1]
-        y_ticks = numpy.array(list(range(n_violins)), dtype=numpy.int32)
+        y_ticks = numpy.array(range(n_violins), dtype=numpy.int32)
         # the vector plot
         coldif = False
         if indices_red is None:
@@ -201,7 +199,7 @@ class BasePlotter(object):
         nticks = []
         for ii, (n, tick) in enumerate(zip([nx, ny], ticks)):
             if len(tick) == 0:
-                ticks[ii] = numpy.array(list(range(n)), dtype=numpy.int32)
+                ticks[ii] = numpy.array(range(n), dtype=numpy.int32)
             nticks.append(len(ticks[ii]))
         cmap = pyplot.set_cmap(cmap)
         img = pyplot.imshow(matrix[ticks[0]][:, ticks[1]].T, cmap=cmap, vmin=vmin, vmax=vmax, interpolation='none')
@@ -213,10 +211,10 @@ class BasePlotter(object):
                 labels[ii] = generate_region_labels(len(tick), numpy.array(lbls)[tick], ". ",
                                                     self.print_regions_indices, tick)
                 # labels[ii] = numpy.array(["%d. %s" % l for l in zip(tick, lbls[tick])])
-                getattr(pyplot, xy + "ticks")(numpy.array(list(range(ntick))), labels[ii], rotation=rot)
+                getattr(pyplot, xy + "ticks")(numpy.array(range(ntick)), labels[ii], rotation=rot)
             else:
                 labels[ii] = numpy.array(["%d." % l for l in tick])
-                getattr(pyplot, xy + "ticks")(numpy.array(list(range(ntick))), labels[ii])
+                getattr(pyplot, xy + "ticks")(numpy.array(range(ntick)), labels[ii])
             if ind_red is not None:
                 tck = tick.tolist()
                 ticklabels = getattr(ax, xy + "axis").get_ticklabels()
@@ -239,7 +237,7 @@ class BasePlotter(object):
                                  x_ticks, y_ticks, indices_red_x, indices_red_y, sharex, sharey, cmap, vmin, vmax)
 
     def _set_axis_labels(self, fig, sub, n_regions, region_labels, indices2emphasize, color='k', position='left'):
-        y_ticks = list(range(n_regions))
+        y_ticks = range(n_regions)
         # region_labels = numpy.array(["%d. %s" % l for l in zip(y_ticks, region_labels)])
         region_labels = generate_region_labels(len(y_ticks), region_labels, ". ", self.print_regions_indices, y_ticks)
         big_ax = fig.add_subplot(sub, frameon=False)
@@ -442,7 +440,6 @@ class BasePlotter(object):
                 ax = pyplot.gca()
         if isinstance(data, (list, tuple)):  # If, there are many groups, data is a list:
             # Fill in with nan in case that not all groups have the same number of elements
-            from itertools import zip_longest
             data = numpy.array(list(zip_longest(*ensure_list(data), fillvalue=numpy.nan))).T
         elif data.ndim == 1:  # This is the case where there is only one group...
             data = numpy.expand_dims(data, axis=1).T
@@ -479,8 +476,7 @@ class BasePlotter(object):
             self._check_show()
         return fig, ax
 
-    def plot(self, plot_fun_name, *args, **kwargs):
-        import tvb.simulator.plot.tools as TVB_plot_tools
+    def tvb_plot(self, plot_fun_name, *args, **kwargs):
         getattr(TVB_plot_tools, plot_fun_name)(*args, **kwargs)
         fig = pyplot.gcf()
         self._save_figure(fig)
