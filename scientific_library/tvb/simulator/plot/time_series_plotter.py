@@ -32,18 +32,20 @@
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 .. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 """
-
-import numpy
 import matplotlib
-from six import string_types
+import numpy
 from matplotlib import pyplot, gridspec
 from matplotlib.colors import Normalize
-from tvb.simulator.plot.utils import ensure_list, isequal_string, generate_region_labels
+from six import string_types
 from tvb.basic.logger.builder import get_logger
-from tvb.simulator.plot.utils import time_spectral_analysis
-from tvb.simulator.plot.base_plotter import BasePlotter
 from tvb.datatypes.time_series import TimeSeries
-LOG = get_logger(__name__)
+from tvb.simulator.plot.base_plotter import BasePlotter
+from tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractivePlotter
+from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
+from tvb.simulator.plot.utils import ensure_string, generate_region_labels, ensure_list, isequal_string, \
+    time_spectral_analysis, raise_value_error
+
+LOGGER = get_logger(__name__)
 
 
 def assert_time(time, n_times, time_unit="ms", logger=None):
@@ -105,7 +107,7 @@ class TimeSeriesPlotter(BasePlotter):
 
     def _ts_plot(self, time, n_vars, nTS, n_times, time_unit, subplots, offset=0.0, data_lims=[]):
 
-        time_unit = str(time_unit)
+        time_unit = ensure_string(time_unit)
         data_fun = lambda data, time, icol: (data[icol], time, icol)
 
         def plot_ts(x, iTS, colors, labels):
@@ -227,7 +229,7 @@ class TimeSeriesPlotter(BasePlotter):
                 plot_traj_3D(x, iTS, colors, labels)
             projection = '3d'
         else:
-            LOG.error("Data dimensions are neigher 2D nor 3D!, but " + str(n_dims) + "D!")
+            raise_value_error("Data dimensions are neigher 2D nor 3D!, but " + str(n_dims) + "D!", LOGGER)
         n_rows = 1
         n_cols = 1
         if subplots is None:
@@ -238,9 +240,9 @@ class TimeSeriesPlotter(BasePlotter):
             n_rows = subplots[0]
             n_cols = subplots[1]
             if n_rows * n_cols < nTS:
-                LOG.error("Not enough subplots for all time series:"
-                          "\nn_rows * n_cols = product(subplots) = product(" + str(subplots) + " = "
-                          + str(n_rows * n_cols) + "!")
+                raise_value_error("Not enough subplots for all time series:"
+                                  "\nn_rows * n_cols = product(subplots) = product(" + str(subplots) + " = "
+                                  + str(n_rows * n_cols) + "!", LOGGER)
         if n_rows * n_cols > 1:
             def_alpha = 0.5
             subtitle = lambda labels, iTS: subtitle_traj(labels, iTS)
@@ -276,8 +278,8 @@ class TimeSeriesPlotter(BasePlotter):
         elif isinstance(data, (list, tuple)):
             data = ensure_list(data)
         else:
-            LOG.error("Input timeseries: %s \n" "is not on of one of the following types: "
-                      "[numpy.ndarray, dict, list, tuple]" % str(data))
+            raise_value_error("Input timeseries: %s \n" "is not on of one of the following types: "
+                              "[numpy.ndarray, dict, list, tuple]" % str(data), LOGGER)
         n_vars = len(data)
         data_lims = []
         for id, d in enumerate(data):
@@ -402,25 +404,23 @@ class TimeSeriesPlotter(BasePlotter):
     def plot_time_series(self, time_series, mode="ts", subplots=None, special_idx=[], subtitles=[],
                          offset=0.5, title=None, figure_name=None, figsize=None, **kwargs):
         if isinstance(time_series, TimeSeries):
-            return self.plot_ts(numpy.swapaxes(time_series.data, 1, 2),
-                                time_series.time, time_series.variables_labels,
-                                mode, subplots, special_idx, subtitles, time_series.space_labels,
-                                offset, time_series.time_unit, title, figure_name, figsize)
-        # elif isinstance(time_series, TimeSeriesTVB):
-        #     self.plot_tvb_time_series(time_series, mode, subplots, special_idx,
-        #                               subtitles, offset, title, figure_name, figsize)
+            self.plot_tvb_time_series(time_series, mode, subplots, special_idx,
+                                      subtitles, offset, title, figure_name, figsize)
         elif isinstance(time_series, (numpy.ndarray, dict, list, tuple)):
             time = kwargs.get("time", None)
             time_unit = kwargs.get("time_unit", "ms")
             labels = kwargs.get("labels", [])
             var_labels = kwargs.get("var_labels", [])
+            if title is None:
+                title = "Time Series"
             return self.plot_ts(time_series, time=time, mode=mode, time_unit=time_unit,
                                 labels=labels, var_labels=var_labels, subplots=subplots, special_idx=special_idx,
                                 subtitles=subtitles, offset=offset, title=title, figure_name=figure_name,
                                 figsize=figsize)
         else:
-            LOG.error("Input time_series: %s \n" "is not on of one of the following types: "
-                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
+            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: [TimeSeries "
+                              "(tvb-contrib), TimeSeries (tvb-library), numpy.ndarray, dict]" % str(time_series),
+                              LOGGER)
 
     def plot_raster(self, time_series, subplots=None, special_idx=[], subtitles=[],
                     offset=0.5, title=None, figure_name=None, figsize=None, **kwargs):
@@ -434,8 +434,7 @@ class TimeSeriesPlotter(BasePlotter):
 
     @staticmethod
     def plot_tvb_time_series_interactive(time_series, first_n=-1, **kwargs):
-        from tvb.simulator.plot.timeseries_interactive import TimeSeriesInteractive
-        interactive_plotter = TimeSeriesInteractive(time_series=time_series, first_n=first_n)
+        interactive_plotter = TimeSeriesInteractivePlotter(time_series=time_series, first_n=first_n)
         interactive_plotter.configure()
         block = kwargs.pop("block", True)
         interactive_plotter.show(block=block, **kwargs)
@@ -443,8 +442,6 @@ class TimeSeriesPlotter(BasePlotter):
     def plot_time_series_interactive(self, time_series, first_n=-1, **kwargs):
         if isinstance(time_series, TimeSeries):
             self.plot_tvb_time_series_interactive(time_series, first_n, **kwargs)
-        # elif isinstance(time_series, TimeSeries):
-        #     self.plot_tvb_time_series_interactive(time_series._tvb, first_n, **kwargs)
         elif isinstance(time_series, numpy.ndarray):
             self.plot_tvb_time_series_interactive(TimeSeries(data=time_series), first_n, **kwargs)
         elif isinstance(time_series, (list, tuple)):
@@ -455,13 +452,12 @@ class TimeSeriesPlotter(BasePlotter):
             time_series = TimeSeries(data=ts, labels_dimensions={"State Variable": time_series.keys()})
             self.plot_tvb_time_series_interactive(time_series, first_n, **kwargs)
         else:
-            LOG.error("Input time_series: %s \n" "is not on of one of the following types: "
-                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict, list, tuple]" %
-                      str(time_series))
+            raise_value_error("Input time_series: %s \n" "is not on of one of the following types: [TimeSeries "
+                              "(tvb-contrib), TimeSeriesTVB (tvb-library), numpy.ndarray, dict, list, tuple]" %
+                              str(time_series), LOGGER)
 
     @staticmethod
     def plot_tvb_power_spectra_interactive(time_series, spectral_props, **kwargs):
-        from tvb.simulator.plot.power_spectra_interactive import PowerSpectraInteractive
         interactive_plotters = PowerSpectraInteractive(time_series=time_series, **spectral_props)
         interactive_plotters.configure()
         block = kwargs.pop("block", True)
@@ -484,7 +480,7 @@ class TimeSeriesPlotter(BasePlotter):
         time = assert_time(time, n_times, time_unit, self.logger)
         if not isinstance(time_unit, string_types):
             time_unit = list(time_unit)[0]
-        time_unit = str(time_unit)
+        time_unit = ensure_string(time_unit)
         if time_unit in ("ms", "msec"):
             fs = 1000.0
         else:
@@ -504,7 +500,7 @@ class TimeSeriesPlotter(BasePlotter):
             if len(labels) != nS:
                 labels = numpy.array([str(ilbl) for ilbl in range(nS)])
         if nS > 20:
-            LOG.warning("It is not possible to plot spectral analysis plots for more than 20 signals!")
+            LOGGER.warning("It is not possible to plot spectral analysis plots for more than 20 signals!")
             return
 
         log_norm = spectral_options.get("log_norm", False)
@@ -595,7 +591,7 @@ class TimeSeriesPlotter(BasePlotter):
                                       special_idx=[], labels=[], title='Spectral Analysis', figure_name=None,
                                       figsize=None, **kwargs):
         if isinstance(time_series, TimeSeries):
-            return self.plot_ts_spectral_analysis_raster(numpy.swapaxes(time_series._tvb.data, 1, 2).squeeze(),
+            return self.plot_ts_spectral_analysis_raster(numpy.swapaxes(time_series.data, 1, 2).squeeze(),
                                                          time_series.time, time_series.time_unit, freq,
                                                          spectral_options,
                                                          special_idx, labels, title, figure_name, figsize)
@@ -606,6 +602,7 @@ class TimeSeriesPlotter(BasePlotter):
                                                          labels=labels, title=title, figure_name=figure_name,
                                                          figsize=figsize)
         else:
-            LOG.error("Input time_series: %s \n"
-                      "is not on of one of the following types: "
-                      "[TimeSeries (tvb-scripts), TimeSeries (TVB), numpy.ndarray, dict]" % str(time_series))
+            raise_value_error("Input time_series: %s \n"
+                              "is not on of one of the following types: [TimeSeries (tvb-contrib), "
+                              "TimeSeries (tvb-library), numpy.ndarray, dict]" % str(time_series),
+                              LOGGER)

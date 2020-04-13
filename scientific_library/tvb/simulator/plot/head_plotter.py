@@ -35,10 +35,10 @@
 
 import numpy
 from matplotlib import pyplot
-from tvb.simulator.plot.utils import compute_in_degree
-from tvb.simulator.plot.base_plotter import BasePlotter
-from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.projections import ProjectionMatrix
+from tvb.datatypes.sensors import Sensors
+from tvb.simulator.plot.base_plotter import BasePlotter
+from tvb.simulator.plot.utils import compute_in_degree
 
 
 class HeadPlotter(BasePlotter):
@@ -106,10 +106,14 @@ class HeadPlotter(BasePlotter):
                         output.append((figure, ax, cax))
         return tuple(output)
 
-    def plot_tvb_connectivity(self, connectivity, num="weights", order_by=None, plot_hinton=False, plot_tracts=True):
+    def plot_tvb_connectivity(self, connectivity, num="weights", order_by=None, plot_hinton=False, plot_tracts=True,
+                              **kwargs):
         """
         A 2D plot for visualizing the Connectivity.weights matrix
         """
+        figsize = kwargs.pop("figsize", self.config.LARGE_SIZE)
+        fontsize = kwargs.pop("fontsize", self.config.SMALL_FONTSIZE)
+
         labels = connectivity.region_labels
         plot_title = connectivity.__class__.__name__
 
@@ -132,7 +136,7 @@ class HeadPlotter(BasePlotter):
             weights_figure = None
         else:
             # weights matrix
-            weights_figure = pyplot.figure(num="Connectivity weights", figsize=self.config.largest_size())
+            weights_figure = pyplot.figure(num="Connectivity weights", figsize=figsize)
             weights_axes = weights_figure.gca()
             wimg = weights_axes.matshow(connectivity.weights[order_rows, order_columns])
             weights_figure.colorbar(wimg)
@@ -140,26 +144,26 @@ class HeadPlotter(BasePlotter):
         weights_axes.set_title(plot_title)
 
         weights_axes.set_yticks(numpy.arange(connectivity.number_of_regions))
-        weights_axes.set_yticklabels(list(labels[order]), fontsize=8)
+        weights_axes.set_yticklabels(list(labels[order]), fontsize=fontsize)
 
         weights_axes.set_xticks(numpy.arange(connectivity.number_of_regions))
-        weights_axes.set_xticklabels(list(labels[order]), fontsize=8, rotation=90)
+        weights_axes.set_xticklabels(list(labels[order]), fontsize=fontsize, rotation=90)
 
         self._save_figure(weights_figure, plot_title)
         self._check_show()
 
         if plot_tracts:
             # tract lengths matrix
-            tracts_figure = pyplot.figure(num="Tracts' lengths", figsize=self.config.largest_size())
+            tracts_figure = pyplot.figure(num="Tracts' lengths", figsize=figsize)
             tracts_axes = tracts_figure.gca()
             timg = tracts_axes.matshow(connectivity.tract_lengths[order_rows, order_columns])
             tracts_axes.set_title("Tracts' lengths")
             tracts_figure.colorbar(timg)
             tracts_axes.set_yticks(numpy.arange(connectivity.number_of_regions))
-            tracts_axes.set_yticklabels(list(labels[order]), fontsize=8)
+            tracts_axes.set_yticklabels(list(labels[order]), fontsize=fontsize)
 
             tracts_axes.set_xticks(numpy.arange(connectivity.number_of_regions))
-            tracts_axes.set_xticklabels(list(labels[order]), fontsize=8, rotation=90)
+            tracts_axes.set_xticklabels(list(labels[order]), fontsize=fontsize, rotation=90)
 
             self._save_figure(tracts_figure)
             self._check_show()
