@@ -327,7 +327,7 @@ Interact with TVB Framework
       `Generate TimeSeries for import in Web GUI`_
 
 Interact with TVB REST Client API
----------------------------
+---------------------------------
 
 .. figure:: figures/interact_client_api_simulation.png
       :width: 200px
