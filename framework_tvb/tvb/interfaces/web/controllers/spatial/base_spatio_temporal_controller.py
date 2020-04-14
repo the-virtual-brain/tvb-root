@@ -144,5 +144,5 @@ class SpatioTemporalController(BaseController):
         return min_x, max_x, ''
 
     @using_template('spatial/spatial_fragment')
-    def get_template_dict(self, adapter_form):
+    def render_spatial_form(self, adapter_form):
         return adapter_form.get_rendering_dict()
