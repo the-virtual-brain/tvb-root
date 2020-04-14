@@ -671,22 +671,3 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         self.plot_time_series()
 
         pylab.show(block=block, **kwargs)
-
-
-if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-    try:
-        data = numpy.load("../demos/demo_data_region_16s_2048Hz.npy")  #
-    except IOError:
-        LOG.error("Can't load demo data. Run demos/generate_region_demo_data.py")
-        raise
-
-    period = 0.00048828125  # NOTE: Providing period in s
-    tsr = time_series_datatypes.TimeSeriesRegion()
-    tsr.data = data
-    tsr.sample_period = period
-
-    tsi = TimeSeriesInteractive(time_series=tsr)
-    tsi.configure()
-    tsi.show()

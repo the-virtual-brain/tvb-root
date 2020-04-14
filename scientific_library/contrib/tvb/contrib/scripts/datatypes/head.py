@@ -246,7 +246,7 @@ class Head(HasTraits):
         return head
 
     @classmethod
-    def from_file(cls, path=os.path.join(CONFIGURED.input.HEAD, "connectivity.zip"), **kwargs):
+    def from_file(cls, path, **kwargs):
         filename = os.path.basename(path)
         dirname = os.path.dirname(path)
         if "head" in filename.lower():
@@ -271,7 +271,7 @@ class Head(HasTraits):
         return cls.from_folder(dirname, head, **kwargs)
 
     @classmethod
-    def from_tvb_file(cls, path=os.path.join(CONFIGURED.input.HEAD, "connectivity.zip"), **kwargs):
+    def from_tvb_file(cls, path, **kwargs):
         return cls.from_file(path, **kwargs)
 
     def make_cortex(self, local_connectivity=None, coupling_strength=None):

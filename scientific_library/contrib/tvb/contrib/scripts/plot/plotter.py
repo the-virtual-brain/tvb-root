@@ -5,7 +5,13 @@ from tvb.simulator.plot.plotter import Plotter as TVBPlotter
 
 class Plotter(TVBPlotter):
     def plot_head(self, head):
-        return self.plot_head_tvb(head.connectivity, head.sensors)
+        sensors_set = {}
+        for s_type in ["eeg", "seeg", "meg"]:
+            sensors = getattr(head, "%s_sensors" % s_type)
+            projection = getattr(head, "%s_projection" % s_type)
+            if sensors is not None and projection is not None:
+                sensors_set[sensors] = projection
+        return self.plot_head_tvb(head.connectivity, sensors_set)
 
     def plot_timeseries(self, *args, **kwargs):
         return TimeSeriesPlotter(self.config).plot_tvb_time_series(*args, **kwargs)
