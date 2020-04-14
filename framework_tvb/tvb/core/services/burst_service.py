@@ -35,6 +35,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.utils import format_bytes_human, format_timedelta
@@ -43,6 +44,8 @@ MAX_BURSTS_DISPLAYED = 50
 
 
 class BurstService(object):
+    LAUNCH_NEW = 'new'
+    LAUNCH_BRANCH = 'branch'
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -188,3 +191,22 @@ class BurstService(object):
             burst_config.range1 = operation_group.range1
             burst_config.range2 = operation_group.range2
         return burst_config
+
+    def prepare_burst_for_pse(self, burst_config):
+        # type: (BurstConfiguration) -> None
+        if burst_config.range2:
+            ranges = [burst_config.range1, burst_config.range2]
+        else:
+            ranges = [burst_config.range1]
+
+        operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        operation_group = dao.store_entity(operation_group)
+
+        metric_operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        metric_operation_group = dao.store_entity(metric_operation_group)
+
+        burst_config.operation_group = operation_group
+        burst_config.operation_group_id = operation_group.id
+        burst_config.metric_operation_group = metric_operation_group
+        burst_config.metric_operation_group_id = metric_operation_group.id
+        dao.store_entity(burst_config)

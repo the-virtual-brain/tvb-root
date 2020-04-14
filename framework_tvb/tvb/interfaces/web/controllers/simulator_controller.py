@@ -48,7 +48,6 @@ from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService
@@ -906,24 +905,7 @@ class SimulatorController(BurstBaseController):
         burst_config.range1 = range_param1.to_json()
         if range_param2:
             burst_config.range2 = range_param2.to_json()
-
-        # TODO: move these to a service
-        if range_param2:
-            ranges = [range_param1.to_json(), range_param2.to_json()]
-        else:
-            ranges = [range_param1.to_json()]
-
-        operation_group = OperationGroup(project.id, ranges=ranges)
-        operation_group = dao.store_entity(operation_group)
-
-        metric_operation_group = OperationGroup(project.id, ranges=ranges)
-        metric_operation_group = dao.store_entity(metric_operation_group)
-
-        burst_config.operation_group = operation_group
-        burst_config.operation_group_id = operation_group.id
-        burst_config.metric_operation_group = metric_operation_group
-        burst_config.metric_operation_group_id = metric_operation_group.id
-        dao.store_entity(burst_config)
+        self.burst_service.prepare_burst_for_pse(burst_config)
 
         try:
             thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_pse,
@@ -971,7 +953,7 @@ class SimulatorController(BurstBaseController):
 
         burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
-        if launch_mode == self.simulator_service.LAUNCH_NEW:
+        if launch_mode == self.burst_service.LAUNCH_NEW:
             if is_simulator_copy:
                 burst_config_to_store = session_burst_config.clone()
         else:
@@ -1135,7 +1117,7 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment("overlay")
     def get_upload_overlay(self):
-        template_specification = self.fill_overlay_attributes(None, "Upload", "Simulation JSON",
+        template_specification = self.fill_overlay_attributes(None, "Upload", "Simulation ZIP",
                                                               "burst/upload_burst_overlay", "dialog-upload")
         template_specification['first_fragment_url'] = SimulatorWizzardURLs.SET_CONNECTIVITY_URL
         return self.fill_default_attributes(template_specification)
@@ -1152,13 +1134,12 @@ class SimulatorController(BurstBaseController):
             upload_param = "uploadedfile"
             if upload_param in data and data[upload_param]:
                 import_service = ImportService()
-                simulator_folder = import_service.import_simulator_configuration_zip(data[upload_param], common.get_current_project().id)
+                simulator_folder = import_service.import_simulator_configuration_zip(data[upload_param])
 
                 project = common.get_current_project()
                 simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
                 with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
                     simulator_gid = sim_h5.gid.load()
-
                 simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
 
                 bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
@@ -1171,8 +1152,11 @@ class SimulatorController(BurstBaseController):
                 common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
                 common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+        except IOError as ioexcep:
+            self.logger.exception(ioexcep)
+            common.set_warning_message("This ZIP does not contain a complete simulator configuration")
         except ServicesBaseException as excep:
             self.logger.warning(excep.message)
-            common.set_error_message(excep.message)
+            common.set_warning_message(excep.message)
 
         raise cherrypy.HTTPRedirect('/burst/')

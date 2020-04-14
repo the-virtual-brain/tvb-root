@@ -51,7 +51,7 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
-from tvb.core.services.exceptions import ProjectImportException
+from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
@@ -483,15 +483,14 @@ class ImportService(object):
         burst_entity = BurstConfiguration(project_id)
         return burst_entity
 
-    def import_simulator_configuration_zip(self, zip_file, project_id):
+    def import_simulator_configuration_zip(self, zip_file):
         # Now compute the name of the folder where to explode uploaded ZIP file
         temp_folder = self._compute_unpack_path()
         uq_file_name = temp_folder + ".zip"
 
         if isinstance(zip_file, FieldStorage) or isinstance(zip_file, Part):
             if not zip_file.file:
-                #TODO: proper exceptions
-                raise Exception("Please select the archive that contains a simulator configuration.")
+                raise ServicesBaseException("Could not process the given ZIP file...")
 
             with open(uq_file_name, 'wb') as file_obj:
                 self.files_helper.copy_file(zip_file.file, file_obj)
@@ -502,5 +501,4 @@ class ImportService(object):
             self.files_helper.unpack_zip(uq_file_name, temp_folder)
             return temp_folder
         except FileStructureException as excep:
-            self.logger.exception(excep)
-            raise Exception("Bad ZIP archive provided. A simulator configuration is expected")
+            raise ServicesBaseException("Could not process the given ZIP file..." + str(excep))

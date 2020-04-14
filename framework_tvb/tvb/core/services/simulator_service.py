@@ -53,10 +53,6 @@ from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 
 class SimulatorService(object):
-    MAX_BURSTS_DISPLAYED = 50
-    LAUNCH_NEW = 'new'
-    LAUNCH_BRANCH = 'branch'
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.operation_service = OperationService()
