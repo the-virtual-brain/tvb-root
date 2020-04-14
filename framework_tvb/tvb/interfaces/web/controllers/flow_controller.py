@@ -41,6 +41,7 @@ import cherrypy
 import formencode
 import numpy
 import six
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.services.burst_service import BurstService
@@ -500,6 +501,9 @@ class FlowController(BaseController):
         except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
+        except LaunchException as excep3:
+            self.logger.exception("Error while executing a Launch procedure:" + excep3.message)
+            common.set_error_message(excep3.message)
         except InvalidFormValues as excep2:
             message, errors = excep2.display_full_errors()
             common.set_error_message(message)

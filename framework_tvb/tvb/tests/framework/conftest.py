@@ -65,7 +65,7 @@ def pytest_addoption(parser):
                      help="my option: TEST_POSTGRES_PROFILE or TEST_SQLITE_PROFILE")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def profile(request):
     profile = request.config.getoption("--profile")
     TvbProfile.set_profile(profile)
@@ -148,7 +148,7 @@ def project_factory():
 @pytest.fixture()
 def operation_factory(user_factory, project_factory):
     def build(algorithm=None, test_user=None, test_project=None,
-              operation_status=STATUS_FINISHED, parameters="test params", meta=None):
+              operation_status=STATUS_FINISHED, parameters="test params", meta=None, range_values=None):
         """
         Create persisted operation.
         :param algorithm: When not None, Simulator.
@@ -165,7 +165,7 @@ def operation_factory(user_factory, project_factory):
             meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                     DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
-                              status=operation_status)
+                              status=operation_status, range_values=range_values)
         dao.store_entity(operation)
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
@@ -388,11 +388,13 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 
 
 @pytest.fixture()
-def datatype_measure_factory(operation_factory):
-    def build(analyzed_entity):
+def datatype_measure_factory():
+    def build(analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
         measure = DatatypeMeasureIndex()
-        measure.metrics = '{"v": 3}'
+        measure.metrics = metrics
         measure.source = analyzed_entity
+        measure.fk_from_operation = operation.id
+        measure.fk_datatype_group = datatype_group.id
         measure = dao.store_entity(measure)
 
         return measure
@@ -442,6 +444,8 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         group_ms = dao.store_entity(group_ms)
 
         datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
+        datatype_group.no_of_ranges = 2
+        datatype_group.count_results = 10
 
         datatype_group = dao.store_entity(datatype_group)
 
@@ -470,7 +474,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(datatype)
+                datatype_measure_factory(datatype, op_ms, dt_group_ms)
 
         return datatype_group
 

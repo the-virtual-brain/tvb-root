@@ -50,7 +50,7 @@ class TestFFT(TransactionalTestCase):
         around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
         assert numpy.abs(around_peak).sum() < 0.5 * 20
 
-    def test_fourier_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_fourier_adapter(self, tmpdir, time_series_index_factory):
         # make file stored and indexed time series
         ts_db = time_series_index_factory()
 
