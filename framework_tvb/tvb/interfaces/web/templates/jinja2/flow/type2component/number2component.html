@@ -41,12 +41,6 @@
                 <tr> <td colspan="2" id="{{ containerDivId }}_rangeLabelsTd"> </td> </tr>
             </table>
 
-            <p class="field-adapters">
-                <input tabindex='1' type="button" class="ranger-button right-display"
-                   value="Expand Range" id="{{ containerDivId }}_buttonExpand"
-                   title="Toggle Range for current parameter. This will launch multiple simulations!"
-                   onclick="toggleRange('{{ containerDivId }}', {{ minValue | safe }}, {{ maxValue | safe }}, {{ stepValue | safe }}, '{{ inputRow.name }}');" />
-             </p>
         {% endwith %}
     {% endif %}
 {%- endmacro %}
