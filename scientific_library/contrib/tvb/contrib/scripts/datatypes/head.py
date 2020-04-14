@@ -2,7 +2,6 @@
 
 import os
 
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.contrib.scripts.datatypes.connectivity import Connectivity
@@ -33,8 +32,6 @@ from tvb.datatypes.surfaces import CorticalSurface as TVBCorticalSurface
 from tvb.datatypes.surfaces import Surface as TVBSurface
 from tvb.simulator.plot.config import CONFIGURED
 from tvb.simulator.plot.utils import raise_value_error
-
-logger = get_logger(__name__)
 
 
 class Head(HasTraits):
@@ -74,7 +71,7 @@ class Head(HasTraits):
         if isinstance(self.cortical_surface, TVBSurface):
             self.cortical_surface.configure()
             if not isinstance(self.cortical_surface, TVBCorticalSurface):
-                logger.warning("cortical_surface is not an instance of TVB CorticalSurface!")
+                self.log.warning("cortical_surface is not an instance of TVB CorticalSurface!")
             if isinstance(self.cortical_region_mapping, TVBRegionMapping):
                 self.cortical_region_mapping.connectivity = self.connectivity
                 self.cortical_region_mapping.surface = self.cortical_surface
@@ -82,7 +79,7 @@ class Head(HasTraits):
         if isinstance(self.subcortical_surface, TVBSurface):
             self.subcortical_surface.configure()
             if not isinstance(self.subcortical_surface, CorticalSurface):
-                logger.warning("cortical_surface is not an instance of SubcorticalSurface!")
+                self.log.warning("cortical_surface is not an instance of SubcorticalSurface!")
             if isinstance(self.subcortical_region_mapping, TVBRegionMapping):
                 self.subcortical_region_mapping.connectivity = self.connectivity
                 self.subcortical_region_mapping.surface = self.subcortical_surface
@@ -108,13 +105,13 @@ class Head(HasTraits):
             if isinstance(sensors, TVBSensors):
                 sensors.configure()
                 if not isinstance(sensors, s_datatype):
-                    logger.warning("%s is not an instance of TVB %s!" % (sensor_name, s_datatype.__name__))
+                    self.log.warning("%s is not an instance of TVB %s!" % (sensor_name, s_datatype.__name__))
                 projection_name = "%s_projection" % s_type
                 projection = getattr(self, projection_name)
                 if isinstance(projection, TVBProjectionMatrix):
                     projection.sensors = sensors
                     if not isinstance(projection, p_datatype):
-                        logger.warning("%s is not an instance of TVB %s!" % (projection_name, p_datatype.__name__))
+                        self.log.warning("%s is not an instance of TVB %s!" % (projection_name, p_datatype.__name__))
                     if isinstance(self.surface, Surface):
                         projection.sources = self.surface
                     projection.projection_type = p_type
@@ -137,7 +134,7 @@ class Head(HasTraits):
             try:
                 return insensitive_glob(os.path.join(self.path, "*%s*" % filename))[0]
             except:
-                logger.warning("No *%s* file found in %s path!" % (filename, self.path))
+                self.log.warning("No *%s* file found in %s path!" % (filename, self.path))
 
     def _load_reference(self, datatype, arg_name, patterns, used_filepaths, **kwargs):
         # Load from file
@@ -185,7 +182,7 @@ class Head(HasTraits):
         connectivity, kwargs = \
             head._load_reference(Connectivity, "connectivity", ["conn"], used_filepaths, **kwargs)
         if connectivity is None:
-            raise_value_error("A Connectivity instance is minimally required for a Head instance!", logger)
+            raise_value_error("A Connectivity instance is minimally required for a Head instance!", cls.log)
         head.connectivity = connectivity
 
         # TVB only volume datatypes: do before region_mappings to avoid confusing them with volume_mapping
@@ -197,7 +194,7 @@ class Head(HasTraits):
                 datatype.from_file
                 instance, kwargs = head._load_reference(datatype, arg_name, patterns, used_filepaths, **kwargs)
             except:
-                logger.warning("No 'from_file' method yet for %s!" % datatype.__class__.__name__)
+                cls.log.warning("No 'from_file' method yet for %s!" % datatype.__class__.__name__)
                 instance = None
             if instance is not None:
                 setattr(head, arg_name, instance)
@@ -261,12 +258,12 @@ class Head(HasTraits):
                 try:
                     setattr(head, field, h5file['/' + field][()])
                 except:
-                    logger.warning("Failed to read Head field %s from file %s!" % (field, path))
+                    cls.log.warning("Failed to read Head field %s from file %s!" % (field, path))
             for attr in ["title"]:
                 try:
                     setattr(head, attr, h5file.attrs.get(attr, h5file.attrs.get("TVB_%s" % attr)))
                 except:
-                    logger.warning("Failed to read Head attribute %s from file %s!" % (attr, path))
+                    cls.log.warning("Failed to read Head attribute %s from file %s!" % (attr, path))
             head.path = dirname
         else:
             kwargs["connectivity"] = filename

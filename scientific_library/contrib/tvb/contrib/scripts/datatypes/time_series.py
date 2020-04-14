@@ -4,12 +4,11 @@ from copy import deepcopy
 from enum import Enum
 
 import numpy
-from tvb.contrib.scripts.datatypes.base import BaseModel
-from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
 from six import string_types
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import List, Attr
-from tvb.basic.profile import TvbProfile
+from tvb.contrib.scripts.datatypes.base import BaseModel
+from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
 from tvb.datatypes.sensors import Sensors, SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.time_series import TimeSeries as TimeSeriesTVB
 from tvb.datatypes.time_series import TimeSeriesEEG as TimeSeriesEEGTVB
@@ -19,8 +18,6 @@ from tvb.datatypes.time_series import TimeSeriesSEEG as TimeSeriesSEEGTVB
 from tvb.datatypes.time_series import TimeSeriesSurface as TimeSeriesSurfaceTVB
 from tvb.datatypes.time_series import TimeSeriesVolume as TimeSeriesVolumeTVB
 from tvb.simulator.plot.utils import ensure_list
-
-TvbProfile.set_profile(TvbProfile.LIBRARY_PROFILE)
 
 
 class TimeSeriesDimensions(Enum):

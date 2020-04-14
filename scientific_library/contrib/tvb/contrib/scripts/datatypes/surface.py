@@ -13,14 +13,6 @@ from tvb.datatypes.surfaces import Surface as TVBSurface
 from tvb.datatypes.surfaces import WhiteMatterSurface as TVBWhiteMatterSurface
 
 
-class SurfaceH5Field(object):
-    VERTICES = "vertices"
-    TRIANGLES = "triangles"
-    VERTEX_NORMALS = "vertex_normals"
-    TRIANGLE_NORMALS = "triangle_normals"
-    VOX2RAS = "vox2ras"
-
-
 class Surface(TVBSurface, BaseModel):
     vox2ras = NArray(
         dtype=np.float,

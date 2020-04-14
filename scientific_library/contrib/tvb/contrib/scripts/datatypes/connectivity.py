@@ -4,17 +4,6 @@ from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.datatypes.connectivity import Connectivity as TVBConnectivity
 
 
-class ConnectivityH5Field(object):
-    WEIGHTS = "weights"
-    TRACTS = "tract_lengths"
-    CENTERS = "centres"
-    CENTRES = "centres"
-    REGION_LABELS = "region_labels"
-    ORIENTATIONS = "orientations"
-    HEMISPHERES = "hemispheres"
-    AREAS = "areas"
-
-
 class Connectivity(TVBConnectivity, BaseModel):
 
     # The following two methods help avoid problems with centers vs centres writing

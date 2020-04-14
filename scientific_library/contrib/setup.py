@@ -32,12 +32,13 @@ import shutil
 import setuptools
 
 TVB_VERSION = "2.0.3"
+CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
 
 setuptools.setup(name='tvb-contrib',
                  version=TVB_VERSION,
                  packages=setuptools.find_packages(),
                  include_package_data=True,
-                 install_requires=["tvb-library"],
+                 install_requires=CONTRIB_DEPENDENCIES,
                  description='A package with TVB contributed additions to the simulator, useful for scripting.',
                  license="GPL v3",
                  author_email='tvb.admin@thevirtualbrain.org',

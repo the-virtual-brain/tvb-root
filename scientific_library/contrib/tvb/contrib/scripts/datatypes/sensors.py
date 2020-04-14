@@ -16,6 +16,7 @@ from tvb.datatypes.sensors import SensorsMEG as TVBSensorsMEG
 from tvb.simulator.plot.utils import ensure_list
 
 
+# TODO: Move this ENUM in library an replace hardcoded sensor types strings from there
 class SensorTypes(Enum):
     TYPE_EEG = EEG_POLYMORPHIC_IDENTITY
     TYPE_MEG = MEG_POLYMORPHIC_IDENTITY
@@ -131,7 +132,7 @@ class SensorsInternal(Sensors, TVBSensorsInternal):
             return np.unique(sensors_inds)
 
     def group_sensors_to_electrodes(self, labels=None):
-        if self.sensors_type == SensorTypes.TYPE_SEEG:
+        if self.sensors_type == SensorTypes.TYPE_SEEG.value:
             if labels is None:
                 labels = self.labels
             sensor_names = np.array(split_string_text_numbers(labels))
