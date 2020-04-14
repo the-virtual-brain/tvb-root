@@ -644,7 +644,7 @@ class SelectField(TraitField):
                 id='{}_{}'.format(self.name, i),
                 value=choice,
                 label=str(choice).title(),
-                checked=self.data == self.choices.get(choice)
+                checked=self.value == self.choices.get(choice)
             )
 
     # def _from_post(self):
