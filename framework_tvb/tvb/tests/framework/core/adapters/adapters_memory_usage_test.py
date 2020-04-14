@@ -33,7 +33,11 @@
 """
 
 import json
+import os
 import pytest
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.tests.framework.adapters.testadapter3 import TestAdapterHugeMemoryRequired, TestAdapterHDDRequired, \
     TestAdapterHugeMemoryRequiredForm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -58,10 +62,6 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
     
     
     def test_adapter_memory(self, test_adapter_factory):
-        """
-        Test that a method not implemented exception is raised in case the
-        get_required_memory_size method is not implemented.
-        """
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         assert 42 == adapter.get_required_memory_size(adapter.get_view_model()())
@@ -70,17 +70,29 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         """
         Test that an MemoryException is raised in case adapter cant launch due to lack of memory.
         """
+        # Prepare adapter
         test_adapter_factory(adapter_class=TestAdapterHugeMemoryRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3",
                                              "TestAdapterHugeMemoryRequired")
+
+        # Simulate receiving POST data
         form = TestAdapterHugeMemoryRequiredForm()
         adapter.submit_form(form)
-        data = {"gid": 5}
 
+        view_model = form.get_view_model()()
+        view_model.test = 5
+
+        # Prepare operation for launch
         operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
-                                    json.dumps(data), json.dumps({}), status=model_operation.STATUS_STARTED)
+                                              json.dumps({'gid': view_model.gid.hex}), json.dumps({}), status=model_operation.STATUS_STARTED)
         operation = dao.store_entity(operation)
+
+        # Store ViewModel in H5
+        parent_folder = FilesHelper().get_project_folder(self.test_project, str(operation.id))
+        view_model_path = os.path.join(parent_folder, h5.path_for(parent_folder, ViewModelH5, view_model.gid))
+        with ViewModelH5(view_model_path, view_model) as view_model_h5:
+            view_model_h5.store(view_model)
+
+        # Launch operation
         with pytest.raises(NoMemoryAvailableException):
             OperationService().initiate_prelaunch(operation, adapter)
-
-

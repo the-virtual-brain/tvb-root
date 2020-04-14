@@ -92,7 +92,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
     """
     Basic testing that Simulator is still working from UI.
     """
-    CONNECTIVITY_NODES = 96
+    CONNECTIVITY_NODES = 74
 
     def transactional_setup_method(self):
         """
@@ -113,8 +113,9 @@ class TestSimulatorAdapter(TransactionalTestCase):
         model.simulation_length = 32
 
         self.operation = operation_factory()
+        # TODO: should store model in H5 and keep GID as param on operation to fix this
 
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, model)
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter)
         sim_result = dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')[0]
         assert (sim_result.data_length_1d, sim_result.data_length_2d, sim_result.data_length_3d,
                 sim_result.data_length_4d) == (32, 1, self.CONNECTIVITY_NODES, 1)
@@ -156,7 +157,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, "Simulator_Adapter_Project")
 
         simulator_adapter_model = SimulatorAdapterModel()
-        connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES)
+        connectivity = connectivity_index_factory(76)
         simulator_adapter_model.connectivity = connectivity.gid
 
         self.simulator_adapter.configure(simulator_adapter_model)

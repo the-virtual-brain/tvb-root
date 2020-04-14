@@ -176,23 +176,18 @@ class TestProjectStructure(TransactionalTestCase):
         count = dao.count_datatypes_in_group(datatypes[0].id)
         assert count == 0, "There should be no dataType."
 
-    def test_set_datatype_visibility(self):
+    def test_set_datatype_visibility(self, dummy_datatype_index_factory):
         """
         Check if the visibility for a datatype is set correct.
         """
         # it's a list of 3 elem.
-        mapped_arrays = self._create_mapped_arrays(self.test_project.id)
-        for mapped_array in mapped_arrays:
-            is_visible = dao.get_datatype_by_id(mapped_array[0]).visible
-            assert is_visible, "The data type should be visible."
+        dummy_dt_index = dummy_datatype_index_factory()
+        is_visible = dummy_dt_index.visible
+        assert is_visible, "The data type should be visible."
 
-        self.project_service.set_datatype_visibility(mapped_arrays[0][2], False)
-        for i in range(len(mapped_arrays)):
-            is_visible = dao.get_datatype_by_id(mapped_arrays[i][0]).visible
-            if not i:
-                assert not is_visible, "The data type should not be visible."
-            else:
-                assert is_visible, "The data type should be visible."
+        self.project_service.set_datatype_visibility(dummy_dt_index.gid, False)
+        is_visible = dao.get_datatype_by_id(dummy_dt_index.id).visible
+        assert not is_visible, "The data type should not be visible."
 
     def test_set_visibility_for_dt_in_group(self, datatype_group_factory):
         """

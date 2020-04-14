@@ -33,29 +33,20 @@
 """
 
 from tvb.core.adapters import abcadapter
-from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.forms import SimpleIntField, IntField
+from tvb.basic.neotraits.api import Int
+from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 class TestModel(ViewModel):
+    param_5 = Int(default=0)
+    param_6 = Int(default=0)
 
-    param_5 = Attr(
-        field_type=str,
-        default='test1_val1'
-    )
-
-    param_6 = Attr(
-        field_type=str,
-        default='test1_val2'
-    )
 
 class TestModelRequired(ViewModel):
-    test = Attr(
-        field_type=str,
-        default='100'
-    )
+    test = Int(default=100)
+
 
 class TestAdapter3Form(abcadapter.ABCAdapterForm):
     """
@@ -77,7 +68,7 @@ class TestAdapter3Form(abcadapter.ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "dummy_data_type"
+        return "param_5"
 
     @staticmethod
     def get_filters():
@@ -109,13 +100,13 @@ class TestAdapter3(abcadapter.ABCAsynchronous):
         """
         # Don't know how much memory is needed.
         return -1
-    
+
     def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
          """
         return 0
-        
+
     def launch(self, view_model):
         result = DummyDataTypeIndex()
         if view_model.param_5 is not None:
@@ -134,7 +125,11 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapterHugeMemoryRequiredForm, self).__init__(prefix, project_id)
-        self.test = SimpleIntField(self, name='test', default=0)
+        self.test = IntField(TestModelRequired.test, self, name='test')
+
+    @staticmethod
+    def get_view_model():
+        return TestModelRequired
 
     @staticmethod
     def get_required_datatype():
@@ -142,7 +137,7 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "dummy_data_type"
+        return "test"
 
     @staticmethod
     def get_filters():
@@ -153,7 +148,7 @@ class TestAdapterHugeMemoryRequired(abcadapter.ABCAsynchronous):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
-    
+
     def __init__(self):
         super(TestAdapterHugeMemoryRequired, self).__init__()
 
@@ -162,17 +157,17 @@ class TestAdapterHugeMemoryRequired(abcadapter.ABCAsynchronous):
 
     def get_output(self):
         return [DummyDataTypeIndex]
-    
+
     def get_required_memory_size(self, view_model):
         """ Huge memory requirement, should fail launch.  """
         return 999999999999999
-    
+
     def get_required_disk_size(self, view_model):
         """ Returns the required disk size to be able to run the adapter. """
         return 0
-    
-    def launch(self):
-        str(self.test)
+
+    def launch(self, view_model):
+        str(view_model.test)
 
 
 class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
@@ -194,7 +189,7 @@ class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "dummy_data_type"
+        return "test"
 
     @staticmethod
     def get_filters():
@@ -205,7 +200,7 @@ class TestAdapterHDDRequired(abcadapter.ABCSynchronous):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
-    
+
     def __init__(self):
         super(TestAdapterHDDRequired, self).__init__()
 
@@ -215,18 +210,18 @@ class TestAdapterHDDRequired(abcadapter.ABCSynchronous):
 
     def get_form_class(self):
         return TestAdapterHDDRequiredForm
-                
+
     def get_output(self):
         return [DummyDataTypeIndex]
-    
+
     def get_required_memory_size(self, view_model):
         """ Value test to be correctly returned """
         return 42
-    
+
     def get_required_disk_size(self, view_model):
         """ Returns the required disk size to be able to run the adapter. """
         return int(view_model.test) * 8 / 2 ** 10
-    
+
     def launch(self, view_model):
         """
         Mimics launching with a lot of memory usage

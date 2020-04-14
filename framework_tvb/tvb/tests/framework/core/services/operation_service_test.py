@@ -33,12 +33,9 @@
 """
 
 import pytest
-import json
-import numpy
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.utils import string2array
 from tvb.core.entities.model import model_burst, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -48,10 +45,8 @@ from tvb.core.services.project_service import initialize_storage, ProjectService
 from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
 from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
-from tvb.tests.framework.adapters.ndimensionarrayadapter import NDimensionArrayAdapter
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.datatypes.datatype2 import Datatype2
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
@@ -59,7 +54,6 @@ class TestOperationService(BaseTestCase):
     """
     Test class for the introspection module. Some tests from here do async launches. For those
     cases Transactional tests won't work.
-    TODO: this is still to be refactored, for being huge, with duplicates and many irrelevant checks
     """
 
     def setup_method(self):
@@ -95,7 +89,7 @@ class TestOperationService(BaseTestCase):
         """
         Tests if the dataType group is set correct on the dataTypes resulted from the same operation group.
         """
-
+        # TODO: re-write this to use groups correctly
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
@@ -104,7 +98,7 @@ class TestOperationService(BaseTestCase):
         adapter_instance = ABCAdapter.build_adapter(algo)
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations
-        FlowService().fire_operation(adapter_instance, self.test_user, self.test_project.id, view_model=adapter_instance.get_view_model()(), **data)
+        FlowService().fire_operation(adapter_instance, self.test_user, self.test_project.id)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 1, "Expected one operation group"
@@ -136,10 +130,13 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter(module, class_name)
         output = adapter.get_output()
         output_type = output[0].__name__
-        data = {"test1_val1": 5, "test1_val2": 5}
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
+
+        view_model = adapter.get_view_model()()
+        view_model.test1_val1 = 5
+        view_model.test1_val2 = 5
         self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
-                                                        tmp_folder, model_view=adapter.get_view_model()(), **data)
+                                                  tmp_folder, model_view=view_model)
 
         group = dao.get_algorithm_by_module(module, class_name)
         assert group.module == 'tvb.tests.framework.adapters.testadapter1', "Wrong data stored."
@@ -158,18 +155,19 @@ class TestOperationService(BaseTestCase):
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
-        data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
         self._assert_no_ddti()
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         datatype = self._assert_stored_ddti()
 
         # Now free some space and relaunch
         ProjectService().remove_datatype(self.test_project.id, datatype.gid)
         self._assert_no_ddti()
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         self._assert_stored_ddti()
 
     def test_launch_two_ops_hdd_with_space(self, test_adapter_factory):
@@ -179,18 +177,20 @@ class TestOperationService(BaseTestCase):
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
-        data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(view_model))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         datatype = self._assert_stored_ddti()
 
-        #Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
-        #plus what is estimated to be required from the next one (transform from B to MB)
-        TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(adapter.get_required_disk_size(view_model))
+        # Now update the maximum disk size to be the size of the previously resulted datatypes (transform from kB to MB)
+        # plus what is estimated to be required from the next one (transform from B to MB)
+        TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(
+            adapter.get_required_disk_size(view_model))
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         self._assert_stored_ddti(2)
 
     def test_launch_two_ops_hdd_full_space(self):
@@ -200,20 +200,21 @@ class TestOperationService(BaseTestCase):
         """
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
-        data = {"test": 100}
 
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(view_model)))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
 
         datatype = self._assert_stored_ddti()
-        #Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
-        #plus what is estimated to be required from the next one (transform from B to MB)
+        # Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
+        # plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size - 1) + \
                                             float(adapter.get_required_disk_size(view_model) - 1)
 
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user,self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                      model_view=view_model)
         self._assert_stored_ddti()
 
     def test_launch_operation_hdd_with_space(self):
@@ -222,11 +223,11 @@ class TestOperationService(BaseTestCase):
         """
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
-        data = {"test": 100}
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         self._assert_stored_ddti()
 
     def test_launch_operation_hdd_with_space_started_ops(self, test_adapter_factory):
@@ -238,17 +239,18 @@ class TestOperationService(BaseTestCase):
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
-        form.fill_from_post({'_test': "100"})
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
-                                            status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
+        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id, "",
+                                                      status=model_operation.STATUS_STARTED,
+                                                      estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()
 
         dao.store_entity(started_operation)
-        data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) + space_taken_by_started)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                  model_view=view_model)
         self._assert_stored_ddti()
 
     def test_launch_operation_hdd_full_space(self, test_adapter_factory):
@@ -262,11 +264,11 @@ class TestOperationService(BaseTestCase):
         adapter.submit_form(form)
         view_model = adapter.get_view_model()()
 
-        data = {"test": 100}
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                      model_view=view_model)
         self._assert_no_ddti()
 
     def test_launch_operation_hdd_full_space_started_ops(self, test_adapter_factory):
@@ -279,16 +281,19 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id, "",
-                                            status=model_operation.STATUS_STARTED, estimated_disk_size=space_taken_by_started)
+        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id, "",
+                                                      status=model_operation.STATUS_STARTED,
+                                                      estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()
 
         dao.store_entity(started_operation)
-        data = {"test": 100}
-        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) + space_taken_by_started - 1)
+        TvbProfile.current.MAX_DISK_SPACE = float(
+            adapter.get_required_disk_size(view_model) + space_taken_by_started - 1)
         tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user,self.test_project, adapter, tmp_folder, model_view=view_model, **data)
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+                                                      model_view=view_model)
         self._assert_no_ddti()
 
     def test_stop_operation(self, test_adapter_factory):
@@ -297,11 +302,13 @@ class TestOperationService(BaseTestCase):
         """
         test_adapter_factory(adapter_class=TestAdapter2)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter2", "TestAdapter2")
-        data = {"test": 5}
+        view_model = adapter.get_view_model()()
+        view_model.test = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {}, view_model=adapter.get_view_model()(), **data)
+                                                                  algo_category, {},
+                                                                  view_model=view_model)
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
@@ -313,11 +320,13 @@ class TestOperationService(BaseTestCase):
         """
         test_adapter_factory()
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
-        data = {"test1_val1": 5, 'test1_val2': 5}
+        view_model = adapter.get_view_model()()
+        view_model.test1_val1 = 5
+        view_model.test1_val2 = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {}, view_model=adapter.get_view_model()(), **data)
+                                                                  algo_category, {}, view_model=view_model)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)
         operation.status = model_operation.STATUS_FINISHED
@@ -325,171 +334,3 @@ class TestOperationService(BaseTestCase):
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
         assert operation.status, model_operation.STATUS_FINISHED == "Operation shouldn't have been canceled!"
-
-    def test_array_from_string(self):
-        """
-        Simple test for parse array on 1d, 2d and 3d array.
-        """
-        row = {'description': 'test.',
-               'default': 'None',
-               'required': True,
-               'label': 'test: ',
-               'attributes': None,
-               'elementType': 'float',
-               'type': 'array',
-               'options': None,
-               'name': 'test'}
-        input_data_string = '[ [1 2 3] [4 5 6]]'
-        output = string2array(input_data_string, ' ', row['elementType'])
-        assert output.shape, (2, 3) == "Dimensions not properly parsed"
-        for i in output[0]:
-            assert i in [1, 2, 3]
-        for i in output[1]:
-            assert i in [4, 5, 6]
-        input_data_string = '[1, 2, 3, 4, 5, 6]'
-        output = string2array(input_data_string, ',', row['elementType'])
-        assert output.shape == (6,), "Dimensions not properly parsed"
-        for i in output:
-            assert i in [1, 2, 3, 4, 5, 6]
-        input_data_string = '[ [ [1,1], [2, 2] ], [ [3 ,3], [4,4] ] ]'
-        output = string2array(input_data_string, ',', row['elementType'])
-        assert output.shape == (2, 2, 2), "Wrong dimensions."
-        for i in output[0][0]:
-            assert i == 1
-        for i in output[0][1]:
-            assert i == 2
-        for i in output[1][0]:
-            assert i == 3
-        for i in output[1][1]:
-            assert i == 4
-        row = {'description': 'test.',
-               'default': 'None',
-               'required': True,
-               'label': 'test: ',
-               'attributes': None,
-               'elementType': 'str',
-               'type': 'array',
-               'options': None,
-               'name': 'test'}
-        input_data_string = '[1, 2, 3, 4, 5, 6]'
-        output = string2array(input_data_string, ',', row['elementType'])
-        for i in output:
-            assert i in [1, 2, 3, 4, 5, 6]
-
-    def test_wrong_array_from_string(self):
-        """Test that parsing an array from string is throwing the expected 
-        exception when wrong input string"""
-        row = {'description': 'test.',
-               'default': 'None',
-               'required': True,
-               'label': 'test: ',
-               'attributes': None,
-               'elementType': 'float',
-               'type': 'array',
-               'options': None,
-               'name': 'test'}
-        input_data_string = '[ [1,2 3] [4,5,6]]'
-        with pytest.raises(ValueError):
-            string2array(input_data_string, ',', row['elementType'])
-        input_data_string = '[ [1,2,wrong], [4, 5, 6]]'
-        with pytest.raises(ValueError):
-            string2array(input_data_string, ',', row['elementType'])
-        row = {'description': 'test.',
-               'default': 'None',
-               'required': True,
-               'label': 'test: ',
-               'attributes': None,
-               'elementType': 'str',
-               'type': 'array',
-               'options': None,
-               'name': 'test'}
-        output = string2array(input_data_string, ',', row['elementType'])
-        assert output.shape == (2, 3)
-        assert output[0][2] == 'wrong', 'String data not converted properly'
-        input_data_string = '[ [1,2 3] [4,5,6]]'
-        output = string2array(input_data_string, ',', row['elementType'])
-        assert output[0][1] == '2 3'
-
-    def test_reduce_dimension_component(self):
-        """
-         This method tests if the data passed to the launch method of
-         the NDimensionArrayAdapter adapter is correct. The passed data should be a list
-         of arrays with one dimension.
-        """
-        inserted_count = FlowService().get_available_datatypes(self.test_project.id,
-                                                               "tvb.datatypes.arrays.MappedArray")[1]
-        assert inserted_count == 0, "Expected to find no data."
-        #create an operation
-        algorithm_id = FlowService().get_algorithm_by_module_and_class('tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                                                       'NDimensionArrayAdapter').id
-        operation = model_operation.Operation(self.test_user.id, self.test_project.id, algorithm_id, 'test params',
-                                    meta=json.dumps({DataTypeMetaData.KEY_STATE: "RAW_DATA"}),
-                                    status=model_operation.STATUS_FINISHED)
-        operation = dao.store_entity(operation)
-        #save the array wrapper in DB
-        adapter_instance = NDimensionArrayAdapter()
-        PARAMS = {}
-        self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-        inserted_data = FlowService().get_available_datatypes(self.test_project.id,
-                                                              "tvb.datatypes.arrays.MappedArray")[0]
-        assert len(inserted_data) == 1, "Problems when inserting data"
-        gid = inserted_data[0][2]
-        entity = dao.get_datatype_by_gid(gid)
-        #from the 3D array do not select any array
-        PARAMS = {"python_method": "reduce_dimension", "input_data": gid,
-                  "input_data_dimensions_0": "requiredDim_1",
-                  "input_data_dimensions_1": "",
-                  "input_data_dimensions_2": ""}
-        try:
-            self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-            raise AssertionError("Test should not pass. The resulted array should be a 1D array.")
-        except Exception:
-            # OK, do nothing; we were expecting to produce a 1D array
-            pass
-        #from the 3D array select only a 1D array
-        first_dim = [gid + '_1_0', 'requiredDim_1']
-        PARAMS = {"python_method": "reduce_dimension", "input_data": gid,
-                  "input_data_dimensions_0": first_dim,
-                  "input_data_dimensions_1": gid + "_2_1"}
-        self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-        expected_result = entity.array_data[:, 0, 1]
-        actual_result = adapter_instance.launch_param
-        assert len(actual_result) == len(expected_result), "Not the same size for results!"
-        assert numpy.equal(actual_result, expected_result).all()
-
-        #from the 3D array select a 2D array
-        first_dim = [gid + '_1_0', gid + '_1_1', 'requiredDim_2']
-        PARAMS = {"python_method": "reduce_dimension", "input_data": gid,
-                  "input_data_dimensions_0": first_dim,
-                  "input_data_dimensions_1": gid + "_2_1"}
-        self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-        expected_result = entity.array_data[slice(0, None), [0, 1], 1]
-        actual_result = adapter_instance.launch_param
-        assert len(actual_result) == len(expected_result), "Not the same size for results!"
-        assert numpy.equal(actual_result, expected_result).all()
-
-        #from 3D array select 1D array by applying SUM function on the first
-        #dimension and average function on the second dimension
-        PARAMS = {"python_method": "reduce_dimension", "input_data": gid,
-                  "input_data_dimensions_0": ["requiredDim_1", "func_sum"],
-                  "input_data_dimensions_1": "func_average",
-                  "input_data_dimensions_2": ""}
-        self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-        aux = numpy.sum(entity.array_data, axis=0)
-        expected_result = numpy.average(aux, axis=0)
-        actual_result = adapter_instance.launch_param
-        assert len(actual_result) == len(expected_result), "Not the same size of results!"
-        assert numpy.equal(actual_result, expected_result).all()
-
-        #from 3D array select a 2D array and apply op. on the second dimension
-        PARAMS = {"python_method": "reduce_dimension", "input_data": gid,
-                  "input_data_dimensions_0": ["requiredDim_2", "func_sum",
-                                              "expected_shape_x,512", "operations_x,&gt;"],
-                  "input_data_dimensions_1": "",
-                  "input_data_dimensions_2": ""}
-        try:
-            self.operation_service.initiate_prelaunch(operation, adapter_instance, {}, **PARAMS)
-            raise AssertionError("Test should not pass! The second dimension of the array should be >512.")
-        except Exception:
-            # OK, do nothing;
-            pass

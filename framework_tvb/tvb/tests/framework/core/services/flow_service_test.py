@@ -115,9 +115,11 @@ class TestFlowService(TransactionalTestCase):
         group = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
-        # Only the isocline is expected due to the 2 ranges set in the factory
-        assert 1 == len(result)
-        assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS == result[0].classname
+        # Both discrete and isocline are expected due to the 2 ranges set in the factory
+        assert 2 == len(result)
+        result_classnames = [res.classname for res in result]
+        assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS in result_classnames
+        assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS in result_classnames
 
     def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory, region_mapping_factory):
 
@@ -127,7 +129,7 @@ class TestFlowService(TransactionalTestCase):
         result,  has_operations_warning = self.flow_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
-        assert False == has_operations_warning
+        assert has_operations_warning is False
 
     def test_get_group_by_identifier(self):
         """

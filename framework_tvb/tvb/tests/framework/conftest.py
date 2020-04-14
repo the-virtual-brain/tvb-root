@@ -208,8 +208,8 @@ def connectivity_index_factory(connectivity_factory, operation_factory):
         conn_db.fk_from_operation = op.id
         conn_db.fill_from_has_traits(conn)
 
-        ts_h5_path = h5.path_for_stored_index(conn_db)
-        with ConnectivityH5(ts_h5_path) as f:
+        conn_h5_path = h5.path_for_stored_index(conn_db)
+        with ConnectivityH5(conn_h5_path) as f:
             f.store(conn)
             f.number_of_regions.store(conn.number_of_regions)
             f.number_of_connections.store(conn.number_of_connections)

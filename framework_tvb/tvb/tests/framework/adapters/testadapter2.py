@@ -36,17 +36,14 @@ Created on Jul 21, 2011
 
 from time import sleep
 import tvb.core.adapters.abcadapter as abcadapter
-from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.forms import SimpleIntField, IntField
+from tvb.basic.neotraits.api import Int
+from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 class TestModel(ViewModel):
 
-    test = Attr(
-        field_type=str,
-        default='test'
-    )
+    test = Int(default=0)
 
 class TestAdapter2Form(abcadapter.ABCAdapterForm):
     """
@@ -55,7 +52,6 @@ class TestAdapter2Form(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapter2Form, self).__init__(prefix, project_id)
-        # self.test = SimpleIntField(self, name="test", default=0)
         self.test = IntField(TestModel.test, self, name='test')
 
     @staticmethod
@@ -114,57 +110,3 @@ class TestAdapter2(abcadapter.ABCAsynchronous):
         sleep(15)
         test_var = 1
         int(test_var)
-
-
-class TestAdapter22Form(abcadapter.ABCAdapterForm):
-    """
-        This class is used for testing purposes.
-    """
-
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapter22Form, self).__init__(prefix, project_id)
-        self.test2 = SimpleIntField(self, name="test2", default=0)
-
-    @staticmethod
-    def get_required_datatype():
-        return DummyDataTypeIndex
-
-    @staticmethod
-    def get_input_name():
-        return "dummy_data_type"
-
-    @staticmethod
-    def get_filters():
-        pass
-
-
-class TestAdapter22(abcadapter.ABCAsynchronous):
-    """
-        This class is used for testing purposes.
-    """
-
-    def __init__(self):
-        super(TestAdapter22, self).__init__()
-        
-    def get_form_class(self):
-        return TestAdapter22Form
-
-    def get_output(self):
-        return [DummyDataTypeIndex]
-
-    def get_required_memory_size(self, **kwargs):
-        """
-        Return the required memory to run this algorithm.
-        """
-        # Don't know how much memory is needed.
-        return -1
-
-    def get_required_disk_size(self, **kwargs):
-        """
-        Returns the required disk size to be able to run the adapter.
-        """
-        return 0
-        
-    def launch(self):
-        test_var = 1
-        str(test_var)

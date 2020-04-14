@@ -123,7 +123,7 @@ class OperationService:
             if len(operations) < 1:
                 self.logger.warning("No operation was defined")
                 raise LaunchException("Invalid empty Operation!!!")
-            return self.initiate_prelaunch(operations[0], adapter_instance, view_model=model_view, **kwargs)
+            return self.initiate_prelaunch(operations[0], adapter_instance, **kwargs)
         else:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
@@ -303,7 +303,7 @@ class OperationService:
             h5_file.load_into(view_model)
         return view_model
 
-    def initiate_prelaunch(self, operation, adapter_instance, view_model=None, **kwargs):
+    def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
         Public method.
         This should be the common point in calling an adapter- method.
@@ -322,8 +322,7 @@ class OperationService:
             user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
-            if view_model is None:
-                view_model = self.load_view_model(adapter_instance, operation)
+            view_model = self.load_view_model(adapter_instance, operation)
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
