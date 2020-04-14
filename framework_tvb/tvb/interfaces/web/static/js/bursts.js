@@ -72,10 +72,6 @@ function resetToNewBurst() {
         type: "POST",
         url: '/burst/reset_simulator_configuration/',
         success: function (response) {
-            // loadSimulatorInterface();
-            // returnToSessionPortletConfiguration();
-            // setNewBurstActive();
-            // fill_burst_name('', false, false);
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
             displayMessage("Completely new configuration loaded!");
@@ -96,9 +92,6 @@ function copyBurst(burstID, first_wizzard_form_url) {
         url: '/burst/copy_simulator_configuration/' + burstID,
         showBlockerOverlay: true,
         success: function (response) {
-            // loadSimulatorInterface();
-            // setNewBurstActive();
-            // fill_burst_name(r, false, true);
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
 
@@ -317,142 +310,6 @@ function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
     $("#button-branch-burst").toggle(beActiveRest);
 }
 
-function _fillSimulatorParametersArea(htmlContent, isConfigure) {
-    let simParamElem = $("#div-simulator-parameters");
-    simParamElem.html(htmlContent);
-
-    const canConfigureRegionLevelParams = !isConfigure && (sessionStoredBurst.id === '' ||
-        sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
-    $("#configRegionModelParam").toggle(canConfigureRegionLevelParams);
-    $("#configSurfaceModelParam").hide();
-    $("#configNoiseValues").toggle(canConfigureRegionLevelParams);
-    $("#button-uncheck-all-params").toggle(isConfigure);
-    $("#button-check-all-params").toggle(isConfigure);
-
-    if (isConfigure) {
-        $("#configure-simulator-button").html("Save Configuration");
-        setSimulatorChangeListener('div-simulator-parameters');
-    } else {
-        $("#configure-simulator-button").html("Configure Interface");
-        toggleConfigSurfaceModelParamsButton();
-        // Do this before ranger expand since otherwise on FF the ranger is hidden.
-        setSimulatorChangeListener('div-simulator-parameters');
-        tryExpandRangers();
-    }
-
-    _toggleLaunchButtons(!isConfigure && sessionStoredBurst.id === '',
-        !isConfigure && sessionStoredBurst.id !== '' && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
-
-    MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
-    // Bind the menu events for the online help pop-ups. Needed for the new dom created
-    setupMenuEvents(simParamElem);
-}
-
-/*
- * Load the left side simulator interface without any check-boxes.
- */
-function loadSimulatorInterface() {
-    doAjaxCall({
-        type: "GET",
-        url: '/burst/get_reduced_simulator_interface',
-        showBlockerOverlay: true,
-        success: function (r) {
-            _fillSimulatorParametersArea(r, false);
-        },
-        error: function () {
-            displayMessage("Simulator data could not be loaded properly..", "errorMessage");
-        }
-    });
-}
-
-function tryExpandRangers() {
-    doAjaxCall({
-        type: "GET",
-        url: '/burst/get_previous_selected_rangers',
-        success: function (r) {
-            const result = $.parseJSON(r);
-            updateRangeValues(result);
-        },
-        error: function () {
-            displayMessage("Could not load previous rangers!.", "warningMessage");
-        }
-    });
-}
-
-/*
- * Set on change on all simulator inputs, to set a new burst as active whenever something changes.
- */
-function setSimulatorChangeListener(parentDivId) {
-    const parentDiv = $('#' + parentDivId);
-    parentDiv.find('select').each(function () {
-        if (!this.disabled) {
-            this.onchange();
-        }
-    });
-    parentDiv.find('input[type="radio"]').each(function () {
-        if (!this.disabled && this.checked) {
-            this.onchange();
-        }
-    });
-    parentDiv.find(":input").each(function () {
-        if (this.type !== 'checkbox') {
-            $(this).change(function () {
-                if (this.type !== 'checkbox') {
-                    markBurstChanged();
-                }
-            });
-        }
-    });
-}
-
-/*
- * Switch the simulator part from the 'configure' view with checkboxes next to 
- * entries to the normal mode only with a reduce set of parameters.
- */
-function configureSimulator(configureHref) {
-    // todo: do not keep app state in dom
-    if (configureHref.text === "Configure Interface") {
-        doAjaxCall({
-            type: "GET",
-            url: '/burst/configure_simulator_parameters',
-            showBlockerOverlay: true,
-            success: function (r) {
-                _fillSimulatorParametersArea(r, true);
-            },
-            error: function () {
-                displayMessage("Error occurred during parameter save.", "errorMessage");
-            }
-        });
-    } else {
-        const submitableData = getSubmitableData('div-simulator-parameters', true);
-
-        doAjaxCall({
-            type: "POST",
-            data: {'simulator_parameters': JSON.stringify(submitableData)},
-            url: '/burst/save_simulator_configuration?exclude_ranges=True',
-            success: function () {
-                loadSimulatorInterface();
-            },
-            error: function () {
-                displayMessage("Error during saving configuration.", "errorMessage");
-            }
-        });
-    }
-}
-
-/**
- * Shortcut into selecting/unselecting all simulation parameters.
- */
-function toggleSimulatorParametersChecks(beChecked) {
-    $(".param-config-checkbox").each(function () {
-        if (beChecked) {
-            $(this).prop("checked", true);
-        } else {
-            $(this).prop("checked", false);
-        }
-    });
-}
-
 /**
  * Submit currently set simulation parameters.
  * For Model-Visual-Setter important are: Connectivity and Model.
@@ -653,22 +510,6 @@ function selectPortlets(isSave) {
         });
     }
     $("#portlet-param-config").hide();
-}
-
-/*
- * Set the right side display to the static image previews of the portlets.
- */
-function setPortletsStaticPreviews() {
-    doAjaxCall({
-        type: "POST",
-        url: '/burst/get_configured_portlets',
-        success: function (r) {
-            $("#portlets-display").replaceWith(r);
-        },
-        error: function () {
-            displayMessage("Selection was not saved properly.", "errorMessage");
-        }
-    });
 }
 
 /*
@@ -936,7 +777,7 @@ function displayBurstTree(selectedHref, selectedProjectID) {
     $("#div-burst-tree").show();
 }
 
-function _calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step){
+function _calculateValuesInRange(pse_param_lo, pse_param_hi, pse_param_step){
     const param_difference = pse_param_hi - pse_param_lo;
     let pse_param_number = Math.floor(param_difference / pse_param_step);
     const remainder_param = param_difference % pse_param_step;
@@ -964,7 +805,7 @@ function _computeRangeNumberForParamPrefix(prefix){
         pse_param_lo = pse_param_lo[0].valueAsNumber;
         const pse_param_hi = $("#".concat(prefix, "_hi"))[0].valueAsNumber;
         const pse_param_step = $("#".concat(prefix, "_step"))[0].valueAsNumber;
-        return _calculateValuesInRage(pse_param_lo, pse_param_hi, pse_param_step);
+        return _calculateValuesInRange(pse_param_lo, pse_param_hi, pse_param_step);
     }
 
     //check if we have param with guid
@@ -1023,39 +864,15 @@ function setPseRangeParameters(){
 function initBurstConfiguration(sessionPortlets, selectedTab) {
     setPseRangeParameters();
 
-    //Get the selected burst from session and store it to be used further ....
-    doAjaxCall({
-        type: "POST",
-        url: '/burst/get_selected_burst',
-        cache: false,
-        async: false,
-        success: function (r) {
-            if (r !== 'None') {
-                sessionStoredBurst.id = r;
-            } else {
-                sessionStoredBurst = clone(EMPTY_BURST);
-            }
-        },
-        error: function () {
-            displayMessage("Simulator data could not be loaded properly..", "errorMessage");
-        }
-    });
-
     loadBurstHistory();
-
-    if (sessionStoredBurst.id !== "") {
-        loadBurst(sessionStoredBurst.id);
-    } else {
-        tryExpandRangers();
-    }
-
     toggleConfigSurfaceModelParamsButton();
 
     if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
     }
-    selectedPortlets = sessionPortlets;
-    setPortletsStaticPreviews();
+
+    // selectedPortlets = sessionPortlets;
+    // setPortletsStaticPreviews();
 }
 
 /*
@@ -1106,9 +923,7 @@ function loadBurst(burst_id) {
                 fill_burst_name(selectedBurst.children[0].text, true, false);
                 updatePortletsToolbar(3);
             }
-            // Now load simulator interface and the corresponding right side div depending
-            // on the condition if the burst was a group launch or not.
-            loadSimulatorInterface();
+
             if (groupGID !== null && groupGID !== "None" && groupGID !== undefined) {
                 loadGroup(groupGID);
             } else if (selectedTab === -1) {
@@ -1154,25 +969,6 @@ function loadBurst(burst_id) {
             displayMessage("Simulation was not loaded properly...", "errorMessage");
         }
     });
-}
-
-
-/*
- * Set the new burst entry from the burst history column as active. Update visualization accordingly.
- */
-function setNewBurstActive() {
-    switch_top_level_visibility("#section-portlets");
-    $("#burst-history").find("li").removeClass(ACTIVE_BURST_CLASS).removeClass(GROUP_BURST_CLASS);
-
-    if (selectedTab === -1) {
-        sessionStoredBurst.id = "";
-        switch_top_level_visibility();
-        $("#section-portlets").show();
-        $("#tab-burst-tree").click();
-    } else {
-        setPortletsStaticPreviews();
-    }
-    sessionStoredBurst = clone(EMPTY_BURST);
 }
 
 /**
