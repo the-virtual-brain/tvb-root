@@ -46,7 +46,7 @@ class ProjectionMatrix(TVBProjectionMatrix, BaseModel):
                                              return_tvb_instance, **kwargs)
 
 
-class ProjectionSurfaceEEG(ProjectionMatrix):
+class ProjectionSurfaceEEG(ProjectionMatrix, TVBProjectionSurfaceEEG):
 
     def to_tvb_instance(self, **kwargs):
         return super(ProjectionSurfaceEEG, self).to_tvb_instance(TVBProjectionSurfaceEEG, **kwargs)
@@ -58,7 +58,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
                                              return_tvb_instance, **kwargs)
 
 
-class ProjectionSurfaceSEEG(ProjectionMatrix):
+class ProjectionSurfaceSEEG(ProjectionMatrix, TVBProjectionSurfaceSEEG):
 
     def to_tvb_instance(self, **kwargs):
         return super(ProjectionSurfaceSEEG, self).to_tvb_instance(TVBProjectionSurfaceSEEG, **kwargs)
@@ -70,7 +70,7 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
                                              return_tvb_instance, **kwargs)
 
 
-class ProjectionSurfaceMEG(ProjectionMatrix):
+class ProjectionSurfaceMEG(ProjectionMatrix, TVBProjectionSurfaceMEG):
 
     def to_tvb_instance(self, **kwargs):
         return super(ProjectionSurfaceMEG, self).to_tvb_instance(TVBProjectionSurfaceMEG, **kwargs)

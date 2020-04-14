@@ -1,8 +1,8 @@
 # coding=utf-8
 
 import numpy as np
-from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.basic.neotraits.api import NArray, Attr
+from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.datatypes.surfaces import BrainSkull as TVBBrainSkull
 from tvb.datatypes.surfaces import CorticalSurface as TVBCorticalSurface
 from tvb.datatypes.surfaces import EEGCap as TVBEEGCap
@@ -90,7 +90,7 @@ class CorticalSurface(Surface, TVBCorticalSurface):
         return super(CorticalSurface, self).to_tvb_instance(TVBCorticalSurface, **kwargs)
 
 
-class SubcorticalSurface(Surface):
+class SubcorticalSurface(Surface, TVBCorticalSurface):
     surface_type = Attr(field_type=str, default="Subcortical Surface")
 
     def to_tvb_instance(self, **kwargs):

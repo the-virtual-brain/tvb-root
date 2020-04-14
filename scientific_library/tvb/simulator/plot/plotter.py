@@ -29,14 +29,14 @@
 #
 
 from tvb.simulator.plot.base_plotter import BasePlotter
-from tvb.simulator.plot.config import FiguresConfig
+from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
 from tvb.simulator.plot.head_plotter import HeadPlotter
 from tvb.simulator.plot.time_series_plotter import TimeSeriesPlotter
 
 
 class Plotter(object):
 
-    def __init__(self, config=None):
+    def __init__(self, config=CONFIGURED):
         # type: (FiguresConfig) -> None
         self.config = config
 
