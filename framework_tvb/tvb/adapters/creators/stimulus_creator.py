@@ -79,7 +79,6 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         super(SurfaceStimulusCreatorForm, self).__init__()
         self.project_id = project_id
 
-        # TODO: filter CorticalSurafces
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',

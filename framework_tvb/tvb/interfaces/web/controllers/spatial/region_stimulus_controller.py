@@ -50,7 +50,6 @@ from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
     check_user
-from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
 
