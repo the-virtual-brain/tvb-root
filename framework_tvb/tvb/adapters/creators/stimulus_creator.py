@@ -37,6 +37,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrField, TraitDataTypeSelectField, \
     SelectField
@@ -45,7 +46,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
@@ -104,7 +105,8 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                                 values=[CORTICAL])
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
