@@ -34,18 +34,16 @@
 """
 
 import os
+from itertools import zip_longest
+
 import matplotlib
 import numpy
+import tvb.simulator.plot.tools as TVB_plot_tools
 from matplotlib import pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from itertools import zip_longest
 from tvb.basic.logger.builder import get_logger
-import tvb.simulator.plot.tools as TVB_plot_tools
-from tvb.simulator.plot.config import FiguresConfig, CONFIGURED
+from tvb.simulator.plot.config import CONFIGURED
 from tvb.simulator.plot.utils import generate_region_labels, ensure_list
-
-matplotlib.use(CONFIGURED.MATPLOTLIB_BACKEND)
-pyplot.rcParams["font.size"] = CONFIGURED.FONTSIZE
 
 
 class BasePlotter(object):
@@ -54,6 +52,8 @@ class BasePlotter(object):
         self.config = config
         self.logger = get_logger(self.__class__.__name__)
         self.print_regions_indices = True
+        matplotlib.use(self.config.MATPLOTLIB_BACKEND)
+        pyplot.rcParams["font.size"] = self.config.FONTSIZE
 
     def _check_show(self):
         if self.config.SHOW_FLAG:
