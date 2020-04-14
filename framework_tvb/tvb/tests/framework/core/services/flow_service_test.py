@@ -37,6 +37,7 @@ import os
 import numpy
 import pytest
 from datetime import datetime
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestAdapter1, TestModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
@@ -159,13 +160,12 @@ class TestFlowService(TransactionalTestCase):
         Test preparation of an adapter.
         """
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        interface = self.flow_service.prepare_adapter(stored_adapter)
         assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
-        assert "name" in interface.KEY_NAME, "Bad interface created!"
-        assert "filterable" in interface.KEY_FILTERABLE, "Bad interface created!"
-        assert "type" in interface.KEY_TYPE, "Bad interface created!"
-        assert "value" in interface.KEY_VALUE, "Bad interface created!"
-        assert "default" in interface.KEY_DEFAULT, "Bad interface created!"
+        adapter = self.flow_service.prepare_adapter(stored_adapter)
+        assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
+        assert adapter.get_form_class() == TestAdapter1Form
+        assert adapter.get_view_model() == TestModel
+
 
     def test_fire_operation(self):
         """
