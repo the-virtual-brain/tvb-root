@@ -321,19 +321,11 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverage), 'Monitor class is incorrect.'
 
-    def test_set_temporal_average_monitor_params(self):
-        with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            self.simulator_controller.set_monitor_params(**self.sess_mock._data)
-
-        assert self.session_stored_simulator.monitors[0].period == 0.9765625, "period should be set to default value."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
-            "Default for variables_of_interest is None"
-
     def test_set_monitor_params(self):
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.8'
-        self.sess_mock['variables_of_interest'] = 'anything'
-
         self.session_stored_simulator.monitors = [SubSample()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -341,8 +333,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
-            "Variables of interest should be None."
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+            list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
 
     def set_region_mapping(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
@@ -373,8 +365,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
                                                                eeg_sensors.gid, surface.gid)
 
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
-        self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
         self.sess_mock['projection'] = eeg_projections.gid
         self.sess_mock['sigma'] = "1.0"
@@ -387,8 +381,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
-        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
-            "Variables of interest where not set correctly."
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+            list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
         assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
         assert self.session_stored_simulator.monitors[0].sensors.gid.hex == eeg_sensors.gid, \
@@ -411,8 +405,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
                                                                meg_sensors.gid, surface.gid)
 
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
-        self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
         self.sess_mock['projection'] = meg_projections.gid
         self.sess_mock['sigma'] = 1.0
@@ -425,8 +421,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
-        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
-            "Variables of interest where not set correctly."
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+            list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
         assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
         assert self.session_stored_simulator.monitors[0].sensors.gid.hex == meg_sensors.gid, \
@@ -449,8 +445,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         seeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
                                                                 seeg_sensors.gid, surface.gid)
 
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
-        self.sess_mock['variables_of_interest'] = '[0, 1]'
         self.sess_mock['region_mapping'] = region_mapping.gid
         self.sess_mock['projection'] = seeg_projections.gid
         self.sess_mock['sigma'] = "1.0"
@@ -463,8 +461,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
-        assert (self.session_stored_simulator.monitors[0].variables_of_interest == [0, 1]).all(), \
-            "Variables of interest where not set correctly."
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+            list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
         assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
         assert self.session_stored_simulator.monitors[0].sensors.gid.hex == seeg_sensors.gid, \
@@ -473,8 +471,11 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             "Projection wasn't stored correctly."
 
     def test_set_bold_monitor_params(self):
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '2000.0'
-        self.sess_mock['variables_of_interest'] = ''
         self.sess_mock['hrf_kernel'] = 'HRF kernel: Volterra Kernel'
 
         self.session_stored_simulator.monitors = [Bold()]
@@ -484,8 +485,8 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
-        assert self.session_stored_simulator.monitors[0].variables_of_interest is None, \
-            "Variables of interest should have not been added."
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+            list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
 
     def test_set_monitor_equation(self):
         self.sess_mock['tau_s'] = '0.8'

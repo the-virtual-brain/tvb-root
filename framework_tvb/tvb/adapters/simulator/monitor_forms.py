@@ -100,6 +100,9 @@ class MonitorForm(Form):
         if trait.variables_of_interest is not None:
             self.variables_of_interest.data = [list(self.variables_of_interest_indexes.keys())[idx]
                                                for idx in trait.variables_of_interest]
+        else:
+            # by default we select all variables of interest for the monitor forms
+            self.variables_of_interest.data = list(self.variables_of_interest_indexes.keys())
 
     def fill_trait(self, datatype):
         super(MonitorForm, self).fill_trait(datatype)
@@ -108,12 +111,10 @@ class MonitorForm(Form):
     #TODO: We should review the code her, we could probably reduce the number of  classes that are used here
 
 
-class RawMonitorForm(MonitorForm):
+class RawMonitorForm(Form):
 
     def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
         super(RawMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
-        self.period = ScalarField(Raw.period, self, disabled=False)
-        self.variables_of_interest = ArrayField(Raw.variables_of_interest, self, disabled=False)
 
 
 class SubSampleMonitorForm(MonitorForm):
@@ -136,7 +137,7 @@ class GlobalAverageMonitorForm(MonitorForm):
         super(GlobalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
-class TemporalAverageMonitorForm(Form):
+class TemporalAverageMonitorForm(MonitorForm):
 
     def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
         super(TemporalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)

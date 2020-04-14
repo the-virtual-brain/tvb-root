@@ -54,7 +54,7 @@ from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
-from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, TemporalAverage
+from tvb.simulator.monitors import Bold, Projection, EEG, MEG, iEEG, Raw
 from tvb.simulator.noise import Additive
 
 
@@ -678,7 +678,7 @@ class SimulatorController(BurstBaseController):
 
         simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
 
-        if isinstance(monitor, TemporalAverage):
+        if isinstance(monitor, Raw):
             form = SimulatorFinalFragment(simulation_number=simulation_number)
 
             if cherrypy.request.method != 'POST':
