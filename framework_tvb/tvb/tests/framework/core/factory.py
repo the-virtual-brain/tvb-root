@@ -40,6 +40,7 @@ Project, User, Operation, basic imports (e.g. CFF).
 
 import os
 import random
+import uuid
 import tvb_data
 from cherrypy._cpreqbody import Part
 from cherrypy.lib.httputil import HeaderMap
@@ -48,6 +49,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterForm
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import hash_password
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
@@ -190,13 +192,18 @@ class TestFactory(object):
         return ABCAdapter.build_adapter(algorithm)
 
     @staticmethod
-    def store_burst(project_id, simulator_config=None):
+    def store_burst(project_id, operation=None):
         """
         Build and persist BurstConfiguration entity.
         """
         burst = BurstConfiguration(project_id)
-        if simulator_config is not None:
-            burst.simulator_configuration = simulator_config
+        if operation is not None:
+            burst.name = 'dummy_burst'
+            burst.status = BurstConfiguration.BURST_FINISHED
+            burst.start_time = datetime.datetime.now()
+            burst.fk_simulation_id = operation.id
+            burst.simulator_gid = uuid.uuid4().hex
+            BurstService().update_burst_configuration_h5(burst)
         return dao.store_entity(burst)
 
     @staticmethod
