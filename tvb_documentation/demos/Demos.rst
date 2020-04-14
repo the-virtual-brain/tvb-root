@@ -135,7 +135,7 @@ examples.
 .. _Simulate SEEG for Epileptor with Observation Noise: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_seeg_from_epileptors_with_observation_noise.ipynb
 .. _Simulate Surface Seeg Eeg Meg: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
 .. _Using Your Own Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
-.. _Interacting with TVBClient API launching simulation and analyzer methods: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
+.. _Interacting with TVBClient API by launching simulation and analyzer methods: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
 .. _Interacting with TVBClient API importers: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
 
 
@@ -326,15 +326,15 @@ Interact with TVB Framework
 
       `Generate TimeSeries for import in Web GUI`_
 
-Interact with TVBClient API
+Interact with TVB REST Client API
 ---------------------------
 
 .. figure:: figures/interact_client_api_simulation.png
       :width: 200px
       :figclass: demo-figure
-      :target: `Interacting with TVBClient API launching simulation and analyzer methods`_
+      :target: `Interacting with TVBClient API by launching simulation and analyzer methods`_
 
-      `Interacting with TVBClient API launching simulation and analyzer methods`_
+      `Interacting with TVBClient API by launching simulation and analyzer methods`_
 
 .. figure:: figures/interact_client_api_operation.png
       :width: 200px
