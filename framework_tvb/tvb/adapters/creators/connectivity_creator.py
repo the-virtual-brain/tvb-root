@@ -39,6 +39,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
@@ -155,7 +156,8 @@ class ConnectivityCreator(ABCAsynchronous):
         Connectivity matrix in the Visualizer.
         """
         # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
-        original_conn_ht = h5.load_from_index(view_model.original_connectivity)
+        original_connectivity_index = load_entity_by_gid(view_model.original_connectivity.hex)
+        original_conn_ht = h5.load_from_index(original_connectivity_index)
         assert isinstance(original_conn_ht, Connectivity)
 
         if not view_model.is_branch:
