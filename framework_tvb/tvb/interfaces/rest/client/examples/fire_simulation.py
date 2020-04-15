@@ -118,6 +118,26 @@ def fire_simulation_example(tvb_client_instance):
         assert chunk.shape[2] == data_shape[2]
         assert chunk.shape[3] == data_shape[3]
 
+        return project_gid, time_series_gid
+
+
+def quick_launch_an_operation(tvb_client_instance, project_gid, datatype_gid):
+    """
+    This is intended to simulate the following behavior:
+        - in GUI the user has the possibility to view all algorithms that can run over a certain datatype
+        - he chooses a datatype and all these algorithms are displayed
+        - then, he selects an algorithm
+    The data that should be sent to the server:
+        - the selected datatype_gid
+        - the index of the selected algorithm
+    """
+    algo_dto_list = tvb_client_instance.get_operations_for_datatype(datatype_gid)
+    algo_dto_index = 0
+
+    # Supposing that algo_dt_index and time_series_gid are sent from the client-side
+    operation_gid = tvb_client.quick_launch_operation(project_gid, algo_dto_list[algo_dto_index], datatype_gid)
+    monitor_operation(tvb_client, operation_gid)
+
 
 if __name__ == '__main__':
     logger.info("Preparing client...")
@@ -125,4 +145,5 @@ if __name__ == '__main__':
 
     logger.info("Attempt to login")
     tvb_client.browser_login()
-    fire_simulation_example(tvb_client)
+    project_gid, time_series_gid = fire_simulation_example(tvb_client)
+    quick_launch_an_operation(tvb_client, project_gid, time_series_gid)
