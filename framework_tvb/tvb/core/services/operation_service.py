@@ -323,7 +323,7 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = self.load_view_model(adapter_instance, operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.parameters = json.dumps(kwargs)

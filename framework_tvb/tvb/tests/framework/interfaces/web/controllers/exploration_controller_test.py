@@ -33,9 +33,6 @@
 """
 
 import json
-
-import pytest
-
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 
@@ -44,6 +41,10 @@ class TestExplorationController(BaseTransactionalControllerTest):
     """
     Unit tests ParameterExplorationController
     """
+
+    def transactional_setup_method(self):
+        self.clean_database()
+        self.init()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
@@ -55,18 +56,18 @@ class TestExplorationController(BaseTransactionalControllerTest):
         """
         self.dt_group = datatype_group_factory()
         self.controller = ParameterExplorationController()
-        result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', None, None)
-        assert result['available_metrics'] == list('{"v": 3}')
-        assert result['color_metric'] == list('{"v": 3}')[0]
-        assert result['size_metric'] is None
-        assert [1, 2, 3] == json.loads(result['labels_x'])
-        assert [0.1, 0.3, 0.5] == json.loads(result['labels_y'])
+        result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', 'v', 'v')
+        assert result['available_metrics'] == ["v"]
+        assert result['color_metric'] == "v"
+        assert result['size_metric'] == "v"
+        assert [1, 3, 5, 7, 9] == json.loads(result['labels_x'])
+        assert [0.1, 0.4] == json.loads(result['labels_y'])
         data = json.loads(result['d3_data'])
-        assert len(data) == 3
+        assert len(data) == 5
         for row in data.values():
-            assert len(row) == 3
+            assert len(row) == 2
             for entry in row.values():
-                assert entry['dataType'] == 'Datatype2'
+                assert entry['dataType'] == 'DatatypeMeasureIndex'
                 for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                     assert key in entry
 
@@ -80,4 +81,4 @@ class TestExplorationController(BaseTransactionalControllerTest):
         assert isinstance(result['canvasName'], str)
         assert isinstance(result['xAxisName'], str)
         assert isinstance(result['url_base'], str)
-        assert list('{"v": 3}') == result['available_metrics']
+        assert result['available_metrics'] == ['v']

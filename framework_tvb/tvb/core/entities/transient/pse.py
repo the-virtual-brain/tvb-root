@@ -39,26 +39,196 @@ The purpose of this entities is to be used in Jinja2 UI, or for populating visua
 
 import json
 import math
-import six
+import numpy
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.config.utils import EnhancedDictionary
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
+from tvb.core.entities.storage import dao
+
+KEY_GID = "Gid"
+KEY_TOOLTIP = "tooltip"
+LINE_SEPARATOR = "<br/>"
 
 
-class ContextDiscretePSE(EnhancedDictionary):
-    """
-    Entity used for filling a PSE visualizer.
-    """
-    KEY_GID = "Gid"
-    KEY_NODE_TYPE = "dataType"
-    KEY_OPERATION_ID = "operationId"
-    KEY_TOOLTIP = "tooltip"
-    LINE_SEPARATOR = "<br/>"
+class PSEModel(object):
+    def __init__(self, operation):
+        self.operation = operation
+        self.datatype_measure = self.determine_operation_result()
+        self.metrics = dict()
+        if self.datatype_measure:
+            self.metrics = json.loads(self.datatype_measure.metrics)
+        self.range1_key = None
+        self.range1_value = None
+        self.range2_key = None
+        self.range2_value = 0
+        self._extract_range_values()
+
+    def _extract_range_values(self):
+        ranges = json.loads(self.operation.range_values)
+        range_keys = list(ranges.keys())
+        self.range1_key = range_keys[0]
+        self.range1_value = ranges[self.range1_key]
+
+        if len(range_keys) > 1:
+            self.range2_key = range_keys[1]
+            self.range2_value = ranges[self.range2_key]
+
+    def __is_float(self, value):
+        is_float = True
+        try:
+            float(value)
+        except ValueError:
+            is_float = False
+        return is_float
+
+    def is_range1_float(self):
+        return self.__is_float(self.range1_value)
+
+    def is_range2_float(self):
+        if not self.range2_key:
+            return False
+        return self.__is_float(self.range2_value)
+
+    def _determine_type_and_label(self, value):
+        if self.__is_float(value):
+            return value
+
+        label = dao.get_datatype_by_gid(value).display_name
+        return label
+
+    def get_range1_label(self):
+        return self._determine_type_and_label(self.range1_value)
+
+    def get_range2_label(self):
+        if not self.range2_key:
+            return ''
+        return self._determine_type_and_label(self.range2_value)
+
+    def prepare_node_info(self):
+        """
+        Build a dictionary with all the required information to be displayed for a given node.
+        """
+        KEY_NODE_TYPE = "dataType"
+        KEY_OPERATION_ID = "operationId"
+
+        node_info = dict()
+        if self.operation.has_finished and self.datatype_measure is not None:
+            node_info[KEY_GID] = self.datatype_measure.gid
+            node_info[KEY_NODE_TYPE] = self.datatype_measure.type
+            node_info[KEY_OPERATION_ID] = self.operation.id
+            node_info[KEY_TOOLTIP] = self._prepare_node_text()
+        else:
+            tooltip = "No result available. Operation is in status: %s" % self.operation.status.split('-')[1]
+            node_info[KEY_TOOLTIP] = tooltip
+        return node_info
+
+    def _prepare_node_text(self):
+        """
+        Prepare text to display as tooltip for a PSE circle
+        :return: str
+        """
+        return str("Operation id: " + str(self.operation.id) + LINE_SEPARATOR +
+                   "Datatype gid: " + str(self.datatype_measure.gid) + LINE_SEPARATOR +
+                   "Datatype type: " + str(self.datatype_measure.type) + LINE_SEPARATOR +
+                   "Datatype subject: " + str(self.datatype_measure.subject) + LINE_SEPARATOR +
+                   "Datatype invalid: " + str(self.datatype_measure.invalid))
+
+    def determine_operation_result(self):
+        datatype_measure = None
+        if self.operation.has_finished:
+            datatypes = dao.get_results_for_operation(self.operation.id)
+            if len(datatypes) > 0:
+                datatype = datatypes[0]
+                if datatype.type == "DatatypeMeasureIndex":
+                    # Load proper entity class from DB.
+                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'gid')
+                else:
+                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
+                if len(measures) > 0:
+                    datatype_measure = measures[0]
+
+        return datatype_measure
 
 
+class PSEGroupModel(object):
+    def __init__(self, datatype_group_gid):
+        self.datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
+
+        if self.datatype_group is None:
+            raise Exception("Selected DataTypeGroup is no longer present in the database. "
+                            "It might have been remove or the specified id is not the correct one.")
+
+        self.operation_group = dao.get_operationgroup_by_id(self.datatype_group.fk_operation_group)
+        self.operations = dao.get_operations_in_group(self.operation_group.id)
+        self.pse_model_list = self.parse_pse_data_for_display()
+        self.all_metrics = dict()
+        self._prepare_ranges_data()
+
+    @property
+    def range1_values(self):
+        if self.pse_model_list[0].is_range1_float():
+            return self.range1_orig_values
+        return list(range(len(self.range1_orig_values)))
+
+    @property
+    def range2_values(self):
+        if self.pse_model_list[0].is_range2_float():
+            return self.range2_orig_values
+        return list(range(len(self.range2_orig_values)))
+
+    def parse_pse_data_for_display(self):
+        pse_model_list = []
+        for operation in self.operations:
+            pse_model = PSEModel(operation)
+            pse_model_list.append(pse_model)
+        return pse_model_list
+
+    def get_range1_key(self):
+        return self.pse_model_list[0].range1_key
+
+    def get_range2_key(self):
+        return self.pse_model_list[0].range2_key
+
+    def _prepare_ranges_data(self):
+        value_to_label1 = dict()
+        value_to_label2 = dict()
+        for pse_model in self.pse_model_list:
+            label1 = pse_model.get_range1_label()
+            value_to_label1.update({pse_model.range1_value: label1})
+            label2 = pse_model.get_range2_label()
+            value_to_label2.update({pse_model.range2_value: label2})
+
+        value_to_label1 = dict(sorted(value_to_label1.items()))
+        value_to_label2 = dict(sorted(value_to_label2.items()))
+        self.range1_orig_values = list(value_to_label1.keys())
+        self.range1_labels = list(value_to_label1.values())
+        self.range2_orig_values = list(value_to_label2.keys())
+        self.range2_labels = list(value_to_label2.values())
+
+    def get_all_node_info(self):
+        all_node_info = dict()
+        for pse_model in self.pse_model_list:
+            node_info = pse_model.prepare_node_info()
+            range1_val = self.range1_values[self.range1_orig_values.index(pse_model.range1_value)]
+            range2_val = self.range2_values[self.range2_orig_values.index(pse_model.range2_value)]
+            if not range1_val in all_node_info:
+                all_node_info[range1_val] = {}
+            all_node_info[range1_val][range2_val] = node_info
+        return all_node_info
+
+    def get_all_metrics(self):
+        if len(self.all_metrics) == 0:
+            for pse_model in self.pse_model_list:
+                if pse_model.datatype_measure:
+                    self.all_metrics.update({pse_model.datatype_measure.gid: pse_model.metrics})
+        return self.all_metrics
+
+    def get_available_metric_keys(self):
+        return list(self.pse_model_list[0].metrics)
+
+
+class DiscretePSE(EnhancedDictionary):
     def __init__(self, datatype_group_gid, color_metric, size_metric, back_page):
-
-        super(ContextDiscretePSE, self).__init__()
-
+        super(DiscretePSE, self).__init__()
         self.datatype_group_gid = datatype_group_gid
         self.min_color = float('inf')
         self.max_color = - float('inf')
@@ -69,23 +239,10 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.title_x, self.title_y = "", ""
         self.values_x, self.labels_x, self.values_y, self.labels_y = [], [], [], []
         self.series_array, self.available_metrics = [], []
-        self.datatypes_dict = {}
         self.d3_data = {}
         self.color_metric = color_metric
         self.size_metric = size_metric
         self.pse_back_page = back_page
-
-
-    def setRanges(self, title_x, values_x, labels_x, title_y, values_y, labels_y, only_numbers):
-        self.title_x = title_x
-        self.values_x = values_x
-        self.labels_x = labels_x
-
-        self.title_y = title_y
-        self.values_y = values_y
-        self.labels_y = labels_y
-        self.only_numbers = only_numbers
-
 
     def prepare_individual_jsons(self):
         """
@@ -99,118 +256,73 @@ class ContextDiscretePSE(EnhancedDictionary):
         self.has_started_ops = json.dumps(self.has_started_ops)
 
 
-    def prepare_full_json(self):
-        """
-        Apply JSON.dumps on full dictionary.
-        """
-        return json.dumps(self)
+class PSEDiscreteGroupModel(PSEGroupModel):
 
+    def __init__(self, datatype_group_gid, color_metric, size_metric, back_page):
+        super(PSEDiscreteGroupModel, self).__init__(datatype_group_gid)
+        self.color_metric = color_metric
+        self.size_metric = size_metric
+        self.determine_default_metrics()
+        self.pse_context = DiscretePSE(datatype_group_gid, self.color_metric, self.size_metric, back_page)
+        self.fill_pse_context()
+        self.prepare_display_data()
 
-    def build_node_info(self, operation, datatype):
-        """
-        Build a dictionary with all the required information to be displayed for a given node.
-        """
-        node_info = {}
-        if operation.status == STATUS_FINISHED and datatype is not None:
-            ### Prepare attributes to be able to show overlay and launch further analysis.
-            node_info[self.KEY_GID] = datatype.gid
-            node_info[self.KEY_NODE_TYPE] = datatype.type
-            node_info[self.KEY_OPERATION_ID] = operation.id
-            ### Prepare tooltip for quick display.
-            datatype_tooltip = str("Operation id: " + str(operation.id) + self.LINE_SEPARATOR +
-                                   "Datatype gid: " + str(datatype.gid) + self.LINE_SEPARATOR +
-                                   "Datatype type: " + str(datatype.type) + self.LINE_SEPARATOR +
-                                   "Datatype subject: " + str(datatype.subject) + self.LINE_SEPARATOR +
-                                   "Datatype invalid: " + str(datatype.invalid))
-            ### Add scientific report to the quick details.
-            if hasattr(datatype, 'summary_info') and datatype.summary_info is not None:
-                for key, value in six.iteritems(datatype.summary_info):
-                    datatype_tooltip = datatype_tooltip + self.LINE_SEPARATOR + str(key) + ": " + str(value)
-            node_info[self.KEY_TOOLTIP] = datatype_tooltip
-        else:
-            tooltip = "No result available. Operation is in status: %s" % operation.status.split('-')[1]
-            node_info[self.KEY_TOOLTIP] = tooltip
-        return node_info
+    def determine_default_metrics(self):
+        if self.color_metric is None and self.size_metric is None:
+            metrics = self.get_available_metric_keys()
+            if len(metrics) > 0:
+                self.color_metric = metrics[0]
+                self.size_metric = metrics[0]
+            if len(metrics) > 1:
+                self.size_metric = metrics[1]
 
+    def fill_pse_context(self):
+        sizes_array = [metrics[self.size_metric] for metrics in self.get_all_metrics().values()]
+        colors_array = [metrics[self.color_metric] for metrics in self.get_all_metrics().values()]
+        if len(sizes_array) > 0:
+            self.pse_context.min_shape_size = numpy.min(sizes_array)
+            self.pse_context.max_shape_size = numpy.max(sizes_array)
+            self.pse_context.min_color = numpy.min(colors_array)
+            self.pse_context.max_color = numpy.max(colors_array)
+        self.pse_context.available_metrics = self.get_available_metric_keys()
+        self.pse_context.title_x = self.get_range1_key()
+        self.pse_context.title_y = self.get_range2_key()
+        self.pse_context.values_x = self.range1_values
+        self.pse_context.values_y = self.range2_values
+        self.pse_context.labels_x = self.range1_labels
+        self.pse_context.labels_y = self.range2_labels
 
-    def prepare_metrics_datatype(self, measures, datatype):
-        """
-        Update attribute self.datatypes_dict with metric values for this DataType.
-        """
-        dt_info = {}
-        if measures is not None and len(measures) > 0:
-            measure = measures[0]
-            metrics = json.loads(measure.metrics)
-            self.available_metrics = list(metrics)
+    def _prepare_coords_json(self, val1, val2):
+        return '{"x":' + str(val1) + ', "y":' + str(val2) + '}'
 
-            # As default we have the first two metrics available is no metrics are passed from the UI
-            if self.color_metric is None and self.size_metric is None:
-                if len(self.available_metrics) >= 1:
-                    self.color_metric = self.available_metrics[0]
-                if len(self.available_metrics) >= 2:
-                    self.size_metric = self.available_metrics[1]
+    def prepare_display_data(self):
+        d3_data = self.get_all_node_info()
+        series_array = []
 
-            if self.color_metric is not None:
-                color_value = metrics[self.color_metric]
-                if color_value < self.min_color:
-                    self.min_color = color_value
-                if color_value > self.max_color:
-                    self.max_color = color_value
-                dt_info[self.color_metric] = color_value
-
-            if self.size_metric is not None:
-                size_value = metrics[self.size_metric]
-                if size_value < self.min_shape_size:
-                    self.min_shape_size = size_value
-                if size_value > self.max_shape_size:
-                    self.max_shape_size = size_value
-                dt_info[self.size_metric] = size_value
-        self.datatypes_dict[datatype.gid] = dt_info
-
-
-    def fill_object(self, final_dict):
-        """ Populate current entity with attributes required for visualizer"""
-        all_series = []
-        if self.only_numbers:
-            self.values_x = list(final_dict)
-
-            y_values_set = set()
-            for dict_ in final_dict.values():
-                y_values_set = y_values_set.union(list(dict_))
-            self.values_y = [a for a in y_values_set]
-
-            self.values_x.sort()
-            self.values_y.sort()
-            self.labels_x = self.values_x
-            self.labels_y = self.values_y
-
-        for key_1 in final_dict.keys():
-            for key_2 in final_dict[key_1].keys():
+        for val1 in d3_data.keys():
+            for val2 in d3_data[val1].keys():
+                current = d3_data[val1][val2]
+                coords = self._prepare_coords_json(val1, val2)
                 datatype_gid = None
-                current = final_dict[key_1][key_2]
-                if self.KEY_GID in current:
+                if KEY_GID in current:
                     # This means the operation was finished
-                    datatype_gid = current[self.KEY_GID]
+                    datatype_gid = current[KEY_GID]
 
-                parameter_coords = '{"x":' + str(key_1) + ', "y":' + str(key_2) + '}'
-                color_weight, shape_type_1 = self.__get_color_weight(self.datatypes_dict, datatype_gid,
-                                                                     self.color_metric)
+                color_weight, shape_type_1 = self.__get_color_weight(datatype_gid)
                 if (shape_type_1 is not None) and (datatype_gid is not None):
-                    current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Color metric has NaN values"
-                shape_size, shape_type_2 = self.__get_node_size(self.datatypes_dict, datatype_gid, len(self.labels_x),
-                                                                len(self.labels_y), self.size_metric)
-                if (shape_type_2 is not None) and (datatype_gid is not None):
-                    current[self.KEY_TOOLTIP] += self.LINE_SEPARATOR + " Size metric has NaN values"
-                # If either of the shape_types is not none use that
-                shape_type = shape_type_1 or shape_type_2
-                series = self.__get_node_json(shape_type, shape_size, parameter_coords)
+                    d3_data[val1][val2][KEY_TOOLTIP] += LINE_SEPARATOR + " Color metric has NaN values"
                 current['color_weight'] = color_weight
-                all_series.append(series)
 
-        self.d3_data = final_dict
-        self.series_array = self.__build_series_json(all_series)
-        self.status = 'started' if self.has_started_ops else 'finished'
+                radius, shape_type_2 = self.__get_node_size(datatype_gid, len(self.range1_values),
+                                                            len(self.range2_values))
+                if (shape_type_2 is not None) and (datatype_gid is not None):
+                    d3_data[val1][val2][KEY_TOOLTIP] += LINE_SEPARATOR + " Size metric has NaN values"
+                symbol = shape_type_1 or shape_type_2
 
+                series_array.append(self.__get_node_json(symbol, radius, coords))
+
+        self.pse_context.d3_data = d3_data
+        self.pse_context.series_array = self.__build_series_json(series_array)
 
     @staticmethod
     def __build_series_json(list_of_series):
@@ -222,7 +334,6 @@ class ContextDiscretePSE(EnhancedDictionary):
             final_json += value
         final_json += "]"
         return final_json
-
 
     @staticmethod
     def __get_node_json(symbol, radius, coords):
@@ -236,71 +347,57 @@ class ContextDiscretePSE(EnhancedDictionary):
         series += '"coords": ' + coords + '}'
         return series
 
-
-    @staticmethod
-    def __get_color_weight(datatype_indexes, datatype_gid, metric):
-        """
-        Returns the color weight of the shape used for representing the dataType with id equal to 'datatype_id'.
-
-        :param: datatype_indexes -  a dictionary which contains as keys a dataType GID and as values
-                            the index corresponding to the dataType into the list of
-                            dataTypes resulted from the same operation group
-        :param: datatype_gid - It should exists into the 'datatype_indexes' dictionary.
-        :param: metric - current metric key.
-        """
-        if datatype_gid is None:
-            return 0, "cross"
-        node_info = datatype_indexes[datatype_gid]
-        valid_metric = True
-
-        if metric in node_info:
-            try:
-                if math.isnan(float(node_info[metric])) or math.isinf(float(node_info[metric])):
-                    valid_metric = False
-            except ValueError:
-                valid_metric = False
-            if valid_metric:
-                return node_info[metric], None
-            else:
-                return 0, "cross"
-        return 0, None
-
-
-    def __get_node_size(self, datatype_indexes, datatype_gid, range1_length, range2_length, metric):
+    def __get_node_size(self, datatype_gid, range1_length, range2_length):
         """
         Computes the size of the shape used for representing the dataType with GID given.
-
-        :param: datatype_indexes -  a dictionary which contains as keys a daTatype GID and as values
-                            the index corresponding to the dataType into the list of
-                            dataTypes resulted from the same operation group
-        :param: datatype_gid - It should exists into the 'datatype_indexes' dict.
-        
         """
         min_size, max_size = self.__get_boundaries(range1_length, range2_length)
         if datatype_gid is None:
             return max_size / 2.0, "cross"
-        node_info = datatype_indexes[datatype_gid]
+        node_info = self.get_all_metrics()[datatype_gid]
 
-        if metric in node_info:
+        if self.size_metric in node_info:
             valid_metric = True
             try:
-                if math.isnan(float(node_info[metric])) or math.isinf(float(node_info[metric])):
+                if math.isnan(float(node_info[self.size_metric])) or math.isinf(float(node_info[self.size_metric])):
                     valid_metric = False
             except ValueError:
                 valid_metric = False
 
             if valid_metric:
-                shape_weight = node_info[metric]
-                values_range = self.max_shape_size - self.min_shape_size
+                shape_weight = node_info[self.size_metric]
+                values_range = self.pse_context.max_shape_size - self.pse_context.min_shape_size
                 shape_range = max_size - min_size
                 if values_range != 0:
-                    return min_size + (shape_weight - self.min_shape_size) / float(values_range) * shape_range, None
+                    return min_size + (shape_weight - self.pse_context.min_shape_size) / float(
+                        values_range) * shape_range, None
                 else:
                     return min_size, None
             else:
                 return max_size / 2.0, "cross"
         return max_size / 2.0, None
 
+    def __get_color_weight(self, datatype_gid):
+        """
+        Returns the color weight of the shape used for representing the dataType which id equal to 'datatype_gid'.
+        :param: datatype_gid - It should exists into the 'datatype_indexes' dictionary.
+        """
+        if datatype_gid is None:
+            return 0, "cross"
+        node_info = self.get_all_metrics()[datatype_gid]
+        valid_metric = True
+
+        if self.color_metric in node_info:
+            try:
+                if math.isnan(float(node_info[self.color_metric])) or math.isinf(float(node_info[self.color_metric])):
+                    valid_metric = False
+            except ValueError:
+                valid_metric = False
+            if valid_metric:
+                return node_info[self.color_metric], None
+            else:
+                return 0, "cross"
+        return 0, None
 
     @staticmethod
     def __get_boundaries(range1_length, range2_length):

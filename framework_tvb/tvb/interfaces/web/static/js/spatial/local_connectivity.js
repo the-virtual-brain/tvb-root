@@ -41,7 +41,7 @@ function LCON_page_init(minValue, maxValue) {
         BS_displayIndexForThePickedVertex();
     });
     LCON_viewer_init(minValue, maxValue);
-    $("select[name='_existentEntitiesSelect']").change(function () {
+    $("select[name='existentEntitiesSelect']").change(function () {
         BS_loadEntity();
     });
     LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
@@ -55,7 +55,7 @@ function _displayGradientForThePickedVertex(selectedLocalConnectivity) {
 
     if (TRIANGLE_pickedIndex >= 0) {
         if (selectedLocalConnectivity == null) {
-            selectedLocalConnectivity = $("select[name='_existentEntitiesSelect']").val();
+            selectedLocalConnectivity = $("select[name='existentEntitiesSelect']").val();
         }
 
         if (selectedLocalConnectivity == null || selectedLocalConnectivity == "None" ||

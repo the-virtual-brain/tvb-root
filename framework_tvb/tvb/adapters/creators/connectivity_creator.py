@@ -33,31 +33,68 @@
 """
 
 import numpy
+from tvb.basic.neotraits._attr import NArray
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleBoolField, SimpleArrayField
+from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 
+class ConnectivityCreatorModel(ViewModel):
+
+    original_connectivity = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        default=None,
+        label="Parent connectivity",
+        required=True
+    )
+
+    new_weights = NArray(
+        default=None,
+        label="Weights json array",
+        required=True,
+        doc="""""")
+
+    new_tracts = NArray(
+        default=None,
+        label="Tracts json array",
+        required=True,
+        doc="""""")
+
+    interest_area_indexes = NArray(
+        dtype=numpy.int,
+        default=None,
+        label="Indices of selected nodes as json array",
+        required=True,
+        doc="""""")
+
+    is_branch = Attr(
+        field_type=bool,
+        label="Is it a branch",
+        required=False,
+        doc="""""")
 
 class ConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityCreatorForm, self).__init__(prefix, project_id)
-        self.original_connectivity = DataTypeSelectField(self.get_required_datatype(), self, required=True,
-                                                         name='original_connectivity', label='Parent connectivity',
-                                                         conditions=self.get_filters())
-        self.new_weights = SimpleArrayField(self, name='new_weights', dtype=numpy.float, required=True,
-                                            label='Weights json array')
-        self.new_tracts = SimpleArrayField(self, name='new_tracts', dtype=numpy.float, required=True,
-                                           label='Tracts json array')
-        self.interest_area_indexes = SimpleArrayField(self, name='interest_area_indexes', dtype=numpy.int,
-                                                      required=True, label='Indices of selected nodes as json array')
-        self.is_branch = SimpleBoolField(self, required=False, name='is_branch', label='Is it a branch')
+        self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity, self,
+                                                         name='original_connectivity', conditions=self.get_filters())
+        self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights, self)
+        self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts, self)
+        self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes, self)
+        self.is_branch = BoolField(ConnectivityCreatorModel.is_branch, self)
+
+    @staticmethod
+    def get_view_model():
+        return ConnectivityCreatorModel
 
     @staticmethod
     def get_required_datatype():
@@ -83,16 +120,15 @@ class ConnectivityCreator(ABCAsynchronous):
     def get_output(self):
         return [ConnectivityIndex, RegionMappingIndex]
 
-    def get_required_disk_size(self, original_connectivity, new_weights, new_tracts, interest_area_indexes,
-                               is_branch=False, **kwargs):
-        n = len(new_weights) if is_branch else len(interest_area_indexes)
+    def get_required_disk_size(self, view_model):
+        n = len(view_model.new_weights) if view_model.is_branch else len(view_model.interest_area_indexes)
         matrices_nr_elems = 2 * n * n
         arrays_nr_elems = (1 + 3 + 1 + 3) * n  # areas, centres, hemispheres, orientations
         matrices_estimate = (matrices_nr_elems + arrays_nr_elems) * numpy.array(0).itemsize
         labels_guesstimate = n * numpy.array(['some label']).nbytes
         return (matrices_estimate + labels_guesstimate) / 1024
 
-    def get_required_memory_size(self, **_):
+    def get_required_memory_size(self, view_model):
         return -1  # does not consume significant additional memory beyond the parameters
 
     def _store_related_region_mappings(self, original_conn_gid, new_connectivity_ht):
@@ -114,27 +150,28 @@ class ConnectivityCreator(ABCAsynchronous):
 
         return result
 
-    def launch(self, original_connectivity, new_weights, new_tracts, interest_area_indexes, is_branch=False, **kwargs):
+    def launch(self, view_model):
         """
         Method to be called when user submits changes on the
         Connectivity matrix in the Visualizer.
         """
         # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
-        original_conn_ht = h5.load_from_index(original_connectivity)
+        original_connectivity_index = load_entity_by_gid(view_model.original_connectivity.hex)
+        original_conn_ht = h5.load_from_index(original_connectivity_index)
         assert isinstance(original_conn_ht, Connectivity)
 
-        if not is_branch:
-            new_conn_ht = self._cut_connectivity(original_conn_ht, numpy.array(new_weights),
-                                                 numpy.array(interest_area_indexes), numpy.array(new_tracts))
+        if not view_model.is_branch:
+            new_conn_ht = self._cut_connectivity(original_conn_ht, view_model.new_weights,
+                                                 view_model.interest_area_indexes, view_model.new_tracts)
             return [h5.store_complete(new_conn_ht, self.storage_path)]
 
         else:
             result = []
-            new_conn_ht = self._branch_connectivity(original_conn_ht, numpy.array(new_weights),
-                                                    numpy.array(interest_area_indexes), numpy.array(new_tracts))
+            new_conn_ht = self._branch_connectivity(original_conn_ht, view_model.new_weights,
+                                                    view_model.interest_area_indexes, view_model.new_tracts)
             new_conn_index = h5.store_complete(new_conn_ht, self.storage_path)
             result.append(new_conn_index)
-            result.extend(self._store_related_region_mappings(original_connectivity.gid, new_conn_ht))
+            result.extend(self._store_related_region_mappings(view_model.original_connectivity.gid, new_conn_ht))
             return result
 
     @staticmethod

@@ -148,8 +148,8 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step1_main'
         template_specification['isSingleMode'] = True
-        template_specification['regionStimSelectorForm'] = self.get_template_dict(region_stim_selector_form)
-        template_specification['regionStimCreatorForm'] = self.get_template_dict(region_stim_creator_form)
+        template_specification['regionStimSelectorForm'] = self.render_spatial_form(region_stim_selector_form)
+        template_specification['regionStimCreatorForm'] = self.render_spatial_form(region_stim_creator_form)
         template_specification['baseUrl'] = '/spatial/stimulus/region'
         self.plotted_equation_prefixes = {
             self.CONNECTIVITY_FIELD: region_stim_creator_form.connectivity.name,
@@ -175,7 +175,7 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step2_main'
         template_specification['next_step_url'] = '/spatial/stimulus/region/step_2_submit'
-        template_specification['regionStimSelectorForm'] = region_stim_selector_form
+        template_specification['regionStimSelectorForm'] = self.render_adapter_form(region_stim_selector_form)
 
         default_weights = current_region_stimulus.weight
         if len(default_weights) == 0:
@@ -340,14 +340,13 @@ class RegionStimulusController(SpatioTemporalController):
         self._reset_region_stimulus()
         return self.do_step(1)
 
-    @staticmethod
-    def _add_extra_fields_to_interface(input_list):
+    def _add_extra_fields_to_interface(self, input_list):
         """
         The fields that have to be added to the existent
         adapter interface should be added in this method.
         """
         temporal_plot_list_form = TemporalPlotForm()
-        input_list['temporalPlotInputList'] = temporal_plot_list_form
+        input_list['temporalPlotInputList'] = self.render_adapter_form(temporal_plot_list_form)
         return input_list
 
     def fill_default_attributes(self, template_dictionary):
