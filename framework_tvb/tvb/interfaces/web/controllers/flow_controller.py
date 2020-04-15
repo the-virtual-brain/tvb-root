@@ -372,7 +372,8 @@ class FlowController(BaseController):
         """
         return {"sum": "Sum", "average": "Average"}
 
-    @expose_fragment("flow/type2component/datatype2select_simple")
+
+    # @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
         # TODO: fix this use-case
         """

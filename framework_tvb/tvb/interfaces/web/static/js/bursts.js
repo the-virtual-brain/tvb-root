@@ -503,11 +503,9 @@ function loadBurst(burst_id) {
             if (groupGID !== null && groupGID !== "None" && groupGID !== undefined) {
                 loadGroup(groupGID);
             } else if (selectedTab === -1) {
-                switch_top_level_visibility();
                 $("#section-portlets").show();
                 $("#tab-burst-tree").click();
             } else {
-                switch_top_level_visibility();
                 const sectionPortletsElem = $("#section-portlets");
                 sectionPortletsElem.show();
                 const portletsDisplay = $("#portlets-display")[0];
