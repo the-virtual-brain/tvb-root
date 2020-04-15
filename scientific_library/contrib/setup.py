@@ -28,43 +28,22 @@
 #
 #
 
-"""
-Install TVB Library package for developers.
-
-Execute:
-    python setup.py install/develop
-"""
-
-import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.0.3"
+TVB_VERSION = "2.0.3"
+CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
 
-LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
-
-LIBRARY_REQUIRED_PACKAGES = ["matplotlib", "networkx", "numba", "numexpr", "numpy", "scipy", "typing"]
-
-LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
-
-with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
-    DESCRIPTION = fd.read()
-
-
-setuptools.setup(name='tvb-library',
-                 version=LIBRARY_VERSION,
+setuptools.setup(name='tvb-contrib',
+                 version=TVB_VERSION,
                  packages=setuptools.find_packages(),
                  include_package_data=True,
-                 install_requires=LIBRARY_REQUIRED_PACKAGES,
-                 extras_require={"test": LIBRARY_REQUIRED_EXTRA},
-                 description='A package for performing whole brain simulations',
-                 long_description=DESCRIPTION,
+                 install_requires=CONTRIB_DEPENDENCIES,
+                 description='A package with TVB contributed additions to the simulator, useful for scripting.',
                  license="GPL v3",
-                 author=LIBRARY_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
                  download_url='https://github.com/the-virtual-brain/tvb-root',
-                 keywords='tvb brain simulator neuroscience human animal neuronal dynamics models delay')
+                 keywords='tvb brain simulator neuroscience contrib')
 
-# Cleanup after EGG install. These are created by running setup.py in the source tree
-shutil.rmtree('tvb_library.egg-info', True)
+shutil.rmtree('tvb_contrib.egg-info', True)
