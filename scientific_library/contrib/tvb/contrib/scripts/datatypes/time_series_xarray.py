@@ -49,6 +49,10 @@ class TimeSeries(HasTraits):
         return self._data.shape
 
     @property
+    def size(self):
+        return self._data.size
+
+    @property
     def nr_dimensions(self):
         return self._data.ndim
 
