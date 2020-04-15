@@ -35,7 +35,9 @@ import os
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.basic.profile import TvbProfile
@@ -193,6 +195,30 @@ def connectivity_factory():
 
     return build
 
+
+@pytest.fixture()
+def connectivity_index_factory(connectivity_factory, operation_factory):
+    def build(data=None, op=None):
+        conn = connectivity_factory(data)
+
+        if op is None:
+            op = operation_factory()
+
+        conn_db = ConnectivityIndex()
+        conn_db.fk_from_operation = op.id
+        conn_db.fill_from_has_traits(conn)
+
+        conn_h5_path = h5.path_for_stored_index(conn_db)
+        with ConnectivityH5(conn_h5_path) as f:
+            f.store(conn)
+            f.number_of_regions.store(conn.number_of_regions)
+            f.number_of_connections.store(conn.number_of_connections)
+            f.gid.store(conn.gid)
+
+        conn_db = dao.store_entity(conn_db)
+        return conn_db
+
+    return build
 
 @pytest.fixture()
 def surface_factory():

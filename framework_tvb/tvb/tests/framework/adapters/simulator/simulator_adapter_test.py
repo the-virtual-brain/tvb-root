@@ -31,10 +31,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
+from os import path
 
 import pytest
 from copy import copy
+
+import tvb_data
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -99,87 +104,106 @@ class TestSimulatorAdapter(TransactionalTestCase):
                                                 IntrospectionRegistry.SIMULATOR_CLASS)
         self.simulator_adapter = ABCAdapter.build_adapter(algorithm)
 
-    def test_happy_flow_launch(self, connectivity_factory, operation_factory):
+    def test_happy_flow_launch(self, connectivity_index_factory, operation_factory):
         """
         Test that launching a simulation from UI works.
         """
-
-        self.test_user = TestFactory.create_user("Simulator_Adapter_User")
-        self.test_project = TestFactory.create_project(self.test_user, "Simulator_Adapter_Project")
-        self.connectivity = connectivity_factory(self.CONNECTIVITY_NODES)
+        model = SimulatorAdapterModel()
+        model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES).gid
+        model.simulation_length = 32
 
         self.operation = operation_factory()
+        # TODO: should store model in H5 and keep GID as param on operation to fix this
 
-        SIMULATOR_PARAMETERS['connectivity'] = self.connectivity.gid
+        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter)
+        sim_result = dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')[0]
+        assert (sim_result.data_length_1d, sim_result.data_length_2d, sim_result.data_length_3d,
+                sim_result.data_length_4d) == (32, 1, self.CONNECTIVITY_NODES, 1)
 
-        OperationService().initiate_prelaunch(self.operation, self.simulator_adapter, **SIMULATOR_PARAMETERS)
-        sim_result = dao.get_generic_entity(TimeSeriesRegion, 'TimeSeriesRegion', 'type')[0]
-        assert sim_result.read_data_shape() == (32, 1, self.CONNECTIVITY_NODES, 1)
+    def _estimate_hdd(self, model):
+        """ Private method, to return HDD estimation for a given a model"""
+        self.simulator_adapter.configure(model)
+        return self.simulator_adapter.get_required_disk_size(model)
 
-    def _estimate_hdd(self, new_parameters_dict):
-        """ Private method, to return HDD estimation for a given set of input parameters"""
-        filtered_params = self.simulator_adapter.prepare_ui_inputs(new_parameters_dict)
-        self.simulator_adapter.configure(**filtered_params)
-        return self.simulator_adapter.get_required_disk_size(**filtered_params)
-
-    def test_estimate_hdd(self, connectivity_factory):
+    def test_estimate_hdd(self, connectivity_index_factory):
         """
         Test that occupied HDD estimation for simulation results considers simulation length.
         """
         factor = 5
-        simulation_parameters = copy(SIMULATOR_PARAMETERS)
-        ## Estimate HDD with default simulation parameters
-        estimate1 = self._estimate_hdd(simulation_parameters)
+
+        model = SimulatorAdapterModel()
+        model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES).gid
+        estimate1 = self._estimate_hdd(model)
         assert estimate1 > 1
 
         ## Change simulation length and monitor period, we expect a direct proportial increase in estimated HDD
-        simulation_parameters['simulation_length'] = float(simulation_parameters['simulation_length']) * factor
-        period = float(simulation_parameters['monitors_parameters_option_TemporalAverage_period'])
-        simulation_parameters['monitors_parameters_option_TemporalAverage_period'] = period / factor
-        estimate2 = self._estimate_hdd(simulation_parameters)
-        assert estimate1 == estimate2 / factor / factor
+        model.simulation_length = float(model.simulation_length) * factor
+        period = float(model.monitors[0].period)
+        model.monitors[0].period = period / factor
+        estimate2 = self._estimate_hdd(model)
+        assert estimate1 == estimate2 // factor // factor
 
         ## Change number of nodes in connectivity. Expect HDD estimation increase.
-        large_conn_gid = connectivity_factory(self.CONNECTIVITY_NODES * factor).gid
-        simulation_parameters['connectivity'] = large_conn_gid
-        estimate3 = self._estimate_hdd(simulation_parameters)
+        model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES * factor).gid
+        estimate3 = self._estimate_hdd(model)
         assert estimate2 == estimate3 / factor
 
-    def test_estimate_execution_time(self):
+    def test_estimate_execution_time(self, connectivity_index_factory):
         """
         Test that get_execution_time_approximation considers the correct params
         """
         ## Compute reference estimation
-        params = self.simulator_adapter.prepare_ui_inputs(SIMULATOR_PARAMETERS)
-        estimation1 = self.simulator_adapter.get_execution_time_approximation(**params)
+        self.test_user = TestFactory.create_user("Simulator_Adapter_User")
+        self.test_project = TestFactory.create_project(self.test_user, "Simulator_Adapter_Project")
+
+        simulator_adapter_model = SimulatorAdapterModel()
+        connectivity = connectivity_index_factory(76)
+        simulator_adapter_model.connectivity = connectivity.gid
+
+        self.simulator_adapter.configure(simulator_adapter_model)
+        estimation1 = self.simulator_adapter.get_execution_time_approximation(simulator_adapter_model)
+
+        # import surfaceData
+        cortex_data = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex_data, CORTICAL)
+        cortex_model = CortexViewModel()
+
+        # import region mapping for cortex_model (surface)
+        text_file = path.join(path.dirname(tvb_data.__file__), 'regionMapping', 'regionMapping_16k_76.txt')
+        region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid, connectivity.gid)
+
+        cortex_model.region_mapping_data = region_mapping.gid
+        cortex_model.surface_gid = surface.gid
+        simulator_adapter_model.surface = cortex_model
 
         ## Estimation when the surface input parameter is set
-        params['surface'] = "GID_surface"
-        estimation2 = self.simulator_adapter.get_execution_time_approximation(**params)
+        self.simulator_adapter.configure(simulator_adapter_model)
+        estimation2 = self.simulator_adapter.get_execution_time_approximation(simulator_adapter_model)
 
-        assert estimation1 == estimation2 / 500
-        params['surface'] = ""
+        assert estimation1 == estimation2 // 500
+        simulator_adapter_model.surface = None
 
         ## Modify integration step and simulation length:
-        initial_simulation_length = float(params['simulation_length'])
-        initial_integration_step = float(params['integrator_parameters']['dt'])
+        initial_simulation_length = simulator_adapter_model.simulation_length
+        initial_integration_step = simulator_adapter_model.integrator.dt
 
         for factor in (2, 4, 10):
-            params['simulation_length'] = initial_simulation_length * factor
-            params['integrator_parameters']['dt'] = initial_integration_step / factor
+            simulator_adapter_model.simulation_length = initial_simulation_length * factor
+            simulator_adapter_model.integrator.dt = initial_integration_step / factor
+            self.simulator_adapter.configure(simulator_adapter_model)
 
-            estimation3 = self.simulator_adapter.get_execution_time_approximation(**params)
+            estimation3 = self.simulator_adapter.get_execution_time_approximation(simulator_adapter_model)
 
-            assert estimation1 == estimation3 / factor / factor
+            assert estimation1 == estimation3 // factor // factor
 
         ## Check that no division by zero happens
-        params['integrator_parameters']['dt'] = 0
-        estimation4 = self.simulator_adapter.get_execution_time_approximation(**params)
+        simulator_adapter_model.integrator.dt = 0
+        estimation4 = self.simulator_adapter.get_execution_time_approximation(simulator_adapter_model)
         assert estimation4 > 0
 
         ## even with length zero, still a positive estimation should be returned
-        params['simulation_length'] = 0
-        estimation5 = self.simulator_adapter.get_execution_time_approximation(**params)
+        simulator_adapter_model.simulation_length = 0
+        estimation5 = self.simulator_adapter.get_execution_time_approximation(simulator_adapter_model)
         assert estimation5 > 0
 
     def test_noise_2d_bad_shape(self):

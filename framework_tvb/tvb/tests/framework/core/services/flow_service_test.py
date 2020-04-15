@@ -37,10 +37,11 @@ import os
 import numpy
 import pytest
 from datetime import datetime
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestAdapter1, TestModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCAsynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
@@ -114,18 +115,21 @@ class TestFlowService(TransactionalTestCase):
         group = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.flow_service.get_visualizers_for_group(dt_group.gid)
-        # Only the discreet is expected
-        assert 1 == len(result)
-        assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS == result[0].classname
+        # Both discrete and isocline are expected due to the 2 ranges set in the factory
+        assert 2 == len(result)
+        result_classnames = [res.classname for res in result]
+        assert IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS in result_classnames
+        assert IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS in result_classnames
 
     def test_get_launchable_algorithms(self, time_series_region_index_factory, connectivity_factory, region_mapping_factory):
 
         conn = connectivity_factory()
         rm = region_mapping_factory()
         ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
-        result = self.flow_service.get_launchable_algorithms(ts.gid)
+        result,  has_operations_warning = self.flow_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
+        assert has_operations_warning is False
 
     def test_get_group_by_identifier(self):
         """
@@ -143,7 +147,7 @@ class TestFlowService(TransactionalTestCase):
         """
         test_adapter_factory()
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(adapter, ABCAsynchronous), "Something went wrong with valid data!"
+        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
 
     def test_build_adapter_invalid(self):
         """
@@ -158,22 +162,19 @@ class TestFlowService(TransactionalTestCase):
         Test preparation of an adapter.
         """
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        interface = self.flow_service.prepare_adapter(stored_adapter)
         assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
-        assert "name" in interface[0], "Bad interface created!"
-        assert interface[0]["name"] == "test", "Bad interface!"
-        assert "type" in interface[0], "Bad interface created!"
-        assert interface[0]["type"] == "int", "Bad interface!"
-        assert "default" in interface[0], "Bad interface created!"
-        assert interface[0]["default"] == "0", "Bad interface!"
+        adapter = self.flow_service.prepare_adapter(stored_adapter)
+        assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
+        assert adapter.get_form_class() == TestAdapter1Form
+        assert adapter.get_view_model() == TestModel
+
 
     def test_fire_operation(self):
         """
         Test preparation of an adapter and launch mechanism.
         """
         adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        data = {"test": 5}
-        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, **data)
+        result = self.flow_service.fire_operation(adapter, self.test_user, self.test_project.id, view_model=adapter.get_view_model()())
         assert result.endswith("has finished."), "Operation fail"
 
     def test_get_filtered_by_column(self):
