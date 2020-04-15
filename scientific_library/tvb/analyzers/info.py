@@ -33,6 +33,7 @@ This module implements information theoretic analyses.
 
 TODO: Fix docstring of sampen
 TODO: Convert sampen to a traited class
+TODO: Fix compatibility with  Python 3 and recent numpy
 
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
@@ -66,7 +67,7 @@ def sampen(y, m=2, r=None, qse=False, taus=1, info=False,
 
     To check that algorithm is working, look at ref 1, fig 1, and run 
     
-    >>> sampen(randn(3*10000), r=.15, taus=r_[1:20], qse=False, m=2)
+    >>> sampen(numpy.random.randn(3*10000), r=.15, taus=numpy.r_[1:20], qse=False, m=2)
 
     """
 
