@@ -212,7 +212,7 @@ class TimeSeries(HasTraits):
                 end_time = time[-1]
                 if len(time) > 1:
                     sample_period = np.mean(np.diff(time))
-                    assert end_time == start_time + (time_length - 1) * sample_period
+                    assert np.abs(end_time - start_time + (time_length - 1) * sample_period) < 1e-6
                 else:
                     sample_period = None
                 return time, start_time, end_time, sample_period, kwargs
@@ -263,7 +263,7 @@ class TimeSeries(HasTraits):
         assert self.time[0] == self.start_time
         assert self.time[-1] == self.end_time
         if self.time_length > 1:
-            assert self.sample_period == (self.end_time - self.start_time) / (self.time_length - 1)
+            assert np.abs(self.sample_period - (self.end_time - self.start_time) / (self.time_length - 1)) < 1e-6
 
     def _configure_labels(self):
         for i_dim in range(1, self.nr_dimensions):
