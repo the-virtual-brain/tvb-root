@@ -17,19 +17,6 @@
  *
  **/
 
-/**
- * Find the range component dom and disable it
- * @param sub_divs a jquery object of candidate parent elements where to search for rangers
- * @param value the "value" of the ranger as stored in the hidden inputs
- * @private
- */
-function _disableDomForRangeComponent_ByValue(sub_divs, value){
-    if (value != 0) {
-        sub_divs.find('table[id$=' + value + '_RANGER]').each(function () {
-            disableRangeComponent(this.id, this.id.replace('_RANGER', ''));
-        });
-    }
-}
 
 /**   When changing the selected value: hide/display correct sub-controlls div.
  *
@@ -56,8 +43,6 @@ function updateDivContent(divID, component, parentDIV, radioComponent) {
 
     if (first_ranger != null && second_ranger != null) {
         // call disable only on the active range components
-        _disableDomForRangeComponent_ByValue(sub_divs, first_ranger.value);
-        _disableDomForRangeComponent_ByValue(sub_divs, second_ranger.value);
         //Switched tabs so reset ranger values
         if (first_ranger.value.indexOf(component.name) === 0) {
             first_ranger.value = '0';
