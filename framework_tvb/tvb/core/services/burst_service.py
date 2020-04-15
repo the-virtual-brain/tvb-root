@@ -178,7 +178,7 @@ class BurstService(object):
 
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
-        project = dao.get_project_by_id(burst_configuration.project_id)
+        project = dao.get_project_by_id(burst_configuration.fk_project)
         storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
         self.store_burst_configuration(burst_configuration, storage_path)
 
@@ -194,16 +194,16 @@ class BurstService(object):
         else:
             ranges = [burst_config.range1]
 
-        operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
         operation_group = dao.store_entity(operation_group)
 
-        metric_operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        metric_operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
         metric_operation_group = dao.store_entity(metric_operation_group)
 
         burst_config.operation_group = operation_group
-        burst_config.operation_group_id = operation_group.id
+        burst_config.fk_operation_group = operation_group.id
         burst_config.metric_operation_group = metric_operation_group
-        burst_config.metric_operation_group_id = metric_operation_group.id
+        burst_config.fk_metric_operation_group = metric_operation_group.id
         dao.store_entity(burst_config)
 
     def store_burst_configuration(self, burst_config, storage_path):

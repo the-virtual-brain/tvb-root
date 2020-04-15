@@ -48,7 +48,6 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
@@ -469,19 +468,6 @@ class ImportService(object):
 
         return operation_entity, datatype_group
 
-
-    def load_burst_entity(self, json_burst, project_id):
-        """
-        Load BurstConfiguration from JSON (possibly exported from a different machine).
-        Nothing gets persisted in DB or on disk.
-
-        :param json_burst: Burst JSON export
-        :param project_id: Current project ID (it will be used if the user later starts this simulation)
-        :return: BurstConfiguration  filled from JSON
-        """
-
-        burst_entity = BurstConfiguration(project_id)
-        return burst_entity
 
     def import_simulator_configuration_zip(self, zip_file):
         # Now compute the name of the folder where to explode uploaded ZIP file
