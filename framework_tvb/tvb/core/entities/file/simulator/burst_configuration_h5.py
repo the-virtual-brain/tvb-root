@@ -46,7 +46,7 @@ class BurstConfigurationH5(H5File):
         self.range1 = Json(Attr(str, required=False), self, name='range1')
         self.range2 = Json(Attr(str, required=False), self, name='range2')
 
-    def store_index(self, burst_config):
+    def store(self, burst_config, scalars_only=False, store_references=False):
         self.name.store(burst_config.name)
         self.status.store(burst_config.status)
         self.error_message.store(burst_config.error_message or 'None')
@@ -57,7 +57,7 @@ class BurstConfigurationH5(H5File):
             self.range1.store(burst_config.range1)
             self.range2.store(burst_config.range2)
 
-    def load_into_index(self, burst_config):
+    def load_into(self, burst_config):
         burst_config.name = self.name.load()
         burst_config.status = self.status.load()
         burst_config.error_message = self.error_message.load()

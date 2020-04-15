@@ -38,9 +38,9 @@ import os
 import shutil
 import uuid
 import numpy
-from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
@@ -102,7 +102,7 @@ class SimulatorService(object):
             burst_config = BurstService.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
             bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
             with BurstConfigurationH5(bc_path) as bc_h5:
-                bc_h5.store_index(burst_config)
+                bc_h5.store(burst_config)
 
             wf_errs = 0
             try:
@@ -201,7 +201,7 @@ class SimulatorService(object):
             burst_config = BurstService.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
             bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
             with BurstConfigurationH5(bc_path) as bc_h5:
-                bc_h5.store_index(burst_config)
+                bc_h5.store(burst_config)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
                                            fk_parent_burst=burst_config.id,
                                            state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])

@@ -30,9 +30,9 @@
 
 import os
 from datetime import datetime
-from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import OperationGroup
@@ -181,7 +181,7 @@ class BurstService(object):
         storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_configuration.gid)
         with BurstConfigurationH5(os.path.join(storage_path, bc_path)) as bc_h5:
-            bc_h5.store_index(burst_configuration)
+            bc_h5.store(burst_configuration)
 
     def load_burst_configuration(self, burst_config_id):
         # type: (int) -> BurstConfiguration

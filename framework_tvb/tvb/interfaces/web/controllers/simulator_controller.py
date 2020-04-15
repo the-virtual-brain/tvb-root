@@ -31,8 +31,8 @@ import os
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
-from tvb.adapters.datatypes.h5.burst_configuration_h5 import BurstConfigurationH5
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
@@ -1145,7 +1145,7 @@ class SimulatorController(BurstBaseController):
                 bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
                 burst_config = BurstConfiguration(project.id)
                 with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
-                    bc_h5.load_into_index(burst_config)
+                    bc_h5.load_into(burst_config)
 
                 common.add2session(common.KEY_BURST_CONFIG, burst_config)
                 common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
