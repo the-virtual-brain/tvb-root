@@ -33,6 +33,7 @@ pipeline {
                         def dockerContext = "tvb_build/docker"
                         def dockerFile = "${dockerContext}/Dockerfile-run"
                         def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        dockerImage.push()
                         dockerImage.push('latest')
                     }
                 }
