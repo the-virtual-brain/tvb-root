@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         FULL_DOCKER_IMAGE_NAME = 'thevirtualbrain/tvb-run'
-        DEPLOY_TAG='keycloak'
     }
 
     stages {
@@ -23,17 +22,18 @@ pipeline {
              }
         }
 
-        stage ('Build docker image which we use to deploy TVB for both VBC and HBP Openshift') {
+        stage ('Build tvb-run docker image') {
             steps {
                 unstash 'step1'
-                unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/deploy_with_keycloak/step1'
+                unzip zipFile: 'tvb_build/build/TVB_build_step1.zip', dir: 'tvb_build/docker/step1'
                 script {
+                    VERSION_TAG = sh(script: "curl -s 'https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/framework_tvb/setup.py' | grep VERSION | head -1 | tr -d 'VERSION = \"'", returnStdout: true). trim()
                     LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
                     withDockerRegistry(credentialsId: 'tvb_on_docker_hub') {
-                        def dockerContext = "tvb_build/deploy_with_keycloak"
-                        def dockerFile = "${dockerContext}/Dockerfile"
-                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
-                        dockerImage.push('${DEPLOY_TAG}')
+                        def dockerContext = "tvb_build/docker"
+                        def dockerFile = "${dockerContext}/Dockerfile-run"
+                        def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}:'${VERSION_TAG}'", "--build-arg LAST_SHA='${LAST_SHA}' -f ${dockerFile} ${dockerContext}")
+                        dockerImage.push('latest')
                     }
                 }
             }
