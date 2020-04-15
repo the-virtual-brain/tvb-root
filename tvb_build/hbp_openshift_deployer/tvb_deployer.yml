@@ -78,7 +78,7 @@ objects:
         spec:
           containers:
             - name: tvb-gui
-              image: thevirtualbrain/tvb-run:keycloak
+              image: thevirtualbrain/tvb-run:latest
               imagePullPolicy: Always
               resources:
                 limits:
