@@ -31,17 +31,17 @@
 """
 Constants and functions used by all controllers
 Custom exceptions
+
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 from copy import copy
 import cherrypy
-
-
-#These are global constants, used for session attributes and template variables.
-#Message, Current Project and User values are stored in session, because they
-# need to be translated between multiple pages.
-#The rest of the values are stored in the template dictionary.
 from tvb.basic.exceptions import TVBException
+
+# These are global constants, used for session attributes and template variables.
+# Message, Current Project and User values are stored in session, because they
+# need to be translated between multiple pages.
+# The rest of the values are stored in the template dictionary.
 
 TYPE_ERROR = "ERROR"
 TYPE_WARNING = "WARNING"
@@ -74,7 +74,7 @@ KEY_SUBMENU_LIST = 'submenu_list'
 KEY_SUBMIT_LINK = 'submitLink'
 KEY_DISPLAY_MENU = "displayControl"
 KEY_PARENT_DIV = "parent_div"
-#User section and settings section specific
+# User section and settings section specific
 KEY_IS_RESTART = "tvbRestarted"
 KEY_INCLUDE_TOOLTIP = "includeTooltip"
 KEY_WRAP_CONTENT_IN_MAIN_DIV = "wrapContentInMainDiv"
@@ -101,7 +101,6 @@ KEY_OVERLAY_INDEXES = "overlay_indexes"
 KEY_OVERLAY_PAGINATION = "show_overlay_pagination"
 KEY_OVERLAY_PREVIOUS = "action_overlay_previous"
 KEY_OVERLAY_NEXT = "action_overlay_next"
-
 
 
 def set_message(msg, m_type=TYPE_INFO):
@@ -214,6 +213,7 @@ class NotAllowed(TVBException):
     """
     Raised when accessing a resource is not allowed
     """
+
     def __init__(self, message, redirect_url):
         TVBException.__init__(self, message)
         self.redirect_url = redirect_url
@@ -224,6 +224,7 @@ class NotAuthenticated(NotAllowed):
     """
     Raised when accessing a protected method with no user logged in
     """
+
     def __init__(self, message, redirect_url):
         NotAllowed.__init__(self, message, redirect_url)
         self.status = 401
@@ -245,4 +246,4 @@ class InvalidFormValues(TVBException):
             for name, item in self.error_dict.items():
                 result[name] = str(item)
             return self.message, str(result).replace(',', ',\n')
-        return self.message
+        return self.message, ""

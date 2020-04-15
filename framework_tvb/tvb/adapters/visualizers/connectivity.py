@@ -46,6 +46,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -202,7 +203,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            surface_h5 = self.load_traited_by_gid(view_model.surface_data)
+            surface_index = load_entity_by_gid(view_model.surface_data.hex)
+            surface_h5 = h5.h5_file_for_index(surface_index)
             url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []

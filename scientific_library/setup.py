@@ -50,6 +50,7 @@ LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
+
 setuptools.setup(name='tvb-library',
                  version=LIBRARY_VERSION,
                  packages=setuptools.find_packages(),

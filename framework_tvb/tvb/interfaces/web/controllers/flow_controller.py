@@ -41,6 +41,7 @@ import cherrypy
 import formencode
 import numpy
 import six
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.services.burst_service import BurstService
@@ -465,6 +466,7 @@ class FlowController(BaseController):
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
+                    self.logger.exception("Form and/or ViewModel not fully implemented for " + str(form))
                     raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
                                             error_dict=form.get_errors_dict())
             else:
@@ -500,6 +502,9 @@ class FlowController(BaseController):
         except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
+        except LaunchException as excep3:
+            self.logger.exception("Error while executing a Launch procedure:" + excep3.message)
+            common.set_error_message(excep3.message)
         except InvalidFormValues as excep2:
             message, errors = excep2.display_full_errors()
             common.set_error_message(message)
@@ -530,7 +535,7 @@ class FlowController(BaseController):
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, adapter_form=self.get_template_dict(adapter_form), title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
@@ -539,10 +544,6 @@ class FlowController(BaseController):
             self.logger.exception(oexc)
             common.set_warning_message('Inconsistent Adapter!  Please review the link (development problem)!')
         return None
-
-    @using_template('form_fields/form')
-    def get_template_dict(self, adapter_form):
-        return {'adapter_form': adapter_form}
 
     @cherrypy.expose
     @handle_error(redirect=False)
