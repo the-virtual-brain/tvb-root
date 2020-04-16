@@ -152,6 +152,7 @@ class BurstService(object):
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
 
+    # TODO: We should implement these two methods
     def stop_burst(self, burst):
         raise NotImplementedError
 
