@@ -100,3 +100,4 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         self.subtype = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.connectivity_gid = datatype.connectivity.gid.hex
+        self.ndim = len(datatype.array_data.shape)

@@ -201,6 +201,7 @@ class DataType(HasTraitsIndex):
 
 
 class DataTypeMatrix(DataType):
+    ##TODO: is it possible to override here field from fill_from_has_traits ?
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
     ndim = Column(Integer, default=0)
 

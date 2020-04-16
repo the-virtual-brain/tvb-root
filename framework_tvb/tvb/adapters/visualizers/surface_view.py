@@ -53,7 +53,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface, FACE
+from tvb.datatypes.surfaces import Surface, FACE, CORTICAL
 
 LOG = get_logger(__name__)
 
@@ -158,9 +158,10 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
+        connectivity_filter = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
-                                                             name='connectivity_measure')
+                                                             name='connectivity_measure', conditions=connectivity_filter)
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
@@ -390,14 +391,15 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            connectivity_measure_shape = connectivity_measure.array_data.shape
+            conn_array = connectivity_measure.array_data.load()
+            connectivity_measure_shape = conn_array.shape
             if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
             if connectivity_measure_shape[0] != measure_points_no:
                 raise ValueError("connectivity measure has %d values but the connectivity has %d "
                                  "regions" % (connectivity_measure_shape[0], measure_points_no))
-            min_measure = numpy.min(connectivity_measure.array_data[:])
-            max_measure = numpy.max(connectivity_measure.array_data[:])
+            min_measure = numpy.min(conn_array[:])
+            max_measure = numpy.max(conn_array[:])
             # We assume here that the index 0 in the measure corresponds to
             # the region 0 of the region map.
             client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid.load().hex,
