@@ -1,9 +1,0 @@
-{% macro draw_bool(inputRow) -%}
-    <!--!
-   Draw field for a Boolean  (input checkbox).
-   -->
-    {% set add_attrs= 'checked' if ('default' in inputRow and (inputRow.default == true or inputRow.default == 'true')) else '' %}
-    <input type="checkbox" tabindex='1' name="{{ inputRow.name }}" id="{{ inputRow.name }}" {{ add_attrs }}/>
-    {% import 'flow/genericAdapterTemplateFunctions.html' as gatf %}
-    {{ gatf.add_checkbox_control(inputRow) }}
-{%- endmacro %}

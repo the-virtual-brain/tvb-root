@@ -70,39 +70,9 @@
                    onclick="displayBurstTree(this, {{ selectedProject.id }});">Results</a>
             </li>
 		</ul>
-		        	
-		<ul class="toolbar-inline standard-portlets-toolbar" id="portlets-toolbar">
-			<li>
-				<a href="#" id="configure-tabs-button" class="action action-edit hideable"
-                   onclick="selectPortlets(false);">Configure View</a>
-			</li>
-			<li>
-				<a href="#" id="save-configure-tabs-button" class="action action-edit hideable"
-                   onclick="selectPortlets(true);">Save choices</a>
-			</li>
-			<li>
-		        <a href="#" id="cancel-configure-tabs-button" class="action action-reset hideable"
-                   onclick="returnToSessionPortletConfiguration()">Cancel</a>
-			</li>
-			<li>
-				<a href="#" id="save-portlet-params-button" class="action action-store hideable"
-                   onclick="savePortletParams()">Save portlet parameters</a>
-			</li>
-			<li>
-				<a href="#" id="cancel-configure-portlet-params-button" class="action action-reset hideable"
-                   onclick="cancelPortletConfig()">Cancel</a>
-			</li>
-		</ul>
-		
+
 		<div class="portlet-container portlet-run visible-2-2" id="portlets-display">
 			No visualizers configured for this tab yet.
-		</div>
-		<div class="portlet-container portlet-edit visible-2-2" id="portlets-configure" style="display: none;">
-			{% import 'burst/portlets_select.html' as ps %}
-		    {{ ps.drawPortletConfiguration(portletList, 0) }}
-	        {{ ps.drawPortletConfiguration(portletList, 1) }}
-	        {{ ps.drawPortletConfiguration(portletList, 2) }}
-	        {{ ps.drawPortletConfiguration(portletList, 3) }}
 		</div>
         <div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;"></div>
 
