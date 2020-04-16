@@ -54,6 +54,10 @@ def fire_simulation_example(tvb_client_instance):
     data_in_project = tvb_client_instance.get_data_in_project(project_gid)
     logger.info("We have {} datatypes".format(len(data_in_project)))
 
+    logger.info("Requesting operations from project {}...".format(project_gid))
+    ops_in_project, _ = tvb_client.get_operations_in_project(project_gid, 1)
+    logger.info("Displayname of the first operation is: {}".format(ops_in_project[0].displayname))
+
     connectivity_gid = None
     datatypes_type = []
     for datatype in data_in_project:

@@ -89,9 +89,11 @@ class OperationDto(BaseDto):
         :param kwargs: dictionary (rest server response)
         """
         self.update(kwargs)
+        if hasattr(self, 'algorithm_dto'):
+            self.algorithm_dto = AlgorithmDto(None, **self.algorithm_dto)
         if operation is not None:
-            self.user_id = operation['user'].id
-            self.algorithm_id = operation['algorithm'].id
+            self.user_gid = operation['user'].gid
+            self.algorithm_dto = AlgorithmDto(operation['algorithm'])
             self.group = operation['group']
             self.gid = operation['gid']
             self.create_date = operation['create']
@@ -100,6 +102,13 @@ class OperationDto(BaseDto):
             self.status = operation['status']
             self.visible = operation['visible']
 
+    @property
+    def displayname(self):
+        return self.algorithm_dto.displayname
+
+    @property
+    def description(self):
+        return self.algorithm_dto.description
 
 class AlgorithmDto(BaseDto):
     def __init__(self, algorithm=None, **kwargs):
