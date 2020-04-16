@@ -84,7 +84,7 @@ def sampen(y, m=2, r=None, qse=False, taus=1, info=False,
 
     # if we have a scale factor, coarsen time series 
     if taus > 1:
-        y = y[:y.shape[0] / taus * taus].reshape((-1, taus)).mean(axis=1)
+        y = y[:y.shape[0] // taus * taus].reshape((-1, taus)).mean(axis=1)
 
     # compute embedding of signal dims m, m+1, initialize match counts to 0
     Y1 = subseq(y, m)
