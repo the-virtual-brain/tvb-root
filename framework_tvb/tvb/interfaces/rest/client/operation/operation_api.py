@@ -30,6 +30,7 @@
 
 import os
 
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
@@ -77,3 +78,21 @@ class OperationApi(MainApi):
             LinkPlaceholder.ALG_MODULE.value: algorithm_class.__module__,
             LinkPlaceholder.ALG_CLASSNAME.value: algorithm_class.__name__
         })), files=files)
+
+    def quick_launch_operation(self, project_gid, algorithm_dto, datatype_gid, temp_folder):
+        adapter_class = ABCAdapter.determine_adapter_class(algorithm_dto)
+        form = adapter_class().get_form()()
+
+        post_data = self._prepare_post_data(datatype_gid, form)
+        form.fill_from_post(post_data)
+
+        view_model = form.get_view_model()()
+        form.fill_trait(view_model)
+
+        operation_gid = self.launch_operation(project_gid, adapter_class, view_model, temp_folder)
+        return operation_gid
+
+    def _prepare_post_data(self, datatype_gid, form):
+        post_data = {form.get_input_name(): datatype_gid,
+                     'fill_defaults': 'true'}
+        return post_data

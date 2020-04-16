@@ -496,13 +496,23 @@ class ABCAdapter(object):
             raise IntrospectionException(str(excep))
 
     @staticmethod
+    def determine_adapter_class(stored_adapter):
+        """
+        Determine the class of an adapter based on module and classname strings from stored_adapter
+        :param stored_adapter: Algorithm or AlgorithmDTO type
+        :return: a subclass of ABCAdapter
+        """
+        ad_module = importlib.import_module(stored_adapter.module)
+        adapter_class = getattr(ad_module, stored_adapter.classname)
+        return adapter_class
+
+    @staticmethod
     def build_adapter(stored_adapter):
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
         try:
-            ad_module = importlib.import_module(stored_adapter.module)
-            adapter_class = getattr(ad_module, stored_adapter.classname)
+            adapter_class = ABCAdapter.determine_adapter_class(stored_adapter)
             adapter_instance = adapter_class()
             adapter_instance.stored_adapter = stored_adapter
             return adapter_instance
