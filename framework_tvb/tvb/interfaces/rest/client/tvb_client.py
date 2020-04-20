@@ -210,6 +210,9 @@ class TVBClient:
         """
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator, self.temp_folder)
 
+    def quick_launch_operation(self, project_gid, algorithm_dto, datatype_gid):
+        return self.operation_api.quick_launch_operation(project_gid, algorithm_dto, datatype_gid, self.temp_folder)
+
     def launch_operation(self, project_gid, algorithm_class, view_model):
         """
         This is a more generic method of launching Analyzers. Given a project id, algorithm module, algorithm classname
