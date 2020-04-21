@@ -89,24 +89,31 @@ function resetToNewBurst() {
 function copyBurst(burstID, first_wizzard_form_url) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/copy_simulator_configuration/' + burstID,
+        url: '/burst/get_last_fragment_url/' + burstID,
         showBlockerOverlay: true,
         success: function (response) {
-            let simParamElem = $("#div-simulator-parameters");
-            simParamElem.html(response);
-
-            _renderAllSimulatorForms([first_wizzard_form_url]);
-            displayMessage("A copy of previous simulation was prepared for you!");
-        },
-        error: function () {
-            displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
-            // sessionStoredBurst = clone(EMPTY_BURST);
+            stop_at_url = response;
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/copy_simulator_configuration/' + burstID,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
+                    displayMessage("A copy of previous simulation was prepared for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
+                    // sessionStoredBurst = clone(EMPTY_BURST);
+                }
+            });
         }
     });
 }
 
 function _renderAllSimulatorForms(url, stop_at_url = '') {
-    if (!stop_at_url.includes(url)) {
+    if (stop_at_url !== url) {
         doAjaxCall({
             type: "GET",
             url: url,
@@ -458,18 +465,27 @@ function initBurstConfiguration(sessionPortlets, selectedTab) {
 function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/load_burst_read_only/' + burst_id,
+        url: '/burst/get_last_fragment_url/' + burst_id,
         showBlockerOverlay: true,
         success: function (response) {
-            let simParamElem = $("#div-simulator-parameters");
-            simParamElem.html(response);
-            _renderAllSimulatorForms(first_wizzard_form_url, ['/burst/launch_simulation', '/burst/launch_pse']);
-            displayMessage("The simulation configuration was loaded for you!");
-        },
-        error: function () {
-            displayMessage("We encountered an error while loading a the simulation configuration. Please try reload and then check the logs!", "errorMessage");
+            stop_at_url = response;
+
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/load_burst_read_only/' + burst_id,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
+                    displayMessage("The simulation configuration was loaded for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while loading a the simulation configuration. Please try reload and then check the logs!", "errorMessage");
+                }
+            })
         }
-    })
+    });
 }
 
 /*
