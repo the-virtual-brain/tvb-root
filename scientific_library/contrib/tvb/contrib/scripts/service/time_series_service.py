@@ -142,7 +142,7 @@ class TimeSeriesService(object):
             if n_ts > 1:
                 for id, time_series in enumerate(time_series_list[1:]):
                     if np.float32(out_time_series.sample_period) != np.float32(time_series.sample_period):
-                        raise_value_error("Timeseries concatenation failed!\n"
+                        raise ValueError("Timeseries concatenation failed!\n"
                                           "Timeseries %d have a different time step %s \n "
                                           "than the concatenated ones %s!" %
                                           (id, str(np.float32(time_series.sample_period)),
