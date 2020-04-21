@@ -59,9 +59,9 @@ class PossibleVariables(Enum):
     Z = "z"
 
 
-def prepare_4d(data, logger):
+def prepare_4d(data, LOG=logger):
     if data.ndim < 2:
-        logger.error("The data array is expected to be at least 2D!")
+        LOG.error("The data array is expected to be at least 2D!")
         raise ValueError
     if data.ndim < 4:
         if data.ndim == 2:
@@ -70,13 +70,17 @@ def prepare_4d(data, logger):
     return data
 
 
-class TimeSeries(TimeSeriesTVB, BaseModel):
+def _slice_data(data, slice_tuple):
+    output_data = data[slice_tuple[0]]
+    preslices = [slice(None)]
+    for i_dim, this_slice in enumerate(slice_tuple[1:]):
+        current_slices = tuple(preslices + [this_slice])
+        output_data = output_data[current_slices]
+        preslices.append(slice(None))
+    return output_data
 
-    def __init__(self, data=None, **kwargs):
-        super(TimeSeries, self).__init__(**kwargs)
-        if data is not None:
-            self.data = prepare_4d(data, logger)
-            self.configure()
+
+class TimeSeries(TimeSeriesTVB, BaseModel):
 
     @property
     def name(self):
@@ -150,14 +154,6 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
     def flattened(self):
         return self.data.flatten()
 
-    def duplicate(self, **kwargs):
-        duplicate = deepcopy(self)
-        for attr, value in kwargs.items():
-            setattr(duplicate, attr, value)
-        duplicate.data = prepare_4d(duplicate.data, logger)
-        duplicate.configure()
-        return duplicate
-
     def from_xarray_DataArray(self, xrdtarr, **kwargs):
         # We assume that time is in the first dimension
         labels_ordering = xrdtarr.coords.dims
@@ -192,6 +188,20 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         for key, value in self.labels_dimensions.items():
             self.labels_dimensions[key] = list(value)
         self.labels_ordering = list(self.labels_ordering)
+
+    def __init__(self, data=None, **kwargs):
+        super(TimeSeries, self).__init__(**kwargs)
+        if data is not None:
+            self.data = prepare_4d(data, logger)
+            self.configure()
+
+    def duplicate(self, **kwargs):
+        duplicate = deepcopy(self)
+        for attr, value in kwargs.items():
+            setattr(duplicate, attr, value)
+        duplicate.data = prepare_4d(duplicate.data, logger)
+        duplicate.configure()
+        return duplicate
 
     def to_tvb_instance(self, datatype=TimeSeriesTVB, **kwargs):
         return super(TimeSeries, self).to_tvb_instance(datatype, **kwargs)
@@ -252,18 +262,19 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
                 logger.error("Some of the given indices are out of %s range: [0, %s]",
                                   (self.get_dimension_name(dim_index), self.data.shape[dim_index]))
                 raise IndexError
+        return indices
 
     def _check_time_indices(self, list_of_index):
-        self._check_indices(list_of_index, 0)
+        return self._check_indices(list_of_index, 0)
 
     def _check_variables_indices(self, list_of_index):
-        self._check_indices(list_of_index, 1)
+        return self._check_indices(list_of_index, 1)
 
     def _check_space_indices(self, list_of_index):
-        self._check_indices(list_of_index, 2)
+        return self._check_indices(list_of_index, 2)
 
     def _check_modes_indices(self, list_of_index):
-        self._check_indices(list_of_index, 2)
+        return self._check_indices(list_of_index, 2)
 
     def _get_index_of_label(self, labels, dimension):
         indices = []
@@ -314,23 +325,29 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
             slice_list.append(self._process_slice(current_slice, idx))
         return tuple(slice_list)
 
-    def _slice_to_indices(self, slices, dim_index):
+    def _slice_to_indices(self, slice_arg, dim_index):
+        if slice_arg.start is None:
+            start = 0
+        else:
+            start = slice_arg.start
+        if slice_arg.stop is None:
+            stop = self.data.shape[dim_index]
+        else:
+            stop = slice_arg.stop
+        if slice_arg.step is None:
+            step = 1
+        else:
+            step = slice_arg.step
+        return self._check_indices(list(range(start, stop, step)), dim_index)
+
+    def _slices_to_indices(self, slices):
         indices = []
-        for slice in ensure_list(slices):
-            if slice.start is None:
-                start = 0
+        for dim_index, slice_arg in enumerate(ensure_list(slices)):
+            if isinstance(slice_arg, slice):
+                indices.append(self._slice_to_indices(slice_arg, dim_index))
             else:
-                start = slice.start
-            if slice.stop is None:
-                stop = self.data.shape[dim_index]
-            else:
-                stop = slice.stop
-            if slice.step is None:
-                step = 1
-            else:
-                step = slice.step
-                slice.step = 1
-            indices.append(self._check_indices(list(range(start, stop, step)), dim_index))
+                # Assuming already indices
+                indices.append(slice_arg)
         if len(indices) == 1:
             return indices[0]
         return tuple(indices)
@@ -366,7 +383,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
 
     def _slice_dimensions_labels(self, indices, **kwargs):
         labels_ordering = kwargs.pop("labels_ordering", self.labels_ordering)
-        labels_dimensions = {}
+        labels_dimensions = dict(self.labels_dimensions)
         for ii, inds in enumerate(indices):
             if len(inds) > 0:
                 try:
@@ -379,11 +396,12 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         return labels_ordering, labels_dimensions
 
     def _get_item(self, slice_tuple, **kwargs):
-        slice_tuple = self._assert_array_indices(slice_tuple)
-        indices = self._slices_to_indices(self._process_slices(slice_tuple))
+        slice_tuple = self._process_slices(self._assert_array_indices(slice_tuple))
+        indices = self._slices_to_indices(slice_tuple)
         start_time, sample_period = self._slice_time_index(indices[0], **kwargs)
         labels_ordering, labels_dimensions = self._slice_dimensions_labels(indices, **kwargs)
-        return self.duplicate(data=self.data[tuple(indices)], start_time=start_time, sample_period=sample_period,
+        return self.duplicate(data=_slice_data(self.data, tuple(indices)),
+                              start_time=start_time, sample_period=sample_period,
                               labels_ordering=labels_ordering, labels_dimensions=labels_dimensions, **kwargs)
 
     # Return a TimeSeries object
@@ -405,7 +423,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         else:
             start_time = self.start_time
             sample_period = self.sample_period
-        all_indices = [] * self.nr_dimensions
+        all_indices = [[]] * self.nr_dimensions
         all_indices[dim_index] = indices
         labels_ordering, labels_dimensions = self._slice_dimensions_labels(all_indices, **kwargs)
         return self.duplicate(data=self.data[tuple(slices)],
