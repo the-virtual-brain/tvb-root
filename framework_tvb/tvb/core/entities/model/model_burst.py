@@ -145,6 +145,10 @@ class BurstConfiguration(HasTraitsIndex):
     datatypes_number = Column(Integer)
     dynamic_ids = Column(String, default='[]', nullable=False)
 
+    # TODO: decide upon these transient fields task TVB-2537
+    range1 = None
+    range2 = None
+
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
     project_id = Column(Integer, ForeignKey('PROJECTS.id', ondelete='CASCADE'))

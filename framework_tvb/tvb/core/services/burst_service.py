@@ -165,3 +165,12 @@ class BurstService(object):
         burst.fk_simulation_id = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
         dao.store_entity(burst)
+
+    def load_burst_configuration(self, burst_config_id):
+        # type: (int) -> BurstConfiguration
+        burst_config = dao.get_burst_by_id(burst_config_id)
+        if burst_config.operation_group_id:
+            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
+            burst_config.range1 = operation_group.range1
+            burst_config.range2 = operation_group.range2
+        return burst_config
