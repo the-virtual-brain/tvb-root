@@ -946,7 +946,7 @@ class SimulatorController(BurstBaseController):
         else:
             burst_config_to_store = session_burst_config.clone()
             count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.project_id)
-            burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count)
+            burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
                                                             session_burst_config.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
