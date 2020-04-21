@@ -80,7 +80,7 @@ class BurstDAO(RootDAO):
         try:
             count = self.session.query(BurstConfiguration
                                        ).filter_by(project_id=project_id
-                                       ).filter(BurstConfiguration.name.like(burst_name + '%')
+                                       ).filter(BurstConfiguration.name.notlike(burst_name + '%')
                                                 ).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
