@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 
+from six import string_types
 from copy import deepcopy
-
 import numpy as np
 import xarray as xr
-from six import string_types
-from tvb.basic.neotraits.api import HasTraits, Attr, List, narray_summary_info
+
+from tvb.basic.logger.builder import get_logger
 from tvb.contrib.scripts.datatypes.time_series import TimeSeries as TimeSeriesTVB
-from tvb.contrib.scripts.utils.data_structures_utils import is_integer
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesRegion as TimeSeriesRegionTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSurface as TimeSeriesSurfaceTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesVolume as TimeSeriesVolumeTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSensors as TimeSeriesSensorsTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesEEG as TimeSeriesEEGTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSEEG as TimeSeriesSEEGTVB
+from tvb.contrib.scripts.datatypes.time_series import TimeSeriesMEG as TimeSeriesMEGTVB
+from tvb.contrib.scripts.datatypes.time_series import prepare_4d
+from tvb.contrib.scripts.utils.data_structures_utils import ensure_list, is_integer
+
+from tvb.basic.neotraits.api import HasTraits, Attr, List, narray_summary_info
 from tvb.datatypes import sensors, surfaces, volumes, region_mapping, connectivity
 
 
-def prepare_4d(data):
-    if data.ndim < 2:
-        raise ValueError("The data array is expected to be at least 2D!")
-    if data.ndim < 4:
-        if data.ndim == 2:
-            data = np.expand_dims(data, 2)
-        data = np.expand_dims(data, 3)
-    return data
+logger = get_logger(__name__)
 
 
 class TimeSeries(HasTraits):
@@ -58,61 +61,33 @@ class TimeSeries(HasTraits):
 
     @property
     def number_of_dimensions(self):
-        return self.nr_dimensions
+        return self._data.ndim
+
+    def _return_shape_of_dim(self, dim):
+        try:
+            return self._data.shape[dim]
+        except:
+            return None
 
     @property
     def time_length(self):
-        try:
-            return self._data.shape[0]
-        except:
-            return None
+        return self._return_shape_of_dim(0)
 
     @property
     def number_of_variables(self):
-        try:
-            return self.shape[1]
-        except:
-            return None
+        return self._return_shape_of_dim(1)
 
     @property
     def number_of_labels(self):
-        try:
-            return self.shape[2]
-        except:
-            return None
+        return self._return_shape_of_dim(2)
 
     @property
     def number_of_samples(self):
-        try:
-            return self.shape[3]
-        except:
-            return None
-
-    @property
-    def dims(self):
-        return self._data.dims
-
-    @property
-    def coords(self):
-        return self._data.coords
-
-    @property
-    def labels_ordering(self):
-        return list(self._data.dims)
-
-    @property
-    def labels_dimensions(self):
-        d = {}
-        for key, val in zip(list(self._data.coords.keys()),
-                            list([value.values for value in self._data.coords.values()])):
-            d[key] = val
-        return d
+        return self._return_shape_of_dim(3)
 
     @property
     def time(self):
         return self._data.coords[self._data.dims[0]].values
-
-    # xarrays have a attrs dict with useful attributes
 
     @property
     def start_time(self):
@@ -149,6 +124,8 @@ class TimeSeries(HasTraits):
         except:
             return None
 
+    # xarrays have a attrs dict with useful attributes
+
     @property
     def sample_period_unit(self):
         try:
@@ -160,16 +137,44 @@ class TimeSeries(HasTraits):
     def time_unit(self):
         return self.sample_period_unit
 
+    @property
+    def dims(self):
+        return self._data.dims
+
+    @property
+    def coords(self):
+        return self._data.coords
+
+    @property
+    def labels_ordering(self):
+        return list(self._data.dims)
+
+    @property
+    def labels_dimensions(self):
+        d = {}
+        for key, val in zip(list(self._data.coords.keys()),
+                            list([value.values for value in self._data.coords.values()])):
+            d[key] = val
+        return d
+
+    @property
+    def space_labels(self):
+        return np.array(self._data.coords.get(self.labels_ordering[2], []))
+
+    @property
+    def variables_labels(self):
+        return np.array(self._data.coords.get(self.labels_ordering[1], []))
+
     def squeeze(self):
         return self._data.squeeze()
 
     @property
     def squeezed(self):
-        return self.data.squeeze()
+        return self._data.values.squeeze()
 
     @property
     def flattened(self):
-        return self.data.flatten()
+        return self._data.value.flatten()
 
     def __setattr__(self, name, value):
         if name == "data":
@@ -188,6 +193,54 @@ class TimeSeries(HasTraits):
             self._data.attrs["sample_period_unit"] = value
         else:
             super(TimeSeries, self).__setattr__(name, value)
+
+    def duplicate(self, **kwargs):
+        # Since all labels are internal to xarray,
+        # it suffices to pass a new (e.g., sliced) xarray _data as kwarg
+        # for all labels to be set correctly (and confirmed by the call to configure(),
+        # whereas any other attributes of TimeSeries will be copied
+        duplicate = deepcopy(self)
+        for attr, value in kwargs.items():
+            setattr(duplicate, attr, value)
+        duplicate.configure()
+        return duplicate
+
+    def from_xarray_DataArray(self, xarr, **kwargs):
+        # ...or as args
+        # including a xr.DataArray or None
+        self._data = xr.DataArray(xarr.values,
+                                  dims=kwargs.pop("dims", kwargs.pop("labels_ordering", None)),
+                                  coords=kwargs.pop("coords", kwargs.pop("labels_dimensions", None)))
+        self._data.attrs = kwargs
+        super(TimeSeries, self).__init__(**kwargs)
+
+    def from_TVB_time_series(self, ts, **kwargs):
+        labels_ordering = kwargs.pop("labels_ordering", kwargs.pop("dims", ts.labels_ordering))
+        labels_dimensions = kwargs.pop("labels_dimensions", kwargs.pop("coords", ts.labels_dimensions))
+        name = kwargs.pop("name", kwargs.pop("title", ts.title))
+        time = kwargs.pop("time", ts.time)
+        labels_dimensions[labels_ordering[0]] = time
+        for label, dimensions in labels_dimensions.items():
+            id = labels_ordering.index(label)
+            if ts.shape[id] != len(dimensions):
+                labels_dimensions[label] = np.arange(ts.shape[id]).astype("i")
+        kwargs["sample_period_unit"] = getattr(ts, "sample_period_unit", kwargs.pop('sample_period_unit', ""))
+        self._data = xr.DataArray(ts.data,
+                                  dims=labels_ordering,
+                                  coords=labels_dimensions,
+                                  name=name, attrs=kwargs)
+
+    def from_numpy(self, data, **kwargs):
+        # We have to infer time and labels inputs from kwargs
+        data = prepare_4d(data)
+        time, start_time, end_time, sample_period, kwargs = self._configure_input_time(data, **kwargs)
+        labels_ordering, labels_dimensions, kwargs = self._configure_input_labels(**kwargs)
+        if time is not None:
+            if labels_dimensions is None:
+                labels_dimensions = {}
+            labels_dimensions[labels_ordering[0]] = time
+        self._data = xr.DataArray(data, dims=labels_ordering, coords=labels_dimensions,
+                                  name=self.__class__.__name__, attrs=kwargs)
 
     def _configure_input_time(self, data, **kwargs):
         # Method to initialise time attributes
@@ -230,34 +283,6 @@ class TimeSeries(HasTraits):
         if isinstance(labels_dimensions, dict):
             assert [key in labels_ordering for key in labels_dimensions.keys()]
         return labels_ordering, labels_dimensions, kwargs
-
-    def from_TVB_time_series(self, ts, **kwargs):
-        labels_ordering = kwargs.pop("labels_ordering", kwargs.pop("dims", ts.labels_ordering))
-        labels_dimensions = kwargs.pop("labels_dimensions", kwargs.pop("coords", ts.labels_dimensions))
-        name = kwargs.pop("name", kwargs.pop("title", ts.title))
-        time = kwargs.pop("time", ts.time)
-        labels_dimensions[labels_ordering[0]] = time
-        for label, dimensions in labels_dimensions.items():
-            id = labels_ordering.index(label)
-            if ts.shape[id] != len(dimensions):
-                labels_dimensions[label] = np.arange(ts.shape[id]).astype("i")
-        kwargs["sample_period_unit"] = getattr(ts, "sample_period_unit", kwargs.pop('sample_period_unit', ""))
-        self._data = xr.DataArray(ts.data,
-                                  dims=labels_ordering,
-                                  coords=labels_dimensions,
-                                  name=name, attrs=kwargs)
-
-    def from_numpy(self, data, **kwargs):
-        # We have to infer time and labels inputs from kwargs
-        data = prepare_4d(data)
-        time, start_time, end_time, sample_period, kwargs = self._configure_input_time(data, **kwargs)
-        labels_ordering, labels_dimensions, kwargs = self._configure_input_labels(**kwargs)
-        if time is not None:
-            if labels_dimensions is None:
-                labels_dimensions = {}
-            labels_dimensions[labels_ordering[0]] = time
-        self._data = xr.DataArray(data, dims=labels_ordering, coords=labels_dimensions,
-                                  name=self.__class__.__name__, attrs=kwargs)
 
     def _configure_time(self):
         assert self.time[0] == self.start_time
@@ -303,6 +328,8 @@ class TimeSeries(HasTraits):
                 setattr(self, attr, val)
         elif isinstance(data, TimeSeriesTVB):
             self.from_TVB_time_series(data, **kwargs)
+        elif isinstance(data, xr.DataArray):
+            self.from_xarray_DataArray(data, **kwargs)
         else:
             # Assuming data is an input xr.DataArray() can handle,
             if isinstance(data, dict):
@@ -334,16 +361,127 @@ class TimeSeries(HasTraits):
         summary.update(narray_summary_info(self.data))
         return summary
 
-    def duplicate(self, **kwargs):
-        # Since all labels are internal to xarray,
-        # it suffices to pass a new (e.g., sliced) xarray _data as kwarg
-        # for all labels to be set correctly (and confirmed by the call to configure(),
-        # whereas any other attributes of TimeSeries will be copied
-        duplicate = deepcopy(self)
-        for attr, value in kwargs.items():
-            setattr(duplicate, attr, value)
-        duplicate.configure()
-        return duplicate
+    def to_tvb_instance(self, datatype=TimeSeriesTVB, **kwargs):
+        return datatype().from_xarray_DataArray(self._data, **kwargs)
+
+    def _assert_index(self, index):
+        if (index < 0 or index >= self.number_of_dimensions):
+            raise IndexError("index %d is not within the dimensions [0, %d] of this TimeSeries data:\n%s"
+                             % (index, self.number_of_dimensions, str(self)))
+        return index
+
+    def get_dimension_index(self, dim_name_or_index):
+        if is_integer(dim_name_or_index):
+            return self._assert_index(dim_name_or_index)
+        elif isinstance(dim_name_or_index, string_types):
+            return self._assert_index(self._data.dims.index(dim_name_or_index))
+        else:
+            raise ValueError("dim_name_or_index is neither a string nor an integer!")
+
+    def get_dimension_name(self, dim_index):
+        try:
+            return self._data.dims[dim_index]
+        except IndexError:
+            logger.error("Cannot access index %d of labels ordering: %s!" %
+                              (int(dim_index), str(self._data.dims)))
+
+    def get_dimension_labels(self, dimension_label_or_index):
+        if not isinstance(dimension_label_or_index, string_types):
+            dimension_label_or_index = self.get_dimension_name(dimension_label_or_index)
+        try:
+            return self._data.coords[dimension_label_or_index]
+        except KeyError:
+            logger.error("There are no %s labels defined for this instance: %s",
+                              (dimension_label_or_index, str(self._data.coords)))
+            raise
+
+    def update_dimension_names(self, dim_names, dim_indices=None):
+        dim_names = ensure_list(dim_names)
+        if dim_indices is None:
+            dim_indices = list(range(len(dim_names)))
+        else:
+            dim_indices = ensure_list(dim_indices)
+        labels_ordering = list(self._data.dims)
+        for dim_name, dim_index in zip(dim_names, dim_indices):
+            labels_ordering[dim_index] = dim_name
+            try:
+                old_dim_name = self._data.dims[dim_index]
+                dim_labels = list(self._data.coords[old_dim_name])
+                del self._data.coords[old_dim_name]
+                self._data.coords[dim_name] = dim_labels
+            except:
+                pass
+        self._data.dims = labels_ordering
+
+    def _check_indices(self, indices, dimension):
+        dim_index = self.get_dimension_index(dimension)
+        for index in ensure_list(indices):
+            if index < 0 or index > self._data.shape[dim_index]:
+                logger.error("Some of the given indices are out of %s range: [0, %s]",
+                                  (self.get_dimension_name(dim_index), self._data.shape[dim_index]))
+                raise IndexError
+
+    def _check_time_indices(self, list_of_index):
+        self._check_indices(list_of_index, 0)
+
+    def _check_variables_indices(self, list_of_index):
+        self._check_indices(list_of_index, 1)
+
+    def _check_space_indices(self, list_of_index):
+        self._check_indices(list_of_index, 2)
+
+    def _check_modes_indices(self, list_of_index):
+        self._check_indices(list_of_index, 2)
+
+    def _get_index_of_label(self, labels, dimension):
+        indices = []
+        data_labels = list(self.get_dimension_labels(dimension))
+        for label in ensure_list(labels):
+            try:
+                indices.append(data_labels.index(label))
+            # TODO: force list error here to be IndexError instead of ValueError
+            except IndexError:
+                logger.error("Cannot access index of %s label: %s. Existing %s labels: %s" % (
+                    dimension, label, dimension, str(data_labels)))
+                raise IndexError
+        return indices
+
+    def _get_index_for_slice_label(self, slice_label, slice_idx):
+        return self._get_index_of_label(slice_label,
+                                        self.get_dimension_name(slice_idx))[0]
+
+    def _check_for_string_or_float_slice_indices(self, current_slice, slice_idx):
+        slice_start = current_slice.start
+        slice_stop = current_slice.stop
+
+        if isinstance(slice_start, string_types) or isinstance(slice_start, float):
+            slice_start = self._get_index_for_slice_label(slice_start, slice_idx)
+        if isinstance(slice_stop, string_types) or isinstance(slice_stop, float):
+            # NOTE!: In case of a string slice, we consider stop included!
+            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx) + 1
+
+        return slice(slice_start, slice_stop, current_slice.step)
+
+    def _process_slice(self, this_slice, dim_index):
+        if isinstance(this_slice, slice):
+            return self._check_for_string_or_float_slice_indices(this_slice, dim_index)
+        else:
+            # If not a slice, it will be an iterable:
+            for i_slc, slc in enumerate(this_slice):
+                if isinstance(slc, string_types) or isinstance(slc, float):
+                    dim_name = self.get_dimension_name(dim_index)
+                    this_slice[i_slc] = ensure_list(self.labels_dimensions[dim_name]).index(slc)
+                else:
+                    this_slice[i_slc] = slc
+            return this_slice
+
+    def _process_slices(self, slice_tuple):
+        n_slices = len(slice_tuple)
+        assert (n_slices >= 0 and n_slices <= self.number_of_dimensions)
+        slice_list = []
+        for idx, current_slice in enumerate(slice_tuple):
+            slice_list.append(self._process_slice(current_slice, idx))
+        return tuple(slice_list)
 
     def _assert_array_indices(self, slice_tuple):
         if is_integer(slice_tuple) or isinstance(slice_tuple, string_types):
@@ -359,52 +497,25 @@ class TimeSeries(HasTraits):
                     slice_list.append(slc)
             return tuple(slice_list)
 
-    def _get_index_for_slice_label(self, slice_label, slice_idx):
-        return self.labels_dimensions[self.labels_ordering[slice_idx]].tolist().index(slice_label)
-
-    def _check_for_string_or_float_slice_indices(self, current_slice, slice_idx):
-        slice_start = current_slice.start
-        slice_stop = current_slice.stop
-
-        if isinstance(slice_start, string_types) or isinstance(slice_start, float):
-            slice_start = self._get_index_for_slice_label(slice_start, slice_idx)
-        if isinstance(slice_stop, string_types) or isinstance(slice_stop, float):
-            # NOTE!: In case of a string slice, we consider stop included!
-            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx) + 1
-
-        return slice(slice_start, slice_stop, current_slice.step)
-
-    def _resolve_mixted_slice(self, slice_tuple):
-        slice_list = []
-        for idx, current_slice in enumerate(slice_tuple):
-            if isinstance(current_slice, slice):
-                slice_list.append(self._check_for_string_or_float_slice_indices(current_slice, idx))
-            else:
-                # If not a slice, it will be an iterable:
-                for i_slc, slc in enumerate(current_slice):
-                    if isinstance(slc, string_types) or isinstance(slc, float):
-                        current_slice[i_slc] = self.labels_dimensions[self.labels_ordering[idx]].tolist().index(slc)
-                    else:
-                        current_slice[i_slc] = slc
-                slice_list.append(current_slice)
-        return tuple(slice_list)
-
-    # Return a TimeSeries object
-    def __getitem__(self, slice_tuple):
+    def _get_item(self, slice_tuple, **kwargs):
         slice_tuple = self._assert_array_indices(slice_tuple)
         try:
             # For integer indices
-            return self.duplicate(_data=self._data[slice_tuple])
+            return self.duplicate(_data=self._data[slice_tuple], **kwargs)
         except:
             try:
                 # For label indices
                 # xrarray.DataArray.loc slices along labels
                 # Assuming that all dimensions without input labels
                 # are configured with labels of integer indices=
-                return self.duplicate(_data=self._data.loc[slice_tuple])
+                return self.duplicate(_data=self._data.loc[slice_tuple], **kwargs)
             except:
                 # Still, for a conflicting mixture that has to be resolved
-                return self.duplicate(_data=self._data[self._resolve_mixted_slice(slice_tuple)])
+                return self.duplicate(_data=self._data[self._process_slices(slice_tuple)], **kwargs)
+
+    # Return a TimeSeries object
+    def __getitem__(self, slice_tuple):
+        return self._get_item(slice_tuple)
 
     def __setitem__(self, slice_tuple, values):
         slice_tuple = self._assert_array_indices(slice_tuple)
@@ -423,7 +534,119 @@ class TimeSeries(HasTraits):
                 self._data.loc[slice_tuple] = values
             except:
                 # Still, for a conflicting mixture that has to be resolved
-                self._data[self._resolve_mixted_slice(slice_tuple)] = values
+                self._data[self._process_slices(slice_tuple)] = values
+
+    def slice_data_across_dimension_by_index(self, indices, dimension, **kwargs):
+        dim_index = self.get_dimension_index(dimension)
+        indices = ensure_list(indices)
+        slices = [slice(None)] * self._data.ndims
+        slices[dim_index] = indices
+        return self.duplicate(_data=self._data[tuple(slices)], **kwargs)
+
+    def slice_data_across_dimension_by_label(self, labels, dimension, **kwargs):
+        dim_index = self.get_dimension_index(dimension)
+        labels = ensure_list(labels)
+        slices = [slice(None)] * self._data.ndims
+        slices[dim_index] = labels
+        return self.duplicate(_data=self._data.loc[tuple(slices)], **kwargs)
+
+    def slice_data_across_dimension_by_slice(self, slice_arg, dimension, **kwargs):
+        dim_index = self.get_dimension_index(dimension)
+        slices = [slice(None)] * self._data.ndims
+        slices[dim_index] = slice_arg
+        slices = tuple(slices)
+        return self._get_item(slices)
+
+    def get_times_by_index(self, list_of_times_indices, **kwargs):
+        return self.slice_data_across_dimension_by_index(list_of_times_indices, 0, **kwargs)
+
+    def _get_time_unit_for_index(self, time_index):
+        return self.start_time + time_index * self.sample_period
+
+    def _get_index_for_time_unit(self, time_unit):
+        return int((time_unit - self.start_time) / self.sample_period)
+
+    def get_time_window(self, index_start, index_end, **kwargs):
+        if index_start < 0 or index_end > self.data.shape[0]:
+            logger.error("The time indices are outside time series interval: [%s, %s]" %
+                              (0, self.data.shape[0]))
+            raise IndexError
+        subtime_data = self.data[index_start:index_end, :, :, :]
+        if subtime_data.ndim == 3:
+            subtime_data = np.expand_dims(subtime_data, 0)
+        return self.duplicate(data=subtime_data, time=self.time[index_start:index_end], **kwargs)
+
+    def get_time_window_by_units(self, unit_start, unit_end, **kwargs):
+        end_time = self.end_time
+        if unit_start < self.start_time or unit_end > end_time:
+            logger.error("The time units are outside time series interval: [%s, %s]" %
+                              (self.start_time, end_time))
+            raise IndexError
+        index_start = self._get_index_for_time_unit(unit_start)
+        index_end = self._get_index_for_time_unit(unit_end)
+        return self.get_time_window(index_start, index_end, **kwargs)
+
+    def get_times(self, list_of_times, **kwargs):
+        return self.slice_data_across_dimension(list_of_times, 0, **kwargs)
+
+    def decimate_time(self, new_sample_period, **kwargs):
+        if new_sample_period % self.sample_period != 0:
+            logger.error("Cannot decimate time if new time step is not a multiple of the old time step")
+            raise ValueError
+        index_step = int(new_sample_period / self.sample_period)
+        return self.duplicate(_data=self._data[::index_step, :, :, :],
+                              sample_period=new_sample_period, **kwargs)
+
+    def get_indices_for_state_variables(self, sv_labels):
+        return self._get_index_of_label(sv_labels, self.get_dimension_name(1))
+
+    def get_state_variables_by_index(self, sv_indices, **kwargs):
+        return self.slice_data_across_dimension_by_index(sv_indices, 1, **kwargs)
+
+    def get_state_variables_by_label(self, sv_labels, **kwargs):
+        return self.slice_data_across_dimension_by_label(sv_labels, 1, **kwargs)
+
+    def get_state_variables_by_slice(self, slice_arg, **kwargs):
+        return self.slice_data_across_dimension_by_slice(slice_arg, 1, **kwargs)
+
+    def get_state_variables(self, sv_inputs, **kwargs):
+        return getattr(self,
+                       "slice_data_across_dimension_by_%s" %
+                       self._index_or_label_or_slice(sv_inputs))(sv_inputs, 1, **kwargs)
+
+    def get_indices_for_labels(self, region_labels):
+        return self._get_index_of_label(region_labels, self.get_dimension_name(2))
+
+    def get_subspace_by_index(self, list_of_index, **kwargs):
+        return self.slice_data_across_dimension_by_index(list_of_index, 2, **kwargs)
+
+    def get_subspace_by_label(self, list_of_labels, **kwargs):
+        return self.slice_data_across_dimension_by_label(list_of_labels, 2, **kwargs)
+
+    def get_subspace_by_slice(self, slice_arg, **kwargs):
+        return self.slice_data_across_dimension_by_slice(slice_arg, 2, **kwargs)
+
+    def get_subspace(self, subspace_inputs, **kwargs):
+        return getattr(self,
+                       "slice_data_across_dimension_by_%s" %
+                       self._index_or_label_or_slice(subspace_inputs))(subspace_inputs, 2, **kwargs)
+
+    def get_modes_by_index(self, list_of_index, **kwargs):
+        return self.slice_data_across_dimension_by_index(list_of_index, 3, **kwargs)
+
+    def get_modes_by_label(self, list_of_labels, **kwargs):
+        return self.slice_data_across_dimension_by_label(list_of_labels, 3, **kwargs)
+
+    def get_modes_by_slice(self, slice_arg, **kwargs):
+        return self.slice_data_across_dimension_by_slice(slice_arg, 3, **kwargs)
+
+    def get_modes(self, modes_inputs, **kwargs):
+        return getattr(self,
+                       "slice_data_across_dimension_by_%s" %
+                       self._index_or_label_or_slice(modes_inputs))(modes_inputs, 3, **kwargs)
+
+    def get_sample_window(self, index_start, index_end, **kwargs):
+        return self.duplicate(_data=self._data[:, :, :, index_start:index_end], **kwargs)
 
     # def __getattr__(self, attr_name):
     #     # We are here because attr_name is not an attribute of TimeSeries...
@@ -582,41 +805,7 @@ class TimeSeries(HasTraits):
                          figname=figname, plotter=plotter, **kwargs)
 
 
-class SensorsTSBase(TimeSeries):
-
-    def __init__(self, data=None, **kwargs):
-        if not isinstance(data, SensorsTSBase):
-            self.sensors = kwargs.pop("sensors")
-        super(SensorsTSBase, self).__init__(data, **kwargs)
-
-    def summary_info(self):
-        """
-        Gather scientifically interesting summary information from an instance of this datatype.
-        """
-        summary = super(SensorsTSBase, self).summary_info()
-        summary.update({"Source Sensors": self.sensors.title})
-        return summary
-
-
-class TimeSeriesEEG(SensorsTSBase):
-    """ A time series associated with a set of EEG sensors. """
-
-    sensors = Attr(field_type=sensors.SensorsEEG)
-    _default_labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
-
-
-class TimeSeriesMEG(SensorsTSBase):
-    """ A time series associated with a set of MEG sensors. """
-
-    sensors = Attr(field_type=sensors.SensorsMEG)
-    _default_labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
-
-
-class TimeSeriesSEEG(SensorsTSBase):
-    """ A time series associated with a set of Internal sensors. """
-
-    sensors = Attr(field_type=sensors.SensorsInternal)
-    _default_labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
+# TODO: Slicing should also slice Connectivity, Surface, Volume, Sensors etc accordingly...
 
 
 class TimeSeriesRegion(TimeSeries):
@@ -647,6 +836,9 @@ class TimeSeriesRegion(TimeSeries):
         })
         return summary
 
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesRegionTVB().from_xarray_DataArray(self._data, **kwargs)
+
 
 class TimeSeriesSurface(TimeSeries):
     """ A time-series associated with a Surface. """
@@ -667,6 +859,9 @@ class TimeSeriesSurface(TimeSeries):
         summary.update({"Source Surface": self.surface.title})
         return summary
 
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesSurfaceTVB().from_xarray_DataArray(self._data, **kwargs)
+
 
 class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
@@ -686,6 +881,58 @@ class TimeSeriesVolume(TimeSeries):
         summary = super(TimeSeriesVolume, self).summary_info()
         summary.update({"Source Volume": self.volume.title})
         return summary
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesVolumeTVB().from_xarray_DataArray(self._data, **kwargs)
+
+
+class SensorsTSBase(TimeSeries):
+
+    def __init__(self, data=None, **kwargs):
+        if not isinstance(data, SensorsTSBase):
+            self.sensors = kwargs.pop("sensors")
+        super(SensorsTSBase, self).__init__(data, **kwargs)
+
+    def summary_info(self):
+        """
+        Gather scientifically interesting summary information from an instance of this datatype.
+        """
+        summary = super(SensorsTSBase, self).summary_info()
+        summary.update({"Source Sensors": self.sensors.title})
+        return summary
+
+    def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
+        return datatype().from_xarray_DataArray(self._data, **kwargs)
+
+
+class TimeSeriesEEG(SensorsTSBase):
+    """ A time series associated with a set of EEG sensors. """
+
+    sensors = Attr(field_type=sensors.SensorsEEG)
+    _default_labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesEEGTVB().from_xarray_DataArray(self._data, **kwargs)
+
+
+class TimeSeriesSEEG(SensorsTSBase):
+    """ A time series associated with a set of Internal sensors. """
+
+    sensors = Attr(field_type=sensors.SensorsInternal)
+    _default_labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesSEEGTVB().from_xarray_DataArray(self._data, **kwargs)
+
+
+class TimeSeriesMEG(SensorsTSBase):
+    """ A time series associated with a set of MEG sensors. """
+
+    sensors = Attr(field_type=sensors.SensorsMEG)
+    _default_labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesMEGTVB().from_xarray_DataArray(self._data, **kwargs)
 
 
 TimeSeriesDict = {TimeSeries.__name__: TimeSeries,
