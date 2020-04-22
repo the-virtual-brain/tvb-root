@@ -1117,19 +1117,8 @@ class SimulatorController(BurstBaseController):
         try:
             upload_param = "uploadedfile"
             if upload_param in data and data[upload_param]:
-                import_service = ImportService()
-                simulator_folder = import_service.import_simulator_configuration_zip(data[upload_param])
-
                 project = common.get_current_project()
-                simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
-                with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
-                    simulator_gid = sim_h5.gid.load()
-                simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
-
-                bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
-                burst_config = BurstConfiguration(project.id)
-                with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
-                    bc_h5.load_into(burst_config)
+                simulator, burst_config = self.simulator_service.load_from_zip(data[upload_param], project)
 
                 common.add2session(common.KEY_BURST_CONFIG, burst_config)
                 common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)

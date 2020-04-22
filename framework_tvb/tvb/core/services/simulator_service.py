@@ -45,9 +45,12 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.simulator.simulator import Simulator
 
 
 class SimulatorService(object):
@@ -220,3 +223,15 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
+
+    def load_from_zip(self, zip_file, project):
+        import_service = ImportService()
+        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
+
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
+        with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
+            simulator_gid = sim_h5.gid.load()
+        simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
+
+        burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
+        return simulator, burst_config

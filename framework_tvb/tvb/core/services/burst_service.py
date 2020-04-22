@@ -38,6 +38,7 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import DirLoader
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -209,3 +210,10 @@ class BurstService(object):
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
+
+    def load_burst_configuration_from_folder(self, simulator_folder, project):
+        bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
+        burst_config = BurstConfiguration(project.id)
+        with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
+            bc_h5.load_into(burst_config)
+        return burst_config
