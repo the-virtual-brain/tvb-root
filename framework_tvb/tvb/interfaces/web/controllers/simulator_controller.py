@@ -668,9 +668,8 @@ class SimulatorController(BurstBaseController):
         form = get_form_for_monitor(type(monitor))(indexes, '', common.get_current_project().id)
         form.fill_from_trait(monitor)
 
-        simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-
         if isinstance(monitor, Raw):
+            simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
             form = SimulatorFinalFragment(simulation_number=simulation_number)
 
             if cherrypy.request.method != 'POST':
@@ -830,16 +829,6 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    def _load_range_param(self, range):
-        all_range_parameters = self.range_parameters.get_all_range_parameters()
-        range_json = json.loads(range)
-        param = all_range_parameters.get(range_json[0])
-        param.range_definition.lo = range_json[1][0]
-        param.range_definition.step = range_json[1][1]
-        param.range_definition.hi = range_json[1][2]
-
-        return param
-
     # TODO: review this in task TVB-2537
     def _is_pse_launch(self):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
@@ -847,11 +836,14 @@ class SimulatorController(BurstBaseController):
 
     def _handle_range_params_at_loading(self):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        all_range_parameters = self.range_parameters.get_all_range_parameters()
         param1, param2 = None, None
         if burst_config.range1:
-            param1 = self._load_range_param(burst_config.range1)
+            param1 = RangeParameter.from_json(burst_config.range1)
+            param1.fill_from_default(all_range_parameters[param1.name])
             if burst_config.range2 is not None:
-                param2 = self._load_range_param(burst_config.range2)
+                param2 = RangeParameter.from_json(burst_config.range2)
+                param2.fill_from_default(all_range_parameters[param2.name])
 
         return param1, param2
 
@@ -879,7 +871,7 @@ class SimulatorController(BurstBaseController):
         else:
             param1, param2 = self._handle_range_params_at_loading()
         project_id = common.get_current_project().id
-        next_form = SimulatorPSEParamRangeFragment(param1, param2, project_id=project_id)
+        next_form = SimulatorPSERangeFragment(param1, param2, project_id=project_id)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.LAUNCH_PSE_URL,
                                                           SimulatorWizzardURLs.SET_PSE_PARAMS_URL,
@@ -893,7 +885,7 @@ class SimulatorController(BurstBaseController):
     @check_user
     def launch_pse(self, **data):
         all_range_parameters = self.range_parameters.get_all_range_parameters()
-        range_param1, range_param2 = SimulatorPSEParamRangeFragment.fill_from_post(all_range_parameters, **data)
+        range_param1, range_param2 = SimulatorPSERangeFragment.fill_from_post(all_range_parameters, **data)
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
 
         project = common.get_current_project()
