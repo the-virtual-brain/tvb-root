@@ -179,9 +179,7 @@ class BurstService(object):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.project_id)
         storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
-        bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_configuration.gid)
-        with BurstConfigurationH5(os.path.join(storage_path, bc_path)) as bc_h5:
-            bc_h5.store(burst_configuration)
+        self.store_burst_configuration(burst_configuration, storage_path)
 
     def load_burst_configuration(self, burst_config_id):
         # type: (int) -> BurstConfiguration
@@ -206,3 +204,8 @@ class BurstService(object):
         burst_config.metric_operation_group = metric_operation_group
         burst_config.metric_operation_group_id = metric_operation_group.id
         dao.store_entity(burst_config)
+
+    def store_burst_configuration(self, burst_config, storage_path):
+        bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
+        with BurstConfigurationH5(bc_path) as bc_h5:
+            bc_h5.store(burst_config)

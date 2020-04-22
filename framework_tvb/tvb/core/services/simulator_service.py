@@ -40,13 +40,11 @@ import uuid
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
@@ -55,6 +53,7 @@ from tvb.core.services.simulator_serializer import SimulatorSerializer
 class SimulatorService(object):
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
+        self.burst_service = BurstService()
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
 
@@ -99,10 +98,8 @@ class SimulatorService(object):
                                                 algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, storage_path)
-            burst_config = BurstService.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
-            bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
-            with BurstConfigurationH5(bc_path) as bc_h5:
-                bc_h5.store(burst_config)
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
+            self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
             try:
@@ -112,7 +109,7 @@ class SimulatorService(object):
                 self.logger.error(excep)
                 wf_errs += 1
                 if burst_config:
-                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                    self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflow. The operation was launched successfully, " +
                               str(wf_errs) + " had error on pre-launch steps")
@@ -120,7 +117,7 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
             if burst_config:
-                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         with SimulatorH5(simulator_file) as simulator_h5:
@@ -198,10 +195,8 @@ class SimulatorService(object):
 
             first_operation = operations[0]
             storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
-            burst_config = BurstService.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
-            bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
-            with BurstConfigurationH5(bc_path) as bc_h5:
-                bc_h5.store(burst_config)
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
+            self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
                                            fk_parent_burst=burst_config.id,
                                            state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])
@@ -217,11 +212,11 @@ class SimulatorService(object):
                 except Exception as excep:
                     self.logger.error(excep)
                     wf_errs += 1
-                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                    self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
 
         except Exception as excep:
             self.logger.error(excep)
-            BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+            self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
