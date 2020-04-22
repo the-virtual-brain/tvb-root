@@ -195,28 +195,35 @@ class TimeSeries(HasTraits):
             coords[dims[0]] = time
         else:
             kwargs['start_time'] = kwargs.pop('start_time', 0.0)
-        self._data = xr.DataArray(data=data, dims=dims, coords=coords, attrs=attrs)
+        if isinstance(xarr.name, string_types) and len(xarr.name) > 0:
+            title = xarr.name
+        else:
+            title = self.__class__.title.default
+        kwargs['title'] = kwargs.pop('title', kwargs.pop('name', title))
+        self._data = xr.DataArray(data=data, dims=dims, coords=coords, attrs=attrs, name=str(kwargs['title']))
         super(TimeSeries, self).__init__(**kwargs)
 
     def from_TVB_time_series(self, ts, **kwargs):
         labels_ordering = kwargs.pop("labels_ordering", kwargs.pop("dims", ts.labels_ordering))
         labels_dimensions = kwargs.pop("labels_dimensions", kwargs.pop("coords", ts.labels_dimensions))
-        name = kwargs.pop("name", kwargs.pop("title", ts.title))
         time = kwargs.pop("time", ts.time)
         labels_dimensions[labels_ordering[0]] = time
         for label, dimensions in labels_dimensions.items():
             id = labels_ordering.index(label)
             if ts.shape[id] != len(dimensions):
                 labels_dimensions[label] = np.arange(ts.shape[id]).astype("i")
-        self.start_time = getattr(ts, "start_time", kwargs.pop('start_time', ts.time[0]))
-        self.sample_period = getattr(ts, "sample_period", kwargs.pop('sample_period', np.diff(ts.time).mean()))
-        self.sample_period_unit = getattr(ts, "sample_period_unit",
-                                          kwargs.pop('sample_period_unit', self.__class__.sample_period_unit.default))
-        self.title = getattr(ts, "title", kwargs.pop('title', self.__class__.title.default))
+        self.start_time = kwargs.pop('start_time',
+                                     getattr(ts, "start_time", ts.time[0]))
+        self.sample_period = kwargs.pop('sample_period',
+                                        getattr(ts, "sample_period", np.diff(ts.time).mean()))
+        self.sample_period_unit = kwargs.pop('sample_period_unit',
+                                             getattr(ts, "sample_period_unit",
+                                                     self.__class__.sample_period_unit.default))
+        self.title = kwargs.pop("title", kwargs.pop("name", ts.title))
         self._data = xr.DataArray(ts.data,
                                   dims=labels_ordering,
                                   coords=labels_dimensions,
-                                  name=name, attrs=kwargs.pop("attrs", None))
+                                  name=str(self.title), attrs=kwargs.pop("attrs", None))
         super(TimeSeries, self).__init__(**kwargs)
 
     def from_numpy(self, data, **kwargs):
@@ -229,9 +236,9 @@ class TimeSeries(HasTraits):
                 labels_dimensions = {}
             labels_dimensions[labels_ordering[0]] = time
         self.sample_period_unit = kwargs.pop('sample_period_unit', self.__class__.sample_period_unit.default)
-        self.title = kwargs.pop('title', self.__class__.title.default)
+        self.title = kwargs.pop('title', kwargs.pop("name", self.__class__.title.default))
         self._data = xr.DataArray(data, dims=labels_ordering, coords=labels_dimensions,
-                                  name=self.__class__.__name__, attrs=kwargs.pop("attrs", None))
+                                  name=str(self.title), attrs=kwargs.pop("attrs", None))
         super(TimeSeries, self).__init__(**kwargs)
 
     def _configure_input_time(self, data, **kwargs):
@@ -295,10 +302,10 @@ class TimeSeries(HasTraits):
     def configure(self):
         # To be always used when a new object is created
         # to check that everything is set correctly
-        if self.name is None:
-            self.title = "TimeSeries"
+        if self._data.name is None or len(self._data.name) == 0:
+            self._data.name = self.title
         else:
-            self.title = self.name
+            self.title = self._data.name
         super(TimeSeries, self).configure()
         try:
             time_length = self.time_length
