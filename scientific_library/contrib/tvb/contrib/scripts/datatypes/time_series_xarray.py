@@ -264,7 +264,7 @@ class TimeSeries(HasTraits):
                 end_time = time[-1]
                 if len(time) > 1:
                     sample_period = np.mean(np.diff(time))
-                    assert np.abs(end_time - start_time + (time_length - 1) * sample_period) < 1e-6
+                    assert np.abs(end_time - start_time - (time_length - 1) * sample_period) < 1e-6
                 else:
                     sample_period = None
                 return time, start_time, end_time, sample_period, kwargs
