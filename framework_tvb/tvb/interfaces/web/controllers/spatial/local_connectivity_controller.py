@@ -51,6 +51,8 @@ from tvb.interfaces.web.controllers.decorators import check_user, handle_error, 
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 
+from framework_tvb.tvb.core.entities.file.exceptions import MissingDataSetException
+
 NO_OF_CUTOFF_POINTS = 20
 
 LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
@@ -326,6 +328,8 @@ class LocalConnectivityController(SpatioTemporalController):
             current_lconn = common.get_from_session(KEY_LCONN)
             surface_gid = current_lconn.surface.hex
             surface = ABCAdapter.load_entity_by_gid(surface_gid)
+            if surface is None:
+                raise MissingDataSetException("There is no surface in the current project. Please insert one to continue.")
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
