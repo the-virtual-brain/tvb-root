@@ -30,6 +30,7 @@
 
 import uuid
 from tvb.basic.neotraits.api import Attr
+from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.neotraits.h5 import H5File, Scalar, Reference, Json
 from tvb.core.utils import date2string, string2date
 
@@ -42,9 +43,9 @@ class BurstConfigurationH5(H5File):
         self.error_message = Scalar(Attr(str, required=False), self, name='error_message')
         self.start_time = Scalar(Attr(str), self, name='start_time')
         self.finish_time = Scalar(Attr(str, required=False), self, name='finish_time')
-        self.simulator = Reference(Attr(str), self, name='simulator')
-        self.range1 = Json(Attr(str, required=False), self, name='range1')
-        self.range2 = Json(Attr(str, required=False), self, name='range2')
+        self.simulator = Reference(Attr(uuid.UUID), self, name='simulator')
+        self.range1 = Scalar(Attr(str), self, name='range1')
+        self.range2 = Scalar(Attr(str), self, name='range2')
 
     def store(self, burst_config, scalars_only=False, store_references=False):
         self.name.store(burst_config.name)
@@ -53,9 +54,8 @@ class BurstConfigurationH5(H5File):
         self.start_time.store(date2string(burst_config.start_time))
         self.finish_time.store(date2string(burst_config.finish_time))
         self.simulator.store(uuid.UUID(burst_config.simulator_gid))
-        if burst_config.operation_group_id:
-            self.range1.store(burst_config.range1)
-            self.range2.store(burst_config.range2)
+        self.range1.store(burst_config.range1)
+        self.range2.store(burst_config.range2)
 
     def load_into(self, burst_config):
         burst_config.name = self.name.load()
@@ -64,5 +64,11 @@ class BurstConfigurationH5(H5File):
         burst_config.start_time = string2date(self.start_time.load())
         burst_config.finish_time = string2date(self.finish_time.load())
         burst_config.simulator_gid = self.simulator.load().hex
-        burst_config.range1 = self.range1.load()
-        burst_config.range2 = self.range2.load()
+        try:
+            burst_config.range1 = self.range1.load()
+        except MissingDataSetException:
+            burst_config.range1 = None
+        try:
+            burst_config.range2 = self.range2.load()
+        except MissingDataSetException:
+            burst_config.range2 = None

@@ -829,11 +829,6 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    # TODO: review this in task TVB-2537
-    def _is_pse_launch(self):
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        return burst_config.range1
-
     def _handle_range_params_at_loading(self):
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
         all_range_parameters = self.range_parameters.get_all_range_parameters()
@@ -991,14 +986,17 @@ class SimulatorController(BurstBaseController):
                 'selectedBurst': session_burst.id,
                 'first_fragment_url': SimulatorFragmentRenderingRules.FIRST_FORM_URL}
 
+    def _prepare_last_fragment_by_burst_type(self, burst_config):
+        if burst_config.is_pse_burst():
+            return SimulatorWizzardURLs.LAUNCH_PSE_URL
+        else:
+            return SimulatorWizzardURLs.SETUP_PSE_URL
+
     @cherrypy.expose
     def get_last_fragment_url(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         common.add2session(common.KEY_BURST_CONFIG, burst_config)
-        if self._is_pse_launch():
-            return SimulatorWizzardURLs.LAUNCH_PSE_URL
-        else:
-            return SimulatorWizzardURLs.SETUP_PSE_URL
+        return self._prepare_last_fragment_by_burst_type(burst_config)
 
     @cherrypy.expose
     @using_template("simulator_fragment")
@@ -1015,11 +1013,8 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
             common.add2session(common.KEY_IS_SIMULATOR_LOAD, True)
             common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
-            if self._is_pse_launch():
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_PSE_URL)
-            else:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
 
+            self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config))
             form = self.prepare_first_fragment()
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                               is_simulation_readonly_load=True, is_first_fragment=True)
@@ -1047,11 +1042,8 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
-        if self._is_pse_launch():
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_PSE_URL)
-        else:
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
 
+        self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config))
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
@@ -1143,7 +1135,10 @@ class SimulatorController(BurstBaseController):
                 common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
                 common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
                 common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+                if burst_config.is_pse_burst():
+                    self._update_last_loaded_fragment_url(SimulatorWizzardURLs.LAUNCH_PSE_URL)
+                else:
+                    self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
         except IOError as ioexcep:
             self.logger.exception(ioexcep)
             common.set_warning_message("This ZIP does not contain a complete simulator configuration")

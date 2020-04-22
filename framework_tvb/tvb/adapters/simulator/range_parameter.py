@@ -46,7 +46,7 @@ class RangeParameter(object):
         self.name = name
         self.type = type
         self.is_array = is_array
-        # range_definition is a Range object when is_array=True and a FilterChain otherwise
+        # range_definition is a Range object when type=float and a FilterChain otherwise
         self.range_definition = range_definition
         self.range_values = range_values
 

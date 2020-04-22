@@ -186,10 +186,6 @@ class BurstService(object):
     def load_burst_configuration(self, burst_config_id):
         # type: (int) -> BurstConfiguration
         burst_config = dao.get_burst_by_id(burst_config_id)
-        if burst_config.operation_group_id:
-            operation_group = dao.get_operationgroup_by_id(burst_config.operation_group_id)
-            burst_config.range1 = operation_group.range1
-            burst_config.range2 = operation_group.range2
         return burst_config
 
     def prepare_burst_for_pse(self, burst_config):
