@@ -61,20 +61,20 @@ def get_monitor_to_form_dict():
 
 
 def get_ui_name_to_monitor_dict(surface):
-    ui_name_to_monitor = {
-        'Raw recording': Raw,
-        'Temporally sub-sample': SubSample,
-        'Spatial average with temporal sub-sample': SpatialAverage,
-        'Global average': GlobalAverage,
-        'Temporal average': TemporalAverage,
-        'EEG': EEG,
-        'MEG': MEG,
-        'Intracerebral / Stereo EEG': iEEG,
-        'BOLD': Bold
-    }
+    ui_name_to_monitor = [
+        'Raw recording',
+        'Temporally sub-sample',
+        'Spatial average with temporal sub-sample',
+        'Global average',
+        'Temporal average',
+        'EEG',
+        'MEG',
+        'Intracerebral / Stereo EEG',
+        'BOLD'
+    ]
 
     if surface:
-        ui_name_to_monitor['BOLD Region ROI'] = BoldRegionROI
+        ui_name_to_monitor.append('BOLD Region ROI')
 
     return ui_name_to_monitor
 

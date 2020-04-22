@@ -31,6 +31,7 @@
 import uuid
 import formencode
 from formencode import validators
+from tvb.basic.neotraits._attr import List
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.core.entities.filters.chain import FilterChain
@@ -40,7 +41,6 @@ from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
-from tvb.simulator.monitors import Monitor
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict
@@ -50,8 +50,8 @@ from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, SimpleHiddenField, \
-    SelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
+    SimpleHiddenField, SelectField, MultiSelectField
 from tvb.core.neocom import h5
 
 
@@ -155,15 +155,14 @@ class SimulatorMonitorFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
-        default_monitor = list(self.monitor_choices.values())[0]
 
-        self.monitor = SelectField(
-            Attr(Monitor, default=default_monitor, label=Simulator.monitors.label, doc=Simulator.monitors.doc), self,
-            choices=self.monitor_choices, name='monitor')
+        self.monitors = MultiSelectField(List(of=str, label='Monitors',
+                                                      choices=tuple(self.monitor_choices)),
+                                                      self, name='monitors')
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
-        self.monitor.data = trait.monitors[0].__class__
+        self.monitors.data = trait.monitors[0].__class__
 
 
 class SimulatorFinalFragment(ABCAdapterForm):
