@@ -201,6 +201,8 @@ class TestFactory(object):
             burst.name = 'dummy_burst'
             burst.status = BurstConfiguration.BURST_FINISHED
             burst.start_time = datetime.datetime.now()
+            burst.range1 = '["conduction_speed", {"lo": 50, "step": 1.0, "hi": 100.0}]'
+            burst.range2 = '["connectivity", null]'
             burst.fk_simulation_id = operation.id
             burst.simulator_gid = uuid.uuid4().hex
             BurstService().update_burst_configuration_h5(burst)

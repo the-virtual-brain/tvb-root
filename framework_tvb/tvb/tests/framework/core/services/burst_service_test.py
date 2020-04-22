@@ -129,6 +129,8 @@ class TestBurstService(BaseTestCase):
         assert first_burst.name == second_burst.name, "Names not equal for bursts."
         assert first_burst.project_id == second_burst.project_id, "Projects not equal for bursts."
         assert first_burst.status == second_burst.status, "Statuses not equal for bursts."
+        assert first_burst.range1 == second_burst.range1, "Statuses not equal for bursts."
+        assert first_burst.range2 == second_burst.range2, "Statuses not equal for bursts."
 
 
     def test_getavailablebursts_none(self):
