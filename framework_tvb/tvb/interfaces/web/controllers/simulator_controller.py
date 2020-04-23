@@ -654,6 +654,16 @@ class SimulatorController(BurstBaseController):
             indexes[variable] = all_variables.index(variable)
         return indexes
 
+    @staticmethod
+    def _build_list_of_monitors(monitor_names, is_surface_simulation):
+        monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
+        monitor_classes = []
+
+        for monitor in monitor_names:
+            monitor_classes.append(monitor_dict[monitor]())
+
+        return monitor_classes
+
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
@@ -665,16 +675,17 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            if data['monitor'] == 'Raw recording':
+            monitors = data['monitors']
+            if monitors[0] == 'Raw recording' and len(monitors) == 1:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
             is_simulator_copy = False
-            # TODO: handle multiple monitors
             fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.is_surface_simulation)
             fragment.fill_from_post(data)
 
-            session_stored_simulator.monitors = [fragment.monitor.value()]
+            session_stored_simulator.monitors = self._build_list_of_monitors(
+                fragment.monitors.value, session_stored_simulator.is_surface_simulation)
 
         all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
         chosen_variables = session_stored_simulator.model.variables_of_interest
@@ -748,7 +759,7 @@ class SimulatorController(BurstBaseController):
 
         session_stored_simulator.monitors = [monitor]
 
-        if isinstance(session_stored_simulator.monitors[0], Projection) and cherrypy.request.method == 'POST':
+        if isinstance(monitor, Projection) and cherrypy.request.method == 'POST':
             # load region mapping
             region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
             region_mapping = h5.load_from_index(region_mapping_index)

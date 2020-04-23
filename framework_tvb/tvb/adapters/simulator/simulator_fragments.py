@@ -157,12 +157,12 @@ class SimulatorMonitorFragment(ABCAdapterForm):
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
 
         self.monitors = MultiSelectField(List(of=str, label='Monitors',
-                                                      choices=tuple(self.monitor_choices)),
+                                                      choices=tuple(self.monitor_choices.keys())),
                                                       self, name='monitors')
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
-        self.monitors.data = trait.monitors[0].__class__
+        self.monitors.data = ['Temporal average']
 
 
 class SimulatorFinalFragment(ABCAdapterForm):
