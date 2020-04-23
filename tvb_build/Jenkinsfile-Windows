@@ -1,0 +1,59 @@
+pipeline {
+    agent { label 'WindowsDocker_Node' }
+
+    environment {
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build-windows:docker'
+    }
+
+    stages {
+        stage('Build docker image'){
+            steps {
+                script{
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-Windows-build tvb_build/docker")
+                    dockerImage.push()
+                }
+
+            }
+        }
+        stage('Copy Step 1') {
+             steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
+                 step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
+                 sh '''#!/bin/bash
+                       ls -all tvb_build/build
+                 '''
+                 stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
+             }
+        }
+        stage ('Build TVB Distribution') {
+            steps {
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}"){
+                    powershell 'cd tvb_build; cmd /c if exist build rd /s /q build; cd ..'
+                    unstash 'step1'
+                    powershell 'cd framework_tvb; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ..'
+                    powershell 'cd scientific_library; C:/miniconda/envs/tvb-run/python.exe setup.py develop; cd..'
+                    powershell 'cd scientific_library/contrib; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ../..'
+                    powershell 'cd tvb_bin; C:/miniconda/envs/tvb-run/python.exe setup.py develop; cd ..'
+                    powershell 'cd tvb_build; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ..'
+                    powershell 'cd tvb_build; C:/miniconda/envs/tvb-run/python.exe build_from_conda.py'
+                }
+                archiveArtifacts artifacts: 'tvb_build/build/TVB_Windows*.zip'
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'bogdan.valean@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}
