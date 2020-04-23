@@ -390,7 +390,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            connectivity_measure_shape = eval(connectivity_measure.shape)
+            connectivity_measure_shape = json.loads(connectivity_measure.shape)
             if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
             if connectivity_measure_shape[0] != measure_points_no:
