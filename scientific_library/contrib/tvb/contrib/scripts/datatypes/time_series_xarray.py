@@ -905,6 +905,7 @@ class TimeSeriesSurface(TimeSeries):
         kwargs["surface"] = kwargs.pop("surface", getattr(self, datatype_name))
         return _data, kwargs
 
+
 class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
 
