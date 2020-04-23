@@ -390,15 +390,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            conn_array = connectivity_measure.array_data.load()
-            connectivity_measure_shape = conn_array.shape
+            connectivity_measure_shape = connectivity_measure.array_data.shape
             if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
             if connectivity_measure_shape[0] != measure_points_no:
                 raise ValueError("connectivity measure has %d values but the connectivity has %d "
                                  "regions" % (connectivity_measure_shape[0], measure_points_no))
-            min_measure = numpy.min(conn_array[:])
-            max_measure = numpy.max(conn_array[:])
+            min_measure = numpy.min(connectivity_measure.array_data[:])
+            max_measure = numpy.max(connectivity_measure.array_data[:])
             # We assume here that the index 0 in the measure corresponds to
             # the region 0 of the region map.
             client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid.load().hex,
