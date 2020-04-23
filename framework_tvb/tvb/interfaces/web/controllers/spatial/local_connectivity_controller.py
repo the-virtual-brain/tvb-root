@@ -44,8 +44,8 @@ from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUS
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.exceptions import ServicesBaseException
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.interfaces.rest.commons.exceptions import ServiceException
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
@@ -328,7 +328,7 @@ class LocalConnectivityController(SpatioTemporalController):
             surface_gid = current_lconn.surface.hex
             surface = ABCAdapter.load_entity_by_gid(surface_gid)
             if surface is None:
-                raise ServiceException("There is no surface in the current project. Please upload one to continue.")
+                raise ServicesBaseException("There is no surface in the current project. Please upload one to continue.")
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
