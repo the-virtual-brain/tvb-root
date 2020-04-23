@@ -84,7 +84,7 @@ class OperationApi(MainApi):
         form = adapter_class().get_form()()
 
         post_data = self._prepare_post_data(datatype_gid, form)
-        form.fill_from_post(post_data)
+        form.fill_from_post_plus_defaults(post_data)
 
         view_model = form.get_view_model()()
         form.fill_trait(view_model)

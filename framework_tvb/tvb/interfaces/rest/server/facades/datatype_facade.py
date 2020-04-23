@@ -44,7 +44,7 @@ class DatatypeFacade:
         return h5_file_for_index(index).path
 
     def get_datatype_operations(self, datatype_gid):
-        categories = dao.get_launchable_categories()
+        categories = dao.get_launchable_categories(elimin_viewers=True)
         datatype = dao.get_datatype_by_gid(datatype_gid)
         _, filtered_adapters, _ = self.flow_service.get_launchable_algorithms_for_datatype(datatype, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]
