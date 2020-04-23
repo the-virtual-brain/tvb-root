@@ -190,8 +190,8 @@ class TimeSeries(HasTraits):
         attrs = kwargs.pop("attrs", None)
         time = kwargs.pop("time", coords.pop(dims[0], None))
         if time is not None:
-            kwargs['start_time'] = kwargs.pop('start_time', time[0])
-            kwargs['sample_period'] = kwargs.pop('sample_period', np.diff(time).mean())
+            kwargs['start_time'] = kwargs.pop('start_time', float(time[0]))
+            kwargs['sample_period'] = kwargs.pop('sample_period', float(np.diff(time).mean()))
             coords[dims[0]] = time
         else:
             kwargs['start_time'] = kwargs.pop('start_time', 0.0)
@@ -213,9 +213,9 @@ class TimeSeries(HasTraits):
             if ts.shape[id] != len(dimensions):
                 labels_dimensions[label] = np.arange(ts.shape[id]).astype("i")
         self.start_time = kwargs.pop('start_time',
-                                     getattr(ts, "start_time", ts.time[0]))
+                                     getattr(ts, "start_time", float(ts.time[0])))
         self.sample_period = kwargs.pop('sample_period',
-                                        getattr(ts, "sample_period", np.diff(ts.time).mean()))
+                                        getattr(ts, "sample_period", float(np.diff(ts.time).mean())))
         self.sample_period_unit = kwargs.pop('sample_period_unit',
                                              getattr(ts, "sample_period_unit",
                                                      self.__class__.sample_period_unit.default))
@@ -260,15 +260,19 @@ class TimeSeries(HasTraits):
                 return time, start_time, end_time, sample_period, kwargs
             else:
                 assert time_length == len(time)
-                start_time = time[0]
-                end_time = time[-1]
+                start_time = float(time[0])
+                end_time = float(time[-1])
                 if len(time) > 1:
-                    sample_period = np.mean(np.diff(time))
+                    sample_period = float(np.mean(np.diff(time)))
                     assert np.abs(end_time - start_time - (time_length - 1) * sample_period) < 1e-6
                 else:
                     sample_period = None
                 return time, start_time, end_time, sample_period, kwargs
         else:
+            if start_time is None:
+                start_time = self.__class__.start_time.default
+            if sample_period is None:
+                sample_period = self.__class__.sample_period.default
             # Empty data
             return None, start_time, None, sample_period, kwargs
 
@@ -290,9 +294,10 @@ class TimeSeries(HasTraits):
             assert np.abs(self.sample_period - (self.end_time - self.start_time) / (self.time_length - 1)) < 1e-6
 
     def _configure_labels(self):
+        labels_dimensions = self.labels_dimensions
         for i_dim in range(1, self.nr_dimensions):
-            dim_label = self.labels_ordering[i_dim]
-            val = self.labels_dimensions.get(dim_label, None)
+            dim_label = self.get_dimension_name(i_dim)
+            val = labels_dimensions.get(dim_label, None)
             if val is not None:
                 assert len(val) == self.shape[i_dim]
             else:
@@ -359,23 +364,29 @@ class TimeSeries(HasTraits):
         summary.update(narray_summary_info(self.data))
         return summary
 
-    def duplicate(self, **kwargs):
+    def _duplicate(self, **kwargs):
         # Since all labels are internal to xarray,
         # it suffices to pass a new (e.g., sliced) xarray _data as kwarg
         # for all labels to be set correctly (and confirmed by the call to configure(),
         # whereas any other attributes of TimeSeries will be copied
-        time = kwargs.pop("time", None)
+        _data = kwargs.pop("_data", self._data)
+        time = _data.coords.get(_data.dims[0], None)
+        time = kwargs.pop("time", time)
         if time is not None:
-            kwargs['start_time'] = kwargs.pop('start_time', time[0])
+            kwargs['start_time'] = kwargs.pop('start_time', float(time[0]))
             kwargs['sample_period'] = kwargs.pop('sample_period', np.diff(time).mean())
         else:
             kwargs['start_time'] = kwargs.pop('start_time', self.start_time)
             kwargs['sample_period'] = kwargs.pop('sample_period', self.sample_period)
         kwargs['sample_period_unit'] = kwargs.pop('sample_period_unit', self.sample_period_unit)
         kwargs['title'] = kwargs.pop('title', self.title)
-        output = self.__class__()
-        output.from_xarray_DataArray(kwargs.pop("_data", self._data), **kwargs)
-        return output
+        return _data, kwargs
+
+    def duplicate(self, **kwargs):
+        _data, kwargs = self._duplicate(**kwargs)
+        duplicate = self.__class__(**kwargs)
+        duplicate.from_xarray_DataArray(_data, **kwargs)
+        return duplicate
 
     def to_tvb_instance(self, datatype=TimeSeriesTVB, **kwargs):
         return datatype().from_xarray_DataArray(self._data, **kwargs)
@@ -836,9 +847,10 @@ class TimeSeriesRegion(TimeSeries):
 
     def __init__(self, data=None, **kwargs):
         if not isinstance(data, TimeSeriesRegion):
-            self.connectivity = kwargs.pop("connectivity")
-            self.region_mapping_volume = kwargs.pop("region_mapping_volume", None)
-            self.region_mapping = kwargs.pop("region_mapping", None)
+            for datatype_name in ["connectivity", "region_mapping_volume", "region_mapping"]:
+                datatype = kwargs.pop(datatype_name, None)
+                if datatype is not None:
+                    setattr(self, datatype_name, datatype)
         super(TimeSeriesRegion, self).__init__(data, **kwargs)
 
     def summary_info(self):
@@ -853,6 +865,12 @@ class TimeSeriesRegion(TimeSeries):
                                       if self.region_mapping_volume else "None")
         })
         return summary
+
+    def _duplicate(self, **kwargs):
+        _data, kwargs = super(TimeSeriesRegion, self)._duplicate(**kwargs)
+        for datatype_name in ["connectivity", "region_mapping_volume", "region_mapping"]:
+            kwargs[datatype_name] = kwargs.pop(datatype_name, getattr(self, datatype_name))
+        return _data, kwargs
 
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesRegionTVB().from_xarray_DataArray(self._data, **kwargs)
@@ -882,6 +900,10 @@ class TimeSeriesSurface(TimeSeries):
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesSurfaceTVB().from_xarray_DataArray(self._data, **kwargs)
 
+    def _duplicate(self, **kwargs):
+        _data, kwargs = super(TimeSeriesSurface, self)._duplicate(**kwargs)
+        kwargs["surface"] = kwargs.pop("surface", getattr(self, datatype_name))
+        return _data, kwargs
 
 class TimeSeriesVolume(TimeSeries):
     """ A time-series associated with a Volume. """
@@ -907,6 +929,11 @@ class TimeSeriesVolume(TimeSeries):
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesVolumeTVB().from_xarray_DataArray(self._data, **kwargs)
 
+    def _duplicate(self, **kwargs):
+        _data, kwargs = super(TimeSeriesVolume, self)._duplicate(**kwargs)
+        kwargs["volume"] = kwargs.pop("volume", getattr(self, datatype_name))
+        return _data, kwargs
+
 
 class TimeSeriesSensors(TimeSeries):
     title = Attr(str, default="Sensor Time Series")
@@ -927,6 +954,13 @@ class TimeSeriesSensors(TimeSeries):
     def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
         return datatype().from_xarray_DataArray(self._data, **kwargs)
 
+    def _duplicate(self, datatype=None, **kwargs):
+        if datatype is None:
+            datatype = self.__class__
+        _data, kwargs = super(datatype, self)._duplicate(**kwargs)
+        kwargs["sensors"] = kwargs.pop("sensors", getattr(self, datatype_name))
+        return _data, kwargs
+
 
 class TimeSeriesEEG(TimeSeriesSensors):
     """ A time series associated with a set of EEG sensors. """
@@ -938,6 +972,9 @@ class TimeSeriesEEG(TimeSeriesSensors):
 
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesEEGTVB().from_xarray_DataArray(self._data, **kwargs)
+
+    def _duplicate(self, **kwargs):
+        super(TimeSeriesEEG, self)._duplicate(TimeSeriesEEG, **kwargs)
 
 
 class TimeSeriesSEEG(TimeSeriesSensors):
@@ -951,6 +988,9 @@ class TimeSeriesSEEG(TimeSeriesSensors):
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesSEEGTVB().from_xarray_DataArray(self._data, **kwargs)
 
+    def _duplicate(self, **kwargs):
+        super(TimeSeriesSEEG, self)._duplicate(TimeSeriesSEEG, **kwargs)
+
 
 class TimeSeriesMEG(TimeSeriesSensors):
     """ A time series associated with a set of MEG sensors. """
@@ -962,6 +1002,9 @@ class TimeSeriesMEG(TimeSeriesSensors):
 
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesMEGTVB().from_xarray_DataArray(self._data, **kwargs)
+
+    def _duplicate(self, **kwargs):
+        super(TimeSeriesMEG, self)._duplicate(TimeSeriesMEG, **kwargs)
 
 
 TimeSeriesDict = {TimeSeries.__name__: TimeSeries,
