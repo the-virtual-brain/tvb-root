@@ -722,6 +722,36 @@ class SimulatorController(BurstBaseController):
 
         return rendering_rules.to_dict()
 
+    def _handle_next_fragment_for_monitors(self, session_stored_simulator, current_monitor_index):
+        if current_monitor_index < len(session_stored_simulator.monitors) - 1:
+            all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+            chosen_variables = session_stored_simulator.model.variables_of_interest
+            indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+
+            next_monitor = session_stored_simulator.monitors[current_monitor_index + 1]
+            next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
+            next_form.fill_from_trait(next_monitor)
+
+            form_action_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL
+            is_launch_fragment = False
+        else:
+            simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
+            default_simulation_name = 'simulation_' + str(simulation_number)
+            next_form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
+            next_form.fill_from_trait(session_stored_simulator)
+
+            form_action_url = SimulatorWizzardURLs.SETUP_PSE_URL
+            is_launch_fragment = True
+
+            if cherrypy.request.method != 'POST':
+                simulation_name = common.get_from_session(common.KEY_BURST_CONFIG).name
+                if simulation_name is None:
+                    simulation_name = 'simulation_' + str(simulation_number)
+                next_form.fill_from_post({'input_simulation_name_id': simulation_name,
+                                          'simulation_length': str(session_stored_simulator.simulation_length)})
+
+        return next_form, form_action_url, is_launch_fragment
+
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
