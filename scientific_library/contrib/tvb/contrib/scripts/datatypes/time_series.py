@@ -255,6 +255,8 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
                 pass
         self.labels_ordering = labels_ordering
 
+    # -----------------------general slicing methods-------------------------------------------
+
     def _check_indices(self, indices, dimension):
         dim_index = self.get_dimension_index(dimension)
         for index in ensure_list(indices):
@@ -412,6 +414,8 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         slice_tuple = self._assert_array_indices(slice_tuple)
         self.data[self._process_slices(slice_tuple)] = values
 
+    # -----------------------slicing by a particular dimension-------------------------------------------
+
     def slice_data_across_dimension_by_index(self, indices, dimension, **kwargs):
         dim_index = self.get_dimension_index(dimension)
         indices = ensure_list(indices)
@@ -558,6 +562,37 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         if subsample_data.ndim == 3:
             subsample_data = numpy.expand_dims(subsample_data, 3)
         return self.duplicate(data=subsample_data, **kwargs)
+
+    # TODO: find out with this is not working!:
+
+    def __getattr__(self, attr_name):
+        # We are here because attr_name is not an attribute of TimeSeries...
+        # TODO: find out if this part works, given that it is not really necessary
+        # Now try to behave as if this was a getitem call:
+        for i_dim in range(1, 4):
+            if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
+                attr_name in self.get_dimension_labels(i_dim):
+                return self.slice_data_across_dimension_by_label(attr_name, i_dim)
+        raise AttributeError("%r object has no attribute %r" % (self.__class__.__name__, attr_name))
+
+    def __setattr__(self, attr_name, value):
+        try:
+            super(TimeSeries, self).__setattr__(attr_name, value)
+            return
+        except:
+            # We are here because attr_name is not an attribute of TimeSeries...
+            # TODO: find out if this part works, given that it is not really necessary
+            # Now try to behave as if this was a setitem call:
+            slice_list = [slice(None)]  # for first dimension index, i.e., time
+            for i_dim in range(1, 4):
+                if self.get_dimension_name(i_dim) in self.labels_dimensions.keys() and \
+                        attr_name in self.get_dimension_labels(i_dim):
+                    slice_list.append(attr_name)
+                    self[tuple(slice_list)] = value
+                    return
+                else:
+                    slice_list.append(slice(None))
+            raise AttributeError("%r object has no attribute %r" % (self.__class__.__name__, attr_name))
 
     def swapaxes(self, ax1, ax2):
         labels_ordering = list(self.labels_ordering)
