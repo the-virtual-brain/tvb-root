@@ -625,7 +625,8 @@ class ProjectController(BaseController):
             self.set_project_structure_grouping(first_level, second_level)
 
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
-
+        if project_id == 'undefined':
+            project_id = common.get_current_project().id
         project = self.project_service.find_project(project_id)
         json_structure = self.project_service.get_project_structure(project, selected_filter,
                                                                     first_level, second_level, filter_value)

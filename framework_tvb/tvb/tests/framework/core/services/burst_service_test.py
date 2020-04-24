@@ -107,8 +107,7 @@ class TestBurstService(BaseTestCase):
         first_burst = TestFactory.store_burst(self.test_project.id)
         cloned_burst = first_burst.clone()
         self._compare_bursts(first_burst, cloned_burst)
-        assert first_burst.selected_tab == cloned_burst.selected_tab, "Selected tabs not equal for bursts."
-        assert len(first_burst.tabs) == len(cloned_burst.tabs), "Tabs not equal for bursts."
+        assert cloned_burst.name == first_burst.name, 'Cloned burst should have the same name'
         assert cloned_burst.id is None, 'id should be none for cloned entry.'
 
 
@@ -128,8 +127,10 @@ class TestBurstService(BaseTestCase):
         Compare that all important attributes are the same between two bursts. (name, project id and status)
         """
         assert first_burst.name == second_burst.name, "Names not equal for bursts."
-        assert first_burst.fk_project == second_burst.fk_project, "Projects not equal for bursts."
+        assert first_burst.project_id == second_burst.project_id, "Projects not equal for bursts."
         assert first_burst.status == second_burst.status, "Statuses not equal for bursts."
+        assert first_burst.range1 == second_burst.range1, "Statuses not equal for bursts."
+        assert first_burst.range2 == second_burst.range2, "Statuses not equal for bursts."
 
 
     def test_getavailablebursts_none(self):
@@ -162,31 +163,15 @@ class TestBurstService(BaseTestCase):
                          "Incorrect bursts retrieved for project %s." % self.test_project
 
 
-    def test_rename_burst(self):
+    def test_rename_burst(self, operation_factory):
         """
         Test that renaming of a burst functions properly.
         """
-        burst_config = TestFactory.store_burst(self.test_project.id)
+        operation = operation_factory()
+        burst_config = TestFactory.store_burst(self.test_project.id, operation)
         self.burst_service.rename_burst(burst_config.id, "new_burst_name")
         loaded_burst = dao.get_burst_by_id(burst_config.id)
         assert loaded_burst.name == "new_burst_name", "Burst was not renamed properly."
-
-
-    def test_load_burst(self):
-        """ 
-        Test that the load burst works properly. NOTE: this method is also tested
-        in the actual burst launch tests. This is just basic test to verify that the simulator
-        interface is loaded properly.
-        """
-        burst_config = TestFactory.store_burst(self.test_project.id)
-        loaded_burst = self.burst_service.load_burst(burst_config.id)[0]
-        assert loaded_burst.simulator_configuration == {}, "No simulator configuration should have been loaded"
-        assert burst_config.fk_project == loaded_burst.fk_project, "Loaded burst different from original one."
-        burst_config = TestFactory.store_burst(self.test_project.id, simulator_config={"test": "test"})
-        loaded_burst, _ = self.burst_service.load_burst(burst_config.id)
-        assert loaded_burst.simulator_configuration == {"test": "test"}, "different burst loaded"
-        assert burst_config.fk_project == loaded_burst.fk_project, "Loaded burst different from original one."
-
 
     def test_remove_burst(self):
         """

@@ -29,20 +29,20 @@
 #
 
 """
-.. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, \
-    TraitDataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):

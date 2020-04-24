@@ -566,10 +566,9 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         assert int(result[4][2:-4]) >= 0, "Running time should be greater than or equal to 0."
 
     def test_rename_burst(self):
-        burst_config = BurstConfiguration(self.test_project.id)
-        burst_config.name = 'Test Burst Configuration'
         new_name = "Test Burst Configuration 2"
-        dao.store_entity(burst_config)
+        operation = TestFactory.create_operation()
+        burst_config = TestFactory.store_burst(self.test_project.id, operation)
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)
         self.sess_mock['burst_name'] = new_name
@@ -577,7 +576,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_BURST_CONFIG, self.session_stored_simulator)
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            result = self.simulator_controller.rename_burst(str(burst[0].id), new_name)
+            result = self.simulator_controller.rename_burst(burst[0].id, new_name)
 
         assert result == '{"success": "Simulation successfully renamed!"}', \
             "Some error happened at renaming, probably because of invalid new name."

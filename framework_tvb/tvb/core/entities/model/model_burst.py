@@ -142,12 +142,12 @@ class BurstConfiguration(HasTraitsIndex):
     nr_of_tabs = 0
     selected_tab = -1
     is_group = False
+
     datatypes_number = Column(Integer)
     dynamic_ids = Column(String, default='[]', nullable=False)
 
-    # TODO: decide upon these transient fields task TVB-2537
-    range1 = None
-    range2 = None
+    range1 = Column(String, nullable=True)
+    range2 = Column(String, nullable=True)
 
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
@@ -183,6 +183,8 @@ class BurstConfiguration(HasTraitsIndex):
     def clone(self):
         new_burst = BurstConfiguration(self.project_id)
         new_burst.name = self.name
+        new_burst.range1 = self.range1
+        new_burst.range2 = self.range2
         new_burst.status = self.BURST_RUNNING
         return new_burst
 
@@ -191,3 +193,6 @@ class BurstConfiguration(HasTraitsIndex):
         if self.finish_time is not None and self.start_time is not None:
             return format_timedelta(self.finish_time - self.start_time)
         return ''
+
+    def is_pse_burst(self):
+        return self.range1 is not None
