@@ -48,7 +48,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'bogdan.valean@codemart.ro',
+            mail to: 'lia.domide@codemart.ro bogdan.valean@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
