@@ -229,6 +229,10 @@ class NotAuthenticated(NotAllowed):
         NotAllowed.__init__(self, message, redirect_url)
         self.status = 401
 
+class MissingDataException(TVBException):
+
+    def __init__(self, message):
+        TVBException.__init__(self, message)
 
 class InvalidFormValues(TVBException):
     """

@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
@@ -36,17 +37,17 @@
 import json
 import uuid
 import cherrypy
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivitySelectorForm, \
-    LocalConnectivityCreatorForm, LocalConnectivityCreator, LocalConnectivityCreatorModel
+from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
-from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
-    get_ui_name_to_equation_dict, get_form_for_equation
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
+from tvb.adapters.simulator.equation_forms import *
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
@@ -56,7 +57,7 @@ NO_OF_CUTOFF_POINTS = 20
 LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 
-# We keep a LocalConnectivityCreatorModel in session at this key
+# Between steps/pages we keep a LocalConnectivityCreatorModel in session at this key
 KEY_LCONN = "local-conn"
 
 
@@ -70,6 +71,7 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
+    MSG_MISSING_SURFACE = "There is no surface in the current project. Please upload a CORTICAL one to continue!"
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -85,7 +87,7 @@ class LocalConnectivityController(SpatioTemporalController):
         Generate the html for the first step of the local connectivity page.
         :param do_reset: Boolean telling to start from empty page or not
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
-               use the same js function for this. TODO: do this in a smarter way
+               use the same js function for this.
         """
         project_id = common.get_current_project().id
 
@@ -95,15 +97,15 @@ class LocalConnectivityController(SpatioTemporalController):
             if default_surface_index:
                 new_lconn.surface = uuid.UUID(default_surface_index.gid)
             else:
-                # TODO: ok to keep a default gid here?
+                # Surface is required in model and we should keep it like this, but we also want to
                 new_lconn.surface = uuid.uuid4()
+                common.set_error_message(self.MSG_MISSING_SURFACE)
             common.add2session(KEY_LCONN, new_lconn)
 
         current_lconn = common.get_from_session(KEY_LCONN)
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
         configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
-
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -126,8 +128,6 @@ class LocalConnectivityController(SpatioTemporalController):
 
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
-        msg, msg_type = common.get_message_from_session()
-        template_specification['displayedMessage'] = msg
         return self.fill_default_attributes(template_specification)
 
     @cherrypy.expose
@@ -177,7 +177,7 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         Generate the html for the second step of the local connectivity page.
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
-               use the same js function for this. TODO: do this in a smarter way
+               use the same js function for this.
         """
         current_lconn = common.get_from_session(KEY_LCONN)
         left_side_form = LocalConnectivitySelectorForm(project_id=common.get_current_project().id)
@@ -282,9 +282,11 @@ class LocalConnectivityController(SpatioTemporalController):
 
         surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_indx)
+        assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
 
         lconn_h5 = h5.h5_file_for_index(lconn_index)
+        assert isinstance(lconn_h5, LocalConnectivityH5)
         lconn_matrix = lconn_h5.matrix.load()
         picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())
         lconn_h5.close()
@@ -326,6 +328,8 @@ class LocalConnectivityController(SpatioTemporalController):
             current_lconn = common.get_from_session(KEY_LCONN)
             surface_gid = current_lconn.surface.hex
             surface = ABCAdapter.load_entity_by_gid(surface_gid)
+            if surface is None:
+                raise MissingDataException(self.MSG_MISSING_SURFACE + "!!!")
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
