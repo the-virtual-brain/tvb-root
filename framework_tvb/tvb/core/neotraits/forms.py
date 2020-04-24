@@ -230,13 +230,15 @@ class DataTypeSelectField(Field):
     missing_value = 'explicit-None-value'
 
     def __init__(self, datatype_index, form, name=None, disabled=False, required=False, label='', doc='',
-                 conditions=None, draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False):
+                 conditions=None, draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False,
+                 show_only_all_option=False):
         super(DataTypeSelectField, self).__init__(form, name, disabled, required, label, doc)
         self.datatype_index = datatype_index
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.dynamic_conditions = dynamic_conditions
         self.has_all_option = has_all_option
+        self.show_only_all_option = show_only_all_option
 
     @property
     def get_dynamic_filters(self):
@@ -266,13 +268,14 @@ class DataTypeSelectField(Field):
                 checked=self.data is None
             )
 
-        for i, datatype in enumerate(filtered_datatypes):
-            yield Option(
-                id='{}_{}'.format(self.name, i),
-                value=datatype[2],
-                label=self._prepare_display_name(datatype),
-                checked=self.data == datatype[2]
-            )
+        if not self.show_only_all_option:
+            for i, datatype in enumerate(filtered_datatypes):
+                yield Option(
+                    id='{}_{}'.format(self.name, i),
+                    value=datatype[2],
+                    label=self._prepare_display_name(datatype),
+                    checked=self.data == datatype[2]
+                )
 
         if self.has_all_option:
             if not self.owner.draw_ranges:

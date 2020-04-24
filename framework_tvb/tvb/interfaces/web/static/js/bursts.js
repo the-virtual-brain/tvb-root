@@ -74,6 +74,7 @@ function resetToNewBurst() {
         success: function (response) {
             let simParamElem = $("#div-simulator-parameters");
             simParamElem.html(response);
+            displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
         },
         error: function () {
@@ -478,6 +479,7 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
+                    displayBurstTree(burst_id);
                     displayMessage("The simulation configuration was loaded for you!");
                 },
                 error: function () {
@@ -759,4 +761,16 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
             }
         }
     })
+}
+
+function displayBurstTree(selectedBurstID) {
+    let filterValue = {'type': 'from_burst', 'value': selectedBurstID};
+    if (filterValue.value === undefined) {
+        filterValue = {'type': 'from_burst', 'value': "0"};
+    }
+    updateTree("#treeOverlay", null, JSON.stringify(filterValue));
+    $("#portlets-display").hide();
+    $("#portlets-configure").hide();
+    $("#portlet-param-config").hide();
+    $("#div-burst-tree").show();
 }
