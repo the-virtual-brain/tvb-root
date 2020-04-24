@@ -40,11 +40,12 @@ from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
 
+
 def get_class_by_name(fqname):
-    '''
+    """
     get_class_by_name("package.module.class")
     is equivalent to from package.module import class
-    '''
+    """
     try:
         modulename, classname = fqname.rsplit('.', 1)
         module = importlib.import_module(modulename)
@@ -82,3 +83,13 @@ def get_filtered_datatypes(project_id, data_type_cls, filters=None, page_size=50
     LOGGER.debug('Filtering:' + str(data_type_cls))
     return dao.get_values_of_datatype(project_id, data_type_cls, filters, page_size)
 
+
+def try_get_last_datatype(project_id, data_type_cls, filters=None):
+    """
+    Retrieve the last dataTypes matching a filter inside the current project.
+    :return: instance of data_type_cls or None
+    """
+    result, count = get_filtered_datatypes(project_id, data_type_cls, filters=filters, page_size=1)
+    if count == 0:
+        return None
+    return result[0]
