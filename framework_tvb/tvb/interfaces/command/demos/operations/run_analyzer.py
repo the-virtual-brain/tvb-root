@@ -45,11 +45,10 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 from time import sleep
+from tvb.interfaces.command.lab import *
 
 
 def run_analyzer():
-    from tvb.interfaces.command.lab import *
-
     log = get_logger(__name__)
 
     # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
