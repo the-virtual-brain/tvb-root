@@ -71,7 +71,6 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
-    MSG_MISSING_SURFACE = "There is no surface in the current project. Please upload a CORTICAL one to continue!"
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
