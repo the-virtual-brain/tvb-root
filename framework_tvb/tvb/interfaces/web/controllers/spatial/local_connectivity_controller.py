@@ -44,10 +44,10 @@ from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUS
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.services.exceptions import ServicesBaseException
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
@@ -96,7 +96,6 @@ class LocalConnectivityController(SpatioTemporalController):
             if default_surface_index:
                 new_lconn.surface = uuid.UUID(default_surface_index.gid)
             else:
-                # TODO: ok to keep a default gid here?
                 new_lconn.surface = uuid.uuid4()
             common.add2session(KEY_LCONN, new_lconn)
 
@@ -104,6 +103,9 @@ class LocalConnectivityController(SpatioTemporalController):
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
         configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
+
+        if configure_lcon_form.surface.data is None:
+            common.set_error_message("There is no surface in the current project. Please upload one to continue.")
 
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
@@ -127,8 +129,6 @@ class LocalConnectivityController(SpatioTemporalController):
 
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
-        msg, msg_type = common.get_message_from_session()
-        template_specification['displayedMessage'] = msg
         return self.fill_default_attributes(template_specification)
 
     @cherrypy.expose
@@ -328,7 +328,7 @@ class LocalConnectivityController(SpatioTemporalController):
             surface_gid = current_lconn.surface.hex
             surface = ABCAdapter.load_entity_by_gid(surface_gid)
             if surface is None:
-                raise ServicesBaseException("There is no surface in the current project. Please upload one to continue.")
+                raise MissingDataException("There is no surface in the current project. Please upload one to continue.")
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
