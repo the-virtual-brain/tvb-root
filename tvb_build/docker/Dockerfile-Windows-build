@@ -1,14 +1,16 @@
 FROM python:3.7.7-windowsservercore
 
+# Download miniconda
 ADD https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe C:\\TEMP\\miniconda.exe
 
 # Set our shell to became cmd
 SHELL ["cmd", "/S", "/C"]
 
+# Install miniconda
 RUN start /wait "" C:\\TEMP\\miniconda.exe /InstallationType=AllUsers /RegisterPython=1 /S /D=C:\miniconda
-
 RUN setx /M PATH "%PATH%;C:\miniconda\Scripts"
 
+# Prepare tvb-run env
 RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN activate && conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
 RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
@@ -19,8 +21,11 @@ RUN activate tvb-run && pip install certifi
 RUN activate tvb-run && pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
 RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
 
+# Download and install tvb data
 ADD https://zenodo.org/record/3688773/files/tvb-data.zip C:\\TEMP\\tvb_data.zip
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
 RUN activate tvb-run && python C:\\tvb_data\\setup.py develop
+
+
 RUN conda init powershell
 CMD ["cmd", "activate tvb-run"]
