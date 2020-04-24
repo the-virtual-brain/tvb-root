@@ -153,7 +153,7 @@ class SpikingWongWangExcIOInhI(Model):
 
     N_E = NArray(
         label=":math:`N_E`",
-        default=numpy.array([100, ]),
+        default=numpy.array([160, ]),
         domain=Range(lo=0, hi=1000000, step=10),
         doc="Number of excitatory population neurons.")
 
@@ -219,7 +219,7 @@ class SpikingWongWangExcIOInhI(Model):
 
     N_I = NArray(
         label=":math:`N_I`",
-        default=numpy.array([70, ]),
+        default=numpy.array([40, ]),
         domain=Range(lo=0, hi=1000000, step=10),
         doc="Number of inhibitory population neurons.")
 
@@ -332,7 +332,7 @@ class SpikingWongWangExcIOInhI(Model):
                        "spikes", "I_L", "I_AMPA_ext", "I_AMPA", "I_GABA", "I_NMDA"]  # non-state variables
     _nvar = 12
     cvar = numpy.array([0], dtype=numpy.int32)
-    number_of_modes = 170  # assuming that 0...N_E-1 are excitatory and N_E ... number_of_modes-1 are inhibitory
+    number_of_modes = 200  # assuming that 0...N_E-1 are excitatory and N_E ... number_of_modes-1 are inhibitory
 
     def update_derived_parameters(self):
         """
