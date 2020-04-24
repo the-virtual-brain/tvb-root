@@ -140,6 +140,7 @@ class TimeSeriesService(object):
         if n_ts > 0:
             out_time_series, select_funs = self.select(time_series_list[0], **kwargs)
             if n_ts > 1:
+                dim_label = out_time_series.get_dimension_name(dim)
                 for id, time_series in enumerate(time_series_list[1:]):
                     if np.float32(out_time_series.sample_period) != np.float32(time_series.sample_period):
                         raise ValueError("Timeseries concatenation failed!\n"
@@ -149,23 +150,25 @@ class TimeSeriesService(object):
                                            str(np.float32(out_time_series.sample_period))))
                     else:
                         time_series = self.select(time_series, select_funs)[0]
-                        # try:
-                        out_time_series.data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
-                        if len(out_time_series.get_dimension_labels(dim)) > 0:
-                            if len(time_series.get_dimension_labels(dim)) > 0:
-                                dim_label = out_time_series.get_dimension_name(dim)
-                                out_time_series.labels_dimensions[dim_label] = \
-                                    np.array(ensure_list(out_time_series.get_dimension_labels(dim)) +
-                                             ensure_list(time_series.get_dimension_labels(dim)))
+                        labels_dimensions = dict(out_time_series.labels_dimensions)
+                        out_labels = out_time_series.get_dimension_labels(dim)
+                        if out_labels is not None and len(out_labels) == out_time_series.shape[dim]:
+                            time_series_labels = time_series.get_dimension_labels(dim)
+                            if time_series_labels is not None and len(time_series_labels) == time_series.shape[dim]:
+                                labels_dimensions[dim_label] =\
+                                    np.array(ensure_list(out_labels) + ensure_list(time_series_labels))
                             else:
-                                raise ValueError("TimeSeries to concatenate %s \n "
-                                                  "has no dimension labels across the concatenation axis,\n"
-                                                  "unlike the TimeSeries to be appended to: %s!"
-                                                  % (str(time_series), str(out_time_series)))
-                        # except:
-                        #     raise_value_error("Timeseries concatenation failed!\n"
-                        #                       "Timeseries %d have a shape %s and the concatenated ones %s!" %
-                        #                       (id, str(out_time_series.shape), str(time_series.shape)))
+                                del labels_dimensions[dim_label]
+                                warning("Dimension labels for dimensions %s cannot be concatenated! "
+                                        "Deleting them!" % dim_label)
+                        try:
+                            out_data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
+                        except:
+                            raise_value_error("Timeseries concatenation failed!\n"
+                                              "Timeseries %d have a shape %s and the concatenated ones %s!" %
+                                              (id, str(out_time_series.shape), str(time_series.shape)))
+                        out_time_series = out_time_series.duplicate(data=out_data,
+                                                                    labels_dimensions=labels_dimensions)
                 return out_time_series
             else:
                 return out_time_series
