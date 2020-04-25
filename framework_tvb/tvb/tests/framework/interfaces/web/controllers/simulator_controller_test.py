@@ -31,11 +31,6 @@
 from os import path
 from uuid import UUID
 from mock import patch
-from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
-from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 import numpy
 import tvb_data.surfaceData
 import tvb_data.regionMapping
@@ -44,7 +39,11 @@ import tvb_data.projectionMatrix
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 from cherrypy.test import helper
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -71,8 +70,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         self.simulator_controller = SimulatorController()
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project)
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project)
 
         self.session_stored_simulator = SimulatorAdapterModel()
         self.session_stored_simulator.connectivity = UUID(connectivity.gid)
@@ -85,8 +83,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_set_connectivity(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
         self.sess_mock['conduction_speed'] = "3.0"
@@ -133,12 +130,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_set_cortex_without_local_connectivity(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
-        surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
         text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
@@ -170,8 +165,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_set_stimulus(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity_index = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         weight_array = numpy.zeros(connectivity_index.number_of_regions)
 
         region_stimulus_creator = RegionStimulusCreator()
@@ -338,12 +332,10 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def set_region_mapping(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
-        surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
         text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
@@ -527,8 +519,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_reset_simulator_configuration(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
         self.sess_mock['conduction_speed'] = "3.0"
@@ -606,8 +597,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_copy_simulator_configuration(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         burst_config = BurstConfiguration(self.test_project.id)
@@ -638,8 +628,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
     def test_load_burst_only(self):
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         burst_config = BurstConfiguration(self.test_project.id)

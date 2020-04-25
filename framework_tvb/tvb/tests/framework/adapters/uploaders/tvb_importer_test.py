@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Gabriel Florea <gabriel.florea@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
@@ -36,18 +37,15 @@
 import os
 import shutil
 import pytest
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.adapters.uploaders.tvb_importer import TVBImporterForm
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.flow_service import FlowService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class TestTVBImporter(TransactionalTestCase):
@@ -91,23 +89,17 @@ class TestTVBImporter(TransactionalTestCase):
         self.test_user = user_factory()
         self.test_project = project_factory(self.test_user)
 
+    def transactional_teardown_method(self):
+        """
+        Clean-up tests data
+        """
+        FilesHelper().remove_project_structure(self.test_project.name)
+
     def _import(self, import_file_path=None):
-        """
-        This method is used for importing data in TVB format
-        :param import_file_path: absolute path of the file to be imported
-        """
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.tvb_importer', 'TVBImporter')
 
-        form = TVBImporterForm()
-        form.fill_from_post({'data_file': Part(import_file_path, HeaderMap({}), ''),
-                             'Data_Subject': 'John Doe'
-                             })
-        form.data_file.data = import_file_path
-        view_model = form.get_view_model()()
-        form.fill_trait(view_model)
-        importer.submit_form(form)
-
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
+        view_model = TVBImporterModel()
+        view_model.data_file = import_file_path
+        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project.id)
 
     def test_zip_import(self, prepare_importer_data):
         """
