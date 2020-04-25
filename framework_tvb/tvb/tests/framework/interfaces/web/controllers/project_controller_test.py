@@ -142,8 +142,8 @@ class TestProjectController(BaseTransactionalControllerTest):
         users_count = dao.get_all_users(is_count=True)
         user = TestFactory.create_user('usr', 'display', 'pass')
         test_project = TestFactory.create_project(user, 'new_name')
-        result = self.project_c.getmemberspage(0, test_project.id)
-        assert result['usersMembers'] == []
+        result = self.project_c.getmemberspage(1, test_project.id)
+        assert result['usersMembers'] == [user.id]
         # Same users as before should be available since we created new one
         # as owned for the project.
         assert len(result['usersList']) == users_count
