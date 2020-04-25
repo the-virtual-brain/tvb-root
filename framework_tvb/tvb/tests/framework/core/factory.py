@@ -86,16 +86,16 @@ class TestFactory(object):
         return try_get_last_datatype(project.id, expected_data, filters)
 
     @staticmethod
-    def get_entity_count(project, datatype):
+    def get_entity_count(project, datatype_class):
         """
         Return the count of stored datatypes with class given by `datatype`
 
         :param datatype: Take class from this instance amd count for this class
         """
-        return dao.count_datatypes(project.id, datatype.__class__)
+        return dao.count_datatypes(project.id, datatype_class)
 
     @staticmethod
-    def _assert_one_mode_datatype(project, dt_class, prev_count=0):
+    def _assert_one_more_datatype(project, dt_class, prev_count=0):
         dt = try_get_last_datatype(project.id, dt_class)
         count = dao.count_datatypes(project.id, dt_class)
         assert prev_count + 1 == count, "Project should contain only one new DT."
@@ -238,7 +238,7 @@ class TestFactory(object):
         view_model.connectivity = connectivity_gid
         TestFactory.launch_importer(RegionMappingImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, RegionMappingIndex)
+        return TestFactory._assert_one_more_datatype(project, RegionMappingIndex)
 
     @staticmethod
     def import_surface_gifti(user, project, path):
@@ -248,7 +248,7 @@ class TestFactory(object):
         view_model.should_center = False
         TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, SurfaceIndex)
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
     def import_surface_zip(user, project, zip_path, surface_type, zero_based=True):
@@ -262,7 +262,7 @@ class TestFactory(object):
         view_model.surface_type = surface_type
         TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, SurfaceIndex, count)
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex, count)
 
     @staticmethod
     def import_surface_obj(user, project, obj_path, surface_type):
@@ -272,7 +272,7 @@ class TestFactory(object):
         view_model.surface_type = surface_type
         TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, SurfaceIndex)
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
     def import_sensors(user, project, zip_path, sensors_type):
@@ -282,7 +282,7 @@ class TestFactory(object):
         view_model.sensors_type = sensors_type
         TestFactory.launch_importer(SensorsImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, SensorsIndex)
+        return TestFactory._assert_one_more_datatype(project, SensorsIndex)
 
     @staticmethod
     def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid):
@@ -293,7 +293,7 @@ class TestFactory(object):
         view_model.surface = surface_gid
         TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, ProjectionMatrixIndex)
+        return TestFactory._assert_one_more_datatype(project, ProjectionMatrixIndex)
 
     @staticmethod
     def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT):
@@ -307,7 +307,7 @@ class TestFactory(object):
         view_model.data_subject = subject
         TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project.id)
 
-        return TestFactory._assert_one_mode_datatype(project, ConnectivityIndex, count)
+        return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
 
 class ExtremeTestFactory(object):
