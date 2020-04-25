@@ -106,7 +106,7 @@ class TestsTransactional(BaseTestCase):
         """
         Commit should be done automatically if you forget for some reason to do so in case of new/update/deletes.
         """
-        stored_user = TestFactory.create_user('username', 'password', 'mail', True, 'role')
+        stored_user = TestFactory.create_user('username', 'displayname', 'password', 'mail', True, 'role')
         user_id = stored_user.id
         self._dao_change_user_forget_commit(user_id, 'new_name')
         edited_user = dao.get_user_by_id(user_id)
@@ -119,7 +119,7 @@ class TestsTransactional(BaseTestCase):
         """
         all_users = dao.get_all_users()
         initial_user_count = len(all_users) if all_users is not None else 0
-        stored_user = TestFactory.create_user('username', 'password', 'mail', True, 'role')
+        stored_user = TestFactory.create_user('username', 'displayname', 'password', 'mail', True, 'role')
         user_id = stored_user.id
         self._dao_delete_user_forget_commit(user_id)
         final_user_count = dao.get_all_users(is_count=True)
@@ -225,7 +225,8 @@ class TestsTransactional(BaseTestCase):
         :param inner_trans_func: either _store_users_happy_flow or _store_users_raises_exception
         """
         for idx in range(n_users):
-            TestFactory.create_user('test_user_nested' + str(idx), 'pass', 'test@test.test', True, 'test')
+            TestFactory.create_user('test_user_nested' + str(idx), 'test_user_nested' + str(idx),
+                                    'pass', 'test@test.test', True, 'test')
         inner_trans_func(n_users)
         raise Exception("This is just so transactional kicks in and a rollback should be done.")
 
@@ -238,7 +239,8 @@ class TestsTransactional(BaseTestCase):
         :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
-            TestFactory.create_user(prefix + 'test_user' + str(idx), 'pass', 'test@test.test', True, 'test')
+            TestFactory.create_user(prefix + 'test_user' + str(idx), prefix + 'test_user' + str(idx),
+                                    'pass', 'test@test.test', True, 'test')
 
     @transactional
     def _store_users_raises_exception(self, n_users):
@@ -249,5 +251,6 @@ class TestsTransactional(BaseTestCase):
         :param n_users: number of users to be stored by this method
         """
         for idx in range(n_users):
-            TestFactory.create_user('test_user' + str(idx), 'pass', 'test@test.test', True, 'test')
+            TestFactory.create_user('test_user' + str(idx), 'test_user' + str(idx),
+                                    'pass', 'test@test.test', True, 'test')
         raise Exception("This is just so transactional kicks in and a rollback should be done.")

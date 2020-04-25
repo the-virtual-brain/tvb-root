@@ -251,7 +251,7 @@ class TestFactory(object):
         return TestFactory._assert_one_mode_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_surface_zip(user, project, zip_path, surface_type, zero_based='True'):
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True):
 
         count = dao.count_datatypes(project.id, SurfaceIndex)
 
