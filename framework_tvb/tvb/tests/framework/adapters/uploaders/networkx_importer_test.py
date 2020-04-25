@@ -34,20 +34,16 @@
 """
 
 import os
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.adapters.uploaders.networkx_connectivity.parser import NetworkxParser
-from tvb.adapters.uploaders.networkx_importer import NetworkxConnectivityImporterForm
+from tvb.adapters.uploaders.networkx_importer import NetworkxImporterModel, NetworkxConnectivityImporter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.flow_service import FlowService
 
 
 class TestNetworkxImporter(TransactionalTestCase):
     """
-    Unit-tests for Obj Surface importer.
+    Unit-tests for NetworkxImporter
     """
 
     upload_file = os.path.join(os.path.dirname(__file__), "test_data", 'connectome_83.gpickle')
@@ -63,28 +59,9 @@ class TestNetworkxImporter(TransactionalTestCase):
         count_before = self.count_all_entities(ConnectivityIndex)
         assert 0 == count_before
 
-        # Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.networkx_importer',
-                                              'NetworkxConnectivityImporter')
-
-        form = NetworkxConnectivityImporterForm()
-        form.fill_from_post({'data_file': Part(self.upload_file, HeaderMap({}), ''),
-                             'key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT[0],
-                             'key_edge_tract': NetworkxParser.KEY_EDGE_TRACT[0],
-                             'key_node_coordinates': NetworkxParser.KEY_NODE_COORDINATES[0],
-                             'key_node_label': NetworkxParser.KEY_NODE_LABEL[0],
-                             'key_node_region': NetworkxParser.KEY_NODE_REGION[0],
-                             'key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE[0],
-                             'Data_Subject': 'John Doe'
-                             })
-        view_model = form.get_view_model()()
-        view_model.data_subject = 'John Doe'
-        form.data_file.data = self.upload_file
-        form.fill_trait(view_model)
-        importer.submit_form(form)
-
-        # Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
+        view_model = NetworkxImporterModel()
+        view_model.data_file = self.upload_file
+        TestFactory.launch_importer(NetworkxConnectivityImporter, view_model, self.test_user, self.test_project.id)
 
         count_after = self.count_all_entities(ConnectivityIndex)
         assert 1 == count_after
