@@ -38,7 +38,7 @@ from tvb.core.entities.model import model_project
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
+from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.utils import hash_password
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -276,28 +276,32 @@ class TestUserService(TransactionalTestCase):
         """
         Get all members of a project except the current user.
         """
-        user_1 = model_project.User("test_user1", "test_name1", "test_pass", "test_mail1@tvb.org", False, "user")
-        dao.store_entity(user_1)
-        user_2 = model_project.User("test_user2", "test_name2", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_2)
-        user_3 = model_project.User("test_user3", "test_name3", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_3)
-        user_4 = model_project.User("test_user4", "test_name4", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_4)
-        user_5 = model_project.User("test_user5", "test_name5", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_5)
+        user_ids = []
+        for i in range(5):
+            user = model_project.User("test_user" + str(i), "test_user_no" + str(i), "pass", "test_mail@tvb.org")
+            user = dao.store_entity(user)
+            user_ids.append(user.id)
         admin = dao.get_user_by_name("test_user1")
         member1 = dao.get_user_by_name("test_user2")
-        member2 = dao.get_user_by_name("test_user5")
+        member2 = dao.get_user_by_name("test_user4")
         data = dict(name="test_proj", description="test_desc", users=[member1.id, member2.id])
         project = ProjectService().store_project(admin, True, None, **data)
         all_users, members, pag = self.user_service.get_users_for_project(admin.username, project.id)
-        assert len(members) == 2, "More members than there should be."
-        assert len(all_users) == 5, "Admin should not be viewed as member. " \
-                                    "Neither should users that were not part of the project's users list."
+        assert len(members) == 3, "More members than there should be."
+        assert len(all_users) == 5
         assert pag == 1, "Invalid total pages number."
+
+        admin_found_member = False
+        for user in members:
+            if user.username == admin.username:
+                admin_found_member = True
+        assert admin_found_member, "Admin is expected to be a project member"
+
+        admin_found_editable = False
         for user in all_users:
-            assert user.username != admin.username, "Admin is in members!"
+            if user.username == admin.username:
+                admin_found_editable = True
+        assert not admin_found_editable, "Admin membership should not be editable"
 
     def test_get_members_pages(self):
         """
@@ -307,7 +311,7 @@ class TestUserService(TransactionalTestCase):
         Now remove extra users, to have only one page of members for the project.
         """
         user_ids = []
-        for i in range(USERS_PAGE_SIZE + 3):
+        for i in range(MEMBERS_PAGE_SIZE + 3):
             user = model_project.User("test_user_no" + str(i), "test_user_no" + str(i), "pass", "test_mail@tvb.org")
             user = dao.store_entity(user)
             user_ids.append(user.id)
@@ -317,8 +321,8 @@ class TestUserService(TransactionalTestCase):
         project = ProjectService().store_project(admin, True, None, **data)
 
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        assert len(page_users) == (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE
-        assert len(all_users) == USERS_PAGE_SIZE + 3, 'Not all members returned'
+        assert len(page_users) == (MEMBERS_PAGE_SIZE + 3) % MEMBERS_PAGE_SIZE
+        assert len(all_users) == MEMBERS_PAGE_SIZE + 3, 'Not all members returned'
         assert pag == 2, 'Invalid page number returned'
 
         for i in range(3):
@@ -327,12 +331,12 @@ class TestUserService(TransactionalTestCase):
 
         page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 2)
         assert len(page_users) == 0, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+        assert len(all_users) == MEMBERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'
 
         page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 1)
-        assert len(page_users) == USERS_PAGE_SIZE, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+        assert len(page_users) == MEMBERS_PAGE_SIZE, 'Paging not working properly'
+        assert len(all_users) == MEMBERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'
 
     def test_edit_user_happy_flow(self):
