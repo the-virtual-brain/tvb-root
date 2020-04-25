@@ -27,6 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
@@ -94,9 +96,13 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
 
+    shape = Column(String, nullable=False)
+
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.connectivity_gid = datatype.connectivity.gid.hex
+        self.shape = json.dumps(datatype.array_data.shape)
+        self.ndim = len(datatype.array_data.shape)

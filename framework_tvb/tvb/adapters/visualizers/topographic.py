@@ -217,7 +217,7 @@ class TopographicViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None  # FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
 
 
 class TopographicViewer(ABCDisplayer):

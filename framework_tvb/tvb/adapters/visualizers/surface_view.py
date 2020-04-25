@@ -160,12 +160,12 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
-                                                             name='connectivity_measure')
+                                                             name='connectivity_measure', conditions=self.get_filters())
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
 
 
 class SurfaceViewerModel(BaseSurfaceViewerModel):
@@ -383,6 +383,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
     @staticmethod
     def _compute_measure_param(connectivity_measure, measure_points_no):
+        # type: (ConnectivityMeasureIndex, int) -> dict
         if connectivity_measure is None:
             # If there is no measure to show then we what to show the region mapping
             # The client will generate a range signal for this use case.
@@ -390,17 +391,17 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            connectivity_measure_shape = connectivity_measure.array_data.shape
+            connectivity_measure_shape = json.loads(connectivity_measure.shape)
             if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
             if connectivity_measure_shape[0] != measure_points_no:
                 raise ValueError("connectivity measure has %d values but the connectivity has %d "
                                  "regions" % (connectivity_measure_shape[0], measure_points_no))
-            min_measure = numpy.min(connectivity_measure.array_data[:])
-            max_measure = numpy.max(connectivity_measure.array_data[:])
+            min_measure = connectivity_measure.array_data_min
+            max_measure = connectivity_measure.array_data_max
             # We assume here that the index 0 in the measure corresponds to
             # the region 0 of the region map.
-            client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid.load().hex,
+            client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid,
                                                                   "get_array_data")
 
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
@@ -417,7 +418,6 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
 
         surface_h5 = h5.h5_file_for_index(surface_index)
-        cm_h5 = h5.h5_file_for_index(connectivity_measure_index) if connectivity_measure_index is not None else None
         region_map_gid = region_map_index.gid if region_map_index is not None else None
         connectivity_gid = region_map_index.connectivity_gid if region_map_index is not None else None
         assert isinstance(surface_h5, SurfaceH5)
@@ -427,11 +427,9 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         params.update(self._compute_surface_params(surface_h5, region_map_gid))
         params.update(self._compute_hemispheric_param(surface_h5))
         params.update(self._compute_measure_points_param(surface_index.gid, region_map_gid, connectivity_gid))
-        params.update(self._compute_measure_param(cm_h5, params['noOfMeasurePoints']))
+        params.update(self._compute_measure_param(connectivity_measure_index, params['noOfMeasurePoints']))
 
         surface_h5.close()
-        if cm_h5:
-            cm_h5.close()
 
         params['shelfObject'] = None
 

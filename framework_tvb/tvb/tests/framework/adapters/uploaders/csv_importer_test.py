@@ -109,11 +109,11 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['=='])
         reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
 
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
 
         self._import_csv_test_connectivity(reference_connectivity_index.gid, TEST_SUBJECT_B)
 
-        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         assert dt_count_before + 1 == dt_count_after
 
         filters = FilterChain('', [field], [TEST_SUBJECT_B], ['like'])

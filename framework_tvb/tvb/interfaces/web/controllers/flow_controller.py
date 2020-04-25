@@ -160,7 +160,7 @@ class FlowController(BaseController):
             algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
             adapter_form = self.flow_service.prepare_adapter_form(self.flow_service.prepare_adapter(algorithm), project.id)
-            algorithm.form = self.get_template_dict(adapter_form)
+            algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
         template_specification = dict(mainContent="flow/algorithms_list", algorithms=algorithms,
