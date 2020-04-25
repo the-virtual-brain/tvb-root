@@ -299,53 +299,38 @@ class TestUserService(TransactionalTestCase):
         for user in all_users:
             assert user.username != admin.username, "Admin is in members!"
 
-    def test_get_users_second_page(self):
+    def test_get_members_pages(self):
         """
-        Try to get the second page of users for a given project
+        Create many users (more than one page of members.
+        Create a project and asign all Users as members.
+        Test that 2 pages or Project Members are retrieved.
+        Now remove extra users, to have only one page of members for the project.
         """
+        user_ids = []
         for i in range(USERS_PAGE_SIZE + 3):
-            exec('user_' + str(i) + '= model_project.User("test_user' + str(
-                i) + '", "test_pass", "test_mail@tvb.org", False, "user")')
-            exec("dao.store_entity(user_" + str(i) + ")")
-        for i in range(USERS_PAGE_SIZE + 3):
-            exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
-        admin = dao.get_user_by_name("test_user1")
-        scope = locals()
-        data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 3)])
+            user = model_project.User("test_user_no" + str(i), "test_user_no" + str(i), "pass", "test_mail@tvb.org")
+            user = dao.store_entity(user)
+            user_ids.append(user.id)
+
+        admin = dao.get_user_by_name("test_user_no1")
+        data = dict(name='test_proj', description='test_desc', users=user_ids)
         project = ProjectService().store_project(admin, True, None, **data)
+
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
         assert len(page_users) == (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE
         assert len(all_users) == USERS_PAGE_SIZE + 3, 'Not all members returned'
         assert pag == 2, 'Invalid page number returned'
 
-    def test_get_users_second_page_del(self):
-        """
-        Try to get the second page of users for a given project where only one user on last page.
-        Then delete that user.
-        """
-        for i in range(USERS_PAGE_SIZE + 1):
-            exec('user_' + str(i) + '= model_project.User("test_user' + str(i) + \
-                 '", "test_pass", "test_mail@tvb.org", False, "user")')
-            exec("dao.store_entity(user_" + str(i) + ")")
-        for i in range(USERS_PAGE_SIZE + 1):
-            exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
+        for i in range(3):
+            user = dao.get_user_by_name("test_user_no" + str(i + 2))
+            self.user_service.delete_user(user.id)
 
-        admin = dao.get_user_by_name("test_user1")
-        scope = locals()
-        data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 1)])
-        project = ProjectService().store_project(admin, True, None, **data)
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        assert len(page_users) == 1, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE + 1, 'Not all members returned'
-        assert pag == 2, 'Invalid page number returned'
-        self.user_service.delete_user(scope['member2'].id)
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
+        page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 2)
         assert len(page_users) == 0, 'Paging not working properly'
         assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 1)
+
+        page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 1)
         assert len(page_users) == USERS_PAGE_SIZE, 'Paging not working properly'
         assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'

@@ -38,15 +38,17 @@ import numpy
 from abc import ABCMeta
 from six import add_metaclass
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
-from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
+from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -57,8 +59,10 @@ LOG = get_logger(__name__)
 
 
 def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
+    filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                         values=[preferred_type])
     if shell_surface is None:
-        shell_surface = dao.try_load_last_surface_of_type(project_id, preferred_type)
+        shell_surface = try_get_last_datatype(project_id, SurfaceIndex, filter)
 
         if not shell_surface:
             LOG.warning('No object of type %s found in current project.' % preferred_type)
