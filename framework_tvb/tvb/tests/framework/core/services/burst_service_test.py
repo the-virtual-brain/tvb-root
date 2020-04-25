@@ -54,7 +54,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-# from tvb.tests.framework.datatypes import datatypes_factory
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import copy
@@ -67,7 +66,7 @@ class TestBurstService(BaseTestCase):
     sessions bounded to the current thread transaction.
     """
     PORTLET_ID = "TA1TA2"
-    ## This should not be present in portlets.xml
+    # This should not be present in portlets.xml
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
     burst_service = BurstService()
@@ -127,7 +126,7 @@ class TestBurstService(BaseTestCase):
         Compare that all important attributes are the same between two bursts. (name, project id and status)
         """
         assert first_burst.name == second_burst.name, "Names not equal for bursts."
-        assert first_burst.project_id == second_burst.project_id, "Projects not equal for bursts."
+        assert first_burst.fk_project == second_burst.fk_project, "Projects not equal for bursts."
         assert first_burst.status == second_burst.status, "Statuses not equal for bursts."
         assert first_burst.range1 == second_burst.range1, "Statuses not equal for bursts."
         assert first_burst.range2 == second_burst.range2, "Statuses not equal for bursts."
