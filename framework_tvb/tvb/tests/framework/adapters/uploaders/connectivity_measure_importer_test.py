@@ -29,23 +29,20 @@
 #
 
 """
-module docstring
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
 import pytest
 import os.path
 import tvb_data
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterForm
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
+from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporter
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.uploaders import test_data
 
 
@@ -56,40 +53,27 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
 
     def transactional_setup_method(self):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        self.test_user = TestFactory.create_user('Test_User')
-        self.test_project = TestFactory.create_project(self.test_user, "Test_Project")
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        self.test_user = TestFactory.create_user('Test_User_CM')
+        self.test_project = TestFactory.create_project(self.test_user, "Test_Project_CM")
+        self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_name):
-        ### Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.connectivity_measure_importer',
-                                              'ConnectivityMeasureImporter')
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)
 
-        form = ConnectivityMeasureImporterForm()
-        form.fill_from_post({'data_file': Part(path, HeaderMap({}), ''),
-                             'dataset_name': 'M',
-                             'connectivity': self.connectivity.gid,
-                             'Data_Subject': 'John Doe'
-                             })
-        form.data_file.data = path
-        view_model = form.get_view_model()()
-        form.fill_trait(view_model)
-        importer.submit_form(form)
-
-        ### Launch import Operation
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
+        view_model = ConnectivityMeasureImporterModel()
+        view_model.data_file = path
+        view_model.dataset_name = "M"
+        view_model.connectivity = self.connectivity.gid
+        TestFactory.launch_importer(ConnectivityMeasureImporter, view_model, self.test_user, self.test_project.id)
 
     def test_happy_flow(self):
-        assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex())
+        assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex)
         self._import('mantini_networks.mat')
-        assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex())
+        assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex)
 
     def test_connectivity_mismatch(self):
         with pytest.raises(OperationException):
             self._import('mantini_networks_33.mat')
-

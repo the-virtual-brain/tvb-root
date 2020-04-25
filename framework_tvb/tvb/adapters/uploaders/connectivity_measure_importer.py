@@ -32,20 +32,18 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
-import uuid
-from tvb.basic.neotraits.api import Attr
-from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.basic.neotraits.api import Attr
+from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
-from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.graph import ConnectivityMeasure
 
 
 class ConnectivityMeasureImporterModel(UploaderViewModel):
@@ -111,33 +109,27 @@ class ConnectivityMeasureImporter(ABCUploader):
         try:
             data = self.read_matlab_data(view_model.data_file, view_model.dataset_name)
             measurement_count, node_count = data.shape
-            connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+            connectivity = self.load_traited_by_gid(view_model.connectivity)
 
-            if node_count != connectivity_index.number_of_regions:
+            if node_count != connectivity.number_of_regions:
                 raise LaunchException('The measurements are for %s nodes but the selected connectivity'
-                                      ' contains %s nodes' % (node_count, connectivity_index.number_of_regions))
+                                      ' contains %s nodes' % (node_count, connectivity.number_of_regions))
 
             measures = []
             for i in range(measurement_count):
-                cm_idx = ConnectivityMeasureIndex()
-                cm_idx.type = ConnectivityMeasureIndex.__name__
-                cm_idx.connectivity_gid = connectivity_index.gid
-
                 cm_data = data[i, :]
-                cm_idx.array_data_ndim = cm_data.ndim
-                cm_idx.ndim = cm_data.ndim
-                cm_idx.array_data_min, cm_idx.array_data_max, cm_idx.array_data_mean = from_ndarray(cm_data)
 
-                cm_h5_path = h5.path_for(self.storage_path, ConnectivityMeasureH5, cm_idx.gid)
-                with ConnectivityMeasureH5(cm_h5_path) as cm_h5:
-                    cm_h5.array_data.store(data[i, :])
-                    cm_h5.connectivity.store(uuid.UUID(connectivity_index.gid))
-                    cm_h5.gid.store(uuid.UUID(cm_idx.gid))
+                measure = ConnectivityMeasure()
+                measure.array_data = cm_data
+                measure.connectivity = connectivity
+                measure.title = "Measure for Conn with %d nods" % (node_count)
 
+                cm_idx = h5.store_complete(measure, self.storage_path)
                 cm_idx.user_tag_2 = "nr.-%d" % (i + 1)
                 cm_idx.user_tag_3 = "conn_%d" % node_count
                 measures.append(cm_idx)
             return measures
+
         except ParseException as excep:
             logger = get_logger(__name__)
             logger.exception(excep)
