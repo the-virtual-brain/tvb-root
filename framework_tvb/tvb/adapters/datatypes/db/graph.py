@@ -27,8 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
 
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure

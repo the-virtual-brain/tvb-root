@@ -383,6 +383,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
     @staticmethod
     def _compute_measure_param(connectivity_measure, measure_points_no):
+        # type: (ConnectivityMeasureIndex, int) -> dict
         if connectivity_measure is None:
             # If there is no measure to show then we what to show the region mapping
             # The client will generate a range signal for this use case.
