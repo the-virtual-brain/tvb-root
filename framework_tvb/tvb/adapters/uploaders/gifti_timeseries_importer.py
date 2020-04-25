@@ -128,7 +128,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
                 raise LaunchException(msg)
             else:
                 ts_h5.surface.store(uuid.UUID(surface.gid))
-                ts_idx.surface_gid = surface.gid
+                ts_idx.fk_surface_gid = surface.gid
             ts_h5.close()
 
             ts_idx.sample_period_unit = partial_time_series.sample_period_unit

@@ -163,7 +163,7 @@ class BurstConfiguration(HasTraitsIndex):
 
     # This will store the first Simulation Operation, and First Simulator GID, in case of PSE
     simulator_gid = Column(String, nullable=True)
-    fk_simulation_id = Column(Integer, ForeignKey('OPERATIONS.id'), nullable=True)
+    fk_simulation = Column(Integer, ForeignKey('OPERATIONS.id'), nullable=True)
 
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
     operation_group = relationship(OperationGroup, foreign_keys=fk_operation_group,

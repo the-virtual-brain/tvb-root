@@ -365,7 +365,7 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_CORTEX_URL)
                 surface_index = ABCAdapter.load_entity_by_gid(surface_index_gid)
                 session_stored_simulator.surface = CortexViewModel()
-                session_stored_simulator.surface.surface_gid = uuid.UUID(surface_index_gid)
+                session_stored_simulator.surface.fk_surface_gid = uuid.UUID(surface_index_gid)
 
         if session_stored_simulator.surface is None:
             stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, False)
@@ -1007,7 +1007,7 @@ class SimulatorController(BurstBaseController):
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             project = common.get_current_project()
-            storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation_id))
+            storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
             simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
 
             common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
@@ -1034,7 +1034,7 @@ class SimulatorController(BurstBaseController):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         common.add2session(common.KEY_BURST_CONFIG, burst_config)
         project = common.get_current_project()
-        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation_id))
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
         simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
         simulator.gid = uuid.uuid4()
         # Generate a new GUID, as it needs to be unique

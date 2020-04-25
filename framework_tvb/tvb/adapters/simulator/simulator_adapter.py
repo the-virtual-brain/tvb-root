@@ -200,7 +200,7 @@ class SimulatorAdapter(ABCAsynchronous):
             rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
             rm = h5.load_from_index(rm_index)
 
-            rm_surface_index = self.load_entity_by_gid(rm_index.surface_gid)
+            rm_surface_index = self.load_entity_by_gid(rm_index.fk_surface_gid)
             rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
             rm.surface = rm_surface
             rm.connectivity = conn
@@ -208,7 +208,7 @@ class SimulatorAdapter(ABCAsynchronous):
             simulator.surface.region_mapping_data = rm
             if simulator.surface.local_connectivity:
                 lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
-                assert lc.surface.gid == rm_index.surface_gid
+                assert lc.surface.gid == rm_index.fk_surface_gid
                 lc.surface = rm_surface
                 simulator.surface.local_connectivity = lc
 
@@ -301,7 +301,7 @@ class SimulatorAdapter(ABCAsynchronous):
         :return: None or instance of "mapping_class"
         """
 
-        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'connectivity_gid')
+        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'fk_connectivity_gid')
         if len(dts_list) < 1:
             return None
 
@@ -376,7 +376,7 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
 
             if self.algorithm.surface:
-                ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
+                ts_index.fk_surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
                 ts_h5.surface.store(self.algorithm.surface.gid)
             else:
                 ts_h5.store_references(ts)

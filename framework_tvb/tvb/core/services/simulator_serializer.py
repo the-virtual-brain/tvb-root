@@ -95,6 +95,6 @@ class SimulatorSerializer(object):
                 simulator_in.surface.local_connectivity = cortex_h5.local_connectivity.load()
                 simulator_in.surface.region_mapping_data = cortex_h5.region_mapping_data.load()
                 rm_index = dao.get_datatype_by_gid(simulator_in.surface.region_mapping_data.hex)
-                simulator_in.surface.surface_gid = uuid.UUID(rm_index.surface_gid)
+                simulator_in.surface.fk_surface_gid = uuid.UUID(rm_index.fk_surface_gid)
 
         return simulator_in

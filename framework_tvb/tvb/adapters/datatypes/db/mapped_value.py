@@ -63,8 +63,8 @@ class DatatypeMeasureIndex(DataType):
     # Actual measure (dictionary Algorithm: single Value) serialized
     metrics = Column(String)
     # DataType for which the measure was computed.
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=False)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=False)
+    source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     @property
     def display_name(self):

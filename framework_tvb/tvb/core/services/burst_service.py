@@ -171,7 +171,7 @@ class BurstService(object):
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
         burst = dao.get_burst_by_id(burst_id)
-        burst.fk_simulation_id = op_simulation_id
+        burst.fk_simulation = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
         burst = dao.store_entity(burst)
         return burst
@@ -179,7 +179,7 @@ class BurstService(object):
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
+        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
     def load_burst_configuration(self, burst_config_id):

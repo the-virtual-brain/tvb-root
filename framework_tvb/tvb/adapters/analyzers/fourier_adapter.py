@@ -179,7 +179,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
 
         """
         fft_index = FourierSpectrumIndex()
-        fft_index.source_gid = view_model.time_series.hex
+        fft_index.fk_source_gid = view_model.time_series.hex
 
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
         blocks = int(math.ceil(self.input_shape[2] / block_size))

@@ -131,10 +131,10 @@ class TestRegionMappingImporter(TransactionalTestCase):
         """
         region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, import_file, self.surface.gid, self.connectivity.gid)
 
-        surface_index = ABCAdapter.load_entity_by_gid(region_mapping_index.surface_gid)
+        surface_index = ABCAdapter.load_entity_by_gid(region_mapping_index.fk_surface_gid)
         assert surface_index is not None
 
-        connectivity_index = ABCAdapter.load_entity_by_gid(region_mapping_index.connectivity_gid)
+        connectivity_index = ABCAdapter.load_entity_by_gid(region_mapping_index.fk_connectivity_gid)
         assert connectivity_index is not None
 
         region_mapping = h5.load_from_index(region_mapping_index)

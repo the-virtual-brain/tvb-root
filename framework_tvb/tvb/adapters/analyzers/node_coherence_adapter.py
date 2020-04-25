@@ -174,7 +174,7 @@ class NodeCoherenceAdapter(ABCAsynchronous):
         coherence_spectrum_index.ndim = len(coherence_h5.array_data.shape)
         time_series_h5.close()
 
-        coherence_spectrum_index.source_gid = self.input_time_series_index.gid
+        coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid
         coherence_spectrum_index.nfft = partial_coh.nfft
         coherence_spectrum_index.frequencies = partial_coh.frequency
 

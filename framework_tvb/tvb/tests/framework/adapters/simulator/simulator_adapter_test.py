@@ -173,7 +173,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid, connectivity.gid)
 
         cortex_model.region_mapping_data = region_mapping.gid
-        cortex_model.surface_gid = surface.gid
+        cortex_model.fk_surface_gid = surface.gid
         simulator_adapter_model.surface = cortex_model
 
         ## Estimation when the surface input parameter is set

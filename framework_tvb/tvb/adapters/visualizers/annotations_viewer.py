@@ -128,13 +128,13 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
         annotations_index = self.load_entity_by_gid(view_model.annotations_index)
 
         if view_model.connectivity_index is None:
-            connectivity_index = self.load_entity_by_gid(annotations_index.connectivity_gid)
+            connectivity_index = self.load_entity_by_gid(annotations_index.fk_connectivity_gid)
         else:
             connectivity_index = self.load_entity_by_gid(view_model.connectivity_index)
 
         if view_model.region_mapping_index is None:
             region_map = dao.get_generic_entity(RegionMappingIndex, connectivity_index.gid,
-                                                'connectivity_gid')
+                                                'fk_connectivity_gid')
             if len(region_map) < 1:
                 raise LaunchException(
                     "Can not launch this viewer unless we have at least a RegionMapping for the current Connectivity!")
@@ -142,11 +142,11 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
         else:
             region_mapping_index = self.load_entity_by_gid(view_model.region_mapping_index)
 
-        boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(region_mapping_index.surface_gid,
+        boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(region_mapping_index.fk_surface_gid,
                                                                          region_mapping_index.gid,
                                                                          self.stored_adapter.id)
 
-        surface_index = self.load_entity_by_gid(region_mapping_index.surface_gid)
+        surface_index = self.load_entity_by_gid(region_mapping_index.fk_surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_index)
         assert isinstance(surface_h5, SurfaceH5)
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(

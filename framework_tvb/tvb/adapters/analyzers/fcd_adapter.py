@@ -209,7 +209,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
 
     @staticmethod
     def _populate_fcd_index(fcd_index, source_gid, fcd_data, metadata):
-        fcd_index.source_gid = source_gid
+        fcd_index.fk_source_gid = source_gid
         fcd_index.labels_ordering = json.dumps(Fcd.labels_ordering.default)
         fcd_index.ndim = fcd_data.ndim
         fcd_index.array_data_min = metadata.min
@@ -271,7 +271,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                         cm_data = eigvect_dict[mode][var][ep][eig]
                         cm_index = ConnectivityMeasureIndex()
                         cm_index.type = ConnectivityMeasure.__name__
-                        cm_index.connectivity_gid = connectivity_gid.hex
+                        cm_index.fk_connectivity_gid = connectivity_gid.hex
                         cm_index.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n " \
                                          "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
 

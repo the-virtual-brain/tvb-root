@@ -202,7 +202,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
                 metrics_results[algorithm_name] = unstored_result
 
         result = DatatypeMeasureIndex()
-        result.source_gid = self.input_time_series_index.gid
+        result.fk_source_gid = self.input_time_series_index.gid
         result.metrics = json.dumps(metrics_results)
 
         result_path = h5.path_for(self.storage_path, DatatypeMeasureH5, result.gid)

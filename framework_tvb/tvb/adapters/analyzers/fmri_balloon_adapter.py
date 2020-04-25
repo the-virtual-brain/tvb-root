@@ -238,9 +238,9 @@ class BalloonModelAdapter(ABCAsynchronous):
         result_index.data_length_1d, result_index.data_length_2d, \
         result_index.data_length_3d, result_index.data_length_4d = prepare_array_shape_meta(result_signal_shape)
 
-        result_index.connectivity_gid = self.input_time_series_index.connectivity_gid
-        result_index.region_mapping_gid = self.input_time_series_index.region_mapping_gid
-        result_index.region_mapping_volume_gid = self.input_time_series_index.region_mapping_volume_gid
+        result_index.fk_connectivity_gid = self.input_time_series_index.fk_connectivity_gid
+        result_index.fk_region_mapping_gid = self.input_time_series_index.fk_region_mapping_gid
+        result_index.fk_region_mapping_volume_gid = self.input_time_series_index.fk_region_mapping_volume_gid
 
         result_index.sample_period = self.input_time_series_index.sample_period
         result_index.sample_period_unit = self.input_time_series_index.sample_period_unit

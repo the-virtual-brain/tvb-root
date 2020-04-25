@@ -319,7 +319,7 @@ class RegionStimulusController(SpatioTemporalController):
         with StimuliRegionH5(stimuli_region_path) as stimuli_region_h5:
             stimuli_region_h5.load_into(stimuli_region)
 
-        dummy_gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)
+        dummy_gid = uuid.UUID(existent_region_stimulus_index.fk_connectivity_gid)
         stimuli_region.connectivity = dummy_gid
 
         common.add2session(KEY_REGION_STIMULUS, stimuli_region)

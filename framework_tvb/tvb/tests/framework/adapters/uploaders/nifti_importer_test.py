@@ -126,7 +126,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         assert dimension_labels is not None
         assert 4 == len(json.loads(dimension_labels))
 
-        volume_index = ABCAdapter.load_entity_by_gid(time_series_index.volume_gid)
+        volume_index = ABCAdapter.load_entity_by_gid(time_series_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)
@@ -149,7 +149,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         assert 64 == data_shape[1]
         assert 10 == data_shape[2]
 
-        volume_index = ABCAdapter.load_entity_by_gid(structural_mri_index.volume_gid)
+        volume_index = ABCAdapter.load_entity_by_gid(structural_mri_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)
@@ -178,9 +178,9 @@ class TestNIFTIImporter(TransactionalTestCase):
 
         assert -1 <= mapping.array_data.min()
         assert mapping.array_data.max() < to_link_conn.number_of_regions
-        assert to_link_conn.gid == mapping_index.connectivity_gid
+        assert to_link_conn.gid == mapping_index.fk_connectivity_gid
 
-        volume_index = ABCAdapter.load_entity_by_gid(mapping_index.volume_gid)
+        volume_index = ABCAdapter.load_entity_by_gid(mapping_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)

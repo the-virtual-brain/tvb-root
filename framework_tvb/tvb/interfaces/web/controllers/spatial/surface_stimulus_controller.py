@@ -308,7 +308,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         with StimuliSurfaceH5(surface_stim_h5_path) as surface_stim_h5:
             surface_stim_h5.load_into(existent_surface_stim)
 
-        existent_surface_stim.surface = uuid.UUID(surface_stim_index.surface_gid)
+        existent_surface_stim.surface = uuid.UUID(surface_stim_index.fk_surface_gid)
 
         common.add2session(KEY_SURFACE_STIMULI, existent_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI_NAME, surface_stim_index.user_tag_1)
