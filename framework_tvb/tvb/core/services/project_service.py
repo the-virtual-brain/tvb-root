@@ -135,7 +135,11 @@ class ProjectService:
             members = UserService.retrieve_users_except(prj_admin, int(page), MEMBERS_PAGE_SIZE)[0]
             members = [m.id for m in members]
             dao.delete_members_for_project(current_proj.id, members)
+
         selected_user_ids = data["users"]
+        if is_create and current_user.id not in selected_user_ids:
+            # Make the project admin also member of the current project
+            selected_user_ids.append(current_user.id)
         dao.add_members_to_project(current_proj.id, selected_user_ids)
         # Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)
