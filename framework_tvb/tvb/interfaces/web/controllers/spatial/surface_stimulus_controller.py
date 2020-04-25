@@ -40,11 +40,10 @@ import numpy
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import *
-from tvb.core.entities.storage import dao
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form, SimpleFloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
@@ -180,7 +179,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_creator_form = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
                                                                self.possible_temporal_equations, project_id)
         if not hasattr(current_surface_stim, 'surface') or not current_surface_stim.surface:
-            default_surface_index = dao.try_load_last_surface_of_type(project_id, CORTICAL)
+            default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
+                                                          SurfaceStimulusCreatorForm.get_filters())
             if default_surface_index is None:
                 common.set_error_message(self.MSG_MISSING_SURFACE)
                 current_surface_stim.surface = uuid.uuid4()

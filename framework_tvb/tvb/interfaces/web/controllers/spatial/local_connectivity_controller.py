@@ -41,10 +41,9 @@ from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import *
-from tvb.core.entities.storage import dao
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
@@ -92,7 +91,8 @@ class LocalConnectivityController(SpatioTemporalController):
 
         if int(do_reset) == 1:
             new_lconn = LocalConnectivityCreatorModel()
-            default_surface_index = dao.try_load_last_surface_of_type(project_id, CORTICAL)
+            default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
+                                                          LocalConnectivityCreatorForm.get_filters())
             if default_surface_index:
                 new_lconn.surface = uuid.UUID(default_surface_index.gid)
             else:

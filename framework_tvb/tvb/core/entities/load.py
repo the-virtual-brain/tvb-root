@@ -92,4 +92,5 @@ def try_get_last_datatype(project_id, data_type_cls, filters=None):
     result, count = get_filtered_datatypes(project_id, data_type_cls, filters=filters, page_size=1)
     if count == 0:
         return None
-    return result[0]
+    dt = load_entity_by_gid(result[0][2])
+    return dt

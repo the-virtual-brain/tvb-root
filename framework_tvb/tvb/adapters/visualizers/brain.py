@@ -111,7 +111,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         Assume one page doesn't get 'dumped' in time and it is highly probably that
         two consecutive pages will be in the same time in memory.
         """
-        time_series = self.load_entity_by_gid(view_model.time_series.hex)
+        time_series = self.load_entity_by_gid(view_model.time_series)
         overall_shape = time_series.get_data_shape()
         used_shape = (overall_shape[0] / (self.PAGE_SIZE * 2.0), overall_shape[1], overall_shape[2], overall_shape[3])
         return numpy.prod(used_shape) * 8.0
@@ -120,7 +120,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         """
         Generate the preview for the burst page
         """
-        time_series = self.load_entity_by_gid(view_model.time_series.hex)
+        time_series = self.load_entity_by_gid(view_model.time_series)
         self.populate_surface_fields(time_series)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
@@ -163,10 +163,10 @@ class BrainViewer(ABCSurfaceDisplayer):
         """
         Build visualizer's page.
         """
-        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        time_series_index = self.load_entity_by_gid(view_model.time_series)
         shell_surface_index = None
         if view_model.shell_surface:
-            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
         params = self.compute_parameters(time_series_index, shell_surface_index)
         return self.build_display_result("brain/view", params, pages=dict(controlPage="brain/controls"))
 
@@ -458,17 +458,18 @@ class DualBrainViewer(BrainViewer):
     def launch(self, view_model):
         # type: (DualBrainViewerModel) -> dict
 
-        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.surface_index = None
         shell_surface_index = None
 
         if view_model.projection_surface:
-            self.surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
+            self.surface_index = self.load_entity_by_gid(view_model.projection_surface)
+
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
 
-        if isinstance(time_series_index, TimeSeriesSEEGIndex) and shell_surface_index is None:
-            shell_surface_index = dao.try_load_last_surface_of_type(self.current_project_id, CORTICAL)
+        if isinstance(time_series_index, TimeSeriesSEEGIndex):
+            shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)
 
         params = BrainViewer.compute_parameters(self, time_series_index, shell_surface_index)
         eeg_monitor = EegMonitor()
