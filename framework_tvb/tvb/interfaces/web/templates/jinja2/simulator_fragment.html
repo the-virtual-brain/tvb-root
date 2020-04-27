@@ -59,17 +59,17 @@
         </button>
     {% endif %}
 
-    {% if renderer.include_branch_button %}
-        <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary"
-                onclick="launchNewBurst(this.parentElement, 'branch')"
-                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Branch
-        </button>
-    {% endif %}
-
     {% if renderer.include_setup_pse %}
         <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary"
                 onclick="wizzard_submit(this.parentElement)"
                 {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
+        </button>
+    {% endif %}
+
+    {% if renderer.include_branch_button %}
+        <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary"
+                onclick="launchNewBurst(this.parentElement, 'branch')"
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Branch
         </button>
     {% endif %}
 
