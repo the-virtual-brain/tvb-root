@@ -678,6 +678,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     var config_launch_button = previous_form.elements.namedItem('launch_simulation');
     var config_pse_button = previous_form.elements.namedItem('setup_pse');
     var config_launch_pse_button = previous_form.elements.namedItem('launch_pse');
+    var config_branch_button = previous_form.elements.namedItem('branch_simulation');
     var fieldset = previous_form.elements[0];
 
     if (next_button != null) {
@@ -704,6 +705,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_launch_pse_button != null){
         config_launch_pse_button.style.visibility = 'visible';
     }
+    if (config_branch_button != null){
+        config_branch_button.style.visibility = 'visible';
+    }
     fieldset.disabled = false;
 }
 
@@ -720,6 +724,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var config_launch_button = currentForm.elements.namedItem('launch_simulation');
     var config_pse_button = currentForm.elements.namedItem('setup_pse');
     var config_launch_pse_button = currentForm.elements.namedItem('launch_pse');
+    var config_branch_button = currentForm.elements.namedItem('branch_simulation');
     var fieldset = currentForm.elements[0];
 
     $.ajax({
@@ -753,6 +758,9 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 if(config_launch_pse_button != null){
                     config_launch_pse_button.style.visibility = 'hidden';
+                }
+                if(config_branch_button != null){
+                    config_branch_button.style.visibility = 'hidden';
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);

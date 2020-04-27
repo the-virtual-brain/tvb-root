@@ -324,6 +324,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
@@ -370,6 +371,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -410,6 +412,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -450,6 +453,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -491,6 +495,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_equation(**self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].equation.parameters[
