@@ -182,7 +182,8 @@ class TestJinja2Simulator(Jinja2Test):
         assert len(hidden_buttons) == 1
 
     def test_buttons_last_fragment(self):
-        rendering_rules = SimulatorFragmentRenderingRules(form_action_url='dummy_url', last_form_url='dummy_url',
+        rendering_rules = SimulatorFragmentRenderingRules(form_action_url=SimulatorWizzardURLs.SETUP_PSE_URL,
+                                                          last_form_url=SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           is_launch_fragment=True)
         soup = self.prepare_simulator_form_for_search(rendering_rules)
 
@@ -192,7 +193,9 @@ class TestJinja2Simulator(Jinja2Test):
         assert len(hidden_buttons) == 0
 
     def test_buttons_last_fragment_copy(self):
-        rendering_rules = SimulatorFragmentRenderingRules(is_launch_fragment=True, is_simulation_copy=True)
+        rendering_rules = SimulatorFragmentRenderingRules(is_launch_fragment=True, is_simulation_copy=True,
+                                                          form_action_url=SimulatorWizzardURLs.SETUP_PSE_URL,
+                                                          last_form_url=SimulatorWizzardURLs.SETUP_PSE_URL)
         soup = self.prepare_simulator_form_for_search(rendering_rules)
 
         all_buttons = soup.find_all('button')

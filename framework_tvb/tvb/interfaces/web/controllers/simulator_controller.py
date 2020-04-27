@@ -695,7 +695,7 @@ class SimulatorController(BurstBaseController):
                                                               is_simulator_copy, is_simulator_load,
                                                               self.last_loaded_form_url, cherrypy.request.method,
                                                               is_launch_fragment=True,
-                                                              is_pse_launch=session_stored_burst.is_pse_launch())
+                                                              is_pse_launch=session_stored_burst.is_pse_burst())
         else:
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                               SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
@@ -811,7 +811,7 @@ class SimulatorController(BurstBaseController):
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_launch_fragment=True,
-                                                          is_pse_launch=session_stored_burst.is_pse_launch())
+                                                          is_pse_launch=session_stored_burst.is_pse_burst())
         return rendering_rules.to_dict()
 
     @cherrypy.expose
