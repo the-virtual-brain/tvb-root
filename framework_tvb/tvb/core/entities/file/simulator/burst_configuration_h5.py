@@ -44,8 +44,8 @@ class BurstConfigurationH5(H5File):
         self.start_time = Scalar(Attr(str), self, name='start_time')
         self.finish_time = Scalar(Attr(str, required=False), self, name='finish_time')
         self.simulator = Reference(Attr(uuid.UUID), self, name='simulator')
-        self.range1 = Scalar(Attr(str), self, name='range1')
-        self.range2 = Scalar(Attr(str), self, name='range2')
+        self.range1 = Scalar(Attr(str, required=False), self, name='range1')
+        self.range2 = Scalar(Attr(str, required=False), self, name='range2')
 
     def store(self, burst_config, scalars_only=False, store_references=False):
         self.name.store(burst_config.name)

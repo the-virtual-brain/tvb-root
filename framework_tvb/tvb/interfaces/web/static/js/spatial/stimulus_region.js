@@ -56,10 +56,10 @@ function prepareUrlParam(paramName, paramValue) {
 }
 
 function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + '_min_x' + '"]').change(function () {
+    $('input[name="' + 'min_x' + '"]').change(function () {
         plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
     });
-    $('input[name="' + '_max_x' + '"]').change(function () {
+    $('input[name="' + 'max_x' + '"]').change(function () {
         plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
     });
 }
