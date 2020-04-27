@@ -91,13 +91,7 @@ class GetUsersResource(RestResource):
         """
         :return: a list of TVB users
         """
-        page_number = flask.request.args.get(Strings.PAGE_NUMBER.value)
-        if page_number is None:
-            page_number = 1
-        try:
-            page_number = int(page_number)
-        except ValueError:
-            raise InvalidInputException(message="Invalid page number")
+        page_number = self.extract_page_number()
 
         user_dto_list, pages_no = UserFacade.get_users(get_current_user().username, page_number, USERS_PAGE_SIZE)
         return {"users": user_dto_list, "pages_no": pages_no}
