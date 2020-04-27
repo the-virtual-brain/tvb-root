@@ -308,10 +308,6 @@ class SurfaceH5(H5File):
         result_vertices = []
         cache_vertices = self.vertices.load()
         for triang in slice_triangles:
-            # if we do that then why bother with the fancy lazy reads?
-            # This is a mix of partial reads and full reads,
-            # this needs both the surface datatype instance and the surfaceh5 class
-            # maybe if the h5file manager would not close the file then assuming the h5 system caches small reads
             result_vertices.append(cache_vertices[triang[0]])
             result_vertices.append(cache_vertices[triang[1]])
             result_vertices.append(cache_vertices[triang[2]])
