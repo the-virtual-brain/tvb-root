@@ -165,7 +165,8 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def hide_previous_button(self):
-        if self.load_readonly and not (self.is_simulation_copy and self.is_launch_fragment):
+        if self.load_readonly and not (self.is_simulation_copy and self.is_launch_fragment and
+                                       self.last_form_url == SimulatorWizzardURLs.SETUP_PSE_URL):
             return True
         return False
 
@@ -191,6 +192,13 @@ class SimulatorFragmentRenderingRules(object):
     def include_launch_button(self):
         if self.is_launch_fragment and (not self.load_readonly or self.is_simulation_copy):
             return True
+        return False
+
+    @property
+    def hide_launch_and_setup_pse_button(self):
+        if self.last_form_url != SimulatorWizzardURLs.SETUP_PSE_URL:
+            return True
+        return False
 
     @property
     def include_branch_button(self):

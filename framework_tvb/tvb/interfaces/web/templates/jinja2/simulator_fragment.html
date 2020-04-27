@@ -54,17 +54,23 @@
 
     {% if renderer.include_launch_button %}
         <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary"
-                onclick="launchNewBurst(this.parentElement, 'new')">Launch</button>
+                onclick="launchNewBurst(this.parentElement, 'new')"
+                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
+        </button>
     {% endif %}
 
     {% if renderer.include_branch_button %}
         <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary"
-                onclick="launchNewBurst(this.parentElement, 'branch')">Branch</button>
+                onclick="launchNewBurst(this.parentElement, 'branch')"
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Branch
+        </button>
     {% endif %}
 
     {% if renderer.include_setup_pse %}
         <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary"
-                onclick="wizzard_submit(this.parentElement)">Setup PSE</button>
+                onclick="wizzard_submit(this.parentElement)"
+                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
+        </button>
     {% endif %}
 
     {% if renderer.include_launch_pse_button %}
