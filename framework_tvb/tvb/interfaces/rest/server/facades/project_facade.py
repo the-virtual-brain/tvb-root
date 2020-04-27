@@ -49,7 +49,7 @@ class ProjectFacade:
 
     def create_project(self, logged_user, project_name, project_description):
         self.project_service.store_project(logged_user, True, None, name=project_name,
-                                           description=project_description, users=[logged_user.id])
+                                           description=project_description)
 
     def get_datatypes_in_project(self, project_gid):
         try:

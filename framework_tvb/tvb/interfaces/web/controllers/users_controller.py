@@ -41,7 +41,6 @@ import os
 import ssl
 import time
 from urllib.request import urlopen
-
 import cherrypy
 import formencode
 import tvb.interfaces.web
@@ -52,8 +51,8 @@ from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list
-from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT, \
-    KEY_AUTH_TOKEN
+from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL, KEY_USERNAME, KEY_COMMENT
+from tvb.core.services.user_service import KEY_AUTH_TOKEN, USERS_PAGE_SIZE
 from tvb.core.utils import format_bytes_human, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -322,7 +321,7 @@ class UserController(BaseController):
                 page -= 1
 
         admin_ = common.get_logged_user().username
-        user_list, pages_no = self.user_service.retrieve_all_users(admin_, page)
+        user_list, pages_no = self.user_service.retrieve_users_except(admin_, page, USERS_PAGE_SIZE)
         template_specification = dict(mainContent="user/user_management", title="Users management", page_number=page,
                                       total_pages=pages_no, userList=user_list, allRoles=UserService.USER_ROLES,
                                       data={})

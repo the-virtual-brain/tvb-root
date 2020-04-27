@@ -36,8 +36,6 @@ Service layer for USER entities.
 
 import os
 import random
-from random import randint
-
 import six
 import tvb_data
 from tvb.basic.logger.builder import get_logger
@@ -75,7 +73,8 @@ KEY_EMAIL = "email"
 KEY_ROLE = "role"
 KEY_COMMENT = "comment"
 DEFAULT_PASS_LENGTH = 10
-USERS_PAGE_SIZE = 7
+USERS_PAGE_SIZE = 10
+MEMBERS_PAGE_SIZE = 30
 
 
 class UserService:
@@ -115,7 +114,7 @@ class UserService:
 
             if role != ROLE_ADMINISTRATOR and email is not None and not skip_sending_email:
                 admins = UserService.get_administrators()
-                admin = admins[randint(0, len(admins) - 1)]
+                admin = admins[random.randint(0, len(admins) - 1)]
                 if admin.email is not None and (admin.email != TvbProfile.current.web.admin.DEFAULT_ADMIN_EMAIL):
                     # Do not send validation email in case default admin email remained unchanged
                     email_sender.send(FROM_ADDRESS, admin.email, SUBJECT_REGISTER, admin_msg)
@@ -161,7 +160,7 @@ class UserService:
                 raise UsernameException("No singular user could be found for the given data!")
 
             old_pass = user.password
-            new_pass = ''.join(chr(randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
+            new_pass = ''.join(chr(random.randint(48, 122)) for _ in range(DEFAULT_PASS_LENGTH))
             user.password = hash_password(new_pass)
             self.edit_user(user, old_pass)
             self.logger.info("Resetting password for email : " + email)
@@ -232,7 +231,7 @@ class UserService:
                 project = dao.get_project_by_id(project_id)
                 if project is not None:
                     admin_name = project.administrator.username
-            all_users, total_pages = self.retrieve_all_users(admin_name, page)
+            all_users, total_pages = self.retrieve_users_except(admin_name, page, MEMBERS_PAGE_SIZE)
             members = dao.get_members_of_project(project_id)
             return all_users, members, total_pages
         except Exception as excep:
@@ -240,14 +239,15 @@ class UserService:
             raise UsernameException(str(excep))
 
     @staticmethod
-    def retrieve_all_users(username, current_page=1):
+    def retrieve_users_except(username, current_page, page_size):
+        # type: (str, int, int) -> (list, int)
         """
         Return all users from the database except the given user
         """
-        start_idx = USERS_PAGE_SIZE * (current_page - 1)
+        start_idx = page_size * (current_page - 1)
         total = dao.get_all_users(username, is_count=True)
-        user_list = dao.get_all_users(username, start_idx, USERS_PAGE_SIZE)
-        pages_no = total // USERS_PAGE_SIZE + (1 if total % USERS_PAGE_SIZE else 0)
+        user_list = dao.get_all_users(username, start_idx, page_size)
+        pages_no = total // page_size + (1 if total % page_size else 0)
         return user_list, pages_no
 
     def edit_user(self, edited_user, old_password=None):

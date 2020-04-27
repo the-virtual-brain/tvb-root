@@ -31,8 +31,8 @@
 import flask
 from flask_restplus import Resource
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.interfaces.rest.commons.exceptions import BadRequestException
-from tvb.interfaces.rest.commons.strings import RequestFileKey
+from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
+from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
 
 
@@ -58,6 +58,16 @@ class RestResource(SecuredResource):
             raise BadRequestException("Only %s files are allowed!" % file_extension)
 
         return file
+
+    def extract_page_number(self):
+        page_number = flask.request.args.get(Strings.PAGE_NUMBER.value)
+        if page_number is None:
+            page_number = 1
+        try:
+            page_number = int(page_number)
+        except ValueError:
+            raise InvalidInputException(message="Invalid page number")
+        return page_number
 
     @staticmethod
     def is_key_in_request_files(key):

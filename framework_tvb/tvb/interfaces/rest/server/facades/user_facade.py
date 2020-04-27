@@ -33,6 +33,6 @@ from tvb.interfaces.rest.commons.dtos import UserDto
 
 class UserFacade:
     @staticmethod
-    def get_users(except_username):
-        user_list, pages_no = UserService.retrieve_all_users(except_username)
+    def get_users(except_username, page_no, page_size):
+        user_list, pages_no = UserService.retrieve_users_except(except_username, page_no, page_size)
         return [UserDto(user) for user in user_list], pages_no

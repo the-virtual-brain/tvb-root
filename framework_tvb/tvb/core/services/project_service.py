@@ -56,7 +56,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
-from tvb.core.services.user_service import UserService
+from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.adapters.abcadapter import ABCAdapter
 
 
@@ -132,10 +132,14 @@ class ProjectService:
         if 'visited_pages' in data and data['visited_pages']:
             visited_pages = data['visited_pages'].split(',')
         for page in visited_pages:
-            members = UserService.retrieve_all_users(prj_admin, int(page))[0]
+            members = UserService.retrieve_users_except(prj_admin, int(page), MEMBERS_PAGE_SIZE)[0]
             members = [m.id for m in members]
             dao.delete_members_for_project(current_proj.id, members)
+
         selected_user_ids = data["users"]
+        if is_create and current_user.id not in selected_user_ids:
+            # Make the project admin also member of the current project
+            selected_user_ids.append(current_user.id)
         dao.add_members_to_project(current_proj.id, selected_user_ids)
         # Finish operation
         self.logger.debug("Edit/Save OK for project:" + str(current_proj.id) + ' by user:' + current_user.username)

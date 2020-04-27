@@ -61,8 +61,10 @@ class UserApi(MainApi):
         return response, ProjectDto
 
     @handle_response
-    def get_users(self):
-        return self.secured_request().get(self.build_request_url(RestNamespace.USERS.value))
+    def get_users(self, page):
+        return self.secured_request().get(self.build_request_url(RestNamespace.USERS.value), params={
+            Strings.PAGE_NUMBER: page
+        })
 
     @handle_response
     def create_project(self, project_name, project_description):

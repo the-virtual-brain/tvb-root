@@ -117,11 +117,11 @@ class TVBClient:
         self.simulation_api.update_tokens(response)
         self.operation_api.update_tokens(response)
 
-    def get_users(self):
+    def get_users(self, page=1):
         """
         Return all TVB users
         """
-        response = self.user_api.get_users()
+        response = self.user_api.get_users(page)
         user_list, pages_no = response
         return [UserDto(**user) for user in response[user_list]], response[pages_no]
 
