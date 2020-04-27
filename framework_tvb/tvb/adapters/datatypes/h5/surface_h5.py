@@ -306,16 +306,15 @@ class SurfaceH5(H5File):
                           min(self._number_of_triangles, (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
                           ]
         result_vertices = []
+        cache_vertices = self.vertices.load()
         for triang in slice_triangles:
-            # fixme: the library seems to assume here that all vertices are loaded
             # if we do that then why bother with the fancy lazy reads?
             # This is a mix of partial reads and full reads,
             # this needs both the surface datatype instance and the surfaceh5 class
-            # fixme: these are reading from h5, the performance will be abysmal
             # maybe if the h5file manager would not close the file then assuming the h5 system caches small reads
-            result_vertices.append(self.vertices[triang[0]])
-            result_vertices.append(self.vertices[triang[1]])
-            result_vertices.append(self.vertices[triang[2]])
+            result_vertices.append(cache_vertices[triang[0]])
+            result_vertices.append(cache_vertices[triang[1]])
+            result_vertices.append(cache_vertices[triang[2]])
         return numpy.array(result_vertices)
 
     def get_pick_vertex_normals_slice(self, slice_number=0):
@@ -328,11 +327,12 @@ class SurfaceH5(H5File):
                           min(self.number_of_triangles.load(), (slice_number + 1) * SPLIT_PICK_MAX_TRIANGLE)
                           ]
         result_normals = []
+        cache_vertex_normals = self.vertex_normals.load()
+
         for triang in slice_triangles:
-            # fixme: these are reading from h5, the performance will be abysmal
-            result_normals.append(self.vertex_normals[triang[0]])
-            result_normals.append(self.vertex_normals[triang[1]])
-            result_normals.append(self.vertex_normals[triang[2]])
+            result_normals.append(cache_vertex_normals[triang[0]])
+            result_normals.append(cache_vertex_normals[triang[1]])
+            result_normals.append(cache_vertex_normals[triang[2]])
         return numpy.array(result_normals)
 
     def get_pick_triangles_slice(self, slice_number=0):
