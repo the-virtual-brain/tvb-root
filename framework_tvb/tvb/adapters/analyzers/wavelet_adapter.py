@@ -224,7 +224,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         wavelet_h5.close()
         time_series_h5.close()
 
-        wavelet_index.source_gid = self.input_time_series_index.gid
+        wavelet_index.fk_source_gid = self.input_time_series_index.gid
         wavelet_index.mother = self.algorithm.mother
         wavelet_index.normalisation = self.algorithm.normalisation
         wavelet_index.q_ratio = self.algorithm.q_ratio

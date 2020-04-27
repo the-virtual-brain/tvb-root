@@ -171,15 +171,15 @@ class BurstService(object):
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
         burst = dao.get_burst_by_id(burst_id)
-        burst.fk_simulation_id = op_simulation_id
+        burst.fk_simulation = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
         burst = dao.store_entity(burst)
         return burst
 
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
-        project = dao.get_project_by_id(burst_configuration.project_id)
-        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation_id))
+        project = dao.get_project_by_id(burst_configuration.fk_project)
+        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
     def load_burst_configuration(self, burst_config_id):
@@ -194,16 +194,16 @@ class BurstService(object):
         else:
             ranges = [burst_config.range1]
 
-        operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
         operation_group = dao.store_entity(operation_group)
 
-        metric_operation_group = OperationGroup(burst_config.project_id, ranges=ranges)
+        metric_operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
         metric_operation_group = dao.store_entity(metric_operation_group)
 
         burst_config.operation_group = operation_group
-        burst_config.operation_group_id = operation_group.id
+        burst_config.fk_operation_group = operation_group.id
         burst_config.metric_operation_group = metric_operation_group
-        burst_config.metric_operation_group_id = metric_operation_group.id
+        burst_config.fk_metric_operation_group = metric_operation_group.id
         dao.store_entity(burst_config)
 
     def store_burst_configuration(self, burst_config, storage_path):

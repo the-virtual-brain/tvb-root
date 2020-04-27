@@ -419,7 +419,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         surface_h5 = h5.h5_file_for_index(surface_index)
         region_map_gid = region_map_index.gid if region_map_index is not None else None
-        connectivity_gid = region_map_index.connectivity_gid if region_map_index is not None else None
+        connectivity_gid = region_map_index.fk_connectivity_gid if region_map_index is not None else None
         assert isinstance(surface_h5, SurfaceH5)
 
         params = dict(title=surface_index.display_name, extended_view=False,
@@ -486,7 +486,7 @@ class RegionMappingViewer(SurfaceViewer):
     def launch(self, view_model):
         # type: (BaseSurfaceViewerModel) -> dict
         region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
-        surface_gid = region_map_index.surface_gid
+        surface_gid = region_map_index.fk_surface_gid
 
         surface_viewer_model = SurfaceViewerModel(surface=uuid.UUID(surface_gid),
                                                   region_map=view_model.region_map,
@@ -534,22 +534,22 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
         # type: (BaseSurfaceViewerModel) -> dict
 
         connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
-        cm_connectivity_gid = connectivity_measure_index.connectivity_gid
+        cm_connectivity_gid = connectivity_measure_index.fk_connectivity_gid
         cm_connectivity_index = dao.get_datatype_by_gid(cm_connectivity_gid)
 
         region_map_index = None
         rm_connectivity_index = None
         if view_model.region_map:
             region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
-            rm_connectivity_gid = region_map_index.connectivity_gid
+            rm_connectivity_gid = region_map_index.fk_connectivity_gid
             rm_connectivity_index = dao.get_datatype_by_gid(rm_connectivity_gid)
 
         if not region_map_index or rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
-            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_gid')
+            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'fk_connectivity_gid')
             if region_maps:
                 region_map_index = region_maps[0]
 
-        surface_gid = region_map_index.surface_gid
+        surface_gid = region_map_index.fk_surface_gid
         surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
                                                   region_map=region_map_index.gid,
                                                   connectivity_measure=view_model.connectivity_measure,

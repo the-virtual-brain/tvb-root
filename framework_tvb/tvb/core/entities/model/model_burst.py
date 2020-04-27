@@ -151,7 +151,7 @@ class BurstConfiguration(HasTraitsIndex):
 
     id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
 
-    project_id = Column(Integer, ForeignKey('PROJECTS.id', ondelete='CASCADE'))
+    fk_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete='CASCADE'))
     project = relationship(Project, backref=backref('BurstConfiguration', cascade='all,delete'))
 
     name = Column(String)
@@ -163,25 +163,25 @@ class BurstConfiguration(HasTraitsIndex):
 
     # This will store the first Simulation Operation, and First Simulator GID, in case of PSE
     simulator_gid = Column(String, nullable=True)
-    fk_simulation_id = Column(Integer, ForeignKey('OPERATIONS.id'), nullable=True)
+    fk_simulation = Column(Integer, ForeignKey('OPERATIONS.id'), nullable=True)
 
-    operation_group_id = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
-    operation_group = relationship(OperationGroup, foreign_keys=operation_group_id,
-                                   primaryjoin=OperationGroup.id == operation_group_id, cascade='none')
+    fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
+    operation_group = relationship(OperationGroup, foreign_keys=fk_operation_group,
+                                   primaryjoin=OperationGroup.id == fk_operation_group, cascade='none')
 
-    metric_operation_group_id = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
-    metric_operation_group = relationship(OperationGroup, foreign_keys=metric_operation_group_id,
-                                          primaryjoin=OperationGroup.id == metric_operation_group_id, cascade='none')
+    fk_metric_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
+    metric_operation_group = relationship(OperationGroup, foreign_keys=fk_metric_operation_group,
+                                          primaryjoin=OperationGroup.id == fk_metric_operation_group, cascade='none')
 
     def __init__(self, project_id, status="running", name=None):
         super().__init__()
-        self.project_id = project_id
+        self.fk_project = project_id
         self.name = name
         self.status = status
         self.dynamic_ids = '[]'
 
     def clone(self):
-        new_burst = BurstConfiguration(self.project_id)
+        new_burst = BurstConfiguration(self.fk_project)
         new_burst.name = self.name
         new_burst.range1 = self.range1
         new_burst.range2 = self.range2

@@ -148,7 +148,7 @@ class ICAAdapter(ABCAsynchronous):
         """
         # --------- Prepare a IndependentComponents object for result ----------##
         ica_index = IndependentComponentsIndex()
-        ica_index.source_gid = view_model.time_series.hex
+        ica_index.fk_source_gid = view_model.time_series.hex
 
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 

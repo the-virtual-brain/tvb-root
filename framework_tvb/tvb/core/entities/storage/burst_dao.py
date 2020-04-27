@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from operator import not_
+
 from sqlalchemy import desc, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -45,7 +45,7 @@ class BurstDAO(RootDAO):
         """Get latest 50 BurstConfiguration entities for the current project"""
         try:
             bursts = self.session.query(BurstConfiguration
-                                        ).filter_by(project_id=project_id
+                                        ).filter_by(fk_project=project_id
                                                     ).order_by(desc(BurstConfiguration.start_time))
             if count:
                 return bursts.count()
@@ -79,9 +79,10 @@ class BurstDAO(RootDAO):
         count = 0
         try:
             count = self.session.query(BurstConfiguration
-                                       ).filter_by(project_id=project_id
-                                       ).filter(BurstConfiguration.name.notlike(burst_name + '%')
-                                                ).count()
+                                    ).filter_by(fk_project=project_id
+                                    ).filter(BurstConfiguration.name.like(burst_name + '%')
+                                    ).filter(BurstConfiguration.name.notlike(burst_name + '/_%/_%', escape='/')
+                ).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return count

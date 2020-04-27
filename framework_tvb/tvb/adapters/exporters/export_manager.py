@@ -317,7 +317,7 @@ class ExportManager:
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        op_folder = FilesHelper().get_project_folder(burst.project, str(burst.fk_simulation_id))
+        op_folder = FilesHelper().get_project_folder(burst.project, str(burst.fk_simulation))
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")

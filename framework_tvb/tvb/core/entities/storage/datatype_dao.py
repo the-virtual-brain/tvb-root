@@ -120,7 +120,7 @@ class DatatypeDAO(RootDAO):
 
     def get_number_of_bursts(self, project_id):
         try:
-            bursts = self.session.query(BurstConfiguration).filter_by(project_id=project_id)
+            bursts = self.session.query(BurstConfiguration).filter_by(fk_project=project_id)
             return bursts.count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)

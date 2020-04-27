@@ -117,7 +117,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
             fourier_spectrum.segment_length = input_h5.segment_length.load()
             fourier_spectrum.windowing_function = input_h5.windowing_function.load()
 
-        ts_index = self.load_entity_by_gid(fs_input_index.source_gid)
+        ts_index = self.load_entity_by_gid(fs_input_index.fk_source_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         if len(state_list) == 0:
             state_list = list(range(shape[1]))

@@ -84,7 +84,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
+        assert region_stimulus_index.fk_connectivity_gid == self.connectivity.gid
 
     def test_create_stimulus_region_with_operation(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
@@ -103,7 +103,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
-        assert region_stimulus_index.connectivity_gid == self.connectivity.gid
+        assert region_stimulus_index.fk_connectivity_gid == self.connectivity.gid
 
     def test_create_stimulus_surface(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
@@ -123,7 +123,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
         assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
-        assert surface_stimulus_index.surface_gid == self.surface.gid
+        assert surface_stimulus_index.fk_surface_gid == self.surface.gid
 
     def test_create_stimulus_surface_with_operation(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
@@ -145,4 +145,4 @@ class TestStimulusCreator(TransactionalTestCase):
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'
         assert surface_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
-        assert surface_stimulus_index.surface_gid == self.surface.gid
+        assert surface_stimulus_index.fk_surface_gid == self.surface.gid

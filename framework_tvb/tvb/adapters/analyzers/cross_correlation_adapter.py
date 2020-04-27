@@ -191,7 +191,7 @@ class CrossCorrelateAdapter(ABCAsynchronous):
         cross_corr_h5.source.store(uuid.UUID(self.input_time_series_index.gid))
         cross_corr_h5.gid.store(uuid.UUID(cross_corr_index.gid))
 
-        cross_corr_index.source_gid = self.input_time_series_index.gid
+        cross_corr_index.fk_source_gid = self.input_time_series_index.gid
         cross_corr_index.labels_ordering = cross_corr_h5.labels_ordering.load()
         cross_corr_index.type = type(cross_corr_index).__name__
         cross_corr_index.array_data_min = ts_array_metadata.min
@@ -398,7 +398,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
             ts_array_metadata = corr_coef_h5.array_data.get_cached_metadata()
             corr_coef_index.ndim = len(corr_coef_h5.array_data.shape)
 
-        corr_coef_index.source_gid = self.input_time_series_index.gid
+        corr_coef_index.fk_source_gid = self.input_time_series_index.gid
         corr_coef_index.subtype = type(corr_coef_index).__name__
         corr_coef_index.labels_ordering = json.dumps(labels_ordering)
         corr_coef_index.array_data_min = ts_array_metadata.min

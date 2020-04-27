@@ -44,10 +44,10 @@ class StimuliRegionIndex(DataType):
     temporal_equation = Column(String, nullable=False)
     temporal_parameters = Column(String)
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
-                              nullable=not StimuliRegion.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid)
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
+                                 nullable=not StimuliRegion.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid)
 
     def fill_from_has_traits(self, datatype):
         # type: (StimuliRegion)  -> None
@@ -56,7 +56,7 @@ class StimuliRegionIndex(DataType):
         self.spatial_parameters = json.dumps(datatype.spatial.parameters)
         self.temporal_equation = datatype.temporal.__class__.__name__
         self.temporal_parameters = json.dumps(datatype.temporal.parameters)
-        self.connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex
 
 
 class StimuliSurfaceIndex(DataType):
@@ -67,8 +67,8 @@ class StimuliSurfaceIndex(DataType):
     temporal_equation = Column(String, nullable=False)
     temporal_parameters = Column(String)
 
-    surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not StimuliSurface.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_gid, primaryjoin=SurfaceIndex.gid == surface_gid)
+    fk_surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not StimuliSurface.surface.required)
+    surface = relationship(SurfaceIndex, foreign_keys=fk_surface_gid, primaryjoin=SurfaceIndex.gid == fk_surface_gid)
 
     def fill_from_has_traits(self, datatype):
         # type: (StimuliSurface)  -> None
@@ -77,4 +77,4 @@ class StimuliSurfaceIndex(DataType):
         self.spatial_parameters = json.dumps(datatype.spatial.parameters)
         self.temporal_equation = datatype.temporal.__class__.__name__
         self.temporal_parameters = json.dumps(datatype.temporal.parameters)
-        self.surface_gid = datatype.surface.gid.hex
+        self.fk_surface_gid = datatype.surface.gid.hex

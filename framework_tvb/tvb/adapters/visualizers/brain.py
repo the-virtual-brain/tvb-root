@@ -179,26 +179,26 @@ class BrainViewer(ABCSurfaceDisplayer):
 
         if self.one_to_one_map:
             self.PAGE_SIZE /= 10
-            surface_gid = time_series_index.surface_gid
+            surface_gid = time_series_index.fk_surface_gid
             surface_index = dao.get_datatype_by_gid(surface_gid)
-            region_map_indexes = dao.get_generic_entity(RegionMappingIndex, surface_gid, 'surface_gid')
+            region_map_indexes = dao.get_generic_entity(RegionMappingIndex, surface_gid, 'fk_surface_gid')
             if len(region_map_indexes) < 1:
                 region_map_index = None
                 connectivity_index = None
             else:
                 region_map_index = region_map_indexes[0]
-                connectivity_index = dao.get_datatype_by_gid(region_map_index.connectivity_gid)
+                connectivity_index = dao.get_datatype_by_gid(region_map_index.fk_connectivity_gid)
         else:
-            connectivity_index = dao.get_datatype_by_gid(time_series_index.connectivity_gid)
+            connectivity_index = dao.get_datatype_by_gid(time_series_index.fk_connectivity_gid)
 
-            if time_series_index.region_mapping_gid:
-                region_map_index = dao.get_datatype_by_gid(time_series_index.region_mapping_gid)
+            if time_series_index.fk_region_mapping_gid:
+                region_map_index = dao.get_datatype_by_gid(time_series_index.fk_region_mapping_gid)
             else:
                 region_map_indexes = dao.get_generic_entity(RegionMappingIndex, connectivity_index.gid,
-                                                            'connectivity_gid')
+                                                            'fk_connectivity_gid')
                 region_map_index = region_map_indexes[0]
 
-            surface_index = dao.get_datatype_by_gid(region_map_index.surface_gid)
+            surface_index = dao.get_datatype_by_gid(region_map_index.fk_surface_gid)
 
         self.connectivity_index = connectivity_index
         self.region_map_gid = None if region_map_index is None else region_map_index.gid
@@ -446,7 +446,7 @@ class DualBrainViewer(BrainViewer):
         if isinstance(time_series, TimeSeriesRegionIndex):
             return BrainViewer.retrieve_measure_points_params(self, time_series)
 
-        sensors_index = dao.get_datatype_by_gid(time_series.sensors_gid)
+        sensors_index = dao.get_datatype_by_gid(time_series.fk_sensors_gid)
         self.measure_points_no = sensors_index.number_of_sensors
 
         if isinstance(time_series, TimeSeriesEEGIndex):
