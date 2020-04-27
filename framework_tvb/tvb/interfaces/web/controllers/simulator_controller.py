@@ -897,11 +897,14 @@ class SimulatorController(BurstBaseController):
         all_range_parameters = self.range_parameters.get_all_range_parameters()
         range_param1, range_param2 = SimulatorPSERangeFragment.fill_from_post(all_range_parameters, **data)
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
 
         project = common.get_current_project()
         user = common.get_logged_user()
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        if is_simulator_copy:
+            burst_config = burst_config.clone()
         burst_config.start_time = datetime.now()
 
         burst_config.range1 = range_param1.to_json()
@@ -933,15 +936,13 @@ class SimulatorController(BurstBaseController):
         session_burst_config.range1 = None
         session_burst_config.range2 = None
 
-        if session_burst_config.name is None:
-            try:
-                current_form.fill_from_post(data)
-            except Exception as exc:
-                self.logger.exception(exc)
-                return {'error': str(exc)}
-            burst_name = current_form.simulation_name.value
-        else:
-            burst_name = session_burst_config.name
+        try:
+            current_form.fill_from_post(data)
+        except Exception as exc:
+            self.logger.exception(exc)
+            return {'error': str(exc)}
+
+        burst_name = current_form.simulation_name.value
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         session_stored_simulator.simulation_length = current_form.simulation_length.value
@@ -1051,8 +1052,6 @@ class SimulatorController(BurstBaseController):
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
         simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
-        simulator.gid = uuid.uuid4()
-        # Generate a new GUID, as it needs to be unique
 
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
