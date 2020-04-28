@@ -176,13 +176,12 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
 
     def configure(self):
         super(TimeSeries, self).configure()
-        if self.time is None:
+        if self.time is None or len(self.time) == 0:
             self.time = numpy.arange(self.start_time, self.end_time + self.sample_period, self.sample_period)
         else:
             self.start_time = 0.0
             self.sample_period = 0.0
-            if len(self.time) > 0:
-                self.start_time = self.time[0]
+            self.start_time = self.time[0]
             if len(self.time) > 1:
                 self.sample_period = numpy.mean(numpy.diff(self.time))
         for key, value in self.labels_dimensions.items():
@@ -370,17 +369,20 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
 
     def _slice_time_index(self, time_inds, **kwargs):
         time = kwargs.pop("time", None)
-        if time is None:
+        if time is None or len(time) == 0:
             try:
                 time = self.time[time_inds]
             except:
                 time = self.time
-        if time is None:
+        if time is None or len(time) == 0:
             start_time = kwargs.pop("start_time", self.start_time)
             sample_period = kwargs.pop("sample_period", self.sample_period)
         else:
             start_time = kwargs.pop("start_time", time[0])
-            sample_period = kwargs.pop("sample_period", numpy.diff(time).mean())
+            if len(time) > 1:
+                sample_period = kwargs.pop("sample_period", numpy.diff(time).mean())
+            else:
+                sample_period = kwargs.pop("sample_period", self.sample_period)
         return start_time, sample_period
 
     def _slice_dimensions_labels(self, indices, **kwargs):

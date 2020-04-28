@@ -179,9 +179,10 @@ class TimeSeries(HasTraits):
         coords = kwargs.pop("coords", kwargs.pop("labels_dimensions", coords_to_dict(xarr.coords)))
         attrs = kwargs.pop("attrs", None)
         time = kwargs.pop("time", coords.pop(dims[0], None))
-        if time is not None:
+        if time is not None and len(time) > 0:
             kwargs['start_time'] = kwargs.pop('start_time', float(time[0]))
-            kwargs['sample_period'] = kwargs.pop('sample_period', float(np.diff(time).mean()))
+            if len(time) > 1:
+                kwargs['sample_period'] = kwargs.pop('sample_period', float(np.diff(time).mean()))
             coords[dims[0]] = time
         else:
             kwargs['start_time'] = kwargs.pop('start_time', 0.0)
@@ -225,7 +226,7 @@ class TimeSeries(HasTraits):
         time = kwargs.pop("time", None)
         time_length = data.shape[0]
         if time_length > 0:
-            if time is None:
+            if time is None or len(time) == 0:
                 if start_time is None:
                     start_time = 0.0
                 if sample_period is None:
@@ -257,7 +258,7 @@ class TimeSeries(HasTraits):
         # i.e., labels_dimensions dict cannot ovewrite it
         # and should agree with it
         labels_ordering = list(kwargs.pop("dims", kwargs.pop("labels_ordering",
-                                          getattr(self, "labels_ordering", self._default_labels_ordering))))
+                                                             self._default_labels_ordering)))
         labels_dimensions = kwargs.pop("coords", kwargs.pop("labels_dimensions",
                                                             getattr(self, "labels_dimensions", None)))
         if labels_dimensions is not None:
@@ -271,7 +272,7 @@ class TimeSeries(HasTraits):
         data = prepare_4d(data, logger)
         time, self.start_time, end_time, self.sample_period, kwargs = self._configure_input_time(data, **kwargs)
         labels_ordering, labels_dimensions, kwargs = self._configure_input_labels(**kwargs)
-        if time is not None:
+        if time is not None and len(time) > 0:
             if labels_dimensions is None:
                 labels_dimensions = {}
             labels_dimensions[labels_ordering[0]] = time
@@ -392,9 +393,12 @@ class TimeSeries(HasTraits):
         # ...with special care for time related ones:
         time = kwargs["labels_dimensions"].get(kwargs["dims"][0], None)
         time = kwargs.pop("time", time)
-        if time is not None:
+        if time is not None and len(time) > 0:
             kwargs['start_time'] = kwargs.pop('start_time', float(time[0]))
-            kwargs['sample_period'] = kwargs.pop('sample_period', np.diff(time).mean())
+            if len(time) > 1:
+                kwargs['sample_period'] = kwargs.pop('sample_period', np.diff(time).mean())
+            else:
+                kwargs['sample_period'] = kwargs.pop('sample_period', self.sample_period)
         else:
             kwargs['start_time'] = kwargs.pop('start_time', self.start_time)
             kwargs['sample_period'] = kwargs.pop('sample_period', self.sample_period)
@@ -769,7 +773,7 @@ class TimeSeries(HasTraits):
     def plot(self, time=None, data=None, y=None, hue=None, col=None, row=None, figname=None, plotter=None, **kwargs):
         if data is None:
             data = self._data
-        if time is None:
+        if time is None or len(time) == 0:
             time = data.dims[0]
         if figname is None:
             figname = kwargs.pop("figname", "%s" % data.name)
