@@ -72,13 +72,13 @@ class BurstDAO(RootDAO):
             self.logger.exception(excep)
         return 0
 
-    def count_bursts_with_name(self, burst_name, project_id):
+    def count_bursts_with_name(self, burst_name, project_id, prefix=None):
         """
         Return the number of burst already named 'custom_b%' and NOT 'custom_b%_%' in current project.
         """
         count = 0
-        if 'copy_of_' in burst_name:
-            name = burst_name.replace('copy_of_', '')
+        if prefix in burst_name:
+            name = burst_name.replace(prefix, '')
         else:
             name = burst_name
         try:
