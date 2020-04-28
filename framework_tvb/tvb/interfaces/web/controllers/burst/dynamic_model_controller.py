@@ -44,6 +44,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model.model_burst as model_burst
 from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template
@@ -216,7 +217,7 @@ class DynamicModelController(BurstBaseController):
             model = dynamic.model
             for name, value in params.items():
                 param_type = float
-                if getattr(model, name).dtype == 'int':
+                if numpy.issubdtype(getattr(model, name).dtype, numpy.integer):
                     param_type = int
                 setattr(model, name, numpy.array([param_type(value)]))
             model.configure()
@@ -348,7 +349,7 @@ class DynamicModelController(BurstBaseController):
             dynamic_name,
             common.get_logged_user().id,
             model.__class__.__name__,
-            json.dumps(model_parameters),
+            json.dumps(model_parameters, cls=TVBJSONEncoder),
             integrator.__class__.__name__,
             None
             # todo: serialize integrator parameters
