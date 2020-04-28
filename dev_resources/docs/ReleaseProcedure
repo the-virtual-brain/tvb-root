@@ -68,7 +68,7 @@ When creating a new TVB set of release packages you should:
             - upload it on Pypi
 
         2. Update the REST server docker image:
-            - thevirtualbrain/tvb-run:keycloak - it is built and uploaded by Jenkins. We have to mount the proper
+            - thevirtualbrain/tvb-run:latest - it is built and uploaded by Jenkins. We have to mount the proper
                                                  Keycloak configuration files inside the container.
 
     If there are changes in tvb-library that affect the tvb-rest-client, we need to release that, too.
