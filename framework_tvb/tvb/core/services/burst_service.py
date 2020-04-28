@@ -217,3 +217,15 @@ class BurstService(object):
         with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
             bc_h5.load_into(burst_config)
         return burst_config
+
+    @staticmethod
+    def prepare_name(burst, project_id):
+        simulation_number = dao.get_number_of_bursts(project_id) + 1
+
+        if burst.name is None:
+            default_simulation_name = 'simulation_' + str(simulation_number)
+        else:
+            default_simulation_name = burst.name
+
+        return default_simulation_name, simulation_number
+
