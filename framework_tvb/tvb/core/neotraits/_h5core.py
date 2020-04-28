@@ -78,6 +78,7 @@ class H5File(object):
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
         self.visible = Scalar(Attr(bool), self, name='visible')
+        self.metadata_cache = None
 
         if not self.storage_manager.is_valid_hdf5_file():
             self.written_by.store(self.__class__.__module__ + '.' + self.__class__.__name__)
