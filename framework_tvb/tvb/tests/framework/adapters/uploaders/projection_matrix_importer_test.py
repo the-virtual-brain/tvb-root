@@ -34,23 +34,16 @@
 """
 
 import os
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterForm
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 import tvb_data.sensors
 import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestProjectionMatrix(TransactionalTestCase):
@@ -66,17 +59,11 @@ class TestProjectionMatrix(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
-        TestFactory.import_sensors(self.test_user, self.test_project, zip_path, SensorsImporterModel.OPTIONS['EEG Sensors'])
+        self.sensors = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
+                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
 
         zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
-
-        field = FilterChain.datatype + '.surface_type'
-        filters = FilterChain('', [field], [CORTICAL], ['=='])
-        self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
-        assert self.surface is not None
-        self.sensors = TestFactory.get_entity(self.test_project, SensorsIndex)
-        assert self.sensors is not None
+        self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
     def transactional_teardown_method(self):
         """
@@ -102,14 +89,12 @@ class TestProjectionMatrix(TransactionalTestCase):
         """
         Verifies the happy flow for importing a surface.
         """
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
-
+        dt_count_before = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex)
         file_path = os.path.join(os.path.abspath(os.path.dirname(dataset.__file__)),
                                  'projection_eeg_65_surface_16k.npy')
 
-        TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid, self.surface.gid)
+        TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
+                                             self.surface.gid)
 
-        dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex())
-
+        dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex)
         assert dt_count_before + 1 == dt_count_after
-

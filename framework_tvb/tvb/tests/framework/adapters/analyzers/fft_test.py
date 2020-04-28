@@ -77,6 +77,6 @@ class TestFFT(TransactionalTestCase):
         memq = adapter.get_required_memory_size(view_model)
         spectra_idx = adapter.launch(view_model)
 
-        assert spectra_idx.source_gid == ts_db.gid
+        assert spectra_idx.fk_source_gid == ts_db.gid
         assert spectra_idx.gid is not None
         assert spectra_idx.segment_length == 1.0  # only 1 sec of signal

@@ -290,11 +290,12 @@ class CaseDAO(RootDAO):
         Return all projects a given user can link some data given by a data_id to.
         """
         try:
-            # First load projects that current user is administrator for.
+            # Load projects where the current user is Admin or Member
             result = self.session.query(Project).join(User
-                                                      ).filter(User.id == user_id).order_by(Project.id).all()
-            result.extend(self.session.query(Project).join(User_to_Project
-                                                           ).filter(User_to_Project.fk_user == user_id).all())
+                                                      ).join(User_to_Project
+                                                             ).filter(or_(User.id == user_id,
+                                                                          User_to_Project.fk_user == user_id)
+                                                                      ).all()
             linked_project_ids = self.session.query(Links.fk_to_project
                                                     ).filter(Links.fk_from_datatype == data_id).all()
             linked_project_ids = [i[0] for i in linked_project_ids]
@@ -305,6 +306,7 @@ class CaseDAO(RootDAO):
                 linked_project_ids.append(current_prj[0])
             else:
                 linked_project_ids = [current_prj[0]]
+
             filtered_result = [entry for entry in result if entry.id not in linked_project_ids]
             [project.administrator.username for project in filtered_result]
             linked_project_ids.remove(current_prj[0])

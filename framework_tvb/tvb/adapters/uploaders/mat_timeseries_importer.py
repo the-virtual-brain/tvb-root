@@ -150,7 +150,7 @@ class RegionTimeSeriesImporter(ABCUploader):
             raise LaunchException("Data has %d channels but the connectivity has %d nodes"
                                   % (data_shape[1], connectivity.number_of_regions))
         ts_idx = TimeSeriesRegionIndex()
-        ts_idx.connectivity_gid = connectivity.gid
+        ts_idx.fk_connectivity_gid = connectivity.gid
         ts_idx.has_surface_mapping = True
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
@@ -165,7 +165,7 @@ class RegionTimeSeriesImporter(ABCUploader):
                                   % (data_shape[1], sensors.number_of_sensors))
 
         ts_idx = TimeSeriesEEGIndex()
-        ts_idx.sensors_gid = sensors.gid
+        ts_idx.fk_sensors_gid = sensors.gid
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesEEGH5, ts_idx.gid)
         ts_h5 = TimeSeriesEEGH5(ts_h5_path)

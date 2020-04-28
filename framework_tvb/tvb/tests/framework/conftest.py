@@ -35,13 +35,12 @@ import os
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
@@ -198,27 +197,18 @@ def connectivity_factory():
 
 @pytest.fixture()
 def connectivity_index_factory(connectivity_factory, operation_factory):
-    def build(data=None, op=None):
+    def build(data=4, op=None):
         conn = connectivity_factory(data)
-
         if op is None:
             op = operation_factory()
 
-        conn_db = ConnectivityIndex()
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        conn_db = h5.store_complete(conn, storage_path)
         conn_db.fk_from_operation = op.id
-        conn_db.fill_from_has_traits(conn)
-
-        conn_h5_path = h5.path_for_stored_index(conn_db)
-        with ConnectivityH5(conn_h5_path) as f:
-            f.store(conn)
-            f.number_of_regions.store(conn.number_of_regions)
-            f.number_of_connections.store(conn.number_of_connections)
-            f.gid.store(conn.gid)
-
-        conn_db = dao.store_entity(conn_db)
-        return conn_db
+        return dao.store_entity(conn_db)
 
     return build
+
 
 @pytest.fixture()
 def surface_factory():

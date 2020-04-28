@@ -30,7 +30,7 @@
 
 import flask
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
-from tvb.interfaces.rest.commons.strings import Strings, FormKeyInput
+from tvb.interfaces.rest.commons.strings import FormKeyInput
 from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.facades.project_facade import ProjectFacade
@@ -65,13 +65,7 @@ class GetOperationsInProjectResource(RestResource):
         """
         :return a list of project's Operation entities
         """
-        page_number = flask.request.args.get(Strings.PAGE_NUMBER.value)
-        if page_number is None:
-            page_number = 1
-        try:
-            page_number = int(page_number)
-        except ValueError:
-            raise InvalidInputException(message="Invalid page number")
+        page_number = self.extract_page_number()
         operation_dto_list, pages = self.project_facade.get_project_operations(project_gid, page_number)
         return {"operations": operation_dto_list, "pages": pages}
 

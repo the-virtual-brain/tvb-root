@@ -68,8 +68,8 @@ class TestBCT(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, "BCT-Project")
         # Make sure Connectivity is in DB
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = dao.get_generic_entity(Connectivity, 'John Doe', 'subject')[0]
+        conn_index = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        self.connectivity = ABCAdapter.load_traited_by_gid(conn_index.gid)
 
         # make weights matrix symmetric, or else some BCT algorithms will run infinitely:
         w = self.connectivity.weights

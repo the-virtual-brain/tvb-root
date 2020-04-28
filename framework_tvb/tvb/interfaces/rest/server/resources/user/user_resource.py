@@ -39,7 +39,7 @@ from tvb.interfaces.rest.server.facades.user_facade import UserFacade
 from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
 
-USERS_PAGE_SIZE = 1000
+USERS_PAGE_SIZE = 30
 
 
 class LoginUserResource(Resource):
@@ -91,7 +91,9 @@ class GetUsersResource(RestResource):
         """
         :return: a list of TVB users
         """
-        user_dto_list, pages_no = UserFacade.get_users(get_current_user().username)
+        page_number = self.extract_page_number()
+
+        user_dto_list, pages_no = UserFacade.get_users(get_current_user().username, page_number, USERS_PAGE_SIZE)
         return {"users": user_dto_list, "pages_no": pages_no}
 
 

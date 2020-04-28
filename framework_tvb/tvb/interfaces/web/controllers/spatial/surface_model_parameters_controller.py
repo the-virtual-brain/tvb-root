@@ -184,7 +184,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         Main method, to initialize Model-Parameter visual-set.
         """
         model, cortex = self.get_data_from_burst_configuration()
-        surface_gid = cortex.surface_gid
+        surface_gid = cortex.fk_surface_gid
         surface_index = dao.get_datatype_by_gid(surface_gid.hex)
 
         self.model_params_dict = self._prepare_model_params_dict(model)

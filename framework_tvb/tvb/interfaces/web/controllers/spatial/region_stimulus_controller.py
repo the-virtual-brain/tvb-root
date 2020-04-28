@@ -34,20 +34,20 @@
 """
 
 import json
-import uuid
 import cherrypy
 import numpy
-from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorForm, RegionStimulusCreator, \
-    StimulusRegionSelectorForm, RegionStimulusCreatorModel
+from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_equation_dict, get_form_for_equation
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
     check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
@@ -85,6 +85,8 @@ class RegionStimulusController(SpatioTemporalController):
     TEMPORAL_FIELD = 'set_temporal'
     DISPLAY_NAME_FIELD = 'set_display_name'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
+    MSG_MISSING_CONNECTIVITY = "There is no structural Connectivity in the current project. " \
+                               "Please upload one to continue!"
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -93,7 +95,8 @@ class RegionStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_connectivity(self, **param):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id).connectivity
+        connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices,
+                                                            common.get_current_project().id).connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
         conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value.hex)
@@ -116,7 +119,7 @@ class RegionStimulusController(SpatioTemporalController):
         current_region_stim.temporal = eq_class()
 
         eq_params_form = get_form_for_equation(eq_class)(prefix=RegionStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
-        #TODO: check eqPrefixes
+        # TODO: check eqPrefixes
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -133,16 +136,19 @@ class RegionStimulusController(SpatioTemporalController):
         """
         current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
         selected_stimulus_gid = current_stimuli_region.gid.hex
-        region_stim_selector_form = StimulusRegionSelectorForm(common.get_current_project().id)
+        project_id = common.get_current_project().id
+        region_stim_selector_form = StimulusRegionSelectorForm(project_id)
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = common.get_from_session(KEY_REGION_STIMULUS_NAME)
 
-        region_stim_creator_form = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id)
+        region_stim_creator_form = RegionStimulusCreatorForm(self.equation_choices, project_id)
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
-            current_connectivity_in_form = region_stim_creator_form.connectivity._get_values_from_db()[0]
-            region_stim_creator_form.connectivity.data = current_connectivity_in_form[2]
-            current_stimuli_region.connectivity = uuid.UUID(region_stim_creator_form.connectivity.value)
-
+            conn = try_get_last_datatype(project_id, ConnectivityIndex)
+            if conn is None:
+                current_stimuli_region.connectivity = uuid.uuid4()
+                common.set_error_message(self.MSG_MISSING_CONNECTIVITY)
+            else:
+                current_stimuli_region.connectivity = uuid.UUID(conn.gid)
         region_stim_creator_form.fill_from_trait(current_stimuli_region)
 
         template_specification = dict(title="Spatio temporal - Region stimulus")
@@ -180,7 +186,11 @@ class RegionStimulusController(SpatioTemporalController):
         default_weights = current_region_stimulus.weight
         if len(default_weights) == 0:
             selected_connectivity = ABCAdapter.load_entity_by_gid(current_region_stimulus.connectivity.hex)
-            default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
+            if selected_connectivity is None:
+                common.set_error_message(self.MSG_MISSING_CONNECTIVITY)
+                default_weights = numpy.array([])
+            else:
+                default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
 
         template_specification['node_weights'] = json.dumps(default_weights.tolist())
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
@@ -235,11 +245,10 @@ class RegionStimulusController(SpatioTemporalController):
         Generates the html for displaying the connectivity matrix.
         """
         connectivity = ABCAdapter.load_entity_by_gid(connectivity_gid)
-
+        if connectivity is None:
+            raise MissingDataException(RegionStimulusController.MSG_MISSING_SURFACE + "!!")
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project, str(connectivity.fk_from_operation))
-
+        conn_path = FilesHelper().get_project_folder(current_project, str(connectivity.fk_from_operation))
         connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
 
         template_specification = dict()
@@ -285,7 +294,7 @@ class RegionStimulusController(SpatioTemporalController):
             min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
             current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
             series_data, display_ui_message = current_stimuli_region.temporal.get_series_data(min_range=min_x,
-                                                                                             max_range=max_x)
+                                                                                              max_range=max_x)
             all_series = self.get_series_json(series_data, 'Temporal')
 
             if display_ui_message:
@@ -310,7 +319,7 @@ class RegionStimulusController(SpatioTemporalController):
         with StimuliRegionH5(stimuli_region_path) as stimuli_region_h5:
             stimuli_region_h5.load_into(stimuli_region)
 
-        dummy_gid = uuid.UUID(existent_region_stimulus_index.connectivity_gid)
+        dummy_gid = uuid.UUID(existent_region_stimulus_index.fk_connectivity_gid)
         stimuli_region.connectivity = dummy_gid
 
         common.add2session(KEY_REGION_STIMULUS, stimuli_region)

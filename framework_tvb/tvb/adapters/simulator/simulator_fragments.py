@@ -61,8 +61,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if trait.surface:
-            if hasattr(trait.surface, 'surface_gid'):
-                self.surface.data = trait.surface.surface_gid.hex
+            if hasattr(trait.surface, 'fk_surface_gid'):
+                self.surface.data = trait.surface.fk_surface_gid.hex
         else:
             self.surface.data = None
 
@@ -72,7 +72,7 @@ class SimulatorRMFragment(ABCAdapterForm):
         super(SimulatorRMFragment, self).__init__(prefix, project_id)
         conditions = None
         if surface_index:
-            conditions = FilterChain(fields=[FilterChain.datatype + '.surface_gid'], operations=["=="],
+            conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid'], operations=["=="],
                                      values=[str(surface_index.gid)])
         self.rm = DataTypeSelectField(RegionMappingIndex, self, name='region_mapping', required=True,
                                       label=Cortex.region_mapping_data.label,
@@ -163,11 +163,11 @@ class SimulatorMonitorFragment(ABCAdapterForm):
 
 class SimulatorFinalFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, simulation_number=1):
+    def __init__(self, prefix='', project_id=None, default_simulation_name="simulation_1"):
         super(SimulatorFinalFragment, self).__init__(prefix, project_id)
-        default_simulation_name = "simulation_" + str(simulation_number)
         self.simulation_length = ScalarField(Simulator.simulation_length, self)
-        self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration', default=default_simulation_name,
+        self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration',
+                                                default=default_simulation_name,
                                                 label='Simulation name'), self, name='input_simulation_name_id')
 
     def fill_from_post(self, form_data):

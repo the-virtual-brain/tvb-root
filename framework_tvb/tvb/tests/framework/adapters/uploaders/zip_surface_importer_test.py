@@ -58,6 +58,5 @@ class TestZIPSurfaceImporter(TransactionalTestCase):
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL)
         assert 4096 == surface.number_of_vertices
         assert 8188 == surface.number_of_triangles
-        assert '' == surface.user_tag_3
         assert surface.valid_for_simulations
 

@@ -189,7 +189,7 @@ class OperationService:
         meta_str = json.dumps(metadata)
 
         parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'id')[0]
-        metric_operation_group_id = parent_burst.metric_operation_group_id
+        metric_operation_group_id = parent_burst.fk_metric_operation_group
         metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
                                      json.dumps({'gid': view_model.gid.hex}),
                                      meta_str, op_group_id=metric_operation_group_id, range_values=range_values)

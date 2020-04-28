@@ -134,10 +134,10 @@ class ConnectivityCreator(ABCAsynchronous):
     def _store_related_region_mappings(self, original_conn_gid, new_connectivity_ht):
         result = []
 
-        linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'connectivity_gid')
+        linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'fk_connectivity_gid')
         for mapping in linked_region_mappings:
             original_rm = h5.load_from_index(mapping)
-            surface_idx = dao.get_generic_entity(SurfaceIndex, mapping.surface_gid, 'gid')[0]
+            surface_idx = dao.get_generic_entity(SurfaceIndex, mapping.fk_surface_gid, 'gid')[0]
             surface = h5.load_from_index(surface_idx)
 
             new_rm = RegionMapping()

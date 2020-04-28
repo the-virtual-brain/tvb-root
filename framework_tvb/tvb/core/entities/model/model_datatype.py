@@ -201,6 +201,8 @@ class DataType(HasTraitsIndex):
 
 
 class DataTypeMatrix(DataType):
+    # These columns will need to be populates in fill_from_has_traits for each subclass
+    # because we do not have a HasTraits inherited class equivalent at this level
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
     ndim = Column(Integer, default=0)
 

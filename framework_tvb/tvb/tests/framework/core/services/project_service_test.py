@@ -33,7 +33,6 @@
 """
 import os
 import shutil
-
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
@@ -53,7 +52,6 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 
-# from tvb.datatypes.mapped_values import ValueWrapper
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
@@ -82,22 +80,23 @@ class TestProjectService(TransactionalTestCase):
         self.delete_project_folders()
 
     def test_create_project_happy_flow(self):
-        """
-        Standard flow for creating a new project.
-        """
+
         user1 = TestFactory.create_user('test_user1')
         user2 = TestFactory.create_user('test_user2')
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 0, "Database reset probably failed!"
-        TestFactory.create_project(self.test_user, 'test_project', users=[user1.id, user2.id])
+
+        TestFactory.create_project(self.test_user, 'test_project', "description", users=[user1.id, user2.id])
+
         resulting_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(resulting_projects) == 1, "Project with valid data not inserted!"
         project = resulting_projects[0]
-        if project.name == "test_project":
-            assert project.description == "description", "Description do no match"
-            users_for_project = dao.get_members_of_project(project.id)
-            for user in users_for_project:
-                assert user.id in [user1.id, user2.id], "Users not stored properly."
+        assert project.name == "test_project", "Invalid retrieved project name"
+        assert project.description == "description", "Description do no match"
+
+        users_for_project = dao.get_members_of_project(project.id)
+        for user in users_for_project:
+            assert user.id in [user1.id, user2.id, self.test_user.id], "Users not stored properly."
         assert os.path.exists(os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
                                            "test_project")), "Folder for project was not created"
 
@@ -503,7 +502,6 @@ class TestProjectService(TransactionalTestCase):
 
         user = user_factory()
         project = project_factory(user)
-
         dt_group = datatype_group_factory(project=project)
 
         link_ids, expected_links = [], []

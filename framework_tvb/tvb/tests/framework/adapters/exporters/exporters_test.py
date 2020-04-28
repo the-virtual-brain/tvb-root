@@ -184,7 +184,7 @@ class TestExporters(TransactionalTestCase):
         simulator.connectivity = connectivity_factory(4).gid
 
         burst_configuration = BurstConfiguration(self.test_project.id)
-        burst_configuration.fk_simulation_id = operation.id
+        burst_configuration.fk_simulation = operation.id
         burst_configuration.simulator_gid = simulator.gid.hex
         burst_configuration = dao.store_entity(burst_configuration)
 

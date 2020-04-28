@@ -44,21 +44,21 @@ class RegionMappingIndex(DataType):
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
 
-    surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not RegionMapping.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_gid, primaryjoin=SurfaceIndex.gid == surface_gid,
+    fk_surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not RegionMapping.surface.required)
+    surface = relationship(SurfaceIndex, foreign_keys=fk_surface_gid, primaryjoin=SurfaceIndex.gid == fk_surface_gid,
                            cascade='none')
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
-                              nullable=not RegionMapping.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid, cascade='none')
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
+                                 nullable=not RegionMapping.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid, cascade='none')
 
     def fill_from_has_traits(self, datatype):
         # type: (RegionMapping)  -> None
         super(RegionMappingIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.surface_gid = datatype.surface.gid.hex
-        self.connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_surface_gid = datatype.surface.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex
 
 
 class RegionVolumeMappingIndex(DataTypeMatrix):
@@ -68,18 +68,18 @@ class RegionVolumeMappingIndex(DataTypeMatrix):
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
-                              nullable=not RegionVolumeMapping.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid, cascade='none')
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
+                                 nullable=not RegionVolumeMapping.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid, cascade='none')
 
-    volume_gid = Column(String(32), ForeignKey(VolumeIndex.gid), nullable=not RegionVolumeMapping.volume.required)
-    volume = relationship(VolumeIndex, foreign_keys=volume_gid, primaryjoin=VolumeIndex.gid == volume_gid,
+    fk_volume_gid = Column(String(32), ForeignKey(VolumeIndex.gid), nullable=not RegionVolumeMapping.volume.required)
+    volume = relationship(VolumeIndex, foreign_keys=fk_volume_gid, primaryjoin=VolumeIndex.gid == fk_volume_gid,
                           cascade='none')
 
     def fill_from_has_traits(self, datatype):
         # type: (RegionVolumeMapping)  -> None
         super(RegionVolumeMappingIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.connectivity_gid = datatype.connectivity.gid.hex
-        self.volume_gid = datatype.volume.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_volume_gid = datatype.volume.gid.hex

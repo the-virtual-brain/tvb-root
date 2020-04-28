@@ -38,15 +38,17 @@ import numpy
 from abc import ABCMeta
 from six import add_metaclass
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
-from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
+from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.adapters.datatypes.h5.surface_h5 import SPLIT_PICK_MAX_TRIANGLE, KEY_VERTICES, KEY_START, SurfaceH5
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -57,8 +59,10 @@ LOG = get_logger(__name__)
 
 
 def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
+    filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                         values=[preferred_type])
     if shell_surface is None:
-        shell_surface = dao.try_load_last_surface_of_type(project_id, preferred_type)
+        shell_surface = try_get_last_datatype(project_id, SurfaceIndex, filter)
 
         if not shell_surface:
             LOG.warning('No object of type %s found in current project.' % preferred_type)
@@ -156,12 +160,12 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
-                                                             name='connectivity_measure')
+                                                             name='connectivity_measure', conditions=self.get_filters())
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
 
 
 class SurfaceViewerModel(BaseSurfaceViewerModel):
@@ -379,6 +383,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
     @staticmethod
     def _compute_measure_param(connectivity_measure, measure_points_no):
+        # type: (ConnectivityMeasureIndex, int) -> dict
         if connectivity_measure is None:
             # If there is no measure to show then we what to show the region mapping
             # The client will generate a range signal for this use case.
@@ -386,17 +391,17 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             max_measure = measure_points_no
             client_measure_url = ''
         else:
-            connectivity_measure_shape = connectivity_measure.array_data.shape
+            connectivity_measure_shape = json.loads(connectivity_measure.shape)
             if len(connectivity_measure_shape) != 1:
                 raise ValueError("connectivity measure must be 1 dimensional")
             if connectivity_measure_shape[0] != measure_points_no:
                 raise ValueError("connectivity measure has %d values but the connectivity has %d "
                                  "regions" % (connectivity_measure_shape[0], measure_points_no))
-            min_measure = numpy.min(connectivity_measure.array_data[:])
-            max_measure = numpy.max(connectivity_measure.array_data[:])
+            min_measure = connectivity_measure.array_data_min
+            max_measure = connectivity_measure.array_data_max
             # We assume here that the index 0 in the measure corresponds to
             # the region 0 of the region map.
-            client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid.load().hex,
+            client_measure_url = SurfaceURLGenerator.build_h5_url(connectivity_measure.gid,
                                                                   "get_array_data")
 
         return dict(minMeasure=min_measure, maxMeasure=max_measure, clientMeasureUrl=client_measure_url)
@@ -413,9 +418,8 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
 
         surface_h5 = h5.h5_file_for_index(surface_index)
-        cm_h5 = h5.h5_file_for_index(connectivity_measure_index) if connectivity_measure_index is not None else None
         region_map_gid = region_map_index.gid if region_map_index is not None else None
-        connectivity_gid = region_map_index.connectivity_gid if region_map_index is not None else None
+        connectivity_gid = region_map_index.fk_connectivity_gid if region_map_index is not None else None
         assert isinstance(surface_h5, SurfaceH5)
 
         params = dict(title=surface_index.display_name, extended_view=False,
@@ -423,11 +427,9 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         params.update(self._compute_surface_params(surface_h5, region_map_gid))
         params.update(self._compute_hemispheric_param(surface_h5))
         params.update(self._compute_measure_points_param(surface_index.gid, region_map_gid, connectivity_gid))
-        params.update(self._compute_measure_param(cm_h5, params['noOfMeasurePoints']))
+        params.update(self._compute_measure_param(connectivity_measure_index, params['noOfMeasurePoints']))
 
         surface_h5.close()
-        if cm_h5:
-            cm_h5.close()
 
         params['shelfObject'] = None
 
@@ -484,7 +486,7 @@ class RegionMappingViewer(SurfaceViewer):
     def launch(self, view_model):
         # type: (BaseSurfaceViewerModel) -> dict
         region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
-        surface_gid = region_map_index.surface_gid
+        surface_gid = region_map_index.fk_surface_gid
 
         surface_viewer_model = SurfaceViewerModel(surface=uuid.UUID(surface_gid),
                                                   region_map=view_model.region_map,
@@ -532,22 +534,22 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
         # type: (BaseSurfaceViewerModel) -> dict
 
         connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
-        cm_connectivity_gid = connectivity_measure_index.connectivity_gid
+        cm_connectivity_gid = connectivity_measure_index.fk_connectivity_gid
         cm_connectivity_index = dao.get_datatype_by_gid(cm_connectivity_gid)
 
         region_map_index = None
         rm_connectivity_index = None
         if view_model.region_map:
             region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
-            rm_connectivity_gid = region_map_index.connectivity_gid
+            rm_connectivity_gid = region_map_index.fk_connectivity_gid
             rm_connectivity_index = dao.get_datatype_by_gid(rm_connectivity_gid)
 
         if not region_map_index or rm_connectivity_index.number_of_regions != cm_connectivity_index.number_of_regions:
-            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'connectivity_gid')
+            region_maps = dao.get_generic_entity(RegionMappingIndex, cm_connectivity_gid, 'fk_connectivity_gid')
             if region_maps:
                 region_map_index = region_maps[0]
 
-        surface_gid = region_map_index.surface_gid
+        surface_gid = region_map_index.fk_surface_gid
         surface_viewer_model = SurfaceViewerModel(surface=surface_gid,
                                                   region_map=region_map_index.gid,
                                                   connectivity_measure=view_model.connectivity_measure,

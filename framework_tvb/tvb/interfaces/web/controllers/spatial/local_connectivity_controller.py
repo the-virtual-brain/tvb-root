@@ -41,10 +41,9 @@ from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import *
-from tvb.core.entities.storage import dao
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
@@ -71,7 +70,6 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
-    MSG_MISSING_SURFACE = "There is no surface in the current project. Please upload a CORTICAL one to continue!"
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -93,7 +91,8 @@ class LocalConnectivityController(SpatioTemporalController):
 
         if int(do_reset) == 1:
             new_lconn = LocalConnectivityCreatorModel()
-            default_surface_index = dao.try_load_last_surface_of_type(project_id, CORTICAL)
+            default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
+                                                          LocalConnectivityCreatorForm.get_filters())
             if default_surface_index:
                 new_lconn.surface = uuid.UUID(default_surface_index.gid)
             else:
@@ -192,7 +191,7 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['displayedMessage'] = msg
         if current_lconn is not None:
             selected_local_conn = ABCAdapter.load_entity_by_gid(current_lconn.gid.hex)
-            template_specification.update(self.display_surface(selected_local_conn.surface_gid))
+            template_specification.update(self.display_surface(selected_local_conn.fk_surface_gid))
             template_specification['no_local_connectivity'] = False
             template_specification['minValue'] = selected_local_conn.matrix_non_zero_min
             template_specification['maxValue'] = selected_local_conn.matrix_non_zero_max
@@ -228,7 +227,7 @@ class LocalConnectivityController(SpatioTemporalController):
         with LocalConnectivityH5(lconn_h5_path) as lconn_h5:
             lconn_h5.load_into(existent_lconn)
 
-        existent_lconn.surface = uuid.UUID(lconn_index.surface_gid)
+        existent_lconn.surface = uuid.UUID(lconn_index.fk_surface_gid)
 
         common.add2session(KEY_LCONN, existent_lconn)
         existent_lconn.display_name = lconn_index.user_tag_1
@@ -280,7 +279,7 @@ class LocalConnectivityController(SpatioTemporalController):
         lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
 
-        surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.surface_gid)
+        surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.fk_surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_indx)
         assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])

@@ -217,7 +217,7 @@ class TopographicViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None  # FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
 
 
 class TopographicViewer(ABCDisplayer):
@@ -251,7 +251,7 @@ class TopographicViewer(ABCDisplayer):
             if measure is not None:
                 measure_index = self.load_entity_by_gid(measure.hex)
                 measures_ht.append(h5.load_from_index(measure_index))
-                conn_index = self.load_entity_by_gid(measure_index.connectivity_gid)
+                conn_index = self.load_entity_by_gid(measure_index.fk_connectivity_gid)
                 connectivities_idx.append(conn_index)
 
         with h5.h5_file_for_index(connectivities_idx[0]) as conn_h5:

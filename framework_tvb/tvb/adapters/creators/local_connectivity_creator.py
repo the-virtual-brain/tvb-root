@@ -86,10 +86,8 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
-        filter_for_cortical = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                                          values=[CORTICAL])
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
-                                                conditions=filter_for_cortical)
+                                                conditions=self.get_filters())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
                                    choices=equation_choices, display_none_choice=False)
 
@@ -112,7 +110,8 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                           values=[CORTICAL])
 
     def get_traited_datatype(self):
         return LocalConnectivityCreatorModel()

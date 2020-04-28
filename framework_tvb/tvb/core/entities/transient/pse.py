@@ -142,7 +142,7 @@ class PSEModel(object):
                     # Load proper entity class from DB.
                     measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'gid')
                 else:
-                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
+                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'fk_source_gid')
                 if len(measures) > 0:
                     datatype_measure = measures[0]
 

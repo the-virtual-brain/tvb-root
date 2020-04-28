@@ -91,7 +91,7 @@ class RegionsModelParametersController(BurstBaseController):
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_idx = dao.get_datatype_by_gid(connectivity.gid.hex)
+        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
         conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)

@@ -40,25 +40,25 @@ class ProjectionMatrixIndex(DataType):
 
     projection_type = Column(String, nullable=False)
 
-    brain_skull_gid = Column(String(32), ForeignKey(SurfaceIndex.gid),
-                             nullable=not ProjectionMatrix.brain_skull.required)
-    brain_skull = relationship(SurfaceIndex, foreign_keys=brain_skull_gid,
-                               primaryjoin=SurfaceIndex.gid == brain_skull_gid, cascade='none')
+    fk_brain_skull_gid = Column(String(32), ForeignKey(SurfaceIndex.gid),
+                                nullable=not ProjectionMatrix.brain_skull.required)
+    brain_skull = relationship(SurfaceIndex, foreign_keys=fk_brain_skull_gid,
+                               primaryjoin=SurfaceIndex.gid == fk_brain_skull_gid, cascade='none')
 
-    skull_skin_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.skull_skin.required)
-    skull_skin = relationship(SurfaceIndex, foreign_keys=skull_skin_gid, primaryjoin=SurfaceIndex.gid == skull_skin_gid,
+    fk_skull_skin_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.skull_skin.required)
+    skull_skin = relationship(SurfaceIndex, foreign_keys=fk_skull_skin_gid, primaryjoin=SurfaceIndex.gid == fk_skull_skin_gid,
                               cascade='none')
 
-    skin_air_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.skin_air.required)
-    skin_air = relationship(SurfaceIndex, foreign_keys=skin_air_gid, primaryjoin=SurfaceIndex.gid == skin_air_gid,
+    fk_skin_air_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.skin_air.required)
+    skin_air = relationship(SurfaceIndex, foreign_keys=fk_skin_air_gid, primaryjoin=SurfaceIndex.gid == fk_skin_air_gid,
                             cascade='none')
 
-    source_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.sources.required)
-    source = relationship(SurfaceIndex, foreign_keys=source_gid, primaryjoin=SurfaceIndex.gid == source_gid,
+    fk_source_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not ProjectionMatrix.sources.required)
+    source = relationship(SurfaceIndex, foreign_keys=fk_source_gid, primaryjoin=SurfaceIndex.gid == fk_source_gid,
                           cascade='none')
 
-    sensors_gid = Column(String(32), ForeignKey(SensorsIndex.gid), nullable=not ProjectionMatrix.sensors.required)
-    sensors = relationship(SensorsIndex, foreign_keys=sensors_gid, primaryjoin=SensorsIndex.gid == sensors_gid,
+    fk_sensors_gid = Column(String(32), ForeignKey(SensorsIndex.gid), nullable=not ProjectionMatrix.sensors.required)
+    sensors = relationship(SensorsIndex, foreign_keys=fk_sensors_gid, primaryjoin=SensorsIndex.gid == fk_sensors_gid,
                            cascade='none')
 
     def fill_from_has_traits(self, datatype):
@@ -66,13 +66,13 @@ class ProjectionMatrixIndex(DataType):
         super(ProjectionMatrixIndex, self).fill_from_has_traits(datatype)
         self.projection_type = datatype.projection_type
         if datatype.brain_skull is not None:
-            self.brain_skull_gid = datatype.brain_skull.gid.hex
+            self.fk_brain_skull_gid = datatype.brain_skull.gid.hex
         if datatype.skull_skin is not None:
-            self.skull_skin_gid = datatype.skull_skin.gid.hex
+            self.fk_skull_skin_gid = datatype.skull_skin.gid.hex
         if datatype.skin_air is not None:
-            self.skin_air_gid = datatype.skin_air.gid.hex
-        self.sensors_gid = datatype.sensors.gid.hex
-        self.source_gid = datatype.sources.gid.hex
+            self.fk_skin_air_gid = datatype.skin_air.gid.hex
+        self.fk_sensors_gid = datatype.sensors.gid.hex
+        self.fk_source_gid = datatype.sources.gid.hex
 
     @property
     def display_name(self):

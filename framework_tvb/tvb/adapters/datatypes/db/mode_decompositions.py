@@ -37,8 +37,8 @@ from tvb.core.entities.model.model_datatype import DataType
 class PrincipalComponentsIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
+    source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     subtype = Column(String)
 
@@ -46,14 +46,14 @@ class PrincipalComponentsIndex(DataType):
         # type: (PrincipalComponents)  -> None
         super(PrincipalComponentsIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
-        self.source_gid = datatype.source.gid
+        self.fk_source_gid = datatype.source.gid
 
 
 class IndependentComponentsIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
+    source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     subtype = Column(String)
 
@@ -61,4 +61,4 @@ class IndependentComponentsIndex(DataType):
         # type: (IndependentComponents)  -> None
         super(IndependentComponentsIndex, self).fill_from_has_traits(datatype)
         self.subtype = datatype.__class__.__name__
-        self.source_gid = datatype.source.gid.hex
+        self.fk_source_gid = datatype.source.gid.hex
