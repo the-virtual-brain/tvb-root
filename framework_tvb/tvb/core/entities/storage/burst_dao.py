@@ -77,11 +77,15 @@ class BurstDAO(RootDAO):
         Return the number of burst already named 'custom_b%' and NOT 'custom_b%_%' in current project.
         """
         count = 0
+        if 'copy_of_' in burst_name:
+            name = burst_name.replace('copy_of_', '')
+        else:
+            name = burst_name
         try:
             count = self.session.query(BurstConfiguration
                                     ).filter_by(fk_project=project_id
-                                    ).filter(BurstConfiguration.name.like(burst_name + '_branch%')
-                                    ).filter(BurstConfiguration.name.notlike(burst_name + '_branch%_branch%', escape='/')
+                                    ).filter(BurstConfiguration.name.like(name + '_branch%')
+                                    ).filter(BurstConfiguration.name.notlike(name + '_branch%_branch%', escape='/')
                 ).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)

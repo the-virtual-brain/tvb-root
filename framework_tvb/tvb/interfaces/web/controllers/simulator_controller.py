@@ -680,7 +680,11 @@ class SimulatorController(BurstBaseController):
 
         if isinstance(monitor, Raw):
             simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-            form = SimulatorFinalFragment(simulation_number=simulation_number)
+            if session_stored_burst.name is None:
+                default_simulation_name = 'simulation_' + str(simulation_number)
+            else:
+                default_simulation_name = session_stored_burst.name
+            form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
 
             if cherrypy.request.method != 'POST':
                 simulation_name = session_stored_burst.name
@@ -760,7 +764,11 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors[0].projection = projection
 
         simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
+        if session_stored_burst.name is None:
+            default_simulation_name = 'simulation_' + str(simulation_number)
+        else:
+            default_simulation_name = session_stored_burst.name
+        next_form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
         next_form.fill_from_trait(session_stored_simulator)
 
         if cherrypy.request.method != 'POST':
@@ -797,7 +805,11 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(monitor.hrf_kernel)
 
         simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-        next_form = SimulatorFinalFragment(simulation_number=simulation_number)
+        if session_stored_burst.name is None:
+            default_simulation_name = 'simulation_' + str(simulation_number)
+        else:
+            default_simulation_name = session_stored_burst.name
+        next_form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
 
         if cherrypy.request.method != 'POST':
             simulation_name = session_stored_burst.name
@@ -962,6 +974,8 @@ class SimulatorController(BurstBaseController):
         else:
             burst_config_to_store = session_burst_config.clone()
             count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.fk_project)
+            if 'copy_of_' in session_burst_config.name:
+                session_burst_config.name = session_burst_config.name.replace('copy_of_', '')
             burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
                                                             session_burst_config.id, "fk_parent_burst")
@@ -1048,6 +1062,7 @@ class SimulatorController(BurstBaseController):
     @check_user
     def copy_simulator_configuration(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
+        burst_config.name = 'copy_of_' + burst_config.name
         common.add2session(common.KEY_BURST_CONFIG, burst_config)
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
