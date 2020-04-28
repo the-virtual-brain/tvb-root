@@ -72,20 +72,16 @@ class BurstDAO(RootDAO):
             self.logger.exception(excep)
         return 0
 
-    def count_bursts_with_name(self, burst_name, project_id, prefix=None):
+    def count_bursts_with_name(self, burst_name, project_id):
         """
         Return the number of burst already named 'custom_b%' and NOT 'custom_b%_%' in current project.
         """
         count = 0
-        if prefix in burst_name:
-            name = burst_name.replace(prefix, '')
-        else:
-            name = burst_name
         try:
             count = self.session.query(BurstConfiguration
                                     ).filter_by(fk_project=project_id
-                                    ).filter(BurstConfiguration.name.like(name + '_branch%')
-                                    ).filter(BurstConfiguration.name.notlike(name + '_branch%_branch%', escape='/')
+                                    ).filter(BurstConfiguration.name.like(burst_name + '_branch%')
+                                    ).filter(BurstConfiguration.name.notlike(burst_name + '_branch%_branch%', escape='/')
                 ).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
