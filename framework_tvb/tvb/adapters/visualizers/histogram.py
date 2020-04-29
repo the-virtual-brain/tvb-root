@@ -81,12 +81,11 @@ class HistogramViewer(ABCDisplayer):
     """
     The viewer takes as input a result DataType as computed by BCT analyzers.
     """
-    _ui_name = "Connectivity Measure Visualizer"
+    _ui_name = "Histogram Visualizer"
 
     def get_form_class(self):
         return HistogramViewerForm
 
-    # TODO: migrate to neotraits
     def launch(self, view_model):
         # type: (HistogramViewerModel) -> dict
         """
@@ -103,7 +102,7 @@ class HistogramViewer(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        input_data = self.load_entity_by_gid(view_model.input_data.hex)
+        input_data = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(input_data.shape) * 2
 
     def generate_preview(self, view_model, figure_size=None):
@@ -113,16 +112,18 @@ class HistogramViewer(ABCDisplayer):
         params = self.prepare_parameters(view_model.input_data)
         return self.build_display_result("histogram/view", params)
 
-    def prepare_parameters(self, input_data):
+    def prepare_parameters(self, connectivity_measure_gid):
         """
         Prepare all required parameters for a launch.
         """
-        labels_list = input_data.connectivity.region_labels.tolist()
-        values_list = input_data.array_data.tolist()
+        conn_measure = self.load_with_references(connectivity_measure_gid)
+        assert isinstance(conn_measure, ConnectivityMeasure)
+        labels_list = conn_measure.connectivity.region_labels.tolist()
+        values_list = conn_measure.array_data.tolist()
         # A gradient of colors will be used for each node
         colors_list = values_list
 
-        params = dict(title="Connectivity Measure - " + input_data.title, labels=json.dumps(labels_list),
+        params = dict(title="Connectivity Measure - " + conn_measure.title, labels=json.dumps(labels_list),
                       data=json.dumps(values_list), colors=json.dumps(colors_list),
                       xposition='center' if min(values_list) < 0 else 'bottom',
                       minColor=min(colors_list), maxColor=max(colors_list))
