@@ -640,6 +640,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         burst_config = BurstConfiguration(self.test_project.id)
         burst_config.fk_simulation = op.id
         burst_config.simulator_gid = self.session_stored_simulator.gid.hex
+        burst_config.name = 'Test_Burst'
         burst_config = dao.store_entity(burst_config)
 
         self.sess_mock['burst_id'] = str(burst_config.id)
