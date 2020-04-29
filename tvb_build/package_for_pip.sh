@@ -27,6 +27,18 @@ for pipPackage in "${folders2pack[@]}"; do
     cd ..
 done
 
+## Package TVB Contrib
+echo "============================="
+echo " Packing: TVB Contrib"
+echo "============================="
+cd scientific_library/contrib
+python setup.py sdist
+python setup.py bdist_wheel
+mv dist/* ../../dist/
+rm -R dist
+rm -R build
+cd ../..
+
 ## Now package tvb-rest-client
 cd framework_tvb
 mv setup.py setup_bck.py
