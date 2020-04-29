@@ -31,7 +31,7 @@
 import shutil
 import setuptools
 
-TVB_VERSION = "2.0.3"
+TVB_VERSION = "2.0.5"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
 
 setuptools.setup(name='tvb-contrib',

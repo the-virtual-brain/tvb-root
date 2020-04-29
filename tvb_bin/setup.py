@@ -33,7 +33,7 @@ from setuptools import setup, find_packages
 setup(
     name='tvb_bin',
     packages=find_packages(),
-    version="2.0.2",
+    version="2.0.5",
     license="GPL v3",
     author="TVB Team"
 )
