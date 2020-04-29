@@ -28,81 +28,51 @@
 #
 #
 
-import json
-from sqlalchemy import Column, Integer, ForeignKey, String, Float
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
-from tvb.core.neotraits.db import from_ndarray
 
 
 class CovarianceIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
-
     fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not Covariance.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
-
-    subtype = Column(String)
 
     def fill_from_has_traits(self, datatype):
         # type: (Covariance)  -> None
         super(CovarianceIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.fk_source_gid = datatype.source.gid.hex
 
 
 class CorrelationCoefficientsIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
-
     fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid),
                            nullable=not CorrelationCoefficients.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
-
-    subtype = Column(String)
 
     labels_ordering = Column(String)
 
     def fill_from_has_traits(self, datatype):
         # type: (CorrelationCoefficients)  -> None
         super(CorrelationCoefficientsIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
         self.labels_ordering = datatype.labels_ordering
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.fk_source_gid = datatype.source.gid.hex
 
 
 class ConnectivityMeasureIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    subtype = Column(String)
-
     fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
                                  nullable=ConnectivityMeasure.connectivity.required)
     connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
                                 primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
-
-    shape = Column(String, nullable=False)
-
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
-        self.shape = json.dumps(datatype.array_data.shape)
-        self.ndim = len(datatype.array_data.shape)
