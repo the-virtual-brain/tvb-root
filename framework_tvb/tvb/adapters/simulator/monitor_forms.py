@@ -79,6 +79,25 @@ def get_ui_name_to_monitor_dict(surface):
     return ui_name_to_monitor
 
 
+def get_monitor_class_name_to_ui_name_dict(surface):
+    monitor_class_name_to_ui_name = {
+        'Raw': 'Raw recording',
+        'SubSample': 'Temporally sub-sample',
+        'SpatialAverage': 'Spatial average with temporal sub-sample',
+        'GlobalAverage': 'Global average',
+        'TemporalAverage': 'Temporal average',
+        'EEG': 'EEG',
+        'MEG': 'MEG',
+        'iEEG': 'Intracerebral / Stereo EEG',
+        'Bold': 'BOLD'
+    }
+
+    if surface:
+        monitor_class_name_to_ui_name['BoldRegionROI'] = 'BOLD Region ROI'
+
+    return monitor_class_name_to_ui_name
+
+
 def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 

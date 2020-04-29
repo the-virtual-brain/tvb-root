@@ -43,7 +43,7 @@ from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict
+from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_class_name_to_ui_name_dict
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
@@ -61,7 +61,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                  values=[CORTICAL])
         self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=False,
-                                           label=Simulator.surface.label, doc=Simulator.surface.doc, conditions=conditions)
+                                           label=Simulator.surface.label, doc=Simulator.surface.doc,
+                                           conditions=conditions)
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -155,14 +156,17 @@ class SimulatorMonitorFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
+        self.is_surface_simulation = is_surface_simulation
 
         self.monitors = MultiSelectField(List(of=str, label='Monitors',
-                                                      choices=tuple(self.monitor_choices.keys())),
-                                                      self, name='monitors')
+                                              choices=tuple(self.monitor_choices.keys())),
+                                         self, name='monitors')
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
-        self.monitors.data = ['Temporal average']
+        self.monitors.data = [
+            get_monitor_class_name_to_ui_name_dict(self.is_surface_simulation)[monitor.__class__.__name__]
+            for monitor in trait]
 
 
 class SimulatorFinalFragment(ABCAdapterForm):
