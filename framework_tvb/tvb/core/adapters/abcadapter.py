@@ -468,7 +468,7 @@ class ABCAdapter(object):
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        index = ABCAdapter.load_entity_by_gid(data_gid.hex)
+        index = ABCAdapter.load_entity_by_gid(data_gid)
         return h5.load_from_index(index)
 
     @staticmethod
