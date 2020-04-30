@@ -41,8 +41,8 @@ class StimuliRegionH5(H5File):
         self.connectivity = Reference(StimuliRegion.connectivity, self)
         self.weight = DataSet(StimuliRegion.weight, self)
 
-    def store(self, datatype, scalars_only=False):
-        super(StimuliRegionH5, self).store(datatype, scalars_only)
+    def store(self, datatype, scalars_only=False, store_references=True):
+        super(StimuliRegionH5, self).store(datatype, scalars_only, store_references)
         self.connectivity.store(datatype.connectivity)
 
 
@@ -56,7 +56,7 @@ class StimuliSurfaceH5(H5File):
         self.focal_points_surface = DataSet(NArray(dtype=int), self, name='focal_points_surface')
         self.focal_points_triangles = DataSet(StimuliSurface.focal_points_triangles, self)
 
-    def store(self, datatype, scalars_only=False):
-        super(StimuliSurfaceH5, self).store(datatype, scalars_only)
+    def store(self, datatype, scalars_only=False, store_references=True):
+        super(StimuliSurfaceH5, self).store(datatype, scalars_only, store_references)
         self.focal_points_surface.store(datatype.focal_points_surface)
 

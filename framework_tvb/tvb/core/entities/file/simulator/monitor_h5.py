@@ -76,11 +76,6 @@ class ProjectionH5(MonitorH5):
         self.region_mapping = Reference(Projection.region_mapping, self)
         self.obnoise = Reference(Projection.obsnoise, self)
 
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (Projection, bool, bool) -> None
-        super(ProjectionH5, self).store(datatype, scalars_only, store_references)
-        self.region_mapping.store(datatype.region_mapping.gid)
-
 
 class EEGH5(ProjectionH5):
 
@@ -91,12 +86,6 @@ class EEGH5(ProjectionH5):
         self.reference = Scalar(EEG.reference, self)
         self.sigma = Scalar(EEG.sigma, self)
 
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (Projection, bool, bool) -> None
-        super(EEGH5, self).store(datatype, scalars_only, store_references)
-        self.projection.store(datatype.projection.gid)
-        self.sensors.store(datatype.sensors.gid)
-
 
 class MEGH5(ProjectionH5):
 
@@ -104,12 +93,6 @@ class MEGH5(ProjectionH5):
         super(MEGH5, self).__init__(path)
         self.projection = Reference(MEG.projection, self)
         self.sensors = Reference(MEG.sensors, self)
-
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (Projection, bool, bool) -> None
-        super(MEGH5, self).store(datatype, scalars_only, store_references)
-        self.projection.store(datatype.projection.gid)
-        self.sensors.store(datatype.sensors.gid)
 
 
 class iEEGH5(ProjectionH5):
@@ -119,12 +102,6 @@ class iEEGH5(ProjectionH5):
         self.projection = Reference(iEEG.projection, self)
         self.sensors = Reference(iEEG.sensors, self)
         self.sigma = Scalar(iEEG.sigma, self)
-
-    def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (Projection, bool, bool) -> None
-        super(iEEGH5, self).store(datatype, scalars_only, store_references)
-        self.projection.store(datatype.projection.gid)
-        self.sensors.store(datatype.sensors.gid)
 
 
 class BoldH5(MonitorH5):

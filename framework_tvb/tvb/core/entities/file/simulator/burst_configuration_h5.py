@@ -47,7 +47,7 @@ class BurstConfigurationH5(H5File):
         self.range1 = Scalar(Attr(str, required=False), self, name='range1')
         self.range2 = Scalar(Attr(str, required=False), self, name='range2')
 
-    def store(self, burst_config, scalars_only=False, store_references=False):
+    def store(self, burst_config, scalars_only=False, store_references=True):
         self.name.store(burst_config.name)
         self.status.store(burst_config.status)
         self.error_message.store(burst_config.error_message or 'None')

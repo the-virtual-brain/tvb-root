@@ -64,10 +64,6 @@ class RegionMappingIndex(DataType):
 class RegionVolumeMappingIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
-
     fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
                                  nullable=not RegionVolumeMapping.connectivity.required)
     connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
@@ -80,6 +76,5 @@ class RegionVolumeMappingIndex(DataTypeMatrix):
     def fill_from_has_traits(self, datatype):
         # type: (RegionVolumeMapping)  -> None
         super(RegionVolumeMappingIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
         self.fk_volume_gid = datatype.volume.gid.hex
