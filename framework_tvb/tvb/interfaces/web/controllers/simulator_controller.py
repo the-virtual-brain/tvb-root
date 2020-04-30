@@ -687,11 +687,6 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            monitors = data['monitors']
-            if monitors[0] == 'Raw recording' and len(monitors) == 1:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
-            else:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
             is_simulator_copy = False
             fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.is_surface_simulation)
             fragment.fill_from_post(data)
@@ -699,15 +694,20 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors = self._build_list_of_monitors(
                 fragment.monitors.value, session_stored_simulator.is_surface_simulation)
 
-        if isinstance(session_stored_simulator.monitors[0], Raw) and len(session_stored_simulator.monitors) > 1:
-            first_monitor_index = 1
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
-        else:
+        # if the first monitor is Raw, it must be skipped because it does not have parameters
+        # also if the only monitor is Raw, the parameters setting phase must be skipped entirely
+        if isinstance(session_stored_simulator.monitors[0], Raw) and len(session_stored_simulator.monitors) == 1:
             first_monitor_index = 0
-            if len(session_stored_simulator.monitors) == 1:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+            last_loaded_fragment_url = SimulatorWizzardURLs.SETUP_PSE_URL
+        else:
+            if not isinstance(session_stored_simulator.monitors[0], Raw):
+                first_monitor_index = 0
             else:
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
+                first_monitor_index = 1
+
+            last_loaded_fragment_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + \
+                session_stored_simulator.monitors[first_monitor_index].__class__.__name__
+        self._update_last_loaded_fragment_url(last_loaded_fragment_url)
 
         all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
         chosen_variables = session_stored_simulator.model.variables_of_interest
@@ -738,7 +738,8 @@ class SimulatorController(BurstBaseController):
                                                               is_launch_fragment=True,
                                                               is_pse_launch=session_stored_burst.is_pse_burst())
         else:
-            rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+            monitor_name = self._get_current_monitor_name(session_stored_simulator.is_surface_simulation, form)
+            rendering_rules = SimulatorFragmentRenderingRules(form, last_loaded_fragment_url,
                                                               SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
                                                               is_simulator_load, self.last_loaded_form_url,
                                                               cherrypy.request.method, is_monitor_params_fragment=True,
@@ -746,17 +747,16 @@ class SimulatorController(BurstBaseController):
 
         return rendering_rules.to_dict()
 
-    def _handle_next_fragment_for_monitors(self, session_stored_simulator, current_monitor_index):
-        if current_monitor_index < len(session_stored_simulator.monitors) - 1:
+    def _handle_next_fragment_for_monitors(self, session_stored_simulator, next_monitor):
+        if next_monitor is not None:
             all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
             chosen_variables = session_stored_simulator.model.variables_of_interest
             indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
 
-            next_monitor = session_stored_simulator.monitors[current_monitor_index + 1]
             next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
             next_form.fill_from_trait(next_monitor)
 
-            form_action_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL
+            form_action_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + next_monitor.__class__.__name__
             is_launch_fragment = False
 
             monitor_name = self._get_current_monitor_name(session_stored_simulator.is_surface_simulation, next_form)
@@ -780,14 +780,27 @@ class SimulatorController(BurstBaseController):
 
         return next_form, form_action_url, is_launch_fragment, monitor_name
 
+    @staticmethod
+    def _get_current_index_and_next_monitor(monitors, current_monitor_name):
+        for monitor in monitors:
+            if monitor.__class__.__name__ == current_monitor_name:
+                index = monitors.index(monitor)
+                if index < len(monitors)-1:
+                    return monitors[index + 1], index
+
+        # Currently at the last monitor
+        return None, len(monitors) - 1
+
     @cherrypy.expose
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
-    def set_monitor_params(self, **data):
+    def set_monitor_params(self, current_monitor, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         session_stored_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        monitor = session_stored_simulator.monitors[0]
+        next_monitor, current_monitor_index = self._get_current_index_and_next_monitor(
+            session_stored_simulator.monitors, current_monitor)
+        monitor = session_stored_simulator.monitors[current_monitor_index]
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
@@ -801,46 +814,50 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(monitor)
 
             if isinstance(monitor, Bold):
-                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL)
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL + '/' +
+                                                      current_monitor)
+            elif next_monitor is not None:
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' +
+                                                      next_monitor.__class__.__name__)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
 
         if isinstance(monitor, Bold):
             next_form = get_form_for_equation(type(monitor.hrf_kernel))()
-            next_form.fill_from_trait(session_stored_simulator.monitors[0].hrf_kernel)
+            next_form.fill_from_trait(monitor.hrf_kernel)
 
-            rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
-                                                              SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+            rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL +
+                                                              '/' + current_monitor,
+                                                              SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL +
+                                                              '/' + current_monitor,
                                                               is_simulator_copy, is_simulator_load,
                                                               self.last_loaded_form_url, cherrypy.request.method)
             return rendering_rules.to_dict()
-
-        session_stored_simulator.monitors = [monitor]
 
         if isinstance(monitor, Projection) and cherrypy.request.method == 'POST':
             # load region mapping
             region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
             region_mapping = h5.load_from_index(region_mapping_index)
-            session_stored_simulator.monitors[0].region_mapping = region_mapping
+            monitor.region_mapping = region_mapping
 
             # load sensors and projection
             sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
-            sensors_class = session_stored_simulator.monitors[0].projection_class().sensors.field_type
+            sensors_class = monitor.projection_class().sensors.field_type
             sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
             projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
-            projection_class = session_stored_simulator.monitors[0].projection_class()
+            projection_class = monitor.projection_class()
             projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
 
-            session_stored_simulator.monitors[0].sensors = sensors
-            session_stored_simulator.monitors[0].projection = projection
+            monitor.sensors = sensors
+            monitor.projection = projection
 
         next_form, form_action_url, is_launch_fragment, monitor_name = \
-            self._handle_next_fragment_for_monitors(session_stored_simulator, current_monitor_index)
+            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor)
 
-        common.add2session(KEY_CURRENT_MONITOR_INDEX, current_monitor_index + 1)
         rendering_rules = SimulatorFragmentRenderingRules(next_form, form_action_url,
-                                                          SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+                                                          SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL +
+                                                          '/' + monitor.__class__.__name__,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_launch_fragment=is_launch_fragment,
@@ -853,32 +870,37 @@ class SimulatorController(BurstBaseController):
     @using_template("simulator_fragment")
     @handle_error(redirect=False)
     @check_user
-    def set_monitor_equation(self, **data):
+    def set_monitor_equation(self, current_monitor, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         session_stored_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        monitor = session_stored_simulator.monitors[0]
+        next_monitor, current_monitor_index = self._get_current_index_and_next_monitor(
+            session_stored_simulator.monitors, current_monitor)
+        monitor = session_stored_simulator.monitors[current_monitor_index]
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == 'POST':
-            self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+            if next_monitor is not None:
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL +
+                                                      '/' + next_monitor.__class__.__name__)
+            else:
+                self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
+
             is_simulator_copy = False
             form = get_form_for_equation(type(monitor.hrf_kernel))()
             form.fill_from_post(data)
             form.fill_trait(monitor.hrf_kernel)
 
         next_form, form_action_url, is_launch_fragment, monitor_name = \
-            self._handle_next_fragment_for_monitors(session_stored_simulator, current_monitor_index)
+            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor)
 
-        common.add2session(KEY_CURRENT_MONITOR_INDEX, current_monitor_index + 1)
         rendering_rules = SimulatorFragmentRenderingRules(next_form, form_action_url,
-                                                          SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
+                                                          SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL +
+                                                          '/' + current_monitor,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_launch_fragment=True,
-                                                          is_pse_launch=session_stored_burst.is_pse_burst())
-                                                          is_launch_fragment=is_launch_fragment,
-                                                          is_pse_launch = session_stored_burst.is_pse_burst()
+                                                          is_pse_launch=session_stored_burst.is_pse_burst(),
                                                           is_monitor_params_fragment=not is_launch_fragment,
                                                           monitor_name=monitor_name)
         return rendering_rules.to_dict()
