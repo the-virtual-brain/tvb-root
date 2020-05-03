@@ -32,10 +32,11 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.adapters.abcadapter import ABCAdapter
+import numpy
+import pytest
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
@@ -44,6 +45,9 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.flow_service import FlowService
+from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.flow_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
 
@@ -308,14 +312,14 @@ class TestProjectStructure(TransactionalTestCase):
         assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
-    def test_get_inputs_for_operation(self, datatype_group_factory):
+    def test_get_inputs_for_operation(self, datatype_group_factory, array_factory, test_adapter_factory):
         """
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
         Verifies filters' influence over results is as expected
         """
+        test_adapter_factory(adapter_class=TestAdapter3)
         algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-
-        array_wrappers = self._create_mapped_arrays(self.test_project.id)
+        array_wrappers = array_factory(self.test_project)
         ids = []
         for datatype in array_wrappers:
             ids.append(datatype[0])
@@ -409,13 +413,13 @@ class TestProjectStructure(TransactionalTestCase):
         assert not datatypes[1].id == inputs[0].id, "Retrieved wrong dataType."
         assert group.id == inputs[0].id, "Retrieved wrong dataType."
 
-    def test_get_inputs_for_op_group_simple_inputs(self):
+    def test_get_inputs_for_op_group_simple_inputs(self, array_factory, test_adapter_factory):
         """
         Tests method get_datatypes_inputs_for_operation_group.
         The dataType inputs will not be part of a dataType group.
         """
         # it's a list of 3 elem.
-        array_wrappers = self._create_mapped_arrays(self.test_project.id)
+        array_wrappers = array_factory(self.test_project)
         array_wrapper_ids = []
         for datatype in array_wrappers:
             array_wrapper_ids.append(datatype[0])
@@ -431,6 +435,7 @@ class TestProjectStructure(TransactionalTestCase):
         params_2 = json.dumps({"param_5": "5", "param_3": array_wrappers[2][2],
                                "param_2": array_wrappers[1][2], "param_6": "6"})
 
+        test_adapter_factory(adapter_class=TestAdapter3)
         algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
 
         op1 = Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
@@ -449,12 +454,12 @@ class TestProjectStructure(TransactionalTestCase):
         assert array_wrapper_ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id]
         assert array_wrapper_ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id]
 
-    def test_remove_datatype(self):
+    def test_remove_datatype(self, array_factory):
         """
         Tests the deletion of a datatype.
         """
         # it's a list of 3 elem.
-        array_wrappers = self._create_mapped_arrays(self.test_project.id)
+        array_wrappers = array_factory(self.test_project)
         dt_list = []
         for array_wrapper in array_wrappers:
             dt_list.append(dao.get_datatype_by_id(array_wrapper[0]))
@@ -496,33 +501,40 @@ class TestProjectStructure(TransactionalTestCase):
         self._check_if_datatype_was_removed(datatype_group)
         self._check_datatype_group_removed(group.id, datatype_group.fk_operation_group)
 
-    def _create_mapped_arrays(self, project_id):
-        """
-        :param project_id: the project in which the arrays are created
-        :return: a list of dummy `MappedArray`
-        """
-        count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
-        assert count == 0
+    @pytest.fixture()
+    def array_factory(self, operation_factory, connectivity_index_factory):
+        def _create_measure(conn, op, op_dir, project_id):
+            conn_measure = ConnectivityMeasure()
+            conn_measure.connectivity = h5.load_from_index(conn)
+            conn_measure.array_data = numpy.array(conn.number_of_regions)
 
-        group = dao.get_algorithm_by_module('tvb.tests.framework.adapters.ndimensionarrayadapter',
-                                            'NDimensionArrayAdapter')
-        adapter_instance = ABCAdapter.build_adapter(group)
-        view_model = adapter_instance.get_view_model()()
-        # create 3 data types
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
-        count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
-        assert count == 1
+            conn_measure_db = h5.store_complete(conn_measure, op_dir)
+            conn_measure_db.fk_from_operation = op.id
+            dao.store_entity(conn_measure_db)
 
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
-        count = self.flow_service.get_available_datatypes(project_id, "tvb.datatypes.arrays.MappedArray")[1]
-        assert count == 2
+            count = dao.count_datatypes(project_id, DataTypeMatrix)
+            return count
 
-        self.flow_service.fire_operation(adapter_instance, self.test_user, project_id, view_model=view_model)
-        array_wrappers, count = self.flow_service.get_available_datatypes(project_id,
-                                                                          "tvb.datatypes.arrays.MappedArray")
-        assert count == 3
+        def build(project):
+            count = dao.count_datatypes(project.id, DataTypeMatrix)
+            assert count == 0
 
-        return array_wrappers
+            op = operation_factory(test_project=project)
+            conn = connectivity_index_factory(op=op)
+            storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+
+            count = _create_measure(conn, op, storage_path, project.id)
+            assert count == 1
+
+            count = _create_measure(conn, op, storage_path, project.id)
+            assert count == 2
+
+            count = _create_measure(conn, op, storage_path, project.id)
+            assert count == 3
+
+            return get_filtered_datatypes(project.id, DataTypeMatrix)[0]
+
+        return build
 
     def _create_operation(self, project_id, algorithm_id):
         """
@@ -547,20 +559,10 @@ class TestProjectStructure(TransactionalTestCase):
         if test_project is None:
             test_project = TestFactory.create_project(test_user, 'test_proj')
         operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
-        value_wrapper = ValueWrapper(data_value=5.0, data_name="my_value")
-        value_wrapper.type = "ValueWrapper"
-        value_wrapper.module = "tvb.datatypes.mapped_values"
-        value_wrapper.subject = "John Doe"
-        value_wrapper.state = "RAW_STATE"
-        value_wrapper.set_operation_id(operation.id)
-        adapter_instance = StoreAdapter([value_wrapper])
-        OperationService().initiate_prelaunch(operation, adapter_instance, {})
-        all_value_wrappers = FlowService().get_available_datatypes(test_project.id,
-                                                                   "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        if len(all_value_wrappers) != 1:
-            raise Exception("Should be only one value wrapper.")
-        result_vw = ABCAdapter.load_entity_by_gid(all_value_wrappers[0][2])
-        return test_project, result_vw.gid, operation.gid
+        value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
+        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        vw_idx = h5.store_complete(value_wrapper, op_dir)
+        return test_project, vw_idx.gid, operation.gid
 
     def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):
         """

@@ -642,7 +642,7 @@ class ProjectService:
                     operations_set.append(adata.fk_from_operation)
 
             datatype_group = dao.get_datatype_group_by_gid(datatype.gid)
-            dao.remove_datatype(datatype_gid)
+            dao.remove_entity(DataTypeGroup, datatype.id)
             correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
@@ -785,6 +785,7 @@ class ProjectService:
         :returns: A list of DataTypes that are used as input parameters for the specified operation.
                  And a dictionary will all operation parameters different then the default ones.
         """
+        # todo rewrite after neotraits TVB-2687
         operation = dao.get_operation_by_gid(operation_gid)
         parameters = json.loads(operation.parameters)
         try:
