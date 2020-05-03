@@ -201,7 +201,9 @@ class TestFactory(object):
         value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
         op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
         vw_idx = h5.store_complete(value_wrapper, op_dir)
-        return test_project, vw_idx.gid, operation.gid
+        vw_idx.fk_from_operation = operation.id
+        vw_idx = dao.store_entity(vw_idx)
+        return test_project, vw_idx.gid, operation
 
     @staticmethod
     def create_adapter(module='tvb.tests.framework.adapters.ndimensionarrayadapter',
