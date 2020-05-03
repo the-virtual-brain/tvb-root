@@ -38,7 +38,7 @@ from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestAdap
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
@@ -129,14 +129,6 @@ class TestFlowService(TransactionalTestCase):
         assert algo_ret.module == self.algorithm.module, "Modules are different!"
         assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
         assert algo_ret.classname == self.algorithm.classname, "Class names are different!"
-
-    def test_build_adapter_instance(self, test_adapter_factory):
-        """
-        Test standard flow for building an adapter instance.
-        """
-        test_adapter_factory()
-        adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(adapter, ABCSynchronous), "Something went wrong with valid data!"
 
     def test_build_adapter_invalid(self):
         """
