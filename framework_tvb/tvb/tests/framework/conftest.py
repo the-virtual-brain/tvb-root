@@ -527,6 +527,6 @@ def test_adapter_factory():
         if inst_from_db is not None:
             stored_adapter.id = inst_from_db.id
 
-        dao.store_entity(stored_adapter, inst_from_db is not None)
+        return dao.store_entity(stored_adapter, inst_from_db is not None)
 
     return build

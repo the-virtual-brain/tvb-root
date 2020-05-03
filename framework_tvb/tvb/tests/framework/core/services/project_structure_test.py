@@ -316,8 +316,7 @@ class TestProjectStructure(TransactionalTestCase):
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
         Verifies filters' influence over results is as expected
         """
-        test_adapter_factory(adapter_class=TestAdapter3)
-        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
+        algo = test_adapter_factory(adapter_class=TestAdapter3)
         array_wrappers = array_factory(self.test_project)
         ids = []
         for datatype in array_wrappers:
@@ -381,9 +380,7 @@ class TestProjectStructure(TransactionalTestCase):
         params_1 = json.dumps({"param_5": "1", "param_1": datatypes[0].gid, "param_6": "2"})
         params_2 = json.dumps({"param_5": "1", "param_4": datatypes[1].gid, "param_6": "5"})
 
-        test_adapter_factory(adapter_class=TestAdapter3)
-        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-
+        algo = test_adapter_factory(adapter_class=TestAdapter3)
         op1 = Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
         op2 = Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
         dao.store_entities([op1, op2])
@@ -434,9 +431,7 @@ class TestProjectStructure(TransactionalTestCase):
         params_2 = json.dumps({"param_5": "5", "param_3": array_wrappers[2][2],
                                "param_2": array_wrappers[1][2], "param_6": "6"})
 
-        test_adapter_factory(adapter_class=TestAdapter3)
-        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-
+        algo = test_adapter_factory(adapter_class=TestAdapter3)
         op1 = Operation(self.test_user.id, self.test_project.id, algo.id, params_1, op_group_id=op_group.id)
         op2 = Operation(self.test_user.id, self.test_project.id, algo.id, params_2, op_group_id=op_group.id)
         dao.store_entities([op1, op2])

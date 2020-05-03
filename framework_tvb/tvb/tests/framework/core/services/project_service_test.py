@@ -367,7 +367,7 @@ class TestProjectService(TransactionalTestCase):
                 else:
                     assert value == new_datatype.parent_operation.user_group
 
-    def test_remove_project_node(self, test_adapter_factory):
+    def test_remove_project_node(self):
         """
         Test removing of a node from a project.
         """
