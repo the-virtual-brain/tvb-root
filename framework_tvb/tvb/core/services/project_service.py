@@ -904,13 +904,17 @@ class ProjectService:
 
         if isinstance(datatype, DataTypeGroup):  # datatype is a group
             set_group_descendants_visibility(datatype.id)
+            datatype.visible = is_visible
+            dao.store_entity(datatype)
         elif datatype.fk_datatype_group is not None:  # datatype is member of a group
             set_group_descendants_visibility(datatype.fk_datatype_group)
             # the datatype to be updated is the parent datatype group
-            datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
-
-        # update the datatype or datatype group.
-        set_visibility(datatype)
+            parent = dao.get_datatype_by_id(datatype.fk_datatype_group)
+            parent.visible = is_visible
+            dao.store_entity(parent)
+        else:
+            # update the single datatype.
+            set_visibility(datatype)
 
     @staticmethod
     def is_datatype_group(datatype_gid):
