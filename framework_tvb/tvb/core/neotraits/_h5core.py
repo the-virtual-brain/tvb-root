@@ -149,10 +149,11 @@ class H5File(object):
             else:
                 setattr(datatype, f_name, value)
 
-    def store_generic_attributes(self, generic_attributes):
-        # type: (GenericAttributes) -> None
+    def store_generic_attributes(self, generic_attributes, create=True):
+        # type: (GenericAttributes, bool) -> None
         # write_metadata  creation time, serializer class name, etc
-        self.create_date.store(date2string(datetime.now()))
+        if create:
+            self.create_date.store(date2string(datetime.now()))
 
         self.generic_attributes.fill_from(generic_attributes)
         self.invalid.store(self.generic_attributes.invalid)

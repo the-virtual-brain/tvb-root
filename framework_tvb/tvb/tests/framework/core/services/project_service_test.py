@@ -412,6 +412,7 @@ class TestProjectService(TransactionalTestCase):
         new_datatype = dao.get_datatype_by_gid(gid)
         self.__check_meta_data(new_meta_data, new_datatype)
 
+        # TODO Change bellow to check the Operation ViewModel H5 instead of the old Operation.xml
         op_path = FilesHelper().get_operation_meta_file_path(inserted_project.name, new_datatype.parent_operation.id)
         op_meta = XMLReader(op_path).read_metadata()
         assert op_meta['user_group'] == 'new user group', 'UserGroup not updated!'
