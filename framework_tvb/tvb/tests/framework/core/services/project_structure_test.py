@@ -34,7 +34,6 @@
 """
 import numpy
 import pytest
-from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
@@ -550,20 +549,6 @@ class TestProjectStructure(TransactionalTestCase):
                               meta=json.dumps(meta), status=STATUS_FINISHED)
         return dao.store_entity(operation)
 
-    @staticmethod
-    def _create_value_wrapper(test_user, test_project=None):
-        """
-        Creates a ValueWrapper dataType, and the associated parent Operation.
-        This is also used in ProjectStructureTest.
-        """
-        if test_project is None:
-            test_project = TestFactory.create_project(test_user, 'test_proj')
-        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
-        value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
-        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
-        vw_idx = h5.store_complete(value_wrapper, op_dir)
-        return test_project, vw_idx.gid, operation.gid
-
     def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):
         """
         Method used for creating a complex tree of operations.
@@ -575,7 +560,7 @@ class TestProjectStructure(TransactionalTestCase):
         if is_group_parent:
             datatype_gid = group_dts[0].gid
         else:
-            datatype_gid = self._create_value_wrapper(self.test_user, self.test_project)[1]
+            datatype_gid = TestFactory.create_value_wrapper(self.test_user, self.test_project)[1]
 
         parameters = json.dumps({"param_name": datatype_gid})
 
