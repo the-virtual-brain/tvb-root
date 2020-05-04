@@ -375,12 +375,8 @@ function _calculateValuesInRange(pse_param_lo, pse_param_hi, pse_param_step){
 
 function _getRangeValueForGuidParameter(pse_param_guid){
     pse_param_guid = pse_param_guid[0];
-
-    if(pse_param_guid.options.selectedIndex === pse_param_guid.options.length - 1){
-        return pse_param_guid.options.length - 1;
-    }
-
-    return 1;
+    const guid_list = pse_param_guid.value.split(',');
+    return guid_list.length;
 }
 
 function _computeRangeNumberForParamPrefix(prefix){
