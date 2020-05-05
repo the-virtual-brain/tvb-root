@@ -130,6 +130,7 @@ class RegionStimulusController(SpatioTemporalController):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         eq_param_form_class = get_form_for_equation(type(current_region_stim.temporal))
         eq_param_form = eq_param_form_class()
+        eq_param_form.fill_from_trait(current_region_stim.temporal)
         eq_param_form.fill_from_post(param)
         eq_param_form.fill_trait(current_region_stim.temporal)
 

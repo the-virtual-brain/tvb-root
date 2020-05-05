@@ -40,6 +40,7 @@ import numpy
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
     DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.core.entities.load import try_get_last_datatype
@@ -103,6 +104,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     DISPLAY_NAME_FIELD = 'set_display_name'
     SPATIAL_PARAMS_FIELD = 'set_spatial_param'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
+    base_url = '/spatial/stimulus/surface'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -117,24 +119,16 @@ class SurfaceStimulusController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def set_spatial(self, equation):
+    def refresh_subform(self, subform_div, equation, mapping_key):
+        # TODO: nicer way to differentiate between temporal and spatial equations
         eq_class = get_ui_name_to_equation_dict().get(equation)
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
-        current_surface_stim.spatial = eq_class()
+        if 'temporal' in subform_div:
+            current_surface_stim.temporal = eq_class()
+        else:
+            current_surface_stim.spatial = eq_class()
 
-        eq_params_form = get_form_for_equation(eq_class)(prefix=SurfaceStimulusCreatorForm.NAME_SPATIAL_PARAMS_DIV)
-        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
-
-    @cherrypy.expose
-    @using_template('form_fields/form_field')
-    @handle_error(redirect=False)
-    @check_user
-    def set_temporal(self, equation):
-        eq_class = get_ui_name_to_equation_dict().get(equation)
-        current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
-        current_surface_stim.temporal = eq_class()
-
-        eq_params_form = get_form_for_equation(eq_class)(prefix=SurfaceStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
+        eq_params_form = SubformHelper().get_subform_for_field_value(equation, mapping_key)
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -142,7 +136,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         surface_form_field = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
                                                         self.possible_temporal_equations,
-                                                        common.get_current_project().id).surface
+                                                        common.get_current_project().id, self.base_url).surface
         surface_form_field.fill_from_post(param)
         current_surface_stim.surface = surface_form_field.value
         self._reset_focal_points(current_surface_stim)
@@ -151,7 +145,8 @@ class SurfaceStimulusController(SpatioTemporalController):
     def set_spatial_param(self, **param):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         eq_param_form_class = get_form_for_equation(type(current_surface_stim.spatial))
-        eq_param_form = eq_param_form_class(prefix=SurfaceStimulusCreatorForm.NAME_SPATIAL_PARAMS_DIV)
+        eq_param_form = eq_param_form_class()
+        eq_param_form.fill_from_trait(current_surface_stim.spatial)
         eq_param_form.fill_from_post(param)
         eq_param_form.fill_trait(current_surface_stim.spatial)
 
@@ -159,7 +154,8 @@ class SurfaceStimulusController(SpatioTemporalController):
     def set_temporal_param(self, **param):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         eq_param_form_class = get_form_for_equation(type(current_surface_stim.temporal))
-        eq_param_form = eq_param_form_class(prefix=SurfaceStimulusCreatorForm.NAME_TEMPORAL_PARAMS_DIV)
+        eq_param_form = eq_param_form_class()
+        eq_param_form.fill_from_trait(current_surface_stim.temporal)
         eq_param_form.fill_from_post(param)
         eq_param_form.fill_trait(current_surface_stim.temporal)
 
@@ -179,7 +175,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form = StimulusSurfaceSelectorForm(project_id)
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         surface_stim_creator_form = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
-                                                               self.possible_temporal_equations, project_id)
+                                                               self.possible_temporal_equations, project_id,
+                                                               self.base_url)
         if not hasattr(current_surface_stim, 'surface') or not current_surface_stim.surface:
             default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
                                                           SurfaceStimulusCreatorForm.get_filters())
@@ -197,13 +194,13 @@ class SurfaceStimulusController(SpatioTemporalController):
         self.plotted_equation_prefixes = {
             self.SURFACE_FIELD: surface_stim_creator_form.surface.name,
             self.SPATIAL_FIELD: surface_stim_creator_form.spatial.name,
-            self.SPATIAL_PARAMS_FIELD: surface_stim_creator_form.spatial_params.name[1:],
+            self.SPATIAL_PARAMS_FIELD: surface_stim_creator_form.spatial.subform_field.name[1:],
             self.TEMPORAL_FIELD: surface_stim_creator_form.temporal.name,
-            self.TEMPORAL_PARAMS_FIELD: surface_stim_creator_form.temporal_params.name[1:],
+            self.TEMPORAL_PARAMS_FIELD: surface_stim_creator_form.temporal.subform_field.name[1:],
             self.DISPLAY_NAME_FIELD: surface_stim_selector_form.display_name.name
         }
         template_specification['mainContent'] = 'spatial/stimulus_surface_step1_main'
-        template_specification['baseUrl'] = '/spatial/stimulus/surface'
+        template_specification['baseUrl'] = self.base_url
         template_specification['spatialFieldsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/stimulus/surface/step_1_submit'
         template_specification['definedFocalPoints'] = current_surface_stim.focal_points_triangles.tolist()

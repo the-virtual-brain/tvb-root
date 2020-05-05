@@ -752,7 +752,7 @@ class FormField(Field):
 
     def __init__(self, form_class, form, name, label='', doc=''):
         super(FormField, self).__init__(form, name, False, False, label, doc)
-        self.form = form_class(prefix=name)
+        self.form = form_class()
 
     def fill_from_post(self, post_data):
         self.form.fill_from_post(post_data)

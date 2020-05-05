@@ -529,12 +529,12 @@ function plotEquation(baseUrl='') {
     dynamicPage.grafic._redrawTrajectories();
 }
 
-function setEventsOnFormFields(param, url, boolparam, div_id) {
+function setEventsOnFormFields(param, url, div_id) {
     $('#' + div_id + ' input').change(function () {
         setIntegratorParamAndRedrawChart(url, 'integrator_parameters_changed', this.name, this.value, param)
     });
 }
 
-function prepareURL(currentElem, elementType) {
+function prepareURL(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
 }

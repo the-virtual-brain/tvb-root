@@ -49,25 +49,27 @@ function redrawPlotOnMinMaxChanges(baseUrl) {
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false, div_id='_temporal_params') {
+function setEventsOnStaticFormFields(fieldsWithEvents, url) {
     let CONNECTIVITY_FIELD = 'set_connectivity';
     let DISPLAY_NAME_FIELD = 'set_display_name';
-    let TEMPORAL_PARAMS_FIELD = 'set_temporal_param';
 
-    if (onlyEquationParams === false) {
-        $('select[name^="' + fieldsWithEvents[CONNECTIVITY_FIELD] + '"]').change(function () {
-            setStimulusParamAndRedrawChart(url, CONNECTIVITY_FIELD, this.name, this.value)
-        });
-        $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
-            setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
-        });
-    }
-    $('#' + div_id + ' input').change(function () {
-        setStimulusParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[CONNECTIVITY_FIELD] + '"]').change(function () {
+        setStimulusParamAndRedrawChart(url, CONNECTIVITY_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
+        setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function plotEquation(baseUrl, params=null) {
+function setEventsOnFormFields(fieldsWithEvents, url, div_id = 'temporal_params') {
+    $('#' + div_id + ' input').change(function () {
+        // TODO: send from server 'set_temporal_param'
+        setStimulusParamAndRedrawChart(url, 'set_temporal_param', this.name, this.value)
+    });
+}
+
+function plotEquation(baseUrl, params = null) {
+    // TODO: always send mina nd max values
     let url = baseUrl + '/get_equation_chart';
     if (params) {
         url += '?' + params
@@ -82,6 +84,6 @@ function plotEquation(baseUrl, params=null) {
     });
 }
 
-function prepareURL(currentElem, elementType) {
+function prepareURL(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + currentElem.value + '/' + elementType;
 }

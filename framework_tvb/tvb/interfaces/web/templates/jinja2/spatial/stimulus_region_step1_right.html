@@ -12,7 +12,7 @@
         	$("select[name='existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
-        	setEventsOnFormFields({{ fieldsWithEvents | safe }}, '{{ baseUrl | safe }}');
+        	setEventsOnStaticFormFields({{ fieldsWithEvents | safe }}, '{{ baseUrl | safe }}');
         	plotEquation('{{ baseUrl | safe }}');
             redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}')
         });

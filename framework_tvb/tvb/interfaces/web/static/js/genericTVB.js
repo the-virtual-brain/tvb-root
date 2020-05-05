@@ -1225,7 +1225,7 @@ $(document).ready(function () {
 });
 
 function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
-    let url = prepareURL(currentElem, elementType);
+    let url = prepareURL(currentElem, elementType, subformDiv);
     if (baseUrl !== 'None') {
         url = baseUrl + '/' + url;
     }
@@ -1235,8 +1235,8 @@ function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
         success: function (r) {
             $('#' + subformDiv).html(r);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
-            setEventsOnFormFields(elementType, baseUrl, true, subformDiv);
-            plotEquation(baseUrl);
+            setEventsOnFormFields(elementType, baseUrl, subformDiv);
+            plotEquation(baseUrl, null, subformDiv);
         }
     })
 }

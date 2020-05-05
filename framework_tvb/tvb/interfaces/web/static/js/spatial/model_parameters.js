@@ -27,7 +27,7 @@
  */
 
 function MP_getSelectedParamName(){
-    var maybeSelect = $("[name='_model_param']");
+    var maybeSelect = $("[name='model_param']");
     if ( maybeSelect.prop('tagName') == "SELECT" ){
         return maybeSelect.val();
     }else{  // radio group
@@ -176,34 +176,25 @@ function prepareUrlParam(paramName, paramValue) {
 }
 
 function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + '_min_x' + '"]').change(function () {
+    $('input[name="' + 'min_x' + '"]').change(function () {
         plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
     });
-    $('input[name="' + '_max_x' + '"]').change(function () {
+    $('input[name="' + 'max_x' + '"]').change(function () {
         plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false) {
+function setEventsOnStaticFormFields(fieldsWithEvents, url) {
     let MODEL_PARAM_FIELD = 'set_model_parameter';
-    let EQUATION_FIELD = 'set_equation';
-    let EQUATION_PARAMS_FIELD = 'set_equation_param';
 
-    if (onlyEquationParams === false) {
         $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
             setModelParam(url, MODEL_PARAM_FIELD, this.value)
         });
+}
 
-        let equationSelectFields = document.getElementsByName(fieldsWithEvents[EQUATION_FIELD]);
-        for (let i=0; i<equationSelectFields.length; i++) {
-            equationSelectFields[i].onclick = function () {
-                changeEquationParamsForm(url, EQUATION_FIELD, this.value, 'equation_params',
-                    fieldsWithEvents)
-            };
-        }
-    }
-    $('input[name^="' + fieldsWithEvents[EQUATION_PARAMS_FIELD] + '"]').change(function () {
-        setParamAndRedrawChart(url, EQUATION_PARAMS_FIELD, this.name, this.value)
+function setEventsOnFormFields(fieldsWithEvents, url, div_id) {
+    $('#' + div_id + ' input').change(function () {
+        setParamAndRedrawChart(url, 'set_equation_param', this.name, this.value)
     });
 }
 
@@ -220,4 +211,8 @@ function plotEquation(baseUrl, params=null) {
             $("#" + 'equationDivId').empty().append(data);
         }
     });
+}
+
+function prepareURL(currentElem, elementType, subformDiv) {
+    return 'refresh_subform/' + currentElem.value + '/' + elementType;
 }
