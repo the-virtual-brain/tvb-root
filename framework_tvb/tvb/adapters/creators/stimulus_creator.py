@@ -41,7 +41,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrField, TraitDataTypeSelectField, \
     SelectField
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
@@ -209,6 +209,11 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
         label="Connectivity"
     )
 
+    display_name = Str(
+        label='Display name',
+        required=False
+    )
+
 
 class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
@@ -278,6 +283,7 @@ class RegionStimulusCreator(ABCSynchronous):
 
         stimuli_region_idx = StimuliRegionIndex()
         stimuli_region_idx.fill_from_has_traits(stimuli_region)
+        self.generic_attributes.user_tag_1 = view_model.display_name
 
         h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx
