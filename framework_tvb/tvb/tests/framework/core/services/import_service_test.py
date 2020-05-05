@@ -36,17 +36,11 @@ import os
 import tvb_data
 import shutil
 import pytest
-from time import sleep
-from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.entities.load import try_get_last_datatype, get_filtered_datatypes
-from tvb.core.services.flow_service import FlowService
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import ProjectImportException
@@ -81,7 +75,7 @@ class TestImportService(BaseTestCase):
 
         self.delete_project_folders()
 
-    def test_import_export(self, user_factory, project_factory):
+    def test_import_export(self, user_factory, project_factory, value_wrapper_factory):
         """
         Test the import/export mechanism for a project structure.
         The project contains the following data types: Connectivity, Surface, MappedArray and ValueWrapper.
@@ -90,7 +84,7 @@ class TestImportService(BaseTestCase):
         test_project = project_factory(test_user, "TestImportExport")
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
-        value_wrapper = self._create_value_wrapper(test_user, test_project)
+        value_wrapper = value_wrapper_factory(test_user, test_project)
 
         result = self.get_all_datatypes()
         expected_results = {}
@@ -147,22 +141,3 @@ class TestImportService(BaseTestCase):
 
         with pytest.raises(ProjectImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
-
-    def _create_value_wrapper(self, test_user, test_project):
-
-        view_model = BaseBCTModel()
-        view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
-
-        importer = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        op = FlowService().fire_operation(importer, test_user, test_project.id, view_model=view_model)[0]
-        # wait for the operation to finish
-        tries = 5
-        while not op.has_finished and tries > 0:
-            sleep(5)
-            tries = -1
-            op = dao.get_operation_by_id(op.id)
-
-        value_wrapper = try_get_last_datatype(test_project.id, ValueWrapperIndex)
-        count = dao.count_datatypes(test_project.id, ValueWrapperIndex)
-        assert count == 1
-        return value_wrapper
