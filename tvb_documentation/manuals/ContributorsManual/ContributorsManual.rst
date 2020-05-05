@@ -1,7 +1,7 @@
 .. |TITLE| replace:: TVB Contributors Manual
 .. |DESCRIPTION| replace:: Provides a tutorial with the steps you need to take in order to start contributing into TVB code.
-.. |VERSION| replace:: 1.0
-.. |REVISION| replace:: 3
+.. |VERSION| replace:: 1.1
+.. |REVISION| replace:: 1
 
 .. |open_issues| raw:: html
 
@@ -15,8 +15,8 @@
 TVB Contributors manual
 =======================
 
-So you want to contribute to TVB. Maybe add a model or another feature.
-Thank you for helping! We welcome and appreciate contributions.
+So you want to contribute to TVB, or simply use the latest code from sources.
+We welcome contributions, or using for testing. Thank you!
 
 Get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
 Sign up for the `mailing list`_ and introduce yourself.
@@ -29,39 +29,41 @@ Have a look at the open tasks in our Jira |open_issues|.
 Finally revisit this document and find out how to set up |TVB| as a developer.
 
 
-The source code
----------------
+Source code and working environment
+------------------------------------
 
-.. _github: https://github.com/the-virtual-brain
-
-
-TVB's source code is hosted on `github`_ . Fork the **tvb-pack** into your account.
-You will need to have git installed locally and a Github account prepared.
-Then clone the repo locally.
-
-
-The work environment
---------------------
-
+.. _github: https://github.com/the-virtual-brain/tvb-root
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 
-We recommend preparing your local Python environment for TVB with `anaconda`_, then install TVB from Pypi.
+TVB's source code is hosted on `github`_ . Fork the **tvb-root** into your account.
+You will need to have `git` installed locally and a Github account prepared. Then clone the repo locally.
+
+For preparing the local work environment, as well as for linking TVB sources into it,
+the following steps should be done.
+We recommend preparing your local Python environment for TVB with `anaconda`_.
 Using a virtual environment inside Anaconda is a good idea.
 
 .. code-block:: bash
 
    $ envname="tvb-run"
-   $ conda create -y -n $envname numpy
+   $ conda create -y --name $envname python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug matplotlib-base
    $ source activate $envname
-   $ conda config --add channels conda-forge
-   $ pip install tvb-framework  # This will bring tvb and all its dependencies
+   $ consta install -c conda-forge jupyterlab flask gevent
+   $ pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
+   $ cd [tvb-root]/tvb_build/
+   $ sh install_full_tvb.sh
+
+The above list of dependencies might change. We recommend you to check the latest version here:
+https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_build/docker
+
+In case you do not want the sources, but only the latest released version of TVB, we recommend you to use Pypi:
+
+.. code-block:: bash
+
+   $ source activate $envname
+   $ pip install tvb-library               # In case you do not need the web interface. not storage, you can stop here
+   $ pip install tvb-framework
    $ python -m tvb.interfaces.web.run WEB_PROFILE  # Launch TVB web server locally
-
-Similarly as using conda-forge repo above, you could install from Pypi **tvb-framework** and/or **tvb-library**.
-
-The above setup will bring you the latest release code of TVB into your Anaconda env.
-As last step, you should replace that released TVB link from your env, with your local clone of the code.
-You can use the script *install_full_tvb* from tvb root repo.
 
 
 Support
@@ -77,7 +79,7 @@ Test suite
 TVB's test suite takes a long time to run, but a patch will have to pass it.
 We recommend running tests before submitting changes that touch code that you have not written::
 
-   $ pip install pytest
+   $ pip install pytest pytest-cov pytest-benchmark pytest-mock
    $ pytest --pyargs tvb.tests.library
    $ pytest --pyargs tvb.tests.framework
 

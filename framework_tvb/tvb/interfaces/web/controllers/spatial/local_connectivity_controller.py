@@ -183,7 +183,7 @@ class LocalConnectivityController(SpatioTemporalController):
         left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
-        template_specification['existentEntitiesInputList'] = left_side_form
+        template_specification['existentEntitiesInputList'] = self.render_adapter_form(left_side_form)
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_1'

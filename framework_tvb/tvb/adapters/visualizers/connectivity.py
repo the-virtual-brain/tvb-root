@@ -281,7 +281,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
                              tractsMin=minimum_t, tractsMax=maximum_t,
                              weightsMin=minimum, weightsMax=maximum,
                              tractsNonZeroMin=minimum_non_zero_t, weightsNonZeroMin=minimum_non_zero,
-                             pointsLabels=connectivity.ordered_labels, conductionSpeed=connectivity.speed or 1,
+                             pointsLabels=connectivity.ordered_labels, conductionSpeed=1,
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
                              hemisphereOrderUrl=path_hemisphere_order_indices)

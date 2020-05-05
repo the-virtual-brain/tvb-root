@@ -38,7 +38,7 @@ class DummyDataTypeH5(H5File):
         self.row1 = Scalar(DummyDataType.row1, self)
         self.row2 = Scalar(DummyDataType.row2, self)
 
-    def store(self, datatype, scalars_only=False, store_references=False):
+    def store(self, datatype, scalars_only=False, store_references=True):
         # type: (DummyDataType, bool, bool) -> None
         super(DummyDataTypeH5, self).store(datatype, scalars_only, store_references)
 

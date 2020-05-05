@@ -28,20 +28,16 @@
 #
 #
 import json
-from sqlalchemy import Column, Integer, ForeignKey, String, Float
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.fcd import Fcd
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
-from tvb.core.neotraits.db import from_ndarray
 
 
 class FcdIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
     fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not Fcd.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
@@ -50,6 +46,5 @@ class FcdIndex(DataTypeMatrix):
     def fill_from_has_traits(self, datatype):
         # type: (Fcd)  -> None
         super(FcdIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
         self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.fk_source_gid = datatype.source.gid.hex

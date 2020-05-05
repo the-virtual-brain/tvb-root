@@ -93,9 +93,10 @@ class Scalar(Accessor):
         # type: () -> typing.Union[str, int, float]
         # assuming here that the h5 will return the type we stored.
         # if paranoid do self.trait_attribute.field_type(value)
-        metadata = self.owner.storage_manager.get_metadata()
-        if self.field_name in metadata:
-            return metadata[self.field_name]
+        if self.owner.metadata_cache is None:
+            self.owner.metadata_cache = self.owner.storage_manager.get_metadata()
+        if self.field_name in self.owner.metadata_cache:
+            return self.owner.metadata_cache[self.field_name]
         else:
             raise MissingDataSetException(self.field_name)
 

@@ -197,11 +197,9 @@ class TopographicViewerForm(ABCAdapterForm):
         self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
                                                conditions=self.get_filters())
         self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
-                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                      operations=["=="], values=[1]))
+                                               conditions=self.get_filters())
         self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
-                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                      operations=["=="], values=[1]))
+                                               conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

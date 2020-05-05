@@ -35,13 +35,14 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
+import json
 from datetime import datetime
 from copy import copy
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits.db import HasTraitsIndex, Base
+from tvb.core.neotraits.db import HasTraitsIndex, Base, from_ndarray
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -201,10 +202,23 @@ class DataType(HasTraitsIndex):
 
 
 class DataTypeMatrix(DataType):
-    # These columns will need to be populates in fill_from_has_traits for each subclass
-    # because we do not have a HasTraits inherited class equivalent at this level
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+    subtype = Column(String, nullable=True)
+
     ndim = Column(Integer, default=0)
+    shape = Column(String, nullable=True)
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
+
+    def fill_from_has_traits(self, datatype):
+        super(DataTypeMatrix, self).fill_from_has_traits(datatype)
+        self.subtype = datatype.__class__.__name__
+
+        if hasattr(datatype, "array_data"):
+            self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+            self.shape = json.dumps(datatype.array_data.shape)
+            self.ndim = len(datatype.array_data.shape)
 
 
 class DataTypeGroup(DataType):
