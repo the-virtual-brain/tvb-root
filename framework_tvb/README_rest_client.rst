@@ -1,27 +1,34 @@
 TVB REST client
 ===============
 
-The tvb-rest-client is a helper package built with the intention to simplify the client interaction with TVB REST API.
-
-All the logic necessary to prepare and send requests towards the REST server, is embeded under a client API.
+The `tvb-rest-client` is a helper package built with the intention to simplify a
+Python client interaction with TVB REST Server.
+All the logic necessary to prepare and send requests towards the REST server, is embedded under this client API.
 
 **GET** requests are sent from this python client using the **requests** library.
 
 For the **POST** requests, a client has to attach a file with some input configuration.
 Such a file is usually an **H5** in TVB specific format.
-Thus, tvb-rest-client has all the logic for preparing those H5 files and sending requests.
+Thus, `tvb-rest-client` has all the logic for preparing those H5 files and sending requests.
 Also, the REST server uses a Keycloak client at log in time, so this client will open a browser that allows the user to
 log in, before attempting to make the requests.
 
 Usage
 =====
-You should provide the URL towards the TVB REST server.
+You should have a TVB REST server running, or access to a public one.
+Then into `tvb-rest-client` you need to provide the URL towards this TVB REST server.
 For the following example, we will suppose TVB REST server runs on *http://localhost:9090*
 
-Accessing the client API entrypoint:
-------------------------------------
+To launch a TVB REST server locally, you should download `tvb-framework` version >2.0. and launch it::
 
-If the TVB REST server you want to access runs at another address, change the parameter in the bellow TVBClient instantiation.
+    $ python -m tvb.interfaces.web.run WEB_PROFILE  # Launch TVB web and REST servers locally
+
+
+Accessing the client API entry-point
+-------------------------------------
+
+If the TVB REST server you want to access runs at another address, change the parameter
+in the bellow TVBClient instantiation.
 
 .. code-block:: python
 

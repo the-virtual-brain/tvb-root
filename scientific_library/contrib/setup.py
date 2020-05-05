@@ -28,11 +28,15 @@
 #
 #
 
+import os
 import shutil
 import setuptools
 
 TVB_VERSION = "2.0.5"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
+
+with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
+    DESCRIPTION = fd.read()
 
 setuptools.setup(name='tvb-contrib',
                  version=TVB_VERSION,
@@ -40,6 +44,7 @@ setuptools.setup(name='tvb-contrib',
                  include_package_data=True,
                  install_requires=CONTRIB_DEPENDENCIES,
                  description='A package with TVB contributed additions to the simulator, useful for scripting.',
+                 long_description=DESCRIPTION,
                  license="GPL v3",
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
