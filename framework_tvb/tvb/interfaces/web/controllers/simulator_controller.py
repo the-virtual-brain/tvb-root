@@ -601,7 +601,7 @@ class SimulatorController(BurstBaseController):
         if isinstance(session_stored_simulator.integrator.noise, Additive):
             monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id,
                                                         session_stored_simulator.is_surface_simulation)
-            monitor_fragment.fill_from_trait(session_stored_simulator)
+            monitor_fragment.fill_from_trait(session_stored_simulator.monitors)
 
             rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
                                                               SimulatorWizzardURLs.SET_NOISE_PARAMS_URL,
@@ -638,7 +638,7 @@ class SimulatorController(BurstBaseController):
 
         monitor_fragment = SimulatorMonitorFragment('', common.get_current_project().id,
                                                     session_stored_simulator.is_surface_simulation)
-        monitor_fragment.fill_from_trait(session_stored_simulator)
+        monitor_fragment.fill_from_trait(session_stored_simulator.monitors)
 
         rendering_rules = SimulatorFragmentRenderingRules(monitor_fragment, SimulatorWizzardURLs.SET_MONITORS_URL,
                                                           SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL,
