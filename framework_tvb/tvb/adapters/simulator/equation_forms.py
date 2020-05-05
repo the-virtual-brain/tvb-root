@@ -32,6 +32,32 @@ from tvb.datatypes.equations import *
 from tvb.core.neotraits.forms import Form, ScalarField, SimpleFloatField
 
 
+LINEAR_EQUATION = 'Linear'
+GAUSSIAN_EQUATION = 'Gaussian'
+DOUBLE_GAUSSIAN_EQUATION = 'Mexican-hat'
+SIGMOID_EQUATION = 'Sigmoid'
+GENRALIZED_SIGMOID_EQUATION = 'GeneralizedSigmoid'
+SINUSOID_EQUATION = 'Sinusoid'
+COSINE_EQUATION = 'Cosine'
+ALPHA_EQUATION = 'Alpha'
+PULSE_TRAIN_EQUATION = 'PulseTrain'
+
+
+def get_ui_name_to_equation_dict():
+    eq_name_to_class = {
+        LINEAR_EQUATION: Linear,
+        GAUSSIAN_EQUATION: Gaussian,
+        DOUBLE_GAUSSIAN_EQUATION: DoubleGaussian,
+        SIGMOID_EQUATION: Sigmoid,
+        GENRALIZED_SIGMOID_EQUATION: GeneralizedSigmoid,
+        SINUSOID_EQUATION: Sinusoid,
+        COSINE_EQUATION: Cosine,
+        ALPHA_EQUATION: Alpha,
+        PULSE_TRAIN_EQUATION: PulseTrain
+    }
+    return eq_name_to_class
+
+
 def get_ui_name_for_equation(equation_class):
     equation_to_ui_name = dict((v, k) for k, v in get_ui_name_to_equation_dict().items())
     return equation_to_ui_name.get(equation_class)
