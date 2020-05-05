@@ -57,6 +57,8 @@ from tvb.simulator.models.reduced_wong_wang_exc_io_inh_i import ReducedWongWangE
 # most of the runtime associated with a simulation.
 class Simulator(HasTraits):
 
+    use_numba = True
+
     tvb_spikeNet_interface = None
     configure_spiking_simulator = None
     run_spiking_simulator = None
@@ -505,12 +507,12 @@ class Simulator(HasTraits):
         self._loop_update_stimulus(step, stimulus)
 
         # TODO: temporary hack because numba dfuns fail for multiple modes
-        if self.model.number_of_modes > 1:
-            use_numba = False
-            dfun = self.model._numpy_dfun
-        else:
+        if self.use_numba and self.model.number_of_modes == 1:
             use_numba = True
             dfun = self.model.dfun
+        else:
+            use_numba = False
+            dfun = self.model._numpy_dfun
 
         # This is not necessary in most cases
         # if update_non_state_variables=True in the model dfun by default
