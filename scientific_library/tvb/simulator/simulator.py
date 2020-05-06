@@ -293,7 +293,16 @@ class Simulator(HasTraits):
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
                            "noise", "psi_table", "nerf_table", "gid")
-        spatial_reshape = self.model.spatial_param_reshape
+
+        # TODO: temporary hack because numba dfuns fail for multiple modes
+        if self.use_numba and self.model.number_of_modes == 1:
+            self._dfun = self.model.dfun
+            spatial_reshape = self.model.spatial_param_reshape
+        else:
+            self.use_numba = False
+            self._dfun = self.model._numpy_dfun
+            spatial_reshape = (-1, 1)
+
         for param in type(self.model).declarative_attrs:
             if param in excluded_params:
                 continue
@@ -506,17 +515,9 @@ class Simulator(HasTraits):
         node_coupling = self._loop_compute_node_coupling(step)
         self._loop_update_stimulus(step, stimulus)
 
-        # TODO: temporary hack because numba dfuns fail for multiple modes
-        if self.use_numba and self.model.number_of_modes == 1:
-            use_numba = True
-            dfun = self.model.dfun
-        else:
-            use_numba = False
-            dfun = self.model._numpy_dfun
-
         # This is not necessary in most cases
         # if update_non_state_variables=True in the model dfun by default
-        self.update_state(state, node_coupling, local_coupling, use_numba)
+        self.update_state(state, node_coupling, local_coupling, self.use_numba)
 
         # TODO: We could have another __call__method obviously when there is no co-simulation...
         if self.tvb_spikeNet_interface is not None:
@@ -555,7 +556,7 @@ class Simulator(HasTraits):
                 self.run_spiking_simulator(self.integrator.dt)
 
             # Integrate TVB to get the new TVB state
-            state = self.integrator.scheme(state, dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
 
             if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                 raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
@@ -573,7 +574,7 @@ class Simulator(HasTraits):
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             # Update any non-state variables and apply any boundaries again to the new state:
-            self.update_state(state, node_coupling, local_coupling, use_numba)
+            self.update_state(state, node_coupling, local_coupling, self.use_numba)
             # Now direct the new state to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
