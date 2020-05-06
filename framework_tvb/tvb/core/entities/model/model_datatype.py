@@ -121,7 +121,7 @@ class DataType(HasTraitsIndex):
         if self.title:
             ret['title'] = str(self.title)
 
-        for attribute in self.__mapper__.column_attrs.keys():
+        for attribute in self.__table__.columns.keys():
             try:
                 attr_field = getattr(self, attribute)
                 ret[attribute] = str(attr_field)
