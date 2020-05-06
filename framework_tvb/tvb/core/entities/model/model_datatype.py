@@ -113,19 +113,18 @@ class DataType(HasTraitsIndex):
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
 
+    @property
     def summary_info(self):
         # type: () -> typing.Dict[str, str]
 
-        cls = type(self)
-        ret = {'Type': cls.__name__}
+        ret = {}
         if self.title:
             ret['title'] = str(self.title)
 
-        for attribute in cls.__dict__:
+        for attribute in self.__mapper__.column_attrs.keys():
             try:
                 attr_field = getattr(self, attribute)
-                if attr_field is not None:
-                    ret[attribute] = attr_field
+                ret[attribute] = str(attr_field)
             except Exception:
                 ""
         return ret

@@ -291,4 +291,4 @@ class DataTypeOverlayDetails(CommonDetails):
 
         ### Populate Scientific attributes
         if hasattr(datatype_result, 'summary_info') and datatype_result.summary_info is not None:
-            self.add_scientific_fields(datatype_result.summary_info())
+            self.add_scientific_fields(datatype_result.summary_info)
