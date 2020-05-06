@@ -37,8 +37,8 @@ from tvb.simulator.models.base import numpy, ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
-@guvectorize([(float64[:],)*19], '(n),(m)' + ',()'*16 + '->(n)', nopython=True)
-def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, di, wi, ji, ri, g, l, io, newS):
+@guvectorize([(float64[:],)*20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
+def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, di, wi, ji, ri, g, l, io, ie, newS):
     "Gufunc for reduced Wong-Wang model equations."
 
     cc = g[0]*jn[0]*c[0]
@@ -46,7 +46,7 @@ def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, 
     jnSe = jn[0] * S[0]
 
     if re[0] < 0.0:
-        x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc
+        x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc + ie[0]
         x = ae[0]*x - be[0]
         h = x / (1 - numpy.exp(-de[0]*x))
         S[2] = h
@@ -155,7 +155,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                                               self.w_p, self.W_e, self.J_N, self.R_e,
                                               self.a_i, self.b_i, self.d_i,
                                               self.W_i, self.J_i, self.R_i,
-                                              self.G, self.lamda, self.I_o)
+                                              self.G, self.lamda, self.I_o, self.I_ext)
             return state_variables
 
         # In this case, rates (H_e, H_i) are non-state variables,
@@ -178,16 +178,16 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         J_N_S_e = self.J_N * S[0]
 
         # TODO: Confirm that this computation is correct for this model depending on the r_e and r_i values!
-        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling
+        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling + self.I_ext
 
         x_e = self.a_e * x_e - self.b_e
-        # Only rates with r_e < 0 will be updated by TVB.
+        # Only rates with R_e < 0 will be updated by TVB.
         H_e = numpy.where(self.R_e >= 0, R[0], x_e / (1 - numpy.exp(-self.d_e * x_e)))
 
         x_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
 
         x_i = self.a_i * x_i - self.b_i
-        # Only rates with r_i < 0 will be updated by TVB.
+        # Only rates with R_i < 0 will be updated by TVB.
         H_i = numpy.where(self.R_i >= 0, R[1], x_i / (1 - numpy.exp(-self.d_i * x_i)))
 
         # We now update the state_variable vector with the new rates:
