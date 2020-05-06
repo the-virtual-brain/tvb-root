@@ -876,6 +876,8 @@ class TimeSeries(HasTraits):
             hue = labels_ordering[3]
         elif self.shape[2] > 1:
             hue = labels_ordering[2]
+        else:
+            hue = None
         kwargs["col_wrap"] = kwargs.pop("col_wrap", self.shape[1])  # All variables in columns
         return self.plot(data=data, y=None, hue=hue, col=col, row=None,
                          figname=figname, plotter=plotter, **kwargs)
