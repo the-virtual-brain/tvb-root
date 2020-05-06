@@ -170,6 +170,10 @@ class SimpleSelectField(Field):
     missing_value = 'explicit-None-value'
     subform_prefix = 'subform_'
 
+    def _prepare_template(self, choices):
+        if len(choices) > 4:
+            self.template = 'form_fields/select_field.html'
+
     def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None,
                  include_none=True, subform=None, base_url=None):
         # type: (dict, Form, str, bool, bool, str, str, object, bool, Form, str) -> None
@@ -180,6 +184,7 @@ class SimpleSelectField(Field):
         if subform:
             self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
             self.base_url = base_url
+        self._prepare_template(self.choices)
 
     def options(self):
         """ to be used from template, assumes self.data is set """
@@ -209,32 +214,6 @@ class SimpleSelectField(Field):
     def validate(self):
         super(SimpleSelectField, self).validate()
         # TODO: validate subform
-
-
-class SimpleArrayField(Field):
-    template = 'form_fields/str_field.html'
-
-    def __init__(self, form, name, dtype, disabled=False, required=False, label='', doc='', default=None):
-        super(SimpleArrayField, self).__init__(form, name, disabled, required, label, doc, default)
-        self.dtype = dtype
-
-    def _from_post(self):
-        if self.unvalidated_data is not None and isinstance(self.unvalidated_data, str):
-            data = json.loads(self.unvalidated_data)
-            self.data = numpy.array(data, dtype=self.dtype).tolist()
-        elif self.unvalidated_data is not None and isinstance(self.unvalidated_data, list):
-            self.data = self.unvalidated_data
-
-    @property
-    def value(self):
-        if self.data is None:
-            # todo: maybe we need to distinguish None from missing data
-            # this None means self.data is missing, either not set or unset cause of validation error
-            return self.unvalidated_data
-        try:
-            return json.dumps(self.data.tolist())
-        except (TypeError, ValueError):
-            return self.unvalidated_data
 
 
 class DataTypeSelectField(Field):
@@ -612,6 +591,10 @@ class SelectField(TraitField):
     missing_value = 'explicit-None-value'
     subform_prefix = 'subform_'
 
+    def _prepare_template(self, choices):
+        if len(choices) > 4:
+            self.template = 'form_fields/select_field.html'
+
     def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
                  subform=None, base_url=None):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
@@ -626,6 +609,7 @@ class SelectField(TraitField):
         if subform:
             self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
             self.base_url = base_url
+        self._prepare_template(self.choices)
 
     @property
     def value(self):
@@ -677,8 +661,6 @@ class SelectField(TraitField):
     def fill_from_post(self, post_data):
         super(SelectField, self).fill_from_post(post_data)
         self.data = self.choices.get(self.data)
-        if self.subform_field:
-            self.subform_field.fill_from_post(post_data)
 
 
 class MultiSelectField(TraitField):
@@ -852,3 +834,8 @@ class Form(object):
             field.fill_from_post(form_data)
         self.range_1 = form_data.get(self.RANGE_1_NAME)
         self.range_2 = form_data.get(self.RANGE_2_NAME)
+
+    def fill_from_single_post_param(self, **param):
+        param_key = list(param)[0]
+        field = getattr(self, param_key)
+        field.fill_from_post(param)

@@ -91,7 +91,6 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
                                    choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm,
                                    base_url=base_url)
-        self.spatial.template = 'form_fields/select_field.html'
         self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
         self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
 

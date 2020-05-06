@@ -81,7 +81,6 @@ class MultiplicativeNoiseForm(NoiseForm):
         self.equation_choices = get_ui_name_to_equation_dict()
         self.equation = SimpleSelectField(self.equation_choices, self, name='equation', required=True, label='Equation',
                                           subform=get_form_for_equation(Linear))
-        self.equation.template = 'form_fields/select_field.html'
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)

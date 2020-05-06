@@ -288,13 +288,12 @@ function setEventsOnStaticFormFields(fieldsWithEvents, url) {
     let SURFACE_FIELD = 'set_surface';
     let DISPLAY_NAME_FIELD = 'set_display_name';
 
-    $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
+    $('select[name^="' + fieldsWithEvents[SURFACE_FIELD] + '"]').change(function () {
         setSurfaceStimParamAndRedrawChart(url, SURFACE_FIELD, this.name, this.value)
     });
-    $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
         setSurfaceStimParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
     });
-    ß
 }
 
 function setEventsOnFormFields(fields_with_events, url, div_id = 'temporal_params') {

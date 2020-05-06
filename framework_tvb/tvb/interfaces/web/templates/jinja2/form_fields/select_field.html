@@ -6,7 +6,7 @@
         {% endfor %}
     </select>
     {% if field.subform_field %}
-         <div id="{{ field.subform_field.name }}">
+        <div id="{{ field.subform_field.name }}">
             {% with adapter_form=field.subform_field.form %}
                 {% include 'form_fields/form_field.html' %}
             {% endwith %}
@@ -18,7 +18,7 @@
                         '{{ field.base_url | safe }}', '{{ field.subform_field.name }}')
                 });
                 setEventsOnFormFields('{{ field.subform_field.form.get_subform_key() }}',
-                        '{{ field.base_url | safe }}', '{{ field.subform_field.name }}');
+                    '{{ field.base_url | safe }}', '{{ field.subform_field.name }}');
             });
         </script>
     {% endif %}

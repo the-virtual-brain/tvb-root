@@ -74,7 +74,6 @@ class IntegratorStochasticForm(IntegratorForm):
         self.noise_choices = get_ui_name_to_noise_dict()
         self.noise = SimpleSelectField(self.noise_choices, self, name='noise', required=True, label='Noise',
                                        subform=get_form_for_noise(Additive))
-        self.noise.template = self.template
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)

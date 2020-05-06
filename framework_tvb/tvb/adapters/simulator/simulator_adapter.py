@@ -124,7 +124,6 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling_choices = get_ui_name_to_coupling_dict()
         self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
                                           label="Coupling", doc=Simulator.coupling.doc)
-        self.coupling.template = 'form_fields/select_field.html'
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]

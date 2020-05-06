@@ -64,11 +64,9 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         super(SurfaceModelParametersForm, self).__init__(prefix)
         self.model_param = SimpleSelectField(model_params, self, name='model_param', required=True,
                                              label='Model parameter')
-        self.model_param.template = 'form_fields/select_field.html'
         self.equation = SimpleSelectField(equation_choices, self, name='equation', required=True, label='Equation',
                                           default=self.default_equation,
                                           subform=get_form_for_equation(self.default_equation), base_url=base_url)
-        self.equation.template = 'form_fields/select_field.html'
 
     @staticmethod
     def get_required_datatype():

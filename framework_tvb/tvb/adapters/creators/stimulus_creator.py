@@ -87,8 +87,6 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
                                     choices=temporal_equation_choices,
                                     subform=get_form_for_equation(self.default_temporal), base_url=base_url)
-        self.temporal.template = 'form_fields/select_field.html'
-        self.spatial.template = 'form_fields/select_field.html'
 
     @staticmethod
     def get_view_model():
@@ -229,7 +227,6 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
                                     choices=equation_choices, subform=get_form_for_equation(self.default_temporal),
                                     base_url=temporal_base_url)
-        self.temporal.template = 'form_fields/select_field.html'
 
     @staticmethod
     def get_view_model():
