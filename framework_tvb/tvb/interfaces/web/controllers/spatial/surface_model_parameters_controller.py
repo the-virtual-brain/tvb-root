@@ -39,11 +39,13 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import Form, SimpleSelectField, SimpleFloatField, FormField
+from tvb.core.neotraits.forms import Form, SimpleFloatField, FormField, SelectField
+from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes.equations import Gaussian
+from tvb.datatypes.equations import Gaussian, SpatialApplicableEquation
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user, \
@@ -62,11 +64,13 @@ class SurfaceModelParametersForm(ABCAdapterForm):
 
     def __init__(self, model_params, equation_choices, prefix='', base_url=None):
         super(SurfaceModelParametersForm, self).__init__(prefix)
-        self.model_param = SimpleSelectField(model_params, self, name='model_param', required=True,
-                                             label='Model parameter')
-        self.equation = SimpleSelectField(equation_choices, self, name='equation', required=True, label='Equation',
-                                          default=self.default_equation,
-                                          subform=get_form_for_equation(self.default_equation), base_url=base_url)
+        default_model_param = list(model_params.values())[0]
+
+        self.model_param = SelectField(Str(label='Model parameter', default=default_model_param), self,
+                                       choices=model_params, name='model_param')
+        self.equation = SelectField(Attr(SpatialApplicableEquation, label='Equation', default=self.default_equation),
+                                    self, choices=equation_choices, name='equation',
+                                    subform=get_form_for_equation(self.default_equation), base_url=base_url)
 
     @staticmethod
     def get_required_datatype():
@@ -83,7 +87,7 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         self.equation.data = type(trait)
         self.equation.subform_field = FormField(get_form_for_equation(type(trait)), self,
-                                               self.NAME_EQATION_PARAMS_DIV)
+                                                self.NAME_EQATION_PARAMS_DIV)
         self.equation.subform_field.form.fill_from_trait(trait)
 
 

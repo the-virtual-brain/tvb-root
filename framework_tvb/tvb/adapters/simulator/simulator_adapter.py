@@ -49,6 +49,7 @@ from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.patterns import SpatioTemporalPattern
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
@@ -59,7 +60,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, Attr
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
+from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
 from tvb.core.neocom import h5
 
 
@@ -117,13 +118,16 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+        self.coupling_choices = get_ui_name_to_coupling_dict()
+        default_coupling = list(self.coupling_choices.values())[0]
+
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                                 required=True, label="Connectivity",
                                                 doc=Simulator.connectivity.doc,
                                                 conditions=self.get_filters())
-        self.coupling_choices = get_ui_name_to_coupling_dict()
-        self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
-                                          label="Coupling", doc=Simulator.coupling.doc)
+        self.coupling = SelectField(
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
+            name='coupling', choices=self.coupling_choices)
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]

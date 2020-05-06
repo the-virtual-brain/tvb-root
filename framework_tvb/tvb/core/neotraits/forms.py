@@ -165,57 +165,6 @@ class SimpleFloatField(Field):
             self.data = float(self.unvalidated_data)
 
 
-class SimpleSelectField(Field):
-    template = 'form_fields/radio_field.html'
-    missing_value = 'explicit-None-value'
-    subform_prefix = 'subform_'
-
-    def _prepare_template(self, choices):
-        if len(choices) > 4:
-            self.template = 'form_fields/select_field.html'
-
-    def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None,
-                 include_none=True, subform=None, base_url=None):
-        # type: (dict, Form, str, bool, bool, str, str, object, bool, Form, str) -> None
-        super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc, default)
-        self.choices = choices
-        self.include_none = include_none
-        self.subform_field = None
-        if subform:
-            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
-            self.base_url = base_url
-        self._prepare_template(self.choices)
-
-    def options(self):
-        """ to be used from template, assumes self.data is set """
-        if not self.required and self.include_none:
-            choice = None
-            yield Option(
-                id='{}_{}'.format(self.name, None),
-                value=self.missing_value,
-                label=str(choice).title(),
-                checked=self.data is None
-            )
-
-        for i, choice in enumerate(self.choices.keys()):
-            yield Option(
-                id='{}_{}'.format(self.name, i),
-                value=choice,
-                label=str(choice).title(),
-                checked=self.data == self.choices.get(choice)
-            )
-
-    def fill_from_post(self, post_data):
-        super(SimpleSelectField, self).fill_from_post(post_data)
-        self.data = self.choices.get(self.data)
-        if self.subform_field:
-            self.subform_field.fill_from_post(post_data)
-
-    def validate(self):
-        super(SimpleSelectField, self).validate()
-        # TODO: validate subform
-
-
 class DataTypeSelectField(Field):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'

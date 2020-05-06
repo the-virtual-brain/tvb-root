@@ -30,8 +30,8 @@
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
 from tvb.simulator.integrators import *
-from tvb.core.neotraits.forms import Form, ScalarField, SimpleSelectField
-from tvb.simulator.noise import Additive
+from tvb.core.neotraits.forms import Form, ScalarField, SelectField
+from tvb.simulator.noise import Noise
 
 
 def get_integrator_to_form_dict():
@@ -72,8 +72,10 @@ class IntegratorStochasticForm(IntegratorForm):
     def __init__(self, prefix=''):
         super(IntegratorStochasticForm, self).__init__(prefix)
         self.noise_choices = get_ui_name_to_noise_dict()
-        self.noise = SimpleSelectField(self.noise_choices, self, name='noise', required=True, label='Noise',
-                                       subform=get_form_for_noise(Additive))
+        default_noise = list(self.noise_choices.values())[0]
+
+        self.noise = SelectField(Attr(Noise, label='Noise', default=default_noise), self, name='noise',
+                                 choices=self.noise_choices, subform=get_form_for_noise(default_noise))
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)
