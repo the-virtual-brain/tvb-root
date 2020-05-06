@@ -43,11 +43,13 @@ class SubformHelper(object):
         NOISE = partial(get_form_for_noise)
         EQUATION = partial(get_form_for_equation)
 
-    def get_subform_for_field_value(self, ui_name, subform_key):
+    @staticmethod
+    def get_subform_for_field_value(ui_name, subform_key):
         current_class = SubformsEnum[subform_key].value().get(ui_name)
-        return self.FormToConfigEnum[subform_key].value(current_class)()
+        return SubformHelper.FormToConfigEnum[subform_key].value(current_class)()
 
-    def get_class_for_field_value(self, ui_name, subform_key):
+    @staticmethod
+    def get_class_for_field_value(ui_name, subform_key):
         current_class = SubformsEnum[subform_key].value().get(ui_name)
         return current_class
 

@@ -204,17 +204,17 @@ class DynamicModelController(BurstBaseController):
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
     def _change_integrator(self, dynamic, field_value, mapping_key):
-        integrator = SubformHelper().get_class_for_field_value(field_value, mapping_key)()
+        integrator = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
         self._update_integrator(dynamic, integrator)
 
     def _change_noise(self, dynamic, field_value, mapping_key):
-        noise = SubformHelper().get_class_for_field_value(field_value, mapping_key)()
+        noise = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
         integrator = dynamic.integrator
         integrator.noise = noise
         self._update_integrator(dynamic, integrator)
 
     def _change_equation(self, dynamic, field_value, mapping_key):
-        equation = SubformHelper().get_class_for_field_value(field_value, mapping_key)()
+        equation = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
         integrator = dynamic.integrator
         integrator.noise.b = equation
         self._update_integrator(dynamic, integrator)
@@ -234,7 +234,7 @@ class DynamicModelController(BurstBaseController):
     @check_user
     def refresh_subform(self, dynamic_gid, field_value, mapping_key):
         self._update_integrator_on_dynamic(dynamic_gid, field_value, mapping_key)
-        subform = SubformHelper().get_subform_for_field_value(field_value, mapping_key)
+        subform = SubformHelper.get_subform_for_field_value(field_value, mapping_key)
         return {'adapter_form': subform}
 
     @cherrypy.expose

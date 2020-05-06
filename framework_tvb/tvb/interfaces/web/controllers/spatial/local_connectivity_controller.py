@@ -143,7 +143,7 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = SubformHelper().get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose

@@ -232,7 +232,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         context = common.get_from_session(KEY_CONTEXT_MPS)
         context.current_equation = eq_class()
 
-        eq_params_form = SubformHelper().get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose

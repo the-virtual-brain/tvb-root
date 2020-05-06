@@ -121,7 +121,7 @@ class RegionStimulusController(SpatioTemporalController):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         current_region_stim.temporal = eq_class()
 
-        eq_params_form = SubformHelper().get_subform_for_field_value(temporal_equation, mapping_key)
+        eq_params_form = SubformHelper.get_subform_for_field_value(temporal_equation, mapping_key)
         # TODO: check eqPrefixes
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
