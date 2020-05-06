@@ -40,15 +40,15 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator.models.base import ModelNumbaDfun
 
 
-@guvectorize([(float64[:],)*21], '(n),(m)' + ',()'*18 + '->(n)', nopython=True)
-def _numba_dfun(S, c, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, dx):
+@guvectorize([(float64[:],)*22], '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
+def _numba_dfun(S, c, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, ie, dx):
     "Gufunc for reduced Wong-Wang model equations."
 
     cc = g[0]*jn[0]*c[0]
 
     jnSe = jn[0]*S[0]
 
-    x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc
+    x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc + ie[0]
     x = ae[0]*x - be[0]
     h = x / (1 - numpy.exp(-de[0]*x))
     dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * h * ge[0]
@@ -182,6 +182,12 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         domain=Range(lo=0.0, hi=1.0, step=0.001),
         doc="""[nA]. Effective external input""")
 
+    I_ext = NArray(
+        label=":math:`I_{ext}`",
+        default=numpy.array([0.0, ]),
+        domain=Range(lo=0.0, hi=1.0, step=0.001),
+        doc="""[nA]. Effective external stimulus input""")
+
     G = NArray(
         label=":math:`G`",
         default=numpy.array([2.0, ]),
@@ -250,7 +256,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
 
         J_N_S_e = self.J_N * S[0]
 
-        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling
+        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling + self.I_ext
 
         x_e = self.a_e * x_e - self.b_e
         H_e = x_e / (1 - numpy.exp(-self.d_e * x_e))
@@ -276,6 +282,6 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
                             self.w_p, self.W_e, self.J_N,
                             self.a_i, self.b_i, self.d_i, self.gamma_i, self.tau_i,
                             self.W_i, self.J_i,
-                            self.G, self.lamda, self.I_o)
+                            self.G, self.lamda, self.I_o, self.I_ext)
         return deriv.T[..., numpy.newaxis]
 
