@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -171,25 +171,21 @@ function setParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
     })
 }
 
-function prepareUrlParam(paramName, paramValue) {
-    return paramName + '=' + paramValue;
-}
-
 function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + 'min_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    $('#min_x').change(function () {
+        plotEquation(baseUrl);
     });
-    $('input[name="' + 'max_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    $('#max_x').change(function () {
+        plotEquation(baseUrl);
     });
 }
 
 function setEventsOnStaticFormFields(fieldsWithEvents, url) {
     let MODEL_PARAM_FIELD = 'set_model_parameter';
 
-        $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
-            setModelParam(url, MODEL_PARAM_FIELD, this.value)
-        });
+    $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
+        setModelParam(url, MODEL_PARAM_FIELD, this.value)
+    });
 }
 
 function setEventsOnFormFields(fieldsWithEvents, url, div_id) {
@@ -198,8 +194,20 @@ function setEventsOnFormFields(fieldsWithEvents, url, div_id) {
     });
 }
 
-function plotEquation(baseUrl, params=null) {
+function prepareUrlParams() {
+    min_field = $('#min_x')[0];
+    min_params = prepareUrlParam(min_field.name, min_field.value);
+
+    max_field = $('#max_x')[0];
+    max_params = prepareUrlParam(max_field.name, max_field.value);
+
+    params = min_params + '&' + max_params;
+    return params;
+}
+
+function plotEquation(baseUrl, subformDiv = null) {
     let url = baseUrl + '/get_equation_chart';
+    params = prepareUrlParams();
     if (params) {
         url += '?' + params
     }

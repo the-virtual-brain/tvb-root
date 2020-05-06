@@ -253,10 +253,6 @@ function tick() {
 }
 
 // Following methods are used for handling events on dynamic forms
-function prepareUrlParam(paramName, paramValue) {
-    return paramName + '=' + paramValue;
-}
-
 function setSurfaceStimParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
     let current_param = prepareUrlParam(fieldName, fieldValue);
     let url = baseUrl + '/' + methodToCall + '?' + current_param;
@@ -270,17 +266,17 @@ function setSurfaceStimParamAndRedrawChart(baseUrl, methodToCall, fieldName, fie
 }
 
 function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + 'min_space_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value), 'spatial');
+    $('#min_space_x').change(function () {
+        plotEquation(baseUrl,'spatial');
     });
-    $('input[name="' + 'max_space_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value), 'spatial');
+    $('#max_space_x').change(function () {
+        plotEquation(baseUrl,'spatial');
     });
-    $('input[name="' + 'min_tmp_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value), 'temporal');
+    $('#min_tmp_x').change(function () {
+        plotEquation(baseUrl,'temporal');
     });
-    $('input[name="' + 'max_tmp_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value), 'temporal');
+    $('#max_tmp_x').change(function () {
+        plotEquation(baseUrl,'temporal');
     });
 }
 
@@ -307,11 +303,27 @@ function setEventsOnFormFields(fields_with_events, url, div_id = 'temporal_param
 }
 
 function plotEquations(baseUrl) {
-    plotEquation(baseUrl, null, 'temporal');
-    plotEquation(baseUrl, null, 'spatial');
+    plotEquation(baseUrl, 'temporal');
+    plotEquation(baseUrl, 'spatial');
 }
 
-function plotEquation(baseUrl, params = null, subformDiv = 'temporal_params') {
+function prepareUrlParams(subformDiv='temporal_params') {
+    let min_field_id = 'min_tmp_x';
+    let max_field_id = 'max_tmp_x';
+    if (subformDiv.includes('spatial')) {
+        min_field_id = 'min_space_x';
+        max_field_id = 'max_space_x';
+    }
+    let min_field = $('#' + min_field_id)[0];
+    let min_params = prepareUrlParam(min_field.name, min_field.value);
+
+    let max_field = $('#' + max_field_id)[0];
+    let max_params = prepareUrlParam(max_field.name, max_field.value);
+
+    return min_params + '&' + max_params;
+}
+
+function plotEquation(baseUrl, subformDiv = 'temporal_params') {
     let methodToCall = 'get_temporal_equation_chart';
     let equationDivId = 'temporalEquationDivId';
     if (subformDiv.includes('spatial')) {
@@ -319,6 +331,7 @@ function plotEquation(baseUrl, params = null, subformDiv = 'temporal_params') {
         equationDivId = 'spatialEquationDivId';
     }
     let url = baseUrl + '/' + methodToCall;
+    params = prepareUrlParams(subformDiv);
     if (params) {
         url += '?' + params
     }

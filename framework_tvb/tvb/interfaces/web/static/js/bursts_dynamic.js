@@ -525,7 +525,7 @@ function setIntegratorParamAndRedrawChart(baseUrl, methodToCall, fieldName, fiel
     })
 }
 
-function plotEquation(baseUrl='') {
+function plotEquation(baseUrl = '', subformDiv = null) {
     dynamicPage.grafic._redrawTrajectories();
 }
 

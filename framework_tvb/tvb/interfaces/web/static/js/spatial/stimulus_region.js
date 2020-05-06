@@ -36,16 +36,12 @@ function setStimulusParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldV
     })
 }
 
-function prepareUrlParam(paramName, paramValue) {
-    return paramName + '=' + paramValue;
-}
-
 function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + 'min_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    $('#min_x').change(function () {
+        plotEquation(baseUrl);
     });
-    $('input[name="' + 'max_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    $('#max_x').change(function () {
+        plotEquation(baseUrl);
     });
 }
 
@@ -68,9 +64,20 @@ function setEventsOnFormFields(fieldsWithEvents, url, div_id = 'temporal_params'
     });
 }
 
-function plotEquation(baseUrl, params = null) {
-    // TODO: always send mina nd max values
+function prepareUrlParams() {
+    min_field = $('#min_x')[0];
+    min_params = prepareUrlParam(min_field.name, min_field.value);
+
+    max_field = $('#max_x')[0];
+    max_params = prepareUrlParam(max_field.name, max_field.value);
+
+    params = min_params + '&' + max_params;
+    return params;
+}
+
+function plotEquation(baseUrl, subformDiv = null) {
     let url = baseUrl + '/get_equation_chart';
+    params = prepareUrlParams();
     if (params) {
         url += '?' + params
     }

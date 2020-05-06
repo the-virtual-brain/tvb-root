@@ -1224,6 +1224,10 @@ $(document).ready(function () {
     setupMenuEvents();
 });
 
+function prepareUrlParam(paramName, paramValue) {
+    return paramName + '=' + paramValue;
+}
+
 function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
     let url = prepareURL(currentElem, elementType, subformDiv);
     if (baseUrl !== 'None') {
@@ -1236,7 +1240,7 @@ function refreshSubform(currentElem, elementType, baseUrl, subformDiv) {
             $('#' + subformDiv).html(r);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
             setEventsOnFormFields(elementType, baseUrl, subformDiv);
-            plotEquation(baseUrl, null, subformDiv);
+            plotEquation(baseUrl, subformDiv);
         }
     })
 }

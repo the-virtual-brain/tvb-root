@@ -203,7 +203,7 @@ function setEventsOnFormFields(fields_with_events, url, div_id = '_temporal_para
     });
 }
 
-function plotEquation(base_url) {
+function plotEquation(base_url, subformDiv = null) {
     let url = base_url + '/get_equation_chart';
     doAjaxCall({
         async: false,
