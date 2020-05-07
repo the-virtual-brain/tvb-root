@@ -399,8 +399,8 @@ def value_wrapper_factory():
         view_model = BaseBCTModel()
         view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
 
-        importer = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        op = FlowService().fire_operation(importer, test_user, test_project.id, view_model=view_model)[0]
+        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        op = FlowService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
         # wait for the operation to finish
         tries = 5
         while not op.has_finished and tries > 0:

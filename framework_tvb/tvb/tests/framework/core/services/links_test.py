@@ -203,28 +203,37 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
         assert 1 == len(links)
         assert self.red_datatype.gid == links[0].gid
 
-    def test_create_interlinked_projects(self, initialize_linked_projects, value_wrapper_factory):
-        """
-        Project src will have 3 datatypes, and a link to the VW from the dest project.
-        Project dest will have the derived VW and links
-        """
-        # add a connectivity to src project and link it to dest project
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        conn = TestFactory.import_zip_connectivity(self.dst_user, self.src_project, zip_path, "John")
-        self.flow_service.create_link([conn.id], self.dest_project.id)
+    @pytest.fixture()
+    def create_interlinked_projects(self):
+        def build():
+            """
+            Project src will have 3 datatypes, and a link to the VW from the dest project.
+            Project dest will have the derived VW and links
+            """
+            # add a connectivity to src project and link it to dest project
+            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
+            conn = TestFactory.import_zip_connectivity(self.dst_user, self.src_project, zip_path, "John")
+            self.flow_service.create_link([conn.id], self.dest_project.id)
 
-        # in dest derive a ValueWrapper from the linked conn
-        vw = value_wrapper_factory(self.dst_user, self.dest_project)
-        # then link the time series in the src project
-        self.flow_service.create_link([vw.id], self.src_project.id)
+            # in dest derive a ValueWrapper from the linked conn
+            vw_gid = TestFactory.create_value_wrapper(self.dst_user, self.dest_project)[1]
+            vw = dao.get_datatype_by_gid(vw_gid)
+            # then link the time series in the src project
+            self.flow_service.create_link([vw.id], self.src_project.id)
 
-        assert 3 == len(dao.get_datatypes_in_project(self.src_project.id))
-        assert 1 == len(dao.get_linked_datatypes_in_project(self.src_project.id))
-        assert 1 == len(dao.get_datatypes_in_project(self.dest_project.id))
-        assert 3 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
+            assert 3 == len(dao.get_datatypes_in_project(self.src_project.id))
+            assert 1 == len(dao.get_linked_datatypes_in_project(self.src_project.id))
+            assert 1 == len(dao.get_datatypes_in_project(self.dest_project.id))
+            assert 3 == len(dao.get_linked_datatypes_in_project(self.dest_project.id))
 
-    def test_linked_datatype_dependencies_restored_on_import(self, initialize_linked_projects, value_wrapper_factory):
-        self.test_create_interlinked_projects(initialize_linked_projects, value_wrapper_factory)
+        return build
+
+    def test_create_interlinked_projects(self, initialize_linked_projects, create_interlinked_projects):
+        create_interlinked_projects()
+
+    def test_linked_datatype_dependencies_restored_on_import(self, initialize_linked_projects,
+                                                             create_interlinked_projects):
+        create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
         assert 4 == len(dao.get_datatypes_in_project(self.dest_project.id))
@@ -241,8 +250,8 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
         assert 4 == len(dao.get_linked_datatypes_in_project(imported_id_2))
 
     def test_linked_datatype_dependencies_restored_on_import_inverse_order(self, initialize_linked_projects,
-                                                                           value_wrapper_factory):
-        self.test_create_interlinked_projects(initialize_linked_projects, value_wrapper_factory)
+                                                                           create_interlinked_projects):
+        create_interlinked_projects()
         # export both then remove them
         export_file_src = self._export_and_remove(self.src_project)
         assert 4 == len(dao.get_datatypes_in_project(self.dest_project.id))
