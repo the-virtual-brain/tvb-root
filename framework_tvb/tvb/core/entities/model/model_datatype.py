@@ -124,7 +124,8 @@ class DataType(HasTraitsIndex):
         for attribute in self.__table__.columns.keys():
             try:
                 attr_field = getattr(self, attribute)
-                ret[attribute] = str(attr_field)
+                attr_name = attribute.title().replace("_", " ")
+                ret[attr_name] = str(attr_field)
             except Exception:
                 ""
         return ret
