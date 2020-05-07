@@ -119,7 +119,7 @@ class DataType(HasTraitsIndex):
 
         ret = {}
         if self.title:
-            ret['title'] = str(self.title)
+            ret['Title'] = str(self.title)
 
         for attribute in self.__table__.columns.keys():
             try:
@@ -127,7 +127,7 @@ class DataType(HasTraitsIndex):
                 attr_name = attribute.title().replace("_", " ")
                 ret[attr_name] = str(attr_field)
             except Exception:
-                ""
+                pass
         return ret
 
     def __init__(self, gid=None, **kwargs):
