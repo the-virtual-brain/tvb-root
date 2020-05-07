@@ -5,7 +5,7 @@
                     class="form-control">{{ option.label }}</option>
         {% endfor %}
     </select>
-    {% if field.subform_field %}
+    {% if field.subform_field and field.display_subform %}
         <div id="{{ field.subform_field.name }}">
             {% with adapter_form=field.subform_field.form %}
                 {% include 'form_fields/form_field.html' %}

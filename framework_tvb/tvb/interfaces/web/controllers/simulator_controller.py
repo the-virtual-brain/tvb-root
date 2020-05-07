@@ -500,6 +500,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator.model)
 
         integrator_fragment = SimulatorIntegratorFragment('', common.get_current_project().id)
+        integrator_fragment.integrator.display_subform = False
         integrator_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(integrator_fragment, SimulatorWizzardURLs.SET_INTEGRATOR_URL,
@@ -525,6 +526,8 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.integrator = fragment.integrator.value()
 
         form = get_form_for_integrator(type(session_stored_simulator.integrator))()
+        if hasattr(form, 'noise'):
+            form.noise.display_subform = False
         form.fill_from_trait(session_stored_simulator.integrator)
 
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL,
@@ -554,6 +557,8 @@ class SimulatorController(BurstBaseController):
 
         if isinstance(session_stored_simulator.integrator, IntegratorStochastic):
             integrator_noise_fragment = get_form_for_noise(type(session_stored_simulator.integrator.noise))()
+            if hasattr(integrator_noise_fragment, 'equation'):
+                integrator_noise_fragment.equation.display_subform = False
             self.range_parameters.integrator_noise_parameters = integrator_noise_fragment.get_range_parameters()
             integrator_noise_fragment.fill_from_trait(session_stored_simulator.integrator.noise)
 
