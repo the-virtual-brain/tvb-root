@@ -35,33 +35,35 @@
 """
 import json
 import os
+import queue as queue
+import signal
 # import shutil
 import sys
-import signal
-import queue as queue
 import threading
+from contextlib import closing
 from subprocess import Popen, PIPE
 from time import sleep
+
 import pyunicore.client as unicore_client
-from pyunicore.client import Storage, Job
+from pyunicore.client import Storage, Job, Client
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, \
+    Operation, STATUS_FINISHED, has_finished
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 # from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters
-from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, \
-    Operation, STATUS_FINISHED, has_finished
-from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
 
@@ -389,13 +391,13 @@ class HPCSchedulerClient(object):
             index.fk_from_operation = operation.id
             if operation.fk_operation_group:
                 datatype_group = \
-                dao.get_generic_entity(DataTypeGroup, operation.fk_operation_group, 'fk_operation_group')[0]
+                    dao.get_generic_entity(DataTypeGroup, operation.fk_operation_group, 'fk_operation_group')[0]
                 index.fk_datatype_group = datatype_group.id
 
             # TODO: update status during operation run
             if operation.fk_operation_group:
                 parent_burst = \
-                dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
+                    dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
                 operations_in_group = dao.get_operations_in_group(operation.fk_operation_group)
                 if parent_burst.metric_operation_group_id:
                     operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
@@ -421,6 +423,54 @@ class HPCSchedulerClient(object):
         return mesage
 
     @staticmethod
+    def _create_job_with_pyunicore(pyunicore_client, job_description, inputs=[]):
+        # type: (Client, {}, list) -> Job
+        """
+        Submit and start a batch job on the site, optionally uploading input data files.
+        We took this code from the pyunicore Client.new_job method in order to use our own upload method
+        :return: job
+        """
+
+        if len(inputs) > 0 or job_description.get('haveClientStageIn') is True:
+            job_description['haveClientStageIn'] = "true"
+
+        with closing(
+                pyunicore_client.transport.post(url=pyunicore_client.site_urls['jobs'], json=job_description)) as resp:
+            job_url = resp.headers['Location']
+
+        job = Job(pyunicore_client.transport, job_url)
+
+        if len(inputs) > 0:
+            working_dir = job.working_dir
+            for input in inputs:
+                HPCSchedulerClient._upload_file_with_pyunicore(working_dir, input)
+        if job_description.get('haveClientStageIn', None) == "true":
+            try:
+                job.start()
+            except:
+                pass
+
+        return job
+
+    @staticmethod
+    def _upload_file_with_pyunicore(working_dir, input_name, destination=None):
+        # type: (Storage, str, str) -> None
+        """
+        Upload file to the HPC working dir.
+        We took this upload code from pyunicore Storage.upload method and modified it because in the original code the
+        upload URL is generated using the os.path.join method. The result is an invalid URL for windows os.
+        """
+        if destination is None:
+            destination = os.path.basename(input_name)
+
+        headers = {'Content-Type': 'application/octet-stream'}
+        with open(input_name, 'rb') as fd:
+            working_dir.transport.put(
+                url="{}/{}/{}".format(working_dir.resource_url, "files", destination),
+                headers=headers,
+                data=fd)
+
+    @staticmethod
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
         job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
@@ -435,7 +485,8 @@ class HPCSchedulerClient(object):
         job_config, job_extra_inputs = HPCSchedulerClient._configure_job(simulator_gid, available_space,
                                                                          is_group_launch)
         job_inputs.extend(job_extra_inputs)
-        job = site_client.new_job(job_description=job_config, inputs=job_inputs)
+        job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
+                                                            inputs=job_inputs)
         return job
 
     @staticmethod
