@@ -192,10 +192,6 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification['surfaceStimulusCreateForm'] = self.render_spatial_form(surface_stim_creator_form)
         self.plotted_equation_prefixes = {
             self.SURFACE_FIELD: surface_stim_creator_form.surface.name,
-            self.SPATIAL_FIELD: surface_stim_creator_form.spatial.name,
-            self.SPATIAL_PARAMS_FIELD: surface_stim_creator_form.spatial.subform_field.name[1:],
-            self.TEMPORAL_FIELD: surface_stim_creator_form.temporal.name,
-            self.TEMPORAL_PARAMS_FIELD: surface_stim_creator_form.temporal.subform_field.name[1:],
             self.DISPLAY_NAME_FIELD: surface_stim_selector_form.display_name.name
         }
         template_specification['mainContent'] = 'spatial/stimulus_surface_step1_main'
@@ -223,6 +219,11 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification['surfaceGID'] = current_surface_stim.surface.hex
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
         template_specification['definedFocalPoints'] = current_surface_stim.focal_points_triangles.tolist()
+        plotted_equation_prefixes = {
+            self.DISPLAY_NAME_FIELD: surface_stim_selector_form.display_name.name
+        }
+        template_specification['baseUrl'] = self.base_url
+        template_specification['spatialFieldsPrefixes'] = json.dumps(plotted_equation_prefixes)
         template_specification.update(self.display_surface(current_surface_stim.surface.hex))
         return self.fill_default_attributes(template_specification)
 

@@ -162,8 +162,6 @@ class RegionStimulusController(SpatioTemporalController):
         template_specification['baseUrl'] = self.base_url
         self.plotted_equation_prefixes = {
             self.CONNECTIVITY_FIELD: region_stim_creator_form.connectivity.name,
-            self.TEMPORAL_FIELD: region_stim_creator_form.temporal.name,
-            self.TEMPORAL_PARAMS_FIELD: region_stim_creator_form.temporal.subform_field.name[1:],
             self.DISPLAY_NAME_FIELD: region_stim_selector_form.display_name.name
         }
         template_specification['fieldsWithEvents'] = json.dumps(self.plotted_equation_prefixes)
@@ -195,6 +193,11 @@ class RegionStimulusController(SpatioTemporalController):
             else:
                 default_weights = StimuliRegion.get_default_weights(selected_connectivity.number_of_regions)
 
+        template_specification['baseUrl'] = self.base_url
+        self.plotted_equation_prefixes = {
+            self.DISPLAY_NAME_FIELD: region_stim_selector_form.display_name.name
+        }
+        template_specification['fieldsWithEvents'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['node_weights'] = json.dumps(default_weights.tolist())
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
         template_specification.update(self.display_connectivity(current_region_stimulus.connectivity.hex))
