@@ -36,6 +36,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 import json
+import typing
 from datetime import datetime
 from copy import copy
 from sqlalchemy.orm import relationship, backref
@@ -121,31 +122,29 @@ class DataType(HasTraitsIndex):
         if self.title:
             ret['Title'] = str(self.title)
 
-        columns = self.get_base_table_columns
-        for attribute in columns:
+        columns = self._get_table_columns()
+        for attr_name in columns:
             try:
-                attr_field = getattr(self, attribute)
-                attr_name = self.get_attribute_name(attribute)
-                if attr_name is not None:
-                    ret[attr_name] = str(attr_field)
+                if attr_name.startswith("fk_") or "id" == attr_name:
+                    continue
+                name = attr_name.title().replace("_", " ")
+                attr_value = getattr(self, attr_name)
+                ret[name] = str(attr_value)
             except Exception:
                 pass
         return ret
 
-    @property
-    def get_base_table_columns(self):
+    def _get_table_columns(self):
         columns = self.__table__.columns.keys()
         if type(self).__bases__[0] is DataType:
             return columns
+        # Consider the immediate superclass only, as for now we have
+        # - most of *Index classes directly inheriting from DataType
+        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
         base_table_columns = type(self).__bases__[0].__table__.columns.keys()
         columns.extend(base_table_columns)
         return columns
 
-    def get_attribute_name(self, attr_name):
-        #don't display fk_ attributes or id(dispayed in generic)
-        if "fk_" in attr_name or "id" in attr_name:
-            return None
-        return attr_name.title().replace("_", " ")
 
     def __init__(self, gid=None, **kwargs):
 
