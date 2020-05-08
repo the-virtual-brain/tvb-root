@@ -202,7 +202,7 @@ class WebSettings(object):
     Web related specifications
     """
 
-    LOCALHOST = "127.0.0.1"
+    LOCALHOST = "localhost"
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
 
