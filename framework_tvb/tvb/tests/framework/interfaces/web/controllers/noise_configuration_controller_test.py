@@ -80,7 +80,7 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
     def test_submit_noise_configuration_happy(self, connectivity_factory):
         self.init()
         self.noise_c = NoiseConfigurationController()
-        _, self.connectivity = connectivity_factory()
+        self.connectivity = connectivity_factory()
         SimulatorController().index()
 
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]

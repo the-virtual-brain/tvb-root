@@ -34,10 +34,10 @@
 
 import pytest
 import cherrypy
+from tvb.adapters.simulator.simulator_adapter import CortexViewModel
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import tvb.interfaces.web.controllers.common as common
 
 
@@ -45,19 +45,18 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceModelParametersController """
 
     @pytest.fixture()
-    def transactional_setup_fixture(self, connectivity_factory, surface_factory):
+    def transactional_setup_fixture(self, connectivity_index_factory, surface_index_factory, region_mapping_index_factory):
         self.init()
         self.surface_m_p_c = SurfaceModelParametersController()
         SimulatorController().index()
-        stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-        _, self.connectivity = connectivity_factory
-        _, self.surface = surface_factory
-        new_params = {}
-        for key, val in SIMULATOR_PARAMETERS.items():
-            new_params[key] = {'value': val}
-        new_params['connectivity'] = {'value': self.connectivity.gid}
-        new_params['surface'] = {'value': self.surface.gid}
-        stored_burst.simulator_configuration = new_params
+        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        connectivity_index = connectivity_index_factory()
+        surface_index = surface_index_factory()
+        region_mapping_index = region_mapping_index_factory()
+        simulator.connectivity = connectivity_index.gid
+        simulator.surface = CortexViewModel()
+        simulator.surface.surface_gid = surface_index.gid
+        simulator.surface.region_mapping_data = region_mapping_index.gid
 
 
     def transactional_teardown_method(self):
