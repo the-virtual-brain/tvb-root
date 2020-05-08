@@ -267,7 +267,7 @@ class FlowService:
             try:
                 if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                     filtered_adapters.append(stored_adapter)
-            except InvalidFilterChainInput:
+            except (TypeError, InvalidFilterChainInput):
                 self.logger.exception("Could not evaluate filter on " + str(stored_adapter))
                 has_operations_warning = True
 
