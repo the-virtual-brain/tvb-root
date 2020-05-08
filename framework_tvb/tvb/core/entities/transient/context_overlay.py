@@ -256,7 +256,7 @@ class DataTypeOverlayDetails(CommonDetails):
         self.data_state = datatype_result.state
         self.datatype_title = datatype_result.display_name
         self.subject = datatype_result.subject
-        self.data_type = datatype_result.type
+        self.data_type = datatype_result.display_type
         self.datatype_tag_1 = datatype_result.user_tag_1
         self.datatype_tag_2 = datatype_result.user_tag_2
         self.datatype_tag_3 = datatype_result.user_tag_3
