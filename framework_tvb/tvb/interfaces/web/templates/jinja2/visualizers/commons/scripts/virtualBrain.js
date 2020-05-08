@@ -160,6 +160,8 @@ var VS_pickedIndex = -1;
 
 var VB_BrainNavigator;
 
+var urlBaseAdapter = '';
+
 
 function VS_init_hemisphere_mask(hemisphere_chunk_mask) {
     VS_hemisphere_chunk_mask = hemisphere_chunk_mask;
@@ -301,8 +303,8 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
 function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                               urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                              urlRegionMapList, minActivity, maxActivity,
-                              oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
+                              urlRegionMapList, minActivity, maxActivity, oneToOneMapping, doubleView,
+                              shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL, baseAdapterURL) {
     // initialize global configuration
     isDoubleView = doubleView;
     if (oneToOneMapping === 'True') {
@@ -314,6 +316,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     activityMax = parseFloat(maxActivity);
     pageSize = onePageSize;
     urlBase = baseDatatypeURL;
+    urlBaseAdapter = baseAdapterURL;
 
     // initialize global data
     _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels);
@@ -375,12 +378,12 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
                                      urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                                      urlRegionMapList, minActivity, maxActivity,
                                      oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
-                                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
+                                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID, baseAdapterURL) {
     _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
         urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
         urlRegionMapList, minActivity, maxActivity,
         oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
-        urlMeasurePointsLabels, boundaryURL);
+        urlMeasurePointsLabels, boundaryURL, baseAdapterURL);
     _VS_init_cubicalMeasurePoints();
 
     if (!isDoubleView) {
@@ -1230,7 +1233,7 @@ function getUrlForPageFromIndex(index) {
         fromIdx = 0;
     }
     const toIdx = fromIdx + pageSize * TIME_STEP;
-    return readDataSplitPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
+    return readDataSplitPageURL(urlBaseAdapter, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
 }
 
 /**

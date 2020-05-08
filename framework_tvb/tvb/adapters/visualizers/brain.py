@@ -138,14 +138,16 @@ class BrainViewer(ABCSurfaceDisplayer):
             surface_gid = self.surface_h5.gid.load().hex
             boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, self.region_map_gid,
                                                                              self.stored_adapter.id)
+            base_adapter_url = SurfaceURLGenerator.get_url_for_data_page_split(surface_gid, self.stored_adapter.id)
         else:
             boundary_url = ''
+            base_adapter_url = ''
 
         params.update(urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                       urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
                       urlRegionMap=json.dumps(url_region_map), urlRegionBoundaries=boundary_url,
-                      base_activity_url=base_activity_url,
-                      isOneToOneMapping=self.one_to_one_map, minActivity=min_val, maxActivity=max_val)
+                      base_activity_url=base_activity_url, isOneToOneMapping=self.one_to_one_map,
+                      minActivity=min_val, maxActivity=max_val, base_adapter_url=base_adapter_url)
 
         normalization_factor = figure_size[0] / 800
         if figure_size[1] / 600 < normalization_factor:
@@ -230,7 +232,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         :rtype: `dict`
         :raises Exception: when
                     * number of measure points exceeds the maximum allowed
-                    * a Face object cannot be found in database
+                    * a Face object cannot be found in databasef
 
         """
         self.populate_surface_fields(time_series)
@@ -257,8 +259,10 @@ class BrainViewer(ABCSurfaceDisplayer):
             surface_gid = self.surface_h5.gid.load().hex
             boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, self.region_map_gid,
                                                                              self.stored_adapter.id)
+            base_adapter_url = SurfaceURLGenerator.get_url_for_data_page_split(time_series.gid, self.stored_adapter.id)
         else:
             boundary_url = ''
+            base_adapter_url = ''
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
         shelf_object = None
@@ -281,7 +285,8 @@ class BrainViewer(ABCSurfaceDisplayer):
                            hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
                            time_series=time_series_h5, pageSize=self.PAGE_SIZE, urlRegionBoundaries=boundary_url,
                            measurePointsLabels=time_series_h5.get_space_labels(),
-                           measurePointsTitle=time_series.title))
+                           measurePointsTitle=time_series.title,
+                           base_adapter_url=base_adapter_url))
 
         params.update(self.build_params_for_subselectable_ts(time_series_h5))
 
@@ -355,6 +360,29 @@ class BrainViewer(ABCSurfaceDisplayer):
         time_urls = [SurfaceURLGenerator.build_h5_url(time_series_gid, 'read_time_page',
                                                       parameter="current_page=0;page_size=" + str(overall_shape[0]))]
         return activity_base_url, time_urls
+
+    def read_data_page_split(self, time_series_gid, from_idx, to_idx, step=None, specific_slices=None):
+        time_series_index = self.load_entity_by_gid(time_series_gid)
+        time_series_h5 = h5.h5_file_for_index(time_series_index)
+
+        surface_gid = time_series_index.fk_surface_gid
+        surface_index = self.load_entity_by_gid(surface_gid)
+        surface_h5 = h5.h5_file_for_index(surface_index)
+        number_of_split_slices = surface_h5.number_of_split_slices.load()
+
+        basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
+        time_series_h5.close()
+        result = []
+
+        if number_of_split_slices <= 1:
+            result.append(basic_result.tolist())
+        else:
+            for slice_number in range(surface_h5.number_of_split_slices):
+                start_idx, end_idx = surface_h5.get_slice_vertex_boundaries(slice_number)
+                result.append(basic_result[:, start_idx:end_idx].tolist())
+        surface_h5.close()
+
+        return result
 
 
 class DualBrainViewerModel(ViewModel):
