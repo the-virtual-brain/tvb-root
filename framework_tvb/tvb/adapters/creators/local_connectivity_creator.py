@@ -84,13 +84,12 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, equation_choices, prefix='', project_id=None, base_url=None):
+    def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
                                                 conditions=self.get_filters())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
-                                   choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm,
-                                   base_url=base_url)
+                                   choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
         self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
         self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
 

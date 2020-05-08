@@ -24,43 +24,42 @@
  */
 
 // Following methods are used for handling events on dynamic forms
-function setStimulusParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+function setStimulusParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
     let currentParam = fieldName + '=' + fieldValue;
-    let url = baseUrl + '/' + methodToCall + '?' + currentParam;
+    let url = refreshBaseUrl + '/' + methodToCall + '?' + currentParam;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquation(baseUrl)
+            plotEquation()
         }
     })
 }
 
-function redrawPlotOnMinMaxChanges(baseUrl) {
+function redrawPlotOnMinMaxChanges() {
     $('#min_x').change(function () {
-        plotEquation(baseUrl);
+        plotEquation();
     });
     $('#max_x').change(function () {
-        plotEquation(baseUrl);
+        plotEquation();
     });
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents, url) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let CONNECTIVITY_FIELD = 'set_connectivity';
     let DISPLAY_NAME_FIELD = 'set_display_name';
 
     $('select[name^="' + fieldsWithEvents[CONNECTIVITY_FIELD] + '"]').change(function () {
-        setStimulusParamAndRedrawChart(url, CONNECTIVITY_FIELD, this.name, this.value)
+        setStimulusParamAndRedrawChart(CONNECTIVITY_FIELD, this.name, this.value)
     });
     $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
-        setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
+        setStimulusParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, div_id = 'temporal_params') {
+function setEventsOnFormFields(fieldsWithEvents, div_id = 'temporal_params') {
     $('#' + div_id + ' input').change(function () {
-        // TODO: send from server 'set_temporal_param'
-        setStimulusParamAndRedrawChart(url, 'set_temporal_param', this.name, this.value)
+        setStimulusParamAndRedrawChart('set_temporal_param', this.name, this.value)
     });
 }
 
@@ -75,8 +74,8 @@ function prepareUrlParams() {
     return params;
 }
 
-function plotEquation(baseUrl, subformDiv = null) {
-    let url = baseUrl + '/get_equation_chart';
+function plotEquation(subformDiv = null) {
+    let url = refreshBaseUrl + '/get_equation_chart';
     params = prepareUrlParams();
     if (params) {
         url += '?' + params
@@ -91,6 +90,6 @@ function plotEquation(baseUrl, subformDiv = null) {
     });
 }
 
-function prepareURL(currentElem, elementType, subformDiv) {
-    return 'refresh_subform/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
 }

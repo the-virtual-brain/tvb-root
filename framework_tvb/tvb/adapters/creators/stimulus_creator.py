@@ -75,7 +75,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     default_spatial = Sigmoid
     default_temporal = PulseTrain
 
-    def __init__(self, spatial_equation_choices, temporal_equation_choices, project_id, base_url=None):
+    def __init__(self, spatial_equation_choices, temporal_equation_choices, project_id):
         super(SurfaceStimulusCreatorForm, self).__init__()
         self.project_id = project_id
 
@@ -83,10 +83,10 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',
                                    choices=spatial_equation_choices,
-                                   subform=get_form_for_equation(self.default_spatial), base_url=base_url)
+                                   subform=get_form_for_equation(self.default_spatial))
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
                                     choices=temporal_equation_choices,
-                                    subform=get_form_for_equation(self.default_temporal), base_url=base_url)
+                                    subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():
@@ -219,14 +219,13 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
     default_temporal = PulseTrain
 
-    def __init__(self, equation_choices, project_id, temporal_base_url):
+    def __init__(self, equation_choices, project_id):
         super(RegionStimulusCreatorForm, self).__init__()
         self.project_id = project_id
 
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
-                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal),
-                                    base_url=temporal_base_url)
+                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():

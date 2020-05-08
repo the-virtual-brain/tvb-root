@@ -510,12 +510,9 @@ dynamicPage.main = main;
 
 })();
 
-function setIntegratorParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue, type) {
+function setIntegratorParamAndRedrawChart(methodToCall, fieldName, fieldValue, type) {
     let currentParam = fieldName + '=' + fieldValue;
     let url = methodToCall + '/' + dynamicPage.dynamic_gid + '/' + type + '?' + currentParam;
-        if (baseUrl !== 'None') {
-            url = baseUrl + '/' + url
-        }
     $.ajax({
         url: url,
         type: 'POST',
@@ -525,16 +522,16 @@ function setIntegratorParamAndRedrawChart(baseUrl, methodToCall, fieldName, fiel
     })
 }
 
-function plotEquation(baseUrl = '', subformDiv = null) {
+function plotEquation(subformDiv = null) {
     dynamicPage.grafic._redrawTrajectories();
 }
 
-function setEventsOnFormFields(param, url, div_id) {
+function setEventsOnFormFields(param, div_id) {
     $('#' + div_id + ' input').change(function () {
-        setIntegratorParamAndRedrawChart(url, 'integrator_parameters_changed', this.name, this.value, param)
+        setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
     });
 }
 
-function prepareURL(currentElem, elementType, subformDiv) {
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
 }

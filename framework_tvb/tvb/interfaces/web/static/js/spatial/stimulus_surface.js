@@ -253,58 +253,58 @@ function tick() {
 }
 
 // Following methods are used for handling events on dynamic forms
-function setSurfaceStimParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+function setSurfaceStimParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
     let current_param = prepareUrlParam(fieldName, fieldValue);
-    let url = baseUrl + '/' + methodToCall + '?' + current_param;
+    let url = refreshBaseUrl + '/' + methodToCall + '?' + current_param;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquations(baseUrl)
+            plotEquations()
         }
     })
 }
 
-function redrawPlotOnMinMaxChanges(baseUrl) {
+function redrawPlotOnMinMaxChanges() {
     $('#min_space_x').change(function () {
-        plotEquation(baseUrl,'spatial');
+        plotEquation('spatial');
     });
     $('#max_space_x').change(function () {
-        plotEquation(baseUrl,'spatial');
+        plotEquation('spatial');
     });
     $('#min_tmp_x').change(function () {
-        plotEquation(baseUrl,'temporal');
+        plotEquation('temporal');
     });
     $('#max_tmp_x').change(function () {
-        plotEquation(baseUrl,'temporal');
+        plotEquation('temporal');
     });
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents, url) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let SURFACE_FIELD = 'set_surface';
     let DISPLAY_NAME_FIELD = 'set_display_name';
 
     $('select[name^="' + fieldsWithEvents[SURFACE_FIELD] + '"]').change(function () {
-        setSurfaceStimParamAndRedrawChart(url, SURFACE_FIELD, this.name, this.value)
+        setSurfaceStimParamAndRedrawChart(SURFACE_FIELD, this.name, this.value)
     });
     $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
-        setSurfaceStimParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
+        setSurfaceStimParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function setEventsOnFormFields(fields_with_events, url, div_id = 'temporal_params') {
+function setEventsOnFormFields(fields_with_events, div_id = 'temporal_params') {
     let PARAMS_FIELD = 'set_temporal_param';
     if (div_id.includes('spatial')) {
         PARAMS_FIELD = 'set_spatial_param';
     }
     $('#' + div_id + ' input').change(function () {
-        setSurfaceStimParamAndRedrawChart(url, PARAMS_FIELD, this.name, this.value);
+        setSurfaceStimParamAndRedrawChart(PARAMS_FIELD, this.name, this.value);
     });
 }
 
-function plotEquations(baseUrl) {
-    plotEquation(baseUrl, 'temporal');
-    plotEquation(baseUrl, 'spatial');
+function plotEquations() {
+    plotEquation('temporal');
+    plotEquation('spatial');
 }
 
 function prepareUrlParams(subformDiv='temporal_params') {
@@ -323,14 +323,14 @@ function prepareUrlParams(subformDiv='temporal_params') {
     return min_params + '&' + max_params;
 }
 
-function plotEquation(baseUrl, subformDiv = 'temporal_params') {
+function plotEquation(subformDiv = 'temporal_params') {
     let methodToCall = 'get_temporal_equation_chart';
     let equationDivId = 'temporalEquationDivId';
     if (subformDiv.includes('spatial')) {
         methodToCall = 'get_spatial_equation_chart';
         equationDivId = 'spatialEquationDivId';
     }
-    let url = baseUrl + '/' + methodToCall;
+    let url = refreshBaseUrl + '/' + methodToCall;
     params = prepareUrlParams(subformDiv);
     if (params) {
         url += '?' + params
@@ -345,6 +345,6 @@ function plotEquation(baseUrl, subformDiv = 'temporal_params') {
     });
 }
 
-function prepareURL(currentElem, elementType, subformDiv) {
-    return 'refresh_subform/' + subformDiv + '/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value + '/' + elementType;
 }

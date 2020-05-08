@@ -98,8 +98,7 @@ class RegionStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_connectivity(self, **param):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id,
-                                                            self.base_url).connectivity
+        connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id).connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
         conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value.hex)
@@ -145,7 +144,7 @@ class RegionStimulusController(SpatioTemporalController):
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = common.get_from_session(KEY_REGION_STIMULUS_NAME)
 
-        region_stim_creator_form = RegionStimulusCreatorForm(self.equation_choices, project_id, self.base_url)
+        region_stim_creator_form = RegionStimulusCreatorForm(self.equation_choices, project_id)
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             conn = try_get_last_datatype(project_id, ConnectivityIndex)
             if conn is None:

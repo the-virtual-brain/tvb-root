@@ -169,42 +169,42 @@ function _drawDefaultColorBuffers() {
 }
 
 // Following functions are used for updating the current LCONN on server and redraw the chart
-function setLconnParamAndRedrawChart(base_url, method_to_call, field_name, field_value) {
+function setLconnParamAndRedrawChart(method_to_call, field_name, field_value) {
     let current_param = field_name + '=' + field_value;
-    let url = base_url + '/' + method_to_call + '?' + current_param;
+    let url = refreshBaseUrl + '/' + method_to_call + '?' + current_param;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquation(base_url)
+            plotEquation()
         }
     })
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents, url) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let SURFACE_FIELD = 'set_surface';
     let CUTOFF_FIELD = 'set_cutoff_value';
     let DISPLAY_NAME_FIELD = 'set_display_name';
 
-    $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
-        setLconnParamAndRedrawChart(url, SURFACE_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[SURFACE_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(SURFACE_FIELD, this.name, this.value)
     });
-    $('input[name^="' + fields_with_events[CUTOFF_FIELD] + '"]').change(function () {
-        setLconnParamAndRedrawChart(url, CUTOFF_FIELD, this.name, this.value)
+    $('input[name^="' + fieldsWithEvents[CUTOFF_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(CUTOFF_FIELD, this.name, this.value)
     });
-    $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
-        setLconnParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function setEventsOnFormFields(fields_with_events, url, div_id = '_temporal_params') {
+function setEventsOnFormFields(fields_with_events, div_id = 'temporal_params') {
     $('#' + div_id + ' input').change(function () {
-        setLconnParamAndRedrawChart(url, 'set_equation_param', this.name, this.value)
+        setLconnParamAndRedrawChart('set_equation_param', this.name, this.value)
     });
 }
 
-function plotEquation(base_url, subformDiv = null) {
-    let url = base_url + '/get_equation_chart';
+function plotEquation(subformDiv = null) {
+    let url = refreshBaseUrl + '/get_equation_chart';
     doAjaxCall({
         async: false,
         type: 'GET',
@@ -215,6 +215,6 @@ function plotEquation(base_url, subformDiv = null) {
     });
 }
 
-function prepareURL(currentElem, elementType, subformDiv) {
-    return 'refresh_subform/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
 }

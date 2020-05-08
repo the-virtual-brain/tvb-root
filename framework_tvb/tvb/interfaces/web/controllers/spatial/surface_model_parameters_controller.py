@@ -62,15 +62,13 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
     default_equation = Gaussian
 
-    def __init__(self, model_params, equation_choices, prefix='', base_url=None):
+    def __init__(self, model_params, equation_choices, prefix=''):
         super(SurfaceModelParametersForm, self).__init__(prefix)
-        default_model_param = list(model_params.values())[0]
 
-        self.model_param = SelectField(Str(label='Model parameter', default=default_model_param), self,
-                                       choices=model_params, name='model_param')
+        self.model_param = SelectField(Str(label='Model parameter'), self, choices=model_params, name='model_param')
         self.equation = SelectField(Attr(SpatialApplicableEquation, label='Equation', default=self.default_equation),
                                     self, choices=equation_choices, name='equation',
-                                    subform=get_form_for_equation(self.default_equation), base_url=base_url)
+                                    subform=get_form_for_equation(self.default_equation))
 
     @staticmethod
     def get_required_datatype():
@@ -174,13 +172,13 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update({'applied_equations': context.get_configure_info()})
 
-        config_form = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices, base_url=self.base_url)
+        config_form = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices)
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
         template_specification.update({'adapter_form': self.render_adapter_form(config_form)})
 
         parameters_equation_plot_form = EquationPlotForm()
-        template_specification.update({'parametersEquationPlotForm': parameters_equation_plot_form})
+        template_specification.update({'parametersEquationPlotForm': self.render_adapter_form(parameters_equation_plot_form)})
         return template_specification
 
     @expose_page
@@ -201,7 +199,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         template_specification = dict(title="Spatio temporal - Model parameters")
         template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
-        dummy_form_for_initialization = SurfaceModelParametersForm({}, {}, base_url=self.base_url)
+        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_dict, self.equation_choices)
         self.plotted_equation_prefixes = {
             self.MODEL_PARAM_FIELD: dummy_form_for_initialization.model_param.name,
             self.EQUATION_FIELD: dummy_form_for_initialization.equation.name,

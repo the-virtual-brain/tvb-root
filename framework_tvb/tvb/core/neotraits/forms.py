@@ -545,7 +545,7 @@ class SelectField(TraitField):
             self.template = 'form_fields/select_field.html'
 
     def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
-                 subform=None, base_url=None, display_subform=True):
+                 subform=None, display_subform=True):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
         if choices:
             self.choices = choices
@@ -557,7 +557,6 @@ class SelectField(TraitField):
         self.subform_field = None
         if subform:
             self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
-            self.base_url = base_url
             self.display_subform = display_subform
         self._prepare_template(self.choices)
 

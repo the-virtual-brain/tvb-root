@@ -136,7 +136,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         surface_form_field = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
                                                         self.possible_temporal_equations,
-                                                        common.get_current_project().id, self.base_url).surface
+                                                        common.get_current_project().id).surface
         surface_form_field.fill_from_post(param)
         current_surface_stim.surface = surface_form_field.value
         self._reset_focal_points(current_surface_stim)
@@ -175,8 +175,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form = StimulusSurfaceSelectorForm(project_id)
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         surface_stim_creator_form = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
-                                                               self.possible_temporal_equations, project_id,
-                                                               self.base_url)
+                                                               self.possible_temporal_equations, project_id)
         if not hasattr(current_surface_stim, 'surface') or not current_surface_stim.surface:
             default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
                                                           SurfaceStimulusCreatorForm.get_filters())

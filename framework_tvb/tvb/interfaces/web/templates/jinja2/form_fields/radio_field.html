@@ -16,11 +16,9 @@
         <script type="text/javascript">
             $(document).ready(function () {
                 $('input[name^="{{ field.name }}"]').change(function () {
-                    refreshSubform(this, '{{ field.subform_field.form.get_subform_key() }}',
-                        '{{ field.base_url | safe }}', '{{ field.subform_field.name }}')
+                    refreshSubform(this, '{{ field.subform_field.form.get_subform_key() }}', '{{ field.subform_field.name }}')
                 });
-                setEventsOnFormFields('{{ field.subform_field.form.get_subform_key() }}',
-                    '{{ field.base_url | safe }}', '{{ field.subform_field.name }}');
+                setEventsOnFormFields('{{ field.subform_field.form.get_subform_key() }}', '{{ field.subform_field.name }}');
             });
         </script>
     {% endif %}

@@ -132,23 +132,8 @@ function MP_onSubmit(ev){
 }
 
 // Following methods are used for handling events on dynamic forms
-function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
-    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
-    $.ajax({
-        url: url,
-        type: 'POST',
-        success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            $("#" + equationParamsDiv).empty().append(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
-            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
-            plotEquation(baseUrl)
-        }
-    })
-}
-
-function setModelParam(baseUrl, methodToCall, currentModelParam) {
-    let url = baseUrl + "/" + methodToCall + "/" + currentModelParam;
+function setModelParam(methodToCall, currentModelParam) {
+    let url = refreshBaseUrl + "/" + methodToCall + "/" + currentModelParam;
     $.ajax({
         url: url,
         type: 'POST',
@@ -159,38 +144,38 @@ function setModelParam(baseUrl, methodToCall, currentModelParam) {
     })
 }
 
-function setParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+function setParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
     let currentParam = fieldName + '=' + fieldValue;
-    let url = baseUrl + '/' + methodToCall + '?' + currentParam;
+    let url = refreshBaseUrl + '/' + methodToCall + '?' + currentParam;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquation(baseUrl)
+            plotEquation()
         }
     })
 }
 
-function redrawPlotOnMinMaxChanges(baseUrl) {
+function redrawPlotOnMinMaxChanges() {
     $('#min_x').change(function () {
-        plotEquation(baseUrl);
+        plotEquation();
     });
     $('#max_x').change(function () {
-        plotEquation(baseUrl);
+        plotEquation();
     });
 }
 
-function setEventsOnStaticFormFields(fieldsWithEvents, url) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let MODEL_PARAM_FIELD = 'set_model_parameter';
 
     $('select[name^="' + fieldsWithEvents[MODEL_PARAM_FIELD] + '"]').change(function () {
-        setModelParam(url, MODEL_PARAM_FIELD, this.value)
+        setModelParam(MODEL_PARAM_FIELD, this.value)
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, div_id) {
+function setEventsOnFormFields(fieldsWithEvents, div_id) {
     $('#' + div_id + ' input').change(function () {
-        setParamAndRedrawChart(url, 'set_equation_param', this.name, this.value)
+        setParamAndRedrawChart('set_equation_param', this.name, this.value)
     });
 }
 
@@ -205,8 +190,8 @@ function prepareUrlParams() {
     return params;
 }
 
-function plotEquation(baseUrl, subformDiv = null) {
-    let url = baseUrl + '/get_equation_chart';
+function plotEquation(subformDiv = null) {
+    let url = refreshBaseUrl + '/get_equation_chart';
     params = prepareUrlParams();
     if (params) {
         url += '?' + params
@@ -221,6 +206,6 @@ function plotEquation(baseUrl, subformDiv = null) {
     });
 }
 
-function prepareURL(currentElem, elementType, subformDiv) {
-    return 'refresh_subform/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
 }

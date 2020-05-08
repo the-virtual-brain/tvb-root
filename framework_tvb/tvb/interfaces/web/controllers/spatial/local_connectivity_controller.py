@@ -108,8 +108,7 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn = common.get_from_session(KEY_LCONN)
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
-        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id,
-                                                           base_url=self.base_url)
+        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -122,7 +121,7 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['existentEntitiesInputList'] = self.render_spatial_form(existent_lcon_form)
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
-        template_specification['localConnBaseUrl'] = self.base_url
+        template_specification['baseUrl'] = self.base_url
 
         self.plotted_equation_prefixes = {self.SURFACE_FIELD: configure_lcon_form.surface.name,
                                           self.EQUATION_FIELD: configure_lcon_form.spatial.name,
@@ -158,20 +157,20 @@ class LocalConnectivityController(SpatioTemporalController):
     @cherrypy.expose
     def set_cutoff_value(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
-        cutoff_form_field = LocalConnectivityCreatorForm(self.possible_equations, base_url=self.base_url).cutoff
+        cutoff_form_field = LocalConnectivityCreatorForm(self.possible_equations).cutoff
         cutoff_form_field.fill_from_post(param)
         current_lconn.cutoff = cutoff_form_field.value
 
     @cherrypy.expose
     def set_surface(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
-        surface_form_field = LocalConnectivityCreatorForm(self.possible_equations, base_url=self.base_url).surface
+        surface_form_field = LocalConnectivityCreatorForm(self.possible_equations).surface
         surface_form_field.fill_from_post(param)
         current_lconn.surface = surface_form_field.value
 
     @cherrypy.expose
     def set_display_name(self, **param):
-        display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations, base_url=self.base_url).display_name
+        display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations).display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
             lconn = common.get_from_session(KEY_LCONN)
