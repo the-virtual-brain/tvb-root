@@ -36,6 +36,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 import json
+import typing
 from datetime import datetime
 from copy import copy
 from sqlalchemy.orm import relationship, backref
@@ -111,6 +112,38 @@ class DataType(HasTraitsIndex):
 
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
+
+    @property
+    def summary_info(self):
+        # type: () -> typing.Dict[str, str]
+
+        ret = {}
+        if self.title:
+            ret['Title'] = str(self.title)
+
+        columns = self._get_table_columns()
+        for attr_name in columns:
+            try:
+                if attr_name.startswith("fk_") or "id" == attr_name:
+                    continue
+                name = attr_name.title().replace("_", " ")
+                attr_value = getattr(self, attr_name)
+                ret[name] = str(attr_value)
+            except Exception:
+                pass
+        return ret
+
+    def _get_table_columns(self):
+        columns = self.__table__.columns.keys()
+        if type(self).__bases__[0] is DataType:
+            return columns
+        # Consider the immediate superclass only, as for now we have
+        # - most of *Index classes directly inheriting from DataType
+        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
+        base_table_columns = type(self).__bases__[0].__table__.columns.keys()
+        columns.extend(base_table_columns)
+        return columns
+
 
     def __init__(self, gid=None, **kwargs):
 
