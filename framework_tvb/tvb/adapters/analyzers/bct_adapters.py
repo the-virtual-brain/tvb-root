@@ -31,12 +31,13 @@
 import os
 from abc import abstractmethod
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
-from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.neocom import h5
@@ -62,12 +63,13 @@ LABEL_CONN_WEIGHTED_UNDIRECTED = "Weighted undirected connection matrix"
 def bct_description(mat_file_name):
     return extract_matlab_doc_string(os.path.join(BCT_PATH, mat_file_name))
 
-class BaseBCTModel(ViewModel):
 
+class BaseBCTModel(ViewModel):
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         label='Connectivity',
     )
+
 
 class BaseBCTForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, draw_ranges=True):
@@ -98,6 +100,7 @@ class BaseUnidirectedBCTForm(BaseBCTForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.undirected'], operations=["=="], values=['1'])
+
 
 class BaseBCT(ABCAsynchronous):
     """
@@ -149,18 +152,18 @@ class BaseBCT(ABCAsynchronous):
         return h5.store_complete(measure, self.storage_path)
 
     def build_float_value_wrapper(self, result, key, title=""):
-        value = ValueWrapperIndex()
-        value.data_value = float(result[key])
+        value = ValueWrapper()
+        value.data_value = str(float(result[key]))
         value.data_type = 'float'
         value.data_name = title
-        return value
+        return h5.store_complete(value, self.storage_path)
 
     def build_int_value_wrapper(self, result, key, title=""):
-        value = ValueWrapperIndex()
-        value.data_value = int(result[key])
+        value = ValueWrapper()
+        value.data_value = str(int(result[key]))
         value.data_type = 'int'
         value.data_name = title
-        return value
+        return h5.store_complete(value, self.storage_path)
 
     @abstractmethod
     def launch(self, view_model):
@@ -177,6 +180,7 @@ class BaseUndirected(BaseBCT):
     @abstractmethod
     def launch(self, view_model):
         pass
+
 
 class ModularityOCSM(BaseBCT):
     """
