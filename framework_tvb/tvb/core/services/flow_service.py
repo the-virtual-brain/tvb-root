@@ -125,8 +125,6 @@ class FlowService:
             self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
 
-
-    
     @staticmethod
     def get_algorithm_by_module_and_class(module, classname):
         """
@@ -134,16 +132,6 @@ class FlowService:
         class.
         """
         return dao.get_algorithm_by_module(module, classname)
-    
-    
-    @staticmethod
-    def get_available_datatypes(project_id, data_type_cls, filters=None):
-        """
-        Return all dataTypes that match a given name and some filters.
-        :param data_type_cls: either a fully qualified class name or a class object
-        """
-        return get_filtered_datatypes(project_id, data_type_cls, filters)
-
 
     @staticmethod
     def create_link(data_ids, project_id):

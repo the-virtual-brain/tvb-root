@@ -93,8 +93,7 @@ class TestOperationService(BaseTestCase):
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
-        test_adapter_factory(TestAdapter3)
-        algo = dao.get_algorithm_by_module('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
+        algo = test_adapter_factory(TestAdapter3)
         adapter_instance = ABCAdapter.build_adapter(algo)
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations

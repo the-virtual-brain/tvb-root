@@ -45,6 +45,7 @@ from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGrou
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.flow_service import FlowService
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
@@ -642,7 +643,7 @@ class ProjectService:
                     operations_set.append(adata.fk_from_operation)
 
             datatype_group = dao.get_datatype_group_by_gid(datatype.gid)
-            dao.remove_datatype(datatype_gid)
+            dao.remove_entity(DataTypeGroup, datatype.id)
             correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
@@ -698,17 +699,11 @@ class ProjectService:
             raise StructureException(str(excep))
 
     def _edit_data(self, datatype, new_data, from_group=False):
+        # type: (DataType, dict, bool) -> None
         """
         Private method, used for editing a meta-data XML file and a DataType row
         for a given custom DataType entity with new dictionary of data from UI.
         """
-        from tvb.basic.traits.types_mapped import MappedType
-
-        if isinstance(datatype, MappedType) and not os.path.exists(datatype.get_storage_file_path()):
-            if not datatype.invalid:
-                datatype.invalid = True
-                dao.store_entity(datatype)
-            return
         # 1. First update Operation fields:
         #    Update group field if possible
         new_group_name = new_data[CommonDetails.CODE_OPERATION_TAG]
@@ -730,27 +725,32 @@ class ProjectService:
             operation.user_group = new_group_name
             dao.store_entity(operation)
 
-        # 2. Update dateType fields:
-        datatype.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
-        datatype.state = new_data[DataTypeOverlayDetails.DATA_STATE]
-        if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
-            datatype.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
-        if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
-            datatype.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
-        if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
-            datatype.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
-        if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
-            datatype.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
-        if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
-            datatype.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
+        # 2. Update GenericAttributes on DataType index and in the associated H5 files:
+        h5_path = h5.path_for_stored_index(datatype)
+        with H5File.from_file(h5_path) as f:
+            ga = f.load_generic_attributes()
 
+        ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
+        ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
+        if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
+            ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
+        if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
+            ga.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
+        if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
+            ga.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
+        if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
+            ga.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
+        if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
+            ga.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
+
+        datatype.fill_from_generic_attributes(ga)
         datatype = dao.store_entity(datatype)
-        # 3. Update MetaData in H5 as well.
-        datatype.persist_full_metadata()
+        # 3. Update MetaData in DT H5 as well.
+        with H5File.from_file(h5_path) as f:
+            f.store_generic_attributes(ga, False)
+
         # 4. Update the group_name/user_group into the operation meta-data file
-        operation = dao.get_operation_by_id(datatype.fk_from_operation)
-        self.structure_helper.update_operation_metadata(operation.project.name, new_group_name,
-                                                        str(datatype.fk_from_operation), from_group)
+        #  TODO update ViewModel of the operation H5
 
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
@@ -785,6 +785,7 @@ class ProjectService:
         :returns: A list of DataTypes that are used as input parameters for the specified operation.
                  And a dictionary will all operation parameters different then the default ones.
         """
+        # todo rewrite after neotraits TVB-2687
         operation = dao.get_operation_by_gid(operation_gid)
         parameters = json.loads(operation.parameters)
         try:
@@ -889,7 +890,10 @@ class ProjectService:
             """ set visibility flag, persist in db and h5"""
             dt.visible = is_visible
             dt = dao.store_entity(dt)
-            dt.persist_full_metadata()
+
+            h5_path = h5.path_for_stored_index(dt)
+            with H5File.from_file(h5_path) as f:
+                f.visible.store(is_visible)
 
         def set_group_descendants_visibility(datatype_group_id):
             datatypes_in_group = dao.get_datatypes_from_datatype_group(datatype_group_id)
@@ -900,13 +904,17 @@ class ProjectService:
 
         if isinstance(datatype, DataTypeGroup):  # datatype is a group
             set_group_descendants_visibility(datatype.id)
+            datatype.visible = is_visible
+            dao.store_entity(datatype)
         elif datatype.fk_datatype_group is not None:  # datatype is member of a group
             set_group_descendants_visibility(datatype.fk_datatype_group)
             # the datatype to be updated is the parent datatype group
-            datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
-
-        # update the datatype or datatype group.
-        set_visibility(datatype)
+            parent = dao.get_datatype_by_id(datatype.fk_datatype_group)
+            parent.visible = is_visible
+            dao.store_entity(parent)
+        else:
+            # update the single datatype.
+            set_visibility(datatype)
 
     @staticmethod
     def is_datatype_group(datatype_gid):

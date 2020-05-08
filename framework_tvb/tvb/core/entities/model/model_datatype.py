@@ -75,7 +75,6 @@ FILTER_CATEGORIES = {'DataType.subject': {'display': 'Subject', 'type': 'string'
                                                    'operations': ['!=', '<', '>']}}
 
 
-
 class DataType(HasTraitsIndex):
     """ 
     Base class for DB storage of Types.
@@ -128,7 +127,6 @@ class DataType(HasTraitsIndex):
             LOG.warning('Could not perform __initdb__: %r', exc)
         super(DataType, self).__init__()
 
-
     def __initdb__(self, subject='', state=None, operation_id=None, fk_parent_burst=None, disk_size=None,
                    user_tag_1=None, user_tag_2=None, user_tag_3=None, user_tag_4=None, user_tag_5=None, **_):
         """Set attributes"""
@@ -142,7 +140,6 @@ class DataType(HasTraitsIndex):
         self.user_tag_5 = user_tag_5
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
-
 
     @property
     def display_type(self):
@@ -160,13 +157,11 @@ class DataType(HasTraitsIndex):
                 display_name += " - " + str(tag)
         return display_name
 
-
     def __repr__(self):
         msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
         return msg % (str(self.id), self.gid, self.type, self.module,
                       self.subject, self.state, str(self.fk_parent_burst),
                       self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
-
 
     @staticmethod
     def accepted_filters():
@@ -174,14 +169,6 @@ class DataType(HasTraitsIndex):
         Return accepted UI filters for current DataType.
         """
         return copy(FILTER_CATEGORIES)
-
-
-    def persist_full_metadata(self):
-        """
-        Do nothing here. We will implement this only in MappedType.
-        """
-        pass
-
 
     def fill_from_has_traits(self, has_traits):
         # type: (HasTraits) -> None
