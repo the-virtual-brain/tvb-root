@@ -323,7 +323,6 @@ class ProjectController(BaseController):
         question = data.get('question', "Are you sure ?")
         data['question'] = question
         return self.fill_default_attributes(data)
-    
 
     @expose_fragment("overlay")
     def get_datatype_details(self, entity_gid, back_page='null', exclude_tabs=None):
@@ -336,21 +335,20 @@ class ProjectController(BaseController):
         selected_project = common.get_current_project()
         datatype_details, states, entity = self.project_service.get_datatype_details(entity_gid)
 
-        ### Load DataType categories
+        # Load DataType categories
         current_type = datatype_details.data_type
         datatype_gid = datatype_details.gid
-        categories = {}
+        categories, has_operations_warning = {}, False
         if not entity.invalid:
             categories, has_operations_warning = self.flow_service.get_launchable_algorithms(datatype_gid)
 
         is_group = False
         if datatype_details.operation_group_id is not None:
-            ## Is a DataTypeGroup
             is_group = True
 
-        ### Retrieve links
+        # Retrieve links
         linkable_projects_dict = self._get_linkable_projects_dict(entity.id)
-        ### Load all exporters
+        # Load all exporters
         exporters = {}
         if not entity.invalid:
             exporters = ExportManager().get_exporters_for_data(entity)
@@ -413,7 +411,8 @@ class ProjectController(BaseController):
                                                               overlay_class, tabs, overlay_indexes)
         template_specification = FlowController().fill_default_attributes(template_specification)
         if has_operations_warning:
-            template_specification[common.KEY_MESSAGE] = 'Not all operations could be loaded for this input DataType. Contact the admin to check the logs!'
+            template_specification[common.KEY_MESSAGE] = 'Not all operations could be loaded for this input DataType.' \
+                                                         ' Contact the admin to check the logs!'
             template_specification[common.KEY_MESSAGE_TYPE] = "warningMessage"
         return template_specification
 

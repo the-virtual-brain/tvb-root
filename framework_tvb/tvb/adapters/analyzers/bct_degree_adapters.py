@@ -85,8 +85,8 @@ class JointDegree(Degree):
         measure_index = self.build_connectivity_measure(result, 'J', connectivity,
                                                   "'Joint Degree JOD= ' +str(result['J_od'])+ ', JID= ' +str(result['J_id'])+ ', JBL= ' +str(result['J_bl'])",
                                                   "Connectivity Nodes", "Connectivity Nodes")
-        value1 = self.build_int_value_wrapper(result, 'J_od', "Number of vertices with od &gt; id")
-        value2 = self.build_int_value_wrapper(result, 'J_id', "Number of vertices with id &gt; od")
+        value1 = self.build_int_value_wrapper(result, 'J_od', "Number of vertices with od > id")
+        value2 = self.build_int_value_wrapper(result, 'J_id', "Number of vertices with id > od")
         value3 = self.build_int_value_wrapper(result, 'J_bl', "Number of vertices with id = od")
         return [measure_index, value1, value2, value3]
 

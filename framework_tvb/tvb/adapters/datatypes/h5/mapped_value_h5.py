@@ -38,6 +38,14 @@ class ValueWrapper(HasTraits):
     data_type = Attr(str)
     data_name = Attr(str)
 
+    @property
+    def value(self):
+        if "int" == self.data_type.lower():
+            return int(self.data_value)
+        if "float" == self.data_type.lower():
+            return float(self.data_value)
+        return self.data_value
+
 
 class ValueWrapperH5(H5File):
 
