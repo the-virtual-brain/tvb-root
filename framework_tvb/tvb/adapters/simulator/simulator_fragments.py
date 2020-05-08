@@ -43,7 +43,7 @@ from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, monitor_for_ui_name
+from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
@@ -165,7 +165,7 @@ class SimulatorMonitorFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         self.monitors.data = [
-            monitor_for_ui_name(self.is_surface_simulation)[monitor.__class__]
+            get_monitor_to_ui_name_dict(self.is_surface_simulation)[type(monitor)]
             for monitor in trait]
 
 

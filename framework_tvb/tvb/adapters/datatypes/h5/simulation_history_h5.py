@@ -89,7 +89,7 @@ class SimulationHistory(HasTraits):
         for i, monitor in enumerate(simulator_algorithm.monitors):
             field_name = "monitor_stock_" + str(i + 1)
             setattr(self, field_name, monitor._stock)
-            monitor_names.append(monitor.__class__.__name__)
+            monitor_names.append(type(monitor).__name__)
 
         if isinstance(simulator_algorithm.integrator, IntegratorStochastic):
             rng_state = simulator_algorithm.integrator.noise.random_stream.get_state()

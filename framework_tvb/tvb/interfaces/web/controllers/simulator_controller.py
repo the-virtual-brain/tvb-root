@@ -110,7 +110,7 @@ class SimulatorFragmentRenderingRules(object):
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type='GET', is_first_fragment=False, is_launch_fragment=False, is_model_fragment=False,
                  is_surface_simulation=False, is_noise_fragment=False, is_launch_pse_fragment=False, is_pse_launch=False,
-                 is_monitor_params_fragment=False, monitor_name=None):
+                 monitor_name=None):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -136,7 +136,6 @@ class SimulatorFragmentRenderingRules(object):
         self.is_noise_fragment = is_noise_fragment
         self.is_launch_pse_fragment = is_launch_pse_fragment
         self.is_pse_launch = is_pse_launch
-        self.is_monitor_params_fragment = is_monitor_params_fragment
         self.monitor_name = monitor_name
 
     @property
@@ -669,8 +668,26 @@ class SimulatorController(BurstBaseController):
 
     @staticmethod
     def _get_current_monitor_name(is_surface_simulation, monitor):
-        return monitor_for_ui_name(
-            is_surface_simulation)[monitor.__class__] + ' monitor'
+        return get_monitor_to_ui_name_dict(
+            is_surface_simulation)[type(monitor)] + ' monitor'
+
+    @staticmethod
+    def _prepare_setting_monitor_params(monitors):
+        # if the first monitor is Raw, it must be skipped because it does not have parameters
+        # also if the only monitor is Raw, the parameters setting phase must be skipped entirely
+        if isinstance(monitors[0], Raw) and len(monitors) == 1:
+            first_monitor_index = 0
+            last_loaded_fragment_url = SimulatorWizzardURLs.SETUP_PSE_URL
+        else:
+            if not isinstance(monitors[0], Raw):
+                first_monitor_index = 0
+            else:
+                first_monitor_index = 1
+
+            last_loaded_fragment_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + \
+                monitors[first_monitor_index].__class__.__name__
+
+        return first_monitor_index, last_loaded_fragment_url
 
     @cherrypy.expose
     @using_template("simulator_fragment")
@@ -690,21 +707,7 @@ class SimulatorController(BurstBaseController):
             session_stored_simulator.monitors = self._build_list_of_monitors(
                 fragment.monitors.value, session_stored_simulator.is_surface_simulation)
 
-
-
-        # if the first monitor is Raw, it must be skipped because it does not have parameters
-        # also if the only monitor is Raw, the parameters setting phase must be skipped entirely
-        if isinstance(session_stored_simulator.monitors[0], Raw) and len(session_stored_simulator.monitors) == 1:
-            first_monitor_index = 0
-            last_loaded_fragment_url = SimulatorWizzardURLs.SETUP_PSE_URL
-        else:
-            if not isinstance(session_stored_simulator.monitors[0], Raw):
-                first_monitor_index = 0
-            else:
-                first_monitor_index = 1
-
-            last_loaded_fragment_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + \
-                session_stored_simulator.monitors[first_monitor_index].__class__.__name__
+        first_monitor_index, last_loaded_fragment_url = self._prepare_setting_monitor_params(session_stored_simulator.monitors)
 
         if cherrypy.request.method == 'POST':
             self._update_last_loaded_fragment_url(last_loaded_fragment_url)
@@ -742,12 +745,11 @@ class SimulatorController(BurstBaseController):
             rendering_rules = SimulatorFragmentRenderingRules(form, last_loaded_fragment_url,
                                                               SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
                                                               is_simulator_load, self.last_loaded_form_url,
-                                                              cherrypy.request.method, is_monitor_params_fragment=True,
-                                                              monitor_name=monitor_name)
+                                                              cherrypy.request.method, monitor_name=monitor_name)
 
         return rendering_rules.to_dict()
 
-    def _handle_next_fragment_for_monitors(self, session_stored_simulator, next_monitor):
+    def _handle_next_fragment_for_monitors(self, session_stored_simulator, next_monitor, session_stored_burst):
         if next_monitor is not None:
             all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
             chosen_variables = session_stored_simulator.model.variables_of_interest
@@ -756,13 +758,12 @@ class SimulatorController(BurstBaseController):
             next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
             next_form.fill_from_trait(next_monitor)
 
-            form_action_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + next_monitor.__class__.__name__
+            form_action_url = SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' + type(next_monitor).__name__
             is_launch_fragment = False
 
             monitor_name = self._get_current_monitor_name(session_stored_simulator.is_surface_simulation, next_monitor)
         else:
-            simulation_number = dao.get_number_of_bursts(common.get_current_project().id) + 1
-            default_simulation_name = 'simulation_' + str(simulation_number)
+            default_simulation_name, simulation_number = BurstService.prepare_name(session_stored_burst, common.get_current_project().id)
             next_form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
             next_form.fill_from_trait(session_stored_simulator)
 
@@ -783,7 +784,7 @@ class SimulatorController(BurstBaseController):
     @staticmethod
     def _get_current_index_and_next_monitor(monitors, current_monitor_name):
         for monitor in monitors:
-            if monitor.__class__.__name__ == current_monitor_name:
+            if type(monitor).__name__ == current_monitor_name:
                 index = monitors.index(monitor)
                 if index < len(monitors)-1:
                     return monitors[index + 1], index
@@ -818,7 +819,7 @@ class SimulatorController(BurstBaseController):
                                                       current_monitor)
             elif next_monitor is not None:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL + '/' +
-                                                      next_monitor.__class__.__name__)
+                                                      type(next_monitor).__name__)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
 
@@ -853,16 +854,15 @@ class SimulatorController(BurstBaseController):
             monitor.projection = projection
 
         next_form, form_action_url, is_launch_fragment, monitor_name = \
-            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor)
+            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, session_stored_burst)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, form_action_url,
                                                           SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL +
-                                                          '/' + monitor.__class__.__name__,
+                                                          '/' + type(monitor).__name__,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_launch_fragment=is_launch_fragment,
                                                           is_pse_launch=session_stored_burst.is_pse_burst(),
-                                                          is_monitor_params_fragment=not is_launch_fragment,
                                                           monitor_name=monitor_name)
         return rendering_rules.to_dict()
 
@@ -882,7 +882,7 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == 'POST':
             if next_monitor is not None:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL +
-                                                      '/' + next_monitor.__class__.__name__)
+                                                      '/' + type(next_monitor).__name__)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SETUP_PSE_URL)
 
@@ -892,7 +892,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(monitor.hrf_kernel)
 
         next_form, form_action_url, is_launch_fragment, monitor_name = \
-            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor)
+            self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, session_stored_burst)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, form_action_url,
                                                           SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL +
@@ -901,7 +901,6 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_launch_fragment=is_launch_fragment,
                                                           is_pse_launch=session_stored_burst.is_pse_burst(),
-                                                          is_monitor_params_fragment=not is_launch_fragment,
                                                           monitor_name=monitor_name)
         return rendering_rules.to_dict()
 

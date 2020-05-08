@@ -79,7 +79,7 @@ def get_ui_name_to_monitor_dict(surface):
     return ui_name_to_monitor
 
 
-def monitor_for_ui_name(surface):
+def get_monitor_to_ui_name_dict(surface):
     monitor_to_ui_name = dict((v, k) for k, v in get_ui_name_to_monitor_dict(surface).items())
     return monitor_to_ui_name
 
