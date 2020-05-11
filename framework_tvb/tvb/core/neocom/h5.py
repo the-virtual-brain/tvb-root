@@ -150,6 +150,14 @@ def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
     return loader.load(gid, dt_class=dt_class)
 
 
+def load_with_links_from_dir(base_dir, gid, dt_class=None):
+    # type: (str, typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    tvb_loader = TVBLoader(REGISTRY)
+    return tvb_loader.load_with_links(fname, dt_class)
+
+
 def store_to_dir(datatype, base_dir, recursive=False):
     # type: (HasTraits, str, bool) -> None
     """
