@@ -40,6 +40,7 @@ from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceU
 from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.time_series import *
@@ -232,7 +233,7 @@ class BrainViewer(ABCSurfaceDisplayer):
         :rtype: `dict`
         :raises Exception: when
                     * number of measure points exceeds the maximum allowed
-                    * a Face object cannot be found in databasef
+                    * a Face object cannot be found in database
 
         """
         self.populate_surface_fields(time_series)
@@ -259,7 +260,7 @@ class BrainViewer(ABCSurfaceDisplayer):
             surface_gid = self.surface_h5.gid.load().hex
             boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, self.region_map_gid,
                                                                              self.stored_adapter.id)
-            base_adapter_url = SurfaceURLGenerator.get_url_for_data_page_split(time_series.gid, self.stored_adapter.id)
+            base_adapter_url = URLGenerator.build_url(self.stored_adapter.id, '{}', time_series.gid)
         else:
             boundary_url = ''
             base_adapter_url = ''

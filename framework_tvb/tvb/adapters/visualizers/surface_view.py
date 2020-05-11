@@ -129,10 +129,6 @@ class SurfaceURLGenerator(URLGenerator):
         return URLGenerator.build_url(adapter_id, 'generate_region_boundaries', surface_gid,
                                       parameter='region_mapping_gid=' + region_mapping_gid)
 
-    @staticmethod
-    def get_url_for_data_page_split(surface_gid, adapter_id):
-        return URLGenerator.build_url(adapter_id, '{}', surface_gid)
-
 
 class BaseSurfaceViewerModel(ViewModel):
     region_map = DataTypeGidAttr(

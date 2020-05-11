@@ -18,7 +18,7 @@
  **/
 
 // ----- Datatype methods mappings start from here
-function setStateModestep(stateVariable, mode, step){
+function setStateModeStep(stateVariable, mode, step){
     if (stateVariable === null || stateVariable === undefined) {
         stateVariable = 0;
     }
@@ -33,12 +33,12 @@ function setStateModestep(stateVariable, mode, step){
 }
 
 function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
-    const param_list = setStateModestep(stateVariable, mode, step);
+    const param_list = setStateModeStep(stateVariable, mode, step);
     return baseDatatypeMethodURL + '/read_data_page/from_idx=' + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
 }
 
 function readDataSplitPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
-    const param_list = setStateModestep(stateVariable, mode, step);
+    const param_list = setStateModeStep(stateVariable, mode, step);
     return baseDatatypeMethodURL.replace('{}', 'read_data_page_split') + "?from_idx=" + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
 
 }
