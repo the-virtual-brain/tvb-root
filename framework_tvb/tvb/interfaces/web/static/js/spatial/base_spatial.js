@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -16,6 +16,15 @@
  * program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **/
+
+/* global variable to keep the base URL for each exploration page */
+var refreshBaseUrl = '';
+
+// This method is called by the template that includes the current script
+function initialize_baseUrl(url = '') {
+    refreshBaseUrl = url;
+}
+
 
 /* globals displayMessage, doAjaxCall */
 
@@ -142,60 +151,6 @@ function BS_removeFocalPoint(focalPointIndex) {
     BS_drawSurfaceFocalPoints();
 }
 
-
-/**
- * Used for plotting equations.
- *
- * @param containerId the id of the container in which should be displayed the equations plot
- * @param url the url where should be made the call to obtain the html which contains the equations plot
- * @param formDataId the id of the form which contains the data for the equations
- * @param fieldsPrefixes a list with the prefixes of the fields at which the equation is sensible. If any
- * field that starts with one of this prefixes is changed than the equation chart will be redrawn.
- * @param axisDataId
- */
-function BS_plotEquations(containerId, url, formDataId, fieldsPrefixes, axisDataId) {
-    _plotEquations(containerId, url, formDataId, axisDataId);
-    _applyEvents(containerId, url, formDataId, axisDataId, fieldsPrefixes);
-}
-
-
-/**
- * Private function.
- *
- * Updates the equations chart.
- */
-function _plotEquations(containerId, url, formDataId, axisDataId) {
-    var formInputs = $("#" + formDataId).serialize();
-    var axisData = $('#' + axisDataId).serialize();
-    doAjaxCall({
-        async:false,
-        type:'GET',
-        url:url + "?" + formInputs + ';' + axisData,
-        success:function (data) {
-        	$("#" + containerId).empty().append(data);
-        }
-    });
-}
-
-
-/**
- * Private function.
- *
- * Applies change events on fields that starts with <code>fieldsPrefixes</code> to updated
- * the plotted equations. The fields should be on a form with id <code>formDataId</code>.
- */
-function _applyEvents(containerId, url, formDataId, axisDataId, fieldsPrefixes) {
-    for (var i = 0; i < fieldsPrefixes.length; i++) {
-        $('select[name^="' + fieldsPrefixes[i] + '"]').change(function () {
-            _plotEquations(containerId, url, formDataId, axisDataId);
-        });
-        $('input[name^="' + fieldsPrefixes[i] + '"]').change(function () {
-            _plotEquations(containerId, url, formDataId, axisDataId);
-        });
-    }
-}
-
-
 /**
  * Loads the interface found at the given url.
  */
@@ -211,4 +166,3 @@ function BS_loadEntity() {
     }
     myForm.submit();
 }
-

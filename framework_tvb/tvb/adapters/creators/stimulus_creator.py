@@ -82,13 +82,11 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',
-                                   choices=spatial_equation_choices)
-        self.spatial_params = FormField(get_form_for_equation(self.default_spatial), self,
-                                        name=self.NAME_SPATIAL_PARAMS_DIV)
+                                   choices=spatial_equation_choices,
+                                   subform=get_form_for_equation(self.default_spatial))
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
-                                    choices=temporal_equation_choices)
-        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
-                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
+                                    choices=temporal_equation_choices,
+                                    subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():
@@ -105,16 +103,18 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                                 values=[CORTICAL])
+                           values=[CORTICAL])
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
         self.spatial.data = type(trait.spatial)
         self.temporal.data = type(trait.temporal)
-        self.spatial_params.form = get_form_for_equation(type(trait.spatial))(self.NAME_SPATIAL_PARAMS_DIV)
-        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
-        self.spatial_params.form.fill_from_trait(trait.spatial)
-        self.temporal_params.form.fill_from_trait(trait.temporal)
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+                                                self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal.subform_field.form.fill_from_trait(trait.temporal)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self,
+                                                self.NAME_SPATIAL_PARAMS_DIV)
+        self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
@@ -224,10 +224,8 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         self.project_id = project_id
 
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
-        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal', choices=equation_choices)
-        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
-                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
-        # self.temporal.template = 'form_fields/select_field.html'
+        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
+                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():
@@ -249,8 +247,9 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         # type: (RegionStimulusCreatorModel) -> None
         self.connectivity.data = trait.connectivity.hex
         self.temporal.data = type(trait.temporal)
-        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
-        self.temporal_params.form.fill_from_trait(trait.temporal)
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+                                                self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal.subform_field.form.fill_from_trait(trait.temporal)
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
@@ -261,6 +260,7 @@ class RegionStimulusCreator(ABCSynchronous):
     """
     The purpose of this adapter is to create a StimuliRegion.
     """
+
     def get_form_class(self):
         return RegionStimulusCreatorForm
 
