@@ -56,13 +56,6 @@ class RegionMappingH5(H5File):
         """
         return self.array_data.load()[int(start_idx): int(end_idx)].T
 
-    def load_into(self, datatype):
-        # type: (RegionMapping) -> None
-        super(RegionMappingH5, self).load_into(datatype)
-        datatype.surface = Surface()
-        datatype.surface.gid = self.surface.load()
-        # TODO: a dummy surface is prepared here only to have the gid
-
 
 class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
 
