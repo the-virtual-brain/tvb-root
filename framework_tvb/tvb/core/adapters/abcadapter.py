@@ -481,16 +481,16 @@ class ABCAdapter(object):
 
     @staticmethod
     def load_traited_by_gid(data_gid, dt_class=None):
-        # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
+        # type: (typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        index = load_entity_by_gid(data_gid.hex)
+        index = ABCAdapter.load_entity_by_gid(data_gid.hex)
         return h5.load_from_index(index, dt_class)
 
     @staticmethod
     def load_with_references(dt_gid):
-        # type: (typing.Union[uuid.UUID]) -> HasTraits
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
         dt_index = ABCAdapter.load_entity_by_gid(dt_gid)
         h5_path = h5.path_for_stored_index(dt_index)
         dt, _ = h5.load_with_references(h5_path)
