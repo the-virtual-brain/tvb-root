@@ -884,7 +884,7 @@ class SimulatorController(BurstBaseController):
             param1 = form.pse_param1.value
             burst_config.range1 = param1.to_json()
             param2 = None
-            if not form.pse_param2.value == form.pse_param2.missing_value:
+            if form.pse_param2.value:
                 param2 = form.pse_param2.value
                 burst_config.range2 = param2.to_json()
         else:
