@@ -375,7 +375,7 @@ class SimulatorController(BurstBaseController):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_CORTEX_URL)
                 surface_index = ABCAdapter.load_entity_by_gid(surface_index_gid)
                 session_stored_simulator.surface = CortexViewModel()
-                session_stored_simulator.surface.fk_surface_gid = uuid.UUID(surface_index_gid)
+                session_stored_simulator.surface.surface_gid = uuid.UUID(surface_index_gid)
 
         if session_stored_simulator.surface is None:
             stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, False)

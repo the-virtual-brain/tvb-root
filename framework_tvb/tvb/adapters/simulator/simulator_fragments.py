@@ -66,8 +66,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if trait.surface:
-            if hasattr(trait.surface, 'fk_surface_gid'):
-                self.surface.data = trait.surface.fk_surface_gid.hex
+            if hasattr(trait.surface, 'surface_gid'):
+                self.surface.data = trait.surface.surface_gid.hex
         else:
             self.surface.data = None
 
