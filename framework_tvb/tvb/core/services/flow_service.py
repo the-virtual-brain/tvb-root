@@ -37,16 +37,14 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from inspect import getmro
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection, \
-    DataType
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService
 
@@ -269,7 +267,8 @@ class FlowService:
             try:
                 if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                     filtered_adapters.append(stored_adapter)
-            except TypeError:
+            except (TypeError, InvalidFilterChainInput):
+                self.logger.exception("Could not evaluate filter on " + str(stored_adapter))
                 has_operations_warning = True
 
         return datatype, filtered_adapters, has_operations_warning

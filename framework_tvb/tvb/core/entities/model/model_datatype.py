@@ -113,38 +113,6 @@ class DataType(HasTraitsIndex):
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
 
-    @property
-    def summary_info(self):
-        # type: () -> typing.Dict[str, str]
-
-        ret = {}
-        if self.title:
-            ret['Title'] = str(self.title)
-
-        columns = self._get_table_columns()
-        for attr_name in columns:
-            try:
-                if attr_name.startswith("fk_") or "id" == attr_name:
-                    continue
-                name = attr_name.title().replace("_", " ")
-                attr_value = getattr(self, attr_name)
-                ret[name] = str(attr_value)
-            except Exception:
-                pass
-        return ret
-
-    def _get_table_columns(self):
-        columns = self.__table__.columns.keys()
-        if type(self).__bases__[0] is DataType:
-            return columns
-        # Consider the immediate superclass only, as for now we have
-        # - most of *Index classes directly inheriting from DataType
-        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
-        base_table_columns = type(self).__bases__[0].__table__.columns.keys()
-        columns.extend(base_table_columns)
-        return columns
-
-
     def __init__(self, gid=None, **kwargs):
 
         # if gid is None:
@@ -174,6 +142,12 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def __repr__(self):
+        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
+        return msg % (str(self.id), self.gid, self.type, self.module,
+                      self.subject, self.state, str(self.fk_parent_burst),
+                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
+
     @property
     def display_type(self):
         return self.type.replace("Index", "")
@@ -190,11 +164,36 @@ class DataType(HasTraitsIndex):
                 display_name += " - " + str(tag)
         return display_name
 
-    def __repr__(self):
-        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
-        return msg % (str(self.id), self.gid, self.type, self.module,
-                      self.subject, self.state, str(self.fk_parent_burst),
-                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
+    @property
+    def summary_info(self):
+        # type: () -> typing.Dict[str, str]
+
+        ret = {}
+        if self.title:
+            ret['Title'] = str(self.title)
+
+        columns = self._get_table_columns()
+        for attr_name in columns:
+            try:
+                if "id" == attr_name:
+                    continue
+                name = attr_name.title().replace("Fk_", "Linked ").replace("_", " ")
+                attr_value = getattr(self, attr_name)
+                ret[name] = str(attr_value)
+            except Exception:
+                pass
+        return ret
+
+    def _get_table_columns(self):
+        columns = self.__table__.columns.keys()
+        if type(self).__bases__[0] is DataType:
+            return columns
+        # Consider the immediate superclass only, as for now we have
+        # - most of *Index classes directly inheriting from DataType
+        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
+        base_table_columns = type(self).__bases__[0].__table__.columns.keys()
+        columns.extend(base_table_columns)
+        return columns
 
     @staticmethod
     def accepted_filters():
