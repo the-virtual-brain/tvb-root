@@ -607,6 +607,7 @@ class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
         burst_config = BurstConfiguration(self.test_project.id)
         burst_config.fk_simulation = op.id
+        burst_config.name = 'test_burst'
         burst_config.simulator_gid = self.session_stored_simulator.gid.hex
         burst_config = dao.store_entity(burst_config)
 
