@@ -275,20 +275,6 @@ class TimeSeriesSurfaceH5(TimeSeriesH5):
     def store_references(self, ts):
         self.surface.store(ts.surface)
 
-    # fixme
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-
-        basic_result = self.read_data_page(from_idx, to_idx, step, specific_slices)
-        result = []
-        if self.surface.number_of_split_slices <= 1:
-            result.append(basic_result.tolist())
-        else:
-            for slice_number in range(self.surface.number_of_split_slices):
-                start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
-                result.append(basic_result[:, start_idx:end_idx].tolist())
-
-        return result
-
     def get_space_labels(self):
         """
         Return only the first `SELECTION_LIMIT` vertices/channels
