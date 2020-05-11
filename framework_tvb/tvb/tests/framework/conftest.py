@@ -55,6 +55,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
@@ -254,6 +255,21 @@ def surface_factory():
 
 
 @pytest.fixture()
+def surface_index_factory(surface_factory, operation_factory):
+    def build(data=4, op=None):
+        surface = surface_factory(data)
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        return dao.store_entity(surface_db)
+
+    return build
+
+
+@pytest.fixture()
 def region_mapping_factory(surface_factory, connectivity_factory):
     def build(surface=None, connectivity=None):
         if not surface:
@@ -265,6 +281,27 @@ def region_mapping_factory(surface_factory, connectivity_factory):
             connectivity=connectivity,
             surface=surface
         )
+
+    return build
+
+
+@pytest.fixture()
+def region_mapping_index_factory(region_mapping_factory, operation_factory):
+    def build(op=None):
+        region_mapping = region_mapping_factory()
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(region_mapping.surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        dao.store_entity(surface_db)
+        conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
+        conn_db.fk_from_operation = op.id
+        dao.store_entity(conn_db)
+        rm_db = h5.store_complete(region_mapping, storage_path)
+        rm_db.fk_from_operation = op.id
+        return dao.store_entity(rm_db)
 
     return build
 
@@ -541,5 +578,26 @@ def test_adapter_factory():
             stored_adapter.id = inst_from_db.id
 
         return dao.store_entity(stored_adapter, inst_from_db is not None)
+
+    return build
+
+
+@pytest.fixture()
+def local_connectivity_index_factory(surface_factory, operation_factory):
+    def build(op=None):
+        surface = surface_factory(cortical=True)
+        lconn = LocalConnectivity()
+        lconn.surface = surface
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        dao.store_entity(surface_db)
+
+        lconn_db = h5.store_complete(lconn, storage_path)
+        lconn_db.fk_from_operation = op.id
+        return dao.store_entity(lconn_db), lconn
 
     return build

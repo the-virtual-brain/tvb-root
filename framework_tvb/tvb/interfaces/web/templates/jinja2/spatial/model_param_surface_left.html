@@ -29,9 +29,9 @@
 
     <script type="text/javascript">
         $(document).ready(function () {
-            setEventsOnFormFields({{ equationsPrefixes | safe }}, '{{ baseUrl | safe }}');
-            plotEquation('{{ baseUrl | safe }}');
-            redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}');
+            setEventsOnStaticFormFields({{ equationsPrefixes | safe }});
+            plotEquation();
+            redrawPlotOnMinMaxChanges();
         });
     </script>
 </div>

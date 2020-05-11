@@ -40,7 +40,10 @@ import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.simulator.equation_forms import *
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subform_helper import SubformHelper
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
+    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -70,6 +73,7 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
+    base_url = '/spatial/localconnectivity'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -117,13 +121,13 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['existentEntitiesInputList'] = self.render_spatial_form(existent_lcon_form)
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
-        template_specification['localConnBaseUrl'] = '/spatial/localconnectivity'
+        template_specification['baseUrl'] = self.base_url
 
         self.plotted_equation_prefixes = {self.SURFACE_FIELD: configure_lcon_form.surface.name,
                                           self.EQUATION_FIELD: configure_lcon_form.spatial.name,
                                           self.CUTOFF_FIELD: configure_lcon_form.cutoff.name,
                                           self.DISPLAY_NAME_FIELD: configure_lcon_form.display_name.name,
-                                          self.EQUATION_PARAMS_FIELD: configure_lcon_form.spatial_params.name[1:]}
+                                          self.EQUATION_PARAMS_FIELD: configure_lcon_form.spatial.subform_field.name[1:]}
 
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
@@ -133,19 +137,20 @@ class LocalConnectivityController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def set_equation(self, equation):
+    def refresh_subform(self, equation, mapping_key):
         eq_class = get_ui_name_to_equation_dict().get(equation)
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = get_form_for_equation(eq_class)(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
+        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
         eq_param_form_class = get_form_for_equation(type(current_lconn.equation))
-        eq_param_form = eq_param_form_class(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
+        eq_param_form = eq_param_form_class()
+        eq_param_form.fill_from_trait(current_lconn.equation)
         eq_param_form.fill_from_post(param)
         eq_param_form.fill_trait(current_lconn.equation)
 

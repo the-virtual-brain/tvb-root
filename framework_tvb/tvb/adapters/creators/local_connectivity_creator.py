@@ -89,10 +89,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
                                                 conditions=self.get_filters())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
-                                   choices=equation_choices, display_none_choice=False)
-
-        self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
-                                        label='Equation parameters')
+                                   choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
         self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
         self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
 
@@ -126,8 +123,9 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         else:
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
-        self.spatial_params.form = get_form_for_equation(type(lc_equation))(self.NAME_EQUATION_PARAMS_DIV)
-        self.spatial_params.form.fill_from_trait(lc_equation)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self,
+                                                self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'next_action': 'form_spatial_local_connectivity_data',

@@ -165,66 +165,6 @@ class SimpleFloatField(Field):
             self.data = float(self.unvalidated_data)
 
 
-class SimpleSelectField(Field):
-    template = 'form_fields/radio_field.html'
-    missing_value = 'explicit-None-value'
-
-    def __init__(self, choices, form, name=None, disabled=False, required=False, label='', doc='', default=None,
-                 include_none=True):
-        super(SimpleSelectField, self).__init__(form, name, disabled, required, label, doc, default)
-        self.choices = choices
-        self.include_none = include_none
-
-    def options(self):
-        """ to be used from template, assumes self.data is set """
-        if not self.required and self.include_none:
-            choice = None
-            yield Option(
-                id='{}_{}'.format(self.name, None),
-                value=self.missing_value,
-                label=str(choice).title(),
-                checked=self.data is None
-            )
-
-        for i, choice in enumerate(self.choices.keys()):
-            yield Option(
-                id='{}_{}'.format(self.name, i),
-                value=choice,
-                label=str(choice).title(),
-                checked=self.data == self.choices.get(choice)
-            )
-
-    def fill_from_post(self, post_data):
-        super(SimpleSelectField, self).fill_from_post(post_data)
-        self.data = self.choices.get(self.data)
-
-
-class SimpleArrayField(Field):
-    template = 'form_fields/str_field.html'
-
-    def __init__(self, form, name, dtype, disabled=False, required=False, label='', doc='', default=None):
-        super(SimpleArrayField, self).__init__(form, name, disabled, required, label, doc, default)
-        self.dtype = dtype
-
-    def _from_post(self):
-        if self.unvalidated_data is not None and isinstance(self.unvalidated_data, str):
-            data = json.loads(self.unvalidated_data)
-            self.data = numpy.array(data, dtype=self.dtype).tolist()
-        elif self.unvalidated_data is not None and isinstance(self.unvalidated_data, list):
-            self.data = self.unvalidated_data
-
-    @property
-    def value(self):
-        if self.data is None:
-            # todo: maybe we need to distinguish None from missing data
-            # this None means self.data is missing, either not set or unset cause of validation error
-            return self.unvalidated_data
-        try:
-            return json.dumps(self.data.tolist())
-        except (TypeError, ValueError):
-            return self.unvalidated_data
-
-
 class DataTypeSelectField(Field):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
@@ -516,7 +456,6 @@ class TraitDataTypeSelectField(TraitField):
             raise ValueError('The chosen entity does not have a proper GID')
 
 
-
 class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
@@ -599,8 +538,14 @@ Option = namedtuple('Option', ['id', 'value', 'label', 'checked'])
 class SelectField(TraitField):
     template = 'form_fields/radio_field.html'
     missing_value = 'explicit-None-value'
+    subform_prefix = 'subform_'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True):
+    def _prepare_template(self, choices):
+        if len(choices) > 4:
+            self.template = 'form_fields/select_field.html'
+
+    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
+                 subform=None, display_subform=True):
         super(SelectField, self).__init__(trait_attribute, form, name, disabled)
         if choices:
             self.choices = choices
@@ -609,6 +554,11 @@ class SelectField(TraitField):
         if not self.choices:
             raise ValueError('no choices for field')
         self.display_none_choice = display_none_choice
+        self.subform_field = None
+        if subform:
+            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
+            self.display_subform = display_subform
+        self._prepare_template(self.choices)
 
     @property
     def value(self):
@@ -733,7 +683,7 @@ class FormField(Field):
 
     def __init__(self, form_class, form, name, label='', doc=''):
         super(FormField, self).__init__(form, name, False, False, label, doc)
-        self.form = form_class(prefix=name)
+        self.form = form_class()
 
     def fill_from_post(self, post_data):
         self.form.fill_from_post(post_data)
@@ -741,6 +691,10 @@ class FormField(Field):
 
     def validate(self):
         return self.form.validate()
+
+    @property
+    def prefix_name(self):
+        return self.form.prefix
 
     def __str__(self):
         return jinja_env.get_template(self.template).render(adapter_form=self.form)
@@ -758,6 +712,12 @@ class Form(object):
         self.prefix = prefix
         self.errors = []
         self.draw_ranges = draw_ranges
+
+    def get_subform_key(self):
+        """
+        If the current form can be used as subform, this method should return the proper value from SubformsEnum.
+        """
+        raise NotImplementedError
 
     @property
     def fields(self):
@@ -823,3 +783,8 @@ class Form(object):
             field.fill_from_post(form_data)
         self.range_1 = form_data.get(self.RANGE_1_NAME)
         self.range_2 = form_data.get(self.RANGE_2_NAME)
+
+    def fill_from_single_post_param(self, **param):
+        param_key = list(param)[0]
+        field = getattr(self, param_key)
+        field.fill_from_post(param)

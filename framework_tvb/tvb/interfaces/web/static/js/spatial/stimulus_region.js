@@ -24,76 +24,59 @@
  */
 
 // Following methods are used for handling events on dynamic forms
-function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
-    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
-    $.ajax({
-        url: url,
-        type: 'POST',
-        success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            $("#" + equationParamsDiv).empty().append(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
-            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
-            plotEquation(baseUrl)
-        }
-    })
-}
-
-function setStimulusParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+function setStimulusParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
     let currentParam = fieldName + '=' + fieldValue;
-    let url = baseUrl + '/' + methodToCall + '?' + currentParam;
+    let url = refreshBaseUrl + '/' + methodToCall + '?' + currentParam;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquation(baseUrl)
+            plotEquation()
         }
     })
 }
 
-function prepareUrlParam(paramName, paramValue) {
-    return paramName + '=' + paramValue;
-}
-
-function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + 'min_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+function redrawPlotOnMinMaxChanges() {
+    $('#min_x').change(function () {
+        plotEquation();
     });
-    $('input[name="' + 'max_x' + '"]').change(function () {
-        plotEquation(baseUrl, prepareUrlParam(this.name, this.value));
+    $('#max_x').change(function () {
+        plotEquation();
     });
 }
 
-function setEventsOnFormFields(fieldsWithEvents, url, onlyEquationParams = false) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let CONNECTIVITY_FIELD = 'set_connectivity';
-    let TEMPORAL_FIELD = 'set_temporal';
     let DISPLAY_NAME_FIELD = 'set_display_name';
-    let TEMPORAL_PARAMS_FIELD = 'set_temporal_param';
 
-    if (onlyEquationParams === false) {
-        $('select[name^="' + fieldsWithEvents[CONNECTIVITY_FIELD] + '"]').change(function () {
-            setStimulusParamAndRedrawChart(url, CONNECTIVITY_FIELD, this.name, this.value)
-        });
-        $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
-            setStimulusParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
-        });
-
-        //TODO: we want to have also support fields for this/ extract hardcoded strings
-        let equationSelectFields = document.getElementsByName(fieldsWithEvents[TEMPORAL_FIELD]);
-        for (let i=0; i<equationSelectFields.length; i++) {
-            equationSelectFields[i].onclick = function () {
-                changeEquationParamsForm(url, TEMPORAL_FIELD, this.value, 'temporal_params',
-                    fieldsWithEvents)
-            };
-        }
-    }
-    $('input[name^="' + fieldsWithEvents[TEMPORAL_PARAMS_FIELD] + '"]').change(function () {
-        setStimulusParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[CONNECTIVITY_FIELD] + '"]').change(function () {
+        setStimulusParamAndRedrawChart(CONNECTIVITY_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
+        setStimulusParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function plotEquation(baseUrl, params=null) {
-    let url = baseUrl + '/get_equation_chart';
+function setEventsOnFormFields(fieldsWithEvents, div_id = 'temporal_params') {
+    $('#' + div_id + ' input').change(function () {
+        setStimulusParamAndRedrawChart('set_temporal_param', this.name, this.value)
+    });
+}
+
+function prepareUrlParams() {
+    min_field = $('#min_x')[0];
+    min_params = prepareUrlParam(min_field.name, min_field.value);
+
+    max_field = $('#max_x')[0];
+    max_params = prepareUrlParam(max_field.name, max_field.value);
+
+    params = min_params + '&' + max_params;
+    return params;
+}
+
+function plotEquation(subformDiv = null) {
+    let url = refreshBaseUrl + '/get_equation_chart';
+    params = prepareUrlParams();
     if (params) {
         url += '?' + params
     }
@@ -105,4 +88,8 @@ function plotEquation(baseUrl, params=null) {
             $("#" + 'equationDivId').empty().append(data);
         }
     });
+}
+
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
 }
