@@ -39,7 +39,7 @@ function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, m
 
 function readDataSplitPageURL(baseAdapterMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
     const param_list = setStateModeStep(stateVariable, mode, step);
-    return baseAdapterMethodURL+ ";from_idx=" + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
+    return baseAdapterMethodURL+ "from_idx=" + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
 
 }
 

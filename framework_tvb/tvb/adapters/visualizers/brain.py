@@ -346,30 +346,26 @@ class BrainViewer(ABCSurfaceDisplayer):
                  Currently timeline_urls has just one value, as on client is loaded entirely anyway.
         """
         time_series_gid = time_series_index.gid
-        if self.surface_gid:
-            activity_base_url = URLGenerator.build_url(self.stored_adapter.id, 'read_data_page_split', time_series_gid,
-                                                       'surface_gid=' + self.surface_gid)
-        else:
-            activity_base_url = ""
+        activity_base_url = URLGenerator.build_url(self.stored_adapter.id, 'read_data_page_split', time_series_gid, "")
         time_urls = [SurfaceURLGenerator.build_h5_url(time_series_gid, 'read_time_page',
                                                       parameter="current_page=0;page_size=" +
                                                                 str(time_series_index.data_length_1d))]
         return activity_base_url, time_urls
 
-    def read_data_page_split(self, time_series_gid, surface_gid, from_idx, to_idx, step=None, specific_slices=None):
+    def read_data_page_split(self, time_series_gid, from_idx, to_idx, step=None, specific_slices=None):
         time_series_index = self.load_entity_by_gid(time_series_gid)
-        time_series_h5 = h5.h5_file_for_index(time_series_index)
-        assert isinstance(time_series_h5, TimeSeriesH5)
+        with h5.h5_file_for_index(time_series_index) as time_series_h5:
+            assert isinstance(time_series_h5, TimeSeriesH5)
+            basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
 
-        surface_index = self.load_entity_by_gid(surface_gid)
+        if not isinstance(time_series_index, TimeSeriesSurfaceIndex):
+            return basic_result.tolist()
+
+        result = []
+        surface_index = self.load_entity_by_gid(time_series_index.fk_surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_index)
         assert isinstance(surface_h5, SurfaceH5)
         number_of_split_slices = surface_h5.number_of_split_slices.load()
-
-        basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
-        time_series_h5.close()
-        result = []
-
         if number_of_split_slices <= 1:
             result.append(basic_result.tolist())
         else:
