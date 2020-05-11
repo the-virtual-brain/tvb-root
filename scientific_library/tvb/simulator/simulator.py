@@ -59,6 +59,8 @@ class Simulator(HasTraits):
 
     use_numba = True
 
+    spike_stimulus = None
+
     tvb_spikeNet_interface = None
     configure_spiking_simulator = None
     run_spiking_simulator = None
@@ -517,6 +519,9 @@ class Simulator(HasTraits):
 
         # This is not necessary in most cases
         # if update_non_state_variables=True in the model dfun by default
+        if self.spike_stimulus:
+            for target_parameter in self.spike_stimulus:
+                setattr(self.model, target_parameter, self.spike_stimulus[target_parameter][0].to_xarray().values)
         self.update_state(state, node_coupling, local_coupling, self.use_numba)
 
         # TODO: We could have another __call__method obviously when there is no co-simulation...
@@ -554,6 +559,11 @@ class Simulator(HasTraits):
 
                 # Integrate Spiking Network to get the new Spiking Network state
                 self.run_spiking_simulator(self.integrator.dt)
+
+            if self.spike_stimulus:
+                for target_parameter in self.spike_stimulus:
+                    setattr(self.model, target_parameter, 
+                            self.spike_stimulus[target_parameter][step].to_xarray().values)
 
             # Integrate TVB to get the new TVB state
             state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
