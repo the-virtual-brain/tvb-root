@@ -191,6 +191,7 @@ class TimeSeriesH5(H5File):
         metadata = self.data.get_cached_metadata()
         return metadata.min, metadata.max
 
+    #TODO Fix for TSRegion
     def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
         """
         No Split needed in case of basic TS (sensors and region level)
