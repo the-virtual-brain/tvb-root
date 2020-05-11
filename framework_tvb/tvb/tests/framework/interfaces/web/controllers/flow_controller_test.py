@@ -161,10 +161,9 @@ class TestFlowController(BaseControllersTest):
         assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
 
     def test_get_simple_adapter_interface(self, test_adapter_factory):
-        test_adapter_factory()
+        algo = test_adapter_factory()
         form = TestAdapter1Form()
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        algo = adapter.stored_adapter
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()

@@ -12,7 +12,8 @@
                 '{{ urlRegionMap | safe }}', '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}',
                 {{ 'true' if extended_view else 'false' }},
                 {{ ("'" + shelfObject + "'" if shelfObject else 'null') | safe }}, {{ hemisphereChunkMask }},
-                '{{ urlMeasurePointsLabels  }}', '{{ urlRegionBoundaries | safe }}', '{{ measurePointsSelectionGID }}');
+                '{{ urlMeasurePointsLabels  }}', '{{ urlRegionBoundaries | safe }}', '{{ measurePointsSelectionGID }}',
+                '{{ base_adapter_url | safe }}');
         });
     </script>
 

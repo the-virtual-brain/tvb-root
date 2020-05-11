@@ -35,8 +35,9 @@
 import json
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, Integer, ForeignKey
-from tvb.core.entities.model.model_datatype import DataType
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.core.entities.model.model_datatype import DataType
 
 
 class ValueWrapperIndex(DataType):
@@ -52,6 +53,13 @@ class ValueWrapperIndex(DataType):
     def display_name(self):
         """ Simple String to be used for display in UI."""
         return "Value Wrapper - " + self.data_name + " : " + str(self.data_value) + " (" + str(self.data_type) + ")"
+
+    def fill_from_has_traits(self, datatype):
+        # type: (ValueWrapper)  -> None
+        super(ValueWrapperIndex, self).fill_from_has_traits(datatype)
+        self.data_value = datatype.data_value
+        self.data_type = datatype.data_type
+        self.data_name = datatype.data_name
 
 
 class DatatypeMeasureIndex(DataType):

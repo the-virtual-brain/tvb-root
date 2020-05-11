@@ -37,16 +37,14 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from inspect import getmro
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection, \
-    DataType
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService
 
@@ -125,8 +123,6 @@ class FlowService:
             self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
 
-
-    
     @staticmethod
     def get_algorithm_by_module_and_class(module, classname):
         """
@@ -134,16 +130,6 @@ class FlowService:
         class.
         """
         return dao.get_algorithm_by_module(module, classname)
-    
-    
-    @staticmethod
-    def get_available_datatypes(project_id, data_type_cls, filters=None):
-        """
-        Return all dataTypes that match a given name and some filters.
-        :param data_type_cls: either a fully qualified class name or a class object
-        """
-        return get_filtered_datatypes(project_id, data_type_cls, filters)
-
 
     @staticmethod
     def create_link(data_ids, project_id):
@@ -281,7 +267,8 @@ class FlowService:
             try:
                 if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
                     filtered_adapters.append(stored_adapter)
-            except TypeError:
+            except (TypeError, InvalidFilterChainInput):
+                self.logger.exception("Could not evaluate filter on " + str(stored_adapter))
                 has_operations_warning = True
 
         return datatype, filtered_adapters, has_operations_warning

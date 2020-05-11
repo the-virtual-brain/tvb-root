@@ -45,6 +45,7 @@ import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixSurfaceEEGImporter
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
@@ -55,8 +56,10 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.core.utils import hash_password
@@ -185,6 +188,22 @@ class TestFactory(object):
 
         resulted_dts = dao.get_datatype_in_group(operation_group_id=operations[0].fk_operation_group)
         return resulted_dts, operations[0].fk_operation_group
+
+    @staticmethod
+    def create_value_wrapper(test_user, test_project=None):
+        """
+        Creates a ValueWrapper dataType, and the associated parent Operation.
+        This is also used in ProjectStructureTest.
+        """
+        if test_project is None:
+            test_project = TestFactory.create_project(test_user, 'test_proj')
+        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
+        value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
+        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        vw_idx = h5.store_complete(value_wrapper, op_dir)
+        vw_idx.fk_from_operation = operation.id
+        vw_idx = dao.store_entity(vw_idx)
+        return test_project, vw_idx.gid, operation
 
     @staticmethod
     def create_adapter(module='tvb.tests.framework.adapters.ndimensionarrayadapter',

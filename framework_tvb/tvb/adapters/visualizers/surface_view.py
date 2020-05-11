@@ -159,13 +159,14 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+        conn_filter = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
-                                                             name='connectivity_measure', conditions=self.get_filters())
+                                                             name='connectivity_measure', conditions=conn_filter)
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
+        return None
 
 
 class SurfaceViewerModel(BaseSurfaceViewerModel):

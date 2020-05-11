@@ -28,6 +28,7 @@
 #
 #
 import json
+from time import sleep
 import numpy
 import pytest
 import os.path
@@ -35,17 +36,23 @@ import os
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
+from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -58,7 +65,6 @@ from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTyp
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
-from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 
 
 def pytest_addoption(parser):
@@ -364,25 +370,9 @@ def time_series_region_index_factory(operation_factory):
 
 
 @pytest.fixture()
-def dummy_datatype_factory():
-    def build():
-        return DummyDataType()
-
-    return build
-
-
-@pytest.fixture()
-def dummy_datatype2_index_factory():
-    def build(subject=None, state=None):
-        return DummyDataType2Index(subject=subject, state=state)
-
-    return build
-
-
-@pytest.fixture()
-def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
+def dummy_datatype_index_factory(operation_factory):
     def build(row1=None, row2=None, project=None, operation=None, subject=None, state=None):
-        data_type = dummy_datatype_factory()
+        data_type = DummyDataType()
         data_type.row1 = row1
         data_type.row2 = row2
 
@@ -399,6 +389,29 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 
         data_type_index = dao.store_entity(data_type_index)
         return data_type_index
+
+    return build
+
+
+@pytest.fixture()
+def value_wrapper_factory():
+    def build(test_user, test_project):
+        view_model = BaseBCTModel()
+        view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
+
+        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        op = FlowService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
+        # wait for the operation to finish
+        tries = 5
+        while not op.has_finished and tries > 0:
+            sleep(5)
+            tries = -1
+            op = dao.get_operation_by_id(op.id)
+
+        value_wrapper = try_get_last_datatype(test_project.id, ValueWrapperIndex)
+        count = dao.count_datatypes(test_project.id, ValueWrapperIndex)
+        assert 1 == count
+        return value_wrapper
 
     return build
 
@@ -527,6 +540,6 @@ def test_adapter_factory():
         if inst_from_db is not None:
             stored_adapter.id = inst_from_db.id
 
-        dao.store_entity(stored_adapter, inst_from_db is not None)
+        return dao.store_entity(stored_adapter, inst_from_db is not None)
 
     return build

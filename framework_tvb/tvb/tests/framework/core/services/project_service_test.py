@@ -36,22 +36,19 @@ import shutil
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.flow_service import FlowService
-from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
-
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
@@ -355,30 +352,6 @@ class TestProjectService(TransactionalTestCase):
         with pytest.raises(ProjectServiceException):
             self.project_service.remove_project(99)
 
-    @staticmethod
-    def _create_value_wrapper(test_user, test_project=None):
-        """
-        Creates a ValueWrapper dataType, and the associated parent Operation.
-        This is also used in ProjectStructureTest.
-        """
-        if test_project is None:
-            test_project = TestFactory.create_project(test_user, 'test_proj')
-        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
-        value_wrapper = ValueWrapper(data_value=5.0, data_name="my_value")
-        value_wrapper.type = "ValueWrapper"
-        value_wrapper.module = "tvb.datatypes.mapped_values"
-        value_wrapper.subject = "John Doe"
-        value_wrapper.state = "RAW_STATE"
-        value_wrapper.set_operation_id(operation.id)
-        adapter_instance = StoreAdapter([value_wrapper])
-        OperationService().initiate_prelaunch(operation, adapter_instance, {})
-        all_value_wrappers = FlowService().get_available_datatypes(test_project.id,
-                                                                   "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        if len(all_value_wrappers) != 1:
-            raise Exception("Should be only one value wrapper.")
-        result_vw = ABCAdapter.load_entity_by_gid(all_value_wrappers[0][2])
-        return test_project, result_vw.gid, operation.gid
-
     def __check_meta_data(self, expected_meta_data, new_datatype):
         """Validate Meta-Data"""
         mapp_keys = {DataTypeMetaData.KEY_SUBJECT: "subject", DataTypeMetaData.KEY_STATE: "state"}
@@ -394,48 +367,42 @@ class TestProjectService(TransactionalTestCase):
                 else:
                     assert value == new_datatype.parent_operation.user_group
 
-    def test_remove_project_node(self, test_adapter_factory):
+    def test_remove_project_node(self):
         """
         Test removing of a node from a project.
         """
-        inserted_project, gid, gid_op = self._create_value_wrapper(self.test_user)
+        inserted_project, gid, op = TestFactory.create_value_wrapper(self.test_user)
         project_to_link = model_project.Project("Link", self.test_user.id, "descript")
         project_to_link = dao.store_entity(project_to_link)
         exact_data = dao.get_datatype_by_gid(gid)
+        assert exact_data is not None, "Initialization problem!"
         dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
-        assert dao.get_datatype_by_gid(gid) is not None, "Initialization problem!"
 
-        operation_id = dao.get_generic_entity(model_operation.Operation, gid_op, 'gid')[0].id
-        op_folder = self.structure_helper.get_project_folder("test_proj", str(operation_id))
-        assert os.path.exists(op_folder)
-        sub_files = os.listdir(op_folder)
-        assert 2 == len(sub_files)
-        ### Validate that no more files are created than needed.
+        vw_h5_path = h5.path_for_stored_index(exact_data)
+        assert os.path.exists(vw_h5_path)
 
-        if (dao.get_system_user() is None):
+        if dao.get_system_user() is None:
             dao.store_entity(model_operation.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME,
                                                   TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True,
                                                   None))
-        self.project_service._remove_project_node_files(inserted_project.id, gid)
-        sub_files = os.listdir(op_folder)
-        assert 1 == len(sub_files)
-        ### operation.xml file should still be there
 
-        op_folder = self.structure_helper.get_project_folder("Link", str(operation_id + 1))
-        sub_files = os.listdir(op_folder)
-        assert 2 == len(sub_files)
-        assert dao.get_datatype_by_gid(gid) is not None, "Data should still be in DB, because of links"
+        self.project_service._remove_project_node_files(inserted_project.id, gid)
+
+        assert not os.path.exists(vw_h5_path)
+        exact_data = dao.get_datatype_by_gid(gid)
+        assert exact_data  is not None, "Data should still be in DB, because of links"
+        vw_h5_path_new = h5.path_for_stored_index(exact_data)
+        assert os.path.exists(vw_h5_path_new)
+        assert vw_h5_path_new != vw_h5_path
+
         self.project_service._remove_project_node_files(project_to_link.id, gid)
         assert dao.get_datatype_by_gid(gid) is None
-        sub_files = os.listdir(op_folder)
-        assert 1 == len(sub_files)
-        ### operation.xml file should still be there
 
     def test_update_meta_data_simple(self):
         """
         Test the new update metaData for a simple data that is not part of a group.
         """
-        inserted_project, gid, _ = self._create_value_wrapper(self.test_user)
+        inserted_project, gid, _ = TestFactory.create_value_wrapper(self.test_user)
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "second_state",
                          DataTypeOverlayDetails.CODE_GID: gid,
@@ -445,6 +412,7 @@ class TestProjectService(TransactionalTestCase):
         new_datatype = dao.get_datatype_by_gid(gid)
         self.__check_meta_data(new_meta_data, new_datatype)
 
+        # TODO Change bellow to check the Operation ViewModel H5 instead of the old Operation.xml
         op_path = FilesHelper().get_operation_meta_file_path(inserted_project.name, new_datatype.parent_operation.id)
         op_meta = XMLReader(op_path).read_metadata()
         assert op_meta['user_group'] == 'new user group', 'UserGroup not updated!'

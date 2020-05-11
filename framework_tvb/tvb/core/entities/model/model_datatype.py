@@ -36,6 +36,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 import json
+import typing
 from datetime import datetime
 from copy import copy
 from sqlalchemy.orm import relationship, backref
@@ -73,7 +74,6 @@ FILTER_CATEGORIES = {'DataType.subject': {'display': 'Subject', 'type': 'string'
                                                  'operations': ['==', '!=', 'like']},
                      'Operation.completion_date': {'display': 'Completion date', 'type': 'date',
                                                    'operations': ['!=', '<', '>']}}
-
 
 
 class DataType(HasTraitsIndex):
@@ -128,7 +128,6 @@ class DataType(HasTraitsIndex):
             LOG.warning('Could not perform __initdb__: %r', exc)
         super(DataType, self).__init__()
 
-
     def __initdb__(self, subject='', state=None, operation_id=None, fk_parent_burst=None, disk_size=None,
                    user_tag_1=None, user_tag_2=None, user_tag_3=None, user_tag_4=None, user_tag_5=None, **_):
         """Set attributes"""
@@ -143,6 +142,11 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def __repr__(self):
+        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
+        return msg % (str(self.id), self.gid, self.type, self.module,
+                      self.subject, self.state, str(self.fk_parent_burst),
+                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
 
     @property
     def display_type(self):
@@ -160,13 +164,36 @@ class DataType(HasTraitsIndex):
                 display_name += " - " + str(tag)
         return display_name
 
+    @property
+    def summary_info(self):
+        # type: () -> typing.Dict[str, str]
 
-    def __repr__(self):
-        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
-        return msg % (str(self.id), self.gid, self.type, self.module,
-                      self.subject, self.state, str(self.fk_parent_burst),
-                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
+        ret = {}
+        if self.title:
+            ret['Title'] = str(self.title)
 
+        columns = self._get_table_columns()
+        for attr_name in columns:
+            try:
+                if "id" == attr_name:
+                    continue
+                name = attr_name.title().replace("Fk_", "Linked ").replace("_", " ")
+                attr_value = getattr(self, attr_name)
+                ret[name] = str(attr_value)
+            except Exception:
+                pass
+        return ret
+
+    def _get_table_columns(self):
+        columns = self.__table__.columns.keys()
+        if type(self).__bases__[0] is DataType:
+            return columns
+        # Consider the immediate superclass only, as for now we have
+        # - most of *Index classes directly inheriting from DataType
+        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
+        base_table_columns = type(self).__bases__[0].__table__.columns.keys()
+        columns.extend(base_table_columns)
+        return columns
 
     @staticmethod
     def accepted_filters():
@@ -174,14 +201,6 @@ class DataType(HasTraitsIndex):
         Return accepted UI filters for current DataType.
         """
         return copy(FILTER_CATEGORIES)
-
-
-    def persist_full_metadata(self):
-        """
-        Do nothing here. We will implement this only in MappedType.
-        """
-        pass
-
 
     def fill_from_has_traits(self, has_traits):
         # type: (HasTraits) -> None
