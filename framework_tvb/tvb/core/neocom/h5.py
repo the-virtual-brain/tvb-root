@@ -149,7 +149,7 @@ def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
     :param recursive: if datatypes contained in this datatype should be loaded as well
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    return loader.load(gid, dt_class)
+    return loader.load(gid, dt_class=dt_class)
 
 
 def load_with_links_from_dir(base_dir, gid):

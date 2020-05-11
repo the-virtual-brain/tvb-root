@@ -17,7 +17,7 @@ WORKDIR /root
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 # TODO: currently installs tvb from tvb-hpc branch
-RUN git clone --depth 1 --branch tvb-hpc https://github.com/the-virtual-brain/tvb-root.git
+RUN git clone --depth 1 --branch tvb-hpc-rebase https://github.com/the-virtual-brain/tvb-root.git
 
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
