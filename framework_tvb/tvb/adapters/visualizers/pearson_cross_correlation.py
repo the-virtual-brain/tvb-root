@@ -109,7 +109,7 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
 
         ts_h5_class, ts_h5_path = self._load_h5_of_gid(ts_gid.hex)
         with ts_h5_class(ts_h5_path) as ts_h5:
-            labels = ts_h5.get_space_labels()
+            labels = self.get_space_labels(ts_h5)
 
         if not labels:
             labels = None

@@ -191,12 +191,6 @@ class TimeSeriesH5(H5File):
         metadata = self.data.get_cached_metadata()
         return metadata.min, metadata.max
 
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-        """
-        No Split needed in case of basic TS (sensors and region level)
-        """
-        return self.read_data_page(from_idx, to_idx, step, specific_slices)
-
     def get_space_labels(self):
         """
         It assumes that we want to select in the 3'rd dimension,

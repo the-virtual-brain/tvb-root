@@ -50,9 +50,9 @@ class TestBrainViewer(TransactionalTestCase):
     """
 
     EXPECTED_KEYS = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlLines', 'urlRegionMap',
-                     'base_activity_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
+                     'base_adapter_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
                      'noOfMeasurePoints', 'isAdapter']
-    EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'time_series', 'pageSize', 'shelfObject',
+    EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'pageSize', 'shelfObject',
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
     face = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')

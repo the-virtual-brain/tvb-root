@@ -119,9 +119,9 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         return {'measurePointsSelectionGID': ts_h5.get_measure_points_selection_gid(),
                 'initialSelection': ts_h5.get_default_selection(),
-                'groupedLabels': self._get_grouped_space_labels(ts_h5)}
+                'groupedLabels': self.get_grouped_space_labels(ts_h5)}
 
-    def _get_grouped_space_labels(self, ts_h5):
+    def get_grouped_space_labels(self, ts_h5):
         """
         :return: A structure of this form [('left', [(idx, lh_label)...]), ('right': [(idx, rh_label) ...])]
         """

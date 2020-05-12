@@ -33,11 +33,12 @@ import json
 import numpy
 from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelationCoefficientVisualizerForm, \
     PearsonCorrelationCoefficientVisualizerModel
-from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
-class PearsonEdgeBundle(ABCDisplayer):
+class PearsonEdgeBundle(ABCSpaceDisplayer):
     """
     Viewer for Pearson CorrelationCoefficients.
     Very similar to the CrossCorrelationVisualizer - this one done with Matplotlib
@@ -70,7 +71,7 @@ class PearsonEdgeBundle(ABCDisplayer):
 
         ts_h5_class, ts_h5_path = self._load_h5_of_gid(ts_index.gid)
         with ts_h5_class(ts_h5_path) as ts_h5:
-            labels = ts_h5.get_space_labels()
+            labels = self.get_space_labels(ts_h5)
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps(labels),
