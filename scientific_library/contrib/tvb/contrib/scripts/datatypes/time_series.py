@@ -391,10 +391,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
 
     @property
     def space_labels(self):
-        try:
-            return numpy.array(self.get_space_labels())
-        except:
-            return numpy.array(self.labels_dimensions.get(self.labels_ordering[2], []))
+         return numpy.array(self.labels_dimensions.get(self.labels_ordering[2], []))
 
     @property
     def variables_labels(self):
