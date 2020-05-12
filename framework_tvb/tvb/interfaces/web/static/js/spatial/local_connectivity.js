@@ -47,6 +47,7 @@ function LCON_page_init(minValue, maxValue) {
     LCONN_disableView('You are already in VIEW mode. If you want to display a different Local Connectivity entity just pick it from the selector menu above the visualizer.');
     LCONN_disableCreate('If you want to create a new Local Connectivity entity, go back to the EDIT page to set a new set of parameters.');
 }
+
 /**
  * Displays a gradient on the surface used by the selected local connectivity.
  * @param [selectedLocalConnectivity] the gid of the local connectivity
@@ -168,67 +169,42 @@ function _drawDefaultColorBuffers() {
 }
 
 // Following functions are used for updating the current LCONN on server and redraw the chart
-function change_equation_params_form(base_url, method_to_call, current_equation, equation_params_div, fields_with_events) {
-    let url = base_url + "/" + method_to_call + "/" + current_equation;
-    $.ajax({
-        url: url,
-        type: 'POST',
-        success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            $("#" + equation_params_div).empty().append(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equation_params_div]);
-            set_events_on_form_fields(fields_with_events, base_url, true);
-            plot_equation(base_url)
-        }
-    })
-}
-
-function set_lconn_param_and_redraw_chart(base_url, method_to_call, field_name, field_value) {
+function setLconnParamAndRedrawChart(method_to_call, field_name, field_value) {
     let current_param = field_name + '=' + field_value;
-    let url = base_url + '/' + method_to_call + '?' + current_param;
+    let url = refreshBaseUrl + '/' + method_to_call + '?' + current_param;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plot_equation(base_url)
+            plotEquation()
         }
     })
 }
 
-function set_events_on_form_fields(fields_with_events, url, only_equation_params = false) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let SURFACE_FIELD = 'set_surface';
-    let EQUATION_FIELD = 'set_equation';
     let CUTOFF_FIELD = 'set_cutoff_value';
     let DISPLAY_NAME_FIELD = 'set_display_name';
-    let EQUATION_PARAMS_FIELD = 'set_equation_param';
 
-    if (only_equation_params === false) {
-        $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
-            set_lconn_param_and_redraw_chart(url, SURFACE_FIELD, this.name, this.value)
-        });
-        $('input[name^="' + fields_with_events[CUTOFF_FIELD] + '"]').change(function () {
-            set_lconn_param_and_redraw_chart(url, CUTOFF_FIELD, this.name, this.value)
-        });
-        $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
-            set_lconn_param_and_redraw_chart(url, DISPLAY_NAME_FIELD, this.name, this.value)
-        });
-
-        //TODO: we want to have also support fields for this/ extract hardcoded strings
-        let equation_select_fields = document.getElementsByName(fields_with_events[EQUATION_FIELD]);
-        for (let i=0; i<equation_select_fields.length; i++) {
-            equation_select_fields[i].onclick = function () {
-                change_equation_params_form(url, EQUATION_FIELD, this.value, 'spatial_params',
-                    fields_with_events)
-            };
-        }
-    }
-    $('input[name^="' + fields_with_events[EQUATION_PARAMS_FIELD] + '"]').change(function () {
-        set_lconn_param_and_redraw_chart(url, EQUATION_PARAMS_FIELD, this.name, this.value)
+    $('select[name^="' + fieldsWithEvents[SURFACE_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(SURFACE_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fieldsWithEvents[CUTOFF_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(CUTOFF_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
+        setLconnParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
     });
 }
 
-function plot_equation(base_url) {
-    let url = base_url + '/get_equation_chart';
+function setEventsOnFormFields(fields_with_events, div_id = 'temporal_params') {
+    $('#' + div_id + ' input').change(function () {
+        setLconnParamAndRedrawChart('set_equation_param', this.name, this.value)
+    });
+}
+
+function plotEquation(subformDiv = null) {
+    let url = refreshBaseUrl + '/get_equation_chart';
     doAjaxCall({
         async: false,
         type: 'GET',
@@ -237,4 +213,8 @@ function plot_equation(base_url) {
             $("#" + 'equationDivId').empty().append(data);
         }
     });
+}
+
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
 }

@@ -1,12 +1,13 @@
 <div id="main" class="columnized colscheme-2-even">
 	<script type="text/javascript" src="/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
-	<script type="text/javascript">
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
+    <script type="text/javascript">
         // 	Define function here to use when create button is not disabled and populate with jinja2 provided values.
         function createLocalConnectivity() {
             LCONN_submitLocalConnectivityData('{{ submit_parameters_url }}', 'form_spatial_local_connectivity_data');
         }
 	</script>
-	
+
 	<div>
         {% include 'spatial/local_connectivity_step1_left.html' %}
         {% include 'spatial/local_connectivity_step1_right.html' %}

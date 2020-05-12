@@ -34,12 +34,11 @@ from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY as EEG_P
 from tvb.datatypes.projections import MEG_POLYMORPHIC_IDENTITY as MEG_P
 from tvb.datatypes.projections import SEEG_POLYMORPHIC_IDENTITY as SEEG_P
 from tvb.simulator.monitors import *
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField, \
-    MultiSelectField
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, MultiSelectField, SelectField
 from tvb.basic.neotraits.api import List
 import numpy
 
@@ -214,10 +213,12 @@ class BoldMonitorForm(MonitorForm):
 
     def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
         super(BoldMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
-        self.period = ScalarField(Bold.period, self)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
-        self.hrf_kernel = SimpleSelectField(self.hrf_kernel_choices, self, name='hrf_kernel',
-                                            required=True, label='Equation')
+        default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
+
+        self.period = ScalarField(Bold.period, self)
+        self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
+                                      self, name='hrf_kernel', choices=self.hrf_kernel_choices)
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)

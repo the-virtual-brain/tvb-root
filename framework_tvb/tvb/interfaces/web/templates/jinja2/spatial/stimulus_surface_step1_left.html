@@ -12,9 +12,9 @@
                 {% if displayedMessage is defined and displayedMessage != none %}
 					displayMessage('{{ displayedMessage }}', '{{ messageType }}');
 				{% endif %}
-                setEventsOnFormFields({{ spatialFieldsPrefixes | safe }}, '{{ baseUrl | safe }}');
-                plotEquations('{{ baseUrl | safe }}');
-                redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}')
+                setEventsOnStaticFormFields({{ spatialFieldsPrefixes | safe }});
+                plotEquations();
+                redrawPlotOnMinMaxChanges()
 	        });
 	    </script>
 

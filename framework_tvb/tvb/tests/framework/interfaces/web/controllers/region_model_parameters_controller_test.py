@@ -59,7 +59,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.region_m_p_c = RegionsModelParametersController()
         SimulatorController().index()
         stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-        _, self.connectivity = connectivity_factory
+        self.connectivity = connectivity_factory()
         new_params = {}
         for key, val in SIMULATOR_PARAMETERS.items():
             new_params[key] = {'value': val}

@@ -1223,3 +1223,21 @@ function setupMenuEvents(parent) {
 $(document).ready(function () {
     setupMenuEvents();
 });
+
+function prepareUrlParam(paramName, paramValue) {
+    return paramName + '=' + paramValue;
+}
+
+function refreshSubform(currentElem, elementType, subformDiv) {
+    let url = prepareRefreshSubformUrl(currentElem, elementType, subformDiv);
+    $.ajax({
+        url: url,
+        type: 'POST',
+        success: function (r) {
+            $('#' + subformDiv).html(r);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
+            setEventsOnFormFields(elementType, subformDiv);
+            plotEquation(subformDiv);
+        }
+    })
+}
