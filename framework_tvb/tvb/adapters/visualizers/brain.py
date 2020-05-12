@@ -279,7 +279,8 @@ class BrainViewer(ABCSurfaceDisplayer):
                            biHemispheric=self.surface_h5.bi_hemispheric.load(),
                            hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
                            pageSize=self.PAGE_SIZE, urlRegionBoundaries=boundary_url,
-                           measurePointsLabels=time_series_h5.get_space_labels(), measurePointsTitle=time_series.title))
+                           measurePointsLabels=self.get_space_labels(time_series_h5),
+                           measurePointsTitle=time_series.title))
 
         params.update(self.build_params_for_subselectable_ts(time_series_h5))
 

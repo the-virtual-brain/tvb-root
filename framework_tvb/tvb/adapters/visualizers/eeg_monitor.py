@@ -34,11 +34,12 @@
 """
 import json
 import numpy
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
-from tvb.core.adapters.exceptions import LaunchException
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -92,7 +93,7 @@ class EegMonitorForm(ABCAdapterForm):
         return None
 
 
-class EegMonitor(ABCDisplayer):
+class EegMonitor(ABCSpaceDisplayer):
     """
     This viewer takes as inputs at least one ArrayWrapper and at most 3 
     ArrayWrappers, and returns the needed parameters for a 2D representation 
@@ -293,7 +294,7 @@ class EegMonitor(ABCDisplayer):
                 measures_sel_gids.append(timeseries.get_measure_points_selection_gid())
             else:
                 measures_sel_gids.append(timeseries.get_measure_points_selection_gid().hex)
-            grouped_labels.append(timeseries.get_grouped_space_labels())
+            grouped_labels.append(self.get_grouped_space_labels(timeseries))
 
             state_vars[ts_name] = timeseries.labels_dimensions.load().get(timeseries.labels_ordering.load()[1], [])
             modes[ts_name] = list(range(shape[3]))
@@ -304,7 +305,7 @@ class EegMonitor(ABCDisplayer):
     def _fill_graph_labels(self, timeseries, graph_labels, mult_inp, idx):
         """ Fill graph labels in the graph_labels parameter """
         shape = timeseries.read_data_shape()
-        space_labels = timeseries.get_space_labels()
+        space_labels = self.get_space_labels(timeseries)
         for j in range(shape[self.selected_dimensions[1]]):
             if space_labels:
                 if j >= len(space_labels):
