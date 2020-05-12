@@ -31,11 +31,10 @@
 import uuid
 import formencode
 from formencode import validators
-from tvb.basic.neotraits._attr import List
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.neotraits.api import Attr, Range
+from tvb.basic.neotraits.api import Attr, Range, List
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
