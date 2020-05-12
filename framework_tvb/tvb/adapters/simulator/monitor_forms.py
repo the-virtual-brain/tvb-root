@@ -79,6 +79,11 @@ def get_ui_name_to_monitor_dict(surface):
     return ui_name_to_monitor
 
 
+def get_monitor_to_ui_name_dict(surface):
+    monitor_to_ui_name = dict((v, k) for k, v in get_ui_name_to_monitor_dict(surface).items())
+    return monitor_to_ui_name
+
+
 def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
@@ -107,7 +112,7 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
 
-    #TODO: We should review the code her, we could probably reduce the number of  classes that are used here
+    #TODO: We should review the code here, we could probably reduce the number of  classes that are used here
 
 
 class RawMonitorForm(Form):

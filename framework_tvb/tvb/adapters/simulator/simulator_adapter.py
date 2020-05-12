@@ -353,7 +353,7 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map, region_volume_map = self._try_load_region_mapping()
 
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
             self.log.debug("Monitor created the TS")
@@ -392,7 +392,7 @@ class SimulatorAdapter(ABCAsynchronous):
         for result in self.algorithm(simulation_length=self.algorithm.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
-                    m_name = monitor.__class__.__name__
+                    m_name = type(monitor).__name__
                     ts_h5 = result_h5[m_name]
                     ts_h5.write_time_slice([result[j][0]])
                     ts_h5.write_data_slice([result[j][1]])
@@ -408,7 +408,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.log.debug("Simulation state persisted, returning results ")
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()
