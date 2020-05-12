@@ -131,7 +131,7 @@ class IntrospectionRegistry(object):
         "ConnectivityIndex": ConnectivityRemover,
         "RegionMappingIndex": RegionMappingRemover,
         "RegionVolumeMappingIndex": RegionVolumeMappingRemover,
-        "ProjectionMatrixIndex": SensorRemover,
+        "SensorsIndex": SensorRemover,
         "VolumeIndex": VolumeRemover,
         "TimeSeriesIndex": TimeseriesRemover
     }
