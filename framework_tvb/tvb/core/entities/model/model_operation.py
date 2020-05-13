@@ -253,6 +253,7 @@ class Operation(Base, Exportable):
     user_group = Column(String, default=None)
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
+    hpc_job_url = Column(String, default=None)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
