@@ -622,6 +622,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
         """)
 
     variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
         choices=("E", "I", "C_ee", "C_ei", "C_ii", "W_e", "W_i"),
         default=("E",),

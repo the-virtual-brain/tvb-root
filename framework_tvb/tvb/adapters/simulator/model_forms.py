@@ -332,7 +332,8 @@ class JansenRitModelForm(FormWithRanges):
         self.p_min = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_min, self)
         self.p_max = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_max, self)
         self.mu = ArrayField(ModelsEnum.JANSEN_RIT.get_class().mu, self)
-        self.variables_of_interest = ArrayField(ModelsEnum.JANSEN_RIT.get_class().variables_of_interest, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.JANSEN_RIT.get_class().variables_of_interest,
+                                                      self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
