@@ -31,7 +31,7 @@
 import json
 import os
 from contextlib import closing
-from threading import Thread
+from threading import Thread, Event
 from time import sleep
 
 import pyunicore.client as unicore_client
@@ -46,7 +46,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation
+from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
@@ -54,6 +54,33 @@ from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 
 LOGGER = get_logger(__name__)
+
+HPC_THREADS = []
+
+
+def get_op_thread(op_id):
+    # type: (int) -> HPCOperationThread
+    op_thread = None
+    for thread in HPC_THREADS:
+        if thread.operation_id == op_id:
+            op_thread = thread
+            break
+    if op_thread is not None:
+        HPC_THREADS.remove(op_thread)
+    return op_thread
+
+
+class HPCOperationThread(Thread):
+    def __init__(self, operation_id, *args, **kwargs):
+        super(HPCOperationThread, self).__init__(*args, **kwargs)
+        self.operation_id = operation_id
+        self._stop_event = Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
 
 class HPCSchedulerClient(BackendClient):
@@ -238,15 +265,21 @@ class HPCSchedulerClient(BackendClient):
                 data=fd)
 
     @staticmethod
+    def _build_unicore_client(auth_token, registry_url, supercomputer):
+        # type: (str, str, str) -> Client
+        transport = unicore_client.Transport(auth_token)
+        registry = unicore_client.Registry(transport, registry_url)
+        return registry.site(supercomputer)
+
+    @staticmethod
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
-        job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
-
-        transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
-        registry = unicore_client.Registry(transport, unicore_client._HBP_REGISTRY_URL)
-
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
-        site_client = registry.site(HPCSettings.SUPERCOMPUTER_SITE)
+        site_client = HPCSchedulerClient._build_unicore_client(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+                                                               unicore_client._HBP_REGISTRY_URL,
+                                                               HPCSettings.SUPERCOMPUTER_SITE)
+
+        job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
 
         available_space = HPCSchedulerClient.compute_available_disk_space(operation)
         job_config, job_extra_inputs = HPCSchedulerClient._configure_job(simulator_gid, available_space,
@@ -254,6 +287,10 @@ class HPCSchedulerClient(BackendClient):
         job_inputs.extend(job_extra_inputs)
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
                                                             inputs=job_inputs)
+
+        operation.hpc_job_url = job.resource_url
+        dao.store_entity(operation)
+
         return job
 
     @staticmethod
@@ -330,11 +367,30 @@ class HPCSchedulerClient(BackendClient):
         """Call the correct system command to submit a job to HPC."""
         # HPCSchedulerClient._run_hpc_job(operation_id)
 
-        thread = Thread(target=HPCSchedulerClient._run_hpc_job,
-                        kwargs={'operation_identifier': operation_id})
+        thread = HPCOperationThread(operation_id, target=HPCSchedulerClient._run_hpc_job,
+                                    kwargs={'operation_identifier': operation_id})
         thread.start()
+        HPC_THREADS.append(thread)
 
     @staticmethod
     def stop_operation(operation_id):
-        # TODO: implement this use-case
-        pass
+        # TODO: Review this implementation after DAINT maintenance
+        operation = dao.get_operation_by_id(operation_id)
+        if not operation or operation.has_finished:
+            LOGGER.warning("Operation already stopped: %s" % operation_id)
+            return True
+
+        LOGGER.debug("Stopping HPC operation: %s" % str(operation_id))
+
+        transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+        job = Job(transport, operation.hpc_job_url)
+        if job.is_running():
+            job.abort()
+
+        # Kill thread
+        operation_thread = get_op_thread(operation_id)
+        operation_thread.stop()
+        while not operation_thread.is_stopped():
+            LOGGER.info("Thread for operation {} is stopping".format(operation_id))
+        BurstService().persist_operation_state(operation, STATUS_CANCELED)
+        return True
