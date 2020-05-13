@@ -45,12 +45,13 @@ class ConnectivityRemover(ABCRemover):
         """
         Called when a Connectivity is to be removed.
         """
+        key = 'fk_connectivity_gid'
         if not skip_validation:
-            associated_ts = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, 'fk_connectivity_gid')
-            associated_rm = dao.get_generic_entity(RegionMappingIndex, self.handled_datatype.gid, 'fk_connectivity_gid')
-            associated_stim = dao.get_generic_entity(StimuliRegionIndex, self.handled_datatype.gid, 'fk_connectivity_gid')
-            associated_mes = dao.get_generic_entity(ConnectivityMeasureIndex, self.handled_datatype.gid, 'fk_connectivity_gid')
-            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, 'fk_connectivity_gid')
+            associated_ts = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, key)
+            associated_rm = dao.get_generic_entity(RegionMappingIndex, self.handled_datatype.gid, key)
+            associated_stim = dao.get_generic_entity(StimuliRegionIndex, self.handled_datatype.gid, key)
+            associated_mes = dao.get_generic_entity(ConnectivityMeasureIndex, self.handled_datatype.gid, key)
+            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, key)
             msg = "Connectivity cannot be removed as it is used by at least one "
 
             if len(associated_ts) > 0:

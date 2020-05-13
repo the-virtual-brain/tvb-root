@@ -46,16 +46,17 @@ class TimeseriesRemover(ABCRemover):
         Called when a TimeSeries is removed.
         """
         if not skip_validation:
-            associated_cv = dao.get_generic_entity(CovarianceIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_pca = dao.get_generic_entity(PrincipalComponentsIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_is = dao.get_generic_entity(IndependentComponentsIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_cc = dao.get_generic_entity(CrossCorrelationIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_fr = dao.get_generic_entity(FourierSpectrumIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_wv = dao.get_generic_entity(WaveletCoefficientsIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_cs = dao.get_generic_entity(CoherenceSpectrumIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_coef = dao.get_generic_entity(CorrelationCoefficientsIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_dtm = dao.get_generic_entity(DatatypeMeasureIndex, self.handled_datatype.gid, 'fk_source_gid')
-            associated_ccs = dao.get_generic_entity(ComplexCoherenceSpectrumIndex, self.handled_datatype.gid, 'fk_source_gid')
+            key = 'fk_connectivity_gid'
+            associated_cv = dao.get_generic_entity(CovarianceIndex, self.handled_datatype.gid, key)
+            associated_pca = dao.get_generic_entity(PrincipalComponentsIndex, self.handled_datatype.gid, key)
+            associated_is = dao.get_generic_entity(IndependentComponentsIndex, self.handled_datatype.gid, key)
+            associated_cc = dao.get_generic_entity(CrossCorrelationIndex, self.handled_datatype.gid, key)
+            associated_fr = dao.get_generic_entity(FourierSpectrumIndex, self.handled_datatype.gid, key)
+            associated_wv = dao.get_generic_entity(WaveletCoefficientsIndex, self.handled_datatype.gid, key)
+            associated_cs = dao.get_generic_entity(CoherenceSpectrumIndex, self.handled_datatype.gid, key)
+            associated_coef = dao.get_generic_entity(CorrelationCoefficientsIndex, self.handled_datatype.gid, key)
+            associated_dtm = dao.get_generic_entity(DatatypeMeasureIndex, self.handled_datatype.gid, key)
+            associated_ccs = dao.get_generic_entity(ComplexCoherenceSpectrumIndex, self.handled_datatype.gid, key)
 
             msg = "TimeSeries cannot be removed as it is used by at least one "
 

@@ -54,7 +54,6 @@ class RegionMappingRemover(ABCRemover):
         ABCRemover.remove_datatype(self, skip_validation)
 
 
-
 class RegionVolumeMappingRemover(RegionMappingRemover):
     """
     RegionVolumeMapping specific validations at remove time.

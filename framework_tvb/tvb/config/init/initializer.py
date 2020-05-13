@@ -37,7 +37,6 @@ import shutil
 import datetime
 import threading
 from types import ModuleType
-
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile

@@ -45,14 +45,23 @@ class SensorRemover(ABCRemover):
         Called when a Sensor is to be removed.
         """
         if not skip_validation:
-            projection_matrices_brain = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid, 'fk_brain_skull_gid')
-            projection_matrices_skull = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid, 'fk_skull_skin_gid')
-            projection_matrices_skin = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid, 'fk_skin_air_gid')
-            projection_matrices_source = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid, 'fk_source_gid')
-            projection_matrices_sensors = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid, 'fk_sensors_gid')
-            ts_seeg = dao.get_generic_entity(TimeSeriesSEEGIndex, self.handled_datatype.gid, 'fk_sensors_gid')
-            ts_meg = dao.get_generic_entity(TimeSeriesMEGIndex, self.handled_datatype.gid, 'fk_sensors_gid')
-            ts_eeg = dao.get_generic_entity(TimeSeriesEEGIndex, self.handled_datatype.gid, 'fk_sensors_gid')
+            projection_matrices_brain = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                               'fk_brain_skull_gid')
+            projection_matrices_skull = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                               'fk_skull_skin_gid')
+            projection_matrices_skin = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                              'fk_skin_air_gid')
+            projection_matrices_source = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                                'fk_source_gid')
+            projection_matrices_sensors = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                                 'fk_sensors_gid')
+            ts_seeg = dao.get_generic_entity(TimeSeriesSEEGIndex, self.handled_datatype.gid,
+                                             'fk_sensors_gid')
+            ts_meg = dao.get_generic_entity(TimeSeriesMEGIndex, self.handled_datatype.gid,
+                                            'fk_sensors_gid')
+            ts_eeg = dao.get_generic_entity(TimeSeriesEEGIndex, self.handled_datatype.gid,
+                                            'fk_sensors_gid')
+
             error_msg = "Cannot be removed as it is used by at least one "
 
             if len(projection_matrices_brain) > 0:

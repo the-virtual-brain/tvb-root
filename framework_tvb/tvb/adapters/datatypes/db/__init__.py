@@ -46,13 +46,13 @@ ALL_DATATYPES = ["annotation", "connectivity", "fcd", "graph", "local_connectivi
                  "surface", "temporal_correlations", "time_series", "tracts", "volume"]
 
 DATATYPE_REMOVERS = {
-        "SurfaceIndex": SurfaceRemover,
-        "LocalConnectivityIndex": SurfaceRemover,
-        "ConnectivityIndex": ConnectivityRemover,
-        "RegionVolumeMappingIndex": ConnectivityRemover,
-        "RegionMappingIndex": RegionMappingRemover,
-        "TimeSeriesRegionIndex": RegionVolumeMappingRemover,
-        "SensorsIndex": SensorRemover,
-        "VolumeIndex": VolumeRemover,
-        "TimeSeriesIndex": TimeseriesRemover
-    }
+    "SurfaceIndex": SurfaceRemover,
+    "LocalConnectivityIndex": SurfaceRemover,
+    "ConnectivityIndex": ConnectivityRemover,
+    "RegionVolumeMappingIndex": ConnectivityRemover,
+    "RegionMappingIndex": RegionMappingRemover,
+    "TimeSeriesRegionIndex": RegionVolumeMappingRemover,
+    "SensorsIndex": SensorRemover,
+    "VolumeIndex": VolumeRemover,
+    "TimeSeriesIndex": TimeseriesRemover
+}
