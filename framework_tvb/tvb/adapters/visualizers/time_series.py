@@ -91,26 +91,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
         # type: (Connectivity) -> dict
         return {'measurePointsSelectionGID': connectivity.gid,
                 'initialSelection': connectivity.saved_selection or list(range(len(connectivity.region_labels))),
-                'groupedLabels': self._connectivity_grouped_space_labels(connectivity)}
-
-    @staticmethod
-    def _connectivity_grouped_space_labels(connectivity):
-        """
-        :return: A list [('left', [lh_labels)], ('right': [rh_labels])]
-        """
-        hemispheres = connectivity.hemispheres
-        region_labels = connectivity.region_labels
-        if hemispheres is not None and hemispheres.size:
-            l, r = [], []
-
-            for i, (is_right, label) in enumerate(zip(hemispheres, region_labels)):
-                if is_right:
-                    r.append((i, label))
-                else:
-                    l.append((i, label))
-            return [('left', l), ('right', r)]
-        else:
-            return [('', list(enumerate(region_labels)))]
+                'groupedLabels': connectivity.get_grouped_space_labels()}
 
     def build_params_for_subselectable_ts(self, ts_h5):
         """
@@ -125,13 +106,20 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         :return: A structure of this form [('left', [(idx, lh_label)...]), ('right': [(idx, rh_label) ...])]
         """
+        if isinstance(ts_h5, TimeSeriesSensorsH5):
+            sensors_gid = ts_h5.sensors.load()
+            sensors_idx = self.load_entity_by_gid(sensors_gid.hex)
+            with h5.h5_file_for_index(sensors_idx) as sensors_h5:
+                # TODO move in sensors ang group by needle in case of SEEG
+                return [('', list(enumerate(sensors_h5.labels.load())))]
+
         if isinstance(ts_h5, TimeSeriesRegionH5):
             connectivity_gid = ts_h5.connectivity.load()
             conn = self.load_traited_by_gid(connectivity_gid)
             assert isinstance(conn, Connectivity)
-            return self._connectivity_grouped_space_labels(conn)
+            return conn.get_grouped_space_labels()
 
-        ts_h5.get_grouped_space_labels()
+        return ts_h5.get_grouped_space_labels()
 
     def get_space_labels(self, ts_h5):
         """
@@ -145,7 +133,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
             with h5.h5_file_for_index(conn_idx) as conn_h5:
                 return list(conn_h5.region_labels.load())
 
-        if type(ts_h5) is TimeSeriesSensorsH5:
+        if isinstance(ts_h5, TimeSeriesSensorsH5):
             sensors_gid = ts_h5.sensors.load()
             if sensors_gid is None:
                 return []

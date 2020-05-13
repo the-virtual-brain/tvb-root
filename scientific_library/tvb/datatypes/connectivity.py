@@ -230,12 +230,6 @@ class Connectivity(HasTraits):
         else:
             return list(range(len(self.region_labels)))
 
-    def get_measure_points_selection_gid(self):
-        """
-        :return: the associated connectivity gid
-        """
-        return self.gid
-
     @property
     def binarized_weights(self):
         """
