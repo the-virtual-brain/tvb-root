@@ -65,7 +65,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 try:
@@ -363,7 +363,7 @@ class OperationService:
         """ Initiate operation on cluster"""
         for operation in operations:
             try:
-                BACKEND_CLIENT.execute(str(operation.id), current_username, adapter_instance)
+                BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
             except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
@@ -521,4 +521,4 @@ class OperationService:
         """
         Stop the operation given by the operation id.
         """
-        return BACKEND_CLIENT.stop_operation(int(operation_id))
+        return BackendClientFactory.stop_operation(int(operation_id))
