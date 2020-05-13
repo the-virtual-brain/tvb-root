@@ -64,6 +64,4 @@ class ConnectivityRemover(ABCRemover):
             if len(associated_rvm) > 0:
                 raise RemoveDataTypeException(msg + " RegionVolumeMapping.")
 
-        # Update child Connectivities, if any. ?
-
         ABCRemover.remove_datatype(self, skip_validation)

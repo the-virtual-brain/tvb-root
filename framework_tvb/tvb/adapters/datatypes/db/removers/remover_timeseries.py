@@ -80,10 +80,4 @@ class TimeseriesRemover(ABCRemover):
             if len(associated_ccs) > 0:
                 raise RemoveDataTypeException(msg + " ComplexCoherenceSpectrum.")
 
-        # # reconsider this. Possibly remove measures?
-        # associated_dm = dao.get_generic_entity(DatatypeMeasure, self.handled_datatype.gid, '_analyzed_datatype')
-        # for datatype_measure in associated_dm:
-        #     datatype_measure._analyed_datatype = None
-        #     dao.store_entity(datatype_measure)
-
         ABCRemover.remove_datatype(self, skip_validation)
