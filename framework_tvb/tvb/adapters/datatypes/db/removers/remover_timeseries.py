@@ -46,7 +46,8 @@ class TimeseriesRemover(ABCRemover):
         Called when a TimeSeries is removed.
         """
         if not skip_validation:
-            key = 'fk_connectivity_gid'
+            key = 'fk_source_gid'
+
             associated_cv = dao.get_generic_entity(CovarianceIndex, self.handled_datatype.gid, key)
             associated_pca = dao.get_generic_entity(PrincipalComponentsIndex, self.handled_datatype.gid, key)
             associated_is = dao.get_generic_entity(IndependentComponentsIndex, self.handled_datatype.gid, key)
