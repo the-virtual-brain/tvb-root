@@ -28,31 +28,36 @@
 #
 #
 
-"""
-This is the module where all TVB Index DataTypes are hooked into the framework.
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
+from tvb.core.entities.storage import dao
+from tvb.core.adapters.abcremover import ABCRemover
+from tvb.core.services.exceptions import RemoveDataTypeException
 
-Define in __all__ attribute, modules to be introspected for finding their classes.
 
-"""
-from tvb.adapters.datatypes.db.removers.remover_connectivity import ConnectivityRemover
-from tvb.adapters.datatypes.db.removers.remover_region_mapping import RegionMappingRemover, RegionVolumeMappingRemover
-from tvb.adapters.datatypes.db.removers.remover_sensor import SensorRemover
-from tvb.adapters.datatypes.db.removers.remover_surface import SurfaceRemover
-from tvb.adapters.datatypes.db.removers.remover_timeseries import TimeseriesRemover
-from tvb.adapters.datatypes.db.removers.remover_volume import VolumeRemover
+class RegionMappingRemover(ABCRemover):
+    """
+    RegionMapping specific validations at remove time.
+    """
+    FIELD_NAME = "fk_region_mapping_gid"
+    CLASS_NAME = "RegionMappingIndex"
 
-ALL_DATATYPES = ["annotation", "connectivity", "fcd", "graph", "local_connectivity", "mapped_value",
-                 "mode_decompositions", "patterns", "projections", "region_mapping", "sensors", "spectral",
-                 "surface", "temporal_correlations", "time_series", "tracts", "volume"]
+    def remove_datatype(self, skip_validation=False):
+        """
+        Called when a Sensor is to be removed.
+        """
+        if not skip_validation:
+            tsr = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, self.FIELD_NAME)
+            error_msg = "%s cannot be removed because is still used by %d TimeSeries Region entities."
+            if tsr:
+                raise RemoveDataTypeException(error_msg % (self.CLASS_NAME, len(tsr)))
 
-DATATYPE_REMOVERS = {
-    "SurfaceIndex": SurfaceRemover,
-    "LocalConnectivityIndex": SurfaceRemover,
-    "ConnectivityIndex": ConnectivityRemover,
-    "RegionVolumeMappingIndex": ConnectivityRemover,
-    "RegionMappingIndex": RegionMappingRemover,
-    "TimeSeriesRegionIndex": RegionVolumeMappingRemover,
-    "SensorsIndex": SensorRemover,
-    "VolumeIndex": VolumeRemover,
-    "TimeSeriesIndex": TimeseriesRemover
-}
+        ABCRemover.remove_datatype(self, skip_validation)
+
+
+class RegionVolumeMappingRemover(RegionMappingRemover):
+    """
+    RegionVolumeMapping specific validations at remove time.
+    """
+
+    FIELD_NAME = "fk_region_mapping_volume_gid"
+    CLASS_NAME = "RegionVolumeMappingIndex"

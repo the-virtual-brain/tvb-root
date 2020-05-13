@@ -34,6 +34,7 @@
 """
 import numpy
 import pytest
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
@@ -471,11 +472,16 @@ class TestProjectStructure(TransactionalTestCase):
 
         datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
+        datatype_measure = dao.get_generic_entity(DatatypeMeasureIndex, datatypes[0].gid, "fk_source_gid")[0]
 
+        # When trying to delete one entity in a group the entire group will be removed
+        #  First remove the DTMeasures, to avoid FK failures
+        self.project_service.remove_datatype(project.id, datatype_measure.gid)
         self.project_service.remove_datatype(project.id, datatypes[0].gid)
         self._check_if_datatype_was_removed(datatypes[0])
         self._check_if_datatype_was_removed(datatypes[1])
         self._check_if_datatype_was_removed(datatype_group)
+        self._check_if_datatype_was_removed(datatype_measure)
         self._check_datatype_group_removed(group.id, datatype_group.fk_operation_group)
 
     def test_remove_datatype_group(self, datatype_group_factory, project_factory, user_factory):
@@ -486,14 +492,17 @@ class TestProjectStructure(TransactionalTestCase):
         project = project_factory(user)
         group = datatype_group_factory(project=project)
 
-        datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
+        datatype_groups = self.get_all_entities(DataTypeGroup)
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
+        assert 2 == len(datatype_groups)
 
-        self.project_service.remove_datatype(project.id, datatype_group.gid)
+        self.project_service.remove_datatype(project.id, datatype_groups[1].gid)
+        self.project_service.remove_datatype(project.id, datatype_groups[0].gid)
         self._check_if_datatype_was_removed(datatypes[0])
         self._check_if_datatype_was_removed(datatypes[1])
-        self._check_if_datatype_was_removed(datatype_group)
-        self._check_datatype_group_removed(group.id, datatype_group.fk_operation_group)
+        self._check_if_datatype_was_removed(datatype_groups[0])
+        self._check_if_datatype_was_removed(datatype_groups[1])
+        self._check_datatype_group_removed(group.id, datatype_groups[0].fk_operation_group)
 
     @pytest.fixture()
     def array_factory(self, operation_factory, connectivity_index_factory):
