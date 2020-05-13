@@ -50,12 +50,6 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
 from tvb.adapters.visualizers.pse_isocline import IsoclinePSEAdapter
-from tvb.datatype_removers.remover_connectivity import ConnectivityRemover
-from tvb.datatype_removers.remover_region_mapping import RegionMappingRemover, RegionVolumeMappingRemover
-from tvb.datatype_removers.remover_sensor import SensorRemover
-from tvb.datatype_removers.remover_surface import SurfaceRemover
-from tvb.datatype_removers.remover_timeseries import TimeseriesRemover
-from tvb.datatype_removers.remover_volume import VolumeRemover
 
 LOGGER = get_logger(__name__)
 
@@ -124,16 +118,6 @@ class IntrospectionRegistry(object):
         UploadAlgorithmCategoryConfig: import_adapters(tvb.adapters.uploaders, ALL_UPLOADERS),
         ViewAlgorithmCategoryConfig: import_adapters(tvb.adapters.visualizers, ALL_VISUALIZERS),
         CreateAlgorithmCategoryConfig: import_adapters(tvb.adapters.creators, ALL_CREATORS),
-    }
-
-    DATATYPE_REMOVERS = {
-        "SurfaceIndex": SurfaceRemover,
-        "ConnectivityIndex": ConnectivityRemover,
-        "RegionMappingIndex": RegionMappingRemover,
-        "RegionVolumeMappingIndex": RegionVolumeMappingRemover,
-        "SensorsIndex": SensorRemover,
-        "VolumeIndex": VolumeRemover,
-        "TimeSeriesIndex": TimeseriesRemover
     }
 
     DATATYPES = import_dt_index(tvb.adapters.datatypes.db, ALL_DATATYPES)

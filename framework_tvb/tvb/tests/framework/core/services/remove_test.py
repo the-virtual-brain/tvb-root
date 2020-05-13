@@ -101,7 +101,7 @@ class TestRemove(TransactionalTestCase):
             pass
 
         res = dao.get_datatype_by_gid(conn_gid)
-        assert conn[0].id == res.id, "Used connectivity removed"
+        assert conn.id == res.id, "Used connectivity removed"
 
     def test_remove_used_surface(self):
         """
