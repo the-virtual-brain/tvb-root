@@ -34,6 +34,7 @@
 """
 import numpy
 import pytest
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
@@ -472,6 +473,8 @@ class TestProjectStructure(TransactionalTestCase):
         datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
 
+        datatype_measure_gid = get_filtered_datatypes(project.id, DatatypeMeasureIndex)[0][00][2]
+        self.project_service.remove_datatype(project.id, datatype_measure_gid)
         self.project_service.remove_datatype(project.id, datatypes[0].gid)
         self._check_if_datatype_was_removed(datatypes[0])
         self._check_if_datatype_was_removed(datatypes[1])
@@ -489,6 +492,8 @@ class TestProjectStructure(TransactionalTestCase):
         datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
 
+        datatype_measure_gid = get_filtered_datatypes(project.id, DatatypeMeasureIndex)[0][00][2]
+        self.project_service.remove_datatype(project.id, datatype_measure_gid)
         self.project_service.remove_datatype(project.id, datatype_group.gid)
         self._check_if_datatype_was_removed(datatypes[0])
         self._check_if_datatype_was_removed(datatypes[1])
