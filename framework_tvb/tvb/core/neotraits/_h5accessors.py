@@ -34,7 +34,7 @@ import uuid
 import numpy
 import scipy.sparse
 import typing
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
 
@@ -438,6 +438,28 @@ class Json(Scalar):
         if self.json_decoder:
             return self.json_decoder().decode(val)
         return json.loads(val)
+
+class JsonRange(Scalar):
+    """
+    Stores and loads a Range in the form of a json in h5.
+    """
+
+    def __init__(self, trait_attribute, h5file, name=None, json_encoder=None, json_decoder=None):
+        super(JsonRange, self).__init__(trait_attribute, h5file, name)
+        self.json_encoder = json_encoder
+        self.json_decoder = json_decoder
+
+    def store(self, val):
+        val = json.dumps(val.__dict__, cls=self.json_encoder)
+        self.owner.storage_manager.set_metadata({self.field_name: val})
+
+    def load(self):
+        val = self.owner.storage_manager.get_metadata()[self.field_name]
+        if self.json_decoder:
+            return self.json_decoder().decode(val)
+        loaded_val = json.loads(val)
+        range_items = list(loaded_val.values())
+        return Range(range_items[0], range_items[1], range_items[2])
 
 
 class JsonFinal(Json):

@@ -66,12 +66,12 @@ class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
 class RangeForm(Form):
     def __init__(self, prefix=''):
         super(RangeForm, self).__init__(prefix)
-        self.lo = SimpleFloatField(self, name='lo', required=True, label='Lo', doc='start of range')
-        # default=ContinuousWaveletTransform.frequencies.lo)
-        self.step = SimpleFloatField(self, name='step', required=True, label='Step', doc='step of range')
-        # default=ContinuousWaveletTransform.frequencies.step)
-        self.hi = SimpleFloatField(self, name='hi', required=True, label='Hi', doc='end of range')
-        # default=ContinuousWaveletTransform.frequencies.hi)
+        self.lo = SimpleFloatField(self, name='lo', required=True, label='Lo', doc='start of range',
+        default=ContinuousWaveletTransform.frequencies.default.lo)
+        self.step = SimpleFloatField(self, name='step', required=True, label='Step', doc='step of range',
+        default=ContinuousWaveletTransform.frequencies.default.step)
+        self.hi = SimpleFloatField(self, name='hi', required=True, label='Hi', doc='end of range',
+        default=ContinuousWaveletTransform.frequencies.default.hi)
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
@@ -147,12 +147,6 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
 
         if view_model.sample_period is not None:
             algorithm.sample_period = view_model.sample_period
-
-        # TODO range form is not correctly populated, some work is still needed there
-        # if (view_model.frequencies is not None):
-        #     and 'lo' in frequencies_parameters
-        #         and 'hi' in frequencies_parameters and frequencies_parameters['hi'] != frequencies_parameters['lo']):
-        #     algorithm.frequencies = Range(**frequencies_parameters)
 
         if view_model.normalisation is not None:
             algorithm.normalisation = view_model.normalisation
