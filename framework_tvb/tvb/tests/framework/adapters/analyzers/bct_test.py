@@ -32,19 +32,17 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import numpy
 import pytest
 import os
 import tvb_data
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_operation import Algorithm, STATUS_FINISHED
+from tvb.core.services.operation_service import OperationService
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
-from tvb.core.services.operation_service import OperationService
-from tvb.core.adapters.exceptions import InvalidParameterException
-from tvb.datatypes.connectivity import Connectivity
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -53,9 +51,6 @@ class TestBCT(TransactionalTestCase):
     Test that all BCT analyzers are executed without error.
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
-    EXPECTED_TO_FAIL_VALIDATION = ["CentralityKCoreness", "CentralityEigenVector",
-                                   "ClusteringCoefficientBU", "ClusteringCoefficientWU",
-                                   "TransitivityBinaryUnDirected", "TransitivityWeightedUnDirected"]
 
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def transactional_setup_method(self):
@@ -67,13 +62,8 @@ class TestBCT(TransactionalTestCase):
         self.test_user = TestFactory.create_user("BCT_User")
         self.test_project = TestFactory.create_project(self.test_user, "BCT-Project")
         # Make sure Connectivity is in DB
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        conn_index = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = ABCAdapter.load_traited_by_gid(conn_index.gid)
-
-        # make weights matrix symmetric, or else some BCT algorithms will run infinitely:
-        w = self.connectivity.weights
-        self.connectivity.weights = w + w.T - numpy.diag(w.diagonal())
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
         algorithms = dao.get_generic_entity(Algorithm, 'Brain Connectivity Toolbox', 'group_description')
         assert algorithms is not None
@@ -94,31 +84,24 @@ class TestBCT(TransactionalTestCase):
         """
         Iterate all BCT algorithms and execute them.
         """
+        service = OperationService()
+        algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
         for adapter_instance in self.bct_adapters:
             algorithm = adapter_instance.stored_adapter
-            operation = TestFactory.create_operation(algorithm=algorithm, test_user=self.test_user,
-                                                     test_project=self.test_project,
-                                                     operation_status=STATUS_STARTED)
-            assert STATUS_STARTED == operation.status
-            # Launch BCT algorithm
-            submit_data = {algorithm.parameter_name: self.connectivity.gid}
-            try:
-                OperationService().initiate_prelaunch(operation, adapter_instance, {}, **submit_data)
-                if algorithm.classname in TestBCT.EXPECTED_TO_FAIL_VALIDATION:
-                    raise Exception("Algorithm %s was expected to throw input validation "
-                                    "exception, but did not!" % (algorithm.classname,))
+            view_model = BaseBCTModel()
+            view_model.connectivity = self.connectivity.gid
 
-                operation = dao.get_operation_by_id(operation.id)
-                # Check that operation status after execution is success.
-                assert STATUS_FINISHED == operation.status
-                # Make sure at least one result exists for each BCT algorithm
-                results = dao.get_generic_entity(DataType, operation.id, 'fk_from_operation')
-                assert len(results) > 0
+            # Avoid the scheduled execution, as this is asynch, thus launch it immediately
+            operation = service.prepare_operations(self.test_user.id, self.test_project, algorithm, algo_category,
+                                                   {}, True, view_model=view_model)[0][0]
+            service.initiate_prelaunch(operation, adapter_instance)
 
-            except InvalidParameterException as excep:
-                # Some algorithms are expected to throw validation exception.
-                if algorithm.classname not in TestBCT.EXPECTED_TO_FAIL_VALIDATION:
-                    raise excep
+            operation = dao.get_operation_by_id(operation.id)
+            # Check that operation status after execution is success.
+            assert STATUS_FINISHED == operation.status
+            # Make sure at least one result exists for each BCT algorithm
+            results = dao.get_generic_entity(DataType, operation.id, 'fk_from_operation')
+            assert len(results) > 0
 
     @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
