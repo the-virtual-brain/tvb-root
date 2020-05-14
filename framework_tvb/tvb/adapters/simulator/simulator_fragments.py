@@ -46,7 +46,7 @@ from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, ge
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex
+from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
@@ -104,7 +104,7 @@ class SimulatorStimulusFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorStimulusFragment, self).__init__(prefix, project_id)
         if is_surface_simulation:
-            stimuli_index_class = StimuliSurfaceIndex
+            stimuli_index_class = SpatioTemporalPatternIndex
         else:
             stimuli_index_class = StimuliRegionIndex
         self.stimulus = DataTypeSelectField(stimuli_index_class, self, name='region_stimuli', required=False,
