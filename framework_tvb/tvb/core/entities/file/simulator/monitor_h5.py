@@ -76,6 +76,12 @@ class ProjectionH5(MonitorH5):
         self.region_mapping = Reference(Projection.region_mapping, self)
         self.obnoise = Reference(Projection.obsnoise, self)
 
+    def store(self, datatype, scalars_only=False, store_references=False):
+        # type: (Projection, bool, bool) -> None
+        super(ProjectionH5, self).store(datatype, scalars_only, store_references)
+        obsnoise_gid = self.store_config_as_reference(datatype.obsnoise)
+        self.obnoise.store(obsnoise_gid)
+
 
 class EEGH5(ProjectionH5):
 
