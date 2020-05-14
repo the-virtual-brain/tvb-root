@@ -46,7 +46,7 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.patterns import SpatioTemporalPattern
+from tvb.datatypes.patterns import SpatioTemporalPattern, StimuliSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.coupling import Coupling
@@ -198,6 +198,8 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator.conduction_speed = view_model.conduction_speed
         simulator.coupling = view_model.coupling
 
+        rm_surface = None
+
         if view_model.surface:
             simulator.surface = Cortex()
             rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
@@ -219,6 +221,11 @@ class SimulatorAdapter(ABCAsynchronous):
             stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
             stimulus = h5.load_from_index(stimulus_index)
             simulator.stimulus = stimulus
+
+            if isinstance(stimulus, StimuliSurface):
+                simulator.stimulus.surface = rm_surface
+            else:
+                simulator.stimulus.connectivity = simulator.connectivity
 
         simulator.model = view_model.model
         simulator.integrator = view_model.integrator

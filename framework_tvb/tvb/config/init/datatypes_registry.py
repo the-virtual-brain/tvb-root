@@ -33,7 +33,7 @@ from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Covariance
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
-from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
+from tvb.datatypes.patterns import StimuliRegion, StimuliSurface, SpatioTemporalPattern
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.region_mapping import RegionVolumeMapping, RegionMapping
 from tvb.datatypes.sensors import Sensors
@@ -77,7 +77,7 @@ from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex, IndependentComponentsIndex
-from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex, SpatioTemporalPatternIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex, RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
@@ -128,6 +128,7 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(CorrelationCoefficients, CorrelationCoefficientsH5, CorrelationCoefficientsIndex)
     REGISTRY.register_datatype(Covariance, CovarianceH5, CovarianceIndex)
     REGISTRY.register_datatype(Fcd, FcdH5, FcdIndex)
+    REGISTRY.register_datatype(SpatioTemporalPattern, None, SpatioTemporalPatternIndex)
     REGISTRY.register_datatype(StimuliRegion, StimuliRegionH5, StimuliRegionIndex)
     REGISTRY.register_datatype(StimuliSurface, StimuliSurfaceH5, StimuliSurfaceIndex)
     REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
