@@ -36,6 +36,7 @@ from time import sleep
 
 import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
+from requests import HTTPError
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
@@ -46,7 +47,8 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED
+from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED, \
+    STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
@@ -304,14 +306,16 @@ class HPCSchedulerClient(BackendClient):
 
     @staticmethod
     def _monitor_job(job):
-        # type: (Job) -> Storage
+        # type: (Job) -> (Storage, str)
         LOGGER.info(job.properties)
         # TODO: better monitoring?
+        LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
         while job.is_running():
-            LOGGER.info(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY])
+            LOGGER.debug("Job is still running")
             sleep(10)
-        LOGGER.info(job.properties[HPCSettings.JOB_STATUS_KEY])
-        return job.working_dir
+        status = job.properties[HPCSettings.JOB_STATUS_KEY]
+        LOGGER.info("Job finished with status: {}".format(status))
+        return job.working_dir, status
 
     @staticmethod
     def _stage_out_to_operation_folder(working_dir, operation):
@@ -342,12 +346,22 @@ class HPCSchedulerClient(BackendClient):
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = json.loads(operation.parameters)['gid']
-        job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
-
-        wd = HPCSchedulerClient._monitor_job(job)
-        h5_filenames = HPCSchedulerClient._stage_out_to_operation_folder(wd, operation)
-        message = HPCSchedulerClient()._update_db_with_results(operation, h5_filenames)
-        LOGGER.debug(message)
+        try:
+            job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
+            wd, job_status = HPCSchedulerClient._monitor_job(job)
+            if job_status == 'FAILED':
+                operation = dao.get_operation_by_id(operation_identifier)
+                if not operation.has_finished:
+                    operation.mark_complete(STATUS_ERROR)
+                    dao.store_entity(operation)
+                return
+            h5_filenames = HPCSchedulerClient._stage_out_to_operation_folder(wd, operation)
+            message = HPCSchedulerClient()._update_db_with_results(operation, h5_filenames)
+            LOGGER.debug(message)
+        except HTTPError as exception:
+            LOGGER.error("Failed to submit job HPC")
+            operation.mark_complete(STATUS_ERROR, exception.response.text)
+            dao.store_entity(operation)
 
     @staticmethod
     def _stage_out_outputs(h5_path, output_list):
@@ -380,9 +394,14 @@ class HPCSchedulerClient(BackendClient):
             LOGGER.warning("Operation already stopped: %s" % operation_id)
             return True
 
-        LOGGER.debug("Stopping HPC operation: %s" % str(operation_id))
+        if operation.hpc_job_url is None:
+            LOGGER.warning("HPC Job url is not set for operation {}.".format(operation.id))
+            return False
 
+        LOGGER.debug("Stopping HPC operation: %s" % str(operation_id))
         transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+
+        # Abort HPC job
         job = Job(transport, operation.hpc_job_url)
         if job.is_running():
             job.abort()
@@ -390,7 +409,7 @@ class HPCSchedulerClient(BackendClient):
         # Kill thread
         operation_thread = get_op_thread(operation_id)
         operation_thread.stop()
-        while not operation_thread.is_stopped():
+        while not operation_thread.stopped():
             LOGGER.info("Thread for operation {} is stopping".format(operation_id))
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
         return True
