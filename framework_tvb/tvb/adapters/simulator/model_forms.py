@@ -263,8 +263,8 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
         self.Ks = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().Ks, self)
         self.N = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().N, self)
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().modification, self)
-        self.variables_of_interest = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().variables_of_interest,
-                                                self)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().variables_of_interest, self)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
