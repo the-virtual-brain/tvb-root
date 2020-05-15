@@ -248,14 +248,14 @@ class SpatialAverage(Monitor):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask[0] == 'cortical':
+                if self.default_mask == 'cortical':
                     if conn is not None and conn.cortical is not None and conn.cortical.size > 0:
                         ## Use as spatial-mask cortical/non cortical areas
                         self.spatial_mask = numpy.array([int(c) for c in conn.cortical])
                     else:
                         msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
                         raise Exception(msg)
-                if self.default_mask[0] == 'hemispheres':
+                if self.default_mask == 'hemispheres':
                     if conn is not None and conn.hemispheres is not None and conn.hemispheres.size > 0:
                         ## Use as spatial-mask left/right hemisphere
                         self.spatial_mask = numpy.array([int(h) for h in conn.hemispheres])
