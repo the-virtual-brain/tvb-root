@@ -40,7 +40,7 @@ ContinuousWaveletTransform Analyzer.
 import uuid
 import numpy
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.basic.neotraits._attr import Float
+from tvb.basic.neotraits.api import Float
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
 from tvb.datatypes.time_series import TimeSeries
