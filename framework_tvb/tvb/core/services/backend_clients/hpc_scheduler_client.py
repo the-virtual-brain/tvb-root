@@ -28,6 +28,11 @@
 #
 #
 
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
+"""
+
 import json
 import os
 from contextlib import closing

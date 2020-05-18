@@ -28,6 +28,10 @@
 #
 #
 
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 import os
 import uuid
 import typing

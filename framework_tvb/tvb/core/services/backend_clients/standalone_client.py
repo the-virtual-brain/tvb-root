@@ -28,6 +28,12 @@
 #
 #
 
+"""
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Yann Gordon <yann@invalid.tvb>
+"""
+
 import os
 import queue
 import signal
