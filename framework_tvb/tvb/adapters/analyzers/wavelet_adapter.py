@@ -40,7 +40,7 @@ ContinuousWaveletTransform Analyzer.
 import uuid
 import numpy
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.basic.neotraits._attr import Attr
+from tvb.basic.neotraits._attr import Float
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
 from tvb.datatypes.time_series import TimeSeries
@@ -62,37 +62,12 @@ class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
         doc="""The timeseries to which the wavelet is to be applied."""
     )
 
-    f_lo = Attr(
-        field_type=float,
-        required=True,
-        label='Lo',
-        default=ContinuousWaveletTransform.frequencies.default.lo,
-        doc='start of range'
-    )
-
-    f_hi = Attr(
-        field_type=float,
-        required=True,
-        label='Hi',
-        default=ContinuousWaveletTransform.frequencies.default.hi,
-        doc='end of range'
-    )
-
-    f_step = Attr(
-        field_type=float,
-        required=True,
-        label='Step',
-        default=ContinuousWaveletTransform.frequencies.default.step,
-        doc='step of range'
-    )
-
-
 class RangeForm(Form):
     def __init__(self, prefix=''):
         super(RangeForm, self).__init__(prefix)
-        self.lo = FloatField(WaveletAdapterModel.f_lo, self, name='Lo')
-        self.hi = FloatField(WaveletAdapterModel.f_hi, self, name='Hi')
-        self.step = FloatField(WaveletAdapterModel.f_step, self, name='Step')
+        self.lo = FloatField(Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'), self, name='Lo')
+        self.hi = FloatField(Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'), self, name='Hi')
+        self.step = FloatField(Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'), self, name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
@@ -120,9 +95,9 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
     def fill_trait(self, datatype):
         super(ContinuousWaveletTransformAdapterForm, self).fill_trait(datatype)
-        datatype.frequencies.lo = self.frequencies.form.lo.data
-        datatype.frequencies.step = self.frequencies.form.step.data
-        datatype.frequencies.hi = self.frequencies.form.hi.data
+        datatype.frequencies.lo = self.frequencies.form.lo.value
+        datatype.frequencies.step = self.frequencies.form.step.value
+        datatype.frequencies.hi = self.frequencies.form.hi.value
 
     @staticmethod
     def get_input_name():
