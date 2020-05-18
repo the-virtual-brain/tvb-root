@@ -89,8 +89,6 @@ class NoiseConfigurationController(BurstBaseController):
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
         raise cherrypy.HTTPRedirect("/burst/")
 
-
-
     @staticmethod
     def group_noise_array_by_state_var(noise_values, state_vars, number_of_regions):
         initial_noise = []
@@ -100,7 +98,6 @@ class NoiseConfigurationController(BurstBaseController):
                 node_noise[sv] = noise_values[sv_idx][i]
             initial_noise.append(node_noise)
         return initial_noise
-
 
     @staticmethod
     def init_noise_config_values(model, integrator, connectivity):

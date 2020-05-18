@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -34,6 +34,7 @@
 
 import json
 import cherrypy
+import pytest
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
@@ -41,60 +42,27 @@ from tvb.core.entities.model.model_burst import PARAM_INTEGRATOR, PARAM_MODEL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
-from tvb.simulator.integrators import EulerStochastic
-from tvb.simulator.models import ModelsEnum
-from tvb.simulator.noise import Additive
+from tvb.simulator.integrators import EulerStochastic, HeunStochastic
 
 
 class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
-    # def transactional_setup_method(self):
-    #     """
-    #     Sets up the environment for testing
-    #     creates a `NoiseConfigurationController`
-    #     """
-    #     self.init()
-    #     self.noise_c = NoiseConfigurationController()
-    #     _, self.connectivity = DatatypesFactory().create_connectivity()
-    #     SimulatorController().index()
-    #
-    #     stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-    #
-    #     new_params = {}
-    #     for key, val in SIMULATOR_PARAMETERS.iteritems():
-    #         new_params[key] = {'value': val}
-    #     new_params['connectivity'] = {'value': self.connectivity.gid}
-    #
-    #     # Simulate selection of a specific integration  from the ui
-    #     new_params[PARAM_INTEGRATOR] = {'value': EulerStochastic.__name__}
-    #     new_params[PARAM_MODEL] = {'value': Generic2dOscillator.__name__}
-    #     new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
-    #     stored_burst.simulator_configuration = new_params
-    #
-    #     self.noise_c.index()
+    @pytest.fixture()
+    def transactional_setup_fixture(self, connectivity_factory):
+        self.init()
+        self.noise_controller = NoiseConfigurationController()
+        SimulatorController().index()
+        self.simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        self.connectivity = connectivity_factory()
+        self.simulator.connectivity = self.connectivity.gid
+        self.simulator.integrator = HeunStochastic()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
+        self.clean_database()
         self.cleanup()
 
-    def test_submit_noise_configuration_happy(self, connectivity_factory):
-        self.init()
-        self.noise_c = NoiseConfigurationController()
-        self.connectivity = connectivity_factory()
-        SimulatorController().index()
-
-        stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-
-        new_params = {}
-        for key, val in SIMULATOR_PARAMETERS.items():
-            new_params[key] = {'value': val}
-        new_params['connectivity'] = {'value': self.connectivity.gid}
-
-        # Simulate selection of a specific integration  from the ui
-        new_params[PARAM_INTEGRATOR] = {'value': EulerStochastic.__name__}
-        new_params[PARAM_MODEL] = {'value': ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__}
-        new_params[INTEGRATOR_PARAMETERS + '_option_EulerStochastic_noise'] = {'value': Additive.__name__}
-        stored_burst.simulator_configuration = new_params
+    def test_submit_noise_configuration_happy(self, transactional_setup_fixture):
         """
         Submit noise configuration writes the noise array on the required key in the burst configuration
         """
@@ -103,13 +71,8 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
         noise_in = [{'V': 1.0, 'W': 2.0} for _ in nodes_range]
         noise_in = json.dumps(noise_in)
 
-        # expected noise array in burst config
+        self._expect_redirect('/burst/', self.noise_controller.submit, noise_in)
+
         expected_noise_arr = [[1.0 for _ in nodes_range], [2.0 for _ in nodes_range]]
-
-        self._expect_redirect('/burst/', self.noise_c.submit, noise_in)
-
-        simulator_configuration = cherrypy.session[common.KEY_BURST_CONFIG].simulator_configuration
-        nsig_key = 'integrator_parameters_option_EulerStochastic_noise_parameters_option_Additive_nsig'
-        actual_noise_arr = json.loads(simulator_configuration[nsig_key]['value'])
-
-        assert expected_noise_arr == actual_noise_arr
+        actual_noise_arr = self.simulator.integrator.noise.nsig
+        assert (expected_noise_arr == actual_noise_arr).all()
