@@ -36,6 +36,7 @@
 import json
 import os
 from contextlib import closing
+from enum import Enum
 from threading import Thread, Event
 from time import sleep
 
@@ -53,8 +54,8 @@ from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED, \
-    STATUS_ERROR
-from tvb.core.entities.storage import dao
+    STATUS_ERROR, OperationProcessIdentifier
+from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.backend_clients.backend_client import BackendClient
@@ -63,6 +64,10 @@ from tvb.core.services.burst_service import BurstService
 LOGGER = get_logger(__name__)
 
 HPC_THREADS = []
+
+
+class HPCJobStatus(Enum):
+    FAILED = "FAILED"
 
 
 def get_op_thread(op_id):
@@ -294,9 +299,8 @@ class HPCSchedulerClient(BackendClient):
         job_inputs.extend(job_extra_inputs)
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
                                                             inputs=job_inputs)
-
-        operation.hpc_job_url = job.resource_url
-        dao.store_entity(operation)
+        op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
+        dao.store_entity(op_identifier)
 
         return job
 
@@ -354,7 +358,7 @@ class HPCSchedulerClient(BackendClient):
         try:
             job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
             wd, job_status = HPCSchedulerClient._monitor_job(job)
-            if job_status == 'FAILED':
+            if job_status == HPCJobStatus.FAILED.value:
                 operation = dao.get_operation_by_id(operation_identifier)
                 if not operation.has_finished:
                     operation.mark_complete(STATUS_ERROR)
@@ -399,22 +403,23 @@ class HPCSchedulerClient(BackendClient):
             LOGGER.warning("Operation already stopped: %s" % operation_id)
             return True
 
-        if operation.hpc_job_url is None:
-            LOGGER.warning("HPC Job url is not set for operation {}.".format(operation.id))
-            return False
-
         LOGGER.debug("Stopping HPC operation: %s" % str(operation_id))
-        transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
-
-        # Abort HPC job
-        job = Job(transport, operation.hpc_job_url)
-        if job.is_running():
-            job.abort()
+        op_ident = OperationDAO().get_operation_process_for_operation(operation_id)
+        if op_ident is not None:
+            # TODO: Handle login
+            transport = unicore_client.Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+            # Abort HPC job
+            job = Job(transport, op_ident.job_id)
+            if job.is_running():
+                job.abort()
 
         # Kill thread
         operation_thread = get_op_thread(operation_id)
-        operation_thread.stop()
-        while not operation_thread.stopped():
-            LOGGER.info("Thread for operation {} is stopping".format(operation_id))
+        if operation_thread is None:
+            LOGGER.warning("Thread for operation {} is not available".format(operation_id))
+        else:
+            operation_thread.stop()
+            while not operation_thread.stopped():
+                LOGGER.info("Thread for operation {} is stopping".format(operation_id))
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
         return True
