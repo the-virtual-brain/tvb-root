@@ -29,10 +29,9 @@
 #
 
 """
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
-.. moduleauthor:: Yann Gordon <yann@invalid.tvb>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.backend_clients.backend_client import BackendClient
