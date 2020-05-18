@@ -40,16 +40,16 @@ ContinuousWaveletTransform Analyzer.
 import uuid
 import numpy
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.basic.neotraits._attr import Attr
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.analyzers.wavelet import ContinuousWaveletTransform
-from tvb.basic.neotraits.api import Range
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, FormField, Form, SimpleFloatField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, FormField, Form, TraitDataTypeSelectField, FloatField
 from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neocom import h5
 
@@ -62,16 +62,37 @@ class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
         doc="""The timeseries to which the wavelet is to be applied."""
     )
 
+    f_lo = Attr(
+        field_type=float,
+        required=True,
+        label='Lo',
+        default=ContinuousWaveletTransform.frequencies.default.lo,
+        doc='start of range'
+    )
+
+    f_hi = Attr(
+        field_type=float,
+        required=True,
+        label='Hi',
+        default=ContinuousWaveletTransform.frequencies.default.hi,
+        doc='end of range'
+    )
+
+    f_step = Attr(
+        field_type=float,
+        required=True,
+        label='Step',
+        default=ContinuousWaveletTransform.frequencies.default.step,
+        doc='step of range'
+    )
+
 
 class RangeForm(Form):
     def __init__(self, prefix=''):
         super(RangeForm, self).__init__(prefix)
-        self.lo = SimpleFloatField(self, name='lo', required=True, label='Lo', doc='start of range',
-        default=ContinuousWaveletTransform.frequencies.default.lo)
-        self.step = SimpleFloatField(self, name='step', required=True, label='Step', doc='step of range',
-        default=ContinuousWaveletTransform.frequencies.default.step)
-        self.hi = SimpleFloatField(self, name='hi', required=True, label='Hi', doc='end of range',
-        default=ContinuousWaveletTransform.frequencies.default.hi)
+        self.lo = FloatField(WaveletAdapterModel.f_lo, self, name='Lo')
+        self.hi = FloatField(WaveletAdapterModel.f_hi, self, name='Hi')
+        self.step = FloatField(WaveletAdapterModel.f_step, self, name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
@@ -96,6 +117,12 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_required_datatype():
         return TimeSeriesIndex
+
+    def fill_trait(self, datatype):
+        super(ContinuousWaveletTransformAdapterForm, self).fill_trait(datatype)
+        datatype.frequencies.lo = self.frequencies.form.lo.data
+        datatype.frequencies.step = self.frequencies.form.step.data
+        datatype.frequencies.hi = self.frequencies.form.hi.data
 
     @staticmethod
     def get_input_name():
@@ -195,7 +222,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
 
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
         wavelet_h5.gid.store(uuid.UUID(wavelet_index.gid))
-        wavelet_h5.source.store(view_model.time)
+        wavelet_h5.source.store(time_series_h5.gid.load())
         wavelet_h5.mother.store(self.algorithm.mother)
         wavelet_h5.q_ratio.store(self.algorithm.q_ratio)
         wavelet_h5.sample_period.store(self.algorithm.sample_period)
