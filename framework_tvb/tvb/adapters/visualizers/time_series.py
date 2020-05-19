@@ -111,8 +111,11 @@ class ABCSpaceDisplayer(ABCDisplayer):
             sensors_gid = ts_h5.sensors.load()
             sensors_idx = self.load_entity_by_gid(sensors_gid.hex)
             with h5.h5_file_for_index(sensors_idx) as sensors_h5:
-                # TODO move in sensors ang group by needle in case of SEEG
-                return [('', list(enumerate(sensors_h5.labels.load())))]
+                labels = sensors_h5.labels.load()
+                # TODO uncomment this when the UI component will be able to scale for many groups
+                # if isinstance(ts_h5, TimeSeriesSEEGH5):
+                #     return SensorsInternal.group_sensors_to_electrodes(labels)
+                return [('', list(enumerate(labels)))]
 
         if isinstance(ts_h5, TimeSeriesRegionH5):
             connectivity_gid = ts_h5.connectivity.load()
