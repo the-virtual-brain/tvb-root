@@ -44,10 +44,9 @@ import tvb.interfaces.web.controllers.common as common
 class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceModelParametersController """
 
-    @pytest.fixture()
-    def transactional_setup_fixture(self, region_mapping_index_factory):
+    def test_edit_model_parameters(self, region_mapping_index_factory):
         self.init()
-        self.surface_m_p_c = SurfaceModelParametersController()
+        surface_m_p_c = SurfaceModelParametersController()
         SimulatorController().index()
         simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
         region_mapping_index = region_mapping_index_factory()
@@ -56,13 +55,7 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
         simulator.surface.surface_gid = region_mapping_index.fk_surface_gid
         simulator.surface.region_mapping_data = region_mapping_index.gid
 
-    def transactional_teardown_method(self):
-        """ Cleans the testing environment """
-        self.clean_database()
-        self.cleanup()
-
-    def test_edit_model_parameters(self, transactional_setup_fixture):
-        result_dict = self.surface_m_p_c.edit_model_parameters()
+        result_dict = surface_m_p_c.edit_model_parameters()
         expected_keys = ['urlNormals', 'urlNormalsPick', 'urlTriangles', 'urlTrianglesPick', 
                          'urlVertices', 'urlVerticesPick', 'mainContent', 'parametersEquationPlotForm',
                          'baseUrl', 'equationsPrefixes', 'brainCenter', 'applied_equations']
@@ -70,3 +63,5 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['baseUrl'] == '/spatial/modelparameters/surface'
         assert result_dict['mainContent'] == 'spatial/model_param_surface_main'
+
+        self.cleanup()

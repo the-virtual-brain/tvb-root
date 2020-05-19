@@ -49,8 +49,7 @@ import tvb.interfaces.web.controllers.common as common
 class TestRegionsModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
 
-    @pytest.fixture()
-    def transactional_setup_fixture(self, connectivity_index_factory):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `RegionsModelParametersController` and a connectivity
@@ -58,10 +57,7 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.init()
         self.region_m_p_c = RegionsModelParametersController()
         SimulatorController().index()
-        stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-        self.connectivity_index = connectivity_index_factory()
         self.simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
-        self.simulator.connectivity = self.connectivity_index.gid
         self._setup_dynamic()
 
     def transactional_teardown_method(self):
@@ -80,11 +76,13 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.dynamic_g = dao.store_entity(dynamic_g)
         self.dynamic_k = dao.store_entity(dynamic_k)
 
-    def test_index(self, transactional_setup_fixture):
+    def test_index(self, connectivity_index_factory):
         """
         Verifies that result dictionary has the expected keys / values after call to
         `edit_model_parameters()`
         """
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         result_dict = self.region_m_p_c.index()
         assert self.connectivity_index.gid == result_dict['connectivity_entity'].gid.hex
         assert result_dict['mainContent'] == 'burst/model_param_region'
@@ -96,17 +94,21 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
 
         json.loads(result_dict['dynamics_json'])
 
-    def test_submit_model_parameters_happy(self, transactional_setup_fixture):
+    def test_submit_model_parameters_happy(self, connectivity_index_factory):
         """
         Verifies call to `submit_model_parameters(...)` correctly redirects to '/burst/'
         """
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         self.region_m_p_c.index()
 
         dynamic_ids = json.dumps([self.dynamic_g.id for _ in range(self.connectivity_index.number_of_regions)])
 
         self._expect_redirect('/burst/', self.region_m_p_c.submit_model_parameters, dynamic_ids)
 
-    def test_submit_model_parameters_inconsistent_models(self, transactional_setup_fixture):
+    def test_submit_model_parameters_inconsistent_models(self, connectivity_index_factory):
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         self.region_m_p_c.index()
 
         dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity_index.number_of_regions)]

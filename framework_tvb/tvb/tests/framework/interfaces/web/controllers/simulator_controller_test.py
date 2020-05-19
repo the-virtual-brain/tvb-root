@@ -38,7 +38,6 @@ import tvb_data.sensors
 import tvb_data.projectionMatrix
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
-from cherrypy.test import helper
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -64,7 +63,7 @@ from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
 
-class TestSimulationController(BaseTransactionalControllerTest, helper.CPWebCase):
+class TestSimulationController(BaseTransactionalControllerTest):
 
     def transactional_setup_method(self):
         self.simulator_controller = SimulatorController()

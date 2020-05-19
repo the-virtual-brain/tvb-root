@@ -34,45 +34,36 @@
 
 import json
 import cherrypy
-import pytest
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-from tvb.core.entities.model.model_burst import PARAM_INTEGRATOR, PARAM_MODEL
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import INTEGRATOR_PARAMETERS
 from tvb.simulator.integrators import EulerStochastic, HeunStochastic
 
 
 class TestNoiseConfigurationController(BaseTransactionalControllerTest):
 
-    @pytest.fixture()
-    def transactional_setup_fixture(self, connectivity_factory):
-        self.init()
-        self.noise_controller = NoiseConfigurationController()
-        SimulatorController().index()
-        self.simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
-        self.connectivity = connectivity_factory()
-        self.simulator.connectivity = self.connectivity.gid
-        self.simulator.integrator = HeunStochastic()
-
-    def transactional_teardown_method(self):
-        """ Cleans the testing environment """
-        self.clean_database()
-        self.cleanup()
-
-    def test_submit_noise_configuration_happy(self, transactional_setup_fixture):
+    def test_submit_noise_configuration_happy(self, connectivity_factory):
         """
         Submit noise configuration writes the noise array on the required key in the burst configuration
         """
+        self.init()
+        noise_controller = NoiseConfigurationController()
+        SimulatorController().index()
+        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        connectivity = connectivity_factory()
+        simulator.connectivity = connectivity.gid
+        simulator.integrator = HeunStochastic()
+
         # a noise configuration in the format expected by submit. Assumes Generic2dOscillator model.
-        nodes_range = list(range(self.connectivity.number_of_regions))
+        nodes_range = list(range(connectivity.number_of_regions))
         noise_in = [{'V': 1.0, 'W': 2.0} for _ in nodes_range]
         noise_in = json.dumps(noise_in)
 
-        self._expect_redirect('/burst/', self.noise_controller.submit, noise_in)
+        self._expect_redirect('/burst/', noise_controller.submit, noise_in)
 
         expected_noise_arr = [[1.0 for _ in nodes_range], [2.0 for _ in nodes_range]]
-        actual_noise_arr = self.simulator.integrator.noise.nsig
+        actual_noise_arr = simulator.integrator.noise.nsig
         assert (expected_noise_arr == actual_noise_arr).all()
+
+        self.cleanup()
