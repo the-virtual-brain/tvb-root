@@ -218,7 +218,7 @@ class Connectivity(HasTraits):
                     r.append((i, label))
                 else:
                     l.append((i, label))
-            return [('left', l), ('right', r)]
+            return [('Left', l), ('Right', r)]
         else:
             return [('', list(enumerate(self.region_labels)))]
 
