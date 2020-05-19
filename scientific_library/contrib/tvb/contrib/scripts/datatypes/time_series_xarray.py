@@ -797,6 +797,11 @@ class TimeSeries(HasTraits):
         return time, labels_ordering, plotter, kwargs
 
     def plot_map(self, **kwargs):
+        if kwargs.pop("per_variable", False):
+            outputs = []
+            for var in self.labels_dimensions[self.labels_ordering[1]]:
+                outputs.append(self[:, var].plot_map(**kwargs))
+            return outputs
         time, labels_ordering, plotter, kwargs = \
             self._prepare_plot_args(**kwargs)
         # Usually variables
@@ -809,9 +814,13 @@ class TimeSeries(HasTraits):
             row = kwargs.pop("row", None)
         kwargs["robust"] = kwargs.pop("robust", True)
         kwargs["cmap"] = kwargs.pop("cmap", "jet")
-        figname = kwargs.pop("figname", "%s" % self.title)
+        if self.shape[1] == 1:  # only one variable
+            kwargs["figname"] = kwargs.pop("figname", "%s" % (self.title + "Map")) + ": " \
+                      + self.labels_dimensions[self.labels_ordering[1]][0]
+        else:
+            kwargs["figname"] = kwargs.pop("figname", "%s" % self.title)
         return self.plot(data=None, y=y, hue=None, col=col, row=row,
-                         figname=figname, plotter=plotter, **kwargs)
+                         plotter=plotter, **kwargs)
 
     def plot_line(self, **kwargs):
         time, labels_ordering, plotter, kwargs = \
