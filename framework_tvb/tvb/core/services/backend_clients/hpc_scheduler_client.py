@@ -67,6 +67,11 @@ HPC_THREADS = []
 
 
 class HPCJobStatus(Enum):
+    STAGINGIN = "STAGINGIN"
+    READY = "READY"
+    QUEUED = "QUEUED"
+    STAGINGOUT = "STAGINGOUT"
+    SUCCESSFUL = "SUCCESSFUL"
     FAILED = "FAILED"
 
 
@@ -319,10 +324,25 @@ class HPCSchedulerClient(BackendClient):
         LOGGER.info(job.properties)
         # TODO: better monitoring?
         LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
-        while job.is_running():
-            LOGGER.debug("Job is still running")
-            sleep(10)
-        status = job.properties[HPCSettings.JOB_STATUS_KEY]
+        files_encryption_key_uploaded = False
+        sleep_period = 5
+        while True:
+            # Read current job status
+            status = job.properties[HPCSettings.JOB_STATUS_KEY]
+
+            # Check if the current job is complete
+            if status in (HPCJobStatus.SUCCESSFUL.value, HPCJobStatus.FAILED.value):
+                break
+            LOGGER.info("Job is still running. Status: {}".format(status))
+
+            # Upload user tokens which will be used to
+            if status == HPCJobStatus.READY.value and not files_encryption_key_uploaded:
+                LOGGER.info("Upload files encryption key")
+                # HPCSchedulerClient._upload_file_with_pyunicore(job.working_dir, "Files encryption key path")
+                files_encryption_key_uploaded = True
+                sleep_period = 10
+            sleep(sleep_period)
+
         LOGGER.info("Job finished with status: {}".format(status))
         return job.working_dir, status
 
