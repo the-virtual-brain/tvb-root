@@ -132,6 +132,8 @@ class TimeSeriesEEGIndex(TimeSeriesIndex):
         # type: (TimeSeriesEEG)  -> None
         super(TimeSeriesEEGIndex, self).fill_from_has_traits(datatype)
         self.fk_sensors_gid = datatype.sensors.gid.hex
+        # Because we had a ProjectionMatrix in the monitor
+        self.has_surface_mapping = True
 
 
 class TimeSeriesMEGIndex(TimeSeriesIndex):
@@ -144,6 +146,7 @@ class TimeSeriesMEGIndex(TimeSeriesIndex):
         # type: (TimeSeriesMEG)  -> None
         super(TimeSeriesMEGIndex, self).fill_from_has_traits(datatype)
         self.fk_sensors_gid = datatype.sensors.gid.hex
+        self.has_surface_mapping = True
 
 
 class TimeSeriesSEEGIndex(TimeSeriesIndex):
@@ -156,6 +159,7 @@ class TimeSeriesSEEGIndex(TimeSeriesIndex):
         # type: (TimeSeriesSEEG)  -> None
         super(TimeSeriesSEEGIndex, self).fill_from_has_traits(datatype)
         self.fk_sensors_gid = datatype.sensors.gid.hex
+        self.has_surface_mapping = True
 
 
 class TimeSeriesRegionIndex(TimeSeriesIndex):
