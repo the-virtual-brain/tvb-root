@@ -87,7 +87,8 @@ class TimeSeriesForm(ABCAdapterForm):
 @add_metaclass(ABCMeta)
 class ABCSpaceDisplayer(ABCDisplayer):
 
-    def build_params_for_selectable_connectivity(self, connectivity):
+    @staticmethod
+    def build_params_for_selectable_connectivity(connectivity):
         # type: (Connectivity) -> dict
         return {'measurePointsSelectionGID': connectivity.gid,
                 'initialSelection': connectivity.saved_selection or list(range(len(connectivity.region_labels))),
