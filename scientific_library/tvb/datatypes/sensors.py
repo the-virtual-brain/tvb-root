@@ -37,6 +37,7 @@ The Sensors dataType.
 
 """
 
+import re
 import numpy
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
@@ -235,4 +236,27 @@ class SensorsInternal(Sensors):
     def from_file(cls, source_file="seeg_39.txt.bz2"):
         return super(SensorsInternal, cls).from_file(source_file)
 
+    @staticmethod
+    def _split_string_text_numbers(labels):
+        items = []
+        for i, s in enumerate(labels):
+            match = re.findall('(\d+|\D+)', s)
+            if match:
+                items.append((match[0], i))
+            else:
+                items.append((s, i))
+        return numpy.array(items)
 
+    @staticmethod
+    def group_sensors_to_electrodes(labels):
+        sensor_names = SensorsInternal._split_string_text_numbers(labels)
+        electrode_labels = numpy.unique(sensor_names[:, 0])
+        electrode_groups = []
+        for electrode in electrode_labels:
+            tuples = [(idx, labels[idx]) for idx in numpy.where(sensor_names[:, 0] == electrode)[0]]
+            electrode_groups.append((electrode, tuples))
+        return electrode_groups
+
+    @property
+    def grouped_electrodes(self):
+        return SensorsInternal.group_sensors_to_electrodes(self.labels)
