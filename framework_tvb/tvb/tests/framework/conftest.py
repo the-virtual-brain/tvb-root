@@ -346,7 +346,7 @@ def time_series_factory():
             data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(
                 2 * numpy.pi * time / 1000.0 * 300)
 
-        return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
+        return TimeSeries(time=time, data=data, sample_period=1.0 / 4000, sample_period_unit="sec")
 
     return build
 

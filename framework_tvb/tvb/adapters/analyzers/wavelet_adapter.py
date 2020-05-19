@@ -210,6 +210,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
         small_ts.sample_period = time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = time_series_h5.sample_period_unit.load()
         for node in range(self.input_shape[2]):
             node_slice[2] = slice(node, node + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
