@@ -218,7 +218,7 @@ class Connectivity(HasTraits):
                     r.append((i, label))
                 else:
                     l.append((i, label))
-            return [('left', l), ('right', r)]
+            return [('Left', l), ('Right', r)]
         else:
             return [('', list(enumerate(self.region_labels)))]
 
@@ -229,12 +229,6 @@ class Connectivity(HasTraits):
             return sel
         else:
             return list(range(len(self.region_labels)))
-
-    def get_measure_points_selection_gid(self):
-        """
-        :return: the associated connectivity gid
-        """
-        return self.gid
 
     @property
     def binarized_weights(self):
