@@ -38,7 +38,7 @@ import numpy
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
-from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params
+from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params, function_sensors_to_surface
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.adapters.abcdisplayer import URLGenerator
@@ -476,6 +476,10 @@ class DualBrainViewer(BrainViewer):
                                                                    self.stored_adapter.id)
 
         return prepare_sensors_as_measure_points_params(sensors_index)
+
+    def sensors_to_surface(self, sensors_gid, surface_to_map_gid):
+        # Method needs to be defined on the adapter, to be called from JS
+        return function_sensors_to_surface(sensors_gid, surface_to_map_gid)
 
     def launch(self, view_model):
         # type: (DualBrainViewerModel) -> dict
