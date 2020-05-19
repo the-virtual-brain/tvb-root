@@ -46,7 +46,7 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.patterns import SpatioTemporalPattern
+from tvb.datatypes.patterns import SpatioTemporalPattern, StimuliSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.coupling import Coupling
@@ -198,6 +198,8 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator.conduction_speed = view_model.conduction_speed
         simulator.coupling = view_model.coupling
 
+        rm_surface = None
+
         if view_model.surface:
             simulator.surface = Cortex()
             rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
@@ -219,6 +221,11 @@ class SimulatorAdapter(ABCAsynchronous):
             stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
             stimulus = h5.load_from_index(stimulus_index)
             simulator.stimulus = stimulus
+
+            if isinstance(stimulus, StimuliSurface):
+                simulator.stimulus.surface = rm_surface
+            else:
+                simulator.stimulus.connectivity = simulator.connectivity
 
         simulator.model = view_model.model
         simulator.integrator = view_model.integrator
@@ -353,7 +360,7 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map, region_volume_map = self._try_load_region_mapping()
 
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
             self.log.debug("Monitor created the TS")
@@ -392,7 +399,7 @@ class SimulatorAdapter(ABCAsynchronous):
         for result in self.algorithm(simulation_length=self.algorithm.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
-                    m_name = monitor.__class__.__name__
+                    m_name = type(monitor).__name__
                     ts_h5 = result_h5[m_name]
                     ts_h5.write_time_slice([result[j][0]])
                     ts_h5.write_data_slice([result[j][1]])
@@ -408,7 +415,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.log.debug("Simulation state persisted, returning results ")
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()

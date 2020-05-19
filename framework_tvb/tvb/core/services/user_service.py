@@ -136,7 +136,7 @@ class UserService:
                     default_prj_id = dao.get_project_by_gid(DEFAULT_PROJECT_GID).id
                     dao.add_members_to_project(default_prj_id, [user.id])
                 except Exception:
-                    self.logger.warning(
+                    self.logger.exception(
                         "Could not link user_id: %d with project_gid: %s " % (user.id, DEFAULT_PROJECT_GID))
 
             return TEXT_DISPLAY

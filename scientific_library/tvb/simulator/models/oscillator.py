@@ -444,6 +444,7 @@ class Kuramoto(Model):
             history, it is also provides the default range of phase-plane plots.""")
 
     variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
         choices=("theta",),
         default=("theta",),

@@ -1,6 +1,9 @@
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
     <fieldset {% if renderer.disable_fields %} disabled {% endif %}>
         <dl>
+            {% if renderer.monitor_name %}
+            <legend>{{ renderer.monitor_name }}</legend>
+            {% endif %}
             {% if renderer.form.ordered_fields %}
                 {% set form_fields = renderer.form.ordered_fields %}
             {% else %}

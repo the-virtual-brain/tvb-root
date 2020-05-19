@@ -34,24 +34,23 @@ from formencode import validators
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.basic.neotraits.api import Attr, Range
+from tvb.basic.neotraits.api import Attr, Range, List
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
-from tvb.simulator.monitors import Monitor
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict
+from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.range_parameter import RangeParameter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex
+from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, SimpleHiddenField, \
-    SelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
+    SimpleHiddenField, SelectField, MultiSelectField
 from tvb.core.neocom import h5
 
 
@@ -61,7 +60,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                  values=[CORTICAL])
         self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=False,
-                                           label=Simulator.surface.label, doc=Simulator.surface.doc, conditions=conditions)
+                                           label=Simulator.surface.label, doc=Simulator.surface.doc,
+                                           conditions=conditions)
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
@@ -104,7 +104,7 @@ class SimulatorStimulusFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorStimulusFragment, self).__init__(prefix, project_id)
         if is_surface_simulation:
-            stimuli_index_class = StimuliSurfaceIndex
+            stimuli_index_class = SpatioTemporalPatternIndex
         else:
             stimuli_index_class = StimuliRegionIndex
         self.stimulus = DataTypeSelectField(stimuli_index_class, self, name='region_stimuli', required=False,
@@ -155,15 +155,17 @@ class SimulatorMonitorFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
-        default_monitor = list(self.monitor_choices.values())[0]
+        self.is_surface_simulation = is_surface_simulation
 
-        self.monitor = SelectField(
-            Attr(Monitor, default=default_monitor, label=Simulator.monitors.label, doc=Simulator.monitors.doc), self,
-            choices=self.monitor_choices, name='monitor')
+        self.monitors = MultiSelectField(List(of=str, label='Monitors',
+                                              choices=tuple(self.monitor_choices.keys())),
+                                         self, name='monitors')
 
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
-        self.monitor.data = trait.monitors[0].__class__
+        self.monitors.data = [
+            get_monitor_to_ui_name_dict(self.is_surface_simulation)[type(monitor)]
+            for monitor in trait]
 
 
 class SimulatorFinalFragment(ABCAdapterForm):

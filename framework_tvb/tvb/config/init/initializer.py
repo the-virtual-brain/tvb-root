@@ -37,8 +37,10 @@ import shutil
 import datetime
 import threading
 from types import ModuleType
+from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS
 from tvb.core.adapters.exceptions import XmlParserException
@@ -129,7 +131,7 @@ class Introspector(object):
             algo_category_id = self._populate_algorithm_categories(algo_category_class)
             self._populate_algorithms(algo_category_class, algo_category_id)
         # self._get_portlets()
-        # removers_factory.update_dictionary(IntrospectionRegistry.DATATYPE_REMOVERS)
+        removers_factory.update_dictionary(DATATYPE_REMOVERS)
 
     @staticmethod
     def _ensure_datatype_tables_are_created():

@@ -63,31 +63,32 @@ class SimulatorSerializer(object):
             simulator_in.stimulus = simulator_in_h5.stimulus.load()
             simulator_in.history_gid = simulator_in_h5.simulation_state.load()
 
-        if isinstance(simulator_in.monitors[0], Projection):
-            with SimulatorH5(simulator_in_path) as simulator_in_h5:
-                monitor_h5_path = simulator_in_h5.get_reference_path(simulator_in.monitors[0].gid)
+        for monitor in simulator_in.monitors:
+            if isinstance(monitor, Projection):
+                with SimulatorH5(simulator_in_path) as simulator_in_h5:
+                    monitor_h5_path = simulator_in_h5.get_reference_path(monitor.gid)
 
-            monitor_h5_class = h5_factory.monitor_h5_factory(type(simulator_in.monitors[0]))
+                monitor_h5_class = h5_factory.monitor_h5_factory(type(monitor))
 
-            with monitor_h5_class(monitor_h5_path) as monitor_h5:
-                sensors_gid = monitor_h5.sensors.load()
-                projection_gid = monitor_h5.projection.load()
-                region_mapping_gid = monitor_h5.region_mapping.load()
+                with monitor_h5_class(monitor_h5_path) as monitor_h5:
+                    sensors_gid = monitor_h5.sensors.load()
+                    projection_gid = monitor_h5.projection.load()
+                    region_mapping_gid = monitor_h5.region_mapping.load()
 
-            sensors_index = ABCAdapter.load_entity_by_gid(sensors_gid.hex)
-            projection_index = ABCAdapter.load_entity_by_gid(projection_gid.hex)
+                sensors_index = ABCAdapter.load_entity_by_gid(sensors_gid.hex)
+                projection_index = ABCAdapter.load_entity_by_gid(projection_gid.hex)
 
-            sensors_class = simulator_in.monitors[0].projection_class().sensors.field_type
-            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
+                sensors_class = monitor.projection_class().sensors.field_type
+                sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
-            projection_class = simulator_in.monitors[0].projection_class()
-            projection = h5.load_from_index(projection_index, dt_class=projection_class)
+                projection_class = monitor.projection_class()
+                projection = h5.load_from_index(projection_index, dt_class=projection_class)
 
-            region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
+                region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
 
-            simulator_in.monitors[0].sensors = sensors
-            simulator_in.monitors[0].projection = projection
-            simulator_in.monitors[0].region_mapping = region_mapping
+                monitor.sensors = sensors
+                monitor.projection = projection
+                monitor.region_mapping = region_mapping
 
         if simulator_in.surface:
             cortex_path = h5.path_for(storage_path, CortexH5, simulator_in.surface.gid)
@@ -95,6 +96,6 @@ class SimulatorSerializer(object):
                 simulator_in.surface.local_connectivity = cortex_h5.local_connectivity.load()
                 simulator_in.surface.region_mapping_data = cortex_h5.region_mapping_data.load()
                 rm_index = dao.get_datatype_by_gid(simulator_in.surface.region_mapping_data.hex)
-                simulator_in.surface.fk_surface_gid = uuid.UUID(rm_index.fk_surface_gid)
+                simulator_in.surface.surface_gid = uuid.UUID(rm_index.fk_surface_gid)
 
         return simulator_in
