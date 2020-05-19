@@ -41,26 +41,28 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, di, wi, ji, ri, g, l, io, ie, newS):
     "Gufunc for reduced Wong-Wang model equations."
 
+    newS[0] = S[0]  # S_e
+    newS[1] = S[1]  # S_i
+
     cc = g[0]*jn[0]*c[0]
 
     jnSe = jn[0] * S[0]
 
+    newS[4] = wp[0] * jnSe - ji[0] * S[1] + we[0] * io[0] + cc + ie[0]
     if re[0] < 0.0:
-        x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc + ie[0]
-        x = ae[0]*x - be[0]
+        x = ae[0]*newS[4] - be[0]
         h = x / (1 - numpy.exp(-de[0]*x))
-        S[2] = h
+        newS[2] = h
+    else:
+        newS[2] = S[2]  # R_e
 
+    newS[5] = jnSe - S[1] + wi[0] * io[0] + l[0] * cc
     if ri[0] < 0.0:
-        x = jnSe - S[1] + wi[0]*io[0] + l[0]*cc
-        x = ai[0]*x - bi[0]
+        x = ai[0]*newS[5] - bi[0]
         h = x / (1 - numpy.exp(-di[0]*x))
-        S[3] = h
-
-    newS[0] = S[0]
-    newS[1] = S[1]
-    newS[3] = S[2]
-    newS[4] = S[4]
+        newS[3] = h
+    else:
+        newS[3] = S[3]  # R_i
 
 
 @guvectorize([(float64[:],)*6], '(n)' + ',()'*4 + '->(n)', nopython=True)
@@ -69,10 +71,11 @@ def _numba_dfun(S, ge, te, gi, ti, dx):
 
     dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * S[2] * ge[0]
     dx[2] = 0.0
+    dx[4] = 0.0
 
     dx[1] = - (S[1] / ti[0]) + S[3] * gi[0]
     dx[3] = 0.0
-
+    dx[5] = 0.0
 
 class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
     r"""
@@ -121,7 +124,9 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         default={"S_e": numpy.array([0.0, 1.0]),
                  "S_i": numpy.array([0.0, 1.0]),
                  "R_e": numpy.array([0.0, None]),
-                 "R_i": numpy.array([0.0, None])},
+                 "R_i": numpy.array([0.0, None]),
+                 "I_e": numpy.array([None, None]),
+                 "I_i": numpy.array([None, None])},
         label="State Variable boundaries [lo, hi]",
         doc="""The values for each state-variable should be set to encompass
             the boundaries of the dynamic range of that state-variable. 
@@ -131,7 +136,9 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         default={"S_e": numpy.array([0.0, 1.0]),
                  "S_i": numpy.array([0.0, 1.0]),
                  "R_e": numpy.array([0.0, 1000.0]),
-                 "R_i": numpy.array([0.0, 1000.0])
+                 "R_i": numpy.array([0.0, 1000.0]),
+                 "I_e": numpy.array([0.0, 2.0]),
+                 "I_i": numpy.array([0.0, 1.0])
                  },
         label="State variable ranges [lo, hi]",
         doc="Population firing rate")
@@ -139,24 +146,26 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=('S_e', 'S_i', 'R_e', 'R_i'),
-        default=('S_e', 'S_i', 'R_e', 'R_i'),
+        choices=('S_e', 'S_i', 'R_e', 'R_i', 'I_e', 'I_i'),
+        default=('S_e', 'S_i', 'R_e', 'R_i', 'I_e', 'I_i'),
         doc="""default state variables to be monitored""")
 
-    state_variables = ['S_e', 'S_i', 'R_e', 'R_i']
-    _nvar = 4
+    state_variables = ['S_e', 'S_i', 'R_e', 'R_i', 'I_e', 'I_i']
+    _nvar = 6
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
         if use_numba:
-            _numba_update_non_state_variables(state_variables.reshape(state_variables.shape[:-1]).T,
-                                              coupling.reshape(coupling.shape[:-1]).T+local_coupling*state_variables[0],
-                                              self.a_e, self.b_e, self.d_e,
-                                              self.w_p, self.W_e, self.J_N, self.R_e,
-                                              self.a_i, self.b_i, self.d_i,
-                                              self.W_i, self.J_i, self.R_i,
-                                              self.G, self.lamda, self.I_o, self.I_ext)
-            return state_variables
+            state_variables = \
+                _numba_update_non_state_variables(state_variables.reshape(state_variables.shape[:-1]).T,
+                                                  coupling.reshape(coupling.shape[:-1]).T +
+                                                  local_coupling*state_variables[0],
+                                                  self.a_e, self.b_e, self.d_e,
+                                                  self.w_p, self.W_e, self.J_N, self.R_e,
+                                                  self.a_i, self.b_i, self.d_i,
+                                                  self.W_i, self.J_i, self.R_i,
+                                                  self.G, self.lamda, self.I_o, self.I_ext)
+            return state_variables.T[..., numpy.newaxis]
 
         # In this case, rates (H_e, H_i) are non-state variables,
         # i.e., they form part of state_variables but have no dynamics assigned on them
@@ -166,7 +175,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         # by any integration scheme
 
         S = state_variables[:2, :]  # synaptic gating dynamics
-        R = state_variables[2:, :]  # rates
+        R = state_variables[2:4, :]  # synaptic gating dynamics
 
         c_0 = coupling[0, :]
 
@@ -178,21 +187,23 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         J_N_S_e = self.J_N * S[0]
 
         # TODO: Confirm that this computation is correct for this model depending on the r_e and r_i values!
-        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling + self.I_ext
+        I_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling + self.I_ext
 
-        x_e = self.a_e * x_e - self.b_e
+        x_e = self.a_e * I_e - self.b_e
         # Only rates with R_e < 0 will be updated by TVB.
-        H_e = numpy.where(self.R_e >= 0, R[0], x_e / (1 - numpy.exp(-self.d_e * x_e)))
+        R_e = numpy.where(self.R_e >= 0, R[0], x_e / (1 - numpy.exp(-self.d_e * x_e)))
 
-        x_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
+        I_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
 
-        x_i = self.a_i * x_i - self.b_i
+        x_i = self.a_i * I_i - self.b_i
         # Only rates with R_i < 0 will be updated by TVB.
-        H_i = numpy.where(self.R_i >= 0, R[1], x_i / (1 - numpy.exp(-self.d_i * x_i)))
+        R_i = numpy.where(self.R_i >= 0, R[1], x_i / (1 - numpy.exp(-self.d_i * x_i)))
 
         # We now update the state_variable vector with the new rates:
-        state_variables[2, :] = H_e
-        state_variables[3, :] = H_i
+        state_variables[2, :] = R_e
+        state_variables[3, :] = R_i
+        state_variables[4, :] = I_e
+        state_variables[5, :] = I_i
 
         return state_variables
 
@@ -216,14 +227,14 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                 self.update_non_state_variables(state_variables, coupling, local_coupling, use_numba=False)
 
         S = state_variables[:2, :]  # synaptic gating dynamics
-        R = state_variables[2:, :]  # rates
+        R = state_variables[2:4, :]  # rates
 
         dS_e = - (S[0] / self.tau_e) + (1 - S[0]) * R[0] * self.gamma_e
         dS_i = - (S[1] / self.tau_i) + R[1] * self.gamma_i
 
         # Rates are non-state variables:
         dummy = 0.0*dS_e
-        derivative = numpy.array([dS_e, dS_i, dummy, dummy])
+        derivative = numpy.array([dS_e, dS_i, dummy, dummy, dummy, dummy])
 
         return derivative
 
