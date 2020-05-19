@@ -36,9 +36,9 @@ from datetime import datetime
 import scipy.sparse
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, EquationScalar, \
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, EquationScalar, \
     SparseMatrix
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
@@ -239,6 +239,8 @@ class ViewModelH5(H5File):
                     ref = Uuid(attr, self)
                 elif issubclass(attr.field_type, Equation):
                     ref = EquationScalar(attr, self)
+                elif attr.field_type is Range:
+                    ref = JsonRange(attr, self)
                 else:
                     ref = Scalar(attr, self)
             setattr(self, attr.field_name, ref)
