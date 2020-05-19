@@ -60,6 +60,7 @@ class Simulator(HasTraits):
     use_numba = True
 
     spike_stimulus = None
+    _spike_stimulus_fun = None
 
     tvb_spikeNet_interface = None
     configure_spiking_simulator = None
@@ -254,6 +255,22 @@ class Simulator(HasTraits):
                      rm.size, unmapped.size, self.number_of_nodes)
         self._guesstimate_memory_requirement()
 
+    def _config_spike_stimulus(self):
+        # Spike stimulus is either a Dictionary or a pandas.Series of
+        # either sparse pandas.Series or xarray.DataArray or numpy.array
+        if self.spike_stimulus is not None:
+            target1 = list(self.spike_stimulus.keys())[0]
+            if self.spike_stimulus[target1].__class__.__name__ == "Series":
+                self._spike_stimulus_fun = \
+                    lambda target, step: self.spike_stimulus[target][step].to_xarray().values
+            elif self.spike_stimulus[target1].__class__.__name__ == "DataArray":
+                self._spike_stimulus_fun = \
+                    lambda target, step: self.spike_stimulus[target][step].values
+            else:  # assuming dictionary of numpy arrays
+                self._spike_stimulus_fun = \
+                    lambda target, step: self.spike_stimulus[target][step]
+
+
     def configure(self, tvb_spikeNet_interface=None, full_configure=True):
         """Configure simulator and its components.
 
@@ -320,6 +337,7 @@ class Simulator(HasTraits):
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
         self._configure_stimuli()
+        self._config_spike_stimulus()
         # Set delays, provided in physical units, in integration steps.
         self.connectivity.set_idelays(self.integrator.dt)
         self.horizon = self.connectivity.idelays.max() + 1
@@ -338,7 +356,7 @@ class Simulator(HasTraits):
             # TODO: maybe deprecate this given that
             #  we have introduced dynamic non-state variables
             # Create TVB model parameter for SpikeNet to target
-            dummy = -numpy.ones((self.connectivity.number_of_regions,))
+            dummy = -numpy.ones((self.connectivity.number_of_regions, 1))
             dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
             for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
                 setattr(self.model, param, dummy)
@@ -460,17 +478,20 @@ class Simulator(HasTraits):
         # in the extreme case where all state variables are cvars as well, we set:
         node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
         for i_time in range(history.shape[1]):
-            update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0)
+            history[:, i_time] = \
+                update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0, use_numba=self.use_numba)
         self.bound_and_clamp(history)
 
-    def update_state(self, state, node_coupling, local_coupling=0.0, use_numba=True):
+    def update_state(self, state, node_coupling, local_coupling=0.0):
         # If there are non-state variables, they need to be updated for the initial condition:
         try:
             self.model.update_non_state_variables
         except:
             return
-        self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba)
+        state = \
+            self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
         self.bound_and_clamp(state)
+        return state
 
     def _print_progression_message(self, step, n_steps):
         if step - self.current_step >= self._tic_point:
@@ -487,6 +508,14 @@ class Simulator(HasTraits):
             sys.stdout.write(print_this)
             sys.stdout.flush()
             self._tic_point += self._tic_ratio * n_steps
+
+    def _apply_spike_stimulus(self, step):
+        # We need to go one index step back: i.e., step-1
+        # i.e., assuming that at spike_stimulus[step] we have spikes arriving in the interval t_step-1 -> t_step,
+        # which will be considered for the iteration t_step-1 -> t_step,
+        # i.e., they will be received at t_step - 1 time.
+        for target_parameter in self.spike_stimulus.keys():
+            setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step-1))
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -512,18 +541,6 @@ class Simulator(HasTraits):
         stimulus = self._prepare_stimulus()
         state = self.current_state
 
-        # Do for initial condition:
-        step = self.current_step + 1  # the first step in the loop
-        node_coupling = self._loop_compute_node_coupling(step)
-        self._loop_update_stimulus(step, stimulus)
-
-        # This is not necessary in most cases
-        # if update_non_state_variables=True in the model dfun by default
-        if self.spike_stimulus:
-            for target_parameter in self.spike_stimulus:
-                setattr(self.model, target_parameter, self.spike_stimulus[target_parameter][0].to_xarray().values)
-        self.update_state(state, node_coupling, local_coupling, self.use_numba)
-
         # TODO: We could have another __call__method obviously when there is no co-simulation...
         if self.tvb_spikeNet_interface is not None:
             # spikeNet simulation preparation:
@@ -533,17 +550,31 @@ class Simulator(HasTraits):
         else:
             updateTVBstateFromSpikeNet = False
 
+        # Do for initial condition, i.e., prepare step t0 -> t1:
+        init_step = self.current_step + 1  # the first step in the loop
+        node_coupling = self._loop_compute_node_coupling(init_step)
+        self._loop_update_stimulus(init_step, stimulus)
+        if self._spike_stimulus_fun:
+            self._apply_spike_stimulus(init_step)
+        state = self.update_state(state, node_coupling, local_coupling)
+
+        # NOTE!!!: we don't update TVB from spikeNet initial condition,
+        # since there is no output yet from spikeNet
+
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
         if self.PRINT_PROGRESSION_MESSAGE:
             self._tic = time.time()
             self._tic_ratio = 0.1
             self._tic_point = self._tic_ratio * n_steps
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
+        end_step =  init_step + n_steps
+        for step in range(init_step, end_step):
 
+            # 1. Update spikeNet with TVB state t_(step-1)
+            #    ...and integrate it for one time step
             # TODO: We could have another __call__method obviously when there is no co-simulation...
             if self.tvb_spikeNet_interface is not None:
-                # TVB state -> SpikeNet (state or parameter)
+                # TVB state t_(step-1) -> SpikeNet (state or parameter)
                 # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
                 # including any necessary conversions from TVB state to SpikeNet variables,
                 # in a model specific manner
@@ -551,41 +582,41 @@ class Simulator(HasTraits):
                 #  Is this addition correct in all cases for all builders?
                 self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus,
                                                                   self.model)
-                # SpikeNet state -> TVB model parameter
-                # Couple the SpikeNet state to some TVB model parameter,
-                # including any necessary conversions in a model specific manner
-                # TODO: probably deprecate it since we have introduced dynamic non-state variables
-                self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
-
-                # Integrate Spiking Network to get the new Spiking Network state
+                # Integrate Spiking Network to get the new Spiking Network state t_step
                 self.run_spiking_simulator(self.integrator.dt)
 
-            if self.spike_stimulus:
-                for target_parameter in self.spike_stimulus:
-                    setattr(self.model, target_parameter, 
-                            self.spike_stimulus[target_parameter][step].to_xarray().values)
-
-            # Integrate TVB to get the new TVB state
+            # 2. Integrate TVB to get the new TVB state t_step
             state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
 
             if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                 raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
 
+            # 3. Update the new TVB state t_step with the new spikeNet state t_step
             if updateTVBstateFromSpikeNet:
-                # SpikeNet state -> TVB state
+                # SpikeNet state t_(step) -> TVB state t_(step)
                 # Update the new TVB state variable with the new SpikeNet state,
                 # including any necessary conversions from SpikeNet variables to TVB state,
                 # in a model specific manner
                 state = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_state(state)
+                # TODO: Deprecate this since we have introduced TVB non-state variables
+                # SpikeNet state t_(step)-> TVB model parameter at time t_(step)
+                # Couple the SpikeNet state to some TVB model parameter,
+                # including any necessary conversions in a model specific manner
+                # TODO: probably deprecate it since we have introduced dynamic non-state variables
+                self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
                 self.bound_and_clamp(state)
 
-            # Prepare coupling and stimulus for next time step
-            # and, therefore, for the new TVB state:
+            # Prepare coupling and stimulus at time t_step, i.e., for next time iteration
+            # and, therefore, for the new TVB state t_step+1, if any:
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
-            # Update any non-state variables and apply any boundaries again to the new state:
-            self.update_state(state, node_coupling, local_coupling, self.use_numba)
-            # Now direct the new state to history buffer and monitors
+            if self._spike_stimulus_fun:
+                self._apply_spike_stimulus(step)
+
+            # Update any non-state variables and apply any boundaries again to the new state t_step:
+            state = self.update_state(state, node_coupling, local_coupling)
+
+            # Now direct the new state t_step to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
             if output is not None:
