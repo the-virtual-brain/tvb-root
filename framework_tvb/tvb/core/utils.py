@@ -33,7 +33,6 @@
 """
 
 import os
-import csv
 import sys
 import json
 import datetime
@@ -99,38 +98,7 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
     return full_path, file_
 
 
-################## PATH related methods end here ###############    
-
-
-################## FILE related methods start here ###############
-
-def store_list_data(data_list, file_name, storage_folder, overwrite=False):
-    """
-    Write a list into a file using CSV writer.
-    CSV writer, better than numpy, write also Strings
-    """
-    if not isinstance(data_list, (list, numpy.ndarray)):
-        raise Exception("Invalid given type!! " + str(type(data_list)))
-    if overwrite:
-        full_path = os.path.join(storage_folder, file_name)
-        file_name = os.path.split(full_path)[1]
-    else:
-        full_path, file_name = get_unique_file_name(storage_folder, file_name)
-
-    # generic writer, capable to write strings also
-    with open(full_path, 'wb') as destination:
-        csv_writer = csv.writer(destination, delimiter=' ')
-        if isinstance(data_list[0], (list, numpy.ndarray)):
-            for row in data_list:
-                csv_writer.writerow(row)
-        else:
-            csv_writer.writerow(data_list)
-
-    return file_name
-
-
-################## FILE related methods end here ###############  
-
+################## PATH related methods end here ###############
 
 ################## CONVERT related methods start here ###############
 
