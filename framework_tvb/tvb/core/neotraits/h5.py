@@ -29,7 +29,7 @@
 #
 
 from ._h5accessors import DataSet, DataSetMetaData
-from ._h5accessors import Scalar, Reference, Accessor
+from ._h5accessors import Scalar, Reference, Accessor, ReferenceList
 from ._h5accessors import SparseMatrix, SparseMatrixMetaData
 from ._h5accessors import Json, JsonFinal, EquationScalar
 from ._h5core import H5File, ViewModelH5

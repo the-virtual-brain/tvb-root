@@ -48,11 +48,10 @@ class IntegratorStochasticH5(IntegratorH5):
         super(IntegratorStochasticH5, self).__init__(path)
         self.noise = Reference(IntegratorStochastic.noise, self)
 
-    def store(self, datatype, scalars_only=False, store_references=False):
+    def store(self, datatype, scalars_only=False, store_references=True):
         # type: (IntegratorStochastic) -> None
         super(IntegratorStochasticH5, self).store(datatype, scalars_only, store_references)
-        noise_gid = self.store_config_as_reference(datatype.noise)
-        self.noise.store(noise_gid)
+        self.store_config_as_reference(datatype.noise)
 
     def load_into(self, datatype):
         # type: (IntegratorStochastic) -> None

@@ -27,6 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+import uuid
+from tvb.basic.neotraits.api import Attr
 from tvb.core.neotraits.h5 import H5File, Reference, Scalar
 from tvb.datatypes.cortex import Cortex
 
@@ -38,3 +41,9 @@ class CortexH5(H5File):
         self.local_connectivity = Reference(Cortex.local_connectivity, self)
         self.region_mapping_data = Reference(Cortex.region_mapping_data, self)
         self.coupling_strength = Scalar(Cortex.coupling_strength, self)
+        self.surface_gid = Reference(Attr(field_type=uuid.UUID), self, name='surface_gid')
+
+    def store(self, datatype, scalars_only=False, store_references=True):
+        # type: (HasTraits, bool, bool) -> None
+        super(CortexH5, self).store(datatype, scalars_only, store_references)
+        self.surface_gid.store(datatype.surface_gid)

@@ -455,6 +455,13 @@ class JsonRange(Scalar):
         return Range(range_items[0], range_items[1], range_items[2])
 
 
+class ReferenceList(Json):
+
+    def store(self, val):
+        gids = [dt.gid.hex for dt in val]
+        super(ReferenceList, self).store(gids)
+
+
 class JsonFinal(Json):
     """
     A python json like data structure accessor meant to be used with Final(dict)

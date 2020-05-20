@@ -246,7 +246,9 @@ class TVBLoader(object):
 
     def load_with_links(self, file_path):
         def load_ht_function(sub_gid, traited_attr):
-            ref_ht = traited_attr.field_type()
+            # Used traited_attr.default for cases similar to ProjectionMonitor which has obsnoise of type Noise and
+            # it cannot be instantiated due to abstract methods, while the default is Additive()
+            ref_ht = traited_attr.default or traited_attr.field_type()
             ref_ht.gid = sub_gid
             return ref_ht
 

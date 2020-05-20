@@ -60,6 +60,13 @@ def h5_file_for_index(dt_index_instance):
     return h5_class(h5_path)
 
 
+def index_for_h5_file(source_path):
+    # type: (str) -> typing.Type[DataType]
+    """"""
+    h5_class = H5File.h5_class_from_file(source_path)
+    return REGISTRY.get_index_for_h5file(h5_class)
+
+
 def load_from_index(dt_index, dt_class=None):
     # type: (DataType, typing.Type[HasTraits]) -> HasTraits
     loader = TVBLoader(REGISTRY)
@@ -129,8 +136,8 @@ def store(datatype, destination, recursive=False):
         loader.store(datatype, destination)
 
 
-def load_from_dir(base_dir, gid, recursive=False):
-    # type: (str, typing.Union[str, uuid.UUID], bool) -> HasTraits
+def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
+    # type: (str, typing.Union[str, uuid.UUID], bool, typing.Type[HasTraits]) -> HasTraits
     """
     Loads a datatype with the requested gid from the given directory.
     The datatype should have been written with store_to_dir
@@ -140,7 +147,25 @@ def load_from_dir(base_dir, gid, recursive=False):
     :param recursive: if datatypes contained in this datatype should be loaded as well
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    return loader.load(gid)
+    return loader.load(gid, dt_class=dt_class)
+
+
+def load_with_links_from_dir(base_dir, gid, dt_class=None):
+    # type: (str, typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    fname = os.path.join(base_dir, fname)
+    tvb_loader = TVBLoader(REGISTRY)
+    return tvb_loader.load_with_links(fname, dt_class)
+
+
+def load_with_references_from_dir(base_dir, gid, dt_class=None):
+    # type: (str, typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    fname = os.path.join(base_dir, fname)
+    tvb_loader = TVBLoader(REGISTRY)
+    return tvb_loader.load_with_references(fname, dt_class)
 
 
 def store_to_dir(datatype, base_dir, recursive=False):

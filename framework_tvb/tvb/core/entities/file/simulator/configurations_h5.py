@@ -29,8 +29,8 @@
 #
 import importlib
 import os
-import uuid
 from tvb.core.entities.file.simulator.h5_factory import config_h5_factory
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neocom import h5
 
@@ -41,17 +41,14 @@ class SimulatorConfigurationH5(H5File):
         return class_entity.__module__ + '.' + class_entity.__name__
 
     def store_config_as_reference(self, config):
-        gid = uuid.uuid4()
-
         config_h5_class = config_h5_factory(type(config))
-        config_path = h5.path_for(os.path.dirname(self.path), config_h5_class, gid)
+        config_path = h5.path_for(os.path.dirname(self.path), config_h5_class, config.gid)
 
         with config_h5_class(config_path) as config_h5:
             config_h5.store(config)
-            config_h5.gid.store(gid)
-            config_h5.type.store(self.get_full_class_name(type(config)))
-
-        return gid
+            ga = GenericAttributes()
+            ga.type = self.get_full_class_name(type(config))
+            config_h5.store_generic_attributes(ga)
 
     def get_reference_path(self, gid):
         dir_loader = h5.DirLoader(os.path.dirname(self.path), h5.REGISTRY)

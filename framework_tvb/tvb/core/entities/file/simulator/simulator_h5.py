@@ -31,7 +31,7 @@ import uuid
 from tvb.basic.neotraits.api import Attr
 from tvb.simulator.simulator import Simulator
 from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
-from tvb.core.neotraits.h5 import Reference, Scalar, Json, DataSet
+from tvb.core.neotraits.h5 import Reference, Scalar, DataSet, ReferenceList
 
 
 class SimulatorH5(SimulatorConfigurationH5):
@@ -46,41 +46,30 @@ class SimulatorH5(SimulatorConfigurationH5):
         self.model = Reference(Simulator.model, self)
         self.integrator = Reference(Simulator.integrator, self)
         self.initial_conditions = DataSet(Simulator.initial_conditions, self)
-        self.monitors = Json(Simulator.monitors, self)
+        self.monitors = ReferenceList(Simulator.monitors, self)
         self.simulation_length = Scalar(Simulator.simulation_length, self)
         self.simulation_state = Reference(Attr(field_type=uuid.UUID), self, name='simulation_state')
 
-    def store(self, datatype, scalars_only=False, store_references=False):
+    def gather_references_gids(self):
+        references = super(SimulatorH5, self).gather_references_gids()
+        monitor_hex_gids = self.monitors.load()
+        monitor_gids = [uuid.UUID(monitor_hex_gid) for monitor_hex_gid in monitor_hex_gids]
+        references.extend(monitor_gids)
+        return references
+
+    def store(self, datatype, scalars_only=False, store_references=True):
         # type: (Simulator, bool, bool) -> None
-        self.gid.store(datatype.gid)
-        self.connectivity.store(datatype.connectivity)
-        self.conduction_speed.store(datatype.conduction_speed)
-        self.initial_conditions.store(datatype.initial_conditions)
-        self.simulation_length.store(datatype.simulation_length)
+        super(SimulatorH5, self).store(datatype, scalars_only, store_references)
 
-        integrator_gid = self.store_config_as_reference(datatype.integrator)
-        self.integrator.store(integrator_gid)
+        self.store_config_as_reference(datatype.integrator)
+        self.store_config_as_reference(datatype.coupling)
+        self.store_config_as_reference(datatype.model)
 
-        coupling_gid = self.store_config_as_reference(datatype.coupling)
-        self.coupling.store(coupling_gid)
-
-        model_gid = self.store_config_as_reference(datatype.model)
-        self.model.store(model_gid)
-
-        monitor_gids = []
         for monitor in datatype.monitors:
-            monitor_gid = self.store_config_as_reference(monitor).hex
-            monitor_gids.append(monitor_gid)
-
-        self.monitors.store(monitor_gids)
+            self.store_config_as_reference(monitor)
 
         if datatype.surface:
-            cortex_gid = self.store_config_as_reference(datatype.surface)
-            self.surface.store(cortex_gid)
-
-        if datatype.stimulus:
-            self.stimulus.store(datatype.stimulus)
-
+            self.store_config_as_reference(datatype.surface)
         self.type.store(self.get_full_class_name(type(datatype)))
 
     def load_into(self, datatype):

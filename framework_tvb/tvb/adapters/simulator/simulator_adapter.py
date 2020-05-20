@@ -207,8 +207,14 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator.model = view_model.model
         simulator.integrator = view_model.integrator
         simulator.initial_conditions = view_model.initial_conditions
-        simulator.monitors = view_model.monitors
         simulator.simulation_length = view_model.simulation_length
+
+        monitors = list()
+        for monitor in view_model.monitors:
+            monitor,  _ = h5.load_with_references_from_dir(self.storage_path, monitor.gid, type(monitor))
+            monitors.append(monitor)
+
+        simulator.monitors = monitors
 
         # TODO: why not load history here?
         # if view_model.history:
