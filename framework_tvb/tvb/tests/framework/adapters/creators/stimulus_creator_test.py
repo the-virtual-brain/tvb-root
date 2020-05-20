@@ -33,7 +33,6 @@ import os
 import numpy
 import tvb_data
 import tvb_data.surfaceData
-from uuid import UUID
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
@@ -74,7 +73,7 @@ class TestStimulusCreator(TransactionalTestCase):
         region_stimulus_creator = RegionStimulusCreator()
 
         view_model = region_stimulus_creator.get_view_model_class()()
-        view_model.connectivity = UUID(self.connectivity.gid)
+        view_model.connectivity = self.connectivity.gid
         view_model.weight = weight_array
         view_model.temporal = TemporalApplicableEquation()
         view_model.temporal.parameters['a'] = 1.0
@@ -91,7 +90,7 @@ class TestStimulusCreator(TransactionalTestCase):
         region_stimulus_creator = RegionStimulusCreator()
 
         view_model = region_stimulus_creator.get_view_model_class()()
-        view_model.connectivity = UUID(self.connectivity.gid)
+        view_model.connectivity = self.connectivity.gid
         view_model.weight = weight_array
         view_model.temporal = TemporalApplicableEquation()
         view_model.temporal.parameters['a'] = 1.0
@@ -109,7 +108,7 @@ class TestStimulusCreator(TransactionalTestCase):
         surface_stimulus_creator = SurfaceStimulusCreator()
 
         view_model = surface_stimulus_creator.get_view_model_class()()
-        view_model.surface = UUID(self.surface.gid)
+        view_model.surface = self.surface.gid
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
         view_model.spatial = FiniteSupportEquation()
         view_model.spatial_amp = 1.0
@@ -129,7 +128,7 @@ class TestStimulusCreator(TransactionalTestCase):
         surface_stimulus_creator = SurfaceStimulusCreator()
 
         view_model = surface_stimulus_creator.get_view_model_class()()
-        view_model.surface = UUID(self.surface.gid)
+        view_model.surface = self.surface.gid
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
         view_model.spatial = FiniteSupportEquation()
         view_model.spatial_amp = 1.0

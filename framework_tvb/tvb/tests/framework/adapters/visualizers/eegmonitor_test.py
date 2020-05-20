@@ -32,7 +32,6 @@
 """
 
 import json
-from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 
@@ -49,7 +48,7 @@ class TestEEGMonitor(TransactionalTestCase):
         time_series_index = time_series_index_factory()
         viewer = EegMonitor()
         view_model = viewer.get_view_model_class()()
-        view_model.input_data = UUID(time_series_index.gid)
+        view_model.input_data = time_series_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['tsNames', 'groupedLabels', 'tsModes', 'tsStateVars', 'longestChannelLength',
                          'label_x', 'entities', 'page_size', 'number_of_visible_points',

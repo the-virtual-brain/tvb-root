@@ -28,7 +28,6 @@
 #
 #
 import numpy
-from uuid import UUID
 from tvb.analyzers.fft import FFT
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -70,7 +69,7 @@ class TestFFT(TransactionalTestCase):
         adapter = FourierAdapter()
         adapter.storage_path = str(tmpdir)
         view_model = adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_db.gid)
+        view_model.time_series = ts_db.gid
         view_model.segment_length = 400
         adapter.configure(view_model)
         diskq = adapter.get_required_disk_size(view_model)

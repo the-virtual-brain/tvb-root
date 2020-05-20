@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.cross_coherence import CrossCoherenceVisualizer
 
@@ -49,7 +48,7 @@ class TestCrossCoherenceViewer(TransactionalTestCase):
         cross_coherence_index = cross_coherence_factory()
         viewer = CrossCoherenceVisualizer()
         view_model = viewer.get_view_model_class()()
-        view_model.datatype = UUID(cross_coherence_index.gid)
+        view_model.datatype = cross_coherence_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['matrix_data', 'matrix_shape', 'frequency']
         for key in expected_keys:
