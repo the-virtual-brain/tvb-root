@@ -148,7 +148,11 @@ class BaseTestCase(object):
         op_service = OperationService()
         operations = self.get_all_entities(Operation)
         for operation in operations:
-            op_service.stop_operation(operation.id)
+            try:
+                op_service.stop_operation(operation.id)
+            except Exception:
+                # Ignore potential wrongly written operations by other unit-tests
+                pass
 
     def delete_project_folders(self):
         """
