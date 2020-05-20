@@ -167,6 +167,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
         small_ts.sample_period = time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = time_series_h5.sample_period_unit.load()
         small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
         self.algorithm.time_series = small_ts
 

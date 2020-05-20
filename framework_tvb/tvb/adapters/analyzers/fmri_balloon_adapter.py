@@ -214,6 +214,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         node_slice = [slice(self.input_shape[0]), slice(self.input_shape[1]), None, slice(self.input_shape[3])]
         small_ts = TimeSeries()
         small_ts.sample_period = self.input_time_series_index.sample_period
+        small_ts.sample_period_unit = self.input_time_series_index.sample_period_unit
         small_ts.time = time_line
 
         for node in range(self.input_shape[2]):

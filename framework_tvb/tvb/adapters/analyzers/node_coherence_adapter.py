@@ -162,6 +162,7 @@ class NodeCoherenceAdapter(ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
         small_ts.sample_period = time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = time_series_h5.sample_period_unit.load()
         partial_coh = None
         for var in range(input_shape[1]):
             node_slice[1] = slice(var, var + 1)
