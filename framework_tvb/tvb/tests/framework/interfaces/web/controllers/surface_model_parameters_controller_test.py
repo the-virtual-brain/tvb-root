@@ -44,6 +44,9 @@ import tvb.interfaces.web.controllers.common as common
 class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceModelParametersController """
 
+    def transactional_teardown_method(self):
+        self.cleanup()
+
     def test_edit_model_parameters(self, region_mapping_index_factory):
         self.init()
         surface_m_p_c = SurfaceModelParametersController()
@@ -56,12 +59,10 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
         simulator.surface.region_mapping_data = region_mapping_index.gid
 
         result_dict = surface_m_p_c.edit_model_parameters()
-        expected_keys = ['urlNormals', 'urlNormalsPick', 'urlTriangles', 'urlTrianglesPick', 
+        expected_keys = ['urlNormals', 'urlNormalsPick', 'urlTriangles', 'urlTrianglesPick',
                          'urlVertices', 'urlVerticesPick', 'mainContent', 'parametersEquationPlotForm',
                          'baseUrl', 'equationsPrefixes', 'brainCenter', 'applied_equations']
         # map(lambda x: self.assertTrue(x in result_dict), expected_keys)
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['baseUrl'] == '/spatial/modelparameters/surface'
         assert result_dict['mainContent'] == 'spatial/model_param_surface_main'
-
-        self.cleanup()
