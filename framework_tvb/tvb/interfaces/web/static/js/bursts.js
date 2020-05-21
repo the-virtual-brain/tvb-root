@@ -101,6 +101,8 @@ function copyBurst(burstID, first_wizzard_form_url) {
                 success: function (response) {
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
+                    const selectedBurst = $("#burst_id_" + burstID)[0];
+                    fill_burst_name(selectedBurst.children[0].text, false, true);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayMessage("A copy of previous simulation was prepared for you!");
                 },
@@ -289,7 +291,7 @@ function renameBurstEntry(burst_id, new_name_id) {
 }
 
 /*
- * Load a given burst entry from history. 
+ * Load a given burst entry from history.
  */
 function changeBurstHistory(burst_id, load_burst, first_wizzard_form_url) {
     const clickedBurst = document.getElementById("burst_id_" + burst_id);
@@ -472,6 +474,8 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
                 url: '/burst/load_burst_read_only/' + burst_id,
                 showBlockerOverlay: true,
                 success: function (response) {
+                    const selectedBurst = $("#burst_id_" + burst_id)[0];
+                    fill_burst_name(selectedBurst.children[0].text, true, false);
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
@@ -579,7 +583,7 @@ function markBurstChanged() {
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
-    const titlePortlets = $("#title-visualizers");
+    const titlePortlets = $("#section-title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy_') < 0) {
         burstName = "Copy_" + burstName;
@@ -595,7 +599,7 @@ function fill_burst_name(burstName, isReadOnly, addPrefix) {
         sessionStoredBurst.name = burstName;
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
-        titleSimulation.append("<mark>Create</mark> New simulation core");
+        titleSimulation.append("<mark>Create</mark> Simulation core for " + burstName);
         if (burstName !== '') {
             titlePortlets.append(burstName);
         } else {
