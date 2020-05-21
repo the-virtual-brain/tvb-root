@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizer
 
@@ -49,7 +48,7 @@ class TestCrossCorrelationViewer(TransactionalTestCase):
         cross_correlation_index = cross_correlation_factory()
         viewer = CrossCorrelationVisualizer()
         view_model = viewer.get_view_model_class()()
-        view_model.datatype = UUID(cross_correlation_index.gid)
+        view_model.datatype = cross_correlation_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:

@@ -51,16 +51,16 @@ class NoiseConfigurationController(BurstBaseController):
     def index(self):
         des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
         connectivity = des.conf.connectivity
+        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
         model = des.conf.model
         integrator = des.conf.integrator
 
         state_vars = model.state_variables
-        noise_values = self.init_noise_config_values(model, integrator, connectivity)
-        initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, connectivity.number_of_regions)
+        noise_values = self.init_noise_config_values(model, integrator, conn_idx)
+        initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, conn_idx.number_of_regions)
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_idx = dao.get_datatype_by_gid(connectivity.gid.hex)
         conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
@@ -89,8 +89,6 @@ class NoiseConfigurationController(BurstBaseController):
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
         raise cherrypy.HTTPRedirect("/burst/")
 
-
-
     @staticmethod
     def group_noise_array_by_state_var(noise_values, state_vars, number_of_regions):
         initial_noise = []
@@ -100,7 +98,6 @@ class NoiseConfigurationController(BurstBaseController):
                 node_noise[sv] = noise_values[sv_idx][i]
             initial_noise.append(node_noise)
         return initial_noise
-
 
     @staticmethod
     def init_noise_config_values(model, integrator, connectivity):

@@ -35,16 +35,11 @@
 import os
 import tvb_data
 import json
-from uuid import UUID
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.model import model_operation
-from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterForm
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
+    ALGORITHMS
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -69,37 +64,25 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         """
         FilesHelper().remove_project_structure(self.test_project.name)
 
-    def test_adapter_launch(self, connectivity_factory, region_mapping_factory, time_series_region_index_factory):
+    def test_adapter_launch(self, connectivity_factory, region_mapping_factory,
+                            time_series_region_index_factory):
         """
         Test that the adapters launches and successfully generates a datatype measure entry.
         """
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe", DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        algo = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                               IntrospectionRegistry.SIMULATOR_CLASS)
-        self.operation = model_operation.Operation(self.test_user.id, self.test_project.id, algo.id, json.dumps(''),
-                                                   meta=json.dumps(meta), status=model_operation.STATUS_STARTED)
-        self.operation = dao.store_entity(self.operation)
-
         # Get connectivity, region_mapping and a dummy time_series_region
         connectivity = connectivity_factory()
         region_mapping = region_mapping_factory()
-        dummy_time_series_index = time_series_region_index_factory(connectivity=connectivity,
-                                                                   region_mapping=region_mapping)
+        time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
-        dummy_time_series_index.start_time = 0.0
-        dummy_time_series_index.sample_period = 1.0
-
-        dummy_time_series_index = \
-        dao.get_generic_entity(dummy_time_series_index.__class__, dummy_time_series_index.gid, 'gid')[0]
         ts_metric_adapter = TimeseriesMetricsAdapter()
-        form = TimeseriesMetricsAdapterForm()
-        view_model = form.get_view_model()()
-        view_model.time_series = UUID(dummy_time_series_index.gid)
-        form.fill_trait(view_model)
-        ts_metric_adapter.submit_form(form)
+        view_model = TimeseriesMetricsAdapterModel()
+        view_model.time_series = time_series_index.gid
+
+        ts_metric_adapter.configure(view_model)
         resulted_metric = ts_metric_adapter.launch(view_model)
+
         assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."
-        assert len(resulted_metric.metrics) >= len(list(ts_metric_adapter.get_form().algorithms.choices)), \
-            "At least a result should have been generated for every metric."
-        for metric_value in json.loads(resulted_metric.metrics).values():
+        metrics = json.loads(resulted_metric.metrics)
+        assert len(metrics) >= len(ALGORITHMS) - 1, "At least one metric expected for every Algorithm, except Kuramoto."
+        for metric_value in metrics.values():
             assert isinstance(metric_value, (float, int))

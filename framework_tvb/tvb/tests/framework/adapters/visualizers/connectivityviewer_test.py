@@ -33,7 +33,6 @@
 
 import os
 import tvb_data
-from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -73,7 +72,7 @@ class TestConnectivityViewer(TransactionalTestCase):
         """
         viewer = ConnectivityViewer()
         view_model = viewer.get_view_model_class()()
-        view_model.connectivity = UUID(self.connectivity_index.gid)
+        view_model.connectivity = self.connectivity_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['weightsMin', 'weightsMax', 'urlWeights', 'urlVertices',
                          'urlTriangles', 'urlTracts', 'urlPositions', 'urlNormals',
