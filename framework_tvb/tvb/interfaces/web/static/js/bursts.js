@@ -104,6 +104,8 @@ function copyBurst(burstID, first_wizzard_form_url) {
                     simParamElem.html(response);
                     const selectedBurst = $("#burst_id_" + burstID)[0];
                     fill_burst_name(selectedBurst.children[0].text, false, true);
+                    changeBurstHistory(burstID, false);
+                    selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayMessage("A copy of previous simulation was prepared for you!");
                 },
@@ -479,6 +481,8 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
                     fill_burst_name(selectedBurst.children[0].text, true, false);
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
+                    const selectedBurst = $("#burst_id_" + burst_id)[0];
+                    selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayBurstTree(burst_id);
                     displayMessage("The simulation configuration was loaded for you!");
