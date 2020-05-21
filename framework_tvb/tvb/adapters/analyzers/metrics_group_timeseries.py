@@ -169,7 +169,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         :rtype: `DatatypeMeasureIndex`
         """
         algorithms = view_model.algorithms
-        if algorithms is None:
+        if algorithms is None or len(algorithms) == 0:
             algorithms = list(ALGORITHMS)
 
         self.log.debug("time_series shape is %s" % str(self.input_shape))
