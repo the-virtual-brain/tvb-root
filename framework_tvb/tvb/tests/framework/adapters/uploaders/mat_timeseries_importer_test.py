@@ -62,7 +62,7 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
         view_model.data_file = self.bold_path
         view_model.dataset_name = "QL_20120824_DK_BOLD_timecourse"
         view_model.data_subject = "QL"
-        view_model.datatype = self.connectivity
+        view_model.datatype = self.connectivity.gid
 
         TestFactory.launch_importer(RegionTimeSeriesImporter, view_model, self.test_user, self.test_project.id)
 

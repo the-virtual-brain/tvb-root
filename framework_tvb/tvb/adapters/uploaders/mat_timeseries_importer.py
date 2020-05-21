@@ -34,21 +34,21 @@
 import json
 import uuid
 import numpy
-from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import ViewModel, Str, DataTypeGidAttr
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
-from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
+from tvb.basic.neotraits.api import Attr, Int
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.core.adapters.exceptions import ParseException, LaunchException
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.storage import transactional
 from tvb.core.adapters.arguments_serialisation import parse_slice
 from tvb.core.neotraits.forms import TraitUploadField, StrField, BoolField, IntField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 
 TS_REGION = "Region"
 TS_EEG = "EEG"
@@ -59,14 +59,12 @@ class RegionMatTimeSeriesImporterModel(UploaderViewModel):
         label='Please select file to import'
     )
 
-    dataset_name = Attr(
-        field_type=str,
+    dataset_name = Str(
         label='Matlab dataset name',
         doc='Name of the MATLAB dataset where data is stored'
     )
 
-    structure_path = Attr(
-        field_type=str,
+    structure_path = Str(
         required=False,
         default='',
         label='For nested structures enter the field path (separated by .)'
@@ -79,22 +77,19 @@ class RegionMatTimeSeriesImporterModel(UploaderViewModel):
         label='Transpose the array. Expected shape is (time, channel)'
     )
 
-    slice = Attr(
-        field_type=str,
+    slice = Str(
         required=False,
         default='',
         label='Slice of the array in numpy syntax. Expected shape is (time, channel)'
     )
 
-    sampling_rate = Attr(
-        field_type=int,
+    sampling_rate = Int(
         required=False,
         default=100,
         label='sampling rate (Hz)'
     )
 
-    start_time = Attr(
-        field_type=int,
+    start_time = Int(
         default=0,
         label='starting time (ms)'
     )
@@ -184,8 +179,8 @@ class RegionTimeSeriesImporter(ABCUploader):
 
             if view_model.transpose:
                 data = data.T
-            if slice:
-                data = data[parse_slice(slice)]
+            if view_model.slice:
+                data = data[parse_slice(view_model.slice)]
 
             datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
             ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, datatype_index)
