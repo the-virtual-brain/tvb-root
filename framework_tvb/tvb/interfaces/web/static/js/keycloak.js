@@ -157,6 +157,10 @@
                     kc.silentCheckSsoRedirectUri = initOptions.silentCheckSsoRedirectUri;
                 }
 
+                if (initOptions.checkSsoLoginScope) {
+                    kc.checkSsoLoginScope = initOptions.checkSsoLoginScope;
+                }
+
                 if (initOptions.pkceMethod) {
                     if (initOptions.pkceMethod !== "S256") {
                         throw 'Invalid value for pkceMethod';
@@ -213,7 +217,7 @@
 
                 var checkSsoSilently = function() {
                     var ifrm = document.createElement("iframe");
-                    var src = kc.createLoginUrl({prompt: 'none', redirectUri: kc.silentCheckSsoRedirectUri});
+                    var src = kc.createLoginUrl({prompt: 'none', redirectUri: kc.silentCheckSsoRedirectUri, scope: kc.checkSsoLoginScope});
                     ifrm.setAttribute("src", src);
                     ifrm.setAttribute("title", "keycloak-silent-check-sso");
                     ifrm.style.display = "none";
