@@ -35,6 +35,7 @@
 import os
 import shutil
 
+from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -72,6 +73,18 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert len(list_plain_dir) + 2 == len(os.listdir(encrypted_dir))
         assert 'dummy1.txt' in list_plain_dir
         assert 'dummy2.txt' in list_plain_dir
+
+    def test_do_operation_launch(self, simulator_factory):
+        # Prepare encrypted dir
+        sim_folder, sim_gid = simulator_factory()
+        job_encrypted_inputs = [os.path.join(sim_folder, encrypted_file) for encrypted_file in os.listdir(sim_folder)]
+        self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
+        encrypted_dir = self.encryption_handler.get_encrypted_dir(self.encryption_handler.encrypted_dir_name)
+
+        # Call do_operation_launch similarly to CSCS env
+        do_operation_launch(sim_gid.hex, 1000, False, encrypted_dir)
+        assert len(os.scandir(encrypted_dir)) == 9
+
 
     def teardown_method(self):
         self.encryption_handler.close_plain_dir(self.encryption_handler.encrypted_dir_name)

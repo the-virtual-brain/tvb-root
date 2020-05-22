@@ -1,0 +1,14 @@
+# User configuration ###########################################################
+gocryptfs = "/usr/bin/gocryptfs"
+gocryptfs_xray = "/usr/bin/gocryptfs"
+
+# Unix group associated with your project
+groupname = "root"
+# Path to your encrypted data sets
+dataroot  = "~root/sds/containers"
+# Path to password files
+# This should be identical for all members of a group.
+passroot  = "~root/.sds/passfiles"
+# List of mountpoints to use
+mountpoints = ["~root/sds/mountpoints/00", "~root/sds/mountpoints/01", "~root/sds/mountpoints/02"]
+# ##############################################################################
