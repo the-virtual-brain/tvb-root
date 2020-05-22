@@ -95,7 +95,7 @@ def do_operation_launch(operation_id):
         log.debug("Successfully finished operation " + str(operation_id))
 
     except Exception as excep:
-        log.error("Could not execute operation " + str(sys.argv[1]))
+        log.error("Could not execute operation " + str(operation_id))
         log.exception(excep)
         parent_burst = burst_service.get_burst_for_operation_id(operation_id)
         if parent_burst is not None:
