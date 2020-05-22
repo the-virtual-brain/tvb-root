@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
+
 import os
 from datetime import datetime
 from tvb.basic.logger.builder import get_logger
@@ -35,14 +35,20 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import OperationGroup
+from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
+STATUS_FOR_OPERATION = {
+    STATUS_PENDING: BurstConfiguration.BURST_RUNNING,
+    STATUS_STARTED: BurstConfiguration.BURST_RUNNING,
+    STATUS_CANCELED: BurstConfiguration.BURST_CANCELED,
+    STATUS_ERROR: BurstConfiguration.BURST_ERROR,
+    STATUS_FINISHED: BurstConfiguration.BURST_FINISHED
+}
 
 
 class BurstService(object):
@@ -103,11 +109,11 @@ class BurstService(object):
         dao.store_entity(operation)
         operation = dao.get_operation_by_id(operation.id)
         self.file_helper.write_operation_metadata(operation)
-        #update burst also
-        burst_id = json.loads(operation.meta_data)[DataTypeMetaData.KEY_BURST]
-        if burst_id:
-            burst_config = self.load_burst_configuration(burst_id)
-            self.mark_burst_finished(burst_config, burst_config.BURST_ERROR, message)
+        # update burst also
+        burst_config = self.get_burst_for_operation_id(operation.id)
+        if burst_config is not None:
+            burst_status = STATUS_FOR_OPERATION.get(operation_status)
+            self.mark_burst_finished(burst_config, burst_status, message)
         return operation
 
     def get_burst_for_operation_id(self, operation_id):
@@ -234,4 +240,3 @@ class BurstService(object):
             default_simulation_name = burst.name
 
         return default_simulation_name, simulation_number
-
