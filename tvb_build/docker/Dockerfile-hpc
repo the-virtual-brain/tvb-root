@@ -2,6 +2,7 @@ FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
+RUN apt-get -y update && apt-get -y install gocryptfs
 
 USER root
 RUN conda update -n base -c defaults conda
@@ -14,6 +15,10 @@ RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib nibabel
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 sqlalchemy flask
 
 WORKDIR /root
+
+RUN git clone https://github.com/HumanBrainProject/secure-data-store.git
+RUN cd secure-data-store; \
+    /opt/conda/envs/tvb-run/bin/python setup.py install
 
 # make sure a copy of tvb-root exists inside, for users without Github clone
 # TODO: currently installs tvb from tvb-hpc branch
@@ -28,6 +33,7 @@ RUN cd tvb-root; \
 RUN mkdir /root/.tvb-temp; mkdir /root/.tvb-temp/logs; mkdir /root/TVB_STORAGE
 
 COPY .tvb.configuration /root/.tvb.configuration
+COPY .sdsrd /root/.sdsrd
 
 WORKDIR /root/tvb-root
 

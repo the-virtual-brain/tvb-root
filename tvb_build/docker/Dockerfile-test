@@ -13,6 +13,7 @@ WORKDIR $USER_HOME
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
 RUN apt-get -y update && apt-get -y install octave postgresql
+RUN apt-get -y update && apt-get -y install gocryptfs
 
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
@@ -39,8 +40,12 @@ RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop
 
+RUN git clone https://github.com/HumanBrainProject/secure-data-store.git
+RUN cd secure-data-store; \
+    /opt/conda/envs/tvb-run/bin/python setup.py install
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
+COPY --chown=$TVB_USER:$TVB_USER .sdsrd /root/.sdsrd
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
 USER $TVB_USER

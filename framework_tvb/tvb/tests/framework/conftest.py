@@ -42,6 +42,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -54,6 +55,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
+from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -599,5 +601,21 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         lconn_db = h5.store_complete(lconn, storage_path)
         lconn_db.fk_from_operation = op.id
         return dao.store_entity(lconn_db), lconn
+
+    return build
+
+
+@pytest.fixture()
+def simulator_factory(connectivity_index_factory, operation_factory):
+    def build(op=None, nr_regions=76):
+
+        model = SimulatorAdapterModel()
+        if not op:
+            op = operation_factory()
+        model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        SimulatorSerializer.serialize_simulator(model, None, storage_path)
+
+        return storage_path, model.gid
 
     return build
