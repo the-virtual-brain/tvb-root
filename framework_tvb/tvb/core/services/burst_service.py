@@ -35,7 +35,8 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_operation import OperationGroup, STATUS_PENDING, STATUS_STARTED, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import STATUS_CANCELED, STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
