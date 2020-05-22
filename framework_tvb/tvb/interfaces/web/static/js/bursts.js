@@ -561,20 +561,6 @@ function loadBurst(burst_id) {
 }
 
 /**
- * Mark current burst as changed, to see the user than the latest changes are not yet persisted.
- */
-function markBurstChanged() {
-    if (sessionStoredBurst.id === '') {
-        return;
-    }
-    const titleSimulation = $("#title-simulation");
-    const previousTitle = titleSimulation.html();
-    if (previousTitle.lastIndexOf("***") < 0) {
-        titleSimulation.html(previousTitle + " ***");
-    }
-}
-
-/**
  * Method for updating title area according to current selected burst and its state.
  * @param {String} burstName
  * @param {bool} isReadOnly
@@ -583,7 +569,7 @@ function markBurstChanged() {
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
-    const titlePortlets = $("#section-title-visualizers");
+    const titlePortlets = $("#title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy_') < 0) {
         burstName = "Copy_" + burstName;
