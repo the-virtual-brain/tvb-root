@@ -35,7 +35,6 @@
 import os
 import tvb_data.obj
 import tvb_data.sensors
-from uuid import UUID
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
@@ -99,7 +98,7 @@ class TestSensorViewers(TransactionalTestCase):
 
         viewer = SensorsViewer()
         view_model = viewer.get_view_model_class()()
-        view_model.sensors = UUID(sensors_index.gid)
+        view_model.sensors = sensors_index.gid
         viewer.current_project_id = self.test_project.id
 
         # Launch without EEG Cap
@@ -107,7 +106,7 @@ class TestSensorViewers(TransactionalTestCase):
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
 
         # Launch with EEG Cap selected
-        view_model.shell_surface = UUID(eeg_cap_surface_index.gid)
+        view_model.shell_surface = eeg_cap_surface_index.gid
         result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_EEG, result)
         for key in ['urlVertices', 'urlTriangles', 'urlLines', 'urlNormals']:
@@ -129,7 +128,7 @@ class TestSensorViewers(TransactionalTestCase):
         viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.sensors = UUID(sensors_index.gid)
+        view_model.sensors = sensors_index.gid
 
         result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_MEG, result)
@@ -144,7 +143,7 @@ class TestSensorViewers(TransactionalTestCase):
         viewer = SensorsViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.sensors = UUID(sensors_index.gid)
+        view_model.sensors = sensors_index.gid
 
         result = viewer.launch(view_model)
         self.assert_compliant_dictionary(self.EXPECTED_KEYS_INTERNAL, result)

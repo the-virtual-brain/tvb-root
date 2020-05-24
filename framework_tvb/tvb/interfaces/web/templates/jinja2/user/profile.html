@@ -47,7 +47,7 @@
             	<dt>Role</dt>
             	<dd tabindex='3' onkeypress="redirectToHrefChild(this)">
             		{{ user.role | lower }}
-					{% if keycloakConfigWebFile is not defined and user.is_administrator() %}
+					{% if user.is_administrator() %}
                 		<a href="/user/usermanagement" tabindex="-1"><u>manage other users</u></a>
 					{% endif %}
             	</dd>

@@ -110,6 +110,10 @@ class UserController(BaseController):
                 elif not keycloak_login:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
                     self.logger.debug("Wrong username " + username + " !!!")
+                else:
+                    common.set_error_message('Your account is not validated. Please contact us at support@thevirtualbrain.org for more details')
+                    self.logger.debug("Invalidated account")
+                    template_specification[common.KEY_ERRORS] = {'invalid_user': True}
             except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
 
@@ -312,7 +316,7 @@ class UserController(BaseController):
                 if ("role_" in key) and not (("delete_" + str(user_id)) in data):
                     valid = ("validate_" + str(user_id)) in data
                     user = self.user_service.get_user_by_id(user_id)
-                    user.role = data[key]
+                    user.role = data[key] if data[key] != "None" else None
                     user.validated = valid
                     self.user_service.edit_user(user)
                     not_deleted += 1
@@ -322,8 +326,11 @@ class UserController(BaseController):
 
         admin_ = common.get_logged_user().username
         user_list, pages_no = self.user_service.retrieve_users_except(admin_, page, USERS_PAGE_SIZE)
+        allRoles = [None]
+        allRoles.extend(UserService.USER_ROLES)
+
         template_specification = dict(mainContent="user/user_management", title="Users management", page_number=page,
-                                      total_pages=pages_no, userList=user_list, allRoles=UserService.USER_ROLES,
+                                      total_pages=pages_no, userList=user_list, allRoles=allRoles,
                                       data={})
         return self.fill_default_attributes(template_specification)
 
@@ -332,7 +339,7 @@ class UserController(BaseController):
     @using_template('user/base_user')
     def recoverpassword(self, cancel=False, **data):
         """
-        This form should reset a password for a given userName/email and send a 
+        This form should reset a password for a given userName/email and send a
         notification message to that email.
         """
         template_specification = dict(mainContent="user/recover_password", title="Recover password", data=data)
@@ -377,7 +384,7 @@ class UserController(BaseController):
     @check_admin
     def validate(self, name):
         """
-        A link to this page will be sent to the administrator to validate 
+        A link to this page will be sent to the administrator to validate
         the registration of each user.
         """
         success = self.user_service.validate_user(name)

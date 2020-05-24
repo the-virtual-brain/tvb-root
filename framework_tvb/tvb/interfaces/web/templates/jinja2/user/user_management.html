@@ -8,7 +8,9 @@
      	    <div class="extension">
      	       <div class="dropdown-pane">
 			   		<ul>
+						{% if keycloakConfigWebFile is not defined %}
                 		<li><button tabindex='50' type="submit" class="action action-new" onclick="document.getElementById('create-new-user').submit(); return false;">Create New</button></li>
+						{% endif %}
                     	<li><button tabindex='50' type="submit" class="action action-confirm" onclick="document.getElementById('doPersist').value = 'true';">Save Changes</button></li>
                     	<li class="action-dismiss"><button tabindex='50' type="submit" value="Cancel" name="cancel" class="action action-cancel">Cancel</button></li>
                 	</ul>
@@ -36,11 +38,15 @@
 						<td><i>{{ user.username }}</i></td>
 						<td>{{ user.email }}</td>
 						<td>
-							<select tabindex='{{ tabindex }}'name="role_{{ user.id }}">
-								{% for role in allRoles %}
-									<option value="{{ role }}" selected="{{ 'true' if role==user.role else none }}">{{ role }}</option>
-								{% endfor %}
-                		 		</select>
+							{% if keycloakConfigWebFile is not defined %}
+								<select tabindex='{{ tabindex }}'name="role_{{ user.id }}">
+									{% for role in allRoles %}
+									<option value="{{ role }}" {{ 'selected' if role==user.role}}>{{ role }}</option>
+									{% endfor %}
+								</select>
+							{% else %}
+								<input tabindex='{{ tabindex }}' name="role_{{ user.id }}" type="text" value="{{user.role}}" readonly=true/>
+							{% endif %}
 						</td>
 
 						<td>
@@ -81,5 +87,7 @@
 		<br/>
 	</form>
 <!--! Form submitted by the Create New button from the aside panel -->
-	<form id="create-new-user" action="/user/create_new"></form>
+	{% if keycloakConfigWebFile is not defined %}
+		<form id="create-new-user" action="/user/create_new"></form>
+	{% endif %}
 </div>

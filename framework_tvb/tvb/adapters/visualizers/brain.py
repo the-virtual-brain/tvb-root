@@ -38,7 +38,7 @@ import numpy
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
-from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params
+from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params, function_sensors_to_surface
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.adapters.abcdisplayer import URLGenerator
@@ -451,8 +451,8 @@ class DualBrainViewer(BrainViewer):
             return
 
         self.one_to_one_map = False
-        self.region_map_h5 = None
-        self.connectivity_h5 = None
+        self.region_map_gid = None
+        self.connectivity_index = None
 
         if self.surface_index is None:
             eeg_cap = dao.get_generic_entity(SurfaceIndex, EEG_CAP, "surface_type")
@@ -460,6 +460,7 @@ class DualBrainViewer(BrainViewer):
                 raise Exception("No EEG Cap Surface found for display!")
             self.surface_index = eeg_cap[0]
 
+        self.surface_gid = self.surface_index.gid
         self.surface_h5 = h5.h5_file_for_index(self.surface_index)
 
     def retrieve_measure_points_params(self, time_series):
@@ -475,6 +476,10 @@ class DualBrainViewer(BrainViewer):
                                                                    self.stored_adapter.id)
 
         return prepare_sensors_as_measure_points_params(sensors_index)
+
+    def sensors_to_surface(self, sensors_gid, surface_to_map_gid):
+        # Method needs to be defined on the adapter, to be called from JS
+        return function_sensors_to_surface(sensors_gid, surface_to_map_gid)
 
     def launch(self, view_model):
         # type: (DualBrainViewerModel) -> dict

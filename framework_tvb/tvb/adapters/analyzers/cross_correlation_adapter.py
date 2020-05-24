@@ -174,6 +174,7 @@ class CrossCorrelateAdapter(ABCAsynchronous):
 
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             small_ts.sample_period = ts_h5.sample_period.load()
+            small_ts.sample_period_unit = ts_h5.sample_period_unit.load()
             partial_cross_corr = None
             labels_ordering = ts_h5.labels_ordering.load()
             for var in range(self.input_shape[1]):

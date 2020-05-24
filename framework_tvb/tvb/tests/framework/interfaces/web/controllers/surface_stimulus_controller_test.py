@@ -42,14 +42,12 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def transactional_setup_method(self):
-        self.clean_database()
         self.init()
         self.surface_s_c = SurfaceStimulusController()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-        self.clean_database()
 
     def test_step_1(self):
         self.surface_s_c.step_1_submit(1, 1)
