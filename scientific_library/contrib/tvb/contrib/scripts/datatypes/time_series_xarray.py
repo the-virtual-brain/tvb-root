@@ -298,9 +298,6 @@ class TimeSeries(HasTraits):
             val = labels_dimensions.get(dim_label, None)
             if val is not None:
                 assert len(val) == self.shape[i_dim]
-            else:
-                # We set by default integer labels if no input labels are provided by the user
-                self._data.coords[self._data.dims[i_dim]] = np.arange(0, self.shape[i_dim])
 
     def configure(self):
         # To be always used when a new object is created
@@ -534,8 +531,10 @@ class TimeSeries(HasTraits):
         return tuple(slice_list)
 
     def _assert_array_indices(self, slice_tuple):
+        integers = False
         if is_integer(slice_tuple) or isinstance(slice_tuple, string_types):
-            return ([slice_tuple],)
+            integers = True
+            return ([slice_tuple],), integers
         else:
             if isinstance(slice_tuple, slice):
                 slice_tuple = (slice_tuple,)
@@ -543,22 +542,27 @@ class TimeSeries(HasTraits):
             for slc in slice_tuple:
                 if is_integer(slc) or isinstance(slc, string_types):
                     slice_list.append([slc])
+                    if is_integer(slc):
+                        integers = True
                 else:
+                    if np.any([is_integer(islc) for islc in [slc.start, slc.stop, slc.step]]):
+                        integers = True
                     slice_list.append(slc)
-            return tuple(slice_list)
+            return tuple(slice_list), integers
 
     def _get_item(self, slice_tuple, **kwargs):
-        slice_tuple = self._assert_array_indices(slice_tuple)
+        slice_tuple, integers = self._assert_array_indices(slice_tuple)
         try:
             # For integer indices
             return self.duplicate(_data=self._data[slice_tuple], **kwargs)
         except:
             try:
+                if integers:
+                    raise
                 # For label indices
                 # xrarray.DataArray.loc slices along labels
-                # Assuming that all dimensions without input labels
-                # are configured with labels of integer indices=
-                return self.duplicate(_data=self._data.loc[slice_tuple], **kwargs)
+                out = self.duplicate(_data=self._data.loc[slice_tuple], **kwargs)
+                return out
             except:
                 # Still, for a conflicting mixture that has to be resolved
                 return self.duplicate(_data=self._data[self._process_slices(slice_tuple)], **kwargs)
