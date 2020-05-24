@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from tvb.contrib.scripts.plot.time_series_plotter import TimeSeriesPlotter
+from tvb.simulator.plot.base_plotter import BasePlotter
 from tvb.simulator.plot.plotter import Plotter as TVBPlotter
 
 
-class Plotter(TVBPlotter):
+class Plotter(TVBPlotter, BasePlotter):
+
     def plot_head(self, head):
         sensors_set = {}
         for s_type in ["eeg", "seeg", "meg"]:
