@@ -574,7 +574,7 @@ class TimeSeries(HasTraits):
         return out
 
     def __setitem__(self, slice_tuple, values):
-        slice_tuple = self._assert_array_indices(slice_tuple)
+        slice_tuple, integers = self._assert_array_indices(slice_tuple)
         # Mind that xarray can handle setting values both from a numpy array and/or another xarray
         if isinstance(values, self.__class__):
             values = values._data
@@ -585,8 +585,8 @@ class TimeSeries(HasTraits):
             try:
                 # For label indices
                 # xrarray.DataArray.loc slices along labels
-                # Assuming that all dimensions without input labels
-                # are configured with labels of integer indices
+                if integers:
+                    raise
                 self._data.loc[slice_tuple] = values
             except:
                 # Still, for a conflicting mixture that has to be resolved
