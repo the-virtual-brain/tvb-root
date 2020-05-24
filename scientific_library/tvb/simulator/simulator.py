@@ -353,10 +353,8 @@ class Simulator(HasTraits):
             # Configure tvb-spikeNet interface
             self.tvb_spikeNet_interface.configure(self.model)
 
-            # TODO: maybe deprecate this given that
-            #  we have introduced dynamic non-state variables
             # Create TVB model parameter for SpikeNet to target
-            dummy = -numpy.ones((self.connectivity.number_of_regions, 1))
+            dummy = -numpy.ones((self.connectivity.number_of_regions, )).reshape(spatial_reshape)
             dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
             for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
                 setattr(self.model, param, dummy)
