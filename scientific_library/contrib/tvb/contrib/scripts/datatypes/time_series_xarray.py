@@ -15,6 +15,7 @@ from tvb.contrib.scripts.datatypes.time_series import TimeSeriesEEG as TimeSerie
 from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSEEG as TimeSeriesSEEGTVB
 from tvb.contrib.scripts.datatypes.time_series import TimeSeriesMEG as TimeSeriesMEGTVB
 from tvb.contrib.scripts.datatypes.time_series import prepare_4d
+from tvb.contrib.scripts.service.head_service import HeadService
 from tvb.contrib.scripts.utils.data_structures_utils import ensure_list, is_integer
 
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, List, narray_summary_info
@@ -278,7 +279,9 @@ class TimeSeries(HasTraits):
             labels_dimensions[labels_ordering[0]] = time
         self.sample_period_unit = kwargs.pop('sample_period_unit', self.__class__.sample_period_unit.default)
         self.title = kwargs.pop('title', kwargs.pop("name", self.__class__.title.default))
-        self._data = xr.DataArray(data, dims=labels_ordering, coords=labels_dimensions,
+        for key, val in labels_dimensions.items():
+            labels_dimensions[key] = list(val)
+        self._data = xr.DataArray(data, dims=list(labels_ordering), coords=labels_dimensions,
                                   name=str(self.title), attrs=kwargs.pop("attrs", None))
         super(TimeSeries, self).__init__(**kwargs)
 
@@ -561,13 +564,15 @@ class TimeSeries(HasTraits):
 
     # Return a TimeSeries object
     def __getitem__(self, slice_tuple):
-        return self._get_item(slice_tuple)
+        out = self._get_item(slice_tuple)
+        out.configure()
+        return out
 
     def __setitem__(self, slice_tuple, values):
         slice_tuple = self._assert_array_indices(slice_tuple)
         # Mind that xarray can handle setting values both from a numpy array and/or another xarray
         if isinstance(values, self.__class__):
-            values = np.array(values.data)
+            values = values._data
         try:
             # For integer indices
             self._data[slice_tuple] = values
@@ -581,6 +586,7 @@ class TimeSeries(HasTraits):
             except:
                 # Still, for a conflicting mixture that has to be resolved
                 self._data[self._process_slices(slice_tuple)] = values
+        self.configure()
 
     #-----------------------slicing by a particular dimension-------------------------------------------
 
@@ -786,8 +792,8 @@ class TimeSeries(HasTraits):
         output = data.plot(x=time, **kwargs)
         # TODO: Something better than this temporary hack for base_plotter functionality
         if plotter is not None:
-            plotter.base._save_figure(figure_name=figname)
-            plotter.base._check_show()
+            plotter._save_figure(figure_name=figname)
+            plotter._check_show()
         return output
 
     def _prepare_plot_args(self, **kwargs):
@@ -812,7 +818,7 @@ class TimeSeries(HasTraits):
         else:
             y = kwargs.pop("y", labels_ordering[3])
             row = kwargs.pop("row", None)
-        kwargs["robust"] = kwargs.pop("robust", True)
+        kwargs["robust"] = kwargs.pop("robust", False)
         kwargs["cmap"] = kwargs.pop("cmap", "jet")
         if self.shape[1] == 1:  # only one variable
             kwargs["figname"] = kwargs.pop("figname", "%s" % (self.title + "Map")) + ": " \
@@ -932,6 +938,15 @@ class TimeSeriesRegion(TimeSeries):
             kwargs[datatype_name] = kwargs.pop(datatype_name, getattr(self, datatype_name))
         return _data, kwargs
 
+    def configure(self):
+        super(TimeSeriesRegion, self).configure()
+        if self.connectivity.number_of_regions != self.number_of_labels:
+            try:
+                labels = self.get_dimension_labels(2)
+                self.connectivity = HeadService().slice_connectivity(self.connectivity, labels)
+            except:
+                logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
+                raise
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesRegionTVB().from_xarray_DataArray(self._data, **kwargs)
 
@@ -1012,15 +1027,24 @@ class TimeSeriesSensors(TimeSeries):
         summary.update({"Source Sensors": self.sensors.title})
         return summary
 
-    def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
-        return datatype().from_xarray_DataArray(self._data, **kwargs)
-
     def _duplicate(self, datatype=None, **kwargs):
         if datatype is None:
             datatype = self.__class__
         _data, kwargs = super(datatype, self)._duplicate(**kwargs)
         kwargs["sensors"] = kwargs.pop("sensors", getattr(self, datatype_name))
         return _data, kwargs
+
+    def configure(self):
+        super(TimeSeriesSensors, self).configure()
+        if self.sensors.number_of_sensors != self.number_of_labels:
+            try:
+                labels = self.get_dimension_labels(2)
+                self.sensors = HeadService().slice_sensors(self.sensors, labels)
+            except:
+                logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
+
+    def to_tvb_instance(self, datatype=TimeSeriesSensorsTVB, **kwargs):
+        return datatype().from_xarray_DataArray(self._data, **kwargs)
 
 
 class TimeSeriesEEG(TimeSeriesSensors):
@@ -1046,12 +1070,11 @@ class TimeSeriesSEEG(TimeSeriesSensors):
     sensors = Attr(field_type=sensors.SensorsInternal)
     _default_labels_ordering = List(of=str, default=("Time", "1", "sEEG Sensor", "1"))
 
-    def to_tvb_instance(self, **kwargs):
-        return TimeSeriesSEEGTVB().from_xarray_DataArray(self._data, **kwargs)
-
     def _duplicate(self, **kwargs):
         super(TimeSeriesSEEG, self)._duplicate(TimeSeriesSEEG, **kwargs)
 
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesSEEGTVB().from_xarray_DataArray(self._data, **kwargs)
 
 class TimeSeriesMEG(TimeSeriesSensors):
     """ A time series associated with a set of MEG sensors. """
@@ -1061,11 +1084,11 @@ class TimeSeriesMEG(TimeSeriesSensors):
     sensors = Attr(field_type=sensors.SensorsMEG)
     _default_labels_ordering = List(of=str, default=("Time", "1", "MEG Sensor", "1"))
 
-    def to_tvb_instance(self, **kwargs):
-        return TimeSeriesMEGTVB().from_xarray_DataArray(self._data, **kwargs)
-
     def _duplicate(self, **kwargs):
         super(TimeSeriesMEG, self)._duplicate(TimeSeriesMEG, **kwargs)
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesMEGTVB().from_xarray_DataArray(self._data, **kwargs)
 
 
 TimeSeriesDict = {TimeSeries.__name__: TimeSeries,
