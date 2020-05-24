@@ -313,6 +313,7 @@ class TimeSeries(HasTraits):
         try:
             time_length = self.time_length
         except:
+            time_length = None
             pass  # It is ok if data is empty
         if time_length is not None and time_length > 0:
             self._configure_time()
@@ -946,7 +947,7 @@ class TimeSeriesRegion(TimeSeries):
                 self.connectivity = HeadService().slice_connectivity(self.connectivity, labels)
             except:
                 logger.warning("Connectivity and RegionTimeSeries labels agreement failed!")
-                raise
+
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesRegionTVB().from_xarray_DataArray(self._data, **kwargs)
 
@@ -1031,7 +1032,7 @@ class TimeSeriesSensors(TimeSeries):
         if datatype is None:
             datatype = self.__class__
         _data, kwargs = super(datatype, self)._duplicate(**kwargs)
-        kwargs["sensors"] = kwargs.pop("sensors", getattr(self, datatype_name))
+        kwargs["sensors"] = kwargs.pop("sensors", getattr(self, datatype))
         return _data, kwargs
 
     def configure(self):
@@ -1055,11 +1056,11 @@ class TimeSeriesEEG(TimeSeriesSensors):
     sensors = Attr(field_type=sensors.SensorsEEG)
     _default_labels_ordering = List(of=str, default=("Time", "1", "EEG Sensor", "1"))
 
-    def to_tvb_instance(self, **kwargs):
-        return TimeSeriesEEGTVB().from_xarray_DataArray(self._data, **kwargs)
-
     def _duplicate(self, **kwargs):
         super(TimeSeriesEEG, self)._duplicate(TimeSeriesEEG, **kwargs)
+
+    def to_tvb_instance(self, **kwargs):
+        return TimeSeriesEEGTVB().from_xarray_DataArray(self._data, **kwargs)
 
 
 class TimeSeriesSEEG(TimeSeriesSensors):
