@@ -210,7 +210,6 @@ class HPCSchedulerClient(BackendClient):
         # type: (str, int, bool) -> (dict, list)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
-        job_inputs = [bash_entrypoint]
 
         # Build job configuration JSON
         my_job = {}
@@ -218,7 +217,7 @@ class HPCSchedulerClient(BackendClient):
         my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
-        return my_job, job_inputs
+        return my_job, bash_entrypoint
 
     @staticmethod
     def listdir(working_dir, base='/'):
@@ -355,19 +354,22 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
+        job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
+
+        available_space = HPCSchedulerClient.compute_available_disk_space(operation)
+        job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
+                                                                         is_group_launch)
+
+        encryption_handler = EncryptionHandler()
+        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
+        encrypted_dir = encryption_handler.get_encrypted_dir(encryption_handler.encrypted_dir_name)
+        script_path = shutil.copy(job_script, encrypted_dir)
+        job_encrypted_inputs.append(script_path)
+
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         site_client = HPCSchedulerClient._build_unicore_client(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY],
                                                                unicore_client._HBP_REGISTRY_URL,
                                                                HPCSettings.SUPERCOMPUTER_SITE)
-
-        job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
-
-        available_space = HPCSchedulerClient.compute_available_disk_space(operation)
-        job_config, job_extra_inputs = HPCSchedulerClient._configure_job(simulator_gid, available_space,
-                                                                         is_group_launch)
-        job_inputs.extend(job_extra_inputs)
-
-        job_encrypted_inputs = EncryptionHandler().encrypt_inputs(job_inputs)
 
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
                                                             inputs=job_encrypted_inputs)
