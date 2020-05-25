@@ -471,7 +471,7 @@ class Simulator(HasTraits):
             try:
                 update_initial_conditions = self.model.update_non_state_variables
             except:
-                return
+                return history
         # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
         # in the extreme case where all state variables are cvars as well, we set:
         node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
@@ -485,7 +485,7 @@ class Simulator(HasTraits):
         try:
             self.model.update_non_state_variables
         except:
-            return
+            return state
         state = \
             self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
         self.bound_and_clamp(state)
