@@ -83,7 +83,7 @@ class TestHPCSchedulerClient(BaseTestCase):
 
         # Call do_operation_launch similarly to CSCS env
         do_operation_launch(sim_gid.hex, 1000, False, encrypted_dir)
-        assert len(os.scandir(encrypted_dir)) == 9
+        assert len(os.listdir(encrypted_dir)) == 9
 
 
     def teardown_method(self):
