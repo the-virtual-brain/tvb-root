@@ -545,7 +545,11 @@ class TimeSeries(HasTraits):
                     if is_integer(slc):
                         integers = True
                 else:
-                    if np.any([is_integer(islc) for islc in [slc.start, slc.stop, slc.step]]):
+                    if isinstance(slc, slice):
+                        elements = [slc.start, slc.stop, slc.step]
+                    else:
+                        elements = slc
+                    if np.any([is_integer(islc) for islc in elements]):
                         integers = True
                     slice_list.append(slc)
             return tuple(slice_list), integers
