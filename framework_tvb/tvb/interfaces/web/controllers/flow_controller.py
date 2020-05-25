@@ -37,23 +37,26 @@ given action are described here.
 
 import copy
 import json
+from http import HTTPStatus
 import cherrypy
 import formencode
 import numpy
 import six
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import OperationPossibleStatus
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
-from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.neocom import h5
+from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -73,6 +76,8 @@ MAXIMUM_DATA_TYPES_DISPLAYED = 50
 KEY_WARNING = "warning"
 WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
                    "Use filters, to make the list small enough to fit in here!"
+
+UPDATE_STATUS_KEY = "NEW_STATUS"
 
 
 @traced
@@ -869,3 +874,19 @@ class FlowController(BaseController):
                                                   datatype_group_ob, **parameters)
 
         return [True, 'Stored the exploration material successfully']
+
+    @cherrypy.expose
+    def update_status(self, simulator_gid, **data):
+        if UPDATE_STATUS_KEY not in data:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
+                                     "Invalid request. {} body param is missing.".format(UPDATE_STATUS_KEY))
+
+        new_status = data[UPDATE_STATUS_KEY]
+        if new_status not in OperationPossibleStatus:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
+                                     "Invalid status.")
+
+        burst_config = dao.get_generic_entity(BurstConfiguration, simulator_gid, "simulator_gid")
+        operation = dao.get_operation_by_id(burst_config.fk_simulation)
+
+        OperationService.handle_hpc_status_changed(operation, new_status)
