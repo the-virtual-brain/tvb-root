@@ -239,7 +239,7 @@ class HPCSchedulerClient(BackendClient):
                 ret[path] = unicore_client.PathFile(working_dir, path_url, path)
         return ret
 
-    def _update_db_with_results(self, operation, result_filenames):
+    def update_db_with_results(self, operation, result_filenames):
         # type: (Operation, list) -> (str, int)
         """
         Generate corresponding Index entities for the resulted H5 files and insert them in DB.
@@ -388,6 +388,7 @@ class HPCSchedulerClient(BackendClient):
         return available_space
 
     @staticmethod
+    # TODO: Remove this
     def _monitor_job(job):
         # type: (Job) -> (Storage, str)
         LOGGER.info(job.properties)
@@ -416,7 +417,7 @@ class HPCSchedulerClient(BackendClient):
         return job.working_dir, status
 
     @staticmethod
-    def _stage_out_to_operation_folder(working_dir, operation):
+    def stage_out_to_operation_folder(working_dir, operation):
         # type: (Storage, Operation) -> list
         output_list = HPCSchedulerClient.listdir(working_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
         encryption_handler = EncryptionHandler()
@@ -450,17 +451,7 @@ class HPCSchedulerClient(BackendClient):
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = json.loads(operation.parameters)['gid']
         try:
-            job = HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
-            wd, job_status = HPCSchedulerClient._monitor_job(job)
-            if job_status == HPCJobStatus.FAILED.value:
-                operation = dao.get_operation_by_id(operation_identifier)
-                if not operation.has_finished:
-                    operation.mark_complete(STATUS_ERROR)
-                    dao.store_entity(operation)
-                return
-            h5_filenames = HPCSchedulerClient._stage_out_to_operation_folder(wd, operation)
-            message = HPCSchedulerClient()._update_db_with_results(operation, h5_filenames)
-            LOGGER.debug(message)
+            HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
         except HTTPError as exception:
             LOGGER.error("Failed to submit job HPC")
             operation.mark_complete(STATUS_ERROR, exception.response.text)

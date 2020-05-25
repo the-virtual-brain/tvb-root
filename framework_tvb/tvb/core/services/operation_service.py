@@ -37,35 +37,39 @@ Module in charge with Launching an operation (creating the Operation entity as w
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import os
 import json
+import os
+import sys
 import uuid
 import zipfile
-import sys
-from copy import copy
 from cgi import FieldStorage
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from copy import copy
+
+from pyunicore.client import Job, Transport
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
     choices
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.exceptions import TVBException
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation, \
+    STATUS_CANCELED, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
-from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client_factory import BackendClientFactory
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 try:
@@ -324,7 +328,8 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = self.load_view_model(adapter_instance, operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space,
+                                                                   view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.parameters = json.dumps(kwargs)
@@ -522,3 +527,38 @@ class OperationService:
         Stop the operation given by the operation id.
         """
         return BackendClientFactory.stop_operation(int(operation_id))
+
+    @staticmethod
+    def _operation_error(operation):
+        operation.mark_complete(STATUS_ERROR)
+        dao.store_entity(operation)
+
+    @staticmethod
+    def _operation_canceled(operation):
+        operation.mark_complete(STATUS_CANCELED)
+        dao.store_entity(operation)
+
+    @staticmethod
+    def _operation_started(operation):
+        operation.start_now()
+        dao.store_entity(operation)
+
+    @staticmethod
+    def _operation_finished(operation):
+        op_ident = dao.get_operation_process_for_operation(operation.id)
+        # TODO: Handle login
+        job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
+                  op_ident.job_id)
+        h5_filenames = HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation)
+        HPCSchedulerClient().update_db_with_results(operation, h5_filenames)
+
+    @staticmethod
+    def handle_hpc_status_changed(operation, new_status):
+        switcher = {
+            STATUS_ERROR: OperationService._operation_error,
+            STATUS_CANCELED: OperationService._operation_canceled,
+            STATUS_STARTED: OperationService._operation_started,
+            STATUS_FINISHED: OperationService._operation_finished,
+        }
+        update_func = switcher.get(new_status, lambda: "Invalid operation status")
+        update_func(operation)
