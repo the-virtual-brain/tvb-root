@@ -52,6 +52,7 @@ function clone(object_) {
  * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
  */
 function resetToNewBurst() {
+    document.getElementById('next/burst/set_connectivity').focus();
     doAjaxCall({
         type: "POST",
         url: '/burst/reset_simulator_configuration/',
@@ -199,6 +200,7 @@ function _updateBurstHistoryElapsedTime(result) {
  * If "withFullUpdate" is true, then a full history section replacement happens before the periodical update.
  */
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
+    document.getElementById('next/burst/set_connectivity').focus();
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
             loadBurstHistory();
@@ -664,7 +666,10 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
-                document.getElementById(div_id).appendChild(t);
+                const new_form = document.getElementById(div_id);
+                new_form.appendChild(t);
+                const index = new_form.lastChild.action.indexOf('/burst');
+                document.getElementById('next' + new_form.lastChild.action.substring(index)).focus();
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
             }
         }
