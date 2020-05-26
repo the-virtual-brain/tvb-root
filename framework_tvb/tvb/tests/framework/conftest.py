@@ -607,11 +607,11 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
 
 @pytest.fixture()
 def simulator_factory(connectivity_index_factory, operation_factory):
-    def build(op=None, nr_regions=76):
+    def build(user=None, project=None, op=None, nr_regions=76):
 
         model = SimulatorAdapterModel()
         if not op:
-            op = operation_factory()
+            op = operation_factory(test_user=user, test_project=project)
         model.connectivity = connectivity_index_factory(nr_regions, op).gid
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         SimulatorSerializer.serialize_simulator(model, None, storage_path)
