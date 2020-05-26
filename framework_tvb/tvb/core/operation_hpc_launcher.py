@@ -27,8 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import cgi
 import json
+import os
 import sys
 
 import requests
@@ -56,6 +57,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
         encyrption_handler = EncryptionHandler(simulator_gid)
+        _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_passfile()))
         # TODO: Ensure encrypted_dir is correctly configured for CSCS
         plain_input_dir = encyrption_handler.open_plain_dir()
         log.info("Current wdir is: {}".format(plain_input_dir))
@@ -72,6 +74,33 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
 
     finally:
         encyrption_handler.close_plain_dir()
+
+
+# TODO: extract common rest api parts
+CHUNK_SIZE = 128
+
+
+def _save_file(file_path, response):
+    with open(file_path, 'wb') as local_file:
+        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+            if chunk:
+                local_file.write(chunk)
+    return file_path
+
+
+def _request_passfile(simulator_gid, base_url, passfile_folder):
+    # type: (str, str, str) -> str
+    try:
+        response = requests.get("{}/flow/encryption_config/{}".format(base_url, simulator_gid))
+        if response.ok:
+            content_disposition = response.headers['Content-Disposition']
+            value, params = cgi.parse_header(content_disposition)
+            file_name = params['filename']
+            file_path = os.path.join(passfile_folder, os.path.basename(file_name))
+            return _save_file(file_path, response)
+    except HTTPError:
+        log.warning(
+            "Failed to request passfile from TVB server {} for simulator {}".format(base_url, simulator_gid))
 
 
 def _update_operation_status(status, simulator_gid, base_url):
