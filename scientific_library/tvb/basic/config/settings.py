@@ -207,13 +207,13 @@ class HPCSettings(object):
     UNICORE_ARGS_KEY = 'Arguments'
     UNICORE_EXE_KEY = 'Executable'
 
-
-    SUPERCOMPUTER_SITE = 'DAINT-CSCS'
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
 
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
+        self.SDS_CONFIG_PATH = manager.get_attribute(stored.KEY_SDS_CONFIG)
+        self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
 
 
 class WebSettings(object):
