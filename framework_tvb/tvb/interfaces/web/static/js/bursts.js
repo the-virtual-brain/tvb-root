@@ -76,6 +76,7 @@ function resetToNewBurst() {
             simParamElem.html(response);
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
+            fill_burst_name("", false, false);
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -101,6 +102,8 @@ function copyBurst(burstID, first_wizzard_form_url) {
                 success: function (response) {
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
+                    const selectedBurst = $("#burst_id_" + burstID)[0];
+                    fill_burst_name(selectedBurst.children[0].text, false, true);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayMessage("A copy of previous simulation was prepared for you!");
                 },
@@ -289,7 +292,7 @@ function renameBurstEntry(burst_id, new_name_id) {
 }
 
 /*
- * Load a given burst entry from history. 
+ * Load a given burst entry from history.
  */
 function changeBurstHistory(burst_id, load_burst, first_wizzard_form_url) {
     const clickedBurst = document.getElementById("burst_id_" + burst_id);
@@ -472,6 +475,8 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
                 url: '/burst/load_burst_read_only/' + burst_id,
                 showBlockerOverlay: true,
                 success: function (response) {
+                    const selectedBurst = $("#burst_id_" + burst_id)[0];
+                    fill_burst_name(selectedBurst.children[0].text, true, false);
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
@@ -557,20 +562,6 @@ function loadBurst(burst_id) {
 }
 
 /**
- * Mark current burst as changed, to see the user than the latest changes are not yet persisted.
- */
-function markBurstChanged() {
-    if (sessionStoredBurst.id === '') {
-        return;
-    }
-    const titleSimulation = $("#title-simulation");
-    const previousTitle = titleSimulation.html();
-    if (previousTitle.lastIndexOf("***") < 0) {
-        titleSimulation.html(previousTitle + " ***");
-    }
-}
-
-/**
  * Method for updating title area according to current selected burst and its state.
  * @param {String} burstName
  * @param {bool} isReadOnly
@@ -579,27 +570,33 @@ function markBurstChanged() {
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
+    const titlePSE = $("#title-pse");
     const titlePortlets = $("#title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy_') < 0) {
         burstName = "Copy_" + burstName;
     }
 
-    titleSimulation.empty();
     inputBurstName.val(burstName);
+    titleSimulation.empty();
     titlePortlets.empty();
+    titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation core for " + burstName);
         titlePortlets.append(burstName);
+        titlePSE.append(burstName);
         sessionStoredBurst.name = burstName;
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
-        titleSimulation.append("<mark>Create</mark> New simulation core");
         if (burstName !== '') {
+            titleSimulation.append("<mark>Create</mark> Simulation core for " + burstName);
             titlePortlets.append(burstName);
+            titlePSE.append(burstName);
         } else {
+            titleSimulation.append("<mark>Configure</mark> New simulation core");
             titlePortlets.append("New simulation");
+            titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
     }
