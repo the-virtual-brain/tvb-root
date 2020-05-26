@@ -223,12 +223,13 @@ class HPCSchedulerClient(BackendClient):
         # type: (str, int, bool) -> (dict, list)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
+        base_url = TvbProfile.current.web.BASE_URL
         inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name, 'FS')
 
         # Build job configuration JSON
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, inputs_in_container]
+        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url, inputs_in_container]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, bash_entrypoint
