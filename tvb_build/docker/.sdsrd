@@ -3,7 +3,7 @@ gocryptfs = "/usr/bin/gocryptfs"
 gocryptfs_xray = "/usr/bin/gocryptfs"
 
 # Unix group associated with your project
-groupname = "root"
+groupname = "bp0"
 # Path to your encrypted data sets
 dataroot  = "~root/sds/containers"
 # Path to password files
