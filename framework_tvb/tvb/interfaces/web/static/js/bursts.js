@@ -76,6 +76,7 @@ function resetToNewBurst() {
             simParamElem.html(response);
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
+            fill_burst_name("", false, false);
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -569,27 +570,33 @@ function loadBurst(burst_id) {
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
+    const titlePSE = $("#title-pse");
     const titlePortlets = $("#title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy_') < 0) {
         burstName = "Copy_" + burstName;
     }
 
-    titleSimulation.empty();
     inputBurstName.val(burstName);
+    titleSimulation.empty();
     titlePortlets.empty();
+    titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation core for " + burstName);
         titlePortlets.append(burstName);
+        titlePSE.append(burstName);
         sessionStoredBurst.name = burstName;
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
-        titleSimulation.append("<mark>Create</mark> Simulation core for " + burstName);
         if (burstName !== '') {
+            titleSimulation.append("<mark>Create</mark> Simulation core for " + burstName);
             titlePortlets.append(burstName);
+            titlePSE.append(burstName);
         } else {
+            titleSimulation.append("<mark>Configure</mark> New simulation core");
             titlePortlets.append("New simulation");
+            titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
     }
