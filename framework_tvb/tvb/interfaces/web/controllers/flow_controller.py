@@ -55,6 +55,7 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
 from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
@@ -80,8 +81,6 @@ MAXIMUM_DATA_TYPES_DISPLAYED = 50
 KEY_WARNING = "warning"
 WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned, to avoid overcrowding. " \
                    "Use filters, to make the list small enough to fit in here!"
-
-UPDATE_STATUS_KEY = "NEW_STATUS"
 
 
 @traced

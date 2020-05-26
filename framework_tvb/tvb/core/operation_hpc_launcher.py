@@ -40,9 +40,10 @@ from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
 from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.core.services.simulator_serializer import SimulatorSerializer
-from tvb.interfaces.web.controllers.flow_controller import UPDATE_STATUS_KEY
 
 log = get_logger('tvb.core.operation_hpc_launcher')
+
+UPDATE_STATUS_KEY = "NEW_STATUS"
 
 if __name__ == '__main__':
     TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
