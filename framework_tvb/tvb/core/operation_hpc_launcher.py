@@ -30,20 +30,26 @@
 
 import json
 import sys
+
+import requests
+from requests import HTTPError
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
+from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
 from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.interfaces.web.controllers.flow_controller import UPDATE_STATUS_KEY
+
+log = get_logger('tvb.core.operation_hpc_launcher')
 
 if __name__ == '__main__':
     TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 
-def do_operation_launch(simulator_gid, available_disk_space, is_group_launch):
-    log = get_logger('tvb.core.operation_hpc_launcher')
+def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url):
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
@@ -54,19 +60,34 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch):
         log.info("Current wdir is: {}".format(plain_input_dir))
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
-        result_msg, nr_datatypes = adapter_instance._prelaunch(None, None, available_disk_space, view_model)
+        _update_operation_status(STATUS_STARTED, simulator_gid, base_url)
+        adapter_instance._prelaunch(None, None, available_disk_space, view_model)
+        _update_operation_status(STATUS_FINISHED, simulator_gid, base_url)
 
     except Exception as excep:
         log.error("Could not execute operation {}".format(str(sys.argv[1])))
         log.exception(excep)
+        _update_operation_status(STATUS_ERROR, simulator_gid, base_url)
 
     finally:
         encyrption_handler.close_plain_dir()
+
+
+def _update_operation_status(status, simulator_gid, base_url):
+    # type: (str, str, str) -> None
+    try:
+        requests.put("{}/flow/update_status/{}".format(base_url, simulator_gid), json={
+            UPDATE_STATUS_KEY: status,
+        })
+    except HTTPError:
+        log.warning(
+            "Failed to notify TVB server {} for simulator {} status update {}".format(base_url, simulator_gid, status))
 
 
 if __name__ == '__main__':
     simulator_gid = sys.argv[1]
     available_disk_space = sys.argv[2]
     is_group_launch = json.loads(sys.argv[3].lower())
+    base_url = sys.argv[4]
 
-    do_operation_launch(simulator_gid, available_disk_space, is_group_launch)
+    do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url)
