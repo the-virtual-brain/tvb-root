@@ -145,7 +145,11 @@ class EncryptionHandler(object):
         return plain_dir
 
     def close_plain_dir(self):
-        secure_data_store.unmount(self.config, self.encrypted_dir_name)
+        try:
+            secure_data_store.unmount(self.config, self.encrypted_dir_name)
+        except UnboundLocalError:
+            LOGGER.info("Cannot determine gocryptfs version on Linux. Please ensure is > 1.7.1")
+            pass
 
     def encrypt_inputs(self, files_to_encrypt):
         # type: (list) -> list
@@ -450,18 +454,6 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
-        # operation = dao.get_operation_by_id(operation_identifier)
-        # is_group_launch = operation.fk_operation_group is not None
-        # input_gid = json.loads(operation.parameters)['gid']
-        #
-        # job_inputs = HPCSchedulerClient._prepare_input(operation, input_gid)
-        # input_hpc = os.path.join(os.getcwd(), 'input_hpc')
-        # os.makedirs(input_hpc)
-        # for input in job_inputs:
-        #     shutil.copy(input, input_hpc)
-        #
-        # do_operation_launch(input_gid, 1000, is_group_launch)
-
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = json.loads(operation.parameters)['gid']
@@ -485,8 +477,6 @@ class HPCSchedulerClient(BackendClient):
     def execute(operation_id, user_name_label, adapter_instance):
         # type: (int, None, None) -> None
         """Call the correct system command to submit a job to HPC."""
-        # HPCSchedulerClient._run_hpc_job(operation_id)
-
         thread = HPCOperationThread(operation_id, target=HPCSchedulerClient._run_hpc_job,
                                     kwargs={'operation_identifier': operation_id})
         thread.start()
