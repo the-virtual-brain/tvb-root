@@ -567,9 +567,29 @@ function launchNewBurst(currentForm, launchMode) {
     });
 }
 
+function setInitialFocusOnButton(current_form){
+    const last_child_action = current_form.lastChild.action;
+
+    if (last_child_action === undefined){
+        document.getElementById('next/burst/set_connectivity').focus();
+    }else{
+        const index = last_child_action.indexOf('/burst');
+        const last_child_simple = last_child_action.substring(index);
+        if(last_child_simple === '/burst/setup_pse'){
+            document.getElementById('launch_simulation').focus();
+        }
+        else if(last_child_simple === '/burst/launch_pse'){
+            document.getElementById('launch_pse').focus();
+        }else {
+            document.getElementById('next' + current_form.lastChild.action.substring(index)).focus();
+        }
+    }
+}
+
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
-    document.getElementById(div_id).removeChild(currentForm);
+    const simulator_form = document.getElementById(div_id);
+    simulator_form.removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
@@ -611,6 +631,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
         config_branch_button.style.visibility = 'visible';
     }
     fieldset.disabled = false;
+    setInitialFocusOnButton(simulator_form);
 }
 
 function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
@@ -666,10 +687,9 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
-                const new_form = document.getElementById(div_id);
-                new_form.appendChild(t);
-                const index = new_form.lastChild.action.indexOf('/burst');
-                document.getElementById('next' + new_form.lastChild.action.substring(index)).focus();
+                const simulator_form = document.getElementById(div_id);
+                simulator_form.appendChild(t);
+                setInitialFocusOnButton(simulator_form);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
             }
         }
