@@ -36,10 +36,12 @@
 import json
 import os
 import shutil
+import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
 from time import sleep
+import typing
 from secure_data_store import secure_data_store
 
 import pyunicore.client as unicore_client
@@ -103,36 +105,48 @@ class HPCOperationThread(Thread):
 
 
 class EncryptionHandler(object):
-    encrypted_dir_name = 'cipher20'
+    encrypted_dir_name_regex = 'cipher_{}'
 
     # TODO: location for config file in .tvb.config?
-    def __init__(self, config_path=os.path.expanduser('~/.sdsrd')):
+    def __init__(self, dir_gid, config_path=os.path.expanduser('~/.sdsrd')):
+        """
+        :param dir_gid: the GID to use for the encrypted directory name
+        :param config_path: path towards the secure_data_store configuration file (usually called .sdsrd)
+        """
+        self.set_dir_gid(dir_gid)
         self.config = self._load_configuration(config_path)
+
+    def _prepare_encrypted_dir_name(self):
+        return self.encrypted_dir_name_regex.format(self.dir_gid)
 
     def _load_configuration(self, config_path):
         config = secure_data_store.read_config(config_path)
         return config
 
-    def get_encrypted_dir(self, encrypted_dir_name):
-        return secure_data_store.datastore(self.config, encrypted_dir_name)
+    def set_dir_gid(self, dir_gid):
+        if isinstance(dir_gid, uuid.UUID):
+            dir_gid = dir_gid.hex
+        self.dir_gid = dir_gid
+        self.encrypted_dir_name = self._prepare_encrypted_dir_name()
 
-    def get_passfile(self, encrypted_dir_name):
-        return secure_data_store.passstore(self.config, encrypted_dir_name)
+    def get_encrypted_dir(self):
+        return secure_data_store.datastore(self.config, self.encrypted_dir_name)
 
-    def prepare_encryption_dir(self, encrypted_dir_name=None):
-        if not encrypted_dir_name:
-            encrypted_dir_name = self.encrypted_dir_name
-        secure_data_store.create(self.config, encrypted_dir_name)
-        encrypted_dir = self.get_encrypted_dir(encrypted_dir_name)
+    def get_passfile(self):
+        return secure_data_store.passstore(self.config, self.encrypted_dir_name)
+
+    def prepare_encryption_dir(self):
+        secure_data_store.create(self.config, self.encrypted_dir_name)
+        encrypted_dir = self.get_encrypted_dir()
         return encrypted_dir
 
-    def open_plain_dir(self, encrypted_dir_name):
+    def open_plain_dir(self):
         # ! Always call close_plain_dir() after this method !
-        plain_dir = secure_data_store.mount(self.config, encrypted_dir_name)
+        plain_dir = secure_data_store.mount(self.config, self.encrypted_dir_name)
         return plain_dir
 
-    def close_plain_dir(self, encrypted_dir_name):
-        secure_data_store.unmount(self.config, encrypted_dir_name)
+    def close_plain_dir(self):
+        secure_data_store.unmount(self.config, self.encrypted_dir_name)
 
     def encrypt_inputs(self, files_to_encrypt):
         # type: (list) -> list
@@ -143,25 +157,25 @@ class EncryptionHandler(object):
         Return a list with all files from the encrypted directory.
         """
         encryption_dir = self.prepare_encryption_dir()
-        plain_dir = self.open_plain_dir(self.encrypted_dir_name)
+        plain_dir = self.open_plain_dir()
 
         for file_to_encrypt in files_to_encrypt:
             shutil.copy(file_to_encrypt, plain_dir)
-        self.close_plain_dir(self.encrypted_dir_name)
+        self.close_plain_dir()
 
         encrypted_files = [os.path.join(encryption_dir, enc_file) for enc_file in os.listdir(encryption_dir)]
         return encrypted_files
 
-    def decrypt_results_to_dir(self, encrypted_dir, dir):
-        # type: (str, str) -> None
+    def decrypt_results_to_dir(self, dir):
+        # type: (str) -> None
         """
-        Having an already encrypted directory :param encrypted_dir, mount a plain directory to it and decrypt files,
+        Having an already encrypted directory, mount a plain directory to it and decrypt files,
         then move plain files to the location specified by :param dir
         """
-        plain_dir = self.open_plain_dir(encrypted_dir)
+        plain_dir = self.open_plain_dir()
         for plain_file in os.listdir(plain_dir):
             shutil.copy(os.path.join(plain_dir, plain_file), dir)
-        self.close_plain_dir(encrypted_dir)
+        self.close_plain_dir()
 
 
 class HPCSchedulerClient(BackendClient):
@@ -210,11 +224,12 @@ class HPCSchedulerClient(BackendClient):
         # type: (str, int, bool) -> (dict, list)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
+        inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name, 'FS')
 
         # Build job configuration JSON
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch]
+        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, inputs_in_container]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, bash_entrypoint
@@ -360,9 +375,9 @@ class HPCSchedulerClient(BackendClient):
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
                                                                          is_group_launch)
 
-        encryption_handler = EncryptionHandler()
+        encryption_handler = EncryptionHandler(simulator_gid)
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
-        encrypted_dir = encryption_handler.get_encrypted_dir(encryption_handler.encrypted_dir_name)
+        encrypted_dir = encryption_handler.get_encrypted_dir()
         script_path = shutil.copy(job_script, encrypted_dir)
         job_encrypted_inputs.append(script_path)
 
@@ -417,15 +432,16 @@ class HPCSchedulerClient(BackendClient):
         return job.working_dir, status
 
     @staticmethod
-    def stage_out_to_operation_folder(working_dir, operation):
-        # type: (Storage, Operation) -> list
+    def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
+        # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> list
         output_list = HPCSchedulerClient.listdir(working_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
-        encryption_handler = EncryptionHandler()
+        encryption_handler = EncryptionHandler(simulator_gid)
+        # TODO: output folder name is encrypted too
         encrypted_dir = os.path.join(encryption_handler.config.dataroot, HPCSimulatorAdapter.OUTPUT_FOLDER)
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
-        encryption_handler.decrypt_results_to_dir(encrypted_dir, operation_dir)
+        encryption_handler.decrypt_results_to_dir(operation_dir)
         h5_filenames = [os.path.join(operation_dir, h5_file) for h5_file in os.listdir(operation_dir)]
 
         LOGGER.info(working_dir.properties)

@@ -27,8 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import json
-import os
 import sys
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.basic.logger.builder import get_logger
@@ -42,15 +42,15 @@ if __name__ == '__main__':
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 
-def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, encrypted_dir=os.getcwd()):
+def do_operation_launch(simulator_gid, available_disk_space, is_group_launch):
     log = get_logger('tvb.core.operation_hpc_launcher')
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
-        encyrption_handler = EncryptionHandler()
+        encyrption_handler = EncryptionHandler(simulator_gid)
         # TODO: Ensure encrypted_dir is correctly configured for CSCS
-        plain_input_dir = encyrption_handler.open_plain_dir(encyrption_handler.encrypted_dir_name)
+        plain_input_dir = encyrption_handler.open_plain_dir()
         log.info("Current wdir is: {}".format(plain_input_dir))
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
@@ -61,7 +61,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, en
         log.exception(excep)
 
     finally:
-        encyrption_handler.close_plain_dir(encrypted_dir)
+        encyrption_handler.close_plain_dir()
 
 
 if __name__ == '__main__':
