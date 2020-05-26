@@ -921,6 +921,8 @@ class FlowController(BaseController):
                                      "Invalid status.")
 
         burst_config = dao.get_generic_entity(BurstConfiguration, simulator_gid, "simulator_gid")
-        operation = dao.get_operation_by_id(burst_config.fk_simulation)
+        if len(burst_config) == 0:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
+                                     "Invalid simulator gid.")
 
-        OperationService.handle_hpc_status_changed(operation, new_status)
+        OperationService.handle_hpc_status_changed(burst_config[0], new_status)

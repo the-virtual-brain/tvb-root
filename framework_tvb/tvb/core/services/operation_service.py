@@ -44,6 +44,7 @@ import uuid
 import zipfile
 from cgi import FieldStorage
 from copy import copy
+from functools import partial
 
 from pyunicore.client import Job, Transport
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
@@ -544,21 +545,24 @@ class OperationService:
         dao.store_entity(operation)
 
     @staticmethod
-    def _operation_finished(operation):
+    def _operation_finished(operation, simulator_gid):
         op_ident = dao.get_operation_process_for_operation(operation.id)
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
-        h5_filenames = HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation)
+        h5_filenames = HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
         HPCSchedulerClient().update_db_with_results(operation, h5_filenames)
 
     @staticmethod
-    def handle_hpc_status_changed(operation, new_status):
+    def handle_hpc_status_changed(burst_config, new_status):
+        # type: (BurstConfiguration, str) -> None
+
+        operation = dao.get_operation_by_id(burst_config.fk_simulation)
         switcher = {
             STATUS_ERROR: OperationService._operation_error,
             STATUS_CANCELED: OperationService._operation_canceled,
             STATUS_STARTED: OperationService._operation_started,
-            STATUS_FINISHED: OperationService._operation_finished,
+            STATUS_FINISHED: partial(OperationService._operation_finished, simulator_gid=burst_config.simulator_gid)
         }
         update_func = switcher.get(new_status, lambda: "Invalid operation status")
         update_func(operation)
