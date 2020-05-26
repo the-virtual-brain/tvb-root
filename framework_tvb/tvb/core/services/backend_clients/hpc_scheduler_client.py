@@ -107,8 +107,7 @@ class HPCOperationThread(Thread):
 class EncryptionHandler(object):
     encrypted_dir_name_regex = 'cipher_{}'
 
-    # TODO: location for config file in .tvb.config?
-    def __init__(self, dir_gid, config_path=os.path.expanduser('~/.sdsrd')):
+    def __init__(self, dir_gid, config_path=TvbProfile.current.hpc.SDS_CONFIG_PATH):
         """
         :param dir_gid: the GID to use for the encrypted directory name
         :param config_path: path towards the secure_data_store configuration file (usually called .sdsrd)
@@ -373,7 +372,7 @@ class HPCSchedulerClient(BackendClient):
 
         available_space = HPCSchedulerClient.compute_available_disk_space(operation)
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
-                                                                         is_group_launch)
+                                                                   is_group_launch)
 
         encryption_handler = EncryptionHandler(simulator_gid)
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
@@ -384,13 +383,13 @@ class HPCSchedulerClient(BackendClient):
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         site_client = HPCSchedulerClient._build_unicore_client(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY],
                                                                unicore_client._HBP_REGISTRY_URL,
-                                                               HPCSettings.SUPERCOMPUTER_SITE)
+                                                               TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
                                                             inputs=job_encrypted_inputs)
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
-
+        LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
         return job
 
     @staticmethod

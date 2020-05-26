@@ -2,7 +2,7 @@ FROM continuumio/miniconda3
 
 RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
-RUN apt-get -y update && apt-get -y install gocryptfs
+RUN apt-get -y update && apt-get -y install gocryptfs fuse
 
 USER root
 RUN conda update -n base -c defaults conda
@@ -12,7 +12,7 @@ RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simpl
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib nibabel allensdk
-RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 sqlalchemy flask
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 sqlalchemy flask pyunicore
 
 WORKDIR /root
 
