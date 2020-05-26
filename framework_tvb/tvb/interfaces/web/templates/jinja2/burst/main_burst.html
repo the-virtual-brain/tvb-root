@@ -13,7 +13,7 @@
 
 	<script type="text/javascript">
     	$(document).ready(function(){
-    		initBurstConfiguration({{ selectedPortlets | safe }}, '{{ burstConfig.selected_tab }}');
+    		initBurstConfiguration('{{ burstConfig.id if (burstConfig.id != None) else ""  }}', {{ selectedPortlets | safe }}, '{{ burstConfig.selected_tab }}');
 		});
     </script>
     
