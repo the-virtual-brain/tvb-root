@@ -44,7 +44,7 @@ import cherrypy
 import formencode
 import numpy
 import six
-from pyunicore.client import Job, Transport
+from cherrypy.lib.static import serve_file
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -52,10 +52,10 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import OperationPossibleStatus, STATUS_FINISHED
-from tvb.core.entities.storage import dao, OperationDAO
+from tvb.core.entities.model.model_operation import OperationPossibleStatus
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
+from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -911,6 +911,9 @@ class FlowController(BaseController):
 
     @cherrypy.expose
     def update_status(self, simulator_gid, **data):
+        if cherrypy.request.method != 'PUT':
+            raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
+
         if UPDATE_STATUS_KEY not in data:
             raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
                                      "Invalid request. {} body param is missing.".format(UPDATE_STATUS_KEY))
@@ -926,3 +929,18 @@ class FlowController(BaseController):
                                      "Invalid simulator gid.")
 
         OperationService.handle_hpc_status_changed(burst_config[0], new_status)
+
+    @cherrypy.expose
+    def encryption_config(self, simulator_gid):
+        if cherrypy.request.method != 'GET':
+            raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
+
+        burst_config = dao.get_generic_entity(BurstConfiguration, simulator_gid, "simulator_gid")
+        if len(burst_config) == 0:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
+                                     "Invalid simulator gid.")
+
+        encryption_handler = EncryptionHandler(simulator_gid)
+        file_path = encryption_handler.get_passfile()
+
+        return serve_file(file_path, "application/x-download", "attachment", os.path.basename(file_path))
