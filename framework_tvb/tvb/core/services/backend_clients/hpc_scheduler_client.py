@@ -42,7 +42,6 @@ from enum import Enum
 from threading import Thread, Event
 from time import sleep
 import typing
-from secure_data_store import secure_data_store
 
 import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
@@ -62,6 +61,7 @@ from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHE
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+from tvb.core.services.backend_clients import secure_data_store_copy as secure_data_store
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 
@@ -145,11 +145,7 @@ class EncryptionHandler(object):
         return plain_dir
 
     def close_plain_dir(self):
-        try:
-            secure_data_store.unmount(self.config, self.encrypted_dir_name)
-        except UnboundLocalError:
-            LOGGER.info("Cannot determine gocryptfs version on Linux. Please ensure is > 1.7.1")
-            pass
+        secure_data_store.unmount(self.config, self.encrypted_dir_name)
 
     def encrypt_inputs(self, files_to_encrypt):
         # type: (list) -> list
