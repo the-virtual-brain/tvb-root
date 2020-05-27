@@ -35,6 +35,30 @@ def coords_to_dict(coords):
     return d
 
 
+def save_show_figure(plotter_config, figure_name=None, fig=None):
+    import os
+    from matplotlib import pyplot
+    if plotter_config.SAVE_FLAG:
+        if figure_name is None:
+            if fig is None:
+                fig = pyplog.gcf()
+            figure_name = fig.get_label()
+        figure_name = figure_name.replace(": ", "_").replace(" ", "_").replace("\t", "_").replace(",", "")
+        figure_name = figure_name[:np.min([100, len(figure_name)])] + '.' + plotter_config.FIG_FORMAT
+        figure_dir = plotter_config.FOLDER_FIGURES
+        if not (os.path.isdir(figure_dir)):
+            os.mkdir(figure_dir)
+        pyplot.savefig(os.path.join(figure_dir, figure_name))
+    if plotter_config.SHOW_FLAG:
+        # mp.use('TkAgg')
+        pyplot.ion()
+        pyplot.show()
+    else:
+        # mp.use('Agg')
+        pyplot.ioff()
+        pyplot.close()
+
+
 class TimeSeries(HasTraits):
     """
     Base time-series dataType.
@@ -335,7 +359,7 @@ class TimeSeries(HasTraits):
             if isinstance(data, dict):
                 # ...either as kwargs
                 self._data = xr.DataArray(**data, attrs=kwargs.pop("attrs", None))
-            else:
+            elif data is not None:
                 # ...or as args
                 # including a xr.DataArray or None
                 self._data = xr.DataArray(data,
@@ -343,7 +367,8 @@ class TimeSeries(HasTraits):
                                           coords=kwargs.pop("coords", kwargs.pop("labels_dimensions", None)),
                                           attrs=kwargs.pop("attrs", None))
             super(TimeSeries, self).__init__(**kwargs)
-        self.configure()
+        if data is not None:
+            self.configure()
 
     def summary_info(self):
         """
@@ -388,11 +413,11 @@ class TimeSeries(HasTraits):
                 # ...or from a potential numpy/list/tuple input
                 _data = xr.DataArray(np.array(data))
         # Now set the rest of the properties...
-        kwargs["dims"] = kwargs.pop("dims", kwargs.pop("labels_ordering", _labels_ordering))
+        kwargs["labels_ordering"] = kwargs.pop("dims", kwargs.pop("labels_ordering", _labels_ordering))
         kwargs["labels_dimensions"] = kwargs.pop("labels_dimensions",
                                                  coords_to_dict(kwargs.pop("coords", _labels_dimensions)))
         # ...with special care for time related ones:
-        time = kwargs["labels_dimensions"].get(kwargs["dims"][0], None)
+        time = kwargs["labels_dimensions"].get(kwargs["labels_ordering"][0], None)
         time = kwargs.pop("time", time)
         if time is not None and len(time) > 0:
             kwargs['start_time'] = kwargs.pop('start_time', float(time[0]))
@@ -409,7 +434,7 @@ class TimeSeries(HasTraits):
 
     def duplicate(self, **kwargs):
         _data, kwargs = self._duplicate(**kwargs)
-        duplicate = self.__class__(**kwargs)
+        duplicate = self.__class__()
         duplicate.from_xarray_DataArray(_data, **kwargs)
         return duplicate
 
@@ -785,7 +810,8 @@ class TimeSeries(HasTraits):
         new_self.configure()
         return new_self
 
-    def plot(self, time=None, data=None, y=None, hue=None, col=None, row=None, figname=None, plotter=None, **kwargs):
+    def plot(self, time=None, data=None, y=None, hue=None, col=None, row=None,
+             figname=None, plotter_config=None, **kwargs):
         if data is None:
             data = self._data
         if time is None or len(time) == 0:
@@ -800,24 +826,25 @@ class TimeSeries(HasTraits):
                     kwargs[dim_name] = dim
         output = data.plot(x=time, **kwargs)
         # TODO: Something better than this temporary hack for base_plotter functionality
-        if plotter is not None:
-            plotter._save_figure(figure_name=figname)
-            plotter._check_show()
+        if plotter_config is not None:
+            save_show_figure(plotter_config, figname)
         return output
 
     def _prepare_plot_args(self, **kwargs):
-        plotter = kwargs.pop("plotter", None)
+        plotter_config = kwargs.pop("plotter_config", None)
         labels_ordering = self.labels_ordering
         time = labels_ordering[0]
-        return time, labels_ordering, plotter, kwargs
+        return time, labels_ordering, plotter_config, kwargs
 
     def plot_map(self, **kwargs):
         if kwargs.pop("per_variable", False):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
-                outputs.append(self[:, var].plot_map(**kwargs))
+                var_ts = self[:, var]
+                var_ts.name = ": ".join([var_ts.name, var])
+                outputs.append(var_ts.plot_map(**kwargs))
             return outputs
-        time, labels_ordering, plotter, kwargs = \
+        time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
         # Usually variables
         col = kwargs.pop("col", labels_ordering[1])
@@ -835,10 +862,10 @@ class TimeSeries(HasTraits):
         else:
             kwargs["figname"] = kwargs.pop("figname", "%s" % self.title)
         return self.plot(data=None, y=y, hue=None, col=col, row=row,
-                         plotter=plotter, **kwargs)
+                         plotter_config=plotter_config, **kwargs)
 
     def plot_line(self, **kwargs):
-        time, labels_ordering, plotter, kwargs = \
+        time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
         # Usually variables
         col = kwargs.pop("col", labels_ordering[1])
@@ -850,13 +877,15 @@ class TimeSeries(HasTraits):
             row = kwargs.pop("row", None)
         figname = kwargs.pop("figname", "%s" % self.title)
         return self.plot(data=None, y=None, hue=hue, col=col, row=row,
-                         figname=figname, plotter=plotter, **kwargs)
+                         figname=figname, plotter_config=plotter_config, **kwargs)
 
     def plot_timeseries(self, **kwargs):
         if kwargs.pop("per_variable", False):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
-                outputs.append(self[:, var].plot_timeseries(**kwargs))
+                var_ts = self[:, var]
+                var_ts.name = ": ".join([var_ts.name, var])
+                outputs.append(var_ts.plot_timeseries(**kwargs))
             return outputs
         if np.any([s < 2 for s in self.shape[1:]]):
             if self.shape[1] == 1:  # only one variable
@@ -872,9 +901,11 @@ class TimeSeries(HasTraits):
         if kwargs.pop("per_variable", False):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
-                outputs.append(self[:, var].plot_raster(**kwargs))
+                var_ts = self[:, var]
+                var_ts.name = ": ".join([var_ts.name, var])
+                outputs.append(var_ts.plot_raster(**kwargs))
             return outputs
-        time, labels_ordering, plotter, kwargs = \
+        time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
         col = labels_ordering[1]  # Variable
         labels_dimensions = self.labels_dimensions
@@ -904,7 +935,7 @@ class TimeSeries(HasTraits):
             hue = None
         kwargs["col_wrap"] = kwargs.pop("col_wrap", self.shape[1])  # All variables in columns
         return self.plot(data=data, y=None, hue=hue, col=col, row=None,
-                         figname=figname, plotter=plotter, **kwargs)
+                         figname=figname, plotter_config=plotter_config, **kwargs)
 
 
 # TODO: Slicing should also slice Connectivity, Surface, Volume, Sensors etc accordingly...
@@ -921,11 +952,13 @@ class TimeSeriesRegion(TimeSeries):
     _default_labels_ordering = List(of=str, default=("Time", "State Variable", "Region", "Mode"))
 
     def __init__(self, data=None, **kwargs):
-        if not isinstance(data, TimeSeriesRegion):
+        if isinstance(data, (TimeSeriesRegion, TimeSeriesRegionTVB)):
             for datatype_name in ["connectivity", "region_mapping_volume", "region_mapping"]:
-                datatype = kwargs.pop(datatype_name, None)
-                if datatype is not None:
-                    setattr(self, datatype_name, datatype)
+                setattr(self, datatype_name, getattr(data, datatype_name))
+        for datatype_name in ["connectivity", "region_mapping_volume", "region_mapping"]:
+            datatype = kwargs.pop(datatype_name, None)
+            if datatype is not None:
+                setattr(self, datatype_name, datatype)
         super(TimeSeriesRegion, self).__init__(data, **kwargs)
 
     def summary_info(self):
@@ -969,8 +1002,11 @@ class TimeSeriesSurface(TimeSeries):
     _default_labels_ordering = List(of=str, default=("Time", "State Variable", "Vertex", "Mode"))
 
     def __init__(self, data=None, **kwargs):
-        if not isinstance(data, TimeSeriesSurface):
-            self.surface = kwargs.pop("surface")
+        if isinstance(data, TimeSeriesSurface):
+            self.surface = data.surface
+        surface = kwargs.pop("surface")
+        if surface is not None:
+            self.surface = surface
         super(TimeSeriesSurface, self).__init__(data, **kwargs)
 
     def summary_info(self):
@@ -999,8 +1035,11 @@ class TimeSeriesVolume(TimeSeries):
     _default_labels_ordering = List(of=str, default=("Time", "X", "Y", "Z"))
 
     def __init__(self, data=None, **kwargs):
-        if not isinstance(data, TimeSeriesVolume):
-            self.volume = kwargs.pop("volume")
+        if isinstance(data, (TimeSeriesVolume, TimeSeriesVolumeTVB)):
+            self.volume = data.volume
+        volume = kwargs.pop("volume", None)
+        if volume is not None:
+            self.volume, volume
         super(TimeSeriesVolume, self).__init__(data, **kwargs)
 
     def summary_info(self):
@@ -1024,8 +1063,11 @@ class TimeSeriesSensors(TimeSeries):
     title = Attr(str, default="Sensor Time Series")
 
     def __init__(self, data=None, **kwargs):
-        if not isinstance(data, TimeSeriesSensors):
-            self.sensors = kwargs.pop("sensors")
+        if not isinstance(data, (TimeSeriesSensors, TimeSeriesSensorsTVB)):
+            self.sensors = data.sensors
+        sensors = kwargs.pop("sensors")
+        if sensors is not None:
+            self.sensors = sensors
         super(TimeSeriesSensors, self).__init__(data, **kwargs)
 
     def summary_info(self):
@@ -1084,6 +1126,7 @@ class TimeSeriesSEEG(TimeSeriesSensors):
 
     def to_tvb_instance(self, **kwargs):
         return TimeSeriesSEEGTVB().from_xarray_DataArray(self._data, **kwargs)
+
 
 class TimeSeriesMEG(TimeSeriesSensors):
     """ A time series associated with a set of MEG sensors. """
