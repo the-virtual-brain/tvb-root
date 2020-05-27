@@ -36,12 +36,12 @@
 import json
 import os
 import shutil
+import typing
 import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
 from time import sleep
-import typing
 
 import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
@@ -224,12 +224,14 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name, 'FS')
+        inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name,
+                                           'FS')
 
         # Build job configuration JSON
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url, inputs_in_container]
+        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url,
+                                                inputs_in_container]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, bash_entrypoint
@@ -463,9 +465,10 @@ class HPCSchedulerClient(BackendClient):
         simulator_gid = json.loads(operation.parameters)['gid']
         try:
             HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
-        except HTTPError as exception:
+        except Exception as exception:
             LOGGER.error("Failed to submit job HPC")
-            operation.mark_complete(STATUS_ERROR, exception.response.text)
+            operation.mark_complete(STATUS_ERROR,
+                                    exception.response.text if isinstance(exception, HTTPError) else exception)
             dao.store_entity(operation)
 
     @staticmethod
