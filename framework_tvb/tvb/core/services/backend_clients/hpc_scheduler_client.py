@@ -468,7 +468,7 @@ class HPCSchedulerClient(BackendClient):
         except Exception as exception:
             LOGGER.error("Failed to submit job HPC")
             operation.mark_complete(STATUS_ERROR,
-                                    exception.response.text if isinstance(exception, HTTPError) else exception)
+                                    exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
 
     @staticmethod
