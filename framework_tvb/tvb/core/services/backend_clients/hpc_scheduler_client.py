@@ -466,7 +466,7 @@ class HPCSchedulerClient(BackendClient):
         try:
             HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
         except Exception as exception:
-            LOGGER.error("Failed to submit job HPC")
+            LOGGER.error("Failed to submit job HPC", exc_info=True)
             operation.mark_complete(STATUS_ERROR,
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
