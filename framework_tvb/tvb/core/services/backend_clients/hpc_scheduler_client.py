@@ -369,25 +369,32 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
+        LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
         job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
-
         available_space = HPCSchedulerClient.compute_available_disk_space(operation)
+
+        LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
                                                                    is_group_launch)
 
+        LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
         encryption_handler = EncryptionHandler(simulator_gid)
+        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
         encrypted_dir = encryption_handler.get_encrypted_dir()
         script_path = shutil.copy(job_script, encrypted_dir)
         job_encrypted_inputs.append(script_path)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
+        LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
         site_client = HPCSchedulerClient._build_unicore_client(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY],
                                                                unicore_client._HBP_REGISTRY_URL,
                                                                TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
+        LOGGER.info("Submit job for operation: {}".format(operation.id))
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
                                                             inputs=job_encrypted_inputs)
+        LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
         LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
