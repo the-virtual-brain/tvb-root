@@ -215,7 +215,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         if isinstance(slice_start, string_types) or isinstance(slice_start, float):
             slice_start = self._get_index_for_slice_label(slice_start, slice_idx)
         if isinstance(slice_stop, string_types) or isinstance(slice_stop, float):
-            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx)
+            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx) + 1  # inclusive last label
 
         return slice(slice_start, slice_stop, current_slice.step)
 
