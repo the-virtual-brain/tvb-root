@@ -216,8 +216,8 @@ def mount(config, name):
             sp.run([gcfs, '-passfile', passfile, container, mountpoint],
                    check=True,
                    stdout=sp.DEVNULL)
-        except sp.CalledProcessError:
-            raise GCFSError("Could not open Container.")
+        except sp.CalledProcessError as exception:
+            raise GCFSError("Could not open Container. {}".format(repr(exception)))
     print(mountpoint)
     return mountpoint
 
