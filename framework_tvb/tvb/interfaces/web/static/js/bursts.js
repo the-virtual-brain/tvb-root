@@ -515,9 +515,18 @@ function fill_burst_name(burstName, isReadOnly) {
     user_edited_title = false;
 }
 
+function hideButtonsAfterLaunch(form_elements){
+    for(var i = 0; i < form_elements.length; i++){
+        if(form_elements[i].type === "button"){
+            form_elements[i].style.visibility = "hidden";
+        }
+    }
+}
+
 function launchNewPSEBurst(currentForm) {
     _displayPseSimulationMessage();
     var form_data = $(currentForm).serialize();
+    hideButtonsAfterLaunch(currentForm.elements);
 
     doAjaxCall({
         type: "POST",
@@ -546,6 +555,7 @@ function launchNewPSEBurst(currentForm) {
  */
 function launchNewBurst(currentForm, launchMode) {
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    hideButtonsAfterLaunch(currentForm.elements);
 
     displayMessage("You've submitted parameters for simulation launch! Please wait for preprocessing steps...", 'warningMessage');
     doAjaxCall({
