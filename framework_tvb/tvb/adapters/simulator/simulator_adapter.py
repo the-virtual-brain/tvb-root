@@ -385,11 +385,7 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
 
-            if self.algorithm.surface:
-                ts_index.fk_surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
-                ts_h5.surface.store(self.algorithm.surface.gid)
-            else:
-                ts_h5.store_references(ts)
+            ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5

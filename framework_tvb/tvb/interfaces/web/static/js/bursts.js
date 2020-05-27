@@ -27,27 +27,11 @@
  *  - Show progress.
  */
 
-
-// Object holding current burst ID/ NAME / STATE
-var EMPTY_BURST = {
-    id: "",
-    name: "",
-    isFinished: false,
-    isRange: false
-};
-
-var sessionStoredBurst = clone(EMPTY_BURST);
+var sessionStoredBurstID = "";
 
 //A list of selected portlets id. Used to correctly change/update the portlet checkboxes for each tab.
 var selectedPortlets;
-//Keeps track of the currently selected tab.
-var selectedTab = 0;
-//Keeps track of the index of the currently configured portlet in the currently selected tab.
-var indexInTab = -1;
-//Flag to keep track if we are configuring portlets or just change tabs for visualization.
-var portletConfigurationActive = false;
-//Keep track of all the timeouts that are set for portlet updating
-var refreshTimeouts = [];
+
 // Class mapping to the active burst entry
 var ACTIVE_BURST_CLASS = 'burst-active';
 // Class mapping to a workflow from a group launch
@@ -76,10 +60,10 @@ function resetToNewBurst() {
             simParamElem.html(response);
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
+            changeBurstHistory(null, false, false, '');
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
-            // sessionStoredBurst = clone(EMPTY_BURST);
         }
     });
 }
@@ -101,12 +85,12 @@ function copyBurst(burstID, first_wizzard_form_url) {
                 success: function (response) {
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
+                    changeBurstHistory(burstID, false, true, '');
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayMessage("A copy of previous simulation was prepared for you!");
                 },
                 error: function () {
                     displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
-                    // sessionStoredBurst = clone(EMPTY_BURST);
                 }
             });
         }
@@ -182,7 +166,7 @@ function updateBurstHistoryStatus() {
                 for (let i = 0; i < result.length; i++) {
                     if (result[i][1] !== 'running') {
                         finalStatusReceived = true;
-                        if (result[i][0] === sessionStoredBurst.id) {
+                        if (result[i][0] === sessionStoredBurstID) {
                             changedStatusOnCurrentBurst = true;
                         }
                     }
@@ -218,9 +202,7 @@ function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
             loadBurstHistory();
-            if (refreshCurrent) {
-                loadBurst(sessionStoredBurst.id);
-            }
+            changeBurstHistory(sessionStoredBurstID, refreshCurrent, false, '/burst/set_connectivity');
         } else {
             setTimeout(updateBurstHistoryStatus, 5000);
         }
@@ -274,8 +256,7 @@ function renameBurstEntry(burst_id, new_name_id) {
             if ('success' in result) {
                 displayMessage(result.success);
                 $("#burst_id_" + burst_id + " a").html(newValue);
-                if (sessionStoredBurst.id === burst_id + "") {
-                    sessionStoredBurst.name = newValue;
+                if (sessionStoredBurstID === burst_id + "") {
                     fill_burst_name(newValue, true, false);
                 }
             } else {
@@ -289,20 +270,30 @@ function renameBurstEntry(burst_id, new_name_id) {
 }
 
 /*
- * Load a given burst entry from history. 
+ * Load a given burst entry from history.
  */
-function changeBurstHistory(burst_id, load_burst, first_wizzard_form_url) {
-    const clickedBurst = document.getElementById("burst_id_" + burst_id);
-    // todo : do not store app state in css classes
-    if (clickedBurst.className.indexOf(ACTIVE_BURST_CLASS) >= 0 &&
-        clickedBurst.className.indexOf(GROUP_BURST_CLASS) < 0) {
-        displayMessage("Simulation already loaded...", "warningMessage");
-        return;
-    }
+function changeBurstHistory(burst_id, load_burst, is_copy, first_wizzard_form_url) {
+
     $("#burst-history").find("li").each(function () {
         $(this).removeClass(ACTIVE_BURST_CLASS);
         $(this).removeClass(GROUP_BURST_CLASS);
     });
+
+    if (is_copy || (burst_id === null)) {
+        sessionStoredBurstID = "";
+    } else {
+        sessionStoredBurstID = burst_id;
+    }
+
+    if (burst_id === null || burst_id === "") {
+        fill_burst_name("", false, false);
+        return;
+    }
+
+    const selectedBurst = $("#burst_id_" + burst_id);
+    fill_burst_name(selectedBurst[0].children[0].text, !is_copy, is_copy);
+    selectedBurst.addClass(ACTIVE_BURST_CLASS);
+
     if (load_burst) {
         // Load the selected burst.
         loadBurstReadOnly(burst_id, first_wizzard_form_url);
@@ -312,11 +303,6 @@ function changeBurstHistory(burst_id, load_burst, first_wizzard_form_url) {
 /*************************************************************************************************************************
  *          MIDDLE COLUMN (SIMULATION PARAMETERS)
  *************************************************************************************************************************/
-
-function _toggleLaunchButtons(beActiveLaunch, beActiveRest) {
-    $("#button-launch-new-burst").toggle(beActiveLaunch);
-    $("#button-branch-burst").toggle(beActiveRest);
-}
 
 /**
  * Submit currently set simulation parameters.
@@ -442,18 +428,16 @@ function setPseRangeParameters(){
 /*
  * If a burst is stored in session then load from there. Called on coming to burst page from a valid session.
  */
-function initBurstConfiguration(sessionPortlets, selectedTab) {
+function initBurstConfiguration(currentBurstID, sessionPortlets, selectedTab) {
     setPseRangeParameters();
 
     loadBurstHistory();
+    changeBurstHistory(currentBurstID, false, false, '');
     toggleConfigSurfaceModelParamsButton();
 
     if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
     }
-
-    // selectedPortlets = sessionPortlets;
-    // setPortletsStaticPreviews();
 }
 
 /*
@@ -486,90 +470,6 @@ function loadBurstReadOnly(burst_id, first_wizzard_form_url) {
     });
 }
 
-/*
- * Given a burst id, make all the required AJAX calls to populate the right and the left side.
- */
-function loadBurst(burst_id) {
-    sessionStoredBurst.id = burst_id;
-    // If left side was on portlet config phase, cancel that.
-    _clearAllTimeouts();
-    // Call ASYNC since it returns a HTML that contains the burst status
-    // This is updated immediately after this function exits so we need to make
-    // sure AJAX response is loaded by then
-    doAjaxCall({
-        type: "POST",
-        url: '/burst/load_burst/' + burst_id,
-        showBlockerOverlay: true,
-        success: function (r) {
-            const result = $.parseJSON(r);
-            selectedTab = result.selected_tab;
-            const groupGID = result.group_gid;
-            const selectedBurst = $("#burst_id_" + burst_id)[0];
-            // This is for the back-button issue with Chrome. Should be removed after permanent solution.
-            if (selectedBurst !== null) {
-                selectedBurst.className = selectedBurst.className + ' ' + ACTIVE_BURST_CLASS;
-                sessionStoredBurst.isFinished = (result.status === 'finished');
-                sessionStoredBurst.isRange = (groupGID !== null && groupGID !== "None" && groupGID !== undefined);
-                fill_burst_name(selectedBurst.children[0].text, true, false);
-                updatePortletsToolbar(3);
-            }
-
-            if (groupGID !== null && groupGID !== "None" && groupGID !== undefined) {
-                loadGroup(groupGID);
-            } else if (selectedTab === -1) {
-                $("#section-portlets").show();
-                $("#tab-burst-tree").click();
-            } else {
-                const sectionPortletsElem = $("#section-portlets");
-                sectionPortletsElem.show();
-                const portletsDisplay = $("#portlets-display")[0];
-                const fullWidth = Math.floor(portletsDisplay.clientWidth);
-                const fullHeight = Math.floor(sectionPortletsElem[0].clientHeight - 95);
-                doAjaxCall({
-                    type: "POST",
-                    url: '/burst/load_configured_visualizers/' + fullWidth + '/' + fullHeight,
-                    showBlockerOverlay: true,
-                    success: function (portlets) {
-                        doAjaxCall({
-                            type: "POST",
-                            async: false,
-                            url: '/burst/get_selected_portlets',
-                            showBlockerOverlay: true,
-                            success: function (rr) {
-                                selectedPortlets = $.parseJSON(rr);
-                            },
-                            error: function () {
-                                displayMessage("Viewers not loaded completely...", "errorMessage");
-                            }
-                        });
-                        displayMessage("Simulation successfully loaded!");
-                    },
-                    error: function () {
-                        displayMessage("Viewers not loaded properly...", "errorMessage");
-                    }
-                });
-            }
-        },
-        error: function () {
-            displayMessage("Simulation was not loaded properly...", "errorMessage");
-        }
-    });
-}
-
-/**
- * Mark current burst as changed, to see the user than the latest changes are not yet persisted.
- */
-function markBurstChanged() {
-    if (sessionStoredBurst.id === '') {
-        return;
-    }
-    const titleSimulation = $("#title-simulation");
-    const previousTitle = titleSimulation.html();
-    if (previousTitle.lastIndexOf("***") < 0) {
-        titleSimulation.html(previousTitle + " ***");
-    }
-}
-
 /**
  * Method for updating title area according to current selected burst and its state.
  * @param {String} burstName
@@ -579,31 +479,35 @@ function markBurstChanged() {
 function fill_burst_name(burstName, isReadOnly, addPrefix) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
+    const titlePSE = $("#title-pse");
     const titlePortlets = $("#title-visualizers");
 
     if (addPrefix && burstName.indexOf('Copy_') < 0) {
         burstName = "Copy_" + burstName;
     }
 
-    titleSimulation.empty();
     inputBurstName.val(burstName);
+    titleSimulation.empty();
     titlePortlets.empty();
+    titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation core for " + burstName);
         titlePortlets.append(burstName);
-        sessionStoredBurst.name = burstName;
+        titlePSE.append(burstName);
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
-        titleSimulation.append("<mark>Create</mark> New simulation core");
         if (burstName !== '') {
+            titleSimulation.append("<mark>Create</mark> Simulation core for " + burstName);
             titlePortlets.append(burstName);
+            titlePSE.append(burstName);
         } else {
+            titleSimulation.append("<mark>Configure</mark> New simulation core");
             titlePortlets.append("New simulation");
+            titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
     }
-    _toggleLaunchButtons(!isReadOnly, isReadOnly && sessionStoredBurst.isFinished && !sessionStoredBurst.isRange);
     user_edited_title = false;
 }
 
@@ -620,7 +524,7 @@ function launchNewPSEBurst(currentForm) {
             loadBurstHistory();
             const result = $.parseJSON(r);
             if ('id' in result) {
-                changeBurstHistory(result.id);
+                changeBurstHistory(result.id, false, false, '');
             }
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");
@@ -649,7 +553,7 @@ function launchNewBurst(currentForm, launchMode) {
             loadBurstHistory();
             const result = $.parseJSON(response);
             if ('id' in result) {
-                changeBurstHistory(result.id, false);
+                changeBurstHistory(result.id, false, false, '');
             }
             if ('error' in result) {
                 displayMessage(result.error, "errorMessage");

@@ -5,9 +5,9 @@
 
     <ul class="burst-list" id="burst-history">
        {% for burst in burst_list %}
-            <li class="burst {{ 'burst-group' if burst.is_group else '' }} {{'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished' }}"
+            <li class="burst {{ 'burst-group' if burst.range1 else '' }} {{'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished' }}"
                 id='burst_id_{{ burst.id }}'>
-                <a href="#" onclick="changeBurstHistory({{ burst.id }}, true, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
+                <a href="#" onclick="changeBurstHistory({{ burst.id }}, true, false, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
                 <nav class="inline-menu inline-hover-menu">
                     <button class="action action-edit action-menu">Edit</button>
                     <div class="extension">
@@ -41,6 +41,14 @@
                             <p class="burst-prop-age"><mark>Created : </mark> {{ burst.start_time.strftime('%Y/%m/%d %H:%M') }}</p>
                             {% if burst.error_message %}
                                 <p class="burst-prop-error"><mark>Error message : </mark> {{ burst.error_message }}</p>
+                            {% endif %}
+
+                            {% if burst.range1 %}
+                            <p class="burst-prop-data"><mark>Range1 : </mark> {{ burst.range1 }}</p>
+                            {% endif %}
+
+                            {% if burst.range2 %}
+                            <p class="burst-prop-data"><mark>Range2 : </mark> {{ burst.range2 }}</p>
                             {% endif %}
 
                             {% if burst.status=='canceled' %}
