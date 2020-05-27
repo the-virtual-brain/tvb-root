@@ -101,6 +101,9 @@ class BurstDAO(RootDAO):
         burst = None
         try:
             burst = self.session.query(BurstConfiguration
+                                       ).filter(BurstConfiguration.fk_simulation == operation_id).first()
+            if not burst:
+                burst = self.session.query(BurstConfiguration
                                        ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.id
                                               ).filter(DataType.fk_from_operation == operation_id).first()
         except NoResultFound:
