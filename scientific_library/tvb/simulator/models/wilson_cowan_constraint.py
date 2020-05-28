@@ -31,11 +31,12 @@ Wilson-Cowan equations based model definition.
 
 """
 import numpy
-from tvb.basic.neotraits.api import Final  #, NArray, List, Range
+from tvb.basic.neotraits.api import Final, NArray, Range, List
 from tvb.simulator.models.wilson_cowan import WilsonCowan as TVBWilsonCowan
 
 
 class WilsonCowan(TVBWilsonCowan):
+
     r"""
     **References**:
 
@@ -146,11 +147,27 @@ class WilsonCowan(TVBWilsonCowan):
 
     """
 
+    # Define traited attributes for this model, these represent possible kwargs.
+
+    tau_Ein = NArray(
+        label=r":math:`\tau_Ein`",
+        default=numpy.array([1., ]),
+        domain=Range(lo=1., hi=100., step=1.0),
+        doc="""[ms]. Excitatory population instant spiking rate time constant.""")
+
+    tau_Iin = NArray(
+        label=r":math:`\tau_Iin`",
+        default=numpy.array([1., ]),
+        domain=Range(lo=1., hi=100., step=1.0),
+        doc="""[ms]. Inhibitory population instant spiking rate time constant.""")
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
         default={"E": numpy.array([0.0, 1.0]),
-                 "I": numpy.array([0.0, 1.0])},
+                 "I": numpy.array([0.0, 1.0]),
+                 "Ein": numpy.array([0.0, 1.0]),
+                 "Iin": numpy.array([0.0, 1.0])},
         doc="""The values for each state-variable should be set to encompass
                 the boundaries of the dynamic range of that state-variable. 
                 Set None for one-sided boundaries.""")
@@ -159,9 +176,78 @@ class WilsonCowan(TVBWilsonCowan):
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"E": numpy.array([0.0, 1.0]),
-                 "I": numpy.array([0.0, 1.0])},
+                 "I": numpy.array([0.0, 1.0]),
+                 "Ein": numpy.array([0.0, 1.0]),
+                 "Iin": numpy.array([0.0, 1.0])},
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
+
+    variables_of_interest = List(
+        of=str,
+        label="Variables watched by Monitors",
+        choices=('E', 'I', 'Ein', 'Iin'),
+        default=('E', 'I', 'Ein', 'Iin'),
+        doc="""default state variables to be monitored""")
+
+    state_variables = ['E', 'I', 'Ein', 'Iin']
+    _nvar = 4
+
+    def update_derived_parameters(self):
+        """
+        When needed, this should be a method for calculating parameters that are
+        calculated based on paramaters directly set by the caller. For example,
+        see, ReducedSetFitzHughNagumo. When not needed, this pass simplifies
+        code that updates an arbitrary models parameters -- ie, this can be
+        safely called on any model, whether it's used or not.
+        """
+        for var in ["Ein", "Iin"]:
+            if hasattr(self, var):
+                setattr(self, "_" + var, getattr(self, var) > 0)
+            else:
+                setattr(self, "_" + var, numpy.array([False, ]))
+
+    def update_initial_conditions_non_state_variables(self, state_variables, coupling, local_coupling=0.0,
+                                                      use_numba=False):
+        # Set Ein and Iin to 0.0. Keep potentially noisy initial condition only for S
+        state_variables[2:] = 0.0
+        return state_variables
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+
+        .. math::
+            \tau \dot{x}(t) &= -z(t) + \phi(z(t)) \\
+            \phi(x) &= \frac{c}{1-exp(-a (x-b))}
+
+        """
+
+        E = state_variables[0, :]
+        I = state_variables[1, :]
+        Ein = state_variables[2, :]  # Input from Spiking Network
+        Iin = state_variables[3, :]  # Input from Spiking Network
+        derivative = numpy.empty_like(state_variables)
+
+        # long-range coupling
+        c_0 = coupling[0, :]
+
+        # short-range (local) coupling
+        lc_0 = local_coupling * E
+        lc_1 = local_coupling * I
+
+        x_e = self.alpha_e * (self.c_ee * E - self.c_ei * I + self.P  - self.theta_e +  c_0 + lc_0 + lc_1)
+        x_i = self.alpha_i * (self.c_ie * E - self.c_ii * I + self.Q  - self.theta_i + lc_0 + lc_1)
+
+        s_e = self.c_e / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e)))
+        s_i = self.c_i / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i)))
+
+        derivative[0] = numpy.where(self._Ein,
+                                    (-E + Ein) / self.tau_Ein,                            # Update from Spiking Network
+                                    (-E + (self.k_e - self.r_e * E) * s_e) / self.tau_e)
+        derivative[1] = numpy.where(self._Iin,
+                                    (-I + Iin) / self.tau_Iin,                            # Update from Spiking Network
+                                    (-I + (self.k_i - self.r_i * I) * s_i) / self.tau_i)
+
+        return derivative

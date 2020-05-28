@@ -354,10 +354,11 @@ class Simulator(HasTraits):
             self.tvb_spikeNet_interface.configure(self.model)
 
             # Create TVB model parameter for SpikeNet to target
-            dummy = -numpy.ones((self.connectivity.number_of_regions, )).reshape(spatial_reshape)
-            dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 0.0
+            dummy = numpy.zeros((self.connectivity.number_of_regions, )).reshape(spatial_reshape)
+            dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 1.0
             for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
                 setattr(self.model, param, dummy)
+            self.model.update_derived_parameters()
 
             # If there are Spiking nodes and are represented exclusively in Spiking Network...
             if self.tvb_spikeNet_interface.exclusive_nodes and len(self.tvb_spikeNet_interface.spiking_nodes_ids) > 0:
