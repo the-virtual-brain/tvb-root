@@ -158,7 +158,7 @@ class TimeSeriesH5(H5File):
                 slices.append(slice(specific_slices[i], min(specific_slices[i] + 1, overall_shape[i]), 1))
 
         data = self.data[tuple(slices)]
-        if len(data) == 1:
+        if data.shape[2] == 1:
             # Do not allow time dimension to get squeezed, a 2D result need to
             # come out of this method.
             data = data.squeeze()

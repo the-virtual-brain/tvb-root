@@ -349,9 +349,6 @@ class EegMonitor(ABCSpaceDisplayer):
 
             page_chunk_data = timeseries.read_data_page(self.current_page * self.page_size,
                                                         (self.current_page + 1) * self.page_size)
-            if len(page_chunk_data.shape) == 1:
-                page_chunk_data = page_chunk_data.reshape(page_chunk_data.shape[0], 1)
-
             channels_per_set.append(int(resulting_shape[1]))
 
             for idx in range(resulting_shape[1]):
