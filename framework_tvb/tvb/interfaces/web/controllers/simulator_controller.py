@@ -260,7 +260,12 @@ class SimulatorController(BurstBaseController):
             burst_config = BurstConfiguration(project.id)
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
 
-        is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
+        if burst_config.start_time is not None:
+            is_simulator_load = True
+            common.add2session(common.KEY_IS_SIMULATOR_LOAD, is_simulator_load)
+        else:
+            is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
+
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
 
         template_specification['burstConfig'] = burst_config
