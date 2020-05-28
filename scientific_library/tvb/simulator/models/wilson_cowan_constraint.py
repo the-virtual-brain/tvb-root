@@ -228,7 +228,7 @@ class WilsonCowan(TVBWilsonCowan):
         I = state_variables[1, :]
         Ein = state_variables[2, :]  # Input from Spiking Network
         Iin = state_variables[3, :]  # Input from Spiking Network
-        derivative = numpy.empty_like(state_variables)
+        derivative = numpy.zeros(state_variables.shape)
 
         # long-range coupling
         c_0 = coupling[0, :]
