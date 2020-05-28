@@ -524,24 +524,23 @@ class ABCAdapter(object):
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
 
-    def review_operation_inputs(self, adapter, operation):
+    def review_operation_inputs(self, operation):
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
         """
         changed_attr = {}
         inputs_datatypes = []
-        view_model = self.load_view_model(adapter, operation)
-        form_model = adapter.get_view_model_class()()
-        form_fields = adapter.get_form_class()().fields
+        view_model = self.load_view_model(self, operation)
+        form_model = self.get_view_model_class()()
+        form_fields = self.get_form_class()().fields
 
         for field in form_fields:
             if not isinstance(field, TraitDataTypeSelectField):
                 attr_form = getattr(form_model, field.name)
                 attr_vm = getattr(view_model, field.name)
                 if attr_vm != attr_form:
-                    field_name = field.name.title().replace("_", " ")
-                    changed_attr[field_name] = attr_vm
+                    changed_attr[field.label] = attr_vm
             else:
                 attr_vm = getattr(view_model, field.name)
                 data_type = ABCAdapter.load_entity_by_gid(attr_vm)
