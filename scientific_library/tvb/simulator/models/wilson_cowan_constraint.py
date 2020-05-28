@@ -151,13 +151,13 @@ class WilsonCowan(TVBWilsonCowan):
 
     tau_Ein = NArray(
         label=r":math:`\tau_Ein`",
-        default=numpy.array([1., ]),
+        default=numpy.array([50., ]),
         domain=Range(lo=1., hi=100., step=1.0),
         doc="""[ms]. Excitatory population instant spiking rate time constant.""")
 
     tau_Iin = NArray(
         label=r":math:`\tau_Iin`",
-        default=numpy.array([1., ]),
+        default=numpy.array([50., ]),
         domain=Range(lo=1., hi=100., step=1.0),
         doc="""[ms]. Inhibitory population instant spiking rate time constant.""")
 
@@ -175,10 +175,10 @@ class WilsonCowan(TVBWilsonCowan):
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"E": numpy.array([0.0, 1.0]),
-                 "I": numpy.array([0.0, 1.0]),
-                 "Ein": numpy.array([0.0, 1.0]),
-                 "Iin": numpy.array([0.0, 1.0])},
+        default={"E": numpy.array([0.0, 0.5]),
+                 "I": numpy.array([0.0, 0.5]),
+                 "Ein": numpy.array([0.0, 0.5]),
+                 "Iin": numpy.array([0.0, 0.5])},
         doc="""The values for each state-variable should be set to encompass
         the expected dynamic range of that state-variable for the current
         parameters, it is used as a mechanism for bounding random inital
