@@ -790,7 +790,7 @@ class ProjectService:
         parameters = json.loads(operation.parameters)
         try:
             adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return adapter.review_operation_inputs(parameters)
+            return adapter.review_operation_inputs(adapter, operation)
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)

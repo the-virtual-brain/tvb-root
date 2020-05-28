@@ -326,7 +326,6 @@ class OperationService:
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
-            operation.parameters = json.dumps(kwargs)
             operation.mark_complete(STATUS_FINISHED)
             if nr_datatypes > 0:
                 #### Write operation meta-XML only if some result are returned

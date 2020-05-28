@@ -53,6 +53,7 @@ from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
+from tvb.core.neotraits._h5core import ViewModelH5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
@@ -523,13 +524,40 @@ class ABCAdapter(object):
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
 
-    def review_operation_inputs(self, parameters):
-        # TODO: implement this for neoforms
+    def review_operation_inputs(self, adapter, operation):
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
         """
-        return {}, None
+        changed_attr = {}
+        inputs_datatypes = []
+        view_model = self.load_view_model(adapter, operation)
+        form_model = adapter.get_view_model_class()()
+        form_fields = adapter.get_form_class()().fields
+
+        for field in form_fields:
+            if not isinstance(field, TraitDataTypeSelectField):
+                attr_form = getattr(form_model, field.name)
+                attr_vm = getattr(view_model, field.name)
+                if attr_vm != attr_form:
+                    field_name = field.name.title().replace("_", " ")
+                    changed_attr[field_name] = attr_vm
+            else:
+                attr_vm = getattr(view_model, field.name)
+                data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                inputs_datatypes.append(data_type)
+
+        return inputs_datatypes, changed_attr
+
+    def load_view_model(self, adapter_instance, operation):
+        storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
+        input_gid = json.loads(operation.parameters)['gid']
+        view_model_class = adapter_instance.get_view_model_class()
+        view_model = view_model_class()
+        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
+        h5_file = ViewModelH5(h5_path, view_model)
+        h5_file.load_into(view_model)
+        return view_model
 
 
 @add_metaclass(ABCMeta)
