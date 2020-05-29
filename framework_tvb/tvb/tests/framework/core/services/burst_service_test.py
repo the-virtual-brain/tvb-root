@@ -70,6 +70,7 @@ class TestBurstService(BaseTestCase):
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
     burst_service = BurstService()
+    project_service = ProjectService()
     flow_service = FlowService()
     operation_service = OperationService()
     sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
@@ -177,7 +178,7 @@ class TestBurstService(BaseTestCase):
         Test the remove burst method added to burst_service.
         """
         loaded_burst, _ = self._prepare_and_launch_sync_burst()
-        self.burst_service.cancel_or_remove_burst(loaded_burst.id)
+        self.project_service.cancel_or_remove_burst(loaded_burst.id)
         self._check_burst_removed()
 
 
@@ -213,7 +214,7 @@ class TestBurstService(BaseTestCase):
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
         assert 4 == launched_workflows, "4 workflows should have been launched due to group parameter."
 
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_config.id)
+        got_deleted = self.project_service.cancel_or_remove_burst(burst_config.id)
         assert got_deleted, "Burst should be deleted"
 
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
@@ -230,12 +231,12 @@ class TestBurstService(BaseTestCase):
         burst_entity = self._prepare_and_launch_async_burst(length=20000)
         assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
                          'A 20000 length simulation should still be started immediately after launch.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
+        got_deleted = self.project_service.cancel_or_remove_burst(burst_entity.id)
         assert not got_deleted, "Burst should be cancelled before deleted."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
         assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
                          'Deleting a running burst should just cancel it first.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
+        got_deleted = self.project_service.cancel_or_remove_burst(burst_entity.id)
         assert got_deleted, "Burst should be deleted if status is cancelled."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
         assert burst_entity is None, "Removing a canceled burst should delete it from db."
@@ -369,7 +370,7 @@ class TestBurstService(BaseTestCase):
         """
         burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=120)
         if burst_config.status != BurstConfiguration.BURST_FINISHED:
-            self.burst_service.stop_burst(burst_config)
+            self.project_service.stop_burst(burst_config)
             raise AssertionError("Burst should have finished successfully.")
 
         op_groups = self.count_all_entities(OperationGroup)
@@ -456,17 +457,17 @@ class TestBurstService(BaseTestCase):
             burst_config = dao.get_burst_by_id(burst_config.id)
 
         if waited > timeout:
-            self.burst_service.stop_burst(burst_config)
+            self.project_service.stop_burst(burst_config)
             raise AssertionError("Timed out waiting for simulations to finish. We will cancel it")
 
         if error_expected and burst_config.status != BurstConfiguration.BURST_ERROR:
-            self.burst_service.stop_burst(burst_config)
+            self.project_service.stop_burst(burst_config)
             raise AssertionError("Burst should have failed due to invalid input data.")
 
         if (not error_expected) and burst_config.status != BurstConfiguration.BURST_FINISHED:
             msg = "Burst status should have been FINISH. Instead got %s %s" % (burst_config.status,
                                                                                burst_config.error_message)
-            self.burst_service.stop_burst(burst_config)
+            self.project_service.stop_burst(burst_config)
             raise AssertionError(msg)
 
         return burst_config

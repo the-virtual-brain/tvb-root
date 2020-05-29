@@ -45,6 +45,12 @@ from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adap
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.flow_service import FlowService
+from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
+from tvb.core.removers_factory import get_remover
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
 from tvb.core.entities.filters.factory import StaticFiltersFactory
@@ -846,6 +852,33 @@ class ProjectService:
         if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
             return dao.get_operations_for_datatype(datatype_gid, only_relevant=False, only_in_groups=only_in_groups)
         return dao.get_operations_for_datatype(datatype_gid, only_in_groups=only_in_groups)
+
+    def cancel_or_remove_burst(self, burst_id):
+        """
+        Cancel (if burst is still running) or Remove the burst given by burst_id.
+        :returns True when Remove operation was done and False when Cancel
+        """
+        burst_entity = dao.get_burst_by_id(burst_id)
+        if burst_entity.status == burst_entity.BURST_RUNNING:
+            self.stop_burst(burst_entity.fk_simulation)
+            return False
+
+        ## Remove each DataType in current burst.
+        datatypes = dao.get_results_for_operation(burst_entity.fk_simulation)
+
+        # Remove burst first to delete work-flow steps which still hold foreign keys to operations.
+        correct = dao.remove_entity(burst_entity.__class__, burst_id)
+        if not correct:
+            raise RemoveDataTypeException("Could not remove Burst entity!")
+
+        for datatype in datatypes:
+            ProjectService().remove_datatype(burst_entity.fk_project, datatype.gid, False)
+
+    def stop_burst(self, operation_id):
+        """
+        Stop the operation given by the operation id.
+        """
+        return BACKEND_CLIENT.stop_operation(int(operation_id))
 
     @staticmethod
     def get_datatype_by_id(datatype_id):

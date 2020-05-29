@@ -41,6 +41,7 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
+from tvb.core.services.project_service import ProjectService
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -240,6 +241,10 @@ class SimulatorController(BurstBaseController):
     def _update_last_loaded_fragment_url(self, current_url):
         self.last_loaded_form_url = current_url
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, self.last_loaded_form_url)
+
+    @cherrypy.expose
+    def cancel_or_remove_burst(self, burst_id):
+        ProjectService().cancel_or_remove_burst(burst_id)
 
     @expose_page
     @settings

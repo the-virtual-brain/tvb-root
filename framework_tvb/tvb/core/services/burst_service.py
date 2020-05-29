@@ -174,13 +174,6 @@ class BurstService(object):
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
 
-    # TODO: We should implement these two methods
-    def stop_burst(self, burst):
-        raise NotImplementedError
-
-    def cancel_or_remove_burst(self, burst_id):
-        raise NotImplementedError
-
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
         burst = dao.get_burst_by_id(burst_id)
