@@ -47,6 +47,7 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes.equations import Gaussian, SpatialApplicableEquation
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragment, handle_error, check_user, \
     using_template
@@ -104,6 +105,7 @@ class EquationPlotForm(Form):
             self.max_x.fill_from_post(form_data)
 
 
+@traced
 class SurfaceModelParametersController(SpatioTemporalController):
     """
     Control for defining parameters of a model in a visual manner.

@@ -49,6 +49,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
     check_user
@@ -79,6 +80,7 @@ class TemporalPlotForm(EquationPlotForm):
             self.max_x.fill_from_post(form_data)
 
 
+@traced
 class RegionStimulusController(SpatioTemporalController):
     """
     Control layer for defining Stimulus entities on Regions.

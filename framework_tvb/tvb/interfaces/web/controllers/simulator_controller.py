@@ -51,6 +51,7 @@ from tvb.core.services.exceptions import BurstServiceException, ServicesBaseExce
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
@@ -221,6 +222,7 @@ class SimulatorFragmentRenderingRules(object):
         return {"renderer": self}
 
 
+@traced
 class SimulatorController(BurstBaseController):
     KEY_IS_LOAD_AFTER_REDIRECT = "is_load_after_redirect"
     DEFAULT_COPY_PREFIX = "copy_of_"

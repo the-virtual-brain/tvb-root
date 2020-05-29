@@ -48,6 +48,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form, SimpleFloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
@@ -93,6 +94,7 @@ class EquationSpatialPlotForm(Form):
             self.max_space_x.fill_from_post(form_data)
 
 
+@traced
 class SurfaceStimulusController(SpatioTemporalController):
     """
     Control layer for defining Stimulus entities on a cortical surface.
