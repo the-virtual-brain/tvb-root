@@ -52,7 +52,6 @@ function clone(object_) {
  * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
  */
 function resetToNewBurst() {
-    document.getElementById('next/burst/set_connectivity').focus();
     doAjaxCall({
         type: "POST",
         url: '/burst/reset_simulator_configuration/',
@@ -62,6 +61,7 @@ function resetToNewBurst() {
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, false, false, '');
+            document.getElementsByClassName('btn btn-primary next')[0].focus();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -99,13 +99,14 @@ function copyBurst(burstID, first_wizzard_form_url) {
 }
 
 function _renderAllSimulatorForms(url, stop_at_url = '') {
+    const simulator_params = document.getElementById('div-simulator-parameters');
     if (stop_at_url !== url) {
         doAjaxCall({
             type: "GET",
             url: url,
             success: function (response) {
                 var t = document.createRange().createContextualFragment(response);
-                document.getElementById('div-simulator-parameters').appendChild(t);
+                simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
 
                 next_url = $(response).attr("action");
@@ -114,6 +115,8 @@ function _renderAllSimulatorForms(url, stop_at_url = '') {
                 }
             }
         });
+    }else{
+        setInitialFocusOnButton(simulator_params);
     }
 }
 
@@ -200,7 +203,6 @@ function _updateBurstHistoryElapsedTime(result) {
  * If "withFullUpdate" is true, then a full history section replacement happens before the periodical update.
  */
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
-    document.getElementById('next/burst/set_connectivity').focus();
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
             loadBurstHistory();
@@ -567,29 +569,21 @@ function launchNewBurst(currentForm, launchMode) {
     });
 }
 
-function setInitialFocusOnButton(current_form){
-    const last_child_action = current_form.lastChild.action;
-
-    if (last_child_action === undefined){
-        document.getElementById('next/burst/set_connectivity').focus();
-    }else{
-        const index = last_child_action.indexOf('/burst');
-        const last_child_simple = last_child_action.substring(index);
-        if(last_child_simple === '/burst/setup_pse'){
-            document.getElementById('launch_simulation').focus();
-        }
-        else if(last_child_simple === '/burst/launch_pse'){
-            document.getElementById('launch_pse').focus();
-        }else {
-            document.getElementById('next' + current_form.lastChild.action.substring(index)).focus();
-        }
+function setInitialFocusOnButton(simulator_params){
+    const current_url = simulator_params.lastElementChild.action;
+    if(current_url !== undefined && current_url.includes('setup_pse')){
+        document.getElementById('launch_simulation').focus();
+    }else if(current_url !== undefined && current_url.includes('launch_pse')){
+        document.getElementById('launch_pse').focus();
+    }else {
+        const next_buttons = document.getElementsByClassName('btn btn-primary next');
+        next_buttons[next_buttons.length - 1].focus();
     }
 }
 
-
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
-    const simulator_form = document.getElementById(div_id);
-    simulator_form.removeChild(currentForm);
+    const simulator_params = document.getElementById(div_id);
+    simulator_params.removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
@@ -631,7 +625,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
         config_branch_button.style.visibility = 'visible';
     }
     fieldset.disabled = false;
-    setInitialFocusOnButton(simulator_form);
+    setInitialFocusOnButton(simulator_params);
 }
 
 function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
@@ -687,10 +681,10 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
-                const simulator_form = document.getElementById(div_id);
-                simulator_form.appendChild(t);
-                setInitialFocusOnButton(simulator_form);
+                const simulator_params = document.getElementById(div_id);
+                simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
+                setInitialFocusOnButton(simulator_params);
             }
         }
     })
