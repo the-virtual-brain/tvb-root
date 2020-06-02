@@ -37,7 +37,6 @@ Service Layer for the Project entity.
 
 import os
 import six
-import json
 import formencode
 from tvb.core import utils
 from tvb.basic.logger.builder import get_logger
@@ -47,6 +46,7 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 from tvb.core.removers_factory import get_remover
 from tvb.core.entities.storage import dao, transactional
@@ -446,7 +446,7 @@ class ProjectService:
 
         user_display_name = dao.get_user_by_id(operation.fk_launched_by).display_name
         burst = dao.get_burst_for_operation_id(operation.id)
-        datatypes_param, all_special_params = self._review_operation_inputs(operation.gid)
+        datatypes_param, all_special_params = OperationService()._review_operation_inputs(operation.gid)
 
         op_pid = dao.get_operation_process_for_operation(operation.id)
         op_details = OperationOverlayDetails(operation, user_display_name, len(datatypes_param),
@@ -760,7 +760,7 @@ class ProjectService:
         If any dataType is part of a dataType group then the dataType group will
         be returned instead of that dataType.
         """
-        all_datatypes = self._review_operation_inputs(operation_gid)[0]
+        all_datatypes = OperationService()._review_operation_inputs(operation_gid)[0]
         datatype_inputs = []
         for datatype in all_datatypes:
             if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW:
@@ -779,29 +779,6 @@ class ProjectService:
 
         datatypes.extend([v for _, v in six.iteritems(datatype_groups)])
         return datatypes
-
-    def _review_operation_inputs(self, operation_gid):
-        """
-        :returns: A list of DataTypes that are used as input parameters for the specified operation.
-                 And a dictionary will all operation parameters different then the default ones.
-        """
-        # todo rewrite after neotraits TVB-2687
-        operation = dao.get_operation_by_gid(operation_gid)
-        parameters = json.loads(operation.parameters)
-        try:
-            adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return adapter.review_operation_inputs(operation)
-
-        except Exception:
-            self.logger.exception("Could not load details for operation %s" % operation_gid)
-            inputs_datatypes = []
-            changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
-            for submit_param in parameters.values():
-                self.logger.debug("Searching DT by GID %s" % submit_param)
-                datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
-                if datatype is not None:
-                    inputs_datatypes.append(datatype)
-            return inputs_datatypes, changed_parameters
 
     def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
         """

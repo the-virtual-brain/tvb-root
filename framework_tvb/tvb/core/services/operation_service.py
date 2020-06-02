@@ -62,6 +62,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, DataTypeSelectField
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
@@ -302,6 +303,53 @@ class OperationService:
             h5_file = ViewModelH5(h5_path, view_model)
             h5_file.load_into(view_model)
         return view_model
+
+    def _review_operation_inputs(self, operation_gid):
+        """
+        :returns: A list of DataTypes that are used as input parameters for the specified operation.
+                 And a dictionary will all operation parameters different then the default ones.
+        """
+        operation = dao.get_operation_by_gid(operation_gid)
+        parameters = json.loads(operation.parameters)
+        try:
+            adapter = ABCAdapter.build_adapter(operation.algorithm)
+            return self.review_operation_inputs(adapter, operation)
+
+        except Exception:
+            self.logger.exception("Could not load details for operation %s" % operation_gid)
+            inputs_datatypes = []
+            changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
+            for submit_param in parameters.values():
+                self.logger.debug("Searching DT by GID %s" % submit_param)
+                datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
+                if datatype is not None:
+                    inputs_datatypes.append(datatype)
+            return inputs_datatypes, changed_parameters
+
+    def review_operation_inputs(self, adapter, operation):
+        """
+        :returns: a list with the inputs from the parameters list that are instances of DataType,\
+            and a dictionary with all parameters which are different than the declared defauts
+        """
+        changed_attr = {}
+        inputs_datatypes = []
+        view_model = self.load_view_model(adapter, operation)
+
+        form_model = adapter.get_view_model_class()()
+        form_fields = adapter.get_form_class()().fields
+
+        for field in form_fields:
+            if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
+                attr_default = getattr(form_model, field.name)
+                attr_vm = getattr(view_model, field.name)
+                if attr_vm != attr_default:
+                    changed_attr[field.label] = attr_vm
+            else:
+                attr_vm = getattr(view_model, field.name)
+                data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                inputs_datatypes.append(data_type)
+
+        return inputs_datatypes, changed_attr
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
