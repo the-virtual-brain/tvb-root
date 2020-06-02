@@ -859,12 +859,14 @@ class ProjectService:
         :returns True when Remove operation was done and False when Cancel
         """
         burst_entity = dao.get_burst_by_id(burst_id)
+        operation_id = burst_entity.fk_simulation
         if burst_entity.status == burst_entity.BURST_RUNNING:
-            self.stop_burst(burst_entity.fk_simulation)
+            self.stop_burst(operation_id)
             return False
 
         ## Remove each DataType in current burst.
-        datatypes = dao.get_results_for_operation(burst_entity.fk_simulation)
+        datatypes = dao.get_results_for_operation(operation_id)
+        self.remove_operation(operation_id)
 
         # Remove burst first to delete work-flow steps which still hold foreign keys to operations.
         correct = dao.remove_entity(burst_entity.__class__, burst_id)
@@ -873,6 +875,7 @@ class ProjectService:
 
         for datatype in datatypes:
             ProjectService().remove_datatype(burst_entity.fk_project, datatype.gid, False)
+        return True
 
     def stop_burst(self, operation_id):
         """

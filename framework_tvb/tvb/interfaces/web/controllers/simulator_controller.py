@@ -243,8 +243,25 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, self.last_loaded_form_url)
 
     @cherrypy.expose
+    @handle_error(redirect=False)
+    @check_user
     def cancel_or_remove_burst(self, burst_id):
-        ProjectService().cancel_or_remove_burst(burst_id)
+        """
+            Cancel or Remove the burst entity given by burst_id.
+            :returns 'reset-new': When currently selected burst was removed. JS will need to reset selection to a new entry
+            :returns 'canceled': When current burst was still running and was just stopped.
+            :returns 'done': When no action is required on the client.
+        """
+        burst_id = int(burst_id)
+        session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
+        removed = ProjectService().cancel_or_remove_burst(burst_id)
+        if removed:
+            if session_burst.id == burst_id:
+                return "reset-new"
+            return 'done'
+        else:
+            # Burst was stopped since it was running
+            return 'canceled'
 
     @expose_page
     @settings
