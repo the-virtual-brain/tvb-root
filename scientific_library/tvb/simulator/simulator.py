@@ -566,7 +566,7 @@ class Simulator(HasTraits):
             self._tic = time.time()
             self._tic_ratio = 0.1
             self._tic_point = self._tic_ratio * n_steps
-        end_step =  init_step + n_steps
+        end_step = init_step + n_steps
         for step in range(init_step, end_step):
 
             # 1. Update spikeNet with TVB state t_(step-1)
