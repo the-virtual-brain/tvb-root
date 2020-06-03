@@ -90,12 +90,12 @@ class FastICA(HasTraits):
         # ICA operates on matrices, here we perform for all state variables and modes
         W = numpy.zeros((n_comp, n_comp, n_svar, n_mode))  # unmixing
         K = numpy.zeros((n_comp, n_node, n_svar, n_mode))  # whitening matrix
-        src = numpy.zeros((n_time, n_comp, n_svar, n_mode))  # component time series
+        src = numpy.zeros((n_comp, n_time, n_svar, n_mode))  # component time series
 
         for mode in range(n_mode):
             for var in range(n_svar):
                 sl = Ellipsis, var, mode
-                K[sl], W[sl], src[sl] = fastica(data[:, var, :, mode], self.n_components)
+                src[sl], W[sl], K[sl] = fastica(data[:, var, :, mode], self.n_components)
 
         return mode_decompositions.IndependentComponents(source=self.time_series, component_time_series=src,
                                                          prewhitening_matrix=K, unmixing_matrix=W, n_components=n_comp)
