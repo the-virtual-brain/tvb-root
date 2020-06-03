@@ -51,6 +51,7 @@ import tvb.core.entities.model.model_burst as model_burst
 from tvb.core.neotraits.forms import SimpleStrField
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
@@ -108,6 +109,7 @@ class _InputTreeFragment(ABCAdapterForm):
                                            doc = """The name of this parameter configuration""")
 
 
+@traced
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
     LOGGER = get_logger(__name__)

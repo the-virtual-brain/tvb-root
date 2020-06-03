@@ -42,12 +42,14 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
 
 
+@traced
 class RegionsModelParametersController(BurstBaseController):
     """
     Controller class for placing model parameters in nodes.

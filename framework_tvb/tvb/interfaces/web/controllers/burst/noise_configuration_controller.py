@@ -32,17 +32,20 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
+
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorWizzardURLs
 
 
+@traced
 class NoiseConfigurationController(BurstBaseController):
     """
     Controller class for placing noise parameters in nodes.

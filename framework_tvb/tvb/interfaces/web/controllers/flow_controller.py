@@ -54,6 +54,7 @@ from tvb.core.services.operation_service import OperationService, RANGE_PARAMETE
 from tvb.core.services.project_service import ProjectService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
@@ -73,6 +74,7 @@ WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned
                    "Use filters, to make the list small enough to fit in here!"
 
 
+@traced
 class FlowController(BaseController):
     """
     This class takes care of executing steps in projects.

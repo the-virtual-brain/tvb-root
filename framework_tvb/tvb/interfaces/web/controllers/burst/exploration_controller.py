@@ -41,6 +41,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import FilterChain
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user
 from tvb.interfaces.web.controllers.decorators import using_template, expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -51,6 +52,7 @@ PSE_ISO = "ISO"
 REDIRECT_MSG = '/burst/explore/pse_error?adapter_name=%s&message=%s'
 
 
+@traced
 class ParameterExplorationController(BaseController):
     """
     Controller to handle PSE actions.

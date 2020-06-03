@@ -53,6 +53,7 @@ from tvb.core.services.import_service import ImportService
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.utils import string2bool
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
@@ -61,6 +62,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 
 
+@traced('generate_call_out_control', exclude=True)
 class ProjectController(BaseController):
     """
     Displays pages which deals with Project data management.
