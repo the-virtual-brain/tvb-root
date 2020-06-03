@@ -61,7 +61,7 @@ function resetToNewBurst() {
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, false, false, '');
-            document.getElementsByClassName('btn btn-primary next')[0].focus();
+            $("button.btn-next").first().focus();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -569,15 +569,14 @@ function launchNewBurst(currentForm, launchMode) {
     });
 }
 
-function setInitialFocusOnButton(simulator_params){
+function setInitialFocusOnButton(simulator_params) {
     const current_url = simulator_params.lastElementChild.action;
-    if(current_url !== undefined && current_url.includes('setup_pse')){
-        document.getElementById('launch_simulation').focus();
-    }else if(current_url !== undefined && current_url.includes('launch_pse')){
-        document.getElementById('launch_pse').focus();
-    }else {
-        const next_buttons = document.getElementsByClassName('btn btn-primary next');
-        next_buttons[next_buttons.length - 1].focus();
+    if (current_url !== undefined && current_url.includes('setup_pse')) {
+        $('#launch_simulation').focus();
+    } else if (current_url !== undefined && current_url.includes('launch_pse')) {
+        $('#launch_pse').focus();
+    } else {
+        $("button.btn-next").last().focus();
     }
 }
 
