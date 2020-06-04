@@ -293,6 +293,9 @@ class WebAdminSettings(object):
         # Admin's email used when creating first user
         self.ADMINISTRATOR_EMAIL = manager.get_attribute(stored.KEY_ADMIN_EMAIL, self.DEFAULT_ADMIN_EMAIL)
 
+        # Admins GID
+        self.ADMINISTRATOR_GIDS = manager.get_attribute(stored.KEY_ADMIN_GIDS, "").split(",")
+
 
 class DBSettings(object):
     # Overwrite number of connections to the DB.
