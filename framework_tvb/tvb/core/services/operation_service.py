@@ -304,7 +304,7 @@ class OperationService:
             h5_file.load_into(view_model)
         return view_model
 
-    def _review_operation_inputs(self, operation_gid):
+    def review_operation_inputs(self, operation_gid):
         """
         :returns: A list of DataTypes that are used as input parameters for the specified operation.
                  And a dictionary will all operation parameters different then the default ones.
@@ -313,37 +313,65 @@ class OperationService:
         parameters = json.loads(operation.parameters)
         try:
             adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return self.review_operation_inputs(adapter, operation)
+            return self.review_operation_inputs_from_adapter(adapter, operation)
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)
-            inputs_datatypes = []
-            changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
-            for submit_param in parameters.values():
-                self.logger.debug("Searching DT by GID %s" % submit_param)
-                datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
-                if datatype is not None:
-                    inputs_datatypes.append(datatype)
-            return inputs_datatypes, changed_parameters
+            if 'gid' in parameters.keys():
+                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
+            else:
+                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
+            return [], changed_parameters
 
-    def review_operation_inputs(self, adapter, operation):
+    def review_operation_inputs_from_adapter(self, adapter, operation):
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
         """
-        changed_attr = {}
-        inputs_datatypes = []
         view_model = self.load_view_model(adapter, operation)
-
         form_model = adapter.get_view_model_class()()
         form_fields = adapter.get_form_class()().fields
 
+        if isinstance(adapter, SimulatorAdapter):
+            fragments = adapter.get_simulator_fragments()
+            inputs_datatypes, changed_attr = self.review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+            for fragment in fragments:
+                fragment_fields = fragment().fields
+                for field in fragment_fields:
+                    if(hasattr(view_model, field.name)):
+                        if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
+                            attr_default = getattr(form_model, field.name)
+                            attr_vm = getattr(view_model, field.name)
+                            if attr_vm != attr_default:
+                                if isinstance(attr_default, float) or isinstance(attr_default, str):
+                                    changed_attr[field.label] = attr_vm
+                                else:
+                                    if not isinstance(attr_default, tuple):
+                                        changed_attr[field.label] = attr_vm.title
+                                    else:
+                                        for sub_attr in attr_default:
+                                            changed_attr[field.label] = sub_attr.title
+                        else:
+                            attr_vm = getattr(view_model, field.name)
+                            data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                            inputs_datatypes.append(data_type)
+        else:
+            inputs_datatypes, changed_attr = self.review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+
+        return inputs_datatypes, changed_attr
+
+    def review_operation_inputs_for_adapter_model(self, form_fields, form_model, view_model):
+        changed_attr = {}
+        inputs_datatypes = []
         for field in form_fields:
             if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
                 attr_default = getattr(form_model, field.name)
                 attr_vm = getattr(view_model, field.name)
                 if attr_vm != attr_default:
-                    changed_attr[field.label] = attr_vm
+                    if isinstance(attr_default, float) or isinstance(attr_default, str):
+                        changed_attr[field.label] = attr_vm
+                    else:
+                        changed_attr[field.label] = attr_vm.title
             else:
                 attr_vm = getattr(view_model, field.name)
                 data_type = ABCAdapter.load_entity_by_gid(attr_vm)

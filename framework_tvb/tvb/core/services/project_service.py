@@ -446,7 +446,7 @@ class ProjectService:
 
         user_display_name = dao.get_user_by_id(operation.fk_launched_by).display_name
         burst = dao.get_burst_for_operation_id(operation.id)
-        datatypes_param, all_special_params = OperationService()._review_operation_inputs(operation.gid)
+        datatypes_param, all_special_params = OperationService().review_operation_inputs(operation.gid)
 
         op_pid = dao.get_operation_process_for_operation(operation.id)
         op_details = OperationOverlayDetails(operation, user_display_name, len(datatypes_param),
@@ -760,7 +760,7 @@ class ProjectService:
         If any dataType is part of a dataType group then the dataType group will
         be returned instead of that dataType.
         """
-        all_datatypes = OperationService()._review_operation_inputs(operation_gid)[0]
+        all_datatypes = OperationService().review_operation_inputs(operation_gid)[0]
         datatype_inputs = []
         for datatype in all_datatypes:
             if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW:

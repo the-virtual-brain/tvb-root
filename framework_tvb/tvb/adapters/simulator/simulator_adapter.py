@@ -42,6 +42,9 @@ Few supplementary steps are done here:
 """
 import json
 
+from tvb.adapters.simulator.simulator_fragments import SimulatorRMFragment, SimulatorSurfaceFragment, \
+    SimulatorStimulusFragment, SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment, \
+    SimulatorFinalFragment
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
@@ -181,6 +184,10 @@ class SimulatorAdapter(ABCAsynchronous):
 
     def get_form_class(self):
         return SimulatorAdapterForm
+
+    def get_simulator_fragments(self):
+        return [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment, SimulatorModelFragment,
+                SimulatorIntegratorFragment, SimulatorMonitorFragment, SimulatorFinalFragment]
 
     def get_output(self):
         """
