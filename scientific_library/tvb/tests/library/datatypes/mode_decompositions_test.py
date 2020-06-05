@@ -68,7 +68,7 @@ class TestModeDecompositions(BaseTestCase):
         n_comp = 5
         dt = mode_decompositions.IndependentComponents(source=ts,
                                                        component_time_series=numpy.random.random((10, n_comp, 10, 10)),
-                                                       prewhitening_matrix=numpy.random.random((n_comp, 10, 10, 10)),
+                                                       prewhitening_matrix=numpy.random.random((10, n_comp, 10, 10)),
                                                        unmixing_matrix=numpy.random.random((n_comp, n_comp, 10, 10)),
                                                        n_components=n_comp)
         dt.compute_norm_source()
@@ -79,6 +79,6 @@ class TestModeDecompositions(BaseTestCase):
         assert dt.source is not None
         assert dt.mixing_matrix is None
         assert dt.unmixing_matrix.shape == (n_comp, n_comp, 10, 10)
-        assert dt.prewhitening_matrix.shape == (n_comp, 10, 10, 10)
+        assert dt.prewhitening_matrix.shape == (10, n_comp, 10, 10)
         assert dt.norm_source.shape == (10, 10, 10, 10)
         assert dt.component_time_series.shape == (10, 10, n_comp, 10)
