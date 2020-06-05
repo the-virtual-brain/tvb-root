@@ -66,7 +66,8 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
+    expose_endpoint
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
@@ -908,7 +909,7 @@ class FlowController(BaseController):
 
         return [True, 'Stored the exploration material successfully']
 
-    @cherrypy.expose
+    @expose_endpoint
     def update_status(self, simulator_gid, **data):
         if cherrypy.request.method != 'PUT':
             raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
@@ -929,7 +930,7 @@ class FlowController(BaseController):
 
         OperationService.handle_hpc_status_changed(burst_config[0], new_status)
 
-    @cherrypy.expose
+    @expose_endpoint
     def encryption_config(self, simulator_gid):
         if cherrypy.request.method != 'GET':
             raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)

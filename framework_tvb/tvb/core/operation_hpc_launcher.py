@@ -39,7 +39,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
-from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
+from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler, HPCSchedulerClient
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 log = get_logger('tvb.core.operation_hpc_launcher')
@@ -56,10 +56,12 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
-        encyrption_handler = EncryptionHandler(simulator_gid)
-        _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_passfile()))
+        # encyrption_handler = EncryptionHandler(simulator_gid)
+        # _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_passfile()))
         # TODO: Ensure encrypted_dir is correctly configured for CSCS
-        plain_input_dir = encyrption_handler.open_plain_dir()
+        # plain_input_dir = encyrption_handler.open_plain_dir()
+        # log.info("Current wdir is: {}".format(plain_input_dir))
+        plain_input_dir = "/job_wd"
         log.info("Current wdir is: {}".format(plain_input_dir))
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
@@ -72,8 +74,8 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         log.exception(excep)
         _update_operation_status(STATUS_ERROR, simulator_gid, base_url)
 
-    finally:
-        encyrption_handler.close_plain_dir()
+    # finally:
+    #     encyrption_handler.close_plain_dir()
 
 
 # TODO: extract common rest api parts
@@ -91,7 +93,7 @@ def _save_file(file_path, response):
 def _request_passfile(simulator_gid, base_url, passfile_folder):
     # type: (str, str, str) -> str
     try:
-        response = requests.get("{}/flow/encryption_config/{}".format(base_url, simulator_gid))
+        response = _build_secured_request().get("{}/flow/encryption_config/{}".format(base_url, simulator_gid))
         if response.ok:
             content_disposition = response.headers['Content-Disposition']
             value, params = cgi.parse_header(content_disposition)
@@ -106,12 +108,27 @@ def _request_passfile(simulator_gid, base_url, passfile_folder):
 def _update_operation_status(status, simulator_gid, base_url):
     # type: (str, str, str) -> None
     try:
-        requests.put("{}/flow/update_status/{}".format(base_url, simulator_gid), json={
+        _build_secured_request().put("{}/flow/update_status/{}".format(base_url, simulator_gid), json={
             UPDATE_STATUS_KEY: status,
         })
     except HTTPError:
         log.warning(
             "Failed to notify TVB server {} for simulator {} status update {}".format(base_url, simulator_gid, status))
+
+
+def _build_secured_request():
+    token_file_path = os.path.join(HPCSchedulerClient.HOME_FOLDER_MOUNT, ".token")
+    token = ""
+    if os.path.exists(token_file_path):
+        with open(token_file_path, "r") as file:
+            token = file.read()
+    else:
+        log.warning("Token file was not found.")
+
+    with requests.Session() as request:
+        auth_header = {"Authorization": "Bearer {}".format(token)}
+        request.headers.update(auth_header)
+        return request
 
 
 if __name__ == '__main__':
