@@ -354,6 +354,8 @@ class OperationService:
                         else:
                             attr_vm = getattr(view_model, field.name)
                             data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                            if attr_vm:
+                                changed_attr[field.label] = data_type.display_name
                             inputs_datatypes.append(data_type)
         else:
             inputs_datatypes, changed_attr = self.review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
@@ -375,6 +377,8 @@ class OperationService:
             else:
                 attr_vm = getattr(view_model, field.name)
                 data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                if attr_vm:
+                    changed_attr[field.label] = data_type.display_name
                 inputs_datatypes.append(data_type)
 
         return inputs_datatypes, changed_attr
