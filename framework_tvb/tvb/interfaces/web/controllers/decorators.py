@@ -33,16 +33,20 @@ Decorators for Cherrypy exposed methods are defined here.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import numpy
-import json
-import cherrypy
 import cProfile
+import json
 from datetime import datetime
 from functools import wraps
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from tvb.basic.profile import TvbProfile
+from http import HTTPStatus
+
+import cherrypy
+import numpy
 import tvb.core.neotraits.forms
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from keycloak.exceptions import KeycloakError
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 
@@ -72,7 +76,6 @@ def using_template(template_name):
     template_path = template_name + '.html'
 
     def dec(func):
-
         @wraps(func)
         def deco(*a, **b):
             template_dict = func(*a, **b)
@@ -83,6 +86,7 @@ def using_template(template_name):
             return template.render(**template_dict)
 
         return deco
+
     return dec
 
 
@@ -103,11 +107,12 @@ def ndarray_to_http_binary(func):
     """
     Decorator to wrap calls that return numpy arrays. It serializes them as binary http response
     """
+
     @wraps(func)
     def deco(*a, **b):
         x = func(*a, **b)
         if not isinstance(x, numpy.ndarray):
-            raise ValueError('Datatype attribute must be an ndarray for binary transport not %s' % type(x) )
+            raise ValueError('Datatype attribute must be an ndarray for binary transport not %s' % type(x))
 
         # map some unsupported dtypes to supported ones
         if x.dtype == numpy.int64:
@@ -135,6 +140,7 @@ def handle_error(redirect):
     All errors are logged
     Redirect false is used by ajax calls
     """
+
     # this offers some context if not already present in the logs
     # def _reql():
     #     return ' when calling \n' + cherrypy.request.request_line
@@ -178,6 +184,7 @@ def handle_error(redirect):
                     raise
 
         return deco
+
     return dec
 
 
@@ -196,10 +203,38 @@ def check_user(func):
     return deco
 
 
+def check_kc_user(func):
+    """
+    Decorator used to check if the incoming request has a valid keycloak refresh token
+    """
+
+    @wraps(func)
+    def deco(*a, **b):
+        authorization = cherrypy.request.headers["Authorization"] if "Authorization" in cherrypy.request.headers \
+            else None
+        if not authorization:
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
+        refresh_token = authorization.replace("Bearer ", "")
+        try:
+            AuthorizationManager(TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().refresh_token(
+                refresh_token)
+        except KeycloakError as kc_error:
+            try:
+                error_message = json.loads(kc_error.error_message.decode())['error_description']
+            except (KeyError, TypeError):
+                error_message = kc_error.error_message.decode()
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, error_message)
+
+        return func(*a, **b)
+
+    return deco
+
+
 def check_admin(func):
     """
     Decorator to check if a user is administrator before accessing a controller method
     """
+
     @wraps(func)
     def deco(*a, **b):
         if hasattr(cherrypy, common.KEY_SESSION):
@@ -241,6 +276,17 @@ def settings(func):
     return deco
 
 
+def expose_endpoint(func):
+    """
+    Equivalent to
+    @cherrypy.expose
+    @check_kc_user
+    """
+    func = check_kc_user(func)
+    func = cherrypy.expose(func)
+    return func
+
+
 def expose_page(func):
     """
     Equivalent to
@@ -264,6 +310,7 @@ def expose_fragment(template_name):
     @using_template2(template)
     @check_user
     """
+
     def deco(func):
         func = check_user(func)
         func = using_template(template_name)(func)

@@ -184,6 +184,7 @@ class HPCSchedulerClient(BackendClient):
     """
     TVB_BIN_ENV_KEY = 'TVB_BIN'
     CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
+    HOME_FOLDER_MOUNT = '/HOME_FOLDER'
     file_handler = FilesHelper()
 
     @staticmethod
@@ -224,14 +225,15 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name,
-                                           'FS')
+        # inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name,
+        #                                    'FS')
+        inputs_in_container = "/job_wd"
 
         # Build job configuration JSON
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
         my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url,
-                                                inputs_in_container]
+                                                inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, bash_entrypoint
@@ -379,13 +381,15 @@ class HPCSchedulerClient(BackendClient):
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
                                                                    is_group_launch)
 
-        LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
-        encryption_handler = EncryptionHandler(simulator_gid)
-        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
-        encrypted_dir = encryption_handler.get_encrypted_dir()
-        script_path = shutil.copy(job_script, encrypted_dir)
-        job_encrypted_inputs.append(script_path)
+        # LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
+        # encryption_handler = EncryptionHandler(simulator_gid)
+        # LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
+        # job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
+        # encrypted_dir = encryption_handler.get_encrypted_dir()
+        # script_path = shutil.copy(job_script, encrypted_dir)
+        # job_encrypted_inputs.append(script_path)
+
+        job_inputs.append(job_script)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
@@ -395,7 +399,7 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info("Submit job for operation: {}".format(operation.id))
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                            inputs=job_encrypted_inputs)
+                                                            inputs=job_inputs)
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
