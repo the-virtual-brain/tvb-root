@@ -111,7 +111,7 @@ def _update_operation_status(status, simulator_gid, base_url):
         _build_secured_request().put("{}/flow/update_status/{}".format(base_url, simulator_gid), json={
             UPDATE_STATUS_KEY: status,
         })
-    except HTTPError:
+    except Exception:
         log.warning(
             "Failed to notify TVB server {} for simulator {} status update {}".format(base_url, simulator_gid, status))
 
