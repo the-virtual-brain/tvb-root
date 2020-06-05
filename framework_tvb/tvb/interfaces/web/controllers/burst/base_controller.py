@@ -33,10 +33,11 @@
 """
 
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 
 
-
+@traced
 class BurstBaseController(BaseController):
 
     def fill_default_attributes(self, template_dictionary, subsection='burst'):

@@ -41,6 +41,7 @@ from tvb.core.entities.model.model_burst import PARAM_SURFACE
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import settings, expose_page, using_template
@@ -49,6 +50,7 @@ MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
 
 
+@traced
 class SpatioTemporalController(BaseController):
     """
     Base class which contains methods related to spatio-temporal actions.

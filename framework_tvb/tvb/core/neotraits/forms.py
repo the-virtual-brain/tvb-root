@@ -488,7 +488,12 @@ class IntField(TraitField):
 
     def _from_post(self):
         super(IntField, self)._from_post()
-        self.data = int(self.unvalidated_data)
+        if self.unvalidated_data and len(self.unvalidated_data) == 0:
+            self.unvalidated_data = None
+        if self.unvalidated_data:
+            self.data = int(self.unvalidated_data)
+        else:
+            self.data = None
 
 
 class FloatField(TraitField):
@@ -500,7 +505,6 @@ class FloatField(TraitField):
 
     def _from_post(self):
         super(FloatField, self)._from_post()
-        # TODO: Throws exception if attr is optional and has no value
         if self.unvalidated_data and len(self.unvalidated_data) == 0:
             self.unvalidated_data = None
         if self.unvalidated_data:

@@ -48,6 +48,7 @@ from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
@@ -63,6 +64,7 @@ RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 KEY_LCONN = "local-conn"
 
 
+@traced
 class LocalConnectivityController(SpatioTemporalController):
     """
     Controller layer for displaying/creating a LocalConnectivity entity.

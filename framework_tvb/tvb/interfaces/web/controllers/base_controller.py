@@ -38,13 +38,14 @@ This is the main UI entry point.
 """
 
 import os
+
 import cherrypy
-from tvb.interfaces.web.controllers import common
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.services.user_service import UserService
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.user_service import UserService
+from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.structure import WebStructure
 
@@ -92,7 +93,6 @@ class BaseController(object):
                                    title='Simulation Cockpit', description='Manage simulations'),
                               dict(link='/burst/dynamic', subsection='dynamic',
                                    title='Phase plane', description='Configure model dynamics')]
-
 
     @staticmethod
     def mark_file_for_delete(file_name, delete_parent_folder=False):
@@ -354,9 +354,6 @@ class BaseController(object):
             project.operations_pending = pending
             common.add2session(common.KEY_PROJECT, project)
 
-
     @using_template('form_fields/form')
     def render_adapter_form(self, adapter_form):
         return {'adapter_form': adapter_form}
-
-

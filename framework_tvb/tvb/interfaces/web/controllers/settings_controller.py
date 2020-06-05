@@ -45,10 +45,12 @@ from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import check_matlab_version
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import check_admin, using_template, jsonify, handle_error
 from tvb.interfaces.web.controllers.users_controller import UserController
 
 
+@traced
 class SettingsController(UserController):
     """
     Controller for TVB-Settings web page.

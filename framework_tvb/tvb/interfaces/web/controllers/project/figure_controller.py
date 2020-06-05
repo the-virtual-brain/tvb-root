@@ -45,11 +45,13 @@ from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 
 
+@traced
 class FigureController(ProjectController):
     """
     Resulting Figures are user-saved figures with specific visualizers or TVB pages which are considered important.

@@ -35,22 +35,21 @@ Basic Help functionality.
 """
 
 import cherrypy
-from tvb.interfaces.web.controllers.decorators import handle_error, using_template
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.decorators import handle_error, using_template
 from tvb.interfaces.web.controllers.help.help_config import HelpConfig
 
 
-
+@traced
 class HelpController(BaseController):
     """
     This class takes care of all requester related to HELP system.
     """
 
-
     def __init__(self):
         BaseController.__init__(self)
         self.config = HelpConfig()
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -69,5 +68,3 @@ class HelpController(BaseController):
         template_specification["helpURL"] = self.config.get_help_url(section, subsection)
 
         return self.fill_default_attributes(template_specification)
-    
-    

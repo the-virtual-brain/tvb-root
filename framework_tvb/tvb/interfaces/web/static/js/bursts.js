@@ -61,6 +61,7 @@ function resetToNewBurst() {
             displayBurstTree(undefined);
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, false, false, '');
+            $("button.btn-next").first().focus();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -98,13 +99,14 @@ function copyBurst(burstID, first_wizzard_form_url) {
 }
 
 function _renderAllSimulatorForms(url, stop_at_url = '') {
+    const simulator_params = document.getElementById('div-simulator-parameters');
     if (stop_at_url !== url) {
         doAjaxCall({
             type: "GET",
             url: url,
             success: function (response) {
                 var t = document.createRange().createContextualFragment(response);
-                document.getElementById('div-simulator-parameters').appendChild(t);
+                simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
 
                 next_url = $(response).attr("action");
@@ -113,6 +115,8 @@ function _renderAllSimulatorForms(url, stop_at_url = '') {
                 }
             }
         });
+    }else{
+        setInitialFocusOnButton(simulator_params);
     }
 }
 
@@ -565,9 +569,20 @@ function launchNewBurst(currentForm, launchMode) {
     });
 }
 
+function setInitialFocusOnButton(simulator_params) {
+    const current_url = simulator_params.lastElementChild.action;
+    if (current_url !== undefined && current_url.includes('setup_pse')) {
+        $('#launch_simulation').focus();
+    } else if (current_url !== undefined && current_url.includes('launch_pse')) {
+        $('#launch_pse').focus();
+    } else {
+        $("button.btn-next").last().focus();
+    }
+}
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
-    document.getElementById(div_id).removeChild(currentForm);
+    const simulator_params = document.getElementById(div_id);
+    simulator_params.removeChild(currentForm);
 
     var previous_form = document.getElementById(previous_action);
     var next_button = previous_form.elements.namedItem('next');
@@ -609,6 +624,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
         config_branch_button.style.visibility = 'visible';
     }
     fieldset.disabled = false;
+    setInitialFocusOnButton(simulator_params);
 }
 
 function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
@@ -664,8 +680,10 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 }
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
-                document.getElementById(div_id).appendChild(t);
+                const simulator_params = document.getElementById(div_id);
+                simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
+                setInitialFocusOnButton(simulator_params);
             }
         }
     })
