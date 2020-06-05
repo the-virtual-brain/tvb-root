@@ -137,7 +137,7 @@ def ica_factory(operation_factory, time_series_index_factory):
         n_comp = 5
         ica = mode_decompositions.IndependentComponents(source=time_series,
                                     component_time_series=numpy.random.random((10, n_comp, 10, 10)),
-                                    prewhitening_matrix=numpy.random.random((n_comp, 10, 10, 10)),
+                                    prewhitening_matrix=numpy.random.random((10, n_comp, 10, 10)),
                                     unmixing_matrix=numpy.random.random((n_comp, n_comp, 10, 10)),
                                     n_components=n_comp)
         ica.compute_norm_source()

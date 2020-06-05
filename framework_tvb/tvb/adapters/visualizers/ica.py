@@ -111,6 +111,6 @@ class ICA(MappedArraySVGVisualizerMixin):
 
         unmixing_matrix = unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
         prewhitening_matrix = prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
-        Cinv = unmixing_matrix.dot(prewhitening_matrix)
+        Cinv = unmixing_matrix.dot(prewhitening_matrix.T)
         pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (view_model.i_svar))
         return self.build_display_result("matrix/svg_view", pars)

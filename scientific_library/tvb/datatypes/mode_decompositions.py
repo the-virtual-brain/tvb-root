@@ -162,7 +162,7 @@ class IndependentComponents(HasTraits):
                 w = self.unmixing_matrix[:, :, var, mode]
                 k = self.prewhitening_matrix[:, :, var, mode]
                 ts = self.source.data[:, var, :, mode]
-                component_ts[:, var, :, mode] = numpy.dot(w, numpy.dot(k, ts.T)).T
+                component_ts[:, var, :, mode] = numpy.dot(w, numpy.dot(k.T, ts.T)).T
         self.component_time_series = component_ts
 
     def compute_normalised_component_time_series(self):
@@ -174,7 +174,7 @@ class IndependentComponents(HasTraits):
                 w = self.unmixing_matrix[:, :, var, mode]
                 k = self.prewhitening_matrix[:, :, var, mode]
                 nts = self.norm_source[:, var, :, mode]
-                component_nts[:, var, :, mode] = numpy.dot(w, numpy.dot(k, nts.T)).T
+                component_nts[:, var, :, mode] = numpy.dot(w, numpy.dot(k.T, nts.T)).T
         self.normalised_component_time_series = component_nts
 
     def compute_mixing_matrix(self):
@@ -189,7 +189,7 @@ class IndependentComponents(HasTraits):
             for mode in range(ts_shape[3]):
                 w = self.unmixing_matrix[:, :, var, mode]
                 k = self.prewhitening_matrix[:, :, var, mode]
-                temp = numpy.matrix(numpy.dot(w, k))
+                temp = numpy.matrix(numpy.dot(w, k.T))
                 mixing_matrix[:, :, var, mode] = numpy.array(numpy.dot(temp.T, (numpy.dot(temp, temp.T)).T))
         self.mixing_matrix = mixing_matrix
 
