@@ -61,9 +61,9 @@ from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHE
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
-from tvb.core.services.backend_clients import secure_data_store_copy as secure_data_store
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.encryption_handler import EncryptionHandler
 
 LOGGER = get_logger(__name__)
 
@@ -102,79 +102,6 @@ class HPCOperationThread(Thread):
 
     def stopped(self):
         return self._stop_event.is_set()
-
-
-class EncryptionHandler(object):
-    encrypted_dir_name_regex = 'cipher_{}'
-
-    def __init__(self, dir_gid, config_path=TvbProfile.current.hpc.SDS_CONFIG_PATH):
-        """
-        :param dir_gid: the GID to use for the encrypted directory name
-        :param config_path: path towards the secure_data_store configuration file (usually called .sdsrd)
-        """
-        self.set_dir_gid(dir_gid)
-        self.config = self._load_configuration(config_path)
-
-    def _prepare_encrypted_dir_name(self):
-        return self.encrypted_dir_name_regex.format(self.dir_gid)
-
-    def _load_configuration(self, config_path):
-        config = secure_data_store.read_config(config_path)
-        return config
-
-    def set_dir_gid(self, dir_gid):
-        if isinstance(dir_gid, uuid.UUID):
-            dir_gid = dir_gid.hex
-        self.dir_gid = dir_gid
-        self.encrypted_dir_name = self._prepare_encrypted_dir_name()
-
-    def get_encrypted_dir(self):
-        return secure_data_store.datastore(self.config, self.encrypted_dir_name)
-
-    def get_passfile(self):
-        return secure_data_store.passstore(self.config, self.encrypted_dir_name)
-
-    def prepare_encryption_dir(self):
-        secure_data_store.create(self.config, self.encrypted_dir_name)
-        encrypted_dir = self.get_encrypted_dir()
-        return encrypted_dir
-
-    def open_plain_dir(self):
-        # ! Always call close_plain_dir() after this method !
-        plain_dir = secure_data_store.mount(self.config, self.encrypted_dir_name)
-        return plain_dir
-
-    def close_plain_dir(self):
-        secure_data_store.unmount(self.config, self.encrypted_dir_name)
-
-    def encrypt_inputs(self, files_to_encrypt):
-        # type: (list) -> list
-        """
-        Receive a list with all files to encrypt.
-        Prepare encryption directory and mount a plain directory to it.
-        Copy all files to the plain directory and unmount it.
-        Return a list with all files from the encrypted directory.
-        """
-        encryption_dir = self.prepare_encryption_dir()
-        plain_dir = self.open_plain_dir()
-
-        for file_to_encrypt in files_to_encrypt:
-            shutil.copy(file_to_encrypt, plain_dir)
-        self.close_plain_dir()
-
-        encrypted_files = [os.path.join(encryption_dir, enc_file) for enc_file in os.listdir(encryption_dir)]
-        return encrypted_files
-
-    def decrypt_results_to_dir(self, dir):
-        # type: (str) -> None
-        """
-        Having an already encrypted directory, mount a plain directory to it and decrypt files,
-        then move plain files to the location specified by :param dir
-        """
-        plain_dir = self.open_plain_dir()
-        for plain_file in os.listdir(plain_dir):
-            shutil.copy(os.path.join(plain_dir, plain_file), dir)
-        self.close_plain_dir()
 
 
 class HPCSchedulerClient(BackendClient):
@@ -225,9 +152,7 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        # inputs_in_container = os.path.join('/root/sds/containers', EncryptionHandler(simulator_gid).encrypted_dir_name,
-        #                                    'FS')
-        inputs_in_container = "/job_wd"
+        inputs_in_container = os.path.join('/root', EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {}
@@ -374,22 +299,22 @@ class HPCSchedulerClient(BackendClient):
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
         LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
-        job_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
+        job_plain_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
         available_space = HPCSchedulerClient.compute_available_disk_space(operation)
 
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
                                                                    is_group_launch)
 
-        # LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
-        # encryption_handler = EncryptionHandler(simulator_gid)
-        # LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        # job_encrypted_inputs = encryption_handler.encrypt_inputs(job_inputs)
-        # encrypted_dir = encryption_handler.get_encrypted_dir()
-        # script_path = shutil.copy(job_script, encrypted_dir)
-        # job_encrypted_inputs.append(script_path)
+        LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
+        encryption_handler = EncryptionHandler(simulator_gid)
+        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
+        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
+        encrypted_dir = encryption_handler.get_encrypted_dir()
+        script_path = shutil.copy(job_script, encrypted_dir)
+        job_encrypted_inputs.append(script_path)
 
-        job_inputs.append(job_script)
+        job_encrypted_inputs.append(job_script)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
@@ -399,7 +324,7 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info("Submit job for operation: {}".format(operation.id))
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                            inputs=job_inputs)
+                                                            inputs=job_encrypted_inputs)
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
@@ -449,8 +374,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> list
         output_list = HPCSchedulerClient.listdir(working_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
         encryption_handler = EncryptionHandler(simulator_gid)
-        # TODO: output folder name is encrypted too
-        encrypted_dir = os.path.join(encryption_handler.config.dataroot, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))

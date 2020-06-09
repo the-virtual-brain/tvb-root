@@ -55,8 +55,8 @@ from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
-from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
