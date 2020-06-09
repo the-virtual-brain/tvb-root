@@ -210,10 +210,15 @@ class HPCSettings(object):
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
 
+    CRYPT_BUFFER_SIZE = 64 * 1024
+    CRYPT_PASS_SIZE = 64
+
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
-        self.SDS_CONFIG_PATH = manager.get_attribute(stored.KEY_SDS_CONFIG)
         self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
+        self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
+        self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
+        self.CRYPT_GROUP = manager.get_attribute(stored.KEY_CRYPT_GROUP)
 
 
 class WebSettings(object):

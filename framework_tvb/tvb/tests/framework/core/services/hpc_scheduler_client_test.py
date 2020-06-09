@@ -37,7 +37,7 @@ import shutil
 
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.operation_hpc_launcher import do_operation_launch
-from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler
+from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -62,7 +62,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         job_inputs = self._prepare_dummy_files(tmpdir)
         job_encrypted_inputs = self.encryption_handler.encrypt_inputs(job_inputs)
         # Encrypted folder has 2 more files are more then plain folder
-        assert len(job_encrypted_inputs) == len(job_inputs) + 2
+        assert len(job_encrypted_inputs) == len(job_inputs)
 
     def test_decrypt_results(self, tmpdir):
         # Prepare encrypted dir
@@ -75,27 +75,32 @@ class TestHPCSchedulerClient(BaseTestCase):
         os.mkdir(out_dir)
         self.encryption_handler.decrypt_results_to_dir(out_dir)
         list_plain_dir = os.listdir(out_dir)
-        assert len(list_plain_dir) + 2 == len(os.listdir(encrypted_dir))
+        assert len(list_plain_dir) == len(os.listdir(encrypted_dir))
         assert 'dummy1.txt' in list_plain_dir
         assert 'dummy2.txt' in list_plain_dir
 
-    def test_do_operation_launch(self, simulator_factory):
+    def test_do_operation_launch(self, simulator_factory, mocker):
+        def dummy_method():
+            pass
+
         # Prepare encrypted dir
         sim_folder, sim_gid = simulator_factory(self.test_user, self.test_project)
         job_encrypted_inputs = [os.path.join(sim_folder, encrypted_file) for encrypted_file in os.listdir(sim_folder)]
         self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
         encrypted_dir = self.encryption_handler.get_encrypted_dir()
 
+        mocker.patch('_request_passfile', dummy_method)
+        mocker.patch('_update_operation_status', dummy_method)
+
         # Call do_operation_launch similarly to CSCS env
-        do_operation_launch(sim_gid.hex, 1000, False)
-        assert len(os.listdir(encrypted_dir)) == 8
+        do_operation_launch(sim_gid.hex, 1000, False, '')
+        assert len(os.listdir(encrypted_dir)) == 6
 
 
     def teardown_method(self):
-        self.encryption_handler.close_plain_dir()
         encrypted_dir = self.encryption_handler.get_encrypted_dir()
-        shutil.rmtree(os.path.dirname(encrypted_dir))
-        passfile = self.encryption_handler.get_passfile()
+        shutil.rmtree(encrypted_dir)
+        passfile = self.encryption_handler.get_password_file()
         os.remove(passfile)
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()

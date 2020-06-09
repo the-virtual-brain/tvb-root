@@ -27,11 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import cgi
 import json
 import os
 import sys
-
 import requests
 from requests import HTTPError
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
@@ -39,7 +39,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
-from tvb.core.services.backend_clients.hpc_scheduler_client import EncryptionHandler, HPCSchedulerClient
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
+from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 log = get_logger('tvb.core.operation_hpc_launcher')
@@ -51,31 +52,34 @@ if __name__ == '__main__':
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 
+def _encrypt_results(adapter_instance, encryption_handler):
+    output_plain_dir = adapter_instance._get_output_path()
+    output_plain_files = os.listdir(output_plain_dir)
+    output_plain_files = [os.path.join(output_plain_dir, plain_file) for plain_file in output_plain_files]
+    encryption_handler.encrypt_inputs(output_plain_files, adapter_instance.OUTPUT_FOLDER)
+
+
 def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url):
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
-        # encyrption_handler = EncryptionHandler(simulator_gid)
-        # _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_passfile()))
-        # TODO: Ensure encrypted_dir is correctly configured for CSCS
-        # plain_input_dir = encyrption_handler.open_plain_dir()
-        # log.info("Current wdir is: {}".format(plain_input_dir))
-        plain_input_dir = "/job_wd"
+        encyrption_handler = EncryptionHandler(simulator_gid)
+        _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_password_file()))
+        plain_input_dir = '/root/plain'
+        encyrption_handler.decrypt_results_to_dir(plain_input_dir)
         log.info("Current wdir is: {}".format(plain_input_dir))
         view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, base_url)
         adapter_instance._prelaunch(None, None, available_disk_space, view_model)
+        _encrypt_results(adapter_instance, encyrption_handler)
         _update_operation_status(STATUS_FINISHED, simulator_gid, base_url)
 
     except Exception as excep:
         log.error("Could not execute operation {}".format(str(sys.argv[1])))
         log.exception(excep)
         _update_operation_status(STATUS_ERROR, simulator_gid, base_url)
-
-    # finally:
-    #     encyrption_handler.close_plain_dir()
 
 
 # TODO: extract common rest api parts
