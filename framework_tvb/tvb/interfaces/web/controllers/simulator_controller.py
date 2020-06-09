@@ -1054,10 +1054,7 @@ class SimulatorController(BurstBaseController):
 
         burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
-        if launch_mode == self.burst_service.LAUNCH_NEW:
-            if is_simulator_copy:
-                burst_config_to_store = session_burst_config.clone()
-        else:
+        if launch_mode == self.burst_service.LAUNCH_BRANCH:
             burst_config_to_store = session_burst_config.clone()
             if self.DEFAULT_COPY_PREFIX in session_burst_config.name:
                 session_burst_config.name = session_burst_config.name.replace(self.DEFAULT_COPY_PREFIX, '')
@@ -1148,8 +1145,9 @@ class SimulatorController(BurstBaseController):
     @check_user
     def copy_simulator_configuration(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
-        burst_config.name = self.DEFAULT_COPY_PREFIX + burst_config.name
-        common.add2session(common.KEY_BURST_CONFIG, burst_config)
+        burst_config_copy = burst_config.clone()
+        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
+
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
         simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
@@ -1157,8 +1155,9 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
-        self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config))
+        self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,

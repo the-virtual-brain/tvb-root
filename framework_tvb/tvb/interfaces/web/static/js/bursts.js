@@ -87,6 +87,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
                     let simParamElem = $("#div-simulator-parameters");
                     simParamElem.html(response);
                     changeBurstHistory(burstID, false, true, '');
+                    displayBurstTree(undefined);
                     _renderAllSimulatorForms(first_wizzard_form_url, stop_at_url);
                     displayMessage("A copy of previous simulation was prepared for you!");
                 },
@@ -296,7 +297,10 @@ function changeBurstHistory(burst_id, load_burst, is_copy, first_wizzard_form_ur
 
     const selectedBurst = $("#burst_id_" + burst_id);
     fill_burst_name(selectedBurst[0].children[0].text, !is_copy, is_copy);
-    selectedBurst.addClass(ACTIVE_BURST_CLASS);
+
+    if(!is_copy) {
+        selectedBurst.addClass(ACTIVE_BURST_CLASS);
+    }
 
     if (load_burst) {
         // Load the selected burst.
