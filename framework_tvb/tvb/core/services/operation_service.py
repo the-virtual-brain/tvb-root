@@ -63,13 +63,13 @@ from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAME
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation, \
-    STATUS_CANCELED, STATUS_STARTED
+    STATUS_CANCELED, STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
-from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 
@@ -566,3 +566,30 @@ class OperationService:
         }
         update_func = switcher.get(new_status, lambda: "Invalid operation status")
         update_func(operation)
+
+    @staticmethod
+    def check_operations_job():
+        logger = get_logger(OperationService.__class__.__module__)
+        operations = dao.get_operations()
+        if operations is None or len(operations) == 0:
+            logger.info("There aren't any simulations in status PENDING or RUNNING")
+            return
+
+        for operation in operations:
+            op_ident = dao.get_operation_process_for_operation(operation.id)
+            if op_ident is not None:
+                transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+                job = Job(transport, op_ident.job_id)
+                if job.is_running():
+                    if operation.status == STATUS_PENDING:
+                        OperationService._operation_started(operation)
+                    logger.info("CSCS job for operation {} is still running.".format(operation.id))
+                    return
+                job_status = job.properties['status']
+                logger.info("Job for operation {} has status {}".format(operation.id, job_status))
+                if job_status == HPCJobStatus.SUCCESSFUL.value:
+                    # TODO: Simulator GID??
+                    # OperationService._operation_finished(operation, "simulator_gid")
+                    pass
+                else:
+                    OperationService._operation_error(operation)

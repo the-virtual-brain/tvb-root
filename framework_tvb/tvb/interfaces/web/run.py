@@ -37,6 +37,8 @@ import importlib
 import time
 from subprocess import Popen, PIPE
 
+from tvb.core.services.operation_service import OperationService
+
 STARTUP_TIC = time.time()
 
 import os
@@ -117,6 +119,12 @@ def init_cherrypy(arguments=None):
     # This tools clean up files on disk (mainly after export)
     cherrypy.tools.cleanup = Tool('on_end_request', RequestHandler.clean_files_on_disk)
     # ----------------- End register additional request handlers ----------------
+
+    # Register housekeeping job
+    if TvbProfile.current.hpc.IS_HPC_RUN:
+        cherrypy.engine.housekeeper = cherrypy.process.plugins.BackgroundTask(
+            TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, OperationService.check_operations_job)
+        cherrypy.engine.housekeeper.start()
 
     #### HTTP Server is fired now ######  
     cherrypy.engine.start()
