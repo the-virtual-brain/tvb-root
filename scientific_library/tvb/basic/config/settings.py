@@ -202,6 +202,7 @@ class HPCSettings(object):
 
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
+        self.BACKGROUND_JOB_INTERVAL = manager.get_attribute(stored.KEY_HPC, 60, int)
         self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
         self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
         self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
