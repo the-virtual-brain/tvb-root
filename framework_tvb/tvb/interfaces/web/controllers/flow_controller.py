@@ -941,6 +941,6 @@ class FlowController(BaseController):
                                      "Invalid simulator gid.")
 
         encryption_handler = EncryptionHandler(simulator_gid)
-        file_path = encryption_handler.get_passfile()
+        file_path = encryption_handler.get_password_file()
 
         return serve_file(file_path, "application/x-download", "attachment", os.path.basename(file_path))

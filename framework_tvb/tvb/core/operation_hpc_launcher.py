@@ -97,12 +97,16 @@ def _save_file(file_path, response):
 def _request_passfile(simulator_gid, base_url, passfile_folder):
     # type: (str, str, str) -> str
     try:
-        response = _build_secured_request().get("{}/flow/encryption_config/{}".format(base_url, simulator_gid))
+        req_params = "{}/flow/encryption_config/{}".format(base_url, simulator_gid)
+        log.info('URL is: {}'.format(req_params))
+        response = _build_secured_request().get(req_params)
+        log.info('Response is: {}'.format(response))
         if response.ok:
             content_disposition = response.headers['Content-Disposition']
             value, params = cgi.parse_header(content_disposition)
             file_name = params['filename']
             file_path = os.path.join(passfile_folder, os.path.basename(file_name))
+            log.info('Passfile downloaded at: {}'.format(file_path))
             return _save_file(file_path, response)
     except HTTPError:
         log.warning(
@@ -130,7 +134,7 @@ def _build_secured_request():
         log.warning("Token file was not found.")
 
     with requests.Session() as request:
-        auth_header = {"Authorization": "Bearer {}".format(token)}
+        auth_header = {"Authorization": "Bearer {}".format(token.replace('\n', ''))}
         request.headers.update(auth_header)
         return request
 
