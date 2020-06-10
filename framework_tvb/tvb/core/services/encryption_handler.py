@@ -123,8 +123,8 @@ class EncryptionHandler(object):
         encrypted_files = [os.path.join(encryption_dir, enc_file) for enc_file in os.listdir(encryption_dir)]
         return encrypted_files
 
-    def decrypt_results_to_dir(self, dir):
-        # type: (str) -> None
+    def decrypt_results_to_dir(self, dir, from_subdir=None):
+        # type: (str, str) -> None
         """
         Having an already encrypted directory, decrypt all files,
         then move plain files to the location specified by :param dir
@@ -135,6 +135,10 @@ class EncryptionHandler(object):
             os.makedirs(dir)
 
         encrypted_dir = self.get_encrypted_dir()
+
+        if from_subdir:
+            encrypted_dir = os.path.join(encrypted_dir, from_subdir)
+
         for encrypted_file in os.listdir(encrypted_dir):
             plain_file = os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
             encrypted_file_full = os.path.join(encrypted_dir, encrypted_file)

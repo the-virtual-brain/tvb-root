@@ -381,7 +381,7 @@ class HPCSchedulerClient(BackendClient):
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
-        encryption_handler.decrypt_results_to_dir(operation_dir)
+        encryption_handler.decrypt_results_to_dir(operation_dir, from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
         h5_filenames = [os.path.join(operation_dir, h5_file) for h5_file in os.listdir(operation_dir)]
 
         LOGGER.info(working_dir.properties)
@@ -405,6 +405,9 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):
         # type: (str, dict) -> None
+        if not os.path.isdir(encrypted_dir_path):
+            os.makedirs(encrypted_dir_path)
+
         for output_filename, output_filepath in output_list.items():
             if type(output_filepath) is not unicore_client.PathFile:
                 continue
