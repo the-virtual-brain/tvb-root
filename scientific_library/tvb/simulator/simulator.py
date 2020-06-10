@@ -270,7 +270,6 @@ class Simulator(HasTraits):
                 self._spike_stimulus_fun = \
                     lambda target, step: self.spike_stimulus[target][step]
 
-
     def configure(self, tvb_spikeNet_interface=None, full_configure=True):
         """Configure simulator and its components.
 
@@ -544,9 +543,12 @@ class Simulator(HasTraits):
         if self.tvb_spikeNet_interface is not None:
             # spikeNet simulation preparation:
             self.configure_spiking_simulator()
+            # A flag to skip unnecessary steps when TVB doesn't coouple to Spiking Simulator
+            coupleTVBstateToSpikeNet = len(self.tvb_spikeNet_interface.tvb_to_spikeNet_interfaces) > 0
             # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
-            updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_sv_interfaces_ids) > 0
+            updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_interfaces) > 0
         else:
+            coupleTVBstateToSpikeNet = False
             updateTVBstateFromSpikeNet = False
 
         # Do for initial condition, i.e., prepare step t0 -> t1:
@@ -573,14 +575,14 @@ class Simulator(HasTraits):
             #    ...and integrate it for one time step
             # TODO: We could have another __call__method obviously when there is no co-simulation...
             if self.tvb_spikeNet_interface is not None:
-                # TVB state t_(step-1) -> SpikeNet (state or parameter)
-                # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
-                # including any necessary conversions from TVB state to SpikeNet variables,
-                # in a model specific manner
-                # TODO: find what is the general treatment of local coupling, if any!
-                #  Is this addition correct in all cases for all builders?
-                self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus,
-                                                                  self.model)
+                if coupleTVBstateToSpikeNet:
+                    # TVB state t_(step-1) -> SpikeNet (state or parameter)
+                    # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
+                    # including any necessary conversions from TVB state to SpikeNet variables,
+                    # in a model specific manner
+                    # TODO: find what is the general treatment of local coupling, if any!
+                    #  Is this addition correct in all cases for all builders?
+                    self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling, stimulus)
                 # Integrate Spiking Network to get the new Spiking Network state t_step
                 self.run_spiking_simulator(self.integrator.dt)
 
@@ -601,8 +603,8 @@ class Simulator(HasTraits):
                 # SpikeNet state t_(step)-> TVB model parameter at time t_(step)
                 # Couple the SpikeNet state to some TVB model parameter,
                 # including any necessary conversions in a model specific manner
-                # TODO: probably deprecate it since we have introduced dynamic non-state variables
-                self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
+                # !!! Deprecate it since we have introduced dynamic non-state variables !!!
+                # self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
                 self.bound_and_clamp(state)
 
             # Prepare coupling and stimulus at time t_step, i.e., for next time iteration

@@ -225,12 +225,6 @@ class Generic2dOscillator(TVBGeneric2dOscillator):
 
     """
 
-    V_m = NArray(
-        label=r":math:`V_m`",
-        default=numpy.array([0.0]),
-        domain=Range(lo=-10.0, hi=10.0, step=0.1),
-        doc="""NEST membrane potential input""")
-
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
         r"""
         The two state variables :math:`V` and :math:`W` are typically considered
@@ -250,7 +244,6 @@ class Generic2dOscillator(TVBGeneric2dOscillator):
 
         """
         V = state_variables[0, :]
-        V = numpy.where(self.V_m == 0, V, self.V_m)
         W = state_variables[1, :]
 
         #[State_variables, nodes]
@@ -281,7 +274,6 @@ class Generic2dOscillator(TVBGeneric2dOscillator):
         return derivative
 
     def dfun(self, vw, c, local_coupling=0.0):
-        vw[0, :] = numpy.where(self.V_m == 0, vw[0, :].squeeze(), self.V_m)[:, numpy.newaxis]
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
