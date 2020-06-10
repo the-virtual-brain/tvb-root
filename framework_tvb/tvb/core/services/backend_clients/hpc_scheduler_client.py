@@ -112,6 +112,7 @@ class HPCSchedulerClient(BackendClient):
     TVB_BIN_ENV_KEY = 'TVB_BIN'
     CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
     HOME_FOLDER_MOUNT = '/HOME_FOLDER'
+    CSCS_DATA_FOLDER = 'data'
     file_handler = FilesHelper()
 
     @staticmethod
@@ -241,8 +242,8 @@ class HPCSchedulerClient(BackendClient):
         return mesage
 
     @staticmethod
-    def _create_job_with_pyunicore(pyunicore_client, job_description, inputs=[]):
-        # type: (Client, {}, list) -> Job
+    def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs):
+        # type: (Client, {}, str, list) -> Job
         """
         Submit and start a batch job on the site, optionally uploading input data files.
         We took this code from the pyunicore Client.new_job method in order to use our own upload method
@@ -260,6 +261,7 @@ class HPCSchedulerClient(BackendClient):
 
         if len(inputs) > 0:
             working_dir = job.working_dir
+            HPCSchedulerClient._upload_file_with_pyunicore(working_dir, job_script, None)
             for input in inputs:
                 HPCSchedulerClient._upload_file_with_pyunicore(working_dir, input)
         if job_description.get('haveClientStageIn', None) == "true":
@@ -271,8 +273,8 @@ class HPCSchedulerClient(BackendClient):
         return job
 
     @staticmethod
-    def _upload_file_with_pyunicore(working_dir, input_name, destination=None):
-        # type: (Storage, str, str) -> None
+    def _upload_file_with_pyunicore(working_dir, input_name, subfolder=CSCS_DATA_FOLDER, destination=None):
+        # type: (Storage, str, object, str) -> None
         """
         Upload file to the HPC working dir.
         We took this upload code from pyunicore Storage.upload method and modified it because in the original code the
@@ -281,10 +283,15 @@ class HPCSchedulerClient(BackendClient):
         if destination is None:
             destination = os.path.basename(input_name)
 
+        if subfolder:
+            url = "{}/{}/{}/{}".format(working_dir.resource_url, "files", subfolder, destination)
+        else:
+            url = "{}/{}/{}".format(working_dir.resource_url, "files", destination)
+
         headers = {'Content-Type': 'application/octet-stream'}
         with open(input_name, 'rb') as fd:
             working_dir.transport.put(
-                url="{}/{}/{}".format(working_dir.resource_url, "files", destination),
+                url=url,
                 headers=headers,
                 data=fd)
 
@@ -310,11 +317,6 @@ class HPCSchedulerClient(BackendClient):
         encryption_handler = EncryptionHandler(simulator_gid)
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
-        encrypted_dir = encryption_handler.get_encrypted_dir()
-        script_path = shutil.copy(job_script, encrypted_dir)
-        job_encrypted_inputs.append(script_path)
-
-        job_encrypted_inputs.append(job_script)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
@@ -324,7 +326,7 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info("Submit job for operation: {}".format(operation.id))
         job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                            inputs=job_encrypted_inputs)
+                                                            job_script=job_script, inputs=job_encrypted_inputs)
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
@@ -372,7 +374,8 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> list
-        output_list = HPCSchedulerClient.listdir(working_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSimulatorAdapter.OUTPUT_FOLDER
+        output_list = HPCSchedulerClient.listdir(working_dir, output_subfolder)
         encryption_handler = EncryptionHandler(simulator_gid)
         encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)

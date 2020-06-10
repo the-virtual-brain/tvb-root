@@ -60,6 +60,7 @@ class EncryptionHandler(object):
         self.pass_dir = TvbProfile.current.hpc.CRYPT_PASSDIR
         self.buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
         self.pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        self._generate_dirs()
 
     def _prepare_encrypted_dir_name(self, dir_gid):
         return self.encrypted_dir_name_regex.format(dir_gid)
@@ -110,7 +111,6 @@ class EncryptionHandler(object):
         Prepare encryption directory and encrypt each file.
         Return a list with all files from the encrypted directory.
         """
-        self._generate_dirs()
         encryption_dir = self.prepare_encryption_dir(subdir)
         password_file = self._generate_password()
 
@@ -129,7 +129,6 @@ class EncryptionHandler(object):
         Having an already encrypted directory, decrypt all files,
         then move plain files to the location specified by :param dir
         """
-        self._generate_dirs()
         password = self._read_password(self.get_password_file())
 
         if not os.path.isdir(dir):
