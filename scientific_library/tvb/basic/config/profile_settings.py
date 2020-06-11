@@ -123,6 +123,7 @@ class BaseSettingsProfile(object):
         """
         self.db.MAX_CONNECTIONS = self.db.MAX_ASYNC_CONNECTIONS
         self.cluster.IN_OPERATION_EXECUTION_PROCESS = True
+        self.hpc.IN_OPERATION_EXECUTION_PROCESS = True
 
     def initialize_profile(self):
         """
