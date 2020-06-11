@@ -39,6 +39,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.simulator_serializer import SimulatorSerializer
@@ -130,10 +131,17 @@ def _update_operation_status(status, simulator_gid, base_url):
 
 def _build_secured_request():
     token_file_path = os.path.join(HPCSchedulerClient.HOME_FOLDER_MOUNT, ".token")
+    kc_config_file_path = os.path.join(HPCSchedulerClient.HOME_FOLDER_MOUNT, ".kc_config")
     token = ""
-    if os.path.exists(token_file_path):
-        with open(token_file_path, "r") as file:
-            token = file.read()
+    if os.path.exists(token_file_path) and os.path.exists(kc_config_file_path):
+        try:
+            with open(token_file_path, "r") as file:
+                refresh_token = file.read()
+            kc_instance = AuthorizationManager(kc_config_file_path).get_keycloak_instance()
+            response = kc_instance.refresh_token(refresh_token)
+            token = response['access_token']
+        except Exception as e:
+            log.error(e, exc_info=True)
     else:
         log.warning("Token file was not found.")
 

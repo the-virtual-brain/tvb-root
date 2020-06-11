@@ -214,10 +214,9 @@ def check_kc_user(func):
             else None
         if not authorization:
             raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
-        refresh_token = authorization.replace("Bearer ", "")
+        token = authorization.replace("Bearer ", "")
         try:
-            AuthorizationManager(TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().refresh_token(
-                refresh_token)
+            AuthorizationManager(TvbProfile.current.KEYCLOAK_WEB_CONFIG).get_keycloak_instance().userinfo(token)
         except KeycloakError as kc_error:
             try:
                 error_message = json.loads(kc_error.error_message.decode())['error_description']
