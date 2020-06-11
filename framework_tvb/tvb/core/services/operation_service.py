@@ -594,19 +594,22 @@ class OperationService:
             return
 
         for operation in operations:
-            op_ident = dao.get_operation_process_for_operation(operation.id)
-            if op_ident is not None:
-                transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
-                job = Job(transport, op_ident.job_id)
-                job_status = job.properties['status']
-                if job.is_running():
-                    if operation.status == STATUS_PENDING and job_status == HPCJobStatus.READY.value:
-                        OperationService._operation_started(operation)
-                    logger.info("CSCS job status: {} for operation {}.".format(job_status, operation.id))
-                    return
-                logger.info("Job for operation {} has status {}".format(operation.id, job_status))
-                if job_status == HPCJobStatus.SUCCESSFUL.value:
-                    simulator_gid = json.loads(operation.parameters)['gid']
-                    OperationService._operation_finished(operation, simulator_gid)
-                else:
-                    OperationService._operation_error(operation)
+            try:
+                op_ident = dao.get_operation_process_for_operation(operation.id)
+                if op_ident is not None:
+                    transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+                    job = Job(transport, op_ident.job_id)
+                    job_status = job.properties['status']
+                    if job.is_running():
+                        if operation.status == STATUS_PENDING and job_status == HPCJobStatus.READY.value:
+                            OperationService._operation_started(operation)
+                        logger.info("CSCS job status: {} for operation {}.".format(job_status, operation.id))
+                        return
+                    logger.info("Job for operation {} has status {}".format(operation.id, job_status))
+                    if job_status == HPCJobStatus.SUCCESSFUL.value:
+                        simulator_gid = json.loads(operation.parameters)['gid']
+                        OperationService._operation_finished(operation, simulator_gid)
+                    else:
+                        OperationService._operation_error(operation)
+            except Exception:
+                logger.error("There was an error on background processing process for operation {}".format(operation.id), exc_info=True)
