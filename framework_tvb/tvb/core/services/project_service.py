@@ -753,25 +753,6 @@ class ProjectService:
         # 4. Update the group_name/user_group into the operation meta-data file
         #  TODO update ViewModel of the operation H5
 
-    def _review_operation_inputs(self, operation_gid):
-        """
-        :returns: A list of DataTypes that are used as input parameters for the specified operation.
-                 And a dictionary will all operation parameters different then the default ones.
-        """
-        operation = dao.get_operation_by_gid(operation_gid)
-        try:
-            adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return review_operation_inputs_from_adapter(adapter, operation)
-
-        except Exception:
-            self.logger.exception("Could not load details for operation %s" % operation_gid)
-            parameters = json.loads(operation.parameters)
-            if 'gid' in parameters.keys():
-                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
-            else:
-                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
-            return [], changed_parameters
-
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
         Returns the dataTypes that are used as input parameters for the given operation.
@@ -799,6 +780,25 @@ class ProjectService:
 
         datatypes.extend([v for _, v in six.iteritems(datatype_groups)])
         return datatypes
+
+    def _review_operation_inputs(self, operation_gid):
+        """
+        :returns: A list of DataTypes that are used as input parameters for the specified operation.
+                 And a dictionary will all operation parameters different then the default ones.
+        """
+        operation = dao.get_operation_by_gid(operation_gid)
+        try:
+            adapter = ABCAdapter.build_adapter(operation.algorithm)
+            return review_operation_inputs_from_adapter(adapter, operation)
+
+        except Exception:
+            self.logger.exception("Could not load details for operation %s" % operation_gid)
+            parameters = json.loads(operation.parameters)
+            if 'gid' in parameters.keys():
+                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
+            else:
+                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
+            return [], changed_parameters
 
     def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
         """
