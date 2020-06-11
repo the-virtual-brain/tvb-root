@@ -173,6 +173,9 @@ class BurstConfiguration(HasTraitsIndex):
     metric_operation_group = relationship(OperationGroup, foreign_keys=fk_metric_operation_group,
                                           primaryjoin=OperationGroup.id == fk_metric_operation_group, cascade='none')
 
+    # Transient attribute, for when copying or branching
+    parent_burst_object = None
+
     def __init__(self, project_id, status="running", name=None):
         super().__init__()
         self.fk_project = project_id
@@ -186,6 +189,7 @@ class BurstConfiguration(HasTraitsIndex):
         new_burst.range1 = self.range1
         new_burst.range2 = self.range2
         new_burst.status = self.BURST_RUNNING
+        new_burst.parent_burst_object = self
         return new_burst
 
     @property

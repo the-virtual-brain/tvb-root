@@ -1054,14 +1054,11 @@ class SimulatorController(BurstBaseController):
         burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
         if launch_mode == self.burst_service.LAUNCH_BRANCH:
-            burst_config_to_store = session_burst_config.clone()
-            if self.DEFAULT_COPY_PREFIX in session_burst_config.name:
-                session_burst_config.name = session_burst_config.name.replace(self.DEFAULT_COPY_PREFIX, '')
-            count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.fk_project)
-            burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count + 1)
-            parent_burst_id = common.get_from_session(common.KEY_BRANCH_PARENT_ID)
+            parent_burst = session_burst_config.parent_burst_object
+            count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
+            burst_config_to_store.name = parent_burst.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
-                                                            parent_burst_id, "fk_parent_burst")
+                                                            parent_burst.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
                 exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
                                             "it!" % session_burst_config.name)
@@ -1156,7 +1153,6 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
         common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
-        common.add2session(common.KEY_BRANCH_PARENT_ID, burst_config_id)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
         form = self.prepare_first_fragment()
