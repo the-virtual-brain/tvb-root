@@ -83,7 +83,6 @@ class UserController(BaseController):
         Login page (with or without messages).
         """
         template_specification = dict(mainContent="user/login", title="Login", data=data)
-        self._set_base_url()
         if cherrypy.request.method == 'POST':
             keycloak_login = TvbProfile.current.KEYCLOAK_LOGIN_ENABLED
             form = LoginForm() if not keycloak_login else KeycloakLoginForm()
@@ -397,6 +396,13 @@ class UserController(BaseController):
             common.set_info_message("User Validated successfully and notification email sent!")
         raise cherrypy.HTTPRedirect('/tvb')
 
+    @cherrypy.expose
+    def base_url(self, **data):
+        if not TvbProfile.current.web.BASE_URL:
+            url = data['url']
+            self.logger.info("Set base url to {}".format(url))
+            TvbProfile.current.web.BASE_URL = url
+
     def _create_user(self, email_msg=None, validated=False, **data):
         """
         Just create a user given the data input. Do form validation beforehand.
@@ -441,11 +447,6 @@ class UserController(BaseController):
         template_dictionary[KEY_SERVER_VERSION] = self.version_info
         template_dictionary[KEY_CURRENT_VERSION_FULL] = TvbProfile.current.version.CURRENT_VERSION
         return template_dictionary
-
-    @staticmethod
-    def _set_base_url():
-        if not TvbProfile.current.web.BASE_URL:
-            TvbProfile.current.web.BASE_URL = cherrypy.request.base
 
 
 class LoginForm(formencode.Schema):
