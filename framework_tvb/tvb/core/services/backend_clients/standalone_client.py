@@ -107,14 +107,8 @@ class OperationExecutor(Thread):
                 operation = dao.get_operation_by_id(self.operation_id)
                 LOGGER.error("Operation suffered fatal failure! Exit code: %s Exit message: %s" % (returned,
                                                                                                    subprocess_result))
-
                 burst_service.persist_operation_state(operation, STATUS_ERROR,
                                                       "Operation failed unexpectedly! Please check the log files.")
-
-                burst_entity = dao.get_burst_for_operation_id(self.operation_id)
-                if burst_entity:
-                    message = "Error in operation process! Possibly segmentation fault."
-                    burst_service.mark_burst_finished(burst_entity, error_message=message)
 
             del launched_process
 
