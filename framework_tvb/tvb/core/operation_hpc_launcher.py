@@ -118,9 +118,11 @@ def _update_operation_status(status, simulator_gid, base_url):
     try:
         req_params = "{}/flow/update_status/{}".format(base_url, simulator_gid)
         log.info('URL is: {}'.format(req_params))
-        _build_secured_request().put(req_params, json={
+        response = _build_secured_request().put(req_params, data={
             UPDATE_STATUS_KEY: status,
         })
+        if not response.ok:
+            log.warning("Failed to update status. {}".format(response.json()))
     except Exception:
         log.warning(
             "Failed to notify TVB server {} for simulator {} status update {}".format(base_url, simulator_gid, status))
