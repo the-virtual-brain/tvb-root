@@ -138,7 +138,7 @@ def _build_secured_request():
             with open(token_file_path, "r") as file:
                 refresh_token = file.read()
             kc_instance = AuthorizationManager(kc_config_file_path).get_keycloak_instance()
-            response = kc_instance.refresh_token(refresh_token)
+            response = kc_instance.refresh_token(refresh_token.replace('\n', ''))
             token = response['access_token']
         except Exception as e:
             log.error(e, exc_info=True)
@@ -146,7 +146,7 @@ def _build_secured_request():
         log.warning("Token file was not found.")
 
     with requests.Session() as request:
-        auth_header = {"Authorization": "Bearer {}".format(token.replace('\n', ''))}
+        auth_header = {"Authorization": "Bearer {}".format(token)}
         request.headers.update(auth_header)
         return request
 
