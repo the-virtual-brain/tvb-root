@@ -202,7 +202,7 @@ class OperationService:
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
 
-        OperationService._store_view_model(stored_metric_operation, sim_operation.project, view_model)
+        self._store_view_model(stored_metric_operation, sim_operation.project, view_model)
         return stored_metric_operation
 
     def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
@@ -278,7 +278,7 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            OperationService._store_view_model(operation, project, view_model)
+            self._store_view_model(operation, project, view_model)
 
         return operations, group
 
@@ -313,7 +313,7 @@ class OperationService:
         parameters = json.loads(operation.parameters)
         try:
             adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return self.review_operation_inputs_from_adapter(adapter, operation)
+            return self._review_operation_inputs_from_adapter(adapter, operation)
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)
@@ -323,7 +323,7 @@ class OperationService:
                 changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
             return [], changed_parameters
 
-    def review_operation_inputs_from_adapter(self, adapter, operation):
+    def _review_operation_inputs_from_adapter(self, adapter, operation):
         """
         :returns: a list with the inputs from the parameters list that are instances of DataType,\
             and a dictionary with all parameters which are different than the declared defauts
@@ -334,7 +334,7 @@ class OperationService:
 
         if isinstance(adapter, SimulatorAdapter):
             fragments = adapter.get_simulator_fragments()
-            inputs_datatypes, changed_attr = self.review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+            inputs_datatypes, changed_attr = self._review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
             for fragment in fragments:
                 fragment_fields = fragment().fields
                 for field in fragment_fields:
@@ -358,11 +358,11 @@ class OperationService:
                                 changed_attr[field.label] = data_type.display_name
                             inputs_datatypes.append(data_type)
         else:
-            inputs_datatypes, changed_attr = self.review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+            inputs_datatypes, changed_attr = self._review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
 
         return inputs_datatypes, changed_attr
 
-    def review_operation_inputs_for_adapter_model(self, form_fields, form_model, view_model):
+    def _review_operation_inputs_for_adapter_model(self, form_fields, form_model, view_model):
         changed_attr = {}
         inputs_datatypes = []
         for field in form_fields:
