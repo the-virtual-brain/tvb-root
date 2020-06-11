@@ -124,7 +124,7 @@ class EncryptionHandler(object):
         return encrypted_files
 
     def decrypt_results_to_dir(self, dir, from_subdir=None):
-        # type: (str, str) -> None
+        # type: (str, str) -> list
         """
         Having an already encrypted directory, decrypt all files,
         then move plain files to the location specified by :param dir
@@ -139,10 +139,14 @@ class EncryptionHandler(object):
         if from_subdir:
             encrypted_dir = os.path.join(encrypted_dir, from_subdir)
 
+        plain_files = []
         for encrypted_file in os.listdir(encrypted_dir):
             plain_file = os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
             encrypted_file_full = os.path.join(encrypted_dir, encrypted_file)
             try:
                 pyAesCrypt.decryptFile(encrypted_file_full, plain_file, password, self.buffer_size)
+                plain_files.append(plain_file)
             except ValueError:
                 LOGGER.info('Could not decrypt file {}'.format(encrypted_file))
+
+        return plain_files

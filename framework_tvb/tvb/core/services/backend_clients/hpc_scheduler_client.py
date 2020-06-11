@@ -381,8 +381,7 @@ class HPCSchedulerClient(BackendClient):
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
-        encryption_handler.decrypt_results_to_dir(operation_dir, from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
-        h5_filenames = [os.path.join(operation_dir, h5_file) for h5_file in os.listdir(operation_dir)]
+        h5_filenames = encryption_handler.decrypt_results_to_dir(operation_dir, from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
 
         LOGGER.info(working_dir.properties)
         LOGGER.info(working_dir.listdir())
