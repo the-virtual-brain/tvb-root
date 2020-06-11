@@ -1044,7 +1044,6 @@ class SimulatorController(BurstBaseController):
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         session_stored_simulator.simulation_length = current_form.simulation_length.value
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
 
         project = common.get_current_project()
         user = common.get_logged_user()
@@ -1054,17 +1053,12 @@ class SimulatorController(BurstBaseController):
 
         burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
-        if launch_mode == self.burst_service.LAUNCH_NEW:
-            if is_simulator_copy:
-                burst_config_to_store = session_burst_config.clone()
-        else:
-            burst_config_to_store = session_burst_config.clone()
-            if self.DEFAULT_COPY_PREFIX in session_burst_config.name:
-                session_burst_config.name = session_burst_config.name.replace(self.DEFAULT_COPY_PREFIX, '')
-            count = dao.count_bursts_with_name(session_burst_config.name, session_burst_config.fk_project)
-            burst_config_to_store.name = session_burst_config.name + "_" + launch_mode + str(count + 1)
+        if launch_mode == self.burst_service.LAUNCH_BRANCH:
+            parent_burst = session_burst_config.parent_burst_object
+            count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
+            burst_config_to_store.name = parent_burst.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
-                                                            session_burst_config.id, "fk_parent_burst")
+                                                            parent_burst.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
                 exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
                                             "it!" % session_burst_config.name)
@@ -1148,8 +1142,9 @@ class SimulatorController(BurstBaseController):
     @check_user
     def copy_simulator_configuration(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
-        burst_config.name = self.DEFAULT_COPY_PREFIX + burst_config.name
-        common.add2session(common.KEY_BURST_CONFIG, burst_config)
+        burst_config_copy = burst_config.clone()
+        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
+
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
         simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
@@ -1157,8 +1152,9 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
-        self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config))
+        self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
