@@ -580,16 +580,15 @@ class OperationService:
             if op_ident is not None:
                 transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
                 job = Job(transport, op_ident.job_id)
-                if job.is_running():
-                    if operation.status == STATUS_PENDING:
-                        OperationService._operation_started(operation)
-                    logger.info("CSCS job for operation {} is still running.".format(operation.id))
-                    return
                 job_status = job.properties['status']
+                if job.is_running():
+                    if operation.status == STATUS_PENDING and job_status == HPCJobStatus.READY.value:
+                        OperationService._operation_started(operation)
+                    logger.info("CSCS job status: {} for operation {}.".format(job_status, operation.id))
+                    return
                 logger.info("Job for operation {} has status {}".format(operation.id, job_status))
                 if job_status == HPCJobStatus.SUCCESSFUL.value:
-                    # TODO: Simulator GID??
-                    # OperationService._operation_finished(operation, "simulator_gid")
-                    pass
+                    simulator_gid = operation.parameters['gid']
+                    OperationService._operation_finished(operation, simulator_gid)
                 else:
                     OperationService._operation_error(operation)
