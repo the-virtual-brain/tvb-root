@@ -200,6 +200,9 @@ class HPCSettings(object):
     CRYPT_BUFFER_SIZE = 64 * 1024
     CRYPT_PASS_SIZE = 64
 
+    # Specify if the current process is executing an operation (via hpcLauncher)
+    IN_OPERATION_EXECUTION_PROCESS = False
+
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
         self.BACKGROUND_JOB_INTERVAL = manager.get_attribute(stored.KEY_HPC, 60, int)
