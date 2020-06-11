@@ -43,7 +43,6 @@ import zipfile
 import sys
 from copy import copy
 from cgi import FieldStorage
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
     choices
@@ -62,11 +61,9 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, DataTypeSelectField
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 try:
     from cherrypy._cpreqbody import Part
@@ -290,98 +287,6 @@ class OperationService:
         h5_file.store(view_model)
         h5_file.close()
 
-    def load_view_model(self, adapter_instance, operation):
-        storage_path = self.file_helper.get_project_folder(operation.project, str(operation.id))
-        input_gid = json.loads(operation.parameters)['gid']
-        # TODO: review location, storage_path, op params deserialization
-        if isinstance(adapter_instance, SimulatorAdapter):
-            view_model = SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
-        else:
-            view_model_class = adapter_instance.get_view_model_class()
-            view_model = view_model_class()
-            h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
-            h5_file = ViewModelH5(h5_path, view_model)
-            h5_file.load_into(view_model)
-        return view_model
-
-    def review_operation_inputs(self, operation_gid):
-        """
-        :returns: A list of DataTypes that are used as input parameters for the specified operation.
-                 And a dictionary will all operation parameters different then the default ones.
-        """
-        operation = dao.get_operation_by_gid(operation_gid)
-        parameters = json.loads(operation.parameters)
-        try:
-            adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return self._review_operation_inputs_from_adapter(adapter, operation)
-
-        except Exception:
-            self.logger.exception("Could not load details for operation %s" % operation_gid)
-            if 'gid' in parameters.keys():
-                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
-            else:
-                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
-            return [], changed_parameters
-
-    def _review_operation_inputs_from_adapter(self, adapter, operation):
-        """
-        :returns: a list with the inputs from the parameters list that are instances of DataType,\
-            and a dictionary with all parameters which are different than the declared defauts
-        """
-        view_model = self.load_view_model(adapter, operation)
-        form_model = adapter.get_view_model_class()()
-        form_fields = adapter.get_form_class()().fields
-
-        if isinstance(adapter, SimulatorAdapter):
-            fragments = adapter.get_simulator_fragments()
-            inputs_datatypes, changed_attr = self._review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
-            for fragment in fragments:
-                fragment_fields = fragment().fields
-                for field in fragment_fields:
-                    if(hasattr(view_model, field.name)):
-                        if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
-                            attr_default = getattr(form_model, field.name)
-                            attr_vm = getattr(view_model, field.name)
-                            if attr_vm != attr_default:
-                                if isinstance(attr_default, float) or isinstance(attr_default, str):
-                                    changed_attr[field.label] = attr_vm
-                                else:
-                                    if not isinstance(attr_default, tuple):
-                                        changed_attr[field.label] = attr_vm.title
-                                    else:
-                                        for sub_attr in attr_default:
-                                            changed_attr[field.label] = sub_attr.title
-                        else:
-                            attr_vm = getattr(view_model, field.name)
-                            data_type = ABCAdapter.load_entity_by_gid(attr_vm)
-                            if attr_vm:
-                                changed_attr[field.label] = data_type.display_name
-                            inputs_datatypes.append(data_type)
-        else:
-            inputs_datatypes, changed_attr = self._review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
-
-        return inputs_datatypes, changed_attr
-
-    def _review_operation_inputs_for_adapter_model(self, form_fields, form_model, view_model):
-        changed_attr = {}
-        inputs_datatypes = []
-        for field in form_fields:
-            if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
-                attr_default = getattr(form_model, field.name)
-                attr_vm = getattr(view_model, field.name)
-                if attr_vm != attr_default:
-                    if isinstance(attr_default, float) or isinstance(attr_default, str):
-                        changed_attr[field.label] = attr_vm
-                    else:
-                        changed_attr[field.label] = attr_vm.title
-            else:
-                attr_vm = getattr(view_model, field.name)
-                data_type = ABCAdapter.load_entity_by_gid(attr_vm)
-                if attr_vm:
-                    changed_attr[field.label] = data_type.display_name
-                inputs_datatypes.append(data_type)
-
-        return inputs_datatypes, changed_attr
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
@@ -402,13 +307,13 @@ class OperationService:
             user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
-            view_model = self.load_view_model(adapter_instance, operation)
+            view_model = adapter_instance.load_view_model(operation)
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
-            ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
+            # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
             if nr_datatypes > 0:
-                #### Write operation meta-XML only if some result are returned
+                # Write operation meta-XML only if some result are returned
                 self.file_helper.write_operation_metadata(operation)
             dao.store_entity(operation)
             adapter_form = adapter_instance.get_form()

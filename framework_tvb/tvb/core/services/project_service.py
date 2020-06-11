@@ -37,28 +37,29 @@ Service Layer for the Project entity.
 
 import os
 import six
+import json
 import formencode
 from tvb.core import utils
 from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
-from tvb.core.services.flow_service import FlowService
-from tvb.core.services.operation_service import OperationService
-from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
-from tvb.core.removers_factory import get_remover
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.removers_factory import get_remover
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 
 
 def initialize_storage():
@@ -446,7 +447,7 @@ class ProjectService:
 
         user_display_name = dao.get_user_by_id(operation.fk_launched_by).display_name
         burst = dao.get_burst_for_operation_id(operation.id)
-        datatypes_param, all_special_params = OperationService().review_operation_inputs(operation.gid)
+        datatypes_param, all_special_params = self._review_operation_inputs(operation.gid)
 
         op_pid = dao.get_operation_process_for_operation(operation.id)
         op_details = OperationOverlayDetails(operation, user_display_name, len(datatypes_param),
@@ -752,6 +753,25 @@ class ProjectService:
         # 4. Update the group_name/user_group into the operation meta-data file
         #  TODO update ViewModel of the operation H5
 
+    def _review_operation_inputs(self, operation_gid):
+        """
+        :returns: A list of DataTypes that are used as input parameters for the specified operation.
+                 And a dictionary will all operation parameters different then the default ones.
+        """
+        operation = dao.get_operation_by_gid(operation_gid)
+        try:
+            adapter = ABCAdapter.build_adapter(operation.algorithm)
+            return review_operation_inputs_from_adapter(adapter, operation)
+
+        except Exception:
+            self.logger.exception("Could not load details for operation %s" % operation_gid)
+            parameters = json.loads(operation.parameters)
+            if 'gid' in parameters.keys():
+                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
+            else:
+                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
+            return [], changed_parameters
+
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
         Returns the dataTypes that are used as input parameters for the given operation.
@@ -760,7 +780,7 @@ class ProjectService:
         If any dataType is part of a dataType group then the dataType group will
         be returned instead of that dataType.
         """
-        all_datatypes = OperationService().review_operation_inputs(operation_gid)[0]
+        all_datatypes = self._review_operation_inputs(operation_gid)[0]
         datatype_inputs = []
         for datatype in all_datatypes:
             if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW:

@@ -31,24 +31,23 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from os import path
 
+from os import path
 import pytest
 from copy import copy
-
 import tvb_data
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel, CortexViewModel
-from tvb.datatypes.surfaces import CORTICAL
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.time_series import TimeSeriesRegion
+from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 # Default values for simulator's input. These values can be replace with adapter.get_flatten_interface...
 SIMULATOR_PARAMETERS = {

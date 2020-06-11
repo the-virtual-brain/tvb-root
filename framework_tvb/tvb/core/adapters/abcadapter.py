@@ -53,7 +53,7 @@ from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -522,6 +522,17 @@ class ABCAdapter(object):
             msg = "Could not load Adapter Instance for Stored row %s" % stored_adapter
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
+
+    def load_view_model(self, operation):
+        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        input_gid = json.loads(operation.parameters)['gid']
+        view_model_class = self.get_view_model_class()
+        view_model = view_model_class()
+        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
+        h5_file = ViewModelH5(h5_path, view_model)
+        h5_file.load_into(view_model)
+        return view_model
+
 
 @add_metaclass(ABCMeta)
 class ABCAsynchronous(ABCAdapter):
