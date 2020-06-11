@@ -569,7 +569,7 @@ class OperationService:
 
     @staticmethod
     def check_operations_job():
-        logger = get_logger(OperationService.__class__.__module__)
+        logger = get_logger("HPC-Sync-Job")
         operations = dao.get_operations()
         if operations is None or len(operations) == 0:
             logger.info("There aren't any simulations in status PENDING or RUNNING")
@@ -588,7 +588,7 @@ class OperationService:
                     return
                 logger.info("Job for operation {} has status {}".format(operation.id, job_status))
                 if job_status == HPCJobStatus.SUCCESSFUL.value:
-                    simulator_gid = operation.parameters['gid']
+                    simulator_gid = json.loads(operation.parameters)['gid']
                     OperationService._operation_finished(operation, simulator_gid)
                 else:
                     OperationService._operation_error(operation)
