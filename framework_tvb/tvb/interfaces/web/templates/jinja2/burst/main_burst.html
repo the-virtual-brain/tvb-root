@@ -13,7 +13,7 @@
 
 	<script type="text/javascript">
     	$(document).ready(function(){
-    		initBurstConfiguration('{{ burstConfig.id if (burstConfig.id != None) else ""  }}', {{ selectedPortlets | safe }}, '{{ burstConfig.selected_tab }}');
+    		initBurstConfiguration('{{ burstConfig.id if (burstConfig.id != None) else ""  }}', '{{ burstConfig.name if (burstConfig.name != None) else ""  }}', '{{ burstConfig.selected_tab }}');
 		});
     </script>
     
@@ -86,7 +86,7 @@
 
 <script type="text/javascript">
     $(document).ready(function() {
-        _renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
+        renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
     });
 </script>
 

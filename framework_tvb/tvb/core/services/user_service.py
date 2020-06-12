@@ -231,7 +231,7 @@ class UserService:
                 project = dao.get_project_by_id(project_id)
                 if project is not None:
                     admin_name = project.administrator.username
-            all_users, total_pages = self.retrieve_users_except(admin_name, page, MEMBERS_PAGE_SIZE)
+            all_users, total_pages = self.retrieve_users_except([admin_name], page, MEMBERS_PAGE_SIZE)
             members = dao.get_members_of_project(project_id)
             return all_users, members, total_pages
         except Exception as excep:
@@ -239,14 +239,14 @@ class UserService:
             raise UsernameException(str(excep))
 
     @staticmethod
-    def retrieve_users_except(username, current_page, page_size):
-        # type: (str, int, int) -> (list, int)
+    def retrieve_users_except(usernames, current_page, page_size):
+        # type: (list, int, int) -> (list, int)
         """
-        Return all users from the database except the given user
+        Return all users from the database except the given users
         """
         start_idx = page_size * (current_page - 1)
-        total = dao.get_all_users(username, is_count=True)
-        user_list = dao.get_all_users(username, start_idx, page_size)
+        total = dao.get_all_users(usernames, is_count=True)
+        user_list = dao.get_all_users(usernames, start_idx, page_size)
         pages_no = total // page_size + (1 if total % page_size else 0)
         return user_list, pages_no
 
@@ -268,7 +268,7 @@ class UserService:
         for key, value in six.iteritems(edited_user.preferences):
             user.preferences[key] = value
         dao.store_entity(user)
-        if user.is_administrator():
+        if user.is_administrator() and user.username == TvbProfile.current.web.admin.ADMINISTRATOR_NAME:
             TvbProfile.current.manager.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
                                                                    SettingsService.KEY_ADMIN_PWD: user.password})
 

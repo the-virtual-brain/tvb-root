@@ -36,8 +36,6 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 """
 
 import os
-from subprocess import Popen, PIPE
-
 from tvb.basic.config import stored
 
 
@@ -80,17 +78,6 @@ class VersionSettings(object):
 
     @property
     def SVN_VERSION(self):
-        """Current SVN version in the package running now."""
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            return os.environ[svn_variable]
-
-        try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
-            return self.parse_svn_version(_proc.communicate()[0])
-        except Exception:
-            pass
-
         try:
             import tvb.basic.config
             config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
@@ -99,7 +86,7 @@ class VersionSettings(object):
         except Exception:
             pass
 
-        raise ValueError('cannot determine TVB revision number')
+        return 42
 
     @staticmethod
     def parse_svn_version(version_string):
