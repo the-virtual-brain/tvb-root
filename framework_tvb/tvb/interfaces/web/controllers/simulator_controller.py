@@ -165,8 +165,7 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def hide_previous_button(self):
-        if self.load_readonly and not (self.is_simulation_copy and self.is_launch_fragment and
-                                       self.last_form_url == SimulatorWizzardURLs.SETUP_PSE_URL):
+        if self.load_readonly:
             return True
         return False
 
