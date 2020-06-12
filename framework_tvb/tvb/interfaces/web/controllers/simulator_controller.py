@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import os
+
 import threading
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
@@ -110,8 +110,8 @@ class SimulatorFragmentRenderingRules(object):
     def __init__(self, form=None, form_action_url=None, previous_form_action_url=None, is_simulation_copy=False,
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type='GET', is_first_fragment=False, is_launch_fragment=False, is_model_fragment=False,
-                 is_surface_simulation=False, is_noise_fragment=False, is_launch_pse_fragment=False, is_pse_launch=False,
-                 monitor_name=None):
+                 is_surface_simulation=False, is_noise_fragment=False, is_launch_pse_fragment=False,
+                 is_pse_launch=False, monitor_name=None):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -189,13 +189,13 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def include_launch_button(self):
-        if self.is_launch_fragment and (not self.load_readonly or self.is_simulation_copy):
+        if self.is_launch_fragment and (not self.load_readonly):
             return True
         return False
 
     @property
     def hide_launch_and_setup_pse_button(self):
-        if self.last_form_url != SimulatorWizzardURLs.SETUP_PSE_URL:
+        if self.last_form_url != SimulatorWizzardURLs.SETUP_PSE_URL and (not self.load_readonly):
             return True
         return False
 
@@ -207,13 +207,13 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def include_setup_pse(self):
-        if self.is_launch_fragment and (not self.load_readonly or self.is_simulation_copy):
+        if self.is_launch_fragment and (not self.load_readonly):
             return True
         return False
 
     @property
     def include_launch_pse_button(self):
-        if self.is_launch_pse_fragment and (not self.load_readonly or self.is_simulation_copy):
+        if self.is_launch_pse_fragment and (not self.load_readonly):
             return True
         return False
 
@@ -261,7 +261,7 @@ class SimulatorController(BurstBaseController):
 
         if burst_config.start_time is not None:
             is_simulator_load = True
-            common.add2session(common.KEY_IS_SIMULATOR_LOAD, is_simulator_load)
+            common.add2session(common.KEY_IS_SIMULATOR_LOAD, True)
         else:
             is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
@@ -992,6 +992,7 @@ class SimulatorController(BurstBaseController):
                                                           is_launch_pse_fragment=True)
         return rendering_rules.to_dict()
 
+    @expose_json
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -999,20 +1000,16 @@ class SimulatorController(BurstBaseController):
         all_range_parameters = self.range_parameters.get_all_range_parameters()
         range_param1, range_param2 = SimulatorPSERangeFragment.fill_from_post(all_range_parameters, **data)
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
-        is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY)
 
         project = common.get_current_project()
         user = common.get_logged_user()
 
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        if is_simulator_copy:
-            burst_config = burst_config.clone()
         burst_config.start_time = datetime.now()
-
         burst_config.range1 = range_param1.to_json()
         if range_param2:
             burst_config.range2 = range_param2.to_json()
-        self.burst_service.prepare_burst_for_pse(burst_config)
+        burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
 
         try:
             thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_pse,
@@ -1024,6 +1021,7 @@ class SimulatorController(BurstBaseController):
                                               'range_param2': range_param2,
                                               'session_stored_simulator': session_stored_simulator})
             thread.start()
+            return {'id': burst_config.id}
         except BurstServiceException as e:
             self.logger.exception("Could not launch burst!")
             return {'error': e.message}
