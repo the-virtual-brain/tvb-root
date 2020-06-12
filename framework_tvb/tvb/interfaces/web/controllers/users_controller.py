@@ -327,7 +327,10 @@ class UserController(BaseController):
                 page -= 1
 
         admin_ = common.get_logged_user().username
-        user_list, pages_no = self.user_service.retrieve_users_except(admin_, page, USERS_PAGE_SIZE)
+        except_usernames = [admin_]
+        if TvbProfile.current.KEYCLOAK_LOGIN_ENABLED:
+            except_usernames.append(TvbProfile.current.web.admin.ADMINISTRATOR_NAME)
+        user_list, pages_no = self.user_service.retrieve_users_except(except_usernames, page, USERS_PAGE_SIZE)
         allRoles = [None]
         allRoles.extend(UserService.USER_ROLES)
 
