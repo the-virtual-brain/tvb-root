@@ -136,7 +136,7 @@ class BaseBCT(ABCAsynchronous):
     def execute_matlab(self, matlab_code, data):
         self.matlab_worker.add_to_path(BCT_PATH)
         self.log.info("Starting execution of MATLAB code:" + matlab_code)
-        runcode, matlablog, result = self.matlab_worker.matlab(matlab_code, data=data)
+        runcode, matlablog, result = self.matlab_worker.matlab(matlab_code, data=data, work_dir=self.storage_path)
         self.log.debug("Code run in MATLAB: " + str(runcode))
         self.log.debug("MATLAB log: " + str(matlablog))
         self.log.debug("Finished MATLAB execution:" + str(result))
