@@ -268,7 +268,7 @@ class UserService:
         for key, value in six.iteritems(edited_user.preferences):
             user.preferences[key] = value
         dao.store_entity(user)
-        if user.is_administrator():
+        if user.is_administrator() and user.username == TvbProfile.current.web.admin.ADMINISTRATOR_NAME:
             TvbProfile.current.manager.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
                                                                    SettingsService.KEY_ADMIN_PWD: user.password})
 
