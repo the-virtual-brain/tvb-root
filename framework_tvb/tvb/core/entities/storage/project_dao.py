@@ -102,8 +102,10 @@ class CaseDAO(RootDAO):
         admins = self.session.query(User).filter_by(role=ROLE_ADMINISTRATOR).all()
         return admins
 
-    def get_all_users(self, different_names=[], page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
+    def get_all_users(self, different_names=None, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
         """Retrieve all USERS in DB, except given users and system user."""
+        if different_names is None:
+            different_names = []
         try:
             sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
             query = self.session.query(User
