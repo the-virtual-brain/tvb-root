@@ -217,7 +217,7 @@ class BurstService(object):
         burst_config.fk_operation_group = operation_group.id
         burst_config.metric_operation_group = metric_operation_group
         burst_config.fk_metric_operation_group = metric_operation_group.id
-        dao.store_entity(burst_config)
+        return dao.store_entity(burst_config)
 
     def store_burst_configuration(self, burst_config, storage_path):
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
