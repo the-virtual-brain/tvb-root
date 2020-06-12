@@ -43,10 +43,14 @@
 				<dt>Username</dt>
             	<dd>{{ user.username }}</dd>
 
-				{% if user.role %}
+				{% if user.role or user.is_administrator() %}
             	<dt>Role</dt>
             	<dd tabindex='3' onkeypress="redirectToHrefChild(this)">
+					{% if user.role %}
             		{{ user.role | lower }}
+					{% else %}
+					administrator
+					{% endif %}
 					{% if user.is_administrator() %}
                 		<a href="/user/usermanagement" tabindex="-1"><u>manage other users</u></a>
 					{% endif %}
