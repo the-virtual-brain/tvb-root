@@ -47,7 +47,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.utils import MATLAB, OCTAVE, matlab_cmd
 
 
-
 class MatlabWorker(object):
     """
     MatlabAnalyzer is an helper class for calling arbitrary MATLAB code with
@@ -59,8 +58,8 @@ class MatlabWorker(object):
 
     matlab_paths = []
 
-
     def __init__(self):
+        self.previous_dir = os.getcwd()
         self.mlab_exe = TvbProfile.current.MATLAB_EXECUTABLE
         self.hex = hex(random.randint(0, 2 ** 32))
         self.script_name = "script%s" % self.hex
@@ -71,7 +70,6 @@ class MatlabWorker(object):
         self.done_fname = self.done_name + '.mat'
         self.log_fname = "log%s" % self.hex
 
-
     def _matlab_pre(self):
         """
         Called to obtain the pre operation code for MATLAB. Current, we
@@ -80,7 +78,6 @@ class MatlabWorker(object):
         """
         paths = "".join(["addpath('" + p + "');\n" for p in self.matlab_paths])
         return paths + "\ntry\n"
-
 
     def _matlab_post(self):
         """
@@ -97,7 +94,6 @@ class MatlabWorker(object):
             save_clause = "hexstamp = '%s'\nsave %s.mat -V7\nsave %s.mat -V7 hexstamp\nquit"
         return catch + save_clause % (self.hex, self.wkspc_name, self.done_name)
 
-
     def cleanup(self):
         """
         Make sure Matlab is closed after execution.
@@ -109,7 +105,7 @@ class MatlabWorker(object):
                 os.remove(file_ref)
             except Exception:
                 pass
-
+        os.chdir(self.previous_dir)
 
     def add_to_path(self, path_to_add):
         """
@@ -117,7 +113,6 @@ class MatlabWorker(object):
         in the MATLAB session
         """
         self.matlab_paths.append(path_to_add)
-
 
     def matlab(self, code, data=None, work_dir=None, cleanup=True):
         """
@@ -158,4 +153,3 @@ class MatlabWorker(object):
         if cleanup:
             self.cleanup()
         return pre + code + post, logtext, retdata
-
