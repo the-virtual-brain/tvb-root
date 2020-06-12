@@ -188,9 +188,9 @@ class SpikingWongWangExcIOInhI(Model):
 
     C_m_E = NArray(
         label=":math:`C_m_E`",
-        default=numpy.array([0.5, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
-        doc="[nF]. Excitatory population membrane capacitance.")
+        default=numpy.array([500.0, ]),
+        domain=Range(lo=0., hi=10., step=1000.0),
+        doc="[pF]. Excitatory population membrane capacitance.")
 
     g_m_E = NArray(
         label=":math:`g_m_E`",
@@ -254,9 +254,9 @@ class SpikingWongWangExcIOInhI(Model):
 
     C_m_I = NArray(
         label=":math:`C_m_I`",
-        default=numpy.array([0.2, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
-        doc="[nF]. Inhibitory population membrane capacitance.")
+        default=numpy.array([200.0, ]),
+        domain=Range(lo=0., hi=10., step=1000.0),
+        doc="[pF]. Inhibitory population membrane capacitance.")
 
     g_m_I = NArray(
         label=":math:`g_m_I`",
@@ -533,8 +533,10 @@ class SpikingWongWangExcIOInhI(Model):
             # 8. spikes
             state_variables[8, ii, _E] = numpy.where(state_variables[5, ii, _E] > self._x_E(self.V_thr, ii), 1.0, 0.0)
             state_variables[8, ii, _I] = numpy.where(state_variables[5, ii, _I] > self._x_I(self.V_thr, ii), 1.0, 0.0)
-            self._spikes_E[ii] = state_variables[8, ii, _E] > 0.0
-            self._spikes_I[ii] = state_variables[8, ii, _I] > 0.0
+            exc_spikes = state_variables[8, ii, _E]  # excitatory spikes
+            inh_spikes = state_variables[8, ii, _I]  # inhibitory spikes
+            self._spikes_E[ii] = exc_spikes > 0.0
+            self._spikes_I[ii] = inh_spikes > 0.0
 
             # set 5. V_m for spiking neurons to V_reset
             state_variables[5, ii, _E] = numpy.where(self._spikes_E[ii],
@@ -607,6 +609,14 @@ class SpikingWongWangExcIOInhI(Model):
                                                               state_variables[5, ii, _I])) \
                 * coupling_NMDA_I  # s_NMDA
 
+            # 0. s_AMPA
+            # s_AMPA += exc_spikes
+            state_variables[0, ii, _E] += exc_spikes
+
+            # 1. x_NMDA
+            # x_NMDA += exc_spikes
+            state_variables[1, ii, _E] += exc_spikes
+
             # 12. I_GABA = g_GABA * (V_m - V_I) * sum(w_ij * s_GABA_k)
             w_IE = self._x_I(self.w_IE, ii)
             w_II = self._x_I(self.w_II, ii)
@@ -618,6 +628,9 @@ class SpikingWongWangExcIOInhI(Model):
             state_variables[12, ii, _I] = self._x_I(self.g_GABA_I, ii) * \
                                           (state_variables[5, ii, _I] - self._x_I(self.V_I, ii)) * \
                                           coupling_GABA_I  # s_GABA
+
+            # 3. s_GABA += inh_spikes
+            state_variables[3, ii, _I] += inh_spikes
 
             # 13. I_AMPA_ext = g_AMPA_ext * (V_m - V_E) * ( G*sum{c_ij sum{s_AMPA_j(t-delay_ij)}} + s_AMPA_ext)
             # Compute large scale coupling_ij = sum(c_ij * S_e(t-t_ij))
@@ -663,13 +676,12 @@ class SpikingWongWangExcIOInhI(Model):
             tau_AMPA_E = self._x_E(self.tau_AMPA, ii)
 
             # 0. s_AMPA
-            # ds_AMPA/dt = -1/tau_AMPA * s_AMPA + exc_spikes
-            derivative[0, ii, _E] =  -state_variables[0, ii, _E] / tau_AMPA_E + exc_spikes
+            # ds_AMPA/dt = -1/tau_AMPA * s_AMPA
+            derivative[0, ii, _E] =  -state_variables[0, ii, _E] / tau_AMPA_E
 
             # 1. x_NMDA
-            # dx_NMDA/dt = -x_NMDA/tau_NMDA_rise + exc_spikes
-            derivative[1, ii, _E] =  \
-                -state_variables[1, ii, _E] / self._x_E(self.tau_NMDA_rise, ii) + exc_spikes
+            # dx_NMDA/dt = -x_NMDA/tau_NMDA_rise
+            derivative[1, ii, _E] =  -state_variables[1, ii, _E] / self._x_E(self.tau_NMDA_rise, ii)
 
             # 2. s_NMDA
             # ds_NMDA/dt = -1/tau_NMDA_decay * s_NMDA + alpha*x_NMDA*(1-s_NMDA)
@@ -678,7 +690,7 @@ class SpikingWongWangExcIOInhI(Model):
                 + self._x_E(self.alpha, ii) * state_variables[1, ii, _E] * (1 - state_variables[2, ii, _E])
 
             # 4. s_AMPA_ext
-            # ds_AMPA_ext/dt = -1/tau_AMPA * (s_AMPA_exc + spikes_ext)
+            # ds_AMPA_ext/dt = -s_AMPA_exc/tau_AMPA
             derivative[4, ii, _E] = -state_variables[4, ii, _E] / tau_AMPA_E
 
             # excitatory refractory neurons:
@@ -707,12 +719,11 @@ class SpikingWongWangExcIOInhI(Model):
 
             _I = self._I(ii)  # inhibitory neurons indices
 
-            # 3. s_GABA/dt = - s_GABA/tau_GABA + inh_spikes
-            derivative[3, ii, _I] = \
-                -state_variables[3, ii, _I] / self._x_I(self.tau_GABA, ii) + state_variables[8, ii, _I]
+            # 3. s_GABA/dt = - s_GABA/tau_GABA
+            derivative[3, ii, _I] = -state_variables[3, ii, _I]/ self._x_I(self.tau_GABA, ii)
 
             # 4. s_AMPA_ext
-            # ds_AMPA_ext/dt = -1/tau_AMPA * (s_AMPA_exc + spikes_ext)
+            # ds_AMPA_ext/dt = -s_AMPA_exc/tau_AMPA
             derivative[4, ii, _I] = -state_variables[4, ii, _I] / self._x_I(self.tau_AMPA, ii)
 
             # inhibitory refractory neurons:
