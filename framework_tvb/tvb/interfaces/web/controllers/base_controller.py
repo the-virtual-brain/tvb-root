@@ -38,7 +38,6 @@ This is the main UI entry point.
 """
 
 import os
-
 import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -298,8 +297,9 @@ class BaseController(object):
         if common.KEY_SUBMENU_LIST not in template_dictionary:
             template_dictionary[common.KEY_SUBMENU_LIST] = None
 
+        js_suffix = TvbProfile.current.version.CURRENT_VERSION.replace(".", "").replace("-", "")
         template_dictionary[common.KEY_CURRENT_VERSION] = TvbProfile.current.version.BASE_VERSION
-        template_dictionary[common.KEY_CURRENT_JS_VERSION] = TvbProfile.current.version.BASE_VERSION.replace(".", "")
+        template_dictionary[common.KEY_CURRENT_JS_VERSION] = js_suffix
         return template_dictionary
 
     def fill_overlay_attributes(self, template_dictionary, title, description, content_template,
