@@ -672,7 +672,6 @@ class SpikingWongWangExcIOInhI(Model):
             # Excitatory neurons:
 
             _E = self._E(ii)  # excitatory neurons indices
-            exc_spikes = state_variables[8, ii, _E]  # excitatory spikes
             tau_AMPA_E = self._x_E(self.tau_AMPA, ii)
 
             # 0. s_AMPA
