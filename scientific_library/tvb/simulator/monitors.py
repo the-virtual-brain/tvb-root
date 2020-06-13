@@ -899,7 +899,6 @@ class Bold(Monitor):
                              ((step//self._interim_istep % self._stock_steps) - 1),
                              axis=1)
             if self._from_file == 1:            # rsHRF has been obtained from a file
-                # feel free to replace the convolution part of the code if found a better method :)
                 for i in range(hrf.shape[0]):   # convolving for all the regions separately
                     if i == 0:
                         bold = numpy.expand_dims(numpy.tensordot(self._stock.transpose(1, 2, 0, 3)[:,i,:,:], hrf[i], axes=([1], [0])), axis = 0)
