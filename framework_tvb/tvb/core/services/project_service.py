@@ -36,11 +36,10 @@ Service Layer for the Project entity.
 """
 
 import os
-import six
 import json
 import formencode
-from tvb.core import utils
 from tvb.basic.logger.builder import get_logger
+from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
@@ -778,7 +777,7 @@ class ProjectService:
                 dt_group = dao.get_datatype_by_id(data_type.fk_datatype_group)
                 datatype_groups[data_type.fk_datatype_group] = dt_group
 
-        datatypes.extend([v for _, v in six.iteritems(datatype_groups)])
+        datatypes.extend([v for v in datatype_groups.values()])
         return datatypes
 
     def _review_operation_inputs(self, operation_gid):

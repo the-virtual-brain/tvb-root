@@ -342,7 +342,7 @@ class TestProjectStructure(TransactionalTestCase):
         assert len(inputs) == 1, "Incorrect number of inputs."
         assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
 
-    def test_get_inputs_for_op_group(self, datatype_group_factory):
+    def test_get_inputs_for_op_group(self, datatype_group_factory, test_adapter_factory):
         """
         Tests method get_datatypes_inputs_for_operation_group.
         The DataType inputs will be from a DataType group.
