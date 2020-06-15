@@ -211,7 +211,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         monitors = list()
         for monitor in view_model.monitors:
-            monitor,  _ = h5.load_with_references_from_dir(self.storage_path, monitor.gid, type(monitor))
+            monitor,  _ = h5.load_with_references_from_dir(self.storage_path, monitor.gid)
             monitors.append(monitor)
 
         simulator.monitors = monitors

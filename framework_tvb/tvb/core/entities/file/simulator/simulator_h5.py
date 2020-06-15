@@ -29,6 +29,7 @@
 #
 import uuid
 from tvb.basic.neotraits.api import Attr
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.simulator.simulator import Simulator
 from tvb.core.entities.file.simulator.configurations_h5 import SimulatorConfigurationH5
 from tvb.core.neotraits.h5 import Reference, Scalar, DataSet, ReferenceList
@@ -50,16 +51,23 @@ class SimulatorH5(SimulatorConfigurationH5):
         self.simulation_length = Scalar(Simulator.simulation_length, self)
         self.simulation_state = Reference(Attr(field_type=uuid.UUID), self, name='simulation_state')
 
-    def gather_references_gids(self):
-        references = super(SimulatorH5, self).gather_references_gids()
+    def determine_datatype_from_file(self, with_references=False):
+        if with_references:
+            return Simulator
+        return super(SimulatorH5, self).determine_datatype_from_file()
+
+    def gather_references(self):
+        references = super(SimulatorH5, self).gather_references()
         monitor_hex_gids = self.monitors.load()
         monitor_gids = [uuid.UUID(monitor_hex_gid) for monitor_hex_gid in monitor_hex_gids]
-        references.extend(monitor_gids)
+        references.append((self.monitors.trait_attribute, monitor_gids))
         return references
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (Simulator, bool, bool) -> None
         super(SimulatorH5, self).store(datatype, scalars_only, store_references)
+        ga = GenericAttributes()
+        self.store_generic_attributes(ga)
 
         self.store_config_as_reference(datatype.integrator)
         self.store_config_as_reference(datatype.coupling)

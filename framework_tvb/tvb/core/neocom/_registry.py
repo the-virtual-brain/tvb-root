@@ -29,10 +29,20 @@
 #
 
 import typing
+from functools import partial
+
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
+from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.datatypes.projections import make_proj_matrix, ProjectionMatrix
+from tvb.datatypes.sensors import make_sensors
+from tvb.datatypes.surfaces import make_surface
 
 
 class Registry(object):
@@ -57,9 +67,23 @@ class Registry(object):
                 return self._h5file_for_datatype[base]
         return H5File
 
-    def get_datatype_for_h5file(self, h5file_class):
+    def get_base_datatype_for_h5file(self, h5file_class):
         # type: (typing.Type[H5File]) -> typing.Type[HasTraits]
         return self._datatype_for_h5file[h5file_class]
+
+    def _determine_proper_datatype_from_h5(self, h5file, subtype):
+        dct = {SurfaceH5: partial(make_surface, subtype),
+               SensorsH5: partial(make_sensors, subtype),
+               ProjectionMatrixH5: partial(make_proj_matrix, subtype)}
+        h5file_class = type(h5file)
+        return type(dct[h5file_class]())
+
+    def get_datatype_for_h5file(self, h5file):
+        # type: (H5File) -> typing.Type[HasTraits]
+        subtype = h5file.read_subtype_attr()
+        if subtype:
+            return self._determine_proper_datatype_from_h5(h5file, subtype)
+        return self._datatype_for_h5file[type(h5file)]
 
     def get_index_for_datatype(self, datatype_class):
         # type: (typing.Type[HasTraits]) -> typing.Type[DataType]
@@ -71,9 +95,18 @@ class Registry(object):
                 return self._index_for_datatype[base]
         return DataType
 
-    def get_datatype_for_index(self, index_class):
-        # type: (typing.Type[HasTraitsIndex]) -> typing.Type[HasTraits]
-        return self._datatype_for_index[index_class]
+    def _determine_proper_datatype_from_index(self, index, subtype):
+        dct = {SurfaceIndex: partial(make_surface, subtype),
+               SensorsIndex: partial(make_sensors, subtype),
+               ProjectionMatrix: partial(make_proj_matrix, subtype)}
+        return type(dct[type(index)]())
+
+    def get_datatype_for_index(self, index):
+        # type: (HasTraitsIndex) -> typing.Type[HasTraits]
+        subtype = index.get_subtype_attr()
+        if subtype:
+            return self._determine_proper_datatype_from_index(index, subtype)
+        return self._datatype_for_index[type(index)]
 
     def get_h5file_for_index(self, index_class):
         # type: (typing.Type[DataType]) -> typing.Type[H5File]

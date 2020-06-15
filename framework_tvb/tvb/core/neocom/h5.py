@@ -34,6 +34,7 @@ import typing
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.storage import dao
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File
@@ -150,22 +151,33 @@ def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
     return loader.load(gid, dt_class=dt_class)
 
 
-def load_with_links_from_dir(base_dir, gid, dt_class=None):
-    # type: (str, typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+def load_with_links_from_dir(base_dir, gid):
+    # type: (str, typing.Union[uuid.UUID, str]) -> HasTraits
     dir_loader = DirLoader(base_dir, REGISTRY, False)
     fname = dir_loader.find_file_name(gid)
     fname = os.path.join(base_dir, fname)
     tvb_loader = TVBLoader(REGISTRY)
-    return tvb_loader.load_with_links(fname, dt_class)
+    return tvb_loader.load_with_links(fname)
 
 
-def load_with_references_from_dir(base_dir, gid, dt_class=None):
-    # type: (str, typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+def load_with_references_from_dir(base_dir, gid):
+    # type: (str, typing.Union[uuid.UUID, str]) -> (HasTraits, GenericAttributes)
     dir_loader = DirLoader(base_dir, REGISTRY, False)
     fname = dir_loader.find_file_name(gid)
     fname = os.path.join(base_dir, fname)
     tvb_loader = TVBLoader(REGISTRY)
-    return tvb_loader.load_with_references(fname, dt_class)
+
+    def load_ht_function(sub_gid, traited_attr):
+        try:
+            dir_loader.find_file_name(sub_gid)
+        except IOError:
+            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
+            ref_fname = tvb_loader.path_for_stored_index(ref_idx)
+            return tvb_loader.load_with_references(ref_fname)[0]
+
+        return load_with_references_from_dir(base_dir, sub_gid)[0]
+
+    return tvb_loader.load_complete_by_function(fname, load_ht_function, True)
 
 
 def store_to_dir(datatype, base_dir, recursive=False):

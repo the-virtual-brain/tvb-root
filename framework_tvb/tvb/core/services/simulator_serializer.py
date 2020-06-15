@@ -61,7 +61,7 @@ class SimulatorSerializer(object):
 
 
         for monitor in simulator_in.monitors:
-            monitor, _ = h5.load_with_links_from_dir(storage_path, monitor.gid, type(monitor))
+            monitor, _ = h5.load_with_links_from_dir(storage_path, monitor.gid)
 
         if simulator_in.surface:
             cortex_path = h5.path_for(storage_path, CortexH5, simulator_in.surface.gid)
