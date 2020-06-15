@@ -39,6 +39,7 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfac
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION
 from tvb.adapters.simulator.subforms_mapping import DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -46,7 +47,7 @@ from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrFi
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.equations import Sigmoid, PulseTrain
+from tvb.datatypes.equations import Sigmoid, PulseTrain, TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
@@ -64,6 +65,9 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
+    spatial = Attr(field_type=FiniteSupportEquation, label="Spatial Equation", default=Sigmoid())
+    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+
     surface = DataTypeGidAttr(
         linked_datatype=CorticalSurface,
         label=StimuliSurface.surface.label
@@ -206,6 +210,8 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
+    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+
     connectivity = DataTypeGidAttr(
         field_type=uuid.UUID,
         linked_datatype=Connectivity,
