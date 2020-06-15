@@ -88,6 +88,9 @@ class H5File(object):
     def file_name_base(cls):
         return cls.__name__.replace("H5", "")
 
+    def read_subtype_attr(self):
+        return None
+
     def iter_accessors(self):
         # type: () -> typing.Generator[Accessor]
         for accessor in self.__dict__.values():
@@ -192,6 +195,12 @@ class H5File(object):
                 ret.append((accessor.trait_attribute, accessor.load()))
         return ret
 
+    def determine_datatype_from_file(self, with_references=False):
+        config_type = self.type.load()
+        package, cls_name = config_type.rsplit('.', 1)
+        module = importlib.import_module(package)
+        datatype_cls = getattr(module, cls_name)
+        return datatype_cls
 
     @staticmethod
     def from_file(path):

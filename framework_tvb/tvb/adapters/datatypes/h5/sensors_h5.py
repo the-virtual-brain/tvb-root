@@ -58,3 +58,6 @@ class SensorsH5(H5File):
         # type: (Sensors) -> None
         super(SensorsH5, self).load_into(datatype)
         datatype.labels = self.labels.load().astype(MEMORY_STRING)
+
+    def read_subtype_attr(self):
+        return self.sensors_type.load()

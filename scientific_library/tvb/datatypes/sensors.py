@@ -260,3 +260,18 @@ class SensorsInternal(Sensors):
     @property
     def grouped_electrodes(self):
         return SensorsInternal.group_sensors_to_electrodes(self.labels)
+
+
+def make_sensors(sensors_type):
+    """
+    Build a Sensors instance, based on an input type
+    :param sensors_type: one of the supported subtypes
+    :return: Instance of the corresponding sensors class, or None
+    """
+    if sensors_type == EEG_POLYMORPHIC_IDENTITY:
+        return SensorsEEG()
+    elif sensors_type == MEG_POLYMORPHIC_IDENTITY:
+        return SensorsMEG()
+    elif sensors_type == INTERNAL_POLYMORPHIC_IDENTITY:
+        return SensorsInternal()
+    return None

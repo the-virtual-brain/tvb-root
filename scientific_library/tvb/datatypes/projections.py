@@ -140,3 +140,18 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     @classmethod
     def from_file(cls, source_file='projection_seeg_588_surface_16k.npy', matlab_data_name=None, is_brainstorm=False):
         return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm)
+
+
+def make_proj_matrix(proj_type):
+    """
+    Build a ProjectionMatrix instance, based on an input type
+    :param proj_type: one of the supported subtypes
+    :return: Instance of the corresponding projectiion matrix class, or None
+    """
+    if proj_type == EEG_POLYMORPHIC_IDENTITY:
+        return ProjectionSurfaceEEG()
+    elif proj_type == MEG_POLYMORPHIC_IDENTITY:
+        return ProjectionSurfaceMEG()
+    elif proj_type == SEEG_POLYMORPHIC_IDENTITY:
+        return ProjectionSurfaceSEEG()
+    return None
