@@ -190,7 +190,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
 
     G = NArray(
         label=":math:`G`",
-        default=numpy.array([2.0, ]),
+        default=numpy.array([20.0, ]),
         domain=Range(lo=0.0, hi=10.0, step=0.01),
         doc="""Global coupling scaling""")
 
