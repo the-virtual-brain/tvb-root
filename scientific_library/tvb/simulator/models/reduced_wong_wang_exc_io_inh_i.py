@@ -104,9 +104,9 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
 
 
 
-    .. automethod:: ReducedWongWang.__init__
+    .. automethod:: ReducedWongWangExcIOInhI.__init__
 
-    Equations taken from [DPA_2013]_ , page 11242
+    Equations taken from [DPA_2014]_
 
     .. math::
                  x_{ek}       &=   w_p\,J_N \, S_{ek} - J_iS_{ik} + W_eI_o + GJ_N \mathbf\Gamma(S_{ek}, S_{ej}, u_{kj}),\\
@@ -229,7 +229,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         I_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling + self.I_ext
 
         x_e = self.a_e * I_e - self.b_e
-        # Only rates with R_e < 0 0 will be updated by TVB.
+        # Only rates with R_e <= 0 0 will be updated by TVB.
         R_e = numpy.where(self._Rin_e, R[0], x_e / (1 - numpy.exp(-self.d_e * x_e)))
 
         I_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
