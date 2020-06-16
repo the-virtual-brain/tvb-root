@@ -37,7 +37,7 @@ Saggio codimension 3 Epileptor model
 import numpy
 
 from .base import ModelNumbaDfun
-from numba import guvectorize, float64, int_
+from numba import guvectorize, float64, int64
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 
@@ -284,7 +284,7 @@ class EpileptorCodim3(ModelNumbaDfun):
 
 
 @guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int_[:], int_[:], float64[:])],
+               float64[:], float64[:], float64[:], float64[:], float64[:], int64[:], int64[:], float64[:])],
              '(n),(m)' + ',()' * 13 + '->(n)', nopython=True)
 def _numba_dfun(state_variables, coupling, E0, E1, E2, F0, F1, F2, b, R, c, dstar, Ks, modification, N, derivative):
     """Gufunction for the Epileptor Codim 3 model"""
@@ -655,7 +655,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
 
 @guvectorize([(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
                float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:],
-               float64[:], float64[:], float64[:], float64[:], float64[:], int_[:], int_[:], float64[:])],
+               float64[:], float64[:], float64[:], float64[:], float64[:], int64[:], int64[:], float64[:])],
              '(n),(m)' + ',()' * 21 + '->(n)', nopython=True)
 def _numba_dfun_slowmod(state_variables, coupling, G0, G1, G2, H0, H1, H2, L0, L1, L2, M0, M1, M2, b, R, c, cA, cB,
                         dstar, Ks, modification, N, derivative):
