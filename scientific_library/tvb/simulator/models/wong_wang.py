@@ -160,7 +160,7 @@ class ReducedWongWang(ModelNumbaDfun):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
         """
-        S   = state_variables[0, :]
+        S = state_variables[0, :]
 
         c_0 = coupling[0, :]
 
