@@ -37,7 +37,7 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 class SpikingWongWangExcIOInhI(Model):
-    _N_E_max = 160
+    _N_E_max = 200
     __n_E = []
     __n_I = []
     __E = {}
@@ -54,25 +54,19 @@ class SpikingWongWangExcIOInhI(Model):
                 Mechanism of Time Integration in Perceptual Decisions*.
                 Journal of Neuroscience 26(4), 1314-1328, 2006.
 
-    .. [DPA_2014] Deco Gustavo, Ponce Alvarez Adrian, Patric Hagmann,
-                  Gian Luca Romani, Dante Mantini, and Maurizio Corbetta. *How Local
-                  Excitation–Inhibition Ratio Impacts the Whole Brain Dynamics*.
-                  The Journal of Neuroscience 34(23), 7886 –7898, 2014.
-
+    .. [DPA_2013] Deco Gustavo, Ponce Alvarez Adrian, Dante Mantini,
+                  Gian Luca Romani, Patric Hagmann, and Maurizio Corbetta.
+                  *Resting-State Functional Connectivity Emerges from
+                  Structurally and Dynamically Shaped Slow Linear Fluctuations*.
+                  The Journal of Neuroscience 33(27), 11239 –11252, 2013.
 
 
     .. automethod:: ReducedWongWang.__init__
 
-    Equations taken from [DPA_2013]_ , page 11242
+    Equations taken from [DPA_2013]_ , page 11241
 
     .. math::
-                 x_{ek}       &=   w_p\,J_N \, S_{ek} - J_iS_{ik} + W_eI_o + GJ_N \mathbf\Gamma(S_{ek}, S_{ej}, u_{kj}),\\
-                 H(x_{ek})    &=  \dfrac{a_ex_{ek}- b_e}{1 - \exp(-d_e(a_ex_{ek} -b_e))},\\
-                 \dot{S}_{ek} &= -\dfrac{S_{ek}}{\tau_e} + (1 - S_{ek}) \, \gammaH(x_{ek}) \,
 
-                 x_{ik}       &=   J_N \, S_{ek} - S_{ik} + W_iI_o + \lambdaGJ_N \mathbf\Gamma(S_{ik}, S_{ej}, u_{kj}),\\
-                 H(x_{ik})    &=  \dfrac{a_ix_{ik} - b_i}{1 - \exp(-d_i(a_ix_{ik} -b_i))},\\
-                 \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
     """
 
@@ -158,14 +152,14 @@ class SpikingWongWangExcIOInhI(Model):
 
     G = NArray(
         label=":math:`G`",
-        default=numpy.array([2.0, ]),
-        domain=Range(lo=0.0, hi=10.0, step=0.01),
+        default=numpy.array([20.0, ]),
+        domain=Range(lo=0.0, hi=100.0, step=1.0),
         doc="""Global coupling scaling""")
 
     N_E = NArray(
         label=":math:`N_E`",
-        default=numpy.array([160, ]),
-        domain=Range(lo=0, hi=1000000, step=10),
+        default=numpy.array([100, ]),
+        domain=Range(lo=0, hi=1000000, step=1),
         doc="Number of excitatory population neurons.")
 
     V_E = NArray(
@@ -176,8 +170,8 @@ class SpikingWongWangExcIOInhI(Model):
 
     w_EE = NArray(
         label=":math:`w_EE`",
-        default=numpy.array([1.4, ]),
-        domain=Range(lo=0., hi=10., step=0.1),
+        default=numpy.array([1.55, ]),   # 1.4 for Deco et al. 2014
+        domain=Range(lo=0., hi=2.0, step=0.01),
         doc="Excitatory within population synapse weight.")
 
     w_EI = NArray(
@@ -200,26 +194,26 @@ class SpikingWongWangExcIOInhI(Model):
 
     g_AMPA_ext_E = NArray(
         label=":math:`g_AMPA_ext_E`",
-        default=numpy.array([3.37, ]),
-        domain=Range(lo=0., hi=10., step=0.01),
+        default=numpy.array([2.496, ]),  # 3.37 for Deco et al. 2014
+        domain=Range(lo=0., hi=10., step=0.001),
         doc="[nS]. Excitatory population external AMPA conductance.")
 
     g_AMPA_E = NArray(
         label=":math:`g_AMPA_E`",
-        default=numpy.array([0.065, ]),
+        default=numpy.array([0.104, ]),  # 0.065 for Deco et al. 2014
         domain=Range(lo=0., hi=0.1, step=0.001),
         doc="[nS]. Excitatory population AMPA conductance.")
 
     g_NMDA_E = NArray(
         label=":math:`g_NMDA_E`",
-        default=numpy.array([0.20, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
+        default=numpy.array([0.327, ]),  # 0.20 for Deco et al. 2014
+        domain=Range(lo=0., hi=1., step=0.001),
         doc="[nS]. Excitatory population NMDA conductance.")
 
     g_GABA_E = NArray(
         label=":math:`g_GABA_E`",
-        default=numpy.array([10.94, ]),
-        domain=Range(lo=0., hi=20., step=0.01),
+        default=numpy.array([4.375, ]),  # 10.94 for Deco et al. 2014
+        domain=Range(lo=0., hi=10., step=0.001),
         doc="[nS]. Excitatory population GABA conductance.")
     
     tau_ref_E = NArray(
@@ -230,7 +224,7 @@ class SpikingWongWangExcIOInhI(Model):
 
     N_I = NArray(
         label=":math:`N_I`",
-        default=numpy.array([40, ]),
+        default=numpy.array([100, ]),
         domain=Range(lo=0, hi=1000000, step=10),
         doc="Number of inhibitory population neurons.")
 
@@ -266,26 +260,26 @@ class SpikingWongWangExcIOInhI(Model):
 
     g_AMPA_ext_I = NArray(
         label=":math:`g_AMPA_ext_I`",
-        default=numpy.array([2.59, ]),
-        domain=Range(lo=0., hi=10., step=0.01),
+        default=numpy.array([1.944, ]),  # 2.59 for Deco et al. 2014
+        domain=Range(lo=0., hi=10., step=0.001),
         doc="[nS]. Inhibitory population external AMPA conductance.")
 
     g_AMPA_I = NArray(
         label=":math:`g_AMPA_I`",
-        default=numpy.array([0.051, ]),
+        default=numpy.array([0.081, ]),  # 0.051 for Deco et al. 2014
         domain=Range(lo=0., hi=0.1, step=0.001),
         doc="[nS]. Inhibitory population AMPA conductance.")
 
     g_NMDA_I = NArray(
         label=":math:`g_NMDA_I`",
-        default=numpy.array([0.16, ]),
-        domain=Range(lo=0., hi=1.0, step=0.01),
+        default=numpy.array([0.258, ]),  # 0.16 for Deco et al. 2014
+        domain=Range(lo=0., hi=1.0, step=0.001),
         doc="[nS]. Inhibitory population NMDA conductance.")
 
     g_GABA_I = NArray(
         label=":math:`g_GABA_I`",
-        default=numpy.array([8.51, ]),
-        domain=Range(lo=0., hi=20., step=0.01),
+        default=numpy.array([3.4055, ]),  # 8.51 for Deco et al. 2014
+        domain=Range(lo=0., hi=10., step=0.0001),
         doc="[nS]. Inhibitory population GABA conductance.")
 
     tau_ref_I = NArray(
