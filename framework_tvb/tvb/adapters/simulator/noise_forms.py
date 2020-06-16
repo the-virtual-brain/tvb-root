@@ -28,13 +28,13 @@
 #
 #
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict, Linear
+from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Attr, Range
+from tvb.core.entities.transient.range_parameter import RangeParameter
+from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField
 from tvb.datatypes.equations import Equation
 from tvb.simulator.noise import Noise, Additive, Multiplicative
-from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.range_parameter import RangeParameter
-from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField
 
 
 def get_form_for_noise(noise_class):
