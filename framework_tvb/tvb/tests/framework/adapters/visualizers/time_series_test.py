@@ -32,7 +32,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from uuid import UUID
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.time_series import TimeSeriesDisplay
 
@@ -49,7 +48,7 @@ class TestTimeSeries(TransactionalTestCase):
         time_series_index = time_series_index_factory()
         viewer = TimeSeriesDisplay()
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = UUID(time_series_index.gid)
+        view_model.time_series = time_series_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['t0', 'shape', 'preview', 'labelsStateVar', 'labelsModes',
                          'mainContent', 'labels', 'labels_json', 'figsize', 'dt']

@@ -41,6 +41,7 @@ import uuid
 import psutil
 import numpy
 import importlib
+import typing
 from functools import wraps
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
@@ -144,7 +145,8 @@ class ABCAdapterForm(Form):
         return None
 
     def _get_original_field_name(self, field):
-        return field.name[len(self.prefix) + 1:]
+        start_idx = len(self.prefix) + 1 if (self.prefix != '') else 0
+        return field.name[start_idx:]
 
     # TODO: Used to support original flow (pass form values as kwargs). Also for the asynchronous launch
     def get_dict(self):
@@ -154,6 +156,12 @@ class ABCAdapterForm(Form):
         attrs_dict.update({self.RANGE_1_NAME: self.range_1})
         attrs_dict.update({self.RANGE_2_NAME: self.range_2})
         return attrs_dict
+
+    def fill_from_post_plus_defaults(self, form_data):
+        self.fill_from_trait(self.get_view_model()())
+        for field in self.fields:
+            if field.name in form_data:
+                field.fill_from_post(form_data)
 
     def get_form_values(self):
         attrs_dict = {}
@@ -165,15 +173,6 @@ class ABCAdapterForm(Form):
                 field_data = field.data
             attrs_dict.update({field_name: field_data})
         return attrs_dict
-
-    def __str__(self):
-        # TODO: remove dependency from web
-        from tvb.interfaces.web.controllers.decorators import using_template
-        template = using_template('form_fields/form')(self._get_template_dict)()
-        return template
-
-    def _get_template_dict(self):
-        return {'form': self}
 
 
 @add_metaclass(ABCMeta)
@@ -459,16 +458,26 @@ class ABCAdapter(object):
         """
         Load a generic DataType, specified by GID.
         """
+        if isinstance(data_gid, uuid.UUID):
+            data_gid = data_gid.hex
         return load_entity_by_gid(data_gid)
 
     @staticmethod
     def load_traited_by_gid(data_gid):
-        # type: (uuid.UUID) -> HasTraits
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        index = load_entity_by_gid(data_gid.hex)
+        index = ABCAdapter.load_entity_by_gid(data_gid)
         return h5.load_from_index(index)
+
+    @staticmethod
+    def load_with_references(dt_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+        dt_index = ABCAdapter.load_entity_by_gid(dt_gid)
+        h5_path = h5.path_for_stored_index(dt_index)
+        dt, _ = h5.load_with_references(h5_path)
+        return dt
 
     @staticmethod
     def build_adapter_from_class(adapter_class):
@@ -488,13 +497,23 @@ class ABCAdapter(object):
             raise IntrospectionException(str(excep))
 
     @staticmethod
+    def determine_adapter_class(stored_adapter):
+        """
+        Determine the class of an adapter based on module and classname strings from stored_adapter
+        :param stored_adapter: Algorithm or AlgorithmDTO type
+        :return: a subclass of ABCAdapter
+        """
+        ad_module = importlib.import_module(stored_adapter.module)
+        adapter_class = getattr(ad_module, stored_adapter.classname)
+        return adapter_class
+
+    @staticmethod
     def build_adapter(stored_adapter):
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
         try:
-            ad_module = importlib.import_module(stored_adapter.module)
-            adapter_class = getattr(ad_module, stored_adapter.classname)
+            adapter_class = ABCAdapter.determine_adapter_class(stored_adapter)
             adapter_instance = adapter_class()
             adapter_instance.stored_adapter = stored_adapter
             return adapter_instance

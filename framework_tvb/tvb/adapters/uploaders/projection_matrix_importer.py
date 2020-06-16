@@ -94,7 +94,7 @@ class ProjectionMatrixImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
-        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, '.mat, .npy', self,
+        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'), self,
                                                 name='projection_file')
         self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
@@ -106,6 +106,12 @@ class ProjectionMatrixImporterForm(ABCUploaderForm):
     @staticmethod
     def get_view_model():
         return ProjectionMatrixImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'projection_file': ('.mat', '.npy')
+        }
 
 
 class ProjectionMatrixSurfaceEEGImporter(ABCUploader):

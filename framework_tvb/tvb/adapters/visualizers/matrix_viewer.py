@@ -137,7 +137,7 @@ class MappedArraySVGVisualizerMixin(ABCSpaceDisplayer):
         with h5.h5_file_for_index(datatype_index) as datatype_h5:
             matrix = datatype_h5.array_data[:]
 
-        source_index = self.load_entity_by_gid(datatype_index.source_gid)
+        source_index = self.load_entity_by_gid(datatype_index.fk_source_gid)
         with h5.h5_file_for_index(source_index) as source_h5:
             labels = self.get_space_labels(source_h5)
 
@@ -171,7 +171,7 @@ class MatrixVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype'
+        return 'datatype'
 
     @staticmethod
     def get_filters():

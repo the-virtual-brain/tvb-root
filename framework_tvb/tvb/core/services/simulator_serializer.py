@@ -39,26 +39,18 @@ from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.simulator.monitors import Projection, EEG, MEG, iEEG
 
 
 class SimulatorSerializer(object):
 
     @staticmethod
-    def serialize_simulator(simulator, simulator_gid, simulation_state_gid, storage_path):
-        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
-
+    def serialize_simulator(simulator, simulation_state_gid, storage_path):
+        simulator_path = h5.path_for(storage_path, SimulatorH5, simulator.gid)
         with SimulatorH5(simulator_path) as simulator_h5:
-            simulator_h5.gid.store(uuid.UUID(simulator_gid))
             simulator_h5.store(simulator)
-            simulator_h5.connectivity.store(simulator.connectivity)
-            if simulator.stimulus:
-                simulator_h5.stimulus.store(simulator.stimulus)
             if simulation_state_gid:
                 simulator_h5.simulation_state.store(uuid.UUID(simulation_state_gid))
-
-        return simulator_gid
 
     @staticmethod
     def deserialize_simulator(simulator_gid, storage_path):
@@ -71,29 +63,32 @@ class SimulatorSerializer(object):
             simulator_in.stimulus = simulator_in_h5.stimulus.load()
             simulator_in.history_gid = simulator_in_h5.simulation_state.load()
 
-        if isinstance(simulator_in.monitors[0], Projection):
-            # TODO: simplify this part
-            with SimulatorH5(simulator_in_path) as simulator_in_h5:
-                monitor_h5_path = simulator_in_h5.get_reference_path(simulator_in.monitors[0].gid)
+        for monitor in simulator_in.monitors:
+            if isinstance(monitor, Projection):
+                with SimulatorH5(simulator_in_path) as simulator_in_h5:
+                    monitor_h5_path = simulator_in_h5.get_reference_path(monitor.gid)
 
-            monitor_h5_class = h5_factory.monitor_h5_factory(type(simulator_in.monitors[0]))
+                monitor_h5_class = h5_factory.monitor_h5_factory(type(monitor))
 
-            with monitor_h5_class(monitor_h5_path) as monitor_h5:
-                sensors_gid = monitor_h5.sensors.load()
-                region_mapping_gid = monitor_h5.region_mapping.load()
+                with monitor_h5_class(monitor_h5_path) as monitor_h5:
+                    sensors_gid = monitor_h5.sensors.load()
+                    projection_gid = monitor_h5.projection.load()
+                    region_mapping_gid = monitor_h5.region_mapping.load()
 
-            sensors = ABCAdapter.load_traited_by_gid(sensors_gid)
+                sensors_index = ABCAdapter.load_entity_by_gid(sensors_gid.hex)
+                projection_index = ABCAdapter.load_entity_by_gid(projection_gid.hex)
 
-            if isinstance(simulator_in.monitors[0], EEG):
-                sensors = SensorsEEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], MEG):
-                sensors = SensorsMEG.build_sensors_subclass(sensors)
-            elif isinstance(simulator_in.monitors[0], iEEG):
-                sensors = SensorsInternal.build_sensors_subclass(sensors)
+                sensors_class = monitor.projection_class().sensors.field_type
+                sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
 
-            simulator_in.monitors[0].sensors = sensors
-            region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
-            simulator_in.monitors[0].region_mapping = region_mapping
+                projection_class = monitor.projection_class()
+                projection = h5.load_from_index(projection_index, dt_class=projection_class)
+
+                region_mapping = ABCAdapter.load_traited_by_gid(region_mapping_gid)
+
+                monitor.sensors = sensors
+                monitor.projection = projection
+                monitor.region_mapping = region_mapping
 
         if simulator_in.surface:
             cortex_path = h5.path_for(storage_path, CortexH5, simulator_in.surface.gid)
@@ -101,6 +96,6 @@ class SimulatorSerializer(object):
                 simulator_in.surface.local_connectivity = cortex_h5.local_connectivity.load()
                 simulator_in.surface.region_mapping_data = cortex_h5.region_mapping_data.load()
                 rm_index = dao.get_datatype_by_gid(simulator_in.surface.region_mapping_data.hex)
-                simulator_in.surface.surface_gid = uuid.UUID(rm_index.surface_gid)
+                simulator_in.surface.surface_gid = uuid.UUID(rm_index.fk_surface_gid)
 
         return simulator_in

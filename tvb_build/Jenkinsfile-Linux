@@ -7,7 +7,22 @@ pipeline {
     }
 
     stages {
-        stage ('Tests on Postgres') {
+        stage('Copy Step 1') {
+             steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
+                 step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
+                 sh '''#!/bin/bash
+                       ls -all tvb_build/build
+                 '''
+                 stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
+             }
+        }
+        stage ('Build TVB Distribution') {
             agent {
                 docker {
                     image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
@@ -15,36 +30,7 @@ pipeline {
                 }
             }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    service postgresql start
-                    cd ../tvb_bin
-                    bash run_tests.sh postgres
-                    exit 0
-                '''
-                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
-            }
-        }
-        stage('Copy step 1') {
-             steps {
-                 script {
-                     step ([$class: 'CopyArtifact',
-                     projectName: 'TVB - Root',
-                     filter: "tvb_build/build/TVB_build_step1.zip",
-                     target: 'tvb_build/build/']);
-                 }
-             }
-        }
-        stage ('Build TVB Distribution') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                }
-            }
-            steps {
-                unstash 'docs-website'
+                unstash 'step1'
                 sh '''#!/bin/bash
                     source activate tvb-run
                     cd tvb_build

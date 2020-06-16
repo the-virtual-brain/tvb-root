@@ -34,7 +34,6 @@ Some standardized simulations are run and a report is generated in the console o
 """
 
 import tvb_data
-from datetime import datetime
 from os import path
 from tvb.simulator.coupling import HyperbolicTangent
 from tvb.simulator.integrators import HeunDeterministic

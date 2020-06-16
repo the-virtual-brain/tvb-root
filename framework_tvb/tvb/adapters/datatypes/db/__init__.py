@@ -34,6 +34,25 @@ This is the module where all TVB Index DataTypes are hooked into the framework.
 Define in __all__ attribute, modules to be introspected for finding their classes.
 
 """
+from tvb.adapters.datatypes.db.removers.remover_connectivity import ConnectivityRemover
+from tvb.adapters.datatypes.db.removers.remover_region_mapping import RegionMappingRemover, RegionVolumeMappingRemover
+from tvb.adapters.datatypes.db.removers.remover_sensor import SensorRemover
+from tvb.adapters.datatypes.db.removers.remover_surface import SurfaceRemover
+from tvb.adapters.datatypes.db.removers.remover_timeseries import TimeseriesRemover
+from tvb.adapters.datatypes.db.removers.remover_volume import VolumeRemover
+
 ALL_DATATYPES = ["annotation", "connectivity", "fcd", "graph", "local_connectivity", "mapped_value",
                  "mode_decompositions", "patterns", "projections", "region_mapping", "sensors", "spectral",
                  "surface", "temporal_correlations", "time_series", "tracts", "volume"]
+
+DATATYPE_REMOVERS = {
+    "SurfaceIndex": SurfaceRemover,
+    "LocalConnectivityIndex": SurfaceRemover,
+    "ConnectivityIndex": ConnectivityRemover,
+    "RegionVolumeMappingIndex": ConnectivityRemover,
+    "RegionMappingIndex": RegionMappingRemover,
+    "TimeSeriesRegionIndex": RegionVolumeMappingRemover,
+    "SensorsIndex": SensorRemover,
+    "VolumeIndex": VolumeRemover,
+    "TimeSeriesIndex": TimeseriesRemover
+}

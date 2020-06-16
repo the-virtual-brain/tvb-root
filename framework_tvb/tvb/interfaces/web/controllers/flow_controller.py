@@ -41,6 +41,7 @@ import cherrypy
 import formencode
 import numpy
 import six
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
 from tvb.core.services.burst_service import BurstService
@@ -53,9 +54,11 @@ from tvb.core.services.operation_service import OperationService, RANGE_PARAMETE
 from tvb.core.services.project_service import ProjectService
 from tvb.core.neocom import h5
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, using_template
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -71,6 +74,7 @@ WARNING_OVERFLOW = "Too many entities in storage; some of them were not returned
                    "Use filters, to make the list small enough to fit in here!"
 
 
+@traced
 class FlowController(BaseController):
     """
     This class takes care of executing steps in projects.
@@ -157,7 +161,8 @@ class FlowController(BaseController):
             algorithm_id = int(i)
             algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
-            algorithm.input_tree = self.flow_service.prepare_adapter(algorithm)
+            adapter_form = self.flow_service.prepare_adapter_form(self.flow_service.prepare_adapter(algorithm), project.id)
+            algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
         template_specification = dict(mainContent="flow/algorithms_list", algorithms=algorithms,
@@ -369,7 +374,8 @@ class FlowController(BaseController):
         """
         return {"sum": "Sum", "average": "Average"}
 
-    @expose_fragment("flow/type2component/datatype2select_simple")
+
+    # @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
         # TODO: fix this use-case
         """
@@ -453,18 +459,22 @@ class FlowController(BaseController):
 
         try:
             form = adapter_instance.get_form()(project_id=project_id)
-            form.fill_from_post(data)
+            if 'fill_defaults' in data:
+                form.fill_from_post_plus_defaults(data)
+            else:
+                form.fill_from_post(data)
             view_model = None
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
                 except NotImplementedError:
-                    raise formencode.Invalid("Could not find a model for this form!", {}, None,
-                                             error_dict=form.get_errors_dict())
+                    self.logger.exception("Form and/or ViewModel not fully implemented for " + str(form))
+                    raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
+                                            error_dict=form.get_errors_dict())
             else:
-                raise formencode.Invalid("Could not fill algorithm from the given inputs!", {}, None,
-                                         error_dict=form.get_errors_dict())
+                raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
+                                        error_dict=form.get_errors_dict())
 
             adapter_instance.submit_form(form)
 
@@ -495,6 +505,13 @@ class FlowController(BaseController):
         except OperationException as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
+        except LaunchException as excep3:
+            self.logger.exception("Error while executing a Launch procedure:" + excep3.message)
+            common.set_error_message(excep3.message)
+        except InvalidFormValues as excep2:
+            message, errors = excep2.display_full_errors()
+            common.set_error_message(message)
+            self.logger.warning("%s \n %s" % (message, errors))
 
         previous_step = self.context.get_current_substep()
         should_reset = previous_step is None or data.get(common.KEY_ADAPTER) != previous_step
@@ -521,7 +538,7 @@ class FlowController(BaseController):
             adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, form=adapter_form, title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification

@@ -40,11 +40,11 @@ import numpy
 from tvb.analyzers.fmri_balloon import BalloonModel
 from tvb.basic.neotraits.api import Float, Attr
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
+from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
@@ -52,7 +52,7 @@ from tvb.core.neocom import h5
 
 class BalloonModelAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeries,
+        linked_datatype=TimeSeriesRegion,
         label="Time Series",
         required=True,
         doc="""The timeseries that represents the input neural activity"""
@@ -114,7 +114,7 @@ class BalloonModelAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_required_datatype():
-        return TimeSeriesIndex
+        return TimeSeriesRegionIndex
 
     @staticmethod
     def get_filters():
@@ -209,11 +209,12 @@ class BalloonModelAdapter(ABCAsynchronous):
         bold_signal_h5.gid.store(uuid.UUID(bold_signal_index.gid))
         self._fill_result_h5(bold_signal_h5, input_time_series_h5)
 
-        ##---------- Iterate over slices and compose final result ------------##
+        # ---------- Iterate over slices and compose final result ------------##
 
         node_slice = [slice(self.input_shape[0]), slice(self.input_shape[1]), None, slice(self.input_shape[3])]
         small_ts = TimeSeries()
         small_ts.sample_period = self.input_time_series_index.sample_period
+        small_ts.sample_period_unit = self.input_time_series_index.sample_period_unit
         small_ts.time = time_line
 
         for node in range(self.input_shape[2]):
@@ -233,15 +234,14 @@ class BalloonModelAdapter(ABCAsynchronous):
         return bold_signal_index
 
     def _fill_result_index(self, result_index, result_signal_shape):
-        result_index.time_series_type = type(result_index).__name__
+        result_index.time_series_type = TimeSeriesRegion.__name__
         result_index.data_ndim = len(result_signal_shape)
         result_index.data_length_1d, result_index.data_length_2d, \
-        result_index.data_length_3d, result_index.data_length_3d = \
-            prepare_array_shape_meta(result_signal_shape)
+        result_index.data_length_3d, result_index.data_length_4d = prepare_array_shape_meta(result_signal_shape)
 
-        result_index.connectivity_gid = self.input_time_series_index.connectivity_gid
-        result_index.region_mapping_gid = self.input_time_series_index.region_mapping_gid
-        result_index.region_mapping_volume_gid = self.input_time_series_index.region_mapping_volume_gid
+        result_index.fk_connectivity_gid = self.input_time_series_index.fk_connectivity_gid
+        result_index.fk_region_mapping_gid = self.input_time_series_index.fk_region_mapping_gid
+        result_index.fk_region_mapping_volume_gid = self.input_time_series_index.fk_region_mapping_volume_gid
 
         result_index.sample_period = self.input_time_series_index.sample_period
         result_index.sample_period_unit = self.input_time_series_index.sample_period_unit

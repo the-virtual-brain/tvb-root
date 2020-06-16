@@ -78,10 +78,10 @@ def do_operation_launch(operation_id):
         OperationService().initiate_prelaunch(curent_operation, adapter_instance)
         if curent_operation.fk_operation_group:
             parent_burst = dao.get_generic_entity(BurstConfiguration, curent_operation.fk_operation_group,
-                                                  'operation_group_id')[0]
+                                                  'fk_operation_group')[0]
             operations_in_group = dao.get_operations_in_group(curent_operation.fk_operation_group)
-            if parent_burst.metric_operation_group_id:
-                operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
+            if parent_burst.fk_metric_operation_group:
+                operations_in_group.extend(dao.get_operations_in_group(parent_burst.fk_metric_operation_group))
             for operation in operations_in_group:
                 if not has_finished(operation.status):
                     break
@@ -95,7 +95,7 @@ def do_operation_launch(operation_id):
         log.debug("Successfully finished operation " + str(operation_id))
 
     except Exception as excep:
-        log.error("Could not execute operation " + str(sys.argv[1]))
+        log.error("Could not execute operation " + str(operation_id))
         log.exception(excep)
         parent_burst = burst_service.get_burst_for_operation_id(operation_id)
         if parent_burst is not None:

@@ -33,7 +33,6 @@
 """
 
 import os
-import csv
 import sys
 import json
 import datetime
@@ -99,38 +98,7 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
     return full_path, file_
 
 
-################## PATH related methods end here ###############    
-
-
-################## FILE related methods start here ###############
-
-def store_list_data(data_list, file_name, storage_folder, overwrite=False):
-    """
-    Write a list into a file using CSV writer.
-    CSV writer, better than numpy, write also Strings
-    """
-    if not isinstance(data_list, (list, numpy.ndarray)):
-        raise Exception("Invalid given type!! " + str(type(data_list)))
-    if overwrite:
-        full_path = os.path.join(storage_folder, file_name)
-        file_name = os.path.split(full_path)[1]
-    else:
-        full_path, file_name = get_unique_file_name(storage_folder, file_name)
-
-    # generic writer, capable to write strings also
-    with open(full_path, 'wb') as destination:
-        csv_writer = csv.writer(destination, delimiter=' ')
-        if isinstance(data_list[0], (list, numpy.ndarray)):
-            for row in data_list:
-                csv_writer.writerow(row)
-        else:
-            csv_writer.writerow(data_list)
-
-    return file_name
-
-
-################## FILE related methods end here ###############  
-
+################## PATH related methods end here ###############
 
 ################## CONVERT related methods start here ###############
 
@@ -202,96 +170,6 @@ def string2bool(string_input):
     """ Convert given string into boolean value."""
     string_input = str(string_input).lower()
     return string_input in ("yes", "true", "t", "1")
-
-
-ARRAY_BEGIN = -1
-DATA_UNCONVERTED = 1
-DATA_CONVERTED = 2
-
-
-def string2array(input_data_str, split_char, dtype=None):
-    """
-    Given an input string first try to load it using JSON and if that fails,
-     meaning some weird array is given by the user, fall-back to _custom_string2array.
-    """
-    prepared_input_data_str = input_data_str.replace(split_char, ',')
-    if not prepared_input_data_str.strip().startswith('['):
-        # In case of range for a model parameter for example, the input string here is just a float
-        # which will be converted to a 0-d numpy array instead of a 1-d array if brackets are missing.
-        prepared_input_data_str = '[' + prepared_input_data_str.strip() + ']'
-    try:
-        array = json.loads(prepared_input_data_str)
-        return numpy.array(array)
-    except ValueError:
-        logger = get_logger(__name__)
-        logger.debug("Received input array %s is poorly formatted and could not be evaluated by Python."
-                     "Falling back to _custom_string2array." % prepared_input_data_str)
-        return _custom_string2array(input_data_str, split_char, dtype)
-
-
-def _custom_string2array(input_data_str, split_char, dtype=None):
-    """
-    From a long string, parse a NumPy array.
-    """
-
-    class HelperData:
-        """Helper for parsing arrays"""
-
-        def __init__(self, data, type_):
-            self.data = data
-            self.type = type_
-
-    input_str = input_data_str.lstrip().rstrip()
-    to_replace = split_char + split_char
-    while to_replace in input_str:
-        input_str = input_str.replace(to_replace, split_char)
-    input_str = input_str.replace('[' + split_char, '[')
-    input_str = input_str.replace(split_char + ']', ']')
-    input_str = input_str.replace(' ' + split_char, split_char)
-    input_str = input_str.replace(split_char + ' ', split_char)
-    input_str = input_str.replace('[ ', '[').replace(' ]', ']')
-
-    str_pos = 0
-    data_stack = []
-    while str_pos < len(input_str):
-        if input_str[str_pos] == '[':
-            data_stack.append(HelperData('[', -1))
-        elif input_str[str_pos] == split_char:
-            if data_stack[-1].type == DATA_UNCONVERTED:
-                if dtype is not None:
-                    elem_type = dtype + "('" + data_stack[-1].data + "')"
-                    data_stack[-1].data = eval(elem_type)
-                data_stack[-1].type = DATA_CONVERTED
-        elif input_str[str_pos] == ']':
-            new_array = []
-            if data_stack[-1].type == DATA_UNCONVERTED:
-                if dtype is not None:
-                    elem_type = dtype + "('" + data_stack[-1].data + "')"
-                    data_stack[-1].data = eval(elem_type)
-                data_stack[-1].type = DATA_CONVERTED
-            while data_stack[-1].type != ARRAY_BEGIN:
-                last_data = data_stack.pop()
-                new_array.insert(0, last_data.data)
-            data_stack.pop()
-            new_array = HelperData(new_array, 0)
-            data_stack.append(new_array)
-
-        elif len(data_stack) == 0 or data_stack[-1].type != DATA_UNCONVERTED:
-            data_stack.append(HelperData(input_str[str_pos], DATA_UNCONVERTED))
-        else:
-            data_stack[-1].data = data_stack[-1].data + input_str[str_pos]
-        str_pos += 1
-    if len(data_stack) == 0:
-        return None
-
-    if type(data_stack[0].data) is str:
-        if dtype is not None:
-            if data_stack[-1].data == 'None':
-                return None
-            elem_type = dtype + "('" + data_stack[-1].data + "')"
-            data_stack[-1].data = eval(elem_type)
-        return data_stack[0].data
-    return numpy.array(data_stack[0].data)
 
 
 class TVBJSONEncoder(json.JSONEncoder):

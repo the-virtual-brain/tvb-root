@@ -50,7 +50,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, MultipleSelectField, TraitDataTypeSelectField, MultiSelectField
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
 # Import metrics here, so that Traits will find them and return them as known subclasses
 import tvb.analyzers.metric_kuramoto_index
 import tvb.analyzers.metric_proxy_metastability
@@ -108,7 +108,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():
@@ -169,7 +169,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         :rtype: `DatatypeMeasureIndex`
         """
         algorithms = view_model.algorithms
-        if algorithms is None:
+        if algorithms is None or len(algorithms) == 0:
             algorithms = list(ALGORITHMS)
 
         self.log.debug("time_series shape is %s" % str(self.input_shape))
@@ -202,7 +202,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
                 metrics_results[algorithm_name] = unstored_result
 
         result = DatatypeMeasureIndex()
-        result.source_gid = self.input_time_series_index.gid
+        result.fk_source_gid = self.input_time_series_index.gid
         result.metrics = json.dumps(metrics_results)
 
         result_path = h5.path_for(self.storage_path, DatatypeMeasureH5, result.gid)

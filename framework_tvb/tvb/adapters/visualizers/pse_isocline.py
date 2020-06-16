@@ -37,119 +37,67 @@ import numpy
 import json
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import OperationGroup, STATUS_STARTED
-from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.transient.pse import PSEGroupModel, PSEModel, KEY_GID
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 
-class PseIsoModel(object):
-    def __init__(self, range1, range2, apriori_data, metrics, datatype_gids):
-        self.log = get_logger(self.__class__.__name__)
-        # ranges
-        all_numbers_range1, self.range1_name, self.range1 = OperationGroup.load_range_numbers(range1)
-        all_numbers_range2, self.range2_name, self.range2 = OperationGroup.load_range_numbers(range2)
+class PSEIsoGroupModel(PSEGroupModel):
+    def __init__(self, datatype_group_gid):
+        super(PSEIsoGroupModel, self).__init__(datatype_group_gid)
+        self.apriori_x = self.range1_values
+        self.apriori_y = self.range2_values
 
-        # Data from which to interpolate larger 2-D space
-        self.apriori_x = self._prepare_axes(self.range1, all_numbers_range1)
-        self.apriori_y = self._prepare_axes(self.range2, all_numbers_range2)
-        self.apriori_data = apriori_data
-        self.datatypes_gids = datatype_gids
-        self.metrics = metrics
+        self.apriori_data = dict()
+        self._fill_apriori_data()
 
-    @staticmethod
-    def pse_filter():
-        return FilterChain(fields=[FilterChain.datatype + '.type'], operations=['!='], values=['SimulatorIndex'])
-
-    @classmethod
-    def from_db(cls, operation_group_id):
-        """
-        Collects from db the information about the operation group that is required by the isocline view.
-        """
-        operations = dao.get_operations_in_group(operation_group_id)
-        operation_group = dao.get_operationgroup_by_id(operation_group_id)
-
-        self = cls(operation_group.range1, operation_group.range2, {},
-                   PseIsoModel._find_metrics(operations), None)
-
-        self._fill_apriori_data(operations)
-        return self
-
-    @staticmethod
-    def _find_metrics(operations):
-        """ Search for an operation with results. Then get the metrics of the generated data type"""
-        dt_measure = None
-
-        for operation in operations:
-
+    def parse_pse_data_for_display(self):
+        pse_model_list = []
+        op_has_results = True
+        for operation in self.operations:
             if not operation.has_finished:
-                raise LaunchException("Can not display until all operations from this range are finished!")
+                raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
+            pse_model = PSEModel(operation)
+            pse_model_list.append(pse_model)
 
-            op_results = dao.get_results_for_operation(operation.id, PseIsoModel.pse_filter())
-            if len(op_results):
-                datatype = op_results[0]
-                if datatype.type == "DatatypeMeasureIndex":
-                    # Load proper entity class from DB.
-                    dt_measure = dao.get_generic_entity(DatatypeMeasureIndex, datatype.id)[0]
-                else:
-                    dt_measure = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
-                    if dt_measure:
-                        dt_measure = dt_measure[0]
-                break
+            if not pse_model.datatype_measure:
+                op_has_results = False
 
-        if dt_measure:
-            return json.loads(dt_measure.metrics)
-        else:
+        if not op_has_results:
             raise LaunchException("No datatypes were generated due to simulation errors. Nothing to display.")
 
-    def _fill_apriori_data(self, operations):
+        return pse_model_list
+
+    def _prepare_sorted_metrics(self, metric_key):
+        coords_to_node_info = super(PSEIsoGroupModel, self).get_all_node_info()
+        metric_values = numpy.zeros((len(self.apriori_x), len(self.apriori_y)))
+        self.datatypes_gids = numpy.zeros((len(self.apriori_x), len(self.apriori_y)), object)
+
+        for idx1, val1 in enumerate(self.apriori_x):
+            for idx2, val2 in enumerate(self.apriori_y):
+                try:
+                    dt_gid = coords_to_node_info[val1][val2][KEY_GID]
+                    metric_values[idx1][idx2] = self.get_all_metrics()[dt_gid][metric_key]
+                except KeyError:
+                    dt_gid = None
+                    metric_values[idx1][idx2] = numpy.NaN
+                self.datatypes_gids[idx1][idx2] = dt_gid
+        return metric_values
+
+    def _fill_apriori_data(self):
         """ Gather apriori data from the operations. Also gather the datatype gid's"""
-        for metric in self.metrics:
-            self.apriori_data[metric] = numpy.zeros((self.apriori_x.size, self.apriori_y.size))
+        for metric_key in self.get_available_metric_keys():
+            metric_values = self._prepare_sorted_metrics(metric_key)
+            self.apriori_data.update({metric_key: metric_values})
 
-        # An 2D array of GIDs which is used later to launch overlay for a DataType
-        self.datatypes_gids = [[None for _ in self.range2] for _ in self.range1]
-
-        for operation in operations:
-            self.log.debug("Gathering data from operation : %s" % operation.id)
-            range_values = eval(operation.range_values)
-            key_1 = range_values[self.range1_name]
-            index_x = self.range1.index(key_1)
-            key_2 = range_values[self.range2_name]
-            index_y = self.range2.index(key_2)
-            if operation.status == STATUS_STARTED:
-                raise LaunchException("Not all operations from this range are complete. Cannot view until then.")
-
-            operation_results = dao.get_results_for_operation(operation.id, PseIsoModel.pse_filter())
-            if operation_results:
-                datatype = operation_results[0]
-                self.datatypes_gids[index_x][index_y] = str(datatype.gid)
-
-                if datatype.type == "DatatypeMeasureIndex":
-                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.id)
-                else:
-                    measures = dao.get_generic_entity(DatatypeMeasureIndex, datatype.gid, 'source_gid')
-            else:
-                self.datatypes_gids[index_x][index_y] = None
-                measures = None
-
-            for metric in self.metrics:
-                if measures:
-                    self.apriori_data[metric][index_x][index_y] = json.loads(measures[0].metrics)[metric]
-                else:
-                    self.apriori_data[metric][index_x][index_y] = numpy.NaN
-
-    @staticmethod
-    def _prepare_axes(original_range_values, is_numbers):
-        result = numpy.array(original_range_values)
-        if not is_numbers:
-            result = numpy.arange(len(original_range_values))
-        return result
+    def get_all_node_info(self):
+        all_node_info = dict()
+        for pse_model in self.pse_model_list:
+            all_node_info.update({pse_model.datatype_measure.gid: pse_model.prepare_node_info()})
+        return all_node_info
 
 
 class IsoclinePSEAdapterModel(ViewModel):
@@ -176,7 +124,7 @@ class IsoclinePSEAdapterForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_datatype_group'
+        return 'datatype_group'
 
     @staticmethod
     def get_filters():
@@ -209,7 +157,6 @@ class IsoclinePSEAdapter(ABCDisplayer):
         # Don't know how much memory is needed.
         return -1
 
-    # TODO: migrate to neotraits
     def burst_preview(self, view_model):
         # type: (IsoclinePSEAdapterModel) -> dict
         """
@@ -217,28 +164,34 @@ class IsoclinePSEAdapter(ABCDisplayer):
         """
         return self.launch(view_model)
 
-    def get_metric_matrix(self, datatype_group, selected_metric=None):
-        self.model = PseIsoModel.from_db(datatype_group.fk_operation_group)
-        if selected_metric is None:
-            selected_metric = list(self.model.metrics)[0]
+    def get_metric_matrix(self, datatype_group_gid, selected_metric=None):
+        pse_iso = PSEIsoGroupModel(datatype_group_gid)
 
-        data_matrix = self.model.apriori_data[selected_metric]
+        if selected_metric is None:
+            selected_metric = list(pse_iso.get_available_metric_keys())[0]
+
+        data_matrix = pse_iso.apriori_data[selected_metric]
         data_matrix = numpy.rot90(data_matrix)
         data_matrix = numpy.flipud(data_matrix)
+        vmin = numpy.nanmin(data_matrix)
+        vmax = numpy.nanmax(data_matrix)
+        # TODO: We replace NaN values here. To be addressed by task TVB-2660.
+        data_matrix[numpy.isnan(data_matrix)] = vmin - 1
         matrix_data = ABCDisplayer.dump_with_precision(data_matrix.flat)
-        matrix_guids = self.model.datatypes_gids
+        matrix_guids = pse_iso.datatypes_gids
         matrix_guids = numpy.rot90(matrix_guids)
         matrix_shape = json.dumps(data_matrix.squeeze().shape)
-        x_min = self.model.apriori_x[0]
-        x_max = self.model.apriori_x[self.model.apriori_x.size - 1]
-        y_min = self.model.apriori_y[0]
-        y_max = self.model.apriori_y[self.model.apriori_y.size - 1]
-        vmin = data_matrix.min()
-        vmax = data_matrix.max()
+        x_min = pse_iso.apriori_x[0]
+        x_max = pse_iso.apriori_x[-1]
+        y_min = pse_iso.apriori_y[0]
+        y_max = pse_iso.apriori_y[-1]
         return dict(matrix_data=matrix_data,
                     matrix_guids=json.dumps(matrix_guids.flatten().tolist()),
                     matrix_shape=matrix_shape,
                     color_metric=selected_metric,
+                    xAxisName=pse_iso.get_range1_key(),
+                    yAxisName=pse_iso.get_range2_key(),
+                    available_metrics=pse_iso.get_available_metric_keys(),
                     x_min=x_min,
                     x_max=x_max,
                     y_min=y_min,
@@ -247,34 +200,15 @@ class IsoclinePSEAdapter(ABCDisplayer):
                     vmax=vmax)
 
     @staticmethod
-    def prepare_node_data(datatype_group):
-        if datatype_group is None:
-            raise Exception("Selected DataTypeGroup is no longer present in the database. "
-                            "It might have been remove or the specified id is not the correct one.")
-
-        operation_group = dao.get_operationgroup_by_id(datatype_group.fk_operation_group)
-        operations = dao.get_operations_in_group(operation_group.id)
-        node_info_dict = dict()
-        for operation_ in operations:
-            datatypes = dao.get_results_for_operation(operation_.id)
-            if len(datatypes) > 0:
-                datatype = datatypes[0]
-                node_info_dict[datatype.gid] = dict(operation_id=operation_.id,
-                                                    datatype_gid=datatype.gid,
-                                                    datatype_type=datatype.type,
-                                                    datatype_subject=datatype.subject,
-                                                    datatype_invalid=datatype.invalid)
-        return node_info_dict
+    def prepare_node_data(datatype_group_gid):
+        pse_iso = PSEIsoGroupModel(datatype_group_gid)
+        return pse_iso.get_all_node_info()
 
     def launch(self, view_model):
-        datatype_group_index = self.load_entity_by_gid(view_model.datatype_group.hex)
-        params = self.get_metric_matrix(datatype_group_index)
+        params = self.get_metric_matrix(view_model.datatype_group.hex)
         params["title"] = self._ui_name
         params["canvasName"] = "Interpolated values for PSE metric: "
-        params["xAxisName"] = self.model.range1_name
-        params["yAxisName"] = self.model.range2_name
         params["url_base"] = "/burst/explore/get_metric_matrix/" + view_model.datatype_group.hex
         params["node_info_url"] = "/burst/explore/get_node_matrix/" + view_model.datatype_group.hex
-        params["available_metrics"] = list(self.model.metrics)
         return self.build_display_result('pse_isocline/view', params,
                                          pages=dict(controlPage="pse_isocline/controls"))

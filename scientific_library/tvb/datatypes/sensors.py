@@ -37,6 +37,7 @@ The Sensors dataType.
 
 """
 
+import re
 import numpy
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
@@ -175,10 +176,6 @@ class Sensors(HasTraits):
 
         return sensor_locations
 
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        pass
-
 
 class SensorsEEG(Sensors):
     """
@@ -196,22 +193,6 @@ class SensorsEEG(Sensors):
     sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
 
     has_orientation = Attr(bool, default=False)
-
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_eeg = SensorsEEG()
-
-        sensors_eeg.sensors_type = sensors.sensors_type
-        sensors_eeg.has_orientation = sensors.has_orientation
-
-        sensors_eeg.labels = sensors.labels
-        sensors_eeg.locations = sensors.locations
-        sensors_eeg.orientations = sensors.orientations
-        sensors_eeg.number_of_sensors = sensors.number_of_sensors
-
-        sensors_eeg.gid = sensors.gid
-
-        return sensors_eeg
 
 
 class SensorsMEG(Sensors):
@@ -244,22 +225,6 @@ class SensorsMEG(Sensors):
 
         return result
 
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_meg = SensorsMEG()
-
-        sensors_meg.sensors_type = sensors.sensors_type
-        sensors_meg.orientations = sensors.orientations
-        sensors_meg.has_orientation = sensors.has_orientation
-
-        sensors_meg.labels = sensors.labels
-        sensors_meg.locations = sensors.locations
-        sensors_meg.number_of_sensors = sensors.number_of_sensors
-
-        sensors_meg.gid = sensors.gid
-
-        return sensors_meg
-
 
 class SensorsInternal(Sensors):
     """
@@ -272,17 +237,26 @@ class SensorsInternal(Sensors):
         return super(SensorsInternal, cls).from_file(source_file)
 
     @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_internal = SensorsInternal()
+    def _split_string_text_numbers(labels):
+        items = []
+        for i, s in enumerate(labels):
+            match = re.findall('(\d+|\D+)', s)
+            if match:
+                items.append((match[0], i))
+            else:
+                items.append((s, i))
+        return numpy.array(items)
 
-        sensors_internal.sensors_type = sensors.sensors_type
+    @staticmethod
+    def group_sensors_to_electrodes(labels):
+        sensor_names = SensorsInternal._split_string_text_numbers(labels)
+        electrode_labels = numpy.unique(sensor_names[:, 0])
+        electrode_groups = []
+        for electrode in electrode_labels:
+            tuples = [(idx, labels[idx]) for idx in numpy.where(sensor_names[:, 0] == electrode)[0]]
+            electrode_groups.append((electrode, tuples))
+        return electrode_groups
 
-        sensors_internal.labels = sensors.labels
-        sensors_internal.orientations = sensors.orientations
-        sensors_internal.has_orientation = sensors.has_orientation
-        sensors_internal.locations = sensors.locations
-        sensors_internal.number_of_sensors = sensors.number_of_sensors
-
-        sensors_internal.gid = sensors.gid
-
-        return sensors_internal
+    @property
+    def grouped_electrodes(self):
+        return SensorsInternal.group_sensors_to_electrodes(self.labels)

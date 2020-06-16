@@ -838,7 +838,7 @@ function PSEDiscreet_LoadNodesMatrix(groupGID) {
     doAjaxCall({
         url: '/burst/explore/get_series_array_discrete/',
         data: {'datatype_group_gid': groupGID,
-               'backPage':_PSE_back_page,
+               'back_page':_PSE_back_page,
                'color_metric': selectedColorMetric,
                'size_metric': selectedSizeMetric},
         type: 'GET',

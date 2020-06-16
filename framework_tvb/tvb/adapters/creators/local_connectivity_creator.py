@@ -29,21 +29,20 @@
 #
 
 """
-.. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, \
-    TraitDataTypeSelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
-from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
@@ -66,9 +65,8 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
     def get_filters():
         return None
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'legend': 'Selected entity'}
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'legend': 'Selected entity'}
 
 
 class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
@@ -88,15 +86,10 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
-        filter_for_cortical = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                                          values=[CORTICAL])
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
-                                                conditions=filter_for_cortical)
+                                                conditions=self.get_filters())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
-                                   choices=equation_choices, display_none_choice=False)
-
-        self.spatial_params = FormField(GaussianEquationForm, self, name=self.NAME_EQUATION_PARAMS_DIV,
-                                        label='Equation parameters')
+                                   choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
         self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
         self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
 
@@ -114,7 +107,8 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                           values=[CORTICAL])
 
     def get_traited_datatype(self):
         return LocalConnectivityCreatorModel()
@@ -129,12 +123,12 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         else:
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
-        self.spatial_params.form = get_form_for_equation(type(lc_equation))(self.NAME_EQUATION_PARAMS_DIV)
-        self.spatial_params.form.fill_from_trait(lc_equation)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self,
+                                                self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_local_connectivity_data',
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'next_action': 'form_spatial_local_connectivity_data',
                 'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 
 

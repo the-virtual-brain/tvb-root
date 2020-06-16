@@ -35,33 +35,30 @@ import os
 import shutil
 import pytest
 import tvb_data
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
-from tvb.core.services.exceptions import ProjectServiceException
-from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
-from tvb.core.services.operation_service import OperationService
-from tvb.core.services.flow_service import FlowService
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
-from tvb.core.adapters.abcadapter import ABCAdapter
-#from tvb.datatypes.mapped_values import ValueWrapper
+from tvb.core.neocom import h5
+from tvb.core.services.exceptions import ProjectServiceException
+from tvb.core.services.flow_service import FlowService
+from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
+from tvb.tests.framework.datatypes.datatype1 import Datatype1
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
-        
+
 
 class TestProjectService(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.services.project_service module.
-    """    
-    
+    """
+
     def transactional_setup_method(self):
         """
         Reset the database before each test.
@@ -69,8 +66,7 @@ class TestProjectService(TransactionalTestCase):
         self.project_service = ProjectService()
         self.structure_helper = FilesHelper()
         self.test_user = TestFactory.create_user()
-    
-    
+
     def transactional_teardown_method(self):
         """
         Remove project folders and clean up database.
@@ -79,29 +75,28 @@ class TestProjectService(TransactionalTestCase):
         for project in created_projects:
             self.structure_helper.remove_project_structure(project.name)
         self.delete_project_folders()
-    
-    
+
     def test_create_project_happy_flow(self):
-        """
-        Standard flow for creating a new project.
-        """
+
         user1 = TestFactory.create_user('test_user1')
         user2 = TestFactory.create_user('test_user2')
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 0, "Database reset probably failed!"
-        TestFactory.create_project(self.test_user, 'test_project', users=[user1.id, user2.id])
+
+        TestFactory.create_project(self.test_user, 'test_project', "description", users=[user1.id, user2.id])
+
         resulting_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(resulting_projects) == 1, "Project with valid data not inserted!"
         project = resulting_projects[0]
-        if project.name == "test_project":
-            assert project.description == "description", "Description do no match"
-            users_for_project = dao.get_members_of_project(project.id)
-            for user in users_for_project:
-                assert user.id in [user1.id, user2.id], "Users not stored properly."
+        assert project.name == "test_project", "Invalid retrieved project name"
+        assert project.description == "description", "Description do no match"
+
+        users_for_project = dao.get_members_of_project(project.id)
+        for user in users_for_project:
+            assert user.id in [user1.id, user2.id, self.test_user.id], "Users not stored properly."
         assert os.path.exists(os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
-                                                    "test_project")), "Folder for project was not created"
-   
-   
+                                           "test_project")), "Folder for project was not created"
+
     def test_create_project_empty_name(self):
         """
         Creating a project with an empty name.
@@ -111,8 +106,7 @@ class TestProjectService(TransactionalTestCase):
         assert len(initial_projects) == 0, "Database reset probably failed!"
         with pytest.raises(ProjectServiceException):
             self.project_service.store_project(self.test_user, True, None, **data)
-   
-   
+
     def test_edit_project_happy_flow(self):
         """
         Standard flow for editing an existing project.
@@ -121,15 +115,14 @@ class TestProjectService(TransactionalTestCase):
         proj_root = self.structure_helper.get_project_folder(selected_project)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
-        
+
         edited_data = dict(name="test_project", description="test_description", users=[])
         edited_project = self.project_service.store_project(self.test_user, False, selected_project.id, **edited_data)
         assert not os.path.exists(proj_root), "Previous folder not deleted"
         proj_root = self.structure_helper.get_project_folder(edited_project)
         assert os.path.exists(proj_root), "New folder not created!"
         assert selected_project.name != edited_project.name, "Project was no changed!"
-        
-             
+
     def test_edit_project_unexisting(self):
         """
         Trying to edit an un-existing project.
@@ -142,7 +135,6 @@ class TestProjectService(TransactionalTestCase):
         with pytest.raises(ProjectServiceException):
             self.project_service.store_project(self.test_user, False, 99, **data)
 
-    
     def test_find_project_happy_flow(self):
         """
         Standard flow for finding a project by it's id.
@@ -153,16 +145,15 @@ class TestProjectService(TransactionalTestCase):
         assert self.project_service.find_project(inserted_project.id) is not None, "Project not found !"
         dao_returned_project = dao.get_project_by_id(inserted_project.id)
         service_returned_project = self.project_service.find_project(inserted_project.id)
-        assert dao_returned_project.id == service_returned_project.id,\
-                         "Data returned from service is different from data returned by DAO."
-        assert dao_returned_project.name == service_returned_project.name,\
-                         "Data returned from service is different than  data returned by DAO."
-        assert dao_returned_project.description == service_returned_project.description,\
-                         "Data returned from service is different from data returned by DAO."
-        assert dao_returned_project.members == service_returned_project.members,\
-                         "Data returned from service is different from data returned by DAO."
-                      
-        
+        assert dao_returned_project.id == service_returned_project.id, \
+            "Data returned from service is different from data returned by DAO."
+        assert dao_returned_project.name == service_returned_project.name, \
+            "Data returned from service is different than  data returned by DAO."
+        assert dao_returned_project.description == service_returned_project.description, \
+            "Data returned from service is different from data returned by DAO."
+        assert dao_returned_project.members == service_returned_project.members, \
+            "Data returned from service is different from data returned by DAO."
+
     def test_find_project_unexisting(self):
         """
         Searching for an un-existing project.
@@ -174,8 +165,7 @@ class TestProjectService(TransactionalTestCase):
         # fetch a likely non-existing project. Previous project id plus a 'big' offset
         with pytest.raises(ProjectServiceException):
             self.project_service.find_project(project.id + 1033)
-        
-        
+
     def test_retrieve_projects_for_user(self):
         """
         Test for retrieving the projects for a given user. One page only.
@@ -191,8 +181,7 @@ class TestProjectService(TransactionalTestCase):
         assert len(projects) == 3, "Projects not retrieved properly!"
         for project in projects:
             assert project.name != "test_project3", "This project should not have been retrieved"
-            
-            
+
     def test_retrieve_1project_3usr(self):
         """
         One user as admin, two users as members, getting projects for admin and for any of
@@ -207,8 +196,7 @@ class TestProjectService(TransactionalTestCase):
         assert len(projects) == 1, "Projects not retrieved properly!"
         projects = self.project_service.retrieve_projects_for_user(member2.id, 1)[0]
         assert len(projects) == 1, "Projects not retrieved properly!"
-        
-        
+
     def test_retrieve_3projects_3usr(self):
         """
         Three users, 3 projects. Structure of db:
@@ -248,13 +236,13 @@ class TestProjectService(TransactionalTestCase):
                 expected_pages = 0
                 exp_proj_per_page = 0
             projects, pages = self.project_service.retrieve_projects_for_user(current_user.id, expected_pages)
-            assert len(projects) == exp_proj_per_page, "Projects not retrieved properly! Expected:" +\
-                             str(exp_proj_per_page) + "but got:" + str(len(projects))
+            assert len(projects) == exp_proj_per_page, "Projects not retrieved properly! Expected:" + \
+                                                       str(exp_proj_per_page) + "but got:" + str(len(projects))
             assert pages == expected_pages, "Pages not retrieved properly!"
 
         for folder in os.listdir(TvbProfile.current.TVB_STORAGE):
             full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
-            if os.path.isdir(full_path) and folder.startswith('Generated'): 
+            if os.path.isdir(full_path) and folder.startswith('Generated'):
                 shutil.rmtree(full_path)
 
     def test_retrieve_projects_page2(self):
@@ -298,7 +286,7 @@ class TestProjectService(TransactionalTestCase):
 
         project2 = TestFactory.create_project(self.test_user, 'test_proj2')
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject');
+        TestFactory.import_zip_connectivity(self.test_user, project2, zip_path, 'testSubject')
 
         projects = self.project_service.retrieve_projects_for_user(self.test_user.id)[0]
         assert projects[0].disk_size != projects[1].disk_size, "projects should have different size"
@@ -332,7 +320,7 @@ class TestProjectService(TransactionalTestCase):
         project_storage = os.path.join(project_storage, str(operation.id))
         os.makedirs(project_storage)
         datatype = dao.store_entity(model_datatype.DataType(module="test_data", subject="subj1",
-                                                   state="test_state", operation_id=operation.id))
+                                                            state="test_state", operation_id=operation.id))
         linkable = self.project_service.get_linkable_projects_for_user(self.test_user.id, str(datatype.id))[0]
         assert len(linkable) == 2, "Wrong count of link-able projects!"
         proj_names = [project.name for project in linkable]
@@ -362,31 +350,7 @@ class TestProjectService(TransactionalTestCase):
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 1, "Initializations failed!"
         with pytest.raises(ProjectServiceException):
-            self.project_service.remove_project(99)   
-
-    @staticmethod
-    def _create_value_wrapper(test_user, test_project=None):
-        """
-        Creates a ValueWrapper dataType, and the associated parent Operation.
-        This is also used in ProjectStructureTest.
-        """
-        if test_project is None:
-            test_project = TestFactory.create_project(test_user, 'test_proj')
-        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
-        value_wrapper = ValueWrapper(data_value=5.0, data_name="my_value")
-        value_wrapper.type = "ValueWrapper"
-        value_wrapper.module = "tvb.datatypes.mapped_values"
-        value_wrapper.subject = "John Doe"
-        value_wrapper.state = "RAW_STATE"
-        value_wrapper.set_operation_id(operation.id)
-        adapter_instance = StoreAdapter([value_wrapper])
-        OperationService().initiate_prelaunch(operation, adapter_instance, {})
-        all_value_wrappers = FlowService().get_available_datatypes(test_project.id,
-                                                                   "tvb.datatypes.mapped_values.ValueWrapper")[0]
-        if len(all_value_wrappers) != 1:
-            raise Exception("Should be only one value wrapper.")
-        result_vw = ABCAdapter.load_entity_by_gid(all_value_wrappers[0][2])
-        return test_project, result_vw.gid, operation.gid
+            self.project_service.remove_project(99)
 
     def __check_meta_data(self, expected_meta_data, new_datatype):
         """Validate Meta-Data"""
@@ -403,55 +367,52 @@ class TestProjectService(TransactionalTestCase):
                 else:
                     assert value == new_datatype.parent_operation.user_group
 
-    def test_remove_project_node(self, test_adapter_factory):
+    def test_remove_project_node(self):
         """
         Test removing of a node from a project.
         """
-        inserted_project, gid, gid_op = self._create_value_wrapper(self.test_user) 
+        inserted_project, gid, op = TestFactory.create_value_wrapper(self.test_user)
         project_to_link = model_project.Project("Link", self.test_user.id, "descript")
         project_to_link = dao.store_entity(project_to_link)
         exact_data = dao.get_datatype_by_gid(gid)
+        assert exact_data is not None, "Initialization problem!"
         dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
-        assert dao.get_datatype_by_gid(gid) is not None, "Initialization problem!"
-        
-        operation_id = dao.get_generic_entity(model_operation.Operation, gid_op, 'gid')[0].id
-        op_folder = self.structure_helper.get_project_folder("test_proj", str(operation_id))
-        assert os.path.exists(op_folder)
-        sub_files = os.listdir(op_folder)
-        assert 2 == len(sub_files)
-        ### Validate that no more files are created than needed.
 
-        if(dao.get_system_user() is None):
-            dao.store_entity(model_operation.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+        vw_h5_path = h5.path_for_stored_index(exact_data)
+        assert os.path.exists(vw_h5_path)
+
+        if dao.get_system_user() is None:
+            dao.store_entity(model_operation.User(TvbProfile.current.web.admin.SYSTEM_USER_NAME,
+                                                  TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True,
+                                                  None))
+
         self.project_service._remove_project_node_files(inserted_project.id, gid)
-        sub_files = os.listdir(op_folder)
-        assert 1 == len(sub_files)
-        ### operation.xml file should still be there
-        
-        op_folder = self.structure_helper.get_project_folder("Link", str(operation_id + 1)) 
-        sub_files = os.listdir(op_folder)
-        assert 2 == len(sub_files)
-        assert dao.get_datatype_by_gid(gid) is not None, "Data should still be in DB, because of links"
+
+        assert not os.path.exists(vw_h5_path)
+        exact_data = dao.get_datatype_by_gid(gid)
+        assert exact_data  is not None, "Data should still be in DB, because of links"
+        vw_h5_path_new = h5.path_for_stored_index(exact_data)
+        assert os.path.exists(vw_h5_path_new)
+        assert vw_h5_path_new != vw_h5_path
+
         self.project_service._remove_project_node_files(project_to_link.id, gid)
         assert dao.get_datatype_by_gid(gid) is None
-        sub_files = os.listdir(op_folder)
-        assert 1 == len(sub_files)
-        ### operation.xml file should still be there
 
     def test_update_meta_data_simple(self):
         """
         Test the new update metaData for a simple data that is not part of a group.
         """
-        inserted_project, gid, _ = self._create_value_wrapper(self.test_user)
+        inserted_project, gid, _ = TestFactory.create_value_wrapper(self.test_user)
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "second_state",
                          DataTypeOverlayDetails.CODE_GID: gid,
                          DataTypeOverlayDetails.CODE_OPERATION_TAG: 'new user group'}
         self.project_service.update_metadata(new_meta_data)
-        
+
         new_datatype = dao.get_datatype_by_gid(gid)
         self.__check_meta_data(new_meta_data, new_datatype)
-        
+
+        # TODO Change bellow to check the Operation ViewModel H5 instead of the old Operation.xml
         op_path = FilesHelper().get_operation_meta_file_path(inserted_project.name, new_datatype.parent_operation.id)
         op_meta = XMLReader(op_path).read_metadata()
         assert op_meta['user_group'] == 'new user group', 'UserGroup not updated!'
@@ -500,7 +461,8 @@ class TestProjectService(TransactionalTestCase):
         resulted_dts = operations[0]['results']
         assert len(resulted_dts) == 3, "3 datatypes should be created."
 
-    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory, project_factory, user_factory):
+    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory, project_factory,
+                                   user_factory):
         """
         Tests project structure is as expected and contains all datatypes
         """
@@ -508,7 +470,6 @@ class TestProjectService(TransactionalTestCase):
 
         user = user_factory()
         project = project_factory(user)
-
         dt_group = datatype_group_factory(project=project)
 
         link_ids, expected_links = [], []
@@ -557,4 +518,3 @@ class TestProjectService(TransactionalTestCase):
         for link_gid in expected_links:
             assert link_gid in node_json, "Expected Link not present"
             assert link_gid in dts_in_tree, "Expected Link not present"
-

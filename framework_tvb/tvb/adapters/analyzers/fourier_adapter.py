@@ -179,7 +179,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
 
         """
         fft_index = FourierSpectrumIndex()
-        fft_index.source_gid = view_model.time_series.hex
+        fft_index.fk_source_gid = view_model.time_series.hex
 
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
         blocks = int(math.ceil(self.input_shape[2] / block_size))
@@ -197,6 +197,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------
         small_ts = TimeSeries()
         small_ts.sample_period = input_time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = input_time_series_h5.sample_period_unit.load()
 
         for block in range(blocks):
             node_slice[2] = slice(block * block_size, min([(block + 1) * block_size, self.input_shape[2]]), 1)

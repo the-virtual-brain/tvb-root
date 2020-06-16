@@ -27,12 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from operator import not_
+
 from sqlalchemy import desc, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
@@ -45,7 +45,7 @@ class BurstDAO(RootDAO):
         """Get latest 50 BurstConfiguration entities for the current project"""
         try:
             bursts = self.session.query(BurstConfiguration
-                                        ).filter_by(project_id=project_id
+                                        ).filter_by(fk_project=project_id
                                                     ).order_by(desc(BurstConfiguration.start_time))
             if count:
                 return bursts.count()
@@ -79,10 +79,10 @@ class BurstDAO(RootDAO):
         count = 0
         try:
             count = self.session.query(BurstConfiguration
-                                       ).filter_by(project_id=project_id
-                                       ).filter(BurstConfiguration.name.like(burst_name + '%')
-                                                ).filter(not_(BurstConfiguration.name.like(burst_name + '/_%/_%', escape='/'))
-                                       ).count()
+                                    ).filter_by(fk_project=project_id
+                                    ).filter(BurstConfiguration.name.like(burst_name + '_branch%')
+                                    ).filter(BurstConfiguration.name.notlike(burst_name + '_branch%_branch%', escape='/')
+                ).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return count
@@ -91,6 +91,7 @@ class BurstDAO(RootDAO):
         """Get the BurstConfiguration entity with the given id"""
         try:
             burst = self.session.query(BurstConfiguration).filter_by(id=burst_id).one()
+            burst.project
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             burst = None
@@ -100,8 +101,11 @@ class BurstDAO(RootDAO):
         burst = None
         try:
             burst = self.session.query(BurstConfiguration
-                                       ).join(SimulatorIndex, SimulatorIndex.fk_parent_burst == BurstConfiguration.id
-                                              ).filter(SimulatorIndex.fk_from_operation == operation_id).one()
+                                       ).filter(BurstConfiguration.fk_simulation == operation_id).first()
+            if not burst:
+                burst = self.session.query(BurstConfiguration
+                                       ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.id
+                                              ).filter(DataType.fk_from_operation == operation_id).first()
         except NoResultFound:
             self.logger.debug("No burst found for operation id = %s" % (operation_id,))
         except SQLAlchemyError as excep:

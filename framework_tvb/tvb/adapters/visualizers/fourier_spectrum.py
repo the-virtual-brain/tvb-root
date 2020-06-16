@@ -36,9 +36,9 @@
 """
 import json
 import numpy
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -67,7 +67,7 @@ class FourierSpectrumForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "_input_data"
+        return "input_data"
 
     @staticmethod
     def get_required_datatype():
@@ -117,7 +117,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
             fourier_spectrum.segment_length = input_h5.segment_length.load()
             fourier_spectrum.windowing_function = input_h5.windowing_function.load()
 
-        ts_index = self.load_entity_by_gid(fs_input_index.source_gid)
+        ts_index = self.load_entity_by_gid(fs_input_index.fk_source_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         if len(state_list) == 0:
             state_list = list(range(shape[1]))
@@ -128,7 +128,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
         params = dict(matrix_shape=json.dumps([shape[0], shape[2]]),
                       plotName=ts_index.title,
-                      url_base=self.build_h5_url(view_model.input_data.hex, "get_fourier_data", parameter=""),
+                      url_base=URLGenerator.build_h5_url(view_model.input_data, "get_fourier_data", parameter=""),
                       xAxisName="Frequency [kHz]",
                       yAxisName="Power",
                       available_scales=available_scales,

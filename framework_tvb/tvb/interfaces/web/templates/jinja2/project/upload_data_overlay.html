@@ -1,10 +1,7 @@
-<!--! Include genericAdapterTemplateFunctions only once. Otherwise js dependencies will be loaded for each adapter -->
-{% include 'flow/genericAdapterTemplateFunctions.html' %}
-
 {% for algorithm in uploadAlgorithms %}
     {% set algo_interface_key = 'template_for_algo_' ~ (algorithm.id | string) %}
     {% set inputList=algorithmsInterface[algo_interface_key].get('inputList') %}
-    {% set form=algorithmsInterface[algo_interface_key].get('form') %}
+    {% set adapter_form=algorithmsInterface[algo_interface_key].get('adapter_form') %}
     {% set submitLink=algorithmsInterface[algo_interface_key].submitLink %}
     <section id="overlayTabContent_{{ loop.index0 }}" class="uploader upload-{{ algorithm.subsection_name }}">
         <form method="post" action="{{ submitLink }}" enctype="multipart/form-data" id="form_{{ algorithm.id }}">
@@ -18,7 +15,6 @@
             </fieldset>
 
             {% with %}
-                {% set includeGenericAdapterTemplateFunctions = false %}
                 {% include 'flow/genericAdapterFormFields.html' %}
             {% endwith %}
 

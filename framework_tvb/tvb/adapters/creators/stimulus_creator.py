@@ -37,16 +37,16 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrField, TraitDataTypeSelectField, \
     SelectField
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
@@ -58,9 +58,8 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
                                                     label='Load Surface Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'legend': 'Loaded stimulus'}
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
@@ -80,17 +79,14 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         super(SurfaceStimulusCreatorForm, self).__init__()
         self.project_id = project_id
 
-        # TODO: filter CorticalSurafces
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',
-                                   choices=spatial_equation_choices)
-        self.spatial_params = FormField(get_form_for_equation(self.default_spatial), self,
-                                        name=self.NAME_SPATIAL_PARAMS_DIV)
+                                   choices=spatial_equation_choices,
+                                   subform=get_form_for_equation(self.default_spatial))
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
-                                    choices=temporal_equation_choices)
-        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
-                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
+                                    choices=temporal_equation_choices,
+                                    subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():
@@ -102,24 +98,26 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_surface'
+        return 'surface'
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                           values=[CORTICAL])
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
         self.spatial.data = type(trait.spatial)
         self.temporal.data = type(trait.temporal)
-        self.spatial_params.form = get_form_for_equation(type(trait.spatial))(self.NAME_SPATIAL_PARAMS_DIV)
-        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
-        self.spatial_params.form.fill_from_trait(trait.spatial)
-        self.temporal_params.form.fill_from_trait(trait.temporal)
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+                                                self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal.subform_field.form.fill_from_trait(trait.temporal)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self,
+                                                self.NAME_SPATIAL_PARAMS_DIV)
+        self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'next_action': 'form_spatial_surface_stimulus_equations',
                 'spatial_params_div': self.NAME_SPATIAL_PARAMS_DIV,
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
@@ -200,9 +198,8 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
                                                    label='Load Region Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'legend': 'Loaded stimulus'}
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'legend': 'Loaded stimulus'}
 
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
@@ -210,6 +207,11 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
         field_type=uuid.UUID,
         linked_datatype=Connectivity,
         label="Connectivity"
+    )
+
+    display_name = Str(
+        label='Display name',
+        required=False
     )
 
 
@@ -222,10 +224,8 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         self.project_id = project_id
 
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
-        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal', choices=equation_choices)
-        self.temporal_params = FormField(get_form_for_equation(self.default_temporal), self,
-                                         name=self.NAME_TEMPORAL_PARAMS_DIV)
-        # self.temporal.template = 'form_fields/select_field.html'
+        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
+                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():
@@ -237,7 +237,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity'
+        return 'connectivity'
 
     @staticmethod
     def get_required_datatype():
@@ -247,12 +247,12 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         # type: (RegionStimulusCreatorModel) -> None
         self.connectivity.data = trait.connectivity.hex
         self.temporal.data = type(trait.temporal)
-        self.temporal_params.form = get_form_for_equation(type(trait.temporal))(self.NAME_TEMPORAL_PARAMS_DIV)
-        self.temporal_params.form.fill_from_trait(trait.temporal)
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+                                                self.NAME_TEMPORAL_PARAMS_DIV)
+        self.temporal.subform_field.form.fill_from_trait(trait.temporal)
 
-    @using_template('spatial/spatial_fragment')
-    def __str__(self):
-        return {'form': self, 'next_action': 'form_spatial_model_param_equations',
+    def get_rendering_dict(self):
+        return {'adapter_form': self, 'next_action': 'form_spatial_model_param_equations',
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
 
@@ -260,6 +260,7 @@ class RegionStimulusCreator(ABCSynchronous):
     """
     The purpose of this adapter is to create a StimuliRegion.
     """
+
     def get_form_class(self):
         return RegionStimulusCreatorForm
 
@@ -282,6 +283,7 @@ class RegionStimulusCreator(ABCSynchronous):
 
         stimuli_region_idx = StimuliRegionIndex()
         stimuli_region_idx.fill_from_has_traits(stimuli_region)
+        self.generic_attributes.user_tag_1 = view_model.display_name
 
         h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx

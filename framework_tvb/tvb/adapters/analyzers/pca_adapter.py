@@ -143,7 +143,7 @@ class PCAAdapter(ABCAsynchronous):
         """
         # --------- Prepare a PrincipalComponents object for result ----------##
         principal_components_index = PrincipalComponentsIndex()
-        principal_components_index.source_gid = view_model.time_series.hex
+        principal_components_index.fk_source_gid = view_model.time_series.hex
 
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 

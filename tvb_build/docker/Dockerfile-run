@@ -1,0 +1,79 @@
+FROM continuumio/miniconda3
+
+ARG TVB_USER=tvb_user
+ARG USER_HOME=/home/$TVB_USER
+ARG TVB_STORAGE=$USER_HOME/TVB_STORAGE
+ARG NUMBA_CACHE=$USER_HOME/numba_cache
+ARG KEYCLOAK_CONFIG=$USER_HOME/keycloak_config
+ARG JUPYTER_CONFIG=$USER_HOME/.jupyter
+
+RUN useradd -ms /bin/bash $TVB_USER
+WORKDIR $USER_HOME
+
+RUN apt-get -y update && apt-get -y install build-essential gcc
+RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
+RUN apt-get -y update && apt-get -y install octave postgresql
+
+USER postgres
+RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+USER root
+RUN conda update -n base -c defaults conda
+RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
+RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
+RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
+RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
+RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
+
+# Jupyther notebook configurations: set password
+# tvb42
+RUN mkdir $JUPYTER_CONFIG
+RUN /bin/bash -c "source activate tvb-run"; \
+    /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
+    echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
+
+RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip; \
+    mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
+    cd tvb_data; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop
+
+# make sure a copy of tvb-root exists inside, for users without Github clone
+USER $TVB_USER
+RUN git clone --depth 1 https://github.com/the-virtual-brain/tvb-root.git
+
+USER root
+ARG LAST_SHA=LATEST
+RUN cd tvb-root; \
+    git pull; \
+    cd tvb_build; \
+    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"
+
+COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
+COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/framework_tvb/tvb/interfaces/web/static/help
+RUN chown $TVB_USER:$TVB_USER $USER_HOME
+
+USER $TVB_USER
+
+RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $NUMBA_CACHE $KEYCLOAK_CONFIG
+
+ENV TVB_USER_HOME $USER_HOME
+ENV NUMBA_CACHE_DIR $NUMBA_CACHE
+
+WORKDIR $USER_HOME/tvb-root
+# MOUNT -v [local- tvb-root - clone]:$USER_HOME/tvb-root
+
+# For running all unit-tests
+# inspect output in local tvb-root/tvb_bin/TEST_OUTPUT folder
+#CMD ["bash","-c","source activate tvb-run && cd tvb_bin && service postgresql start && bash run_tests.sh postgres"]
+
+# For running Jupyter notebooks
+# bind port 8888:8888
+#CMD ["bash","-c","source activate tvb-run && cd tvb_documentation && jupyter notebook --ip 0.0.0.0 --no-browser --allow-root"]
+
+# For running TVB Web GUI
+# bind port 8080
+# MOUNT -v [local- ~/TVB ]:$TVB_STORAGE
+
+CMD ["bash","-c","source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"]

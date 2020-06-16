@@ -40,12 +40,13 @@ Backend-side for TS Visualizer of TS Volume DataTypes.
 import json
 import numpy
 from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.arguments_serialisation import preprocess_space_parameters, postprocess_voxel_ts
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.arguments_serialisation import preprocess_space_parameters, postprocess_voxel_ts
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -81,7 +82,7 @@ class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_time_series'
+        return 'time_series'
 
     @staticmethod
     def get_filters():
@@ -107,12 +108,15 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
     def launch(self, view_model):
         # type: (TimeSeriesVolumeVisualiserModel) -> dict
 
-        url_volume_data = self.build_url('get_volume_view', view_model.time_series.hex, '')
-        url_timeseries_data = self.build_url('get_voxel_time_series', view_model.time_series.hex, '')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', view_model.time_series, '')
+        url_timeseries_data = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_time_series',
+                                                     view_model.time_series, '')
 
         ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.time_series.hex)
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
+
+        ts_index = self.load_entity_by_gid(view_model.time_series.hex)
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
             volume_h5_class, volume_h5_path = self._load_h5_of_gid(ts_h5.volume.load().hex)
@@ -135,8 +139,8 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),
-                      labelsStateVar=ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], []),
-                      labelsModes=list(range(ts_h5.data.shape[3])),
+                      labelsStateVar=ts_index.get_labels_for_dimension(1),
+                      labelsModes=list(range(ts_index.data_length_4d)),
                       minValue=min_value, maxValue=max_value,
                       urlVolumeData=url_volume_data,
                       urlTimeSeriesData=url_timeseries_data,
@@ -166,7 +170,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         min_value, max_value = background_h5.get_min_max_values()
         background_h5.close()
 
-        url_volume_data = self.build_url('get_volume_view', background_index.gid, '')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', background_index.gid, '')
         return _MappedArrayVolumeBase.compute_background_params(min_value, max_value, url_volume_data)
 
     def get_voxel_time_series(self, entity_gid, **kwargs):

@@ -63,7 +63,7 @@ class TestConnectivityZipImporter(TransactionalTestCase):
         Test that importing a CFF generates at least one DataType in DB.
         """
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         assert dt_count_before + 1 == dt_count_after

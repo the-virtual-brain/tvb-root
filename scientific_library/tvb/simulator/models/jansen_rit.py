@@ -459,6 +459,7 @@ class ZetterbergJansen(Model):
         it is also provides the default range of phase-plane plots.""")
 
     variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
         choices=("v1", "y1", "v2", "y2", "v3", "y3", "v4", "y4", "v5", "y5", "v6", "v7"),
         default=("v6", "v7", "v2", "v3", "v4", "v5"),

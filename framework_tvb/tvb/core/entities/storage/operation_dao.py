@@ -252,6 +252,8 @@ class OperationDAO(RootDAO):
                     query = query.filter(eval(filter_str))
             query = query.order_by(DataType.id)
             result = query.all()
+            for dt in result:
+                dt.display_name
 
             return result
         except SQLAlchemyError as excep:

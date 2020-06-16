@@ -148,7 +148,7 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
         self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self, name='weights')
         self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self,
                                              name='weights_delimiter', choices=DELIMITER_OPTIONS)
-        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, '.csv', self, name='tracts')
+        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], self, name='tracts')
         self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self,
                                             name='tracts_delimiter', choices=DELIMITER_OPTIONS)
         self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self, name='input_data')
@@ -156,6 +156,13 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
     @staticmethod
     def get_view_model():
         return CSVConnectivityImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'weights': '.csv',
+            'tracts': '.csv'
+        }
 
 
 class CSVConnectivityImporter(ABCUploader):

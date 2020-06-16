@@ -73,6 +73,31 @@ class ConnectivityAnnotations(HasTraits):
         annotations = numpy.array(annotations, dtype=ANNOTATION_DTYPE)
         self.region_annotations = annotations
 
+    def get_activation_patterns(self):
+        """
+        Group Annotation terms by URI.
+        :return: map {brco_id: list of TVB regions IDs in which the same term is being subclass}
+        """
+        map_by_uri = {}
+        for ann in self.region_annotations:
+            ann_uri = ann[8]
+            left, right = str(ann[2]), str(ann[3])
+            if ann_uri not in map_by_uri:
+                map_by_uri[ann_uri] = [left, right]
+            else:
+                if left not in map_by_uri[ann_uri]:
+                    map_by_uri[ann_uri].append(left)
+                if right not in map_by_uri[ann_uri]:
+                    map_by_uri[ann_uri].append(right)
+
+        map_by_brco_id = {}
+        for ann in self.region_annotations:
+            ann_uri = ann[8]
+            ann_id = ann[0]
+            map_by_brco_id[str(ann_id)] = map_by_uri[ann_uri]
+
+        return map_by_brco_id
+
 
 class ConnectivityAnnotationsH5(H5File):
     """

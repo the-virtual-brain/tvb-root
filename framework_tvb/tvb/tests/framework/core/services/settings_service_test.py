@@ -51,7 +51,6 @@ class TestSettingsService(BaseTestCase):
     TEST_SETTINGS = {SettingsService.KEY_ADMIN_NAME: 'test_name',
                      SettingsService.KEY_ADMIN_EMAIL: 'my@yahoo.com',
                      SettingsService.KEY_PORT: 8081,
-                     SettingsService.KEY_URL_WEB: "http://192.168.123.11:8081/",
                      SettingsService.KEY_MAX_DISK_SPACE_USR: 2 ** 8}
 
 

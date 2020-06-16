@@ -29,59 +29,80 @@
 #
 
 import os
+
+import flask
 import pytest
 import tvb_data
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
+from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
 
-class TestProjectResource(TransactionalTestCase):
+class TestProjectResource(RestResourceTest):
 
     def transactional_setup_method(self):
         self.data_resource = GetDataInProjectResource()
         self.operations_resource = GetOperationsInProjectResource()
         self.test_user = TestFactory.create_user('Rest_User')
-        self.test_project_without_data = TestFactory.create_project(self.test_user, 'Rest_Project')
-        self.test_project_with_data = TestFactory.create_project(self.test_user, 'Rest_Project2')
+        self.test_project_without_data = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
+        self.test_project_with_data = TestFactory.create_project(self.test_user, 'Rest_Project2', users=[self.test_user.id])
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project_with_data, zip_path)
 
-    def test_server_get_data_in_project_inexistent_gid(self):
+    def test_server_get_data_in_project_inexistent_gid(self, mocker):
+        self._mock_user(mocker)
         project_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException): self.data_resource.get(project_gid)
+        with pytest.raises(InvalidIdentifierException): self.data_resource.get(project_gid=project_gid)
 
-    def test_server_get_data_in_project_empty(self):
+    def test_server_get_data_in_project_empty(self, mocker):
+        self._mock_user(mocker)
         project_gid = self.test_project_without_data.gid
-        result = self.data_resource.get(project_gid)
+        result = self.data_resource.get(project_gid=project_gid)
         assert type(result) is list
         assert len(result) == 0
 
-    def test_get_data_in_project(self):
+    def test_get_data_in_project(self, mocker):
+        self._mock_user(mocker)
         project_gid = self.test_project_with_data.gid
 
-        result = self.data_resource.get(project_gid)
+        result = self.data_resource.get(project_gid=project_gid)
         assert type(result) is list
         assert len(result) > 0
 
-    def test_server_get_operations_in_project_inexistent_gid(self):
+    def test_server_get_operations_in_project_inexistent_gid(self, mocker):
+        self._mock_user(mocker)
         project_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid)
 
-    def test_server_get_operations_in_project_empty(self):
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid=project_gid)
+
+    def test_server_get_operations_in_project_empty(self, mocker):
+        self._mock_user(mocker)
         project_gid = self.test_project_without_data.gid
-        result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) == 0
 
-    def test_get_operations_in_project(self):
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        result = self.operations_resource.get(project_gid=project_gid)
+        assert type(result) is dict
+        assert len(result['operations']) == 0
+
+    def test_get_operations_in_project(self, mocker):
+        self._mock_user(mocker)
         project_gid = self.test_project_with_data.gid
-        result = self.operations_resource.get(project_gid)
-        assert type(result) is list
-        assert len(result) > 0
+
+        request_mock = mocker.patch.object(flask, 'request')
+        request_mock.args = {Strings.PAGE_NUMBER: '1'}
+
+        result = self.operations_resource.get(project_gid=project_gid)
+        assert type(result) is dict
+        assert len(result['operations']) > 0
 
     def transactional_teardown_method(self):
         FilesHelper().remove_project_structure(self.test_project_with_data.name)

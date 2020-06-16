@@ -36,33 +36,34 @@ import copy
 import json
 import os
 import shutil
+import uuid
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.simulator.simulator import Simulator
 
 
 class SimulatorService(object):
-    MAX_BURSTS_DISPLAYED = 50
-    LAUNCH_NEW = 'new'
-    LAUNCH_BRANCH = 'branch'
-
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
+        self.burst_service = BurstService()
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
 
     @transactional
-    def _prepare_operation(self, project_id, user_id, simulator_id, simulator_index, algo_category, op_group, metadata,
+    def _prepare_operation(self, project_id, user_id, simulator_id, simulator_gid, algo_category, op_group, metadata,
                            ranges=None):
-        operation_parameters = json.dumps({'gid': simulator_index.gid})
+        operation_parameters = json.dumps({'gid': simulator_gid.hex})
         metadata, user_group = self.operation_service._prepare_metadata(metadata, algo_category, op_group, {})
         meta_str = json.dumps(metadata)
 
@@ -73,16 +74,12 @@ class SimulatorService(object):
         operation = Operation(user_id, project_id, simulator_id, operation_parameters, op_group_id=op_group_id,
                               meta=meta_str, range_values=ranges)
 
-        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
-                          str(metadata) + ",algorithmId=" + str(simulator_id) + ", ops_group= " + str(
-            op_group_id) + ")")
+        self.logger.info("Saving Operation(userId=" + str(user_id) + ", projectId=" + str(project_id) + "," +
+                          str(metadata) + ", algorithmId=" + str(simulator_id) + ", ops_group= " +
+                          str(op_group_id) + ", params=" + str(operation_parameters) + ")")
 
-        # visible_operation = visible and category.display is False
         operation = dao.store_entity(operation)
-        # operation.visible = visible_operation
-
         # TODO: prepare portlets/handle operation groups/no workflows
-
         return operation
 
     @staticmethod
@@ -96,23 +93,16 @@ class SimulatorService(object):
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo,
                                             session_stored_simulator, simulation_state_gid):
         try:
-            simulator_index = SimulatorIndex()
             metadata = {}
-            if burst_config:
-                simulator_index.fk_parent_burst = burst_config.id
-                metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
-            dao.store_entity(simulator_index)
+            metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
             simulator_id = simulator_algo.id
             algo_category = simulator_algo.algorithm_category
-            operation = self._prepare_operation(project.id, user.id, simulator_id, simulator_index, algo_category, None,
-                                                metadata)
-
-            simulator_index.fk_from_operation = operation.id
-            dao.store_entity(simulator_index)
-
+            operation = self._prepare_operation(project.id, user.id, simulator_id, session_stored_simulator.gid,
+                                                algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-            SimulatorSerializer().serialize_simulator(session_stored_simulator, simulator_index.gid,
-                                                      simulation_state_gid, storage_path)
+            SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, storage_path)
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
+            self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
             try:
@@ -122,7 +112,7 @@ class SimulatorService(object):
                 self.logger.error(excep)
                 wf_errs += 1
                 if burst_config:
-                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                    self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflow. The operation was launched successfully, " +
                               str(wf_errs) + " had error on pre-launch steps")
@@ -130,19 +120,16 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
             if burst_config:
-                BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         with SimulatorH5(simulator_file) as simulator_h5:
             simulator_gid = simulator_h5.gid.load()
 
-        simulator_index = SimulatorIndex()
-        simulator_index.gid = simulator_gid.hex
-
         metadata = {}
         simulator_id = algorithm.id
         algo_category = algorithm.algorithm_category
-        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_index,
+        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_gid,
                                             algo_category, None, metadata)
         storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
         self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
@@ -162,6 +149,15 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
 
+    @staticmethod
+    def _set_range_param_in_dict(param_value):
+        if type(param_value) is numpy.ndarray:
+            return param_value[0]
+        elif isinstance(param_value, uuid.UUID):
+            return param_value.hex
+        else:
+            return param_value
+
     def async_launch_and_prepare_pse(self, burst_config, user, project, simulator_algo, range_param1, range_param2,
                                      session_stored_simulator):
         try:
@@ -170,32 +166,40 @@ class SimulatorService(object):
             operation_group = burst_config.operation_group
             metric_operation_group = burst_config.metric_operation_group
             operations = []
-            range_param2_values = []
+            range_param2_values = [None]
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
+            first_simulator = None
+
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
+                    # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
+                    simulator.gid = uuid.uuid4()
                     self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
-                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
 
-                    simulator_index = SimulatorIndex()
-                    simulator_index.fk_parent_burst = burst_config.id
-                    simulator_index = dao.store_entity(simulator_index)
-                    ranges = json.dumps({range_param1.name: param1_value[0], range_param2.name: param2_value[0]})
+                    ranges = {range_param1.name: self._set_range_param_in_dict(param1_value)}
 
-                    operation = self._prepare_operation(project.id, user.id, simulator_id, simulator_index,
+                    if param2_value is not None:
+                        self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                        ranges[range_param2.name] = self._set_range_param_in_dict(param2_value)
+
+                    ranges = json.dumps(ranges)
+
+                    operation = self._prepare_operation(project.id, user.id, simulator_id, simulator.gid,
                                                         algo_category, operation_group,
                                                         {DataTypeMetaData.KEY_BURST: burst_config.id}, ranges)
 
-                    simulator_index.fk_from_operation = operation.id
-                    dao.store_entity(simulator_index)
-
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-                    SimulatorSerializer().serialize_simulator(simulator, simulator_index.gid, None, storage_path)
+                    SimulatorSerializer().serialize_simulator(simulator, None, storage_path)
                     operations.append(operation)
+                    if first_simulator is None:
+                        first_simulator = simulator
 
             first_operation = operations[0]
+            storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
+            self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
                                            fk_parent_burst=burst_config.id,
                                            state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])
@@ -211,11 +215,23 @@ class SimulatorService(object):
                 except Exception as excep:
                     self.logger.error(excep)
                     wf_errs += 1
-                    BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+                    self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
 
         except Exception as excep:
             self.logger.error(excep)
-            BurstService().mark_burst_finished(burst_config, error_message=str(excep))
+            self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
+
+    def load_from_zip(self, zip_file, project):
+        import_service = ImportService()
+        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
+
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
+        with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
+            simulator_gid = sim_h5.gid.load()
+        simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
+
+        burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
+        return simulator, burst_config

@@ -155,7 +155,7 @@ class SurfaceContextModelParameters(object):
             if focal_points and equation:
                 res = surface_dt.compute_equation(focal_points, equation)
                 return res
-            self.logger.warn('Focal points or Equation are missing for %s. Defaults will be used.', param_name)
+            self.logger.warning('Focal points or Equation are missing for %s. Defaults will be used.', param_name)
             return self._get_default_value_for_model_param(param_name)
         else:
             return self._get_default_value_for_model_param(param_name)

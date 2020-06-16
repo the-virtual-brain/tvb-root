@@ -29,6 +29,7 @@
 #
 
 import os
+
 import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -37,28 +38,30 @@ from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
 
-class TestDatatypeResource(TransactionalTestCase):
+class TestDatatypeResource(RestResourceTest):
 
     def transactional_setup_method(self):
         self.test_user = TestFactory.create_user('Rest_User')
-        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
         self.retrieve_resource = RetrieveDatatypeResource()
         self.get_operations_resource = GetOperationsForDatatypeResource()
         self.get_data_in_project_resource = GetDataInProjectResource()
 
-    def test_server_retrieve_datatype_inexistent_gid(self):
+    def test_server_retrieve_datatype_inexistent_gid(self, mocker):
+        self._mock_user(mocker)
         datatype_gid = "inexistent-gid"
-        with pytest.raises(InvalidIdentifierException): self.retrieve_resource.get(datatype_gid)
+        with pytest.raises(InvalidIdentifierException): self.retrieve_resource.get(datatype_gid=datatype_gid)
 
     def test_server_retrieve_datatype(self, mocker):
+        self._mock_user(mocker)
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        datatypes_in_project = self.get_data_in_project_resource.get(self.test_project.gid)
+        datatypes_in_project = self.get_data_in_project_resource.get(project_gid=self.test_project.gid)
         assert type(datatypes_in_project) is list
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
@@ -68,22 +71,23 @@ class TestDatatypeResource(TransactionalTestCase):
 
         # Mock flask.send_file to behave like send_file_dummy
         mocker.patch('flask.send_file', send_file_dummy)
-        result = self.retrieve_resource.get(datatypes_in_project[0].gid)
+        result = self.retrieve_resource.get(datatype_gid=datatypes_in_project[0].gid)
 
         assert type(result) is tuple
         assert result[1] is True
-        assert result[0] == result[2]
+        assert os.path.basename(result[0]) == os.path.basename(result[2])
 
-    def test_server_get_operations_for_datatype(self):
+    def test_server_get_operations_for_datatype(self, mocker):
+        self._mock_user(mocker)
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        datatypes_in_project = self.get_data_in_project_resource.get(self.test_project.gid)
+        datatypes_in_project = self.get_data_in_project_resource.get(project_gid=self.test_project.gid)
         assert type(datatypes_in_project) is list
         assert len(datatypes_in_project) == 1
         assert datatypes_in_project[0].type == ConnectivityIndex().display_type
 
-        result = self.get_operations_resource.get(datatypes_in_project[0].gid)
+        result = self.get_operations_resource.get(datatype_gid=datatypes_in_project[0].gid)
         assert type(result) is list
         assert len(result) > 3
 

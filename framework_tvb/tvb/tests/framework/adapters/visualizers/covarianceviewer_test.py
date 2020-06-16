@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from uuid import UUID
+
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.covariance import CovarianceVisualizer
 
@@ -48,7 +48,7 @@ class TestCovarianceViewer(TransactionalTestCase):
         covariance_index = covariance_factory()
         viewer = CovarianceVisualizer()
         view_model = viewer.get_view_model_class()()
-        view_model.datatype = UUID(covariance_index.gid)
+        view_model.datatype = covariance_index.gid
         result = viewer.launch(view_model)
         expected_keys = ['matrix_shape', 'matrix_data', 'mainContent', 'isAdapter']
         for key in expected_keys:

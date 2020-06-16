@@ -138,7 +138,7 @@ class OperationOverlayDetails(CommonDetails):
     """
 
 
-    def __init__(self, operation, username, count_inputs, count_results, burst, no_of_op_in_group, op_pid):
+    def __init__(self, operation, user_display_name, count_inputs, count_results, burst, no_of_op_in_group, op_pid):
         super(OperationOverlayDetails, self).__init__()
 
         self.operation_id = operation.id
@@ -170,7 +170,7 @@ class OperationOverlayDetails(CommonDetails):
 
         ### Now set/update generic fields
         self.gid = operation.gid
-        self.author = username
+        self.author = user_display_name
         self.count = no_of_op_in_group
         self.burst_name = burst.name if burst is not None else ""
         self.operation_type = self.compute_operation_name(operation.algorithm.algorithm_category.displayname,
@@ -256,14 +256,14 @@ class DataTypeOverlayDetails(CommonDetails):
         self.data_state = datatype_result.state
         self.datatype_title = datatype_result.display_name
         self.subject = datatype_result.subject
-        self.data_type = datatype_result.type
+        self.data_type = datatype_result.display_type
         self.datatype_tag_1 = datatype_result.user_tag_1
         self.datatype_tag_2 = datatype_result.user_tag_2
         self.datatype_tag_3 = datatype_result.user_tag_3
         self.datatype_tag_4 = datatype_result.user_tag_4
         self.datatype_tag_5 = datatype_result.user_tag_5
         self.datatype_size = datatype_result.disk_size
-        self.author = datatype_result.parent_operation.user.username
+        self.author = datatype_result.parent_operation.user.display_name
 
         parent_algorithm = datatype_result.parent_operation.algorithm
         operation_name = self.compute_operation_name(parent_algorithm.algorithm_category.displayname,

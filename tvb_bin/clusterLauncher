@@ -10,7 +10,7 @@ if [ ! ${TVB_ROOT+1} ]; then
         exit 1
 fi
 
-export PYTHONPATH=$TVB_ROOT/tvb_data/lib/python2.7:$TVB_ROOT/tvb_data/lib/python2.7/site-packages
+export PYTHONPATH=$TVB_ROOT/tvb_data/lib/python3.7:$TVB_ROOT/tvb_data/lib/python3.7/site-packages
 unset PYTHONHOME
 
 if [ ${LD_LIBRARY_PATH+1} ]; then

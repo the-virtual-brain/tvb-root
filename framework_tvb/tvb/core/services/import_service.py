@@ -48,10 +48,9 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
-from tvb.core.services.exceptions import ProjectImportException
+from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
@@ -353,7 +352,7 @@ class ImportService(object):
         figure_dict = XMLReader(file_name).read_metadata()
         new_path = os.path.join(os.path.split(file_name)[0], os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(new_path):
-            self.logger.warn("Expected to find image path %s .Skipping" % new_path)
+            self.logger.warning("Expected to find image path %s .Skipping" % new_path)
 
         op = dao.get_operation_by_gid(figure_dict['fk_from_operation'])
         figure_dict['fk_op_id'] = op.id if op is not None else None
@@ -470,15 +469,22 @@ class ImportService(object):
         return operation_entity, datatype_group
 
 
-    def load_burst_entity(self, json_burst, project_id):
-        """
-        Load BurstConfiguration from JSON (possibly exported from a different machine).
-        Nothing gets persisted in DB or on disk.
+    def import_simulator_configuration_zip(self, zip_file):
+        # Now compute the name of the folder where to explode uploaded ZIP file
+        temp_folder = self._compute_unpack_path()
+        uq_file_name = temp_folder + ".zip"
 
-        :param json_burst: Burst JSON export
-        :param project_id: Current project ID (it will be used if the user later starts this simulation)
-        :return: BurstConfiguration  filled from JSON
-        """
+        if isinstance(zip_file, FieldStorage) or isinstance(zip_file, Part):
+            if not zip_file.file:
+                raise ServicesBaseException("Could not process the given ZIP file...")
 
-        burst_entity = BurstConfiguration(project_id)
-        return burst_entity
+            with open(uq_file_name, 'wb') as file_obj:
+                self.files_helper.copy_file(zip_file.file, file_obj)
+        else:
+            shutil.copy2(zip_file, uq_file_name)
+
+        try:
+            self.files_helper.unpack_zip(uq_file_name, temp_folder)
+            return temp_folder
+        except FileStructureException as excep:
+            raise ServicesBaseException("Could not process the given ZIP file..." + str(excep))

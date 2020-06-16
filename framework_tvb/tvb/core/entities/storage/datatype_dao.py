@@ -42,7 +42,6 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
 from sqlalchemy.orm.exc import NoResultFound
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -119,6 +118,13 @@ class DatatypeDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
+    def get_number_of_bursts(self, project_id):
+        try:
+            bursts = self.session.query(BurstConfiguration).filter_by(fk_project=project_id)
+            return bursts.count()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
 
     def get_disk_size_for_operation(self, operation_id):
         """
@@ -340,6 +346,7 @@ class DatatypeDAO(RootDAO):
                 dt.parent_operation.project
                 dt.parent_operation.operation_group
                 dt.parent_operation.user
+                dt.display_name
 
         except Exception as excep:
             self.logger.exception(excep)
@@ -482,23 +489,6 @@ class DatatypeDAO(RootDAO):
             return result[0]
         return None
 
-    #TODO: review whether this separate method for SurfaceIndex is necessary
-    def try_load_last_surface_of_type(self, project_id, surface_type):
-
-        query = self.session.query(SurfaceIndex
-                    ).join((Operation, SurfaceIndex.fk_from_operation == Operation.id)
-                    ).outerjoin(Links
-                    ).filter(or_(Operation.fk_launched_in == project_id,
-                                 Links.fk_to_project == project_id)
-                             ).filter(SurfaceIndex.surface_type == surface_type)
-        query = query.order_by(desc(SurfaceIndex.id)).limit(1)
-        result = query.all()
-
-        if result is not None and len(result):
-            return result[0]
-        return None
-
-
     def get_values_of_datatype(self, project_id, datatype_class, filters=None, page_size=50):
         """
         Retrieve a list of dataTypes matching a filter inside a project.
@@ -512,7 +502,7 @@ class DatatypeDAO(RootDAO):
             return result, count
 
         try:
-            #Prepare generic query:
+            # Prepare generic query:
             query = self.session.query(datatype_class.id,
                                        func.max(datatype_class.type),
                                        func.max(datatype_class.gid),
@@ -533,7 +523,7 @@ class DatatypeDAO(RootDAO):
                 if filter_str is not None:
                     query = query.filter(eval(filter_str))
 
-            #Retrieve the results
+            # Retrieve the results
             query = query.group_by(datatype_class.id).order_by(desc(datatype_class.id))
 
             result = query.limit(max(page_size, 0)).all()

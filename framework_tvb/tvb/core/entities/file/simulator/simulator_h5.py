@@ -51,9 +51,9 @@ class SimulatorH5(SimulatorConfigurationH5):
         self.simulation_state = Reference(Attr(field_type=uuid.UUID), self, name='simulation_state')
 
     def store(self, datatype, scalars_only=False, store_references=False):
-        # type: (Simulator) -> None
-        # TODO: handle store conn here
-        # self.connectivity.store(conn_gid)
+        # type: (Simulator, bool, bool) -> None
+        self.gid.store(datatype.gid)
+        self.connectivity.store(datatype.connectivity)
         self.conduction_speed.store(datatype.conduction_speed)
         self.initial_conditions.store(datatype.initial_conditions)
         self.simulation_length.store(datatype.simulation_length)
@@ -67,13 +67,19 @@ class SimulatorH5(SimulatorConfigurationH5):
         model_gid = self.store_config_as_reference(datatype.model)
         self.model.store(model_gid)
 
-        # TODO: handle multiple monitors
-        monitor_gid = self.store_config_as_reference(datatype.monitors[0])
-        self.monitors.store([monitor_gid.hex])
+        monitor_gids = []
+        for monitor in datatype.monitors:
+            monitor_gid = self.store_config_as_reference(monitor).hex
+            monitor_gids.append(monitor_gid)
+
+        self.monitors.store(monitor_gids)
 
         if datatype.surface:
             cortex_gid = self.store_config_as_reference(datatype.surface)
             self.surface.store(cortex_gid)
+
+        if datatype.stimulus:
+            self.stimulus.store(datatype.stimulus)
 
         self.type.store(self.get_full_class_name(type(datatype)))
 
@@ -85,7 +91,11 @@ class SimulatorH5(SimulatorConfigurationH5):
         datatype.integrator = self.load_from_reference(self.integrator.load())
         datatype.coupling = self.load_from_reference(self.coupling.load())
         datatype.model = self.load_from_reference(self.model.load())
-        # TODO: handle multiple monitors
-        datatype.monitors = [self.load_from_reference(self.monitors.load()[0])]
+
+        monitors = []
+        for monitor in self.monitors.load():
+            monitors.append(self.load_from_reference(monitor))
+        datatype.monitors = monitors
+
         if self.surface.load():
             datatype.surface = self.load_from_reference(self.surface.load())

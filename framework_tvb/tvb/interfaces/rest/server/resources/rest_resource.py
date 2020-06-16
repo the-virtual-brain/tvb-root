@@ -27,22 +27,48 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import flask
 from flask_restplus import Resource
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.interfaces.rest.commons.exceptions import BadRequestException
-from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify
+from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
+from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
+from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
 
 
-class RestResource(Resource):
+class SecuredResource(Resource):
+    method_decorators = [secured]
+
+
+class RestResource(SecuredResource):
     method_decorators = [rest_jsonify]
 
+    def __init__(self, *args, **kwargs):
+        super(RestResource, self).__init__(args, kwargs)
+        if not all(decorator in self.method_decorators for decorator in super().method_decorators):
+            self.method_decorators.extend(super().method_decorators)
+
     @staticmethod
-    def extract_file_from_request(file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-        if 'file' not in flask.request.files:
-            raise BadRequestException('No file part in the request!')
-        file = flask.request.files['file']
+    def extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value,
+                                  file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+        if not RestResource.is_key_in_request_files(request_file_key):
+            raise BadRequestException("No file '%s' in the request!" % request_file_key)
+        file = flask.request.files[request_file_key]
         if not file.filename.endswith(file_extension):
-            raise BadRequestException('Only %s files are allowed!' % file_extension)
+            raise BadRequestException("Only %s files are allowed!" % file_extension)
 
         return file
+
+    def extract_page_number(self):
+        page_number = flask.request.args.get(Strings.PAGE_NUMBER.value)
+        if page_number is None:
+            page_number = 1
+        try:
+            page_number = int(page_number)
+        except ValueError:
+            raise InvalidInputException(message="Invalid page number")
+        return page_number
+
+    @staticmethod
+    def is_key_in_request_files(key):
+        return key in flask.request.files

@@ -33,12 +33,14 @@ A convenience module for the command interface
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+from datetime import datetime
 from time import sleep
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterForm
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
@@ -88,12 +90,10 @@ def import_conn_zip(project_id, zip_path):
     project = dao.get_project_by_id(project_id)
 
     importer = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
-    params = {"_uploaded": zip_path}
-    form = ZIPConnectivityImporterForm()
-    form.uploaded.data = zip_path
-    importer.submit_form(form)
+    view_model = ZIPConnectivityImporterModel()
+    view_model.uploaded = zip_path
 
-    FlowService().fire_operation(importer, project.administrator, project_id, **params)
+    FlowService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
 
 
 def fire_simulation(project_id, simulator):
@@ -105,7 +105,12 @@ def fire_simulation(project_id, simulator):
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()
-    launched_operation = simulator_service.async_launch_and_prepare_simulation(None, project.administrator, project,
+    burst = BurstConfiguration(project.id)
+    burst.name = "Sim " + str(datetime.now())
+    burst.start_time = datetime.now()
+    dao.store_entity(burst)
+
+    launched_operation = simulator_service.async_launch_and_prepare_simulation(burst, project.administrator, project,
                                                                                cached_simulator_algorithm, simulator,
                                                                                None)
     LOG.info("Operation launched ....")

@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
 from sqlalchemy import Column, Integer, ForeignKey, Boolean, Float
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import from_ndarray
@@ -70,6 +69,14 @@ class ConnectivityIndex(DataType):
         # self.weights_non_zero = NArrayIndex.from_ndarray(datatype.weights[datatype.weights.nonzero()])
         # self.tract_lengths_non_zero = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.tract_lengths.nonzero()])
         # self.tract_lengths_connections = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.weights.nonzero()])
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of regions field
+        """
+        previous = "Connectivity"
+        return previous + " [" + str(self.number_of_regions) + "]"
 
     @staticmethod
     def accepted_filters():

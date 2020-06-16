@@ -36,9 +36,7 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 """
 
 import os
-from subprocess import Popen, PIPE
 from tvb.basic.config import stored
-
 
 
 class VersionSettings(object):
@@ -47,7 +45,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "2.0"
+    BASE_VERSION = "2.0.6"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 18
@@ -64,7 +62,6 @@ class VersionSettings(object):
     # Should this be sync-ed with data version changes?
     PROJECT_VERSION = 3
 
-
     def __init__(self, manager, bin_folder):
 
         # Used for reading the version file from it
@@ -79,20 +76,8 @@ class VersionSettings(object):
         # The version up until we done the upgrade properly for the file data storage.
         self.CODE_CHECKED_TO_VERSION = manager.get_attribute(stored.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
 
-
     @property
     def SVN_VERSION(self):
-        """Current SVN version in the package running now."""
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            return os.environ[svn_variable]
-
-        try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
-            return self.parse_svn_version(_proc.communicate()[0])
-        except Exception:
-            pass
-
         try:
             import tvb.basic.config
             config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
@@ -101,8 +86,7 @@ class VersionSettings(object):
         except Exception:
             pass
 
-        raise ValueError('cannot determine TVB revision number')
-
+        return 42
 
     @staticmethod
     def parse_svn_version(version_string):
@@ -111,7 +95,6 @@ class VersionSettings(object):
 
         number = ''.join([ch for ch in version_string if ch.isdigit()])
         return int(number)
-
 
 
 class ClusterSettings(object):
@@ -126,7 +109,6 @@ class ClusterSettings(object):
 
     _CACHED_IS_RUNNING_ON_CLUSTER = None
     _CACHED_NODE_NAME = None
-
 
     def __init__(self, manager):
         self.IS_DEPLOY = manager.get_attribute(stored.KEY_CLUSTER, False, eval)
@@ -175,7 +157,6 @@ class ClusterSettings(object):
 
         return self._CACHED_IS_RUNNING_ON_CLUSTER
 
-
     @property
     def CLUSTER_NODE_NAME(self):
         """
@@ -203,33 +184,26 @@ class ClusterSettings(object):
         return None
 
 
-
 class WebSettings(object):
     """
     Web related specifications
     """
 
-    ENABLED = False
-    LOCALHOST = "127.0.0.1"
+    LOCALHOST = "localhost"
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
-    VISUALIZERS_URL_PREFIX = "/flow/read_datatype_attribute/"
 
+    def __init__(self, manager):
 
-    def __init__(self, manager, enabled):
-
-        self.ENABLED = enabled
         self.admin = WebAdminSettings(manager)
 
         self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if enabled:
-            try:
-                import tvb.interfaces
-                self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(tvb.interfaces.__file__)))
-            except ImportError:
-                pass
-        else:
-            self.VISUALIZERS_URL_PREFIX = ""
+
+        try:
+            import tvb.interfaces
+            self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(tvb.interfaces.__file__)))
+        except ImportError:
+            pass
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
 
@@ -237,8 +211,8 @@ class WebSettings(object):
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
 
-        # Compute PUBLIC reference towards the current web application, valid FROM outside
-        self.BASE_URL = manager.get_attribute(stored.KEY_URL_WEB, self.BASE_LOCAL_URL)
+        # Compute PUBLIC reference towards the current web application, it will be used in the emails text
+        self.BASE_URL = ""
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"
@@ -284,7 +258,6 @@ class WebSettings(object):
                                        }
 
 
-
 class WebAdminSettings(object):
     """
     Setting related to the default users of web-tvb
@@ -294,10 +267,12 @@ class WebAdminSettings(object):
     DEFAULT_ADMIN_EMAIL = 'jira.tvb@gmail.com'
     ADMINISTRATOR_BLANK_PWD = 'pass'
 
-
     def __init__(self, manager):
         # Give name for the Admin user, first created.
         self.ADMINISTRATOR_NAME = manager.get_attribute(stored.KEY_ADMIN_NAME, 'admin')
+
+        # Give display name for the Admin user, first created.
+        self.ADMINISTRATOR_DISPLAY_NAME = manager.get_attribute(stored.KEY_ADMIN_DISPLAY_NAME, 'Administrator')
 
         # Admin's password used when creating first user (default is MD5 for 'pass')
         self.ADMINISTRATOR_PASSWORD = manager.get_attribute(stored.KEY_ADMIN_PWD, '1a1dc91c907325c69271ddf0c944bc72')
@@ -305,10 +280,11 @@ class WebAdminSettings(object):
         # Admin's email used when creating first user
         self.ADMINISTRATOR_EMAIL = manager.get_attribute(stored.KEY_ADMIN_EMAIL, self.DEFAULT_ADMIN_EMAIL)
 
+        # Admins GID
+        self.ADMINISTRATOR_GIDS = manager.get_attribute(stored.KEY_ADMIN_GIDS, "").split(",")
 
 
 class DBSettings(object):
-
     # Overwrite number of connections to the DB.
     # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
     # MAX_CONNECTION default value will be used for WEB

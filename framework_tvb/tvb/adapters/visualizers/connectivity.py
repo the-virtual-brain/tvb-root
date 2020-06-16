@@ -46,6 +46,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -151,7 +152,7 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return "_input_data"
+        return "input_data"
 
 
 class ConnectivityViewer(ABCSpaceDisplayer):
@@ -202,7 +203,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            surface_h5 = self.load_traited_by_gid(view_model.surface_data)
+            surface_index = load_entity_by_gid(view_model.surface_data.hex)
+            surface_h5 = h5.h5_file_for_index(surface_index)
             url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
@@ -279,7 +281,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
                              tractsMin=minimum_t, tractsMax=maximum_t,
                              weightsMin=minimum, weightsMax=maximum,
                              tractsNonZeroMin=minimum_non_zero_t, weightsNonZeroMin=minimum_non_zero,
-                             pointsLabels=connectivity.ordered_labels, conductionSpeed=connectivity.speed or 1,
+                             pointsLabels=connectivity.ordered_labels, conductionSpeed=1,
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
                              hemisphereOrderUrl=path_hemisphere_order_indices)

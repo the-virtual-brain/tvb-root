@@ -36,9 +36,9 @@ from datetime import datetime
 import scipy.sparse
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, EquationScalar, \
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, EquationScalar, \
     SparseMatrix
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
@@ -78,6 +78,7 @@ class H5File(object):
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
         self.visible = Scalar(Attr(bool), self, name='visible')
+        self.metadata_cache = None
 
         if not self.storage_manager.is_valid_hdf5_file():
             self.written_by.store(self.__class__.__module__ + '.' + self.__class__.__name__)
@@ -148,10 +149,11 @@ class H5File(object):
             else:
                 setattr(datatype, f_name, value)
 
-    def store_generic_attributes(self, generic_attributes):
-        # type: (GenericAttributes) -> None
+    def store_generic_attributes(self, generic_attributes, create=True):
+        # type: (GenericAttributes, bool) -> None
         # write_metadata  creation time, serializer class name, etc
-        self.create_date.store(date2string(datetime.now()))
+        if create:
+            self.create_date.store(date2string(datetime.now()))
 
         self.generic_attributes.fill_from(generic_attributes)
         self.invalid.store(self.generic_attributes.invalid)
@@ -237,6 +239,8 @@ class ViewModelH5(H5File):
                     ref = Uuid(attr, self)
                 elif issubclass(attr.field_type, Equation):
                     ref = EquationScalar(attr, self)
+                elif attr.field_type is Range:
+                    ref = JsonRange(attr, self)
                 else:
                     ref = Scalar(attr, self)
             setattr(self, attr.field_name, ref)

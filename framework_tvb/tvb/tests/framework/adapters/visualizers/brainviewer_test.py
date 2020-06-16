@@ -33,7 +33,6 @@
 """
 
 import os
-from uuid import UUID
 import tvb_data.surfaceData
 import tvb_data.regionMapping
 from tvb.core.neocom import h5
@@ -50,9 +49,9 @@ class TestBrainViewer(TransactionalTestCase):
     """
 
     EXPECTED_KEYS = ['urlVertices', 'urlNormals', 'urlTriangles', 'urlLines', 'urlRegionMap',
-                     'base_activity_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
+                     'base_adapter_url', 'isOneToOneMapping', 'minActivity', 'maxActivity',
                      'noOfMeasurePoints', 'isAdapter']
-    EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'time_series', 'pageSize', 'shelfObject',
+    EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'pageSize', 'shelfObject',
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
     face = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
@@ -95,8 +94,8 @@ class TestBrainViewer(TransactionalTestCase):
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = UUID(time_series_index.gid)
-        view_model.shell_surface = UUID(self.face_surface.gid)
+        view_model.time_series = time_series_index.gid
+        view_model.shell_surface = self.face_surface.gid
         result = viewer.launch(view_model)
 
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
@@ -112,7 +111,7 @@ class TestBrainViewer(TransactionalTestCase):
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = UUID(time_series_index.gid)
+        view_model.time_series = time_series_index.gid
         assert viewer.get_required_memory_size(view_model) > 0
 
     def test_generate_preview(self, time_series_region_index_factory):
@@ -124,7 +123,7 @@ class TestBrainViewer(TransactionalTestCase):
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = UUID(time_series_index.gid)
+        view_model.time_series = time_series_index.gid
         result = viewer.generate_preview(view_model, figure_size=(500, 200))
         for key in TestBrainViewer.EXPECTED_KEYS:
             assert key in result and result[key] is not None, key
@@ -138,8 +137,8 @@ class TestBrainViewer(TransactionalTestCase):
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
-        view_model.time_series = UUID(time_series_index.gid)
-        view_model.shell_surface = UUID(self.face_surface.gid)
+        view_model.time_series = time_series_index.gid
+        view_model.shell_surface = self.face_surface.gid
         result = viewer.launch(view_model)
         for key in TestBrainViewer.EXPECTED_KEYS + TestBrainViewer.EXPECTED_EXTRA_KEYS:
             assert key in result and result[key] is not None

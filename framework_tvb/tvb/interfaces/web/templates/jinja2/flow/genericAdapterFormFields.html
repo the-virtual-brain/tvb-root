@@ -1,20 +1,11 @@
 <div class="adaptersDiv">
 
-    {% if (includeGenericAdapterTemplateFunctions is not defined) or (includeGenericAdapterTemplateFunctions == true) %}
-        {% include 'flow/genericAdapterTemplateFunctions.html' %}
-    {% endif %}
-
     {% with %}
         {% set drawHiddenRanges =  draw_hidden_ranges if draw_hidden_ranges is defined else false %}
         {% set tree_session_key = treeSessionKey if treeSessionKey is defined else 'defaultTree' %}
-        {% import 'flow/genericAdapterTemplateFunctions.html' as gatf with context %}
 
-        {% if form is defined %}
-            {{ form | safe }}
-        {% endif %}
-
-        {% if inputList is defined %}
-            {{ gatf.generateDisplay(inputList, false, "", tree_session_key, draw_hidden_ranges=drawHiddenRanges) }}
+        {% if adapter_form is defined %}
+            {{ adapter_form | safe }}
         {% endif %}
     {% endwith %}
 

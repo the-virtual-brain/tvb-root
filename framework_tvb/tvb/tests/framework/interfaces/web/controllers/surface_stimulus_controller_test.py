@@ -42,33 +42,31 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
     """ Unit tests for SurfaceStimulusController """
     
     def transactional_setup_method(self):
-        self.clean_database()
         self.init()
         self.surface_s_c = SurfaceStimulusController()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-        self.clean_database()
 
     def test_step_1(self):
         self.surface_s_c.step_1_submit(1, 1)
         result_dict = self.surface_s_c.step_1()
-        expected_keys = ['temporalPlotInputList', 'temporalFieldsPrefixes', 'temporalEquationViewerUrl',
-                         'spatialPlotInputList', 'spatialFieldsPrefixes', 'spatialEquationViewerUrl',
-                         'selectedFocalPoints', 'mainContent', 'existentEntitiesInputList']
+        expected_keys = ['temporalPlotInputList', 'spatialPlotInputList', 'baseUrl', 'definedFocalPoints',
+                         'mainContent', 'surfaceStimulusSelectForm', 'surfaceStimulusCreateForm']
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['mainContent'] == 'spatial/stimulus_surface_step1_main'
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_1_submit'
 
-    def test_step_2(self, surface_factory):
-        _, surface = surface_factory
+    def test_step_2(self, surface_index_factory):
+        surface_index = surface_index_factory()
         self.surface_s_c.step_1_submit(1, 1)
         context = get_from_session(KEY_SURFACE_STIMULI)
+        context.surface = surface_index.gid
         result_dict = self.surface_s_c.step_2()
         expected_keys = ['urlVerticesPick', 'urlVertices', 'urlTrianglesPick', 'urlTriangles',
-                         'urlNormalsPick', 'urlNormals', 'surfaceGID', 'mainContent', 
-                         'loadExistentEntityUrl', 'existentEntitiesInputList', 'definedFocalPoints']
+                         'urlNormalsPick', 'urlNormals', 'baseUrl', 'surfaceGID', 'mainContent',
+                         'loadExistentEntityUrl', 'surfaceStimulusSelectForm', 'definedFocalPoints']
         assert all(x in result_dict for x in expected_keys)
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_2_submit'
         assert result_dict['mainContent'] == 'spatial/stimulus_surface_step2_main'

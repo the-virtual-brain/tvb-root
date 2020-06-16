@@ -35,8 +35,9 @@
 import json
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, Integer, ForeignKey
-from tvb.core.entities.model.model_datatype import DataType
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.core.entities.model.model_datatype import DataType
 
 
 class ValueWrapperIndex(DataType):
@@ -53,6 +54,13 @@ class ValueWrapperIndex(DataType):
         """ Simple String to be used for display in UI."""
         return "Value Wrapper - " + self.data_name + " : " + str(self.data_value) + " (" + str(self.data_type) + ")"
 
+    def fill_from_has_traits(self, datatype):
+        # type: (ValueWrapper)  -> None
+        super(ValueWrapperIndex, self).fill_from_has_traits(datatype)
+        self.data_value = datatype.data_value
+        self.data_type = datatype.data_type
+        self.data_name = datatype.data_name
+
 
 class DatatypeMeasureIndex(DataType):
     """
@@ -63,8 +71,8 @@ class DatatypeMeasureIndex(DataType):
     # Actual measure (dictionary Algorithm: single Value) serialized
     metrics = Column(String)
     # DataType for which the measure was computed.
-    source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=False)
-    source = relationship(TimeSeriesIndex, foreign_keys=source_gid, primaryjoin=TimeSeriesIndex.gid == source_gid)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=False)
+    source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     @property
     def display_name(self):

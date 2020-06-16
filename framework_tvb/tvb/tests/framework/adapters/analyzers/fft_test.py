@@ -28,7 +28,6 @@
 #
 #
 import numpy
-from uuid import UUID
 from tvb.analyzers.fft import FFT
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -50,7 +49,7 @@ class TestFFT(TransactionalTestCase):
         around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
         assert numpy.abs(around_peak).sum() < 0.5 * 20
 
-    def test_fourier_adapter(self, tmpdir, session, operation_factory, time_series_index_factory):
+    def test_fourier_adapter(self, tmpdir, time_series_index_factory):
         # make file stored and indexed time series
         ts_db = time_series_index_factory()
 
@@ -70,13 +69,13 @@ class TestFFT(TransactionalTestCase):
         adapter = FourierAdapter()
         adapter.storage_path = str(tmpdir)
         view_model = adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_db.gid)
+        view_model.time_series = ts_db.gid
         view_model.segment_length = 400
         adapter.configure(view_model)
         diskq = adapter.get_required_disk_size(view_model)
         memq = adapter.get_required_memory_size(view_model)
         spectra_idx = adapter.launch(view_model)
 
-        assert spectra_idx.source_gid == ts_db.gid
+        assert spectra_idx.fk_source_gid == ts_db.gid
         assert spectra_idx.gid is not None
         assert spectra_idx.segment_length == 1.0  # only 1 sec of signal

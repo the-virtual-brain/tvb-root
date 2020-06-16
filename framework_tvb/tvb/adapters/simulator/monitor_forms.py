@@ -26,18 +26,21 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
-#
-
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY as EEG_S
 from tvb.datatypes.sensors import MEG_POLYMORPHIC_IDENTITY as MEG_S
 from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY as SEEG_S
+from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY as EEG_P
+from tvb.datatypes.projections import MEG_POLYMORPHIC_IDENTITY as MEG_P
+from tvb.datatypes.projections import SEEG_POLYMORPHIC_IDENTITY as SEEG_P
 from tvb.simulator.monitors import *
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, SimpleSelectField
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, MultiSelectField, SelectField
+from tvb.basic.neotraits.api import List
+import numpy
 
 
 def get_monitor_to_form_dict():
@@ -76,57 +79,78 @@ def get_ui_name_to_monitor_dict(surface):
     return ui_name_to_monitor
 
 
+def get_monitor_to_ui_name_dict(surface):
+    monitor_to_ui_name = dict((v, k) for k, v in get_ui_name_to_monitor_dict(surface).items())
+    return monitor_to_ui_name
+
+
 def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
 
 class MonitorForm(Form):
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
         super(MonitorForm, self).__init__(prefix)
         self.project_id = project_id
         self.period = ScalarField(Monitor.period, self)
-        self.variables_of_interest = ArrayField(Monitor.variables_of_interest, self)
+        self.variables_of_interest_indexes = variables_of_interest_indexes
+        self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
+                                                      choices=tuple(self.variables_of_interest_indexes.keys())),
+                                                      self, name='variables_of_interest')
+
+    def fill_from_trait(self, trait):
+        super(MonitorForm, self).fill_from_trait(trait)
+        if trait.variables_of_interest is not None:
+            self.variables_of_interest.data = [list(self.variables_of_interest_indexes.keys())[idx]
+                                               for idx in trait.variables_of_interest]
+        else:
+            # by default we select all variables of interest for the monitor forms
+            self.variables_of_interest.data = list(self.variables_of_interest_indexes.keys())
+
+    def fill_trait(self, datatype):
+        super(MonitorForm, self).fill_trait(datatype)
+        datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
+
+    #TODO: We should review the code here, we could probably reduce the number of  classes that are used here
 
 
-class RawMonitorForm(MonitorForm):
+class RawMonitorForm(Form):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RawMonitorForm, self).__init__(prefix, project_id)
-        self.period = ScalarField(Raw.period, self, disabled=False)
-        self.variables_of_interest = ArrayField(Raw.variables_of_interest, self, disabled=False)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(RawMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class SubSampleMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SubSampleMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(SubSampleMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SpatialAverageMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(SpatialAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
-        self.default_mask = ScalarField(SpatialAverage.default_mask, self, disabled=True)
+        self.default_mask = ScalarField(SpatialAverage.default_mask, self)
 
 
 class GlobalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GlobalAverageMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(GlobalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
-class TemporalAverageMonitorForm(Form):
+class TemporalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TemporalAverageMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(TemporalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ProjectionMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(ProjectionMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.region_mapping = DataTypeSelectField(RegionMappingIndex, self, name='region_mapping', required=True,
                                                   label=Projection.region_mapping.label,
                                                   doc=Projection.region_mapping.doc)
@@ -135,15 +159,18 @@ class ProjectionMonitorForm(MonitorForm):
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(EEGMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(EEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[EEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[EEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=EEG.projection.label, doc=EEG.projection.label,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.reference = ScalarField(EEG.reference, self)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=EEG.sensors.label,
                                            doc=EEG.sensors.doc, conditions=sensor_filter)
@@ -152,30 +179,36 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(MEGMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[MEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[MEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=MEG.projection.label, doc=MEG.projection.doc,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=MEG.sensors.label,
                                            doc=MEG.sensors.doc, conditions=sensor_filter)
 
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(iEEGMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(iEEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SEEG_S])
 
-        self.projection = DataTypeSelectField(SurfaceIndex, self, name='projection', required=True,
+        projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
+                                        values=[SEEG_P])
+
+        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
                                               label=iEEG.projection.label, doc=iEEG.projection.doc,
-                                              conditions=None)
+                                              conditions=projection_filter)
         self.sigma = ScalarField(iEEG.sigma, self)
         self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=iEEG.sensors.label,
                                            doc=iEEG.sensors.doc, conditions=sensor_filter)
@@ -183,19 +216,26 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BoldMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(BoldMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+        self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
+        default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
+
         self.period = ScalarField(Bold.period, self)
-        self.equation_choices = get_ui_name_to_monitor_equation_dict()
-        self.equation = SimpleSelectField(self.equation_choices, self, name='equation', required=True, label='Equation')
+        self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
+                                      self, name='hrf_kernel', choices=self.hrf_kernel_choices)
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
-        datatype.equation = self.equation.data()
+        datatype.hrf_kernel = self.hrf_kernel.data()
+
+    def fill_from_trait(self, trait):
+        super(BoldMonitorForm, self).fill_from_trait(trait)
+        self.hrf_kernel.data = trait.hrf_kernel.__class__
 
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BoldRegionROIMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, variables_of_interest_indexes, prefix='', project_id=None):
+        super(BoldRegionROIMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)

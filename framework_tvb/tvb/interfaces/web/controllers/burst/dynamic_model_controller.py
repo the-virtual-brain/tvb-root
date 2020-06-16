@@ -32,11 +32,16 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
+import cherrypy
 import numpy
 import threading
-from tvb.adapters.simulator.integrator_forms import get_ui_name_to_integrator_dict
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
+from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
+from tvb.adapters.simulator.subform_helper import SubformHelper
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
@@ -44,9 +49,12 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model.model_burst as model_burst
 from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
+    handle_error, check_user
 from tvb.simulator import models, integrators
 
 
@@ -101,6 +109,7 @@ class _InputTreeFragment(ABCAdapterForm):
                                            doc = """The name of this parameter configuration""")
 
 
+@traced
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
     LOGGER = get_logger(__name__)
@@ -136,9 +145,9 @@ class DynamicModelController(BurstBaseController):
         params = {
             'title': "Dynamic model",
             'mainContent': 'burst/dynamic',
-            'model_name_fragment': model_name_fragment,
-            'model_form': model_fragment,
-            'integrator_form': integrator_fragment,
+            'model_name_fragment': self.render_adapter_form(model_name_fragment),
+            'model_form': self.render_adapter_form(model_fragment),
+            'integrator_form': self.render_adapter_form(integrator_fragment),
             'dynamic_gid': dynamic_gid
         }
         self.fill_default_attributes(params)
@@ -179,7 +188,7 @@ class DynamicModelController(BurstBaseController):
         # integrator_parameters = tree['integrator_parameters']
 
         # noise_framework.build_noise(integrator_parameters)
-        integrator = self.available_integrators[kwargs['_integrator']]()
+        integrator = self.available_integrators[kwargs['integrator']]()
 
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.integrator = integrator
@@ -189,6 +198,67 @@ class DynamicModelController(BurstBaseController):
 
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
+    def _update_integrator(self, dynamic, integrator):
+        dynamic.integrator = integrator
+        dynamic.model.integrator = integrator
+        dynamic.model.configure()
+        self._configure_integrator_noise(integrator, dynamic.model)
+        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
+
+    def _change_integrator(self, dynamic, field_value, mapping_key):
+        integrator = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+        self._update_integrator(dynamic, integrator)
+
+    def _change_noise(self, dynamic, field_value, mapping_key):
+        noise = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+        integrator = dynamic.integrator
+        integrator.noise = noise
+        self._update_integrator(dynamic, integrator)
+
+    def _change_equation(self, dynamic, field_value, mapping_key):
+        equation = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+        integrator = dynamic.integrator
+        integrator.noise.b = equation
+        self._update_integrator(dynamic, integrator)
+
+    def _update_integrator_on_dynamic(self, dynamic_gid, field_value, mapping_key):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        if mapping_key == SubformHelper.FormToConfigEnum.INTEGRATOR.name:
+            self._change_integrator(dynamic, field_value, mapping_key)
+        if mapping_key == SubformHelper.FormToConfigEnum.NOISE.name:
+            self._change_noise(dynamic, field_value, mapping_key)
+        if mapping_key == SubformHelper.FormToConfigEnum.EQUATION.name:
+            self._change_equation(dynamic, field_value, mapping_key)
+
+    @cherrypy.expose
+    @using_template('form_fields/form_field')
+    @handle_error(redirect=False)
+    @check_user
+    def refresh_subform(self, dynamic_gid, field_value, mapping_key):
+        self._update_integrator_on_dynamic(dynamic_gid, field_value, mapping_key)
+        subform = SubformHelper.get_subform_for_field_value(field_value, mapping_key)
+        return {'adapter_form': subform}
+
+    @cherrypy.expose
+    def integrator_parameters_changed(self, dynamic_gid, type, **param):
+        dynamic = self.get_cached_dynamic(dynamic_gid)
+        integrator = dynamic.integrator
+        if type == SubformHelper.FormToConfigEnum.INTEGRATOR.name:
+            integrator_form_class = get_form_for_integrator(integrator.__class__)
+            integrator_form = integrator_form_class()
+            integrator_form.fill_from_post(param)
+            integrator_form.fill_trait(integrator)
+        if type == SubformHelper.FormToConfigEnum.NOISE.name:
+            noise_form_class = get_form_for_noise(integrator.noise.__class__)
+            noise_form = noise_form_class()
+            noise_form.fill_from_post(param)
+            noise_form.fill_trait(integrator.noise)
+        if type == SubformHelper.FormToConfigEnum.EQUATION.name:
+            eq_form_class = get_form_for_equation(integrator.noise.b.__class__)
+            eq_form = eq_form_class()
+            eq_form.fill_from_post(param)
+            eq_form.fill_trait(integrator.noise.b)
+        self._update_integrator(dynamic, integrator)
 
     @staticmethod
     def _configure_integrator_noise(integrator, model):
@@ -216,7 +286,7 @@ class DynamicModelController(BurstBaseController):
             model = dynamic.model
             for name, value in params.items():
                 param_type = float
-                if getattr(model, name).dtype == 'int':
+                if numpy.issubdtype(getattr(model, name).dtype, numpy.integer):
                     param_type = int
                 setattr(model, name, numpy.array([param_type(value)]))
             model.configure()
@@ -241,7 +311,7 @@ class DynamicModelController(BurstBaseController):
 
             for t in trajectories:
                 if not numpy.isfinite(t).all():
-                    self.logger.warn('Denaturated point %s on a trajectory')
+                    self.logger.warning('Denaturated point %s on a trajectory')
                     return {'finite':False}
 
             return {'trajectories': trajectories, 'signals': signals, 'finite':True}
@@ -258,7 +328,7 @@ class DynamicModelController(BurstBaseController):
             attr = getattr(type(model), name)
             ranger = attr.domain
             if ranger is None:
-                DynamicModelController.LOGGER.warn("Param %s doesn't have a domain specified" % (name))
+                DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % (name))
                 continue
             default = float(attr.default)
 
@@ -348,7 +418,7 @@ class DynamicModelController(BurstBaseController):
             dynamic_name,
             common.get_logged_user().id,
             model.__class__.__name__,
-            json.dumps(model_parameters),
+            json.dumps(model_parameters, cls=TVBJSONEncoder),
             integrator.__class__.__name__,
             None
             # todo: serialize integrator parameters

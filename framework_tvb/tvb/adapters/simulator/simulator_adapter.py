@@ -40,13 +40,16 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+import json
+
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.patterns import SpatioTemporalPattern
+from tvb.datatypes.patterns import SpatioTemporalPattern, StimuliSurface
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
@@ -57,7 +60,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, Attr
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
+from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
 from tvb.core.neocom import h5
 
 
@@ -115,14 +118,16 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+        self.coupling_choices = get_ui_name_to_coupling_dict()
+        default_coupling = list(self.coupling_choices.values())[0]
+
         self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
                                                 required=True, label="Connectivity",
                                                 doc=Simulator.connectivity.doc,
                                                 conditions=self.get_filters())
-        self.coupling_choices = get_ui_name_to_coupling_dict()
-        self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
-                                          label="Coupling", doc=Simulator.coupling.doc)
-        self.coupling.template = 'form_fields/select_field.html'
+        self.coupling = SelectField(
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
+            name='coupling', choices=self.coupling_choices)
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
@@ -193,12 +198,14 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator.conduction_speed = view_model.conduction_speed
         simulator.coupling = view_model.coupling
 
+        rm_surface = None
+
         if view_model.surface:
             simulator.surface = Cortex()
             rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
             rm = h5.load_from_index(rm_index)
 
-            rm_surface_index = self.load_entity_by_gid(rm_index.surface_gid)
+            rm_surface_index = self.load_entity_by_gid(rm_index.fk_surface_gid)
             rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
             rm.surface = rm_surface
             rm.connectivity = conn
@@ -206,7 +213,7 @@ class SimulatorAdapter(ABCAsynchronous):
             simulator.surface.region_mapping_data = rm
             if simulator.surface.local_connectivity:
                 lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
-                assert lc.surface.gid == rm_index.surface_gid
+                assert lc.surface.gid == rm_index.fk_surface_gid
                 lc.surface = rm_surface
                 simulator.surface.local_connectivity = lc
 
@@ -214,6 +221,11 @@ class SimulatorAdapter(ABCAsynchronous):
             stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
             stimulus = h5.load_from_index(stimulus_index)
             simulator.stimulus = stimulus
+
+            if isinstance(stimulus, StimuliSurface):
+                simulator.stimulus.surface = rm_surface
+            else:
+                simulator.stimulus.connectivity = simulator.connectivity
 
         simulator.model = view_model.model
         simulator.integrator = view_model.integrator
@@ -299,7 +311,7 @@ class SimulatorAdapter(ABCAsynchronous):
         :return: None or instance of "mapping_class"
         """
 
-        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'connectivity_gid')
+        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'fk_connectivity_gid')
         if len(dts_list) < 1:
             return None
 
@@ -348,7 +360,7 @@ class SimulatorAdapter(ABCAsynchronous):
         region_map, region_volume_map = self._try_load_region_mapping()
 
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
             self.log.debug("Monitor created the TS")
@@ -360,12 +372,11 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_index.data_ndim = 4
             ts_index.state = 'INTERMEDIATE'
 
-            # state_variable_dimension_name = ts.labels_ordering[1]
-            # if ts_index.user_tag_1:
-            #     ts_index.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
-            # elif m_name in self.HAVE_STATE_VARIABLES:
-            #     selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
-            #     ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+            state_variable_dimension_name = ts.labels_ordering[1]
+            if m_name in self.HAVE_STATE_VARIABLES:
+                selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
+                ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+                ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
             ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
@@ -374,11 +385,7 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
 
-            if self.algorithm.surface:
-                ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
-                ts_h5.surface.store(self.algorithm.surface.gid)
-            else:
-                ts_h5.store_references(ts)
+            ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5
@@ -388,7 +395,7 @@ class SimulatorAdapter(ABCAsynchronous):
         for result in self.algorithm(simulation_length=self.algorithm.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
-                    m_name = monitor.__class__.__name__
+                    m_name = type(monitor).__name__
                     ts_h5 = result_h5[m_name]
                     ts_h5.write_time_slice([result[j][0]])
                     ts_h5.write_data_slice([result[j][1]])
@@ -404,7 +411,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.log.debug("Simulation state persisted, returning results ")
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()

@@ -37,16 +37,16 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 import json
 from abc import ABCMeta
 from six import add_metaclass
-from tvb.basic.neotraits.api import Attr
-from tvb.core.adapters.arguments_serialisation import *
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
+from tvb.basic.neotraits.api import Attr
+from tvb.core.adapters.arguments_serialisation import *
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
@@ -89,7 +89,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         # prepare the url that will display the region volume map
         conn_index = dao.get_datatype_by_gid(region_mapping_volume.connectivity.load().hex)
         min_value, max_value = [0, conn_index.number_of_regions]
-        url_volume_data = self.build_url('get_volume_view', region_mapping_volume.gid.load().hex, '')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view',
+                                                 region_mapping_volume.gid.load(), '')
         return dict(minValue=min_value, maxValue=max_value, urlVolumeData=url_volume_data)
 
     def _compute_measure_params(self, region_mapping_volume, measure, data_slice):
@@ -102,8 +103,8 @@ class _MappedArrayVolumeBase(ABCDisplayer):
             conn_index = dao.get_datatype_by_gid(region_mapping_volume.connectivity.load().hex)
             data_slice = self.get_default_slice(measure_shape, conn_index.number_of_regions)
             data_slice = slice_str(data_slice)
-        url_volume_data = self.build_url('get_mapped_array_volume_view', region_mapping_volume.gid.load().hex,
-                                         parameter='')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_mapped_array_volume_view',
+                                                 region_mapping_volume.gid.load(), parameter='')
         url_volume_data += 'mapped_array_gid=' + measure.gid + ';mapped_array_slice=' + data_slice + ';'
 
         return dict(minValue=min_value, maxValue=max_value,
@@ -160,7 +161,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         min_value, max_value = background_h5.get_min_max_values()
         background_h5.close()
 
-        url_volume_data = self.build_url('get_volume_view', background.gid, '')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', background.gid, '')
         return self.compute_background_params(min_value, max_value, url_volume_data)
 
     def compute_params(self, region_mapping_volume=None, measure=None, data_slice='', background=None):
@@ -177,7 +178,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         else:
             params = self._compute_measure_params(rmv_h5, measure, data_slice)
 
-        url_voxel_region = self.build_h5_url(region_mapping_volume.gid, 'get_voxel_region', '')
+        url_voxel_region = URLGenerator.build_h5_url(region_mapping_volume.gid, 'get_voxel_region', parameter='')
 
         volume_gid = rmv_h5.volume.load()
         volume_h5_class, volume_g5_path = self._load_h5_of_gid(volume_gid.hex)
@@ -311,7 +312,7 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_measure'
+        return 'measure'
 
     @staticmethod
     def get_required_datatype():
@@ -380,7 +381,7 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_connectivity_measure'
+        return 'connectivity_measure'
 
     @staticmethod
     def get_filters():
@@ -451,7 +452,7 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_region_mapping_volume'
+        return 'region_mapping_volume'
 
     @staticmethod
     def get_required_datatype():
@@ -466,10 +467,13 @@ class RegionVolumeMappingVisualiser(_MappedArrayVolumeBase):
 
     def launch(self, view_model):
         # type: (RegionVolumeMappingVisualiserModel) -> dict
-        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+
+        connectivity_measure_index = None
         region_mapping_volume_index = None
         background_volume_index = None
 
+        if view_model.connectivity_measure:
+            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
         if view_model.region_mapping_volume:
             region_mapping_volume_index = self.load_entity_by_gid(view_model.region_mapping_volume.hex)
         if view_model.background:
@@ -498,7 +502,7 @@ class MriVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_input_name():
-        return '_background'
+        return 'background'
 
     @staticmethod
     def get_filters():
@@ -525,7 +529,7 @@ class MriVolumeVisualizer(ABCDisplayer):
         volume_shape = (1,) + volume_shape
 
         min_value, max_value = background_h5.get_min_max_values()
-        url_volume_data = self.build_url('/get_volume_view/', view_model.background.hex, '')
+        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', view_model.background, '')
 
         volume_gid = background_h5.volume.load()
         volume_class, volume_path = self._load_h5_of_gid(volume_gid.hex)

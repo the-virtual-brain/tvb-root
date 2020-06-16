@@ -37,8 +37,8 @@ DAO operation related to Users and Projects are defined here.
 
 from sqlalchemy import or_, and_, func
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.expression import desc
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_datatype import DataType, Links
 from tvb.core.entities.model.model_operation import Operation
@@ -73,6 +73,15 @@ class CaseDAO(RootDAO):
             self.logger.debug("Could not retrieve user for name " + str(name))
         return user
 
+    def get_user_by_gid(self, gid):
+        """Retrieve USER entity by gid."""
+        user = None
+        try:
+            user = self.session.query(User).filter_by(gid=gid).one()
+        except SQLAlchemyError:
+            self.logger.debug("Could not retrieve user for gid= " + gid)
+        return user
+
     def get_system_user(self):
         """Retrieve System user from DB."""
         user = None
@@ -93,12 +102,14 @@ class CaseDAO(RootDAO):
         admins = self.session.query(User).filter_by(role=ROLE_ADMINISTRATOR).all()
         return admins
 
-    def get_all_users(self, different_name=' ', page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
-        """Retrieve all USERS in DB, except current user and system user."""
+    def get_all_users(self, different_names=None, page_start=0, page_size=DEFAULT_PAGE_SIZE, is_count=False):
+        """Retrieve all USERS in DB, except given users and system user."""
+        if different_names is None:
+            different_names = []
         try:
             sys_name = TvbProfile.current.web.admin.SYSTEM_USER_NAME
             query = self.session.query(User
-                                       ).filter(User.username != different_name
+                                       ).filter(User.username.notin_(different_names)
                                                 ).filter(User.username != sys_name)
             if is_count:
                 result = query.count()
@@ -281,11 +292,12 @@ class CaseDAO(RootDAO):
         Return all projects a given user can link some data given by a data_id to.
         """
         try:
-            # First load projects that current user is administrator for.
+            # Load projects where the current user is Admin or Member
             result = self.session.query(Project).join(User
-                                                      ).filter(User.id == user_id).order_by(Project.id).all()
-            result.extend(self.session.query(Project).join(User_to_Project
-                                                           ).filter(User_to_Project.fk_user == user_id).all())
+                                                      ).join(User_to_Project
+                                                             ).filter(or_(User.id == user_id,
+                                                                          User_to_Project.fk_user == user_id)
+                                                                      ).all()
             linked_project_ids = self.session.query(Links.fk_to_project
                                                     ).filter(Links.fk_from_datatype == data_id).all()
             linked_project_ids = [i[0] for i in linked_project_ids]
@@ -296,6 +308,7 @@ class CaseDAO(RootDAO):
                 linked_project_ids.append(current_prj[0])
             else:
                 linked_project_ids = [current_prj[0]]
+
             filtered_result = [entry for entry in result if entry.id not in linked_project_ids]
             [project.administrator.username for project in filtered_result]
             linked_project_ids.remove(current_prj[0])

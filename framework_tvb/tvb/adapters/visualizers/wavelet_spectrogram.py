@@ -76,7 +76,7 @@ class WaveletSpectrogramVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_input_data'
+        return 'input_data'
 
 
 class WaveletSpectrogramVisualizer(ABCDisplayer):
@@ -120,7 +120,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
             data_matrix = input_h5.power[slices]
             data_matrix = data_matrix.sum(axis=3)
 
-        ts_index = self.load_entity_by_gid(input_index.source_gid)
+        ts_index = self.load_entity_by_gid(input_index.fk_source_gid)
         assert isinstance(ts_index, TimeSeriesIndex)
 
         wavelet_sample_period = ts_index.sample_period * max((1, int(input_sample_period / ts_index.sample_period)))

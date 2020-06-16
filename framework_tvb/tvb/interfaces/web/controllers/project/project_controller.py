@@ -53,6 +53,7 @@ from tvb.core.services.import_service import ImportService
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.utils import string2bool
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
@@ -61,6 +62,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 
 
+@traced('generate_call_out_control', exclude=True)
 class ProjectController(BaseController):
     """
     Displays pages which deals with Project data management.
@@ -175,20 +177,22 @@ class ProjectController(BaseController):
         is_create = False
         if project_id is None or not int(project_id):
             is_create = True
-            data["administrator"] = current_user.username
+            data["administrator"] = current_user.display_name
+            admin_username = current_user.username
         else:
             current_project = self.project_service.find_project(project_id)
             if not save:
                 # Only when we do not have submitted data,
                 # populate fields with initial values for edit.
                 data = dict(name=current_project.name, description=current_project.description)
-            data["administrator"] = current_project.administrator.username
+            data["administrator"] = current_project.administrator.display_name
+            admin_username = current_project.administrator.username
             self._mark_selected(current_project)
         data["project_id"] = project_id
 
         template_specification = dict(mainContent="project/editone", data=data, isCreate=is_create,
                                       title="Create new project" if is_create else "Edit " + data["name"],
-                                      editUsersEnabled=(current_user.username == data['administrator']))
+                                      editUsersEnabled=(current_user.username == admin_username))
         try:
             if cherrypy.request.method == 'POST' and save:
                 common.remove_from_session(common.KEY_PROJECT)
@@ -321,7 +325,6 @@ class ProjectController(BaseController):
         question = data.get('question', "Are you sure ?")
         data['question'] = question
         return self.fill_default_attributes(data)
-    
 
     @expose_fragment("overlay")
     def get_datatype_details(self, entity_gid, back_page='null', exclude_tabs=None):
@@ -334,21 +337,20 @@ class ProjectController(BaseController):
         selected_project = common.get_current_project()
         datatype_details, states, entity = self.project_service.get_datatype_details(entity_gid)
 
-        ### Load DataType categories
+        # Load DataType categories
         current_type = datatype_details.data_type
         datatype_gid = datatype_details.gid
-        categories = {}
+        categories, has_operations_warning = {}, False
         if not entity.invalid:
-            categories = self.flow_service.get_launchable_algorithms(datatype_gid)
+            categories, has_operations_warning = self.flow_service.get_launchable_algorithms(datatype_gid)
 
         is_group = False
         if datatype_details.operation_group_id is not None:
-            ## Is a DataTypeGroup
             is_group = True
 
-        ### Retrieve links
+        # Retrieve links
         linkable_projects_dict = self._get_linkable_projects_dict(entity.id)
-        ### Load all exporters
+        # Load all exporters
         exporters = {}
         if not entity.invalid:
             exporters = ExportManager().get_exporters_for_data(entity)
@@ -409,8 +411,12 @@ class ProjectController(BaseController):
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
-        template_specification['baseUrl'] = TvbProfile.current.web.BASE_URL
-        return FlowController().fill_default_attributes(template_specification)
+        template_specification = FlowController().fill_default_attributes(template_specification)
+        if has_operations_warning:
+            template_specification[common.KEY_MESSAGE] = 'Not all operations could be loaded for this input DataType.' \
+                                                         ' Contact the admin to check the logs!'
+            template_specification[common.KEY_MESSAGE_TYPE] = "warningMessage"
+        return template_specification
 
 
     @expose_fragment('project/linkable_projects')
@@ -534,7 +540,7 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
-        template_specification = dict(mainContent="project/structure", baseUrl=TvbProfile.current.web.BASE_URL,
+        template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       lastSelectedTab=last_selected_tab, firstLevelSelection=first_level,
@@ -620,7 +626,8 @@ class ProjectController(BaseController):
             self.set_project_structure_grouping(first_level, second_level)
 
         selected_filter = StaticFiltersFactory.build_datatype_filters(single_filter=visibility_filter)
-
+        if project_id == 'undefined':
+            project_id = common.get_current_project().id
         project = self.project_service.find_project(project_id)
         json_structure = self.project_service.get_project_structure(project, selected_filter,
                                                                     first_level, second_level, filter_value)

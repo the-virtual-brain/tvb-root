@@ -41,6 +41,11 @@
         <script type="text/javascript" src="/static/jquery/jquery.js"></script>
         <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">checkForIE()</script>
+
+        <!--  include keycloak initialization      -->
+        {% if keycloakConfigWebFile is defined%}
+            {% include 'user/keycloak_config.html' %}
+        {% endif %}
     </head>
 
     <!--! ========================================================== -->

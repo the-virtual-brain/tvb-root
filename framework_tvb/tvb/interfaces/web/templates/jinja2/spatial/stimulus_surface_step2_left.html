@@ -3,6 +3,7 @@
 	<script type="text/javascript" src="/static_view/commons/scripts/regionBoundaries.js?{{ currentVersionJS }}"></script>
 	<script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
     <script type="text/javascript" src="/static/js/spatial/stimulus_surface.js?{{ currentVersionJS }}"></script>
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
 
 	<h4>	<mark>Select</mark> Focal points</h4>
 
@@ -16,9 +17,10 @@
 	<script type="text/javascript">
         $(document).ready(function() {
             ColSch_initColorSchemeComponent();
-        	$("select[name='_existentEntitiesSelect']").change(function () {
+        	$("select[name='existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
+            setEventsOnStaticFormFields({{ spatialFieldsPrefixes | safe }});
         });
     </script>
     

@@ -35,11 +35,15 @@ Created on Jul 21, 2011
 """
 
 import tvb.core.adapters.abcadapter as abcadapter
-from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.forms import SimpleIntField, TraitDataTypeSelectField
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
-from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.basic.neotraits.api import Int
+from tvb.core.neotraits.forms import IntField
+from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+
+
+class TestModel(ViewModel):
+    test1_val1 = Int(default=0)
+    test1_val2 = Int(default=0)
 
 
 class TestAdapter1Form(abcadapter.ABCAdapterForm):
@@ -49,8 +53,12 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapter1Form, self).__init__(prefix, project_id)
-        self.test1_val1 = SimpleIntField(self, name='test1_val1', default=0)
-        self.test1_val2 = SimpleIntField(self, name='test1_val2', default=0)
+        self.test1_val1 = IntField(TestModel.test1_val1, self, name='test1_val1')
+        self.test1_val2 = IntField(TestModel.test1_val2, self, name='test1_val2')
+
+    @staticmethod
+    def get_view_model():
+        return TestModel
 
     @staticmethod
     def get_required_datatype():
@@ -65,7 +73,7 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter1(abcadapter.ABCAsynchronous):
+class TestAdapter1(abcadapter.ABCSynchronous):
     """
         This class is used for testing purposes.
     """
@@ -73,26 +81,30 @@ class TestAdapter1(abcadapter.ABCAsynchronous):
     def __init__(self):
         super(TestAdapter1, self).__init__()
 
+    @staticmethod
+    def get_view_model():
+        return TestModel
+
     def get_form_class(self):
         return TestAdapter1Form
 
     def get_output(self):
         return [DummyDataTypeIndex]
-    
-    def get_required_memory_size(self, **kwargs):
+
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
-    
-    def get_required_disk_size(self, **kwargs):
+
+    def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
         """
         return 0
-        
-    def launch(self):
+
+    def launch(self, view_model):
         """
         Tests successful launch of an ABCSynchronous adapter
 
@@ -100,62 +112,6 @@ class TestAdapter1(abcadapter.ABCAsynchronous):
         :param test1_val2: a dummy integer value
         :return: a `Datatype1` object
         """
-        result = DummyDataTypeIndex()
-        result.row1 = 'test'
-        result.row2 = 'test'
-        result.storage_path = self.storage_path
-        return result
-
-
-class TestAdapterDatatypeInputForm(abcadapter.ABCAdapterForm):
-    """
-        This class is used for testing purposes.
-    """
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapterDatatypeInputForm, self).__init__(prefix, project_id)
-        self.test1_dt_input = TraitDataTypeSelectField(Attr(DummyDataType), self, name="test1_dt_input")
-        self.test1_non_dt_input = SimpleIntField(self, name='test1_non_dt_input', default=0)
-
-    @staticmethod
-    def get_required_datatype():
-        return DummyDataTypeIndex
-
-    @staticmethod
-    def get_input_name():
-        return "dummy_data_type"
-
-    @staticmethod
-    def get_filters():
-        pass
-
-
-class TestAdapterDatatypeInput(abcadapter.ABCSynchronous):
-    """
-        This class is used for testing purposes.
-    """
-    def __init__(self):
-        abcadapter.ABCSynchronous.__init__(self)
-
-    def get_form_class(self):
-        return TestAdapter1Form
-
-    def get_output(self):
-        return [Datatype1]
-
-    def get_required_memory_size(self, **kwargs):
-        """
-        Return the required memory to run this algorithm.
-        """
-        # Don't know how much memory is needed.
-        return -1
-    
-    def get_required_disk_size(self, **kwargs):
-        """
-        Returns the required disk size to be able to run the adapter.
-        """
-        return 0
-        
-    def launch(self):
         result = DummyDataTypeIndex()
         result.row1 = 'test'
         result.row2 = 'test'

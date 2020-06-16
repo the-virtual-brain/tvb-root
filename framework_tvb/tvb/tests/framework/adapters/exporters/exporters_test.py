@@ -36,16 +36,15 @@ import os.path
 import shutil
 import zipfile
 from contextlib import closing
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
+from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.neocom import h5
-from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
-from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -176,24 +175,22 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-    def test_export_simulator_configuration(self, operation_factory):
+    def test_export_simulator_configuration(self, operation_factory, connectivity_factory):
         """
         Test export of a simulator configuration
         """
         operation = operation_factory()
-        simulator = Simulator()
-        simulator_index = SimulatorIndex()
-        simulator_index.fill_from_has_traits(simulator)
-        simulator_index.fk_from_operation = operation.id
-        simulator_index = dao.store_entity(simulator_index)
+        simulator = SimulatorAdapterModel()
+        simulator.connectivity = connectivity_factory(4).gid
 
-        burst_configuration = BurstConfiguration(self.test_project.id, simulator_index.id)
+        burst_configuration = BurstConfiguration(self.test_project.id)
+        burst_configuration.fk_simulation = operation.id
+        burst_configuration.simulator_gid = simulator.gid.hex
         burst_configuration = dao.store_entity(burst_configuration)
-        simulator_index.fk_parent_burst = burst_configuration.id
-        simulator_index = dao.store_entity(simulator_index)
 
-        simulator_h5 = h5.path_for_stored_index(simulator_index)
-        with SimulatorH5(simulator_h5) as h5_file:
+        storage_path = FilesHelper().get_project_folder(self.test_project, str(operation.id))
+        h5_path = h5.path_for(storage_path, SimulatorH5, simulator.gid)
+        with SimulatorH5(h5_path) as h5_file:
             h5_file.store(simulator)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)

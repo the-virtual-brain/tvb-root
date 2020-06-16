@@ -30,24 +30,27 @@
 
 import os
 import sys
+
 from flask import Flask
+from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
+from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import InvalidSettingsException
-from tvb.interfaces.rest.commons import RestNamespace, RestLink, LinkPlaceholder, Strings
-from tvb.interfaces.rest.server.decorators.rest_decorators import CustomFlaskEncoder
+from tvb.interfaces.rest.commons.strings import RestNamespace, RestLink, LinkPlaceholder, Strings
+from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
-    GetDataInProjectResource
+    GetDataInProjectResource, ProjectMembersResource
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
+from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
+    GetUsersResource, LinksResource
 from tvb.interfaces.rest.server.rest_api import RestApi
-from gevent.pywsgi import WSGIServer
-
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
@@ -55,7 +58,6 @@ LOGGER = get_logger('tvb.interfaces.rest.server.run')
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 FLASK_PORT = 9090
-
 
 
 def initialize_tvb(arguments):
@@ -78,6 +80,7 @@ def build_path(namespace):
 def initialize_flask():
     # creating the flask app
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     app.json_encoder = CustomFlaskEncoder
 
     # creating an API object
@@ -85,9 +88,10 @@ def initialize_flask():
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
-    name_space_users.add_resource(GetUsersResource, '/')
-    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS_LIST.compute_url(
-        values={LinkPlaceholder.USERNAME.value: "<string:username>"}))
+    name_space_users.add_resource(GetUsersResource, "/")
+    name_space_users.add_resource(LoginUserResource, RestLink.LOGIN.compute_url())
+    name_space_users.add_resource(GetProjectsListResource, RestLink.PROJECTS.compute_url())
+    name_space_users.add_resource(LinksResource, RestLink.USEFUL_URLS.compute_url())
 
     # Projects namespace
     name_space_projects = api.namespace(build_path(RestNamespace.PROJECTS),
@@ -95,6 +99,8 @@ def initialize_flask():
     name_space_projects.add_resource(GetDataInProjectResource, RestLink.DATA_IN_PROJECT.compute_url(
         values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
     name_space_projects.add_resource(GetOperationsInProjectResource, RestLink.OPERATIONS_IN_PROJECT.compute_url(
+        values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
+    name_space_projects.add_resource(ProjectMembersResource, RestLink.PROJECT_MEMBERS.compute_url(
         values={LinkPlaceholder.PROJECT_GID.value: "<string:project_gid>"}))
 
     # Datatypes namepsace
@@ -131,6 +137,9 @@ def initialize_flask():
     api.add_namespace(name_space_datatypes)
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
+
+    # Register keycloak authorization manager
+    AuthorizationManager(TvbProfile.current.KEYCLOAK_CONFIG)
 
     http_server = WSGIServer(("0.0.0.0", FLASK_PORT), app)
     http_server.serve_forever()

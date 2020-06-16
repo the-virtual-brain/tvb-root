@@ -36,10 +36,11 @@
 import json
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
-from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
@@ -75,7 +76,7 @@ def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapt
     """
 
     if eeg_cap:
-        sensor_locations = URLGenerator.build_url(sensors.gid, 'sensors_to_surface', adapter_id=adapter_id,
+        sensor_locations = URLGenerator.build_url(adapter_id, 'sensors_to_surface', sensors.gid,
                                                   parameter='surface_to_map_gid=' + eeg_cap.gid)
         sensor_no = sensors.number_of_sensors
         sensor_labels = URLGenerator.build_h5_url(sensors.gid, 'get_labels')
@@ -88,6 +89,27 @@ def prepare_mapped_sensors_as_measure_points_params(sensors, eeg_cap=None, adapt
                 'urlMeasure': ''}
 
     return prepare_sensors_as_measure_points_params(sensors)
+
+
+def function_sensors_to_surface(sensors_gid, surface_to_map_gid):
+    """
+    Map EEG sensors onto the head surface (skin-air).
+
+    EEG sensor locations are typically only given on a unit sphere, that is,
+    they are effectively only identified by their orientation with respect
+    to a coordinate system. This method is used to map these unit vector
+    sensor "locations" to a specific location on the surface of the skin.
+
+    Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
+
+    """
+    index = ABCAdapter.load_entity_by_gid(sensors_gid)
+    sensors_dt = h5.load_from_index(index)
+
+    index = ABCAdapter.load_entity_by_gid(surface_to_map_gid)
+    surface_dt = h5.load_from_index(index)
+
+    return sensors_dt.sensors_to_surface(surface_dt).tolist()
 
 
 class SensorsViewerModel(ViewModel):
@@ -135,7 +157,7 @@ class SensorsViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_sensors'
+        return 'sensors'
 
     @staticmethod
     def get_filters():
@@ -167,7 +189,7 @@ class SensorsViewer(ABCDisplayer):
 
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
-        if projection_surface_index:
+        if view_model.projection_surface:
             projection_surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
 
         if sensors_index.sensors_type == SensorsInternal.sensors_type.default:
@@ -201,7 +223,7 @@ class SensorsViewer(ABCDisplayer):
         params['shelfObject'] = self._prepare_shell_surface_params(shell_surface)
 
         return self.build_display_result('sensors/sensors_internal', params,
-                                         pages={'controlPage': 'sensors/sensors_controls'})
+                                         pages={"controlPage": "sensors/sensors_controls"})
 
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
@@ -258,26 +280,5 @@ class SensorsViewer(ABCDisplayer):
         return -1
 
     def sensors_to_surface(self, sensors_gid, surface_to_map_gid):
-        """
-        Map EEG sensors onto the head surface (skin-air).
-
-        EEG sensor locations are typically only given on a unit sphere, that is,
-        they are effectively only identified by their orientation with respect
-        to a coordinate system. This method is used to map these unit vector
-        sensor "locations" to a specific location on the surface of the skin.
-
-        Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
-
-        """
-        # Normalize sensor and vertex locations to unit vectors
-        sensors_h5_class, sensors_h5_path = self._load_h5_of_gid(sensors_gid)
-        sensors_dt = Sensors()
-        with sensors_h5_class(sensors_h5_path) as sensors_h5:
-            sensors_h5.load_into(sensors_dt)
-
-        surface_h5_class, surface_h5_path = self._load_h5_of_gid(surface_to_map_gid)
-        surface_dt = Surface()
-        with surface_h5_class(surface_h5_path) as surface_h5:
-            surface_h5.load_into(surface_dt)
-
-        return sensors_dt.sensors_to_surface(surface_dt).tolist()
+        # Method needs to be defined on the adapter, to be called from JS
+        return function_sensors_to_surface(sensors_gid, surface_to_map_gid)

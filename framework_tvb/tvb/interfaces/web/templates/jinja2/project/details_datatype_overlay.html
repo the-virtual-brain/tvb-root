@@ -85,7 +85,7 @@
             <script type="text/javascript">
                 $(document).ready(function () {
                     var filterValue = {'type': 'from_datatype', 'value': '{{ entity_gid }}'};
-                    updateTree('#treeOverlay', '{{ selectedProject.id }}', '{{ baseUrl }}', JSON.stringify(filterValue));
+                    updateTree('#treeOverlay', '{{ selectedProject.id }}', JSON.stringify(filterValue));
                 })
             </script>
         </div>

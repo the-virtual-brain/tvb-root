@@ -38,7 +38,6 @@ import json
 import copy
 import shutil
 import pytest
-import hashlib
 import cherrypy
 from time import sleep
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -59,7 +58,9 @@ class TestSettingsController(BaseTransactionalControllerTest):
                        if TvbProfile.current.db.SELECTED_DB == 'sqlite'
                        else TvbProfile.current.db.DB_URL)
 
-    VALID_SETTINGS = {'TVB_STORAGE': "TestFolder",
+    VALID_SETTINGS = {'KEYCLOAK_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-config.json',
+                      'KEYCLOAK_WEB_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-web-config.json',
+                      'TVB_STORAGE': "TestFolder",
                       'USR_DISK_SPACE': 1,
                       'MAXIMUM_NR_OF_THREADS': 6,
                       'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 142,
@@ -71,10 +72,10 @@ class TestSettingsController(BaseTransactionalControllerTest):
                       'SELECTED_DB': TvbProfile.current.db.SELECTED_DB,  # Not changeable,due to test profile overwrites
                       'URL_VALUE': accepted_db_url,
 
-                      'URL_WEB': "http://localhost:9999/",
                       'WEB_SERVER_PORT': 9999,
 
                       'ADMINISTRATOR_NAME': 'test_admin',
+                      'ADMINISTRATOR_DISPLAY_NAME': 'test_Administrator',
                       'ADMINISTRATOR_PASSWORD': "test_pass",
                       'ADMINISTRATOR_EMAIL': 'admin@test.test'}
 
@@ -89,8 +90,6 @@ class TestSettingsController(BaseTransactionalControllerTest):
         self.cleanup()
         self.clean_database()
 
-
-
         if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
             shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
 
@@ -104,11 +103,9 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
     def test_with_invalid_web_settings(self):
 
-        self._assert_invalid_parameters({'URL_WEB': '',
-                                         'WEB_SERVER_PORT': 'a'})
+        self._assert_invalid_parameters({'WEB_SERVER_PORT': 'a'})
 
-        self._assert_invalid_parameters({'URL_WEB': 'off://bla',
-                                         'WEB_SERVER_PORT': '70000'})
+        self._assert_invalid_parameters({'WEB_SERVER_PORT': '70000'})
 
     def test_with_invalid_settings(self):
 
@@ -146,7 +143,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
 
     def test_with_valid_settings(self):
 
-        submit_data = self.VALID_SETTINGS
+        submit_data = copy.copy(self.VALID_SETTINGS)
         self.settings_c._restart_services = self._fake_restart_services
 
         with pytest.raises(cherrypy.HTTPRedirect):
@@ -155,7 +152,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         assert self.was_reset
-        assert 17 == len(TvbProfile.current.manager.stored_settings)
+        assert len(TvbProfile.current.manager.stored_settings) == 20
 
         assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
         assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE
@@ -167,12 +164,12 @@ class TestSettingsController(BaseTransactionalControllerTest):
         assert submit_data['SELECTED_DB'] == TvbProfile.current.db.SELECTED_DB
         assert submit_data['URL_VALUE'] == TvbProfile.current.db.DB_URL
 
-        assert submit_data['URL_WEB'] == TvbProfile.current.web.BASE_URL
         assert submit_data['WEB_SERVER_PORT'] == TvbProfile.current.web.SERVER_PORT
 
         assert submit_data['ADMINISTRATOR_NAME'] == TvbProfile.current.web.admin.ADMINISTRATOR_NAME
         assert submit_data['ADMINISTRATOR_EMAIL'] == TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL
-        assert hash_password(submit_data['ADMINISTRATOR_PASSWORD']) == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
+        assert hash_password(
+            submit_data['ADMINISTRATOR_PASSWORD']) == TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD
 
     def _fake_restart_services(self, should_reset):
         """

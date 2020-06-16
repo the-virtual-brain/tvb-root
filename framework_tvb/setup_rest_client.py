@@ -34,17 +34,19 @@ This is used to package the tvb-rest-client separately.
 
 import os
 import shutil
+
 import setuptools
 from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.0a1"
+VERSION = "2.0.6"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "requests", "scipy",
-                            "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library"]
+                            "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library",
+                            "werkzeug"]
 
 # Packaging tvb-rest-client
 with open(os.path.join(os.path.dirname(__file__), 'README_rest_client.rst')) as fd:

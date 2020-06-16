@@ -37,8 +37,10 @@ import shutil
 import datetime
 import threading
 from types import ModuleType
+from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS
 from tvb.core.adapters.exceptions import XmlParserException
@@ -95,8 +97,11 @@ def initialize(skip_import=False):
     if not TvbProfile.is_first_run():
         # Create default users.
         if is_db_empty:
-            dao.store_entity(User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+            dao.store_entity(
+                User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, TvbProfile.current.web.admin.SYSTEM_USER_NAME, None,
+                     None, True, None))
             UserService().create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=ROLE_ADMINISTRATOR, skip_import=skip_import)
@@ -126,7 +131,7 @@ class Introspector(object):
             algo_category_id = self._populate_algorithm_categories(algo_category_class)
             self._populate_algorithms(algo_category_class, algo_category_id)
         # self._get_portlets()
-        # removers_factory.update_dictionary(IntrospectionRegistry.DATATYPE_REMOVERS)
+        removers_factory.update_dictionary(DATATYPE_REMOVERS)
 
     @staticmethod
     def _ensure_datatype_tables_are_created():

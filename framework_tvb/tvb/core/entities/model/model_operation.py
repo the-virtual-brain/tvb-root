@@ -49,7 +49,6 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_project import Project, User
 from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
-
 LOG = get_logger(__name__)
 
 
@@ -71,7 +70,6 @@ class AlgorithmCategory(Base):
     last_introspection_check = Column(DateTime)
     removed = Column(Boolean, default=False)
 
-
     def __init__(self, displayname, launchable=False, rawinput=False, display=False, defaultdatastate='',
                  order_nr='999', last_introspection_check=None):
         self.displayname = displayname
@@ -82,7 +80,6 @@ class AlgorithmCategory(Base):
         self.order_nr = order_nr
         self.last_introspection_check = last_introspection_check
         self.removed = False
-
 
     def __repr__(self):
         return "<AlgorithmCategory('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')>" % (
@@ -99,7 +96,6 @@ class AlgorithmCategory(Base):
                 self.display == other.display and self.defaultdatastate == other.defaultdatastate)
 
 
-
 class AlgorithmTransientGroup(object):
 
     def __init__(self, name, description, subsection=None):
@@ -109,9 +105,7 @@ class AlgorithmTransientGroup(object):
         self.subsection = subsection
 
 
-
 class Algorithm(Base):
-
     __tablename__ = 'ALGORITHMS'
 
     id = Column(Integer, primary_key=True)
@@ -137,7 +131,6 @@ class Algorithm(Base):
     algorithm_category = relationship(AlgorithmCategory,
                                       backref=backref('ALGORITHMS', order_by=id, cascade="delete, all"))
 
-
     def __init__(self, module, classname, category_key, group_name=None, group_description=None,
                  display_name='', description="", subsection_name=None, last_introspection_check=None):
 
@@ -156,16 +149,10 @@ class Algorithm(Base):
         else:
             self.subsection_name = self.module.split('.')[-1].replace('_adapter', '')
 
-
     def __repr__(self):
         return "<Algorithm('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s')>" % (
             self.id, self.module, self.classname, self.fk_category, self.displayname,
             self.subsection_name, self.group_name, self.group_description, self.removed)
-
-
-
-RANGE_MISSING_STRING = "-"
-RANGE_MISSING_VALUE = 1
 
 
 class OperationGroup(Base, Exportable):
@@ -184,7 +171,6 @@ class OperationGroup(Base, Exportable):
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
 
-
     def __init__(self, project_id, name='incomplete', ranges=None):
         self.name = name
         if ranges:
@@ -197,10 +183,8 @@ class OperationGroup(Base, Exportable):
         self.gid = generate_guid()
         self.fk_launched_in = project_id
 
-
     def __repr__(self):
         return "<OperationGroup(%s,%s)>" % (self.name, self.gid)
-
 
     @property
     def range_references(self):
@@ -211,7 +195,6 @@ class OperationGroup(Base, Exportable):
         if self.range3 and self.range3 != 'null':
             ranges.append(self.range3)
         return ranges
-
 
     def fill_operationgroup_name(self, entities_in_group):
         """
@@ -232,30 +215,6 @@ class OperationGroup(Base, Exportable):
         self.name = new_name
 
 
-    @staticmethod
-    def load_range_numbers(range_value):
-        """
-        Parse the range values for a given json-like string.
-
-        :returns: Boolean_are_all_numbers, range_field_name, array_range_values)
-        """
-        if range_value is None:
-            return None, RANGE_MISSING_STRING, [RANGE_MISSING_VALUE]
-
-        loaded_json = json.loads(range_value)
-        range_name = loaded_json[0]
-        range_values = loaded_json[1]
-        are_all_numbers = True  # Assume this is a numeric range that we can interpolate
-        for idx, entry in enumerate(range_values):
-            try:
-                range_values[idx] = float(entry)
-            except ValueError:
-                # It's a DataType range
-                are_all_numbers = False
-                range_values[idx] = entry
-        return are_all_numbers, range_name, range_values
-
-
 # Possible values for Operation.status field
 STATUS_FINISHED = "5-FINISHED"
 STATUS_PENDING = "4-PENDING"
@@ -264,6 +223,7 @@ STATUS_CANCELED = "2-CANCELED"
 STATUS_ERROR = "1-ERROR"
 
 OperationPossibleStatus = [STATUS_FINISHED, STATUS_PENDING, STATUS_STARTED, STATUS_CANCELED, STATUS_ERROR]
+
 
 def has_finished(status):
     """ Is the given status indicating a finished operation? """
@@ -284,9 +244,9 @@ class Operation(Base, Exportable):
     gid = Column(String)
     parameters = Column(String)
     meta_data = Column(String)
-    create_date = Column(DateTime)       # Date at which the user generated this entity
-    start_date = Column(DateTime)        # Actual time when the operation executions is started (without queue time)
-    completion_date = Column(DateTime)   # Time when the operation got status FINISHED/ ERROR or CANCEL set.
+    create_date = Column(DateTime)  # Date at which the user generated this entity
+    start_date = Column(DateTime)  # Actual time when the operation executions is started (without queue time)
+    completion_date = Column(DateTime)  # Time when the operation got status FINISHED/ ERROR or CANCEL set.
     status = Column(String, index=True)
     visible = Column(Boolean, default=True)
     additional_info = Column(String)
@@ -298,7 +258,6 @@ class Operation(Base, Exportable):
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
     operation_group = relationship(OperationGroup)
     user = relationship(User)
-
 
     def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='',
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
@@ -320,19 +279,16 @@ class Operation(Base, Exportable):
         self.gid = generate_guid()
         self.estimated_disk_size = estimated_disk_size
 
-
     def __repr__(self):
         return "<Operation(%s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s')>" \
                % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
                   self.meta_data, self.status, self.start_date, self.completion_date,
                   self.fk_operation_group, self.user_group)
 
-
     def start_now(self):
         """ Update Operation fields at startup: Status and Date"""
         self.start_date = datetime.datetime.now()
         self.status = STATUS_STARTED
-
 
     def mark_complete(self, status, additional_info=None):
         """ Update Operation fields on completion: Status and Date"""
@@ -341,11 +297,9 @@ class Operation(Base, Exportable):
             self.additional_info = additional_info
         self.status = status
 
-
     @property
     def has_finished(self):
         return has_finished(self.status)
-
 
     def to_dict(self):
         """
@@ -365,8 +319,7 @@ class Operation(Base, Exportable):
             base_dict['fk_operation_group'] = json.dumps(self.operation_group.to_dict()[1])
         return self.__class__.__name__, base_dict
 
-
-    #TODO: Fix this hackish dao pass
+    # TODO: Fix this hackish dao pass
     def from_dict(self, dictionary, dao, user_id=None, project_gid=None):
         """
         Add specific attributes from a input dictionary.
@@ -437,7 +390,6 @@ class Operation(Base, Exportable):
 
         return self
 
-
     def _parse_status(self, status):
         """
         To keep backwards compatibility, when we import an operation that did not have new 
@@ -455,7 +407,6 @@ class Operation(Base, Exportable):
         return STATUS_PENDING
 
 
-
 class OperationProcessIdentifier(Base):
     """
     Class for storing for each operation the process identifier under which
@@ -470,12 +421,10 @@ class OperationProcessIdentifier(Base):
 
     operation = relationship(Operation, backref=backref('OPERATION_PROCESS_IDENTIFIERS', order_by=id, cascade="delete"))
 
-
     def __init__(self, operation_id, pid=None, job_id=None):
         self.fk_from_operation = operation_id
         self.pid = pid
         self.job_id = job_id
-
 
 
 class ResultFigure(Base, Exportable):
@@ -496,7 +445,6 @@ class ResultFigure(Base, Exportable):
     file_path = Column(String)
     file_format = Column(String)
 
-
     def __init__(self, operation_id, user_id, project_id, session_name, name, path, file_format="PNG"):
         self.fk_from_operation = operation_id
         self.fk_for_user = user_id
@@ -506,12 +454,10 @@ class ResultFigure(Base, Exportable):
         self.file_path = path
         self.file_format = file_format.lower()  # some platforms have difficulties if it's not lower case
 
-
     def __repr__(self):
         return "<ResultFigure(%s, %s, %s, %s, %s, %s, %s)>" % (self.fk_from_operation, self.fk_for_user,
                                                                self.fk_in_project, self.session_name, self.name,
                                                                self.file_path, self.file_format)
-
 
     def to_dict(self):
         """
@@ -522,7 +468,6 @@ class ResultFigure(Base, Exportable):
         base_dict['fk_from_operation'] = self.operation.gid if self.operation is not None else None
         base_dict['fk_in_project'] = self.project.gid
         return self.__class__.__name__, base_dict
-
 
     def from_dict(self, dictionary):
         """

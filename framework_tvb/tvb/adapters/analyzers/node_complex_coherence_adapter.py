@@ -167,6 +167,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------##
         small_ts = TimeSeries()
         small_ts.sample_period = time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = time_series_h5.sample_period_unit.load()
         small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
         self.algorithm.time_series = small_ts
 
@@ -185,7 +186,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         spectra_h5.close()
         time_series_h5.close()
 
-        complex_coherence_spectrum_index.source_gid = self.input_time_series_index.gid
+        complex_coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid
         complex_coherence_spectrum_index.epoch_length = partial_result.epoch_length
         complex_coherence_spectrum_index.segment_length = partial_result.segment_length
         complex_coherence_spectrum_index.windowing_function = partial_result.windowing_function

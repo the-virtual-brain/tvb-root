@@ -158,13 +158,12 @@ class TimeSeriesH5(H5File):
                 slices.append(slice(specific_slices[i], min(specific_slices[i] + 1, overall_shape[i]), 1))
 
         data = self.data[tuple(slices)]
-        if len(data) == 1:
+        data = data.squeeze()
+
+        if len(data.shape) == 1:
             # Do not allow time dimension to get squeezed, a 2D result need to
             # come out of this method.
-            data = data.squeeze()
             data = data.reshape((1, len(data)))
-        else:
-            data = data.squeeze()
 
         return data
 
@@ -190,12 +189,6 @@ class TimeSeriesH5(H5File):
         """
         metadata = self.data.get_cached_metadata()
         return metadata.min, metadata.max
-
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-        """
-        No Split needed in case of basic TS (sensors and region level)
-        """
-        return self.read_data_page(from_idx, to_idx, step, specific_slices)
 
     def get_space_labels(self):
         """
@@ -274,20 +267,6 @@ class TimeSeriesSurfaceH5(TimeSeriesH5):
 
     def store_references(self, ts):
         self.surface.store(ts.surface)
-
-    # fixme
-    def read_data_page_split(self, from_idx, to_idx, step=None, specific_slices=None):
-
-        basic_result = self.read_data_page(from_idx, to_idx, step, specific_slices)
-        result = []
-        if self.surface.number_of_split_slices <= 1:
-            result.append(basic_result.tolist())
-        else:
-            for slice_number in range(self.surface.number_of_split_slices):
-                start_idx, end_idx = self.surface._get_slice_vertex_boundaries(slice_number)
-                result.append(basic_result[:, start_idx:end_idx].tolist())
-
-        return result
 
     def get_space_labels(self):
         """

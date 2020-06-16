@@ -49,8 +49,7 @@ import tvb.interfaces.web.controllers.common as common
 class TestRegionsModelParametersController(BaseTransactionalControllerTest):
     """ Unit tests for RegionsModelParametersController """
 
-    @pytest.fixture(scope='module')
-    def transactional_setup_fixture(self, connectivity_factory):
+    def transactional_setup_method(self):
         """
         Sets up the environment for testing;
         creates a `RegionsModelParametersController` and a connectivity
@@ -58,19 +57,12 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.init()
         self.region_m_p_c = RegionsModelParametersController()
         SimulatorController().index()
-        stored_burst = cherrypy.session[common.KEY_BURST_CONFIG]
-        _, self.connectivity = connectivity_factory
-        new_params = {}
-        for key, val in SIMULATOR_PARAMETERS.items():
-            new_params[key] = {'value': val}
-        new_params['connectivity'] = {'value': self.connectivity.gid}
-        stored_burst.simulator_configuration = new_params
+        self.simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
         self._setup_dynamic()
 
     def transactional_teardown_method(self):
         """ Cleans the testing environment """
         self.cleanup()
-
 
     def _setup_dynamic(self):
         dynamic_g = Dynamic("test_dyn", self.test_user.id, ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().__name__,
@@ -84,13 +76,15 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         self.dynamic_g = dao.store_entity(dynamic_g)
         self.dynamic_k = dao.store_entity(dynamic_k)
 
-    def test_index(self, transactional_setup_fixture):
+    def test_index(self, connectivity_index_factory):
         """
         Verifies that result dictionary has the expected keys / values after call to
         `edit_model_parameters()`
         """
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         result_dict = self.region_m_p_c.index()
-        assert self.connectivity.gid == result_dict['connectivity_entity'].gid
+        assert self.connectivity_index.gid == result_dict['connectivity_entity'].gid.hex
         assert result_dict['mainContent'] == 'burst/model_param_region'
         assert result_dict['submit_parameters_url'] == '/burst/modelparameters/regions/submit_model_parameters'
         assert 'dynamics' in result_dict
@@ -100,21 +94,24 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
 
         json.loads(result_dict['dynamics_json'])
 
-    def test_submit_model_parameters_happy(self, transactional_setup_fixture):
+    def test_submit_model_parameters_happy(self, connectivity_index_factory):
         """
         Verifies call to `submit_model_parameters(...)` correctly redirects to '/burst/'
         """
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         self.region_m_p_c.index()
 
-        dynamic_ids = json.dumps([self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)])
+        dynamic_ids = json.dumps([self.dynamic_g.id for _ in range(self.connectivity_index.number_of_regions)])
 
         self._expect_redirect('/burst/', self.region_m_p_c.submit_model_parameters, dynamic_ids)
-        
 
-    def test_submit_model_parameters_inconsistent_models(self, transactional_setup_fixture):
+    def test_submit_model_parameters_inconsistent_models(self, connectivity_index_factory):
+        self.connectivity_index = connectivity_index_factory()
+        self.simulator.connectivity = self.connectivity_index.gid
         self.region_m_p_c.index()
 
-        dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity.number_of_regions)]
+        dynamic_ids = [self.dynamic_g.id for _ in range(self.connectivity_index.number_of_regions)]
         dynamic_ids[-1] = self.dynamic_k.id
         dynamic_ids = json.dumps(dynamic_ids)
 

@@ -35,17 +35,14 @@
 import pytest
 import tvb_data
 from os import path
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterForm, \
-    DELIMITER_OPTIONS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.flow_service import FlowService
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
@@ -93,27 +90,12 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         self.helper.copy_file(weights, weights_tmp)
         self.helper.copy_file(tracts, tracts_tmp)
 
-        ### Find importer and Launch Operation
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.csv_connectivity_importer',
-                                              'CSVConnectivityImporter')
-
-        form = CSVConnectivityImporterForm()
-        form.fill_from_post({'_weights': Part(weights_tmp, HeaderMap({}), ''),
-                             '_tracts': Part(tracts_tmp, HeaderMap({}), ''),
-                             '_weights_delimiter': list(DELIMITER_OPTIONS.keys())[0],
-                             '_tracts_delimiter': list(DELIMITER_OPTIONS.keys())[0],
-                             '_Data_Subject': subject,
-                             '_input_data': reference_connectivity_gid
-                            })
-
-        form.weights.data = weights_tmp
-        form.tracts.data = tracts_tmp
-        view_model = form.get_view_model()()
+        view_model = CSVConnectivityImporterModel()
+        view_model.weights = weights_tmp
+        view_model.tracts = tracts_tmp
         view_model.data_subject = subject
-        form.fill_trait(view_model)
-        importer.submit_form(form)
-
-        FlowService().fire_operation(importer, self.test_user, self.test_project.id, view_model=view_model)
+        view_model.input_data = reference_connectivity_gid
+        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project.id)
 
     def test_happy_flow_import(self):
         """
@@ -127,11 +109,11 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['=='])
         reference_connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
 
-        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
 
         self._import_csv_test_connectivity(reference_connectivity_index.gid, TEST_SUBJECT_B)
 
-        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex())
+        dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         assert dt_count_before + 1 == dt_count_after
 
         filters = FilterChain('', [field], [TEST_SUBJECT_B], ['like'])

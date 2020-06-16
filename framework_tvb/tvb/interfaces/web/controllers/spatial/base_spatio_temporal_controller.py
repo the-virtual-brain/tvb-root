@@ -41,17 +41,21 @@ from tvb.core.entities.model.model_burst import PARAM_SURFACE
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import settings, expose_page
+from tvb.interfaces.web.controllers.common import MissingDataException
+from tvb.interfaces.web.controllers.decorators import settings, expose_page, using_template
 
 MODEL_PARAMETERS = 'model_parameters'
 INTEGRATOR_PARAMETERS = 'integrator_parameters'
 
 
+@traced
 class SpatioTemporalController(BaseController):
     """
     Base class which contains methods related to spatio-temporal actions.
     """
+    MSG_MISSING_SURFACE = "There is no surface in the current project. Please upload a CORTICAL one to continue!"
 
     def __init__(self):
         BaseController.__init__(self)
@@ -78,6 +82,8 @@ class SpatioTemporalController(BaseController):
         Generates the HTML for displaying the surface with the given ID.
         """
         surface = ABCAdapter.load_entity_by_gid(surface_gid)
+        if surface is None:
+            raise MissingDataException(SpatioTemporalController.MSG_MISSING_SURFACE + "!!")
         common.add2session(PARAM_SURFACE, surface_gid)
         surface_h5 = h5.h5_file_for_index(surface)
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
@@ -142,3 +148,7 @@ class SpatioTemporalController(BaseController):
             return 0, 100, "The min value for the x-axis should be smaller then the max value of the x-axis."
 
         return min_x, max_x, ''
+
+    @using_template('spatial/spatial_fragment')
+    def render_spatial_form(self, adapter_form):
+        return adapter_form.get_rendering_dict()

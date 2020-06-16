@@ -37,7 +37,6 @@ Test suite for experimental OpenCL components.
 
 import pytest
 import numpy
-from tvb.tests.library.base_testcase import BaseTestCase
 
 try:
     import pyopencl
@@ -99,7 +98,7 @@ class TestModels():
         self.validate(Linear(), CL_Linear(), CL_Linear.n_states)
 
     def test_Epiletor(self):
-        from tvb.simulator.models.epileptor import Epileptor
+        from tvb.simulator.models.references.epileptor_overflow import Epileptor
         from tvb.simulator._opencl.cl_models import CL_Epileptor
         self.validate(Epileptor(), CL_Epileptor(), CL_Epileptor.n_states)
 

@@ -6,7 +6,7 @@
 
     <script type="text/javascript">
         $(document).ready(function () {
-            VS_StartBrainActivityViewer('{{ base_activity_url }}', {{ pageSize  }}, '{{ time | safe }}',
+            VS_StartBrainActivityViewer('{{ base_adapter_url }}', {{ pageSize  }}, '{{ time | safe }}',
                 '' + '{{ urlVertices | safe }}', '{{ urlLines | safe }}', '{{ urlTriangles | safe }}',
                 '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
                 '{{ urlRegionMap | safe }}', '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}',

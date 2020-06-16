@@ -80,7 +80,7 @@ class TopographyCalculations(object):
     def _spiral(array):
         x_length = array.shape[0] - 2
         y_length = array.shape[1] - 2
-        r = x_length / 2
+        r = x_length // 2
         x = y = 0
         dx = 0
         dy = -1
@@ -197,11 +197,9 @@ class TopographicViewerForm(ABCAdapterForm):
         self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
                                                conditions=self.get_filters())
         self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
-                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                      operations=["=="], values=[1]))
+                                               conditions=self.get_filters())
         self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
-                                               conditions=FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'],
-                                                                      operations=["=="], values=[1]))
+                                               conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():
@@ -213,11 +211,11 @@ class TopographicViewerForm(ABCAdapterForm):
 
     @staticmethod
     def get_input_name():
-        return '_data_0'
+        return 'data_0'
 
     @staticmethod
     def get_filters():
-        return None  # FilterChain(fields=[FilterChain.datatype + '._nr_dimensions'], operations=["=="], values=[1])
+        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
 
 
 class TopographicViewer(ABCDisplayer):
@@ -251,7 +249,7 @@ class TopographicViewer(ABCDisplayer):
             if measure is not None:
                 measure_index = self.load_entity_by_gid(measure.hex)
                 measures_ht.append(h5.load_from_index(measure_index))
-                conn_index = self.load_entity_by_gid(measure_index.connectivity_gid)
+                conn_index = self.load_entity_by_gid(measure_index.fk_connectivity_gid)
                 connectivities_idx.append(conn_index)
 
         with h5.h5_file_for_index(connectivities_idx[0]) as conn_h5:

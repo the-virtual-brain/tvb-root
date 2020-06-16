@@ -35,7 +35,6 @@ class TraitError(Exception):
         self.attr = attr
         super(TraitError, self).__init__(msg)
 
-
     def __str__(self):
         lines = [self.args[0]]
         if self.attr:

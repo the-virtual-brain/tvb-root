@@ -1,5 +1,8 @@
 <section  class="select-regions view-column col-1">
-	
+
+    <script type="text/javascript" src="/static/js/spatial/stimulus_region.js"></script>
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
 	<h4><mark>Select</mark> Regions</h4>
 
     {{ regionStimSelectorForm | safe }}
@@ -10,11 +13,12 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-        	$("select[name='_existentEntitiesSelect']").change(function () {
+        	$("select[name='existentEntitiesSelect']").change(function () {
                 BS_loadEntity();
             });
 			main({{ node_weights }}, "{{ measurePointsSelectionGID }}");
 			GFUN_initSelectionComponent("{{ measurePointsSelectionGID }}", "{{ hemisphereOrderUrl }}");
+            setEventsOnStaticFormFields({{ fieldsWithEvents | safe }});
         });
     </script>
     

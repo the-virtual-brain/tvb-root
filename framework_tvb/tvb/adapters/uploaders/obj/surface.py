@@ -85,7 +85,7 @@ class ObjSurface(object):
         Triangulate a quad. Higher order will get truncated.
         """
         if len(face) > 4:
-            self.logger.warn("truncated face to a quad")
+            self.logger.warning("truncated face to a quad")
         triangles = face[:3]
         if len(face) == 4:
             triangles += [face[0], face[2], face[3]]

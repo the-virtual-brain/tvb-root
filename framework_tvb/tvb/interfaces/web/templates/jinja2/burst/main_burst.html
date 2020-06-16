@@ -13,7 +13,7 @@
 
 	<script type="text/javascript">
     	$(document).ready(function(){
-    		initBurstConfiguration({{ selectedPortlets | safe }}, '{{ burstConfig.selected_tab }}');
+    		initBurstConfiguration('{{ burstConfig.id if (burstConfig.id != None) else ""  }}', '{{ burstConfig.name if (burstConfig.name != None) else ""  }}', '{{ burstConfig.selected_tab }}');
 		});
     </script>
     
@@ -36,10 +36,10 @@
 	
 	<!--! View Parameter space exploration or ISO Parameter space for selected Burst -->
 	<section id="section-pse" class="parameter-space-exploration view-column col-3" style="display: none;">
-		<h4><mark>Parameter Space Exploration</mark> <span id="title-visualizers"></span></h4>
+		<h4><mark>Parameter Space Exploration</mark> <span id="title-pse"></span></h4>
 		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-iso"
 			onclick="toggleMaximizeBurst(this);">Maximize</a>
-		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
+		<ul id="section-portlets-ul-pse" class="view-switcher tabswitcher">
 			<li id="pse-flot" class="active">
 				<a href="#" onclick="changePSETab(this, 'flot');"> View Parameter Space Discrete </a>
 			</li>
@@ -66,43 +66,14 @@
         	{% endfor %}
 
             <li class="{{ 'active' if '-1' == (burstConfig.selected_tab | string) else none }}">
+                {% set currentBurstID = burstConfig.id if burstConfig.id else undefined %}
                 <a href="#" id="tab-burst-tree"
-                   onclick="displayBurstTree(this, {{ selectedProject.id }}, '{{ baseUrl }}');">Results</a>
+                   onclick="displayBurstTree({{ currentBurstID }});">Results</a>
             </li>
 		</ul>
-		        	
-		<ul class="toolbar-inline standard-portlets-toolbar" id="portlets-toolbar">
-			<li>
-				<a href="#" id="configure-tabs-button" class="action action-edit hideable"
-                   onclick="selectPortlets(false);">Configure View</a>
-			</li>
-			<li>
-				<a href="#" id="save-configure-tabs-button" class="action action-edit hideable"
-                   onclick="selectPortlets(true);">Save choices</a>
-			</li>
-			<li>
-		        <a href="#" id="cancel-configure-tabs-button" class="action action-reset hideable"
-                   onclick="returnToSessionPortletConfiguration()">Cancel</a>
-			</li>
-			<li>
-				<a href="#" id="save-portlet-params-button" class="action action-store hideable"
-                   onclick="savePortletParams()">Save portlet parameters</a>
-			</li>
-			<li>
-				<a href="#" id="cancel-configure-portlet-params-button" class="action action-reset hideable"
-                   onclick="cancelPortletConfig()">Cancel</a>
-			</li>
-		</ul>
-		
+
 		<div class="portlet-container portlet-run visible-2-2" id="portlets-display">
 			No visualizers configured for this tab yet.
-		</div>
-		<div class="portlet-container portlet-edit visible-2-2" id="portlets-configure" style="display: none;">
-			{% import 'burst/portlets_select.html' as ps %}
-		    {{ ps.drawPortletConfiguration(portletList, 0) }}
-	        {{ ps.drawPortletConfiguration(portletList, 1) }}
-	        {{ ps.drawPortletConfiguration(portletList, 2) }}
-	        {{ ps.drawPortletConfiguration(portletList, 3) }}
 		</div>
         <div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;"></div>
 
@@ -115,7 +86,7 @@
 
 <script type="text/javascript">
     $(document).ready(function() {
-        _renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
+        renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
     });
 </script>
 

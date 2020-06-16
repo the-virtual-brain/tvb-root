@@ -28,18 +28,32 @@
 #
 #
 
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, HasTraits
 from tvb.datatypes.time_series import TimeSeries
 from tvb.core.neotraits.h5 import H5File, Scalar, Json, Reference
+
+
+class ValueWrapper(HasTraits):
+    data_value = Attr(str)
+    data_type = Attr(str)
+    data_name = Attr(str)
+
+    @property
+    def value(self):
+        if "int" == self.data_type.lower():
+            return int(self.data_value)
+        if "float" == self.data_type.lower():
+            return float(self.data_value)
+        return self.data_value
 
 
 class ValueWrapperH5(H5File):
 
     def __init__(self, path):
         super(ValueWrapperH5, self).__init__(path)
-        self.data_value = Scalar(Attr(str), self, name='data_value')
-        self.data_type = Scalar(Attr(str), self, name='data_type')
-        self.data_name = Scalar(Attr(str), self, name='data_name')
+        self.data_value = Scalar(ValueWrapper.data_value, self)
+        self.data_type = Scalar(ValueWrapper.data_type, self)
+        self.data_name = Scalar(ValueWrapper.data_name, self)
 
 
 class DatatypeMeasureH5(H5File):

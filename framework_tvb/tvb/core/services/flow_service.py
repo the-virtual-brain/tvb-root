@@ -37,16 +37,14 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from inspect import getmro
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.model.model_datatype import DataTypeGroup, Links, StoredPSEFilter, MeasurePointsSelection, \
-    DataType
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
+from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService
 
@@ -125,8 +123,6 @@ class FlowService:
             self.logger.exception('Not found:' + adapter_name + ' in:' + adapter_module)
             raise OperationException("Could not prepare " + adapter_name)
 
-
-    
     @staticmethod
     def get_algorithm_by_module_and_class(module, classname):
         """
@@ -134,16 +130,6 @@ class FlowService:
         class.
         """
         return dao.get_algorithm_by_module(module, classname)
-    
-    
-    @staticmethod
-    def get_available_datatypes(project_id, data_type_cls, filters=None):
-        """
-        Return all dataTypes that match a given name and some filters.
-        :param data_type_cls: either a fully qualified class name or a class object
-        """
-        return get_filtered_datatypes(project_id, data_type_cls, filters)
-
 
     @staticmethod
     def create_link(data_ids, project_id):
@@ -239,7 +225,7 @@ class FlowService:
         :return: dict(category_name: List AlgorithmTransientGroup)
         """
         categories = dao.get_launchable_categories()
-        datatype_instance, filtered_adapters = self._get_launchable_algorithms(datatype_gid, categories)
+        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid, categories)
 
         if isinstance(datatype_instance, DataTypeGroup):
             # If part of a group, update also with specific analyzers of the child datatype
@@ -248,14 +234,14 @@ class FlowService:
             if len(datatypes):
                 datatype = datatypes[-1]
                 analyze_category = dao.get_launchable_categories(True)
-                _, inner_analyzers = self._get_launchable_algorithms(datatype.gid, analyze_category)
+                _, inner_analyzers, _ = self._get_launchable_algorithms(datatype.gid, analyze_category)
                 filtered_adapters.extend(inner_analyzers)
 
         categories_dict = dict()
         for c in categories:
             categories_dict[c.id] = c.displayname
 
-        return self._group_adapters_by_category(filtered_adapters, categories_dict)
+        return self._group_adapters_by_category(filtered_adapters, categories_dict), has_operations_warning
 
     def _get_launchable_algorithms(self, datatype_gid, categories):
         datatype_instance = dao.get_datatype_by_gid(datatype_gid)
@@ -275,12 +261,17 @@ class FlowService:
         launchable_adapters = dao.get_applicable_adapters(all_compatible_classes, categories_ids)
 
         filtered_adapters = []
+        has_operations_warning = False
         for stored_adapter in launchable_adapters:
             filter_chain = FilterChain.from_json(stored_adapter.datatype_filter)
-            if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
-                filtered_adapters.append(stored_adapter)
+            try:
+                if not filter_chain or filter_chain.get_python_filter_equivalent(datatype):
+                    filtered_adapters.append(stored_adapter)
+            except (TypeError, InvalidFilterChainInput):
+                self.logger.exception("Could not evaluate filter on " + str(stored_adapter))
+                has_operations_warning = True
 
-        return datatype, filtered_adapters
+        return datatype, filtered_adapters, has_operations_warning
 
 
     def _group_adapters_by_category(self, stored_adapters, categories):

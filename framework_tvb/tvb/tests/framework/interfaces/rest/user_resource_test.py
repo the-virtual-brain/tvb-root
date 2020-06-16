@@ -28,34 +28,26 @@
 #
 #
 
-import pytest
+import flask
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
-from tvb.interfaces.rest.server.resources.user.user_resource import GetUsersResource, GetProjectsListResource
+from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
 
-class TestUserResource(TransactionalTestCase):
+class TestUserResource(RestResourceTest):
 
     def transactional_setup_method(self):
         self.username = 'Rest_User'
         self.test_user = TestFactory.create_user(self.username)
-        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project')
-        self.users_resource = GetUsersResource()
+        self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
         self.projects_list_resource = GetProjectsListResource()
 
-    def test_get_users(self):
-        result = self.users_resource.get()
-        assert type(result) is list
-        assert len(result) == 2
+    def test_get_projects(self, mocker):
+        self._mock_user(mocker)
 
-    def test_get_project_invalid_username(self):
-        invalid_username = 'invalid-username'
-        with pytest.raises(InvalidIdentifierException): self.projects_list_resource.get(invalid_username)
-
-    def test_get_projects(self):
-        result = self.projects_list_resource.get(self.username)
+        result = self.projects_list_resource.get()
         assert type(result) is list
         assert len(result) == 1
 

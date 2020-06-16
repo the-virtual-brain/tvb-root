@@ -79,7 +79,8 @@ EXCLUDES_SO = [
 
 EXCLUDES_DYLIB = [
     'libcrypto.1.0.0.dylib', 'libncursesw.5.dylib', 'libpq.5.dylib', 'libpq.5.8.dylib',
-    'libssl.1.0.0.dylib', 'libpython2.7.dylib', 'libsz.2.0.0.dylib',
+    'libssl.1.0.0.dylib', 'libsz.2.0.0.dylib',
+    re.compile(r'libpython3.*\.dylib'),
     re.compile(r'libgcc.*\.dylib'),
     # Public domain:
     'liblzma.5.dylib',
@@ -103,9 +104,11 @@ EXTRA_MODULES = {
     'jit': '2.0.1',
     'd3': '3',
     'bct': '2017',
+    'lems': "unknown",
     'python': PYTHON_VERSION,
     'zlib': '1.0',
-    'mathjax': '2.0'
+    'mathjax': '2.0',
+    'keycloak': '9.0.0'
 }
 
 ANACONDA_VERSION = "4.2"
@@ -169,7 +172,7 @@ def _find_extra_modules(extra, modules_dict, excludes):
         if excludes is not None and module in excludes:
             continue
         modules_dict[module.lower()] = _get_module_version(module)
-        if modules_dict[module] == 'unknown':
+        if modules_dict[module.lower()] == 'unknown':
             modules_dict[module.lower()] = extra[module]
 
 
@@ -271,5 +274,5 @@ def parse_tree_structure(root_, excludes=None):
 # Test case for Windows or Mac
 if __name__ == '__main__':
     ROOT = 'D:\Projects\Brain\dist-repo\TVB_distribution\library.zip'
-    ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python2.7'
+    ROOT_MAC = '../TVB_MacOS_dist/TVB_distribution/tvb.app/Contents/Resources/lib/python3.7'
     print(parse_tree_structure(ROOT))

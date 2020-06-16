@@ -33,7 +33,7 @@ from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Covariance
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
-from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
+from tvb.datatypes.patterns import StimuliRegion, StimuliSurface, SpatioTemporalPattern
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.region_mapping import RegionVolumeMapping, RegionMapping
 from tvb.datatypes.sensors import Sensors
@@ -46,16 +46,13 @@ from tvb.datatypes.time_series import TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSE
 from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
 from tvb.datatypes.cortex import Cortex
-from tvb.simulator.simulator import Simulator
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
-from tvb.core.entities.model.simulator.simulator import SimulatorIndex
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
 from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5, CorrelationCoefficientsH5, CovarianceH5
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
-from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5, ValueWrapperH5
+from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5, ValueWrapperH5, ValueWrapper
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5, IndependentComponentsH5
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfaceH5
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
@@ -80,7 +77,7 @@ from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex, IndependentComponentsIndex
-from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex, SpatioTemporalPatternIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex, RegionMappingIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
@@ -131,10 +128,10 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(CorrelationCoefficients, CorrelationCoefficientsH5, CorrelationCoefficientsIndex)
     REGISTRY.register_datatype(Covariance, CovarianceH5, CovarianceIndex)
     REGISTRY.register_datatype(Fcd, FcdH5, FcdIndex)
+    REGISTRY.register_datatype(SpatioTemporalPattern, None, SpatioTemporalPatternIndex)
     REGISTRY.register_datatype(StimuliRegion, StimuliRegionH5, StimuliRegionIndex)
     REGISTRY.register_datatype(StimuliSurface, StimuliSurfaceH5, StimuliSurfaceIndex)
     REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
-    REGISTRY.register_datatype(None, ValueWrapperH5, ValueWrapperIndex)
+    REGISTRY.register_datatype(ValueWrapper, ValueWrapperH5, ValueWrapperIndex)
     REGISTRY.register_datatype(Cortex, CortexH5, None)
-    REGISTRY.register_datatype(Simulator, SimulatorH5, SimulatorIndex)

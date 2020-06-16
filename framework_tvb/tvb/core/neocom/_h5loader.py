@@ -105,9 +105,19 @@ class DirLoader(object):
         fname = self._locate(gid)
         return fname
 
-    def load(self, gid):
-        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        fname = self.find_file_name(gid)
+    def load(self, gid=None, fname=None):
+        # type: (typing.Union[uuid.UUID, str], str) -> HasTraits
+        """
+        Load from file a HasTraits entity. Either gid or fname should be given, or else an error is raised.
+
+        :param gid: optional entity GUID to search for it under self.base_dir
+        :param fname: optional file name to search for it under self.base_dir.
+        :return: HasTraits instance read from the given location
+        """
+        if fname is None:
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
+            fname = self.find_file_name(gid)
 
         sub_dt_refs = []
 
@@ -120,27 +130,34 @@ class DirLoader(object):
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
-            subdt = self.load(sub_gid)
-            setattr(datatype, traited_attr.field_name, subdt)
+            if sub_gid is not None:
+                subdt = self.load(sub_gid)
+                setattr(datatype, traited_attr.field_name, subdt)
 
         return datatype
 
-    def store(self, datatype):
-        # type: (HasTraits) -> None
+    def store(self, datatype, fname=None):
+        # type: (HasTraits, str) -> None
         h5file_cls = self.registry.get_h5file_for_datatype(type(datatype))
-        path = self.path_for(h5file_cls, datatype.gid)
+        if fname is None:
+            path = self.path_for(h5file_cls, datatype.gid)
+        else:
+            path = os.path.join(self.base_dir, fname)
 
         sub_dt_refs = []
 
         with h5file_cls(path) as f:
             f.store(datatype)
+            # Store empty Generic Attributes, so that TVBLoader.load_complete_by_function can be still used
+            f.store_generic_attributes(GenericAttributes())
 
             if self.recursive:
                 sub_dt_refs = f.gather_references()
 
         for traited_attr, sub_gid in sub_dt_refs:
             subdt = getattr(datatype, traited_attr.field_name)
-            self.store(subdt)
+            if subdt is not None:  # Because a non required reference may be not populated
+                self.store(subdt)
 
     def path_for(self, h5_file_class, gid):
         """
@@ -202,8 +219,8 @@ class TVBLoader(object):
             f.load_into(result_dt)
         return result_dt
 
-    def load_with_references(self, file_path):
-        # type: (str) -> (HasTraits, GenericAttributes)
+    def load_complete_by_function(self, file_path, load_ht_function):
+        # type: (str, callable) -> (HasTraits, GenericAttributes)
         with H5File.from_file(file_path) as f:
             datatype_cls = self.registry.get_datatype_for_h5file(type(f))
             datatype = datatype_cls()
@@ -214,8 +231,23 @@ class TVBLoader(object):
         for traited_attr, sub_gid in sub_dt_refs:
             if sub_gid is None:
                 continue
-            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
-            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            ref_ht = load_ht_function(sub_gid, traited_attr)
             setattr(datatype, traited_attr.field_name, ref_ht)
 
         return datatype, ga
+
+    def load_with_references(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
+            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)
+
+    def load_with_links(self, file_path):
+        def load_ht_function(sub_gid, traited_attr):
+            ref_ht = traited_attr.field_type()
+            ref_ht.gid = sub_gid
+            return ref_ht
+
+        return self.load_complete_by_function(file_path, load_ht_function)

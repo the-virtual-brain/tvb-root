@@ -27,41 +27,127 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import socket
 import tempfile
+import webbrowser
 
+from tvb.basic.neotraits.api import HasTraits
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.interfaces.rest.client.datatype.datatype_api import DataTypeApi
 from tvb.interfaces.rest.client.operation.operation_api import OperationApi
 from tvb.interfaces.rest.client.project.project_api import ProjectApi
 from tvb.interfaces.rest.client.simulator.simulation_api import SimulationApi
 from tvb.interfaces.rest.client.user.user_api import UserApi
-from tvb.interfaces.rest.commons.dtos import OperationDto
+from tvb.interfaces.rest.commons.dtos import OperationDto, UserDto
+from tvb.interfaces.rest.commons.exceptions import ClientException
 
 
 class TVBClient:
     """
-    TVB-BrainX3 client class which expose the whole API. Initializing this class with the correct rest server url is mandatory.
+    TVB-BrainX3 client class which expose the whole API.
+    Initializing this class with the correct rest server url is mandatory.
+    The methods for loading datatypes are not intended to be used for datatypes with expandable fields (eg. TimeSeries).
+    Those should be loaded in chunks, because they might be to large to be loaded in memory at once.
     """
 
-    def __init__(self, server_url):
+    def __init__(self, server_url, auth_token='', login_callback_port=8888):
+        # type: (str,str,int) -> None
+        """
+        TVBClient init method
+        :param server_url: REST server URL
+        :param auth_token: Authorization Bearer token (optional). It is required if you do an external login
+        :param login_callback_port: Port where cherrypy login callback server will run on 127.0.0.1
+        """
+        populate_datatypes_registry()
+        self._test_free_port(login_callback_port)
         self.temp_folder = tempfile.gettempdir()
-        self.user_api = UserApi(server_url)
-        self.project_api = ProjectApi(server_url)
-        self.datatype_api = DataTypeApi(server_url)
-        self.simulation_api = SimulationApi(server_url)
-        self.operation_api = OperationApi(server_url)
+        self.login_callback_port = login_callback_port
+        self.user_api = UserApi(server_url, auth_token)
+        self.project_api = ProjectApi(server_url, auth_token)
+        self.datatype_api = DataTypeApi(server_url, auth_token)
+        self.simulation_api = SimulationApi(server_url, auth_token)
+        self.operation_api = OperationApi(server_url, auth_token)
 
-    def get_users(self):
-        """
-        Retrieve users list
-        """
-        return self.user_api.get_users()
+    @staticmethod
+    def _test_free_port(login_callback_port):
+        try:
+            test_socket = socket.socket()
+            test_socket.connect(("127.0.0.1", login_callback_port))
+            test_socket.close()
+            raise ClientException("Port {} is already in use.".format(login_callback_port))
+        except socket.error:
+            return
 
-    def get_project_list(self, username):
+    def browser_login(self):
+        login_response = self.user_api.browser_login(self.login_callback_port, self.open_browser)
+        self._update_token(login_response)
+
+    @staticmethod
+    def open_browser(url):
         """
-        Given a username, this function will return all projects for the given user.
+        Open given URL in a browser. If you want to open the URL in an embedded browser for example you will have to
+        override this method
+        :param url: URL to open
         """
-        return self.user_api.get_projects_list(username)
+        web = webbrowser.get()
+        web.open_new(url)
+
+    def logout(self):
+        """
+        Logout user by invalidating the keycloak token
+        """
+        self.user_api.logout()
+
+    def update_auth_token(self, auth_token):
+        """
+        Set the authorization token for API requests. Use this method if you handle the login and token refreshing
+        processes by yourself.
+        :param auth_token:
+        """
+        self.user_api.authorization_token = auth_token
+        self.project_api.authorization_token = auth_token
+        self.datatype_api.authorization_token = auth_token
+        self.simulation_api.authorization_token = auth_token
+        self.operation_api.authorization_token = auth_token
+
+    def _update_token(self, response):
+        self.user_api.update_tokens(response)
+        self.project_api.update_tokens(response)
+        self.datatype_api.update_tokens(response)
+        self.simulation_api.update_tokens(response)
+        self.operation_api.update_tokens(response)
+
+    def get_users(self, page=1):
+        """
+        Return all TVB users
+        """
+        response = self.user_api.get_users(page)
+        user_list, pages_no = response
+        return [UserDto(**user) for user in response[user_list]], response[pages_no]
+
+    def get_project_list(self):
+        """
+        Return all projects for the current logged user.
+        """
+        return self.user_api.get_projects_list()
+
+    def create_project(self, project_name, project_description=''):
+        """
+        Create a new project which will be linked to the logged user
+        :param project_name: Project name (mandatory)
+        :param project_description: Project description
+        :return: GID of the new project
+        """
+        return self.user_api.create_project(project_name, project_description)
+
+    def add_members_to_project(self, project_gid, new_members_gid):
+        # type: (str, []) -> None
+        """
+        Add members to the given project. Logged user must be the project administrator
+        :param project_gid: Given project GID
+        :param new_members_gid: List of user which will be project members
+        """
+        self.project_api.add_members_to_project(project_gid, new_members_gid)
 
     def get_data_in_project(self, project_gid):
         """
@@ -85,13 +171,31 @@ class TVBClient:
 
         return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
 
-    def load_datatype(self, datatype_path):
+    def load_datatype_from_file(self, datatype_path):
         """
-        TODO: TO BE IMPLEMENTED
         Given a local H5 file location, where previously a valid H5 file has been downloaded from TVB server, load in
-        memory a HasTraits subclass instance (e.g. Connectivity, TimeSeriesRegion).
+        memory a HasTraits subclass instance (e.g. Connectivity).
         """
-        return self.datatype_api.load_datatype(datatype_path)
+        return self.datatype_api.load_datatype_from_file(datatype_path)
+
+    def load_datatype_with_full_references(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download the entire tree of dependencies and load them in memory.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with all references fully loaded
+        """
+        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder)
+
+    def load_datatype_with_links(self, datatype_gid, download_folder):
+        # type: (str, str) -> HasTraits
+        """
+        Given a datatype GID, download only the corresponding H5 file and load it in memory.
+        Also, instantiate empty objects as its references only for the purpose to load the GIDs on them.
+        :param datatype_gid: GID of datatype to load
+        :return: datatype object with correct GIDs for references
+        """
+        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder)
 
     def get_operations_for_datatype(self, datatype_gid):
         """
@@ -106,13 +210,15 @@ class TVBClient:
         """
         return self.simulation_api.fire_simulation(project_gid, session_stored_simulator, self.temp_folder)
 
-    def launch_operation(self, project_gid, algorithm_module, algorithm_classname, view_model):
+    def quick_launch_operation(self, project_gid, algorithm_dto, datatype_gid):
+        return self.operation_api.quick_launch_operation(project_gid, algorithm_dto, datatype_gid, self.temp_folder)
+
+    def launch_operation(self, project_gid, algorithm_class, view_model):
         """
         This is a more generic method of launching Analyzers. Given a project id, algorithm module, algorithm classname
         and a view model instance, this function will serialize the view model and will launch the analyzer.
         """
-        return self.operation_api.launch_operation(project_gid, algorithm_module, algorithm_classname,
-                                                   view_model, self.temp_folder)
+        return self.operation_api.launch_operation(project_gid, algorithm_class, view_model, self.temp_folder)
 
     def get_operation_status(self, operation_gid):
         """

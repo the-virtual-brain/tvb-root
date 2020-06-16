@@ -34,7 +34,7 @@ import uuid
 import numpy
 import scipy.sparse
 import typing
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
 
@@ -93,9 +93,10 @@ class Scalar(Accessor):
         # type: () -> typing.Union[str, int, float]
         # assuming here that the h5 will return the type we stored.
         # if paranoid do self.trait_attribute.field_type(value)
-        metadata = self.owner.storage_manager.get_metadata()
-        if self.field_name in metadata:
-            return metadata[self.field_name]
+        if self.owner.metadata_cache is None:
+            self.owner.metadata_cache = self.owner.storage_manager.get_metadata()
+        if self.field_name in self.owner.metadata_cache:
+            return self.owner.metadata_cache[self.field_name]
         else:
             raise MissingDataSetException(self.field_name)
 
@@ -437,6 +438,21 @@ class Json(Scalar):
         if self.json_decoder:
             return self.json_decoder().decode(val)
         return json.loads(val)
+
+class JsonRange(Scalar):
+    """
+    Stores and loads a Range in the form of a json in h5.
+    """
+
+    def store(self, val):
+        val = json.dumps(val.__dict__)
+        self.owner.storage_manager.set_metadata({self.field_name: val})
+
+    def load(self):
+        val = self.owner.storage_manager.get_metadata()[self.field_name]
+        loaded_val = json.loads(val)
+        range_items = list(loaded_val.values())
+        return Range(range_items[0], range_items[1], range_items[2])
 
 
 class JsonFinal(Json):

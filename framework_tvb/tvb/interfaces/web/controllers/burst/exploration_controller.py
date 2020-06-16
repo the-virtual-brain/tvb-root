@@ -41,6 +41,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import FilterChain
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import handle_error, expose_fragment, check_user
 from tvb.interfaces.web.controllers.decorators import using_template, expose_json
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -51,6 +52,7 @@ PSE_ISO = "ISO"
 REDIRECT_MSG = '/burst/explore/pse_error?adapter_name=%s&message=%s'
 
 
+@traced
 class ParameterExplorationController(BaseController):
     """
     Controller to handle PSE actions.
@@ -97,6 +99,36 @@ class ParameterExplorationController(BaseController):
     def pse_error(self, adapter_name, message):
         return {'adapter_name': adapter_name, 'message': message}
 
+    def _prepare_pse_context(self, datatype_group_gid, back_page, color_metric, size_metric, is_refresh):
+
+        if color_metric == 'None' or color_metric == "undefined":
+            color_metric = None
+        if size_metric == 'None' or size_metric == "undefined":
+            size_metric = None
+
+        algorithm = self.flow_service.get_algorithm_by_module_and_class(
+            IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
+            IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+
+        if self._is_compatible(algorithm, datatype_group_gid):
+            try:
+                pse_context = adapter.prepare_parameters(datatype_group_gid, back_page, color_metric, size_metric)
+                if is_refresh:
+                    return dict(series_array=pse_context.series_array,
+                                has_started_ops=pse_context.has_started_ops)
+                else:
+                    pse_context.prepare_individual_jsons()
+                    return pse_context
+            except LaunchException as ex:
+                error_msg = urllib.parse.quote(ex.message)
+        else:
+            error_msg = urllib.parse.quote(
+                "Discrete PSE is incompatible (most probably due to result size being too large).")
+
+        name = urllib.parse.quote(adapter._ui_name)
+        raise LaunchException(REDIRECT_MSG % (name, error_msg))
+
     @cherrypy.expose
     @handle_error(redirect=True)
     @using_template('visualizers/pse_discrete/burst_preview')
@@ -105,53 +137,20 @@ class ParameterExplorationController(BaseController):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
-        if color_metric == 'None' or color_metric == "undefined":
-            color_metric = None
-        if size_metric == 'None' or size_metric == "undefined":
-            size_metric = None
-
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
-        adapter = ABCAdapter.build_adapter(algorithm)
-        if self._is_compatible(algorithm, datatype_group_gid):
-            try:
-                pse_context = adapter.prepare_parameters(datatype_group_gid, back_page, color_metric, size_metric)
-                pse_context.prepare_individual_jsons()
-                return pse_context
-            except LaunchException as ex:
-                error_msg = urllib.parse.quote(ex.message)
-        else:
-            error_msg = urllib.parse.quote("Discrete PSE is incompatible (most probably due to result size being too large).")
-
-        name = urllib.parse.quote(adapter._ui_name)
-        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+        try:
+            return self._prepare_pse_context(datatype_group_gid, back_page, color_metric, size_metric, False)
+        except LaunchException as ex:
+            raise cherrypy.HTTPRedirect(ex.message)
 
     @expose_json
-    def get_series_array_discrete(self, datatype_group_gid, backPage, color_metric=None, size_metric=None):
+    def get_series_array_discrete(self, datatype_group_gid, back_page, color_metric=None, size_metric=None):
         """
         Create new data for when the user chooses to refresh from the UI.
         """
-        if color_metric == 'None':
-            color_metric = None
-        if size_metric == 'None':
-            size_metric = None
-
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
-        adapter = ABCAdapter.build_adapter(algorithm)
-        if self._is_compatible(algorithm, datatype_group_gid):
-            try:
-                pse_context = adapter.prepare_parameters(datatype_group_gid, backPage, color_metric, size_metric)
-                return dict(series_array=pse_context.series_array,
-                            has_started_ops=pse_context.has_started_ops)
-            except LaunchException as ex:
-                error_msg = urllib.parse.quote(ex.message)
-        else:
-            error_msg = urllib.parse.quote(
-                "Discrete PSE is incompatible (most probably due to result size being too large).")
-
-        name = urllib.parse.quote(adapter._ui_name)
-        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+        try:
+            return self._prepare_pse_context(datatype_group_gid, back_page, color_metric, size_metric, True)
+        except LaunchException as ex:
+            raise cherrypy.HTTPRedirect(ex.message)
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -164,7 +163,9 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                return adapter.burst_preview(datatype_group_gid)
+                view_model = adapter.get_view_model_class()()
+                view_model.datatype_group = datatype_group_gid
+                return adapter.burst_preview(view_model)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
@@ -182,8 +183,7 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.get_metric_matrix(datatype_group, metric_name)
+                return adapter.get_metric_matrix(datatype_group_gid, metric_name)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)
@@ -201,8 +201,7 @@ class ParameterExplorationController(BaseController):
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
-                datatype_group = dao.get_datatype_group_by_gid(datatype_group_gid)
-                return adapter.prepare_node_data(datatype_group)
+                return adapter.prepare_node_data(datatype_group_gid)
             except LaunchException as ex:
                 self.logger.error(ex.message)
                 error_msg = urllib.parse.quote(ex.message)

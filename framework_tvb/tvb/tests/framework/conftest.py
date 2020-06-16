@@ -28,6 +28,7 @@
 #
 #
 import json
+from time import sleep
 import numpy
 import pytest
 import os.path
@@ -35,18 +36,26 @@ import os
 import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
+from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors
 from tvb.datatypes.surfaces import Surface, CorticalSurface
@@ -57,7 +66,6 @@ from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTyp
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
-from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 
 
 def pytest_addoption(parser):
@@ -65,7 +73,7 @@ def pytest_addoption(parser):
                      help="my option: TEST_POSTGRES_PROFILE or TEST_SQLITE_PROFILE")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def profile(request):
     profile = request.config.getoption("--profile")
     TvbProfile.set_profile(profile)
@@ -85,12 +93,12 @@ def tmph5factory(tmpdir):
 
 @pytest.fixture(scope='session')
 def db_engine(tmpdir_factory, profile):
-    if profile == 'TEST_SQLITE_PROFILE':
+    if profile == TvbProfile.TEST_SQLITE_PROFILE:
         tmpdir = tmpdir_factory.mktemp('tmp')
         path = os.path.join(str(tmpdir), 'tmp.sqlite')
         conn_string = r'sqlite:///' + path
-    elif profile == 'TEST_POSTGRES_PROFILE':
-        conn_string = 'postgresql+psycopg2://tvb:tvb23@localhost:5432/tvb'
+    elif profile == TvbProfile.TEST_POSTGRES_PROFILE:
+        conn_string = TvbProfile.current.db.DB_URL
     else:
         raise ValueError('bad test profile {}'.format(profile))
 
@@ -110,7 +118,7 @@ def session(db_engine):
 
 @pytest.fixture
 def user_factory():
-    def build(username='test_user', password='test_pass',
+    def build(username='test_user', display_name='test_name', password='test_pass',
               mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
@@ -120,7 +128,7 @@ def user_factory():
         if existing_user is not None:
             return existing_user
 
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     return build
@@ -148,7 +156,7 @@ def project_factory():
 @pytest.fixture()
 def operation_factory(user_factory, project_factory):
     def build(algorithm=None, test_user=None, test_project=None,
-              operation_status=STATUS_FINISHED, parameters="test params", meta=None):
+              operation_status=STATUS_FINISHED, parameters="test params", meta=None, range_values=None):
         """
         Create persisted operation.
         :param algorithm: When not None, Simulator.
@@ -165,7 +173,7 @@ def operation_factory(user_factory, project_factory):
             meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
                     DataTypeMetaData.KEY_STATE: "RAW_DATA"}
         operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
-                              status=operation_status)
+                              status=operation_status, range_values=range_values)
         dao.store_entity(operation)
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
@@ -190,6 +198,21 @@ def connectivity_factory():
             number_of_connections=nr_regions * nr_regions,
             saved_selection=[1, 2, 3]
         )
+
+    return build
+
+
+@pytest.fixture()
+def connectivity_index_factory(connectivity_factory, operation_factory):
+    def build(data=4, op=None):
+        conn = connectivity_factory(data)
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        conn_db = h5.store_complete(conn, storage_path)
+        conn_db.fk_from_operation = op.id
+        return dao.store_entity(conn_db)
 
     return build
 
@@ -232,6 +255,21 @@ def surface_factory():
 
 
 @pytest.fixture()
+def surface_index_factory(surface_factory, operation_factory):
+    def build(data=4, op=None):
+        surface = surface_factory(data)
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        return dao.store_entity(surface_db)
+
+    return build
+
+
+@pytest.fixture()
 def region_mapping_factory(surface_factory, connectivity_factory):
     def build(surface=None, connectivity=None):
         if not surface:
@@ -243,6 +281,27 @@ def region_mapping_factory(surface_factory, connectivity_factory):
             connectivity=connectivity,
             surface=surface
         )
+
+    return build
+
+
+@pytest.fixture()
+def region_mapping_index_factory(region_mapping_factory, operation_factory):
+    def build(op=None):
+        region_mapping = region_mapping_factory()
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(region_mapping.surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        dao.store_entity(surface_db)
+        conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
+        conn_db.fk_from_operation = op.id
+        dao.store_entity(conn_db)
+        rm_db = h5.store_complete(region_mapping, storage_path)
+        rm_db.fk_from_operation = op.id
+        return dao.store_entity(rm_db)
 
     return build
 
@@ -287,7 +346,7 @@ def time_series_factory():
             data[:, 0, 2, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 100) + numpy.sin(
                 2 * numpy.pi * time / 1000.0 * 300)
 
-        return TimeSeries(time=time, data=data, sample_period=1.0 / 4000)
+        return TimeSeries(time=time, data=data, sample_period=1.0 / 4000, sample_period_unit="sec")
 
     return build
 
@@ -348,25 +407,9 @@ def time_series_region_index_factory(operation_factory):
 
 
 @pytest.fixture()
-def dummy_datatype_factory():
-    def build():
-        return DummyDataType()
-
-    return build
-
-
-@pytest.fixture()
-def dummy_datatype2_index_factory():
-    def build(subject=None, state=None):
-        return DummyDataType2Index(subject=subject, state=state)
-
-    return build
-
-
-@pytest.fixture()
-def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
+def dummy_datatype_index_factory(operation_factory):
     def build(row1=None, row2=None, project=None, operation=None, subject=None, state=None):
-        data_type = dummy_datatype_factory()
+        data_type = DummyDataType()
         data_type.row1 = row1
         data_type.row2 = row2
 
@@ -388,11 +431,36 @@ def dummy_datatype_index_factory(dummy_datatype_factory, operation_factory):
 
 
 @pytest.fixture()
-def datatype_measure_factory(operation_factory):
-    def build(analyzed_entity):
+def value_wrapper_factory():
+    def build(test_user, test_project):
+        view_model = BaseBCTModel()
+        view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
+
+        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        op = FlowService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
+        # wait for the operation to finish
+        tries = 5
+        while not op.has_finished and tries > 0:
+            sleep(5)
+            tries = -1
+            op = dao.get_operation_by_id(op.id)
+
+        value_wrapper = try_get_last_datatype(test_project.id, ValueWrapperIndex)
+        count = dao.count_datatypes(test_project.id, ValueWrapperIndex)
+        assert 1 == count
+        return value_wrapper
+
+    return build
+
+
+@pytest.fixture()
+def datatype_measure_factory():
+    def build(analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
         measure = DatatypeMeasureIndex()
-        measure.metrics = '{"v": 3}'
+        measure.metrics = metrics
         measure.source = analyzed_entity
+        measure.fk_from_operation = operation.id
+        measure.fk_datatype_group = datatype_group.id
         measure = dao.store_entity(measure)
 
         return measure
@@ -405,8 +473,13 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                            operation_factory):
     def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
 
-        range_1 = ["row1", [1, 2, 3]]
+        # there store the name and the (hi, lo, step) value of the range parameters
+        range_1 = ["row1", [1, 2, 10]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        # there are the actual numbers in the interval
+        range_values_1 = [1, 3, 5, 7, 9]
+        range_values_2 = [0.1, 0.4]
 
         user = user_factory()
 
@@ -437,6 +510,8 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         group_ms = dao.store_entity(group_ms)
 
         datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
+        datatype_group.no_of_ranges = 2
+        datatype_group.count_results = 10
 
         datatype_group = dao.store_entity(datatype_group)
 
@@ -444,8 +519,8 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
-        for range_val1 in range_1[1]:
-            for range_val2 in range_2[1]:
+        for range_val1 in range_values_1:
+            for range_val2 in range_values_2:
                 op = Operation(user.id, project.id, algorithm.id, 'test parameters',
                                meta=json.dumps(meta), status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
@@ -465,7 +540,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(datatype)
+                datatype_measure_factory(datatype, op_ms, dt_group_ms)
 
         return datatype_group
 
@@ -502,6 +577,27 @@ def test_adapter_factory():
         if inst_from_db is not None:
             stored_adapter.id = inst_from_db.id
 
-        dao.store_entity(stored_adapter, inst_from_db is not None)
+        return dao.store_entity(stored_adapter, inst_from_db is not None)
+
+    return build
+
+
+@pytest.fixture()
+def local_connectivity_index_factory(surface_factory, operation_factory):
+    def build(op=None):
+        surface = surface_factory(cortical=True)
+        lconn = LocalConnectivity()
+        lconn.surface = surface
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        surface_db = h5.store_complete(surface, storage_path)
+        surface_db.fk_from_operation = op.id
+        dao.store_entity(surface_db)
+
+        lconn_db = h5.store_complete(lconn, storage_path)
+        lconn_db.fk_from_operation = op.id
+        return dao.store_entity(lconn_db), lconn
 
     return build

@@ -162,7 +162,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
                     covariance_h5.write_data_slice(partial_cov.array_data)
             ts_array_metadata = covariance_h5.array_data.get_cached_metadata()
 
-        covariance_index.source_gid = self.input_time_series_index.gid
+        covariance_index.fk_source_gid = self.input_time_series_index.gid
         covariance_index.subtype = type(covariance_index).__name__
         covariance_index.array_data_min = ts_array_metadata.min
         covariance_index.array_data_max = ts_array_metadata.max

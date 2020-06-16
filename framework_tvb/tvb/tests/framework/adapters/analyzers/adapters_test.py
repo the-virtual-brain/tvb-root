@@ -29,8 +29,6 @@
 #
 
 import os
-from uuid import UUID
-
 from tvb.adapters.analyzers.cross_correlation_adapter import CrossCorrelateAdapter, PearsonCorrelationCoefficientAdapter
 from tvb.adapters.analyzers.fcd_adapter import FunctionalConnectivityDynamicsAdapter
 from tvb.adapters.analyzers.fmri_balloon_adapter import BalloonModelAdapter
@@ -60,7 +58,7 @@ class TestAdapters(TransactionalTestCase):
 
         wavelet_adapter = ContinuousWaveletTransformAdapter()
         view_model = wavelet_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         wavelet_adapter.storage_path = storage_folder
         wavelet_adapter.configure(view_model)
 
@@ -78,7 +76,7 @@ class TestAdapters(TransactionalTestCase):
 
         pca_adapter = PCAAdapter()
         view_model = pca_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         pca_adapter.storage_path = storage_folder
         pca_adapter.configure(view_model)
 
@@ -97,7 +95,7 @@ class TestAdapters(TransactionalTestCase):
         ica_adapter = ICAAdapter()
         ica_adapter.storage_path = storage_folder
         view_model = ica_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         ica_adapter.configure(view_model)
 
         disk = ica_adapter.get_required_disk_size(view_model)
@@ -115,7 +113,7 @@ class TestAdapters(TransactionalTestCase):
         metrics_adapter = TimeseriesMetricsAdapter()
         metrics_adapter.storage_path = storage_folder
         view_model = metrics_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         metrics_adapter.configure(view_model)
 
         disk = metrics_adapter.get_required_disk_size(view_model)
@@ -133,7 +131,7 @@ class TestAdapters(TransactionalTestCase):
         cross_correlation_adapter = CrossCorrelateAdapter()
         cross_correlation_adapter.storage_path = storage_folder
         view_model = cross_correlation_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         cross_correlation_adapter.configure(view_model)
 
         disk = cross_correlation_adapter.get_required_disk_size(view_model)
@@ -152,7 +150,7 @@ class TestAdapters(TransactionalTestCase):
         pearson_correlation_coefficient_adapter = PearsonCorrelationCoefficientAdapter()
         pearson_correlation_coefficient_adapter.storage_path = storage_folder
         view_model = pearson_correlation_coefficient_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         pearson_correlation_coefficient_adapter.configure(view_model)
 
         disk = pearson_correlation_coefficient_adapter.get_required_disk_size(view_model)
@@ -171,7 +169,7 @@ class TestAdapters(TransactionalTestCase):
         node_coherence_adapter = NodeCoherenceAdapter()
         node_coherence_adapter.storage_path = storage_folder
         view_model = node_coherence_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         node_coherence_adapter.configure(view_model)
 
         disk = node_coherence_adapter.get_required_disk_size(view_model)
@@ -189,7 +187,7 @@ class TestAdapters(TransactionalTestCase):
         node_complex_coherence_adapter = NodeComplexCoherenceAdapter()
         node_complex_coherence_adapter.storage_path = storage_folder
         view_model = node_complex_coherence_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         node_complex_coherence_adapter.configure(view_model)
 
         disk = node_complex_coherence_adapter.get_required_disk_size(view_model)
@@ -213,7 +211,7 @@ class TestAdapters(TransactionalTestCase):
         view_model = fcd_adapter.get_view_model_class()()
         view_model.sw = 0.5
         view_model.sp = 0.2
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         fcd_adapter.configure(view_model)
 
         disk = fcd_adapter.get_required_disk_size(view_model)
@@ -236,7 +234,7 @@ class TestAdapters(TransactionalTestCase):
         fmri_balloon_adapter = BalloonModelAdapter()
         fmri_balloon_adapter.storage_path = storage_folder
         view_model = fmri_balloon_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         fmri_balloon_adapter.configure(view_model)
 
         disk = fmri_balloon_adapter.get_required_disk_size(view_model)
@@ -254,7 +252,7 @@ class TestAdapters(TransactionalTestCase):
         node_covariance_adapter = NodeCovarianceAdapter()
         node_covariance_adapter.storage_path = storage_folder
         view_model = node_covariance_adapter.get_view_model_class()()
-        view_model.time_series = UUID(ts_index.gid)
+        view_model.time_series = ts_index.gid
         node_covariance_adapter.configure(view_model)
 
         disk = node_covariance_adapter.get_required_disk_size(view_model)
