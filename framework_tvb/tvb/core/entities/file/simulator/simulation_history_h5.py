@@ -28,9 +28,9 @@
 #
 #
 
-from tvb.simulator.integrators import IntegratorStochastic
 from tvb.basic.neotraits.api import HasTraits, NArray, Int, List, Attr, Float
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Json
+from tvb.simulator.integrators import IntegratorStochastic
 
 
 class SimulationHistory(HasTraits):
