@@ -41,6 +41,8 @@ Few supplementary steps are done here:
 
 """
 import json
+from tvb.adapters.simulator.model_forms import get_model_to_form_dict
+from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
@@ -131,10 +133,26 @@ class SimulatorAdapter(ABCAsynchronous):
     def get_form_class(self):
         return SimulatorAdapterForm
 
-    @staticmethod
-    def get_simulator_fragments():
-        return [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment, SimulatorModelFragment,
-                SimulatorIntegratorFragment, SimulatorMonitorFragment, SimulatorFinalFragment]
+    def get_adapter_fragments(self, view_model):
+        # type (SimulatorAdapterModel) -> dict
+        forms = {None: [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment,
+                        SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment,
+                        SimulatorFinalFragment]}
+
+        current_model_class = type(view_model.model)
+        all_model_forms = get_model_to_form_dict()
+        forms["model"] = [all_model_forms.get(current_model_class)]
+
+        all_monitor_forms = get_monitor_to_form_dict()
+        selected_monitor_forms = []
+        for monitor in view_model.monitors:
+            current_monitor_class = type(monitor)
+            selected_monitor_forms.append(all_monitor_forms.get(current_monitor_class))
+
+        forms["monitors"] = selected_monitor_forms
+        # Not sure if where we should in fact include the entire tree, or it will become too tedious.
+        # For now I think it is ok if we rename this section "Summary" and filter what is shown
+        return forms
 
     def load_view_model(self, operation):
         storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))

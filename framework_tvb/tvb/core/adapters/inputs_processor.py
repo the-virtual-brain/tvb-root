@@ -35,21 +35,30 @@ from tvb.core.neotraits.forms import TraitDataTypeSelectField, DataTypeSelectFie
 def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model):
     changed_attr = {}
     inputs_datatypes = []
+
     for field in form_fields:
-        if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
-            attr_default = getattr(form_model, field.name)
-            attr_vm = getattr(view_model, field.name)
-            if attr_vm != attr_default:
-                if isinstance(attr_default, float) or isinstance(attr_default, str):
-                    changed_attr[field.label] = attr_vm
-                else:
-                    changed_attr[field.label] = attr_vm.title
-        else:
+        if not hasattr(view_model, field.name):
+            continue
+
+        if isinstance(field, TraitDataTypeSelectField) or isinstance(field, DataTypeSelectField):
+
             attr_vm = getattr(view_model, field.name)
             data_type = ABCAdapter.load_entity_by_gid(attr_vm)
             if attr_vm:
                 changed_attr[field.label] = data_type.display_name
             inputs_datatypes.append(data_type)
+
+        else:
+            attr_default = getattr(form_model, field.name)
+            attr_vm = getattr(view_model, field.name)
+            if attr_vm != attr_default:
+                if isinstance(attr_vm, float) or isinstance(attr_vm, int) or isinstance(attr_vm, str):
+                    changed_attr[field.label] = attr_vm
+                elif isinstance(attr_vm, tuple) or isinstance(attr_vm, list):
+                    changed_attr[field.label] = ', '.join([str(sub_attr) for sub_attr in attr_vm])
+                else:
+                    # All HasTraits instances will show as being different than default, even if the same,
+                    changed_attr[field.label] = str(attr_vm)
 
     return inputs_datatypes, changed_attr
 
@@ -63,32 +72,24 @@ def review_operation_inputs_from_adapter(adapter, operation):
     form_model = adapter.get_view_model_class()()
     form_fields = adapter.get_form_class()().fields
 
-    if 'SimulatorAdapter' in operation.algorithm.classname:
-        fragments = adapter.get_simulator_fragments()
-        inputs_datatypes, changed_attr = _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+    inputs_datatypes, changed_attr = _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+
+    fragments_dict = adapter.get_adapter_fragments(view_model)
+    # The Simulator, for example will have Fragments
+    for path, fragments in fragments_dict.items():
+        if path is None:
+            fragment_defaults = form_model
+            fragment_model = view_model
+        else:
+            fragment_defaults = getattr(form_model, path)
+            fragment_model = getattr(view_model, path)
+
         for fragment in fragments:
             fragment_fields = fragment().fields
-            for field in fragment_fields:
-                if hasattr(view_model, field.name):
-                    if not isinstance(field, TraitDataTypeSelectField) and not isinstance(field, DataTypeSelectField):
-                        attr_default = getattr(form_model, field.name)
-                        attr_vm = getattr(view_model, field.name)
-                        if attr_vm != attr_default:
-                            if isinstance(attr_default, float) or isinstance(attr_default, str):
-                                changed_attr[field.label] = attr_vm
-                            else:
-                                if not isinstance(attr_default, tuple):
-                                    changed_attr[field.label] = attr_vm.title
-                                else:
-                                    for sub_attr in attr_default:
-                                        changed_attr[field.label] = sub_attr.title
-                    else:
-                        attr_vm = getattr(view_model, field.name)
-                        data_type = ABCAdapter.load_entity_by_gid(attr_vm)
-                        if attr_vm:
-                            changed_attr[field.label] = data_type.display_name
-                        inputs_datatypes.append(data_type)
-    else:
-        inputs_datatypes, changed_attr = _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model)
+
+            part_dts, part_changed = _review_operation_inputs_for_adapter_model(fragment_fields,
+                                                                                fragment_defaults, fragment_model)
+            inputs_datatypes.extend(part_dts)
+            changed_attr.update(part_changed)
 
     return inputs_datatypes, changed_attr

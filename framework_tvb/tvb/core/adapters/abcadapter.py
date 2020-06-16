@@ -261,6 +261,15 @@ class ABCAdapter(object):
     def get_form_class(self):
         return None
 
+    def get_adapter_fragments(self, view_model):
+        """
+        The result will be used for introspecting and checking operation changed input
+        params from the defaults, to show in web gui.
+        :return: a list of ABCAdapterForm classes, in case the current Adapter GUI
+        will be composed of multiple sub-forms.
+        """
+        return {}
+
     def get_view_model_class(self):
         return self.get_form_class().get_view_model()
 
