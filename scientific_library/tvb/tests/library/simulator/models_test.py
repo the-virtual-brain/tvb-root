@@ -251,16 +251,16 @@ class TestModels(BaseTestCase):
 class TestDSLModels(BaseTestCase):
 
     def test_load_model(self):
-        model, _ = load_lems_model('Epileptor')
+        model, _ = load_lems_model('EpileptorT')
         assert model is not None
 
     def test_render_model(self):
-        name = 'Epileptor'
+        name = 'EpileptorT'
         model_str = render_model(name)
-        assert '_numba_dfun_Epileptor' in model_str
+        assert '_numba_dfun_EpileptorT' in model_str
 
     def test_eval_model_str(self):
-        name = 'Epileptor'
+        name = 'EpileptorT'
         module = {}
         exec(render_model(name), module)
         assert issubclass(module[name], Model)

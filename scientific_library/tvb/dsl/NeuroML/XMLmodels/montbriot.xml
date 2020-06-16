@@ -4,7 +4,7 @@
       xsi:schemaLocation="http://www.neuroml.org/lems/0.7.4 ../../LEMS/Schemas/LEMS/LEMS_v0.7.4.xsd"
       description="Rate based/population models translated using LEMS.">
 
-    <ComponentType name="Montbrio"
+    <ComponentType name="MontbrioT"
                    description="2D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons)."
                    value="">
 

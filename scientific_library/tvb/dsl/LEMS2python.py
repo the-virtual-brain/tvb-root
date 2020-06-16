@@ -73,11 +73,11 @@ def regTVB_templating(model_filename, folder=None):
     file_class_name is the name of the produced file and also the model's class name
     the path to XML model files folder can be added with the 2nd argument.
     example model files:
-        epileptor.xml
-        generic2doscillator.xml
-        kuramoto.xml
-        montbrio.xml
-        reducedwongwang.xml
+        epileptort.xml
+        generic2doscillatort.xml
+        kuramotot.xml
+        montbriot.xml
+        reducedwongwangt.xml
     """
 
     # file locations
@@ -117,4 +117,4 @@ def regTVB_templating(model_filename, folder=None):
 if __name__ == "__main__":
 
     # example run for ReducedWongWang model
-    regTVB_templating('ReducedWongWang', './NeuroML/XMLmodels/')
+    regTVB_templating('ReducedWongWangT', './NeuroML/XMLmodels/')
