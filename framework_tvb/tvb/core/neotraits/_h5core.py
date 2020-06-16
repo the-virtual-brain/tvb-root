@@ -34,15 +34,20 @@ import os.path
 import uuid
 from datetime import datetime
 import scipy.sparse
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, EquationScalar, \
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, \
+    EquationScalar, \
     SparseMatrix
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.equations import Equation
+
+LOGGER = get_logger(__name__)
 
 
 class H5File(object):
@@ -150,7 +155,15 @@ class H5File(object):
                 for k, v in current_attr.items():
                     current_attr[k] = value[k]
             else:
-                setattr(datatype, f_name, value)
+                try:
+                    setattr(datatype, f_name, value)
+                except TraitFinalAttributeError:
+                    if getattr(datatype, f_name) != value:
+                        raise
+                    else:
+                        LOGGER.info(
+                            'Cannot overwrite Final attribute: {} on {}, but it already has the expected value'.format(
+                                f_name, type(datatype).__name__))
 
     def store_generic_attributes(self, generic_attributes, create=True):
         # type: (GenericAttributes, bool) -> None
@@ -187,7 +200,6 @@ class H5File(object):
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         return self.generic_attributes
 
-
     def gather_references(self):
         ret = []
         for accessor in self.iter_accessors():
@@ -215,7 +227,6 @@ class H5File(object):
         module = importlib.import_module(package)
         cls = getattr(module, cls_name)
         return cls(path)
-
 
     def __repr__(self):
         return '<{}("{}")>'.format(type(self).__name__, self.path)
