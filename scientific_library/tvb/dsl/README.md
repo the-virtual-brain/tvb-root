@@ -11,7 +11,7 @@ The produced filename is a lower cased [model].py which contains a class named [
 
 # Files
 * dsl/LEMS2pyton.py 				: python script for initiating model code generation
-* dsl/NeuroML/XMLmodels				: directory containing LEMS based XML model files
+* dsl/NeuroML/XMLmodels				: directory containing new XML model files. Contains 5 example XMLs.
 * dsl/tmpl8_regTVB.py				: Mako template converting XML to python
 * dsl/NeuroML/lems                  : modified pyLEMS library tuned for TVB
 * dsl/NeuroML/lems/component.py     : maintains constants and exposures

@@ -6,7 +6,7 @@
                     Base type of any cell/population which has a (dimensionless) rate _R.
                     Generic nonlinear 2-D (phase plane) oscillator.">
 
-    <ComponentType name="Generic2doscillatorT"
+    <ComponentType name="Generic2dOscillatorT"
                    description="Rate based 2D oscillator for TVB"
                    value="">
 
