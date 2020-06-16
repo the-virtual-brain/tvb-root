@@ -1,8 +1,8 @@
 ﻿# TVB model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to TVB Python format.
 The LEMS format PR has been adopted and altered to match TVB model names. 
-In LEMS2python.py the function "regTVB_templating('Model')" will start the code generation.
-It expects a [model].xml file to be present in tvb/dsl/NeuroML/XMLmodels. 
+In LEMS2python.py the function "regTVB_templating('Model', '/path/to/modelfolder')" will start the code generation.
+It expects a [model].xml file to be present in the /path/to/modelfolder. 
 The generated file will be placed in tvb/simulator/models and __init__.py will be updated with model references in case 
 of a new model being added. In case of model updation the reference will not be updated.
 The produced filename is a lower cased [model].py which contains a class named [model].
@@ -174,7 +174,7 @@ dx[1] = ...
 ```
 
 # Running
-Place model file in directory and execute regTVB_templating('modelname') function. Resulting model will be in model directory
+Place model file in directory and execute regTVB_templating('modelname', '/path/to/modelfolder') function. Resulting model will be in model directory
 and recognized by TVB.
 
 # TODO

@@ -70,8 +70,8 @@ def regTVB_templating(model_filename, folder=None):
     """
     modelfile.py is placed results into tvb/simulator/models
     for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
-    file_class_name is the name of the produced file and also the class name
-    path to XML model files can be added with a second argument.
+    file_class_name is the name of the produced file and also the model's class name
+    the path to XML model files folder can be added with the 2nd argument.
     example model files:
         epileptor.xml
         generic2doscillator.xml
