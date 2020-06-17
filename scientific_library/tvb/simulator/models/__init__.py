@@ -51,10 +51,6 @@ from enum import Enum
 
 
 class ModelsEnum(Enum):
-    REDUCEDWONGWANGT = "ReducedWongWangT"
-    REDUCEDWONGWANG = "ReducedWongWang"
-    MONTBRIO = "Montbrio"
-    GENERIC2DOSCILLATOR = "Generic2doscillator"
     BASE_MODEL = "Model"
     EPILEPTOR = "Epileptor"
     EPILEPTOR_2D = "Epileptor2D"
