@@ -40,6 +40,9 @@ from tvb.core.entities.model.model_operation import STATUS_CANCELED, STATUS_ERRO
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
+from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.exceptions import RemoveDataTypeException
+from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -173,6 +176,37 @@ class BurstService(object):
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
+
+    def cancel_or_remove_burst(self, burst_id):
+        """
+        Cancel (if burst is still running) or Remove the burst given by burst_id.
+        :returns True when Remove operation was done and False when Cancel
+        """
+        burst_entity = dao.get_burst_by_id(burst_id)
+        operation_id = burst_entity.fk_simulation
+        if burst_entity.status == burst_entity.BURST_RUNNING:
+            self.stop_burst(operation_id)
+            return False
+
+        # Remove each DataType in current burst.
+        service = ProjectService()
+        datatypes = dao.get_results_for_operation(operation_id)
+        service.remove_operation(operation_id)
+
+        # Remove burst first to delete work-flow steps which still hold foreign keys to operations.
+        correct = dao.remove_entity(burst_entity.__class__, burst_id)
+        if not correct:
+            raise RemoveDataTypeException("Could not remove Burst entity!")
+
+        for datatype in datatypes:
+            service.remove_datatype(burst_entity.fk_project, datatype.gid, False)
+        return True
+
+    def stop_burst(self, operation_id):
+        """
+        Stop the operation given by the operation id.
+        """
+        return BACKEND_CLIENT.stop_operation(int(operation_id))
 
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):

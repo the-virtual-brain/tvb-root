@@ -41,7 +41,6 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
-from tvb.core.services.project_service import ProjectService
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -254,7 +253,7 @@ class SimulatorController(BurstBaseController):
         """
         burst_id = int(burst_id)
         session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-        removed = ProjectService().cancel_or_remove_burst(burst_id)
+        removed = BurstService().cancel_or_remove_burst(burst_id)
         if removed:
             if session_burst.id == burst_id:
                 return "reset-new"
