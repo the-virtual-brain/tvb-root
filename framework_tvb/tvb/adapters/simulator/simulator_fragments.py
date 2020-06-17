@@ -69,17 +69,31 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
 
 
 class SimulatorRMFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, surface_index=None):
+    def __init__(self, prefix='', project_id=None, surface_index=None, connectivity_gid=None):
         super(SimulatorRMFragment, self).__init__(prefix, project_id)
         conditions = None
         if surface_index:
-            conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid'], operations=["=="],
-                                     values=[str(surface_index.gid)])
+            conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
+                                             FilterChain.datatype + '.fk_connectivity_gid'],
+                                     operations=["==", "=="],
+                                     values=[str(surface_index.gid), connectivity_gid.hex])
         self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self, name='region_mapping',
                                            conditions=conditions)
         self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self, name='local_connectivity',
                                            conditions=conditions)
         self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self)
+
+    def fill_from_trait(self, trait):
+        # type: (Simulator) -> None
+        self.coupling_strength.data = trait.surface.coupling_strength
+        if hasattr(trait.surface, 'region_mapping_data'):
+            self.rm.data = trait.surface.region_mapping_data.hex
+        else:
+            self.rm.data = None
+        if trait.surface.local_connectivity:
+            self.lc.data = trait.surface.local_connectivity.hex
+        else:
+            self.lc.data = None
 
 
 class SimulatorStimulusFragment(ABCAdapterForm):
