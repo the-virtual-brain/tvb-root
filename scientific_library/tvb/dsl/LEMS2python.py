@@ -11,9 +11,10 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 from mako.template import Template
 import tvb
 import os
-
+from tvb.basic.logger.builder import get_logger
 from tvb.dsl.NeuroML.lems.model.model import Model
 
+logger = get_logger(__name__)
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -62,7 +63,6 @@ def render_model(model_name, template=None, folder=None):
                             svboundaries=svboundaries,
                             exposures=model.component_types[model_name].exposures
                             )
-    # print(model_str)
     return model_str
 
 
@@ -81,7 +81,7 @@ def regTVB_templating(model_filename, folder=None):
     """
 
     # file locations
-    modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
+    modelfile = os.path.join(os.path.dirname(tvb.__file__), 'simulator', 'models', model_filename.lower() + '.py')
 
     # start templating
     model_str = render_model(model_filename, template=default_template(), folder=folder)
@@ -111,8 +111,8 @@ def regTVB_templating(model_filename, folder=None):
                 f.truncate(0)
                 f.seek(0)
                 f.writelines(lines)
-    except:
-        print('unable to add new model to __init__.py')
+    except IOError as e:
+        logger.error('ioerror: %s', e)
 
 if __name__ == "__main__":
 
