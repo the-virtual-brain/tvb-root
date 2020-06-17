@@ -1,0 +1,102 @@
+<Lems>
+    <ComponentType name="Epileptor"
+                   description="Rate based 2D oscillator for TVB"
+                   value="">
+
+        <Constant name="a" domain="" default="1.0" description="Coefficient of the cubic term in the first state-variable."/>
+        <Constant name="b" domain="" default="3.0" description="Coefficient of the squared term in the first state-variable."/>
+        <Constant name="c" domain="" default="1.0" description="Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."/>
+        <Constant name="d" domain="" default="5.0" description="Coefficient of the squared term in the second state-variable x_{2}."/>
+        <Constant name="r" domain="" default="0.00035" description="Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."/>
+        <Constant name="s" domain="" default="4.0" description="Linear coefficient in the third state variable"/>
+        <Constant name="x0" domain="" default="-1.6" description="Epileptogenicity parameter."/>
+        <Constant name="Iext" domain="" default="3.1" description="External input current to the first state-variable."/>
+        <Constant name="slope" domain="" default="0." description="Linear coefficient in the first state-variable."/>
+        <Constant name="Iext2" domain="" default="3.1" description="External input current to the first state-variable."/>
+        <Constant name="tau" domain="" default="10.0" description="Temporal scaling coefficient in fifth state variable."/>
+        <Constant name="aa" domain="" default="6.0" description="Linear coefficient in fifth state variable."/>
+        <Constant name="bb" domain="" default="2.0" description="Linear coefficient of lowpass excitatory coupling in fourth state variable."/>
+        <Constant name="Kvf" domain="" default="0.0" description="Coupling scaling on a very fast time scale."/>
+        <Constant name="Kf" domain="" default="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
+        <Constant name="Ks" domain="" default="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
+        <Constant name="tt" domain="" default="1.0" description="Time scaling of the whole system to the system in real time."/>
+        <Constant name="modification" domain="" default="1.0" description="When modification is True, then use nonlinear influence on z. The default default is False, i.e., linear influence."/>
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='float'/>
+        <Parameter name="global_coupling" dimension='float'/>
+
+        <DerivedParameter name="rec_n" expression="1 / n_node" value="None"/>
+        <DerivedParameter name="rec_speed_dt" expression="1.0f / global_speed / (dt)" value="None"/>
+        <DerivedParameter name="nsig" expression="sqrt(dt) * sqrt(2.0 * 1e-5)" value="None"/>
+
+        <Dynamics>
+
+            <StateVariable name="x1" default="" boundaries="-2.0, 1.0"/>
+            <StateVariable name="y1" default="" boundaries="-20.0, 2.0"/>
+            <StateVariable name="z" default="" boundaries="-2.0, 5.0"/>
+            <StateVariable name="x2" default="" boundaries="-2.0, 0.0"/>
+            <StateVariable name="y2" default="" boundaries="0.0, 2.0"/>
+            <StateVariable name="g" default="" boundaries="-1.0, 1.0"/>
+
+            <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to). Cases are separated with ; -->
+            <!-- Population 1 -->
+            <ConditionalDerivedVariable name="ydot0" condition="x1 &lt; 0.0" cases="-a * powf(x1, 2) + b * x1; slope - x2 + 0.6 * powf((z - 4),2)"/>
+            <!-- Use the statevariables for name in timederivatives. They will be added to the state variables -->
+            <TimeDerivative name="x1" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 )"/>
+            <TimeDerivative name="y1" expression="tt * (c - d * powf(x1, 2) - y1)"/>
+
+            <!-- Energy -->
+            <ConditionalDerivedVariable name="ydot2" condition="z &lt; 0.0" cases="- 0.1 * (powf(z, 7)); 0"/>
+            <ConditionalDerivedVariable name="h" condition="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)); 4 * (x1 - x0) + ydot2"/>
+            <TimeDerivative name="z" expression="tt * (r * (h - z + Ks * c_pop1))"/>
+
+            <!-- Population 2 -->
+            <TimeDerivative name="x2" expression="tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
+            <ConditionalDerivedVariable name="ydot4" condition="x2 &lt; -0.25" cases="0.0; aa * (x2 + 0.25)"/>
+            <TimeDerivative name="y2" expression="tt * (-y2 + ydot4) / tau"/>
+
+            <!-- Filter -->
+            <TimeDerivative name="g" expression="tt * (-0.01 * (g - 0.1 * x1) )"/>
+
+
+        </Dynamics>
+
+        <!-- Exposures are used for observables. For dimension enter the reduction functionality. Name field is not used-->
+        <Exposure name="o_x1" choices="x1" default="x1"/>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function_pop1">
+
+        <Constant name="c_a" domain="lo=0.0, hi=10., step=0.1" default="1" description="Rescales the connection strength."/>
+
+        <!-- variable for pre synaptic function, only 1 param is allowed (and should be sufficient))  -->
+        <!-- the dimension param indicates the nth statevariable to which the coupling function should apply  -->
+        <!-- param name appears in the pre or post coupling function.  -->
+        <Parameter name="x1_j" dimension='0'/>
+
+    <Dynamics>
+        <DerivedVariable name="pre" expression="sin(x1_j - x1)" description="pre synaptic function for coupling activity"/>
+        <DerivedVariable name="post" expression="c_a" description="post synaptic = a * pre"/>
+    </Dynamics>
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+        <DerivedParameter name="c_pop1" expression="global_coupling * coupling" value="None"/>
+
+    </ComponentType>
+
+        <!-- It is possible to decribe a 2nd coupling funtion, with the same as the syntax as previous. -->
+        <!-- Here used to express the 2nd coupling function which is represented by the linear relation c_pop2 = g -->
+        <ComponentType name="coupling_function_pop2">
+            
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+        <DerivedParameter name="c_pop2" expression="g" value="None"/>
+
+    </ComponentType>
+
+    <ComponentType name="noise" description="on">
+    </ComponentType>
+
+</Lems>
+
+

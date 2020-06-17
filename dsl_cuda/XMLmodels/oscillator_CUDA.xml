@@ -1,0 +1,67 @@
+<Lems>
+
+    <ComponentType name="Oscillator"
+                   description="Rate based 2D oscillator for TVB"
+                   value="">
+
+        <Constant name="tau" domain="" default="1.0"
+                  description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
+        <Constant name="I" domain="" default="0.0" description="Baseline shift of the cubic nullcline"/>
+        <Constant name="a" domain="" default="-2.0" description="Vertical shift of the configurable nullcline"/>
+        <Constant name="b" domain="" default="-10.0" description="Linear slope of the configurable nullcline"/>
+        <Constant name="c" domain="" default="0" description="Parabolic term of the configurable nullcline"/>
+        <Constant name="d" domain="" default="0.02" description="Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."/>
+        <Constant name="e" domain="" default="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
+        <Constant name="f" domain="" default="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
+        <Constant name="g" domain="" default="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
+        <Constant name="alpha" domain="" default="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
+        <Constant name="beta" domain="" default="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
+        <Constant name="gamma" domain="" default="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative.
+It scales both I and the long range coupling term.."/>
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='float'/>
+        <Parameter name="global_coupling" dimension='float'/>
+
+        <DerivedParameter name="rec_n" expression="1 / n_node"/>
+        <DerivedParameter name="rec_speed_dt" expression="1.0f / global_speed / (dt)"/>
+        <DerivedParameter name="nsig" expression="sqrt(dt) * sqrt(2.0 * 1e-3)"/>
+        <DerivedParameter name="lc" expression="0.0"/>
+
+        <Dynamics>
+            <StateVariable name="V" default="" boundaries="-2.0, 4.0"/>
+            <StateVariable name="W" default="" boundaries="-6.0, 6.0"/>
+
+            <TimeDerivative name="V" expression="d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V)"/>
+            <TimeDerivative name="W" expression="d * (a + b * V + c * powf(V, 2) - beta * W) / tau"/>
+        </Dynamics>
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality-->
+        <Exposure name="V" choices="V" default="V"/>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function">
+
+        <Constant name="c_a" domain="lo=0.0, hi=10., step=0.1" default="1" description="Rescales the connection strength."/>
+
+<!--        variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+
+<!--        variables for post synaptic function-->
+<!--        <Requirement name="wij" dimension=''/>-->
+        <Dynamics>
+            <DerivedVariable name="pre" expression="sin(V_j - V)" description = "pre synaptic function for coupling activity"/>
+            <DerivedVariable name="post" expression="c_a" description = "post synaptic function for coupling activity"/>
+        </Dynamics>
+
+        <!-- Handle local coupling result, full expression is 'name' *= 'expression'-->
+        <DerivedParameter name="c_0" expression="global_coupling"/>
+
+    </ComponentType>
+
+    <ComponentType name="noise" description="on">
+    </ComponentType>
+
+</Lems>

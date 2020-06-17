@@ -1,0 +1,89 @@
+<Lems
+      description="A number of ComponentTypes for rate based/population models.
+                    Base type of any cell/population which has a (dimensionless) rate _R.
+                    Reduced Wong Wang model.">
+
+    <ComponentType name="Rwongwang"
+                   description="Rate based 2D oscillator for TVB">
+
+        <Constant name="w_plus" domain="" default="1.4f" description="Excitatory population recurrence weight"/>
+        <Constant name="a_E" domain="" default="310.0f" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_E" domain="" default="125.0f" description="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_E" domain="" default="0.154f" description="[s]. Excitatory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="a_I" domain="" default="615.0f" description="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_I" domain="" default="177.0f" description="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_I" domain="" default="0.087f" description="[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma_E" domain="" default="0.641f / 1000.0f" description="Excitatory population kinetic parameter"/>
+        <Constant name="tau_E" domain="" default="100.0f" description="[ms]. Excitatory population NMDA decay time constant."/>
+        <Constant name="tau_I" domain="" default="10.0f" description="[ms]. Inhibitory population NMDA decay time constant."/>
+        <Constant name="I_0" domain="" default="0.382f" description="[nA]. Effective external input"/>
+        <Constant name="w_E" domain="" default="1.0f" description="Excitatory population external input scaling weight"/>
+        <Constant name="w_I" domain="" default="0.7f" description="Inhibitory population external input scaling weight"/>
+        <Constant name="gamma_I" domain="" default="1.0f / 1000.0f" description="Inhibitory population kinetic parameter"/>
+        <Constant name="min_d_E" domain="" default="-1.0f * d_E" description="Only in CUDA"/>
+        <Constant name="min_d_I" domain="" default="-1.0f * d_I" description="Only in CUDA"/>
+        <Constant name="imintau_E" domain="" default="-1.0f / tau_E" description="Only in CUDA"/>
+        <Constant name="imintau_I" domain="" default="-1.0f / tau_I" description="Only in CUDA"/>
+        <Constant name="w_E__I_0" domain="" default="w_E * I_0" description="Only in CUDA"/>
+        <Constant name="w_I__I_0" domain="" default="w_I * I_0" description="Only in CUDA"/>
+
+        <Constant name="J_N" domain="" default="0.15" description="[nA] NMDA current"/>
+        <Constant name="J_I" domain="" default="1.0" description="[nA] Local inhibitory current"/>
+        <Constant name="G" domain="" default="2.0" description="Global coupling scaling"/>
+        <Constant name="lamda" domain="" default="0.0" description="Inhibitory global coupling scaling"/>
+
+        <!-- Unpack params -->
+        <Constant name="J_NMDA" domain="" default="0.15" description=""/>
+        <Constant name="JI" domain="" default="1.0" description=""/>
+        <Constant name="J_NMDA" domain="" default="0.15" description=""/>
+        <Constant name="G_J_NMDA" domain="" default="G*J_NMDA" description=""/>
+        <Constant name="w_plus__J_NMDA" domain="" default="w_plus * J_NMDA" description=""/>
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='float'/>
+        <Parameter name="global_coupling" dimension='float'/>
+
+        <DerivedParameter name="rec_n" expression="1 / n_node"/>
+        <!-- If rec_speed_dt not is defined or is zero, then no delays will be fetched -->
+        <DerivedParameter name="rec_speed_dt" expression="0"/>
+        <DerivedParameter name="nsig" expression="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
+
+        <Dynamics>
+            <StateVariable name="V" default="" boundaries="0.0000001, 1"/>
+            <StateVariable name="W" default="" boundaries="0.0000001, 1"/>
+
+            <DerivedVariable name="tmp_I_E" expression="a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_0 - JI*W) - b_E"/>
+            <DerivedVariable name="tmp_H_E" expression="tmp_I_E/(1.0-exp(min_d_E * tmp_I_E))"/>
+            <DerivedVariable name="tmp_I_I" expression="(a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I"/>
+            <DerivedVariable name="tmp_H_I" expression="tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))"/>
+
+            <TimeDerivative name="V" expression="(imintau_E* V)+(tmp_H_E*(1-V)*gamma_E)"/>
+            <TimeDerivative name="W" expression="(imintau_I* W)+(tmp_H_I*gamma_I)"/>
+        </Dynamics>
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+        and for dimension enter the reduction functionality-->
+        <Exposure name="V" choices="V" default="V"/>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function">
+
+        <Constant name="a" domain="lo=0.0, hi=10., step=0.1" default="1" description="Rescales the connection strength."/>
+
+        <!-- variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+
+    <Dynamics>
+        <DerivedVariable name="pre" expression="V_j * G_J_NMDA" description = "pre synaptic function for coupling activity"/>
+        <DerivedVariable name="post" expression="a" description = "post synaptic function for coupling activity"/>
+    </Dynamics>
+
+        <DerivedParameter name="c_0" expression="None"/>
+
+    </ComponentType>
+
+    <ComponentType name="noise" description="on">
+    </ComponentType>
+
+</Lems>
