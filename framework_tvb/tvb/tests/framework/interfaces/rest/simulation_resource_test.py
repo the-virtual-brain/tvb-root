@@ -35,7 +35,7 @@ import flask
 import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import Operation
-from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.core.neocom import h5
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import RequestFileKey
@@ -90,8 +90,7 @@ class TestSimulationResource(RestResourceTest):
 
         simulator = Simulator()
         simulator.connectivity = connectivity_factory()
-        sim_serializer = SimulatorSerializer()
-        sim_serializer.serialize_simulator(simulator, None, sim_dir)
+        h5.store_view_model(simulator, sim_dir)
 
         zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
         FilesHelper().zip_folder(zip_filename, sim_dir)

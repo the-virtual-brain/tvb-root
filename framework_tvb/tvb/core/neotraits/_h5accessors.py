@@ -466,3 +466,22 @@ class JsonFinal(Json):
     """
     A python json like data structure accessor meant to be used with Final(dict)
     """
+
+    class StateVariablesEncoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, numpy.ndarray):
+                o = o.tolist()
+            return o
+
+    class StateVariablesDecoder(json.JSONDecoder):
+        def __init__(self):
+            json.JSONDecoder.__init__(self, object_hook=self.dict_array)
+
+        def dict_array(self, dictionary):
+            dict_array = {}
+            for k, v in dictionary.items():
+                dict_array.update({k: numpy.array(v)})
+            return dict_array
+
+    def __init__(self, trait_attribute, h5file, name=None):
+        super(JsonFinal, self).__init__(trait_attribute, h5file, name, self.StateVariablesEncoder, self.StateVariablesDecoder)

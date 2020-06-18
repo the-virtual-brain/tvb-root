@@ -203,10 +203,10 @@ class TVBLoader(object):
 
         return os.path.join(operation_folder, fname)
 
-    def path_for(self, operation_dir, h5_file_class, gid):
+    def path_for(self, operation_dir, h5_file_class, gid, dt_class=None):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
         return os.path.join(operation_dir, fname)
 
     def load_from_index(self, dt_index, dt_class=None):

@@ -359,6 +359,8 @@ class TraitDataTypeSelectField(TraitField):
     def from_trait(self, trait, f_name):
         if hasattr(trait, f_name):
             self.data = getattr(trait, f_name)
+            if isinstance(self.data, uuid.UUID):
+                self.data = self.data.hex
 
     @property
     def get_dynamic_filters(self):

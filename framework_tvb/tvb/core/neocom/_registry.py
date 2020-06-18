@@ -31,6 +31,7 @@
 import typing
 from functools import partial
 
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
@@ -98,7 +99,7 @@ class Registry(object):
     def _determine_proper_datatype_from_index(self, index, subtype):
         dct = {SurfaceIndex: partial(make_surface, subtype),
                SensorsIndex: partial(make_sensors, subtype),
-               ProjectionMatrix: partial(make_proj_matrix, subtype)}
+               ProjectionMatrixIndex: partial(make_proj_matrix, subtype)}
         return type(dct[type(index)]())
 
     def get_datatype_for_index(self, index):

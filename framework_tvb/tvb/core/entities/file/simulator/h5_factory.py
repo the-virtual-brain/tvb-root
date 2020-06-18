@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.datatypes.cortex import Cortex
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.integrators import *
 from tvb.simulator.models import ModelsEnum
@@ -38,6 +37,7 @@ from tvb.simulator.noise import Additive, Multiplicative, Noise
 # TODO: rethink this solution
 def config_h5_factory(config_class):
     from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
+    from tvb.core.entities.file.simulator.view_model import CortexViewModel
 
     if issubclass(config_class, Noise):
         return noise_h5_factory(config_class)
@@ -49,7 +49,7 @@ def config_h5_factory(config_class):
         return model_h5_factory(config_class)
     if issubclass(config_class, Monitor):
         return monitor_h5_factory(config_class)
-    if issubclass(config_class, Cortex):
+    if issubclass(config_class, CortexViewModel):
         return CortexH5
     return None
 

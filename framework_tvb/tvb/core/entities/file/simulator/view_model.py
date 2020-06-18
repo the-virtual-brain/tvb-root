@@ -27,16 +27,120 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, List
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.projections import ProjectionSurfaceEEG, ProjectionSurfaceMEG, ProjectionSurfaceSEEG
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.simulator.monitors import Monitor, EEG, MEG, iEEG, Raw, SubSample, SpatialAverage, GlobalAverage, \
+    TemporalAverage, Projection, Bold, BoldRegionROI
 from tvb.simulator.simulator import Simulator
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.patterns import SpatioTemporalPattern
+
+
+class MonitorViewModel(ViewModel, Monitor):
+    """"""
+
+
+class RawViewModel(MonitorViewModel, Raw):
+    """"""
+
+
+class SubSampleViewModel(MonitorViewModel, SubSample):
+    """"""
+
+
+class SpatialAverageViewModel(MonitorViewModel, SpatialAverage):
+    """"""
+
+
+class GlobalAverageViewModel(MonitorViewModel, GlobalAverage):
+    """"""
+
+
+class TemporalAverageViewModel(MonitorViewModel, TemporalAverage):
+    """"""
+
+    def to_has_traits(self):
+        temporal_average = TemporalAverage()
+        temporal_average.gid = self.gid
+        temporal_average.period = self.period
+        temporal_average.variables_of_interest = self.variables_of_interest
+        return temporal_average
+
+
+class ProjectionViewModel(MonitorViewModel, Projection):
+    region_mapping = DataTypeGidAttr(
+        linked_datatype=RegionMapping,
+        required=Projection.region_mapping.required,
+        label=Projection.region_mapping.label,
+        doc=Projection.region_mapping.doc
+    )
+
+
+class EEGViewModel(ProjectionViewModel, EEG):
+    projection = DataTypeGidAttr(
+        linked_datatype=ProjectionSurfaceEEG,
+        label=EEG.projection.label,
+        doc=EEG.projection.doc
+    )
+
+    sensors = DataTypeGidAttr(
+        linked_datatype=SensorsEEG,
+        label=EEG.sensors.label,
+        doc=EEG.sensors.doc
+    )
+
+    def to_has_traits(self):
+        eeg = EEG()
+        eeg.gid = self.gid
+        eeg.period = self.period
+        eeg.variables_of_interest = self.variables_of_interest
+        eeg.obsnoise = self.obsnoise
+        eeg.reference = self.reference
+        eeg.sigma = self.sigma
+        return eeg
+
+
+class MEGViewModel(ProjectionViewModel, MEG):
+    projection = DataTypeGidAttr(
+        linked_datatype=ProjectionSurfaceMEG,
+        label=MEG.projection.label,
+        doc=MEG.projection.doc
+    )
+
+    sensors = DataTypeGidAttr(
+        linked_datatype=SensorsMEG,
+        label=MEG.sensors.label,
+        doc=MEG.sensors.doc
+    )
+
+
+class iEEGViewModel(ProjectionViewModel, iEEG):
+    projection = DataTypeGidAttr(
+        linked_datatype=ProjectionSurfaceSEEG,
+        label=iEEG.projection.label,
+        doc=iEEG.projection.doc
+    )
+
+    sensors = DataTypeGidAttr(
+        linked_datatype=SensorsInternal,
+        label=iEEG.sensors.label,
+        doc=iEEG.sensors.doc
+    )
+
+
+class BoldViewModel(MonitorViewModel, Bold):
+    """"""
+
+
+class BoldRegionROIViewModel(BoldViewModel, BoldRegionROI):
+    """"""
 
 
 class CortexViewModel(ViewModel, Cortex):
@@ -85,4 +189,11 @@ class SimulatorAdapterModel(ViewModel, Simulator):
     history_gid = DataTypeGidAttr(
         linked_datatype=SimulationHistory,
         required=False
+    )
+
+    monitors = List(
+        of=MonitorViewModel,
+        label=Simulator.monitors.label,
+        default=(TemporalAverageViewModel(),),
+        doc=Simulator.monitors.doc
     )

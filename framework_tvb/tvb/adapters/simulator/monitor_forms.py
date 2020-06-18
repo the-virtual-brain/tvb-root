@@ -26,6 +26,7 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY as EEG_S
 from tvb.datatypes.sensors import MEG_POLYMORPHIC_IDENTITY as MEG_S
@@ -33,28 +34,25 @@ from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY as SEEG_S
 from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY as EEG_P
 from tvb.datatypes.projections import MEG_POLYMORPHIC_IDENTITY as MEG_P
 from tvb.datatypes.projections import SEEG_POLYMORPHIC_IDENTITY as SEEG_P
-from tvb.simulator.monitors import *
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, DataTypeSelectField, MultiSelectField, SelectField
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField, SelectField, \
+    TraitDataTypeSelectField
 from tvb.basic.neotraits.api import List
 import numpy
 
 
 def get_monitor_to_form_dict():
     monitor_class_to_form = {
-        Raw: RawMonitorForm,
-        SubSample: SubSampleMonitorForm,
-        SpatialAverage: SpatialAverageMonitorForm,
-        GlobalAverage: GlobalAverageMonitorForm,
-        TemporalAverage: TemporalAverageMonitorForm,
-        EEG: EEGMonitorForm,
-        MEG: MEGMonitorForm,
-        iEEG: iEEGMonitorForm,
-        Bold: BoldMonitorForm,
-        BoldRegionROI: BoldRegionROIMonitorForm
+        RawViewModel: RawMonitorForm,
+        SubSampleViewModel: SubSampleMonitorForm,
+        SpatialAverageViewModel: SpatialAverageMonitorForm,
+        GlobalAverageViewModel: GlobalAverageMonitorForm,
+        TemporalAverageViewModel: TemporalAverageMonitorForm,
+        EEGViewModel: EEGMonitorForm,
+        MEGViewModel: MEGMonitorForm,
+        iEEGViewModel: iEEGMonitorForm,
+        BoldViewModel: BoldMonitorForm,
+        BoldRegionROIViewModel: BoldRegionROIMonitorForm
     }
 
     return monitor_class_to_form
@@ -62,19 +60,19 @@ def get_monitor_to_form_dict():
 
 def get_ui_name_to_monitor_dict(surface):
     ui_name_to_monitor = {
-        'Raw recording': Raw,
-        'Temporally sub-sample': SubSample,
-        'Spatial average with temporal sub-sample': SpatialAverage,
-        'Global average': GlobalAverage,
-        'Temporal average': TemporalAverage,
-        'EEG': EEG,
-        'MEG': MEG,
-        'Intracerebral / Stereo EEG': iEEG,
-        'BOLD': Bold
+        'Raw recording': RawViewModel,
+        'Temporally sub-sample': SubSampleViewModel,
+        'Spatial average with temporal sub-sample': SpatialAverageViewModel,
+        'Global average': GlobalAverageViewModel,
+        'Temporal average': TemporalAverageViewModel,
+        'EEG': EEGViewModel,
+        'MEG': MEGViewModel,
+        'Intracerebral / Stereo EEG': iEEGViewModel,
+        'BOLD': BoldViewModel
     }
 
     if surface:
-        ui_name_to_monitor['BOLD Region ROI'] = BoldRegionROI
+        ui_name_to_monitor['BOLD Region ROI'] = BoldRegionROIViewModel
 
     return ui_name_to_monitor
 
@@ -151,10 +149,7 @@ class ProjectionMonitorForm(MonitorForm):
 
     def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
         super(ProjectionMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
-        self.region_mapping = DataTypeSelectField(RegionMappingIndex, self, name='region_mapping', required=True,
-                                                  label=Projection.region_mapping.label,
-                                                  doc=Projection.region_mapping.doc)
-        # self.obsnoise
+        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self, name='region_mapping')
 
 
 class EEGMonitorForm(ProjectionMonitorForm):
@@ -168,12 +163,10 @@ class EEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[EEG_P])
 
-        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
-                                              label=EEG.projection.label, doc=EEG.projection.label,
-                                              conditions=projection_filter)
+        self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self, name='projection',
+                                                   conditions=projection_filter)
         self.reference = ScalarField(EEG.reference, self)
-        self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=EEG.sensors.label,
-                                           doc=EEG.sensors.doc, conditions=sensor_filter)
+        self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
         self.sigma = ScalarField(EEG.sigma, self)
 
 
@@ -188,11 +181,9 @@ class MEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[MEG_P])
 
-        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
-                                              label=MEG.projection.label, doc=MEG.projection.doc,
-                                              conditions=projection_filter)
-        self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=MEG.sensors.label,
-                                           doc=MEG.sensors.doc, conditions=sensor_filter)
+        self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self, name='projection',
+                                                   conditions=projection_filter)
+        self.sensors = TraitDataTypeSelectField(MEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
 
 
 class iEEGMonitorForm(ProjectionMonitorForm):
@@ -206,12 +197,10 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[SEEG_P])
 
-        self.projection = DataTypeSelectField(ProjectionMatrixIndex, self, name='projection', required=True,
-                                              label=iEEG.projection.label, doc=iEEG.projection.doc,
-                                              conditions=projection_filter)
+        self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self, name='projection',
+                                                   conditions=projection_filter)
         self.sigma = ScalarField(iEEG.sigma, self)
-        self.sensors = DataTypeSelectField(SensorsIndex, self, name='sensors', required=True, label=iEEG.sensors.label,
-                                           doc=iEEG.sensors.doc, conditions=sensor_filter)
+        self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
 
 
 class BoldMonitorForm(MonitorForm):

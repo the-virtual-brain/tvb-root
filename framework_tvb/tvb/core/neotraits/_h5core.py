@@ -33,8 +33,10 @@ import typing
 import os.path
 import uuid
 from datetime import datetime
+import numpy
 import scipy.sparse
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits._attr import Final
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -42,7 +44,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, \
     EquationScalar, \
-    SparseMatrix
+    SparseMatrix, ReferenceList
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.equations import Equation
@@ -133,7 +135,7 @@ class H5File(object):
     def load_into(self, datatype):
         # type: (HasTraits) -> None
         for accessor in self.iter_accessors():
-            if isinstance(accessor, Reference):
+            if isinstance(accessor, (Reference, ReferenceList)):
                 # we do not load references recursively
                 continue
             f_name = accessor.trait_attribute.field_name
@@ -205,6 +207,10 @@ class H5File(object):
         for accessor in self.iter_accessors():
             if isinstance(accessor, Reference):
                 ret.append((accessor.trait_attribute, accessor.load()))
+            if isinstance(accessor, ReferenceList):
+                hex_gids = accessor.load()
+                gids = [uuid.UUID(hex_gid) for hex_gid in hex_gids]
+                ret.append((accessor.trait_attribute, gids))
         return ret
 
     def determine_datatype_from_file(self, with_references=False):
@@ -213,6 +219,20 @@ class H5File(object):
         module = importlib.import_module(package)
         datatype_cls = getattr(module, cls_name)
         return datatype_cls
+
+    @staticmethod
+    def determine_type(path):
+        # type: (str) -> typing.Type[HasTraits]
+        base_dir, fname = os.path.split(path)
+        storage_manager = HDF5StorageManager(base_dir, fname)
+        meta = storage_manager.get_metadata()
+        type_class_fqn = meta.get('type')
+        if type_class_fqn is None:
+            return HasTraits
+        package, cls_name = type_class_fqn.rsplit('.', 1)
+        module = importlib.import_module(package)
+        cls = getattr(module, cls_name)
+        return cls
 
     @staticmethod
     def from_file(path):
@@ -251,16 +271,27 @@ class ViewModelH5(H5File):
             elif isinstance(attr, NArray):
                 ref = DataSet(attr, self)
             elif isinstance(attr, List):
-                ref = Json(attr, self)
+                if issubclass(attr.element_type, HasTraits):
+                    ref = ReferenceList(attr, self)
+                else:
+                    ref = Json(attr, self)
             elif issubclass(type(attr), Attr):
                 if attr.field_type is scipy.sparse.spmatrix:
                     ref = SparseMatrix(attr, self)
+                elif attr.field_type is numpy.random.RandomState:
+                    continue
                 elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
                 elif issubclass(attr.field_type, Equation):
                     ref = EquationScalar(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
+                elif isinstance(attr, Final) and attr.field_type == dict:
+                    ref = JsonFinal(attr, self)
+                elif issubclass(attr.field_type, HasTraits):
+                    ref = Reference(attr, self)
                 else:
                     ref = Scalar(attr, self)
+            else:
+                ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)

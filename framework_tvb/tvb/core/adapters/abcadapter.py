@@ -534,12 +534,7 @@ class ABCAdapter(object):
     def load_view_model(self, operation):
         storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
         input_gid = json.loads(operation.parameters)['gid']
-        view_model_class = self.get_view_model_class()
-        view_model = view_model_class()
-        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
-        h5_file = ViewModelH5(h5_path, view_model)
-        h5_file.load_into(view_model)
-        return view_model
+        return h5.load_view_model(input_gid, storage_path)
 
 
 @add_metaclass(ABCMeta)

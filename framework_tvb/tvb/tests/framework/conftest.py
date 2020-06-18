@@ -55,7 +55,6 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -639,7 +638,7 @@ def simulator_factory(connectivity_index_factory, operation_factory):
             op = operation_factory(test_user=user, test_project=project)
         model.connectivity = connectivity_index_factory(nr_regions, op).gid
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        SimulatorSerializer.serialize_simulator(model, None, storage_path)
+        h5.store_view_model(model, storage_path)
 
         return storage_path, model.gid
 

@@ -37,6 +37,7 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
+from tvb.core.neotraits._h5core import ViewModelH5
 from tvb.core.neotraits.h5 import H5File
 
 REGISTRY = Registry()
@@ -48,10 +49,10 @@ def path_for_stored_index(dt_index_instance):
     return loader.path_for_stored_index(dt_index_instance)
 
 
-def path_for(base_dir, h5_file_class, gid):
-    # type: (str, typing.Type[H5File], object) -> str
+def path_for(base_dir, h5_file_class, gid, dt_class=None):
+    # type: (str, typing.Type[H5File], object, str) -> str
     loader = TVBLoader(REGISTRY)
-    return loader.path_for(base_dir, h5_file_class, gid)
+    return loader.path_for(base_dir, h5_file_class, gid, dt_class)
 
 
 def h5_file_for_index(dt_index_instance):
@@ -189,3 +190,50 @@ def store_to_dir(datatype, base_dir, recursive=False):
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
     loader.store(datatype)
+
+
+def get_full_class_name(class_entity):
+    return class_entity.__module__ + '.' + class_entity.__name__
+
+
+def store_view_model(view_model, base_dir):
+    h5_path = path_for(base_dir, ViewModelH5, view_model.gid, type(view_model).__name__)
+    with ViewModelH5(h5_path, view_model) as h5_file:
+        h5_file.store(view_model)
+        h5_file.type.store(get_full_class_name(type(view_model)))
+
+        references = h5_file.gather_references()
+        for trait_attr, gid in references:
+            if not gid:
+                continue
+            model_attr = getattr(view_model, trait_attr.field_name)
+            if isinstance(gid, list):
+                for idx, sub_gid in enumerate(gid):
+                    store_view_model(model_attr[idx], base_dir)
+            else:
+                store_view_model(model_attr, base_dir)
+
+
+def load_view_model(gid, base_dir):
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    h5_path = os.path.join(base_dir, fname)
+
+    view_model_class = H5File.determine_type(h5_path)
+    view_model = view_model_class()
+
+    with ViewModelH5(h5_path, view_model) as h5_file:
+        h5_file.load_into(view_model)
+        references = h5_file.gather_references()
+        for trait_attr, gid in references:
+            if not gid:
+                continue
+            if isinstance(gid, list):
+                loaded_ref = []
+                for idx, sub_gid in enumerate(gid):
+                    ref = load_view_model(sub_gid, base_dir)
+                    loaded_ref.append(ref)
+            else:
+                loaded_ref = load_view_model(gid, base_dir)
+            setattr(view_model, trait_attr.field_name, loaded_ref)
+    return view_model

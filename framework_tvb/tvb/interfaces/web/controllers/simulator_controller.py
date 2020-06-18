@@ -42,7 +42,6 @@ from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -868,24 +867,6 @@ class SimulatorController(BurstBaseController):
                                                               self.last_loaded_form_url, cherrypy.request.method)
             return rendering_rules.to_dict()
 
-        if isinstance(monitor, Projection) and cherrypy.request.method == 'POST':
-            # load region mapping
-            region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
-            region_mapping = h5.load_from_index(region_mapping_index)
-            monitor.region_mapping = region_mapping
-
-            # load sensors and projection
-            sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
-            sensors_class = monitor.projection_class().sensors.field_type
-            sensors = h5.load_from_index(sensors_index, dt_class=sensors_class)
-
-            projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
-            projection_class = monitor.projection_class()
-            projection = h5.load_from_index(projection_surface_index, dt_class=projection_class)
-
-            monitor.sensors = sensors
-            monitor.projection = projection
-
         next_form, form_action_url, is_launch_fragment, monitor_name = \
             self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, session_stored_burst)
 
@@ -1143,7 +1124,7 @@ class SimulatorController(BurstBaseController):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             project = common.get_current_project()
             storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-            simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
+            simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
 
             common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
             common.add2session(common.KEY_IS_SIMULATOR_LOAD, True)
@@ -1172,7 +1153,7 @@ class SimulatorController(BurstBaseController):
 
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-        simulator = SimulatorSerializer().deserialize_simulator(burst_config.simulator_gid, storage_path)
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
 
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)

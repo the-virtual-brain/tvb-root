@@ -49,7 +49,6 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
@@ -624,7 +623,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, None, storage_path)
+        h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
@@ -656,7 +655,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
-        SimulatorSerializer().serialize_simulator(self.session_stored_simulator, None, storage_path)
+        h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.load_burst_read_only(str(burst_config.id))

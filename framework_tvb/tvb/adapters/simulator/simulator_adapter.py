@@ -51,13 +51,12 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
 from tvb.core.neocom import h5
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.patterns import StimuliSurface
 from tvb.datatypes.surfaces import CorticalSurface
@@ -154,11 +153,6 @@ class SimulatorAdapter(ABCAsynchronous):
         # For now I think it is ok if we rename this section "Summary" and filter what is shown
         return forms
 
-    def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
-        input_gid = json.loads(operation.parameters)['gid']
-        return SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
-
     def get_output(self):
         """
         :returns: list of classes for possible results of the Simulator.
@@ -210,8 +204,13 @@ class SimulatorAdapter(ABCAsynchronous):
         simulator.simulation_length = view_model.simulation_length
 
         monitors = list()
-        for monitor in view_model.monitors:
-            monitor,  _ = h5.load_with_references_from_dir(self.storage_path, monitor.gid)
+        for monitor_vm in view_model.monitors:
+            monitor = monitor_vm.to_has_traits()
+            if issubclass(type(monitor_vm), EEGViewModel):
+                monitor.projection = self.load_traited_by_gid(monitor_vm.projection)
+                monitor.sensors = self.load_traited_by_gid(monitor_vm.sensors)
+                if monitor_vm.region_mapping:
+                    monitor.region_mapping = self.load_traited_by_gid(monitor_vm.region_mapping)
             monitors.append(monitor)
 
         simulator.monitors = monitors
