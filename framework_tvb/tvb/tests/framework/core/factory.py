@@ -59,6 +59,7 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.neotraits.view_model import ViewModel
@@ -327,6 +328,23 @@ class TestFactory(object):
         TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project.id)
 
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
+
+    @staticmethod
+    def launch_synchronously(test_user, test_project, adapter_instance, view_model, algo_category=None):
+        # Avoid the scheduled execution, as this is asynch, thus launch it immediately
+        service = OperationService()
+        algorithm = adapter_instance.stored_adapter
+        if algo_category is None:
+            algo_category = dao.get_category_by_id(algorithm.fk_category)
+        operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
+                                               {}, True, view_model=view_model)[0][0]
+        service.initiate_prelaunch(operation, adapter_instance)
+
+        operation = dao.get_operation_by_id(operation.id)
+        # Check that operation status after execution is success.
+        assert STATUS_FINISHED == operation.status
+        # Make sure at least one result exists for each BCT algorithm
+        return dao.get_generic_entity(DataType, operation.id, 'fk_from_operation')
 
 
 class ExtremeTestFactory(object):

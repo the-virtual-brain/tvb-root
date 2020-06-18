@@ -47,6 +47,7 @@ from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
 from tvb.datatypes.cortex import Cortex
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
+from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
@@ -58,7 +59,6 @@ from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfac
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5, RegionVolumeMappingH5
 from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
-from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5, ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5, WaveletCoefficientsH5
 from tvb.adapters.datatypes.h5.structural_h5 import StructuralMRIH5

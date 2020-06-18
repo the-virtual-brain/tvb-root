@@ -41,77 +41,28 @@ Few supplementary steps are done here:
 
 """
 import json
-
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.patterns import SpatioTemporalPattern, StimuliSurface
-from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.simulator.coupling import Coupling
-from tvb.simulator.simulator import Simulator
+from tvb.adapters.simulator.model_forms import get_model_to_form_dict
+from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
+from tvb.adapters.simulator.simulator_fragments import *
 from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, Attr
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.basic.neotraits.api import Attr
+from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
 from tvb.core.neocom import h5
-
-
-class CortexViewModel(ViewModel, Cortex):
-
-    surface_gid = DataTypeGidAttr(
-        linked_datatype=CorticalSurface
-    )
-
-    local_connectivity = DataTypeGidAttr(
-        linked_datatype=LocalConnectivity,
-        required=Cortex.local_connectivity.required,
-        label=Cortex.local_connectivity.label,
-        doc=Cortex.local_connectivity.doc
-    )
-
-    region_mapping_data = DataTypeGidAttr(
-        linked_datatype=RegionMapping,
-        label=Cortex.region_mapping_data.label,
-        doc=Cortex.region_mapping_data.doc
-    )
-
-
-class SimulatorAdapterModel(ViewModel, Simulator):
-    connectivity = DataTypeGidAttr(
-        linked_datatype=Connectivity,
-        required=Simulator.connectivity.required,
-        label=Simulator.connectivity.label,
-        doc=Simulator.connectivity.doc
-    )
-
-    surface = Attr(
-        field_type=CortexViewModel,
-        label=Simulator.surface.label,
-        default=Simulator.surface.default,
-        required=Simulator.surface.required,
-        doc=Simulator.surface.doc
-    )
-
-    stimulus = DataTypeGidAttr(
-        linked_datatype=SpatioTemporalPattern,
-        label=Simulator.stimulus.label,
-        default=Simulator.stimulus.default,
-        required=Simulator.stimulus.required,
-        doc=Simulator.stimulus.doc
-    )
-
-    history_gid = DataTypeGidAttr(
-        linked_datatype=SimulationHistory,
-        required=False
-    )
+from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.datatypes.cortex import Cortex
+from tvb.datatypes.patterns import StimuliSurface
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator.coupling import Coupling
+from tvb.simulator.simulator import Simulator
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
@@ -181,6 +132,32 @@ class SimulatorAdapter(ABCAsynchronous):
 
     def get_form_class(self):
         return SimulatorAdapterForm
+
+    def get_adapter_fragments(self, view_model):
+        # type (SimulatorAdapterModel) -> dict
+        forms = {None: [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment,
+                        SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment,
+                        SimulatorFinalFragment]}
+
+        current_model_class = type(view_model.model)
+        all_model_forms = get_model_to_form_dict()
+        forms["model"] = [all_model_forms.get(current_model_class)]
+
+        all_monitor_forms = get_monitor_to_form_dict()
+        selected_monitor_forms = []
+        for monitor in view_model.monitors:
+            current_monitor_class = type(monitor)
+            selected_monitor_forms.append(all_monitor_forms.get(current_monitor_class))
+
+        forms["monitors"] = selected_monitor_forms
+        # Not sure if where we should in fact include the entire tree, or it will become too tedious.
+        # For now I think it is ok if we rename this section "Summary" and filter what is shown
+        return forms
+
+    def load_view_model(self, operation):
+        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        input_gid = json.loads(operation.parameters)['gid']
+        return SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
 
     def get_output(self):
         """

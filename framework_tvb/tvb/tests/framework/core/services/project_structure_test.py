@@ -32,9 +32,14 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import os
 import numpy
 import pytest
+import tvb_data
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
+from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
@@ -312,56 +317,30 @@ class TestProjectStructure(TransactionalTestCase):
         assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
-    def test_get_inputs_for_operation(self, datatype_group_factory, array_factory, test_adapter_factory):
+    def test_get_inputs_for_operation(self):
         """
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
         Verifies filters' influence over results is as expected
         """
-        algo = test_adapter_factory(adapter_class=TestAdapter3)
-        array_wrappers = array_factory(self.test_project)
-        ids = []
-        for datatype in array_wrappers:
-            ids.append(datatype[0])
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        view_model = BaseBCTModel()
+        view_model.connectivity = conn.gid
+        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        value_wrapper = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter, view_model)[0]
 
-        datatype = dao.get_datatype_by_id(ids[0])
-        datatype.visible = False
-        dao.store_entity(datatype)
-
-        parameters = json.dumps({"param_5": "1", "param_1": array_wrappers[0][2],
-                                 "param_2": array_wrappers[1][2], "param_3": array_wrappers[2][2], "param_6": "0"})
-        operation = Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
-        operation = dao.store_entity(operation)
+        conn.visible = False
+        dao.store_entity(conn)
+        operation = dao.get_operation_by_id(value_wrapper.fk_from_operation)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.relevant_filter)
-        assert len(inputs) == 2
-        assert ids[1] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
-        assert ids[2] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
-        assert not ids[0] in [inputs[0].id, inputs[1].id], "Retrieved wrong dataType."
+        assert len(inputs) == 0
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.full_filter)
-        assert len(inputs) == 3, "Incorrect number of operations."
-        assert ids[0] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
-        assert ids[1] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
-        assert ids[2] in [inputs[0].id, inputs[1].id, inputs[2].id], "Retrieved wrong dataType."
-
-        group = datatype_group_factory(project=self.test_project)
-        datatypes = dao.get_datatypes_from_datatype_group(group.id)
-        datatypes[0].visible = False
-        dao.store_entity(datatypes[0])
-        parameters = json.dumps({"other_param": "_", "param_1": datatypes[0].gid})
-        operation = Operation(self.test_user.id, self.test_project.id, algo.id, parameters)
-        operation = dao.store_entity(operation)
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.relevant_filter)
-        assert len(inputs) == 0, "Incorrect number of dataTypes."
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert inputs[0].id == group.id, "Wrong dataType."
-        assert inputs[0].id != datatypes[0].id, "Wrong dataType."
+        assert len(inputs) == 1, "Incorrect number of inputs."
+        assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
 
     def test_get_inputs_for_op_group(self, datatype_group_factory, test_adapter_factory):
         """

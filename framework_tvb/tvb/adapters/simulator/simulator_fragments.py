@@ -29,29 +29,30 @@
 #
 
 import uuid
+
 import formencode
 from formencode import validators
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
+from tvb.adapters.simulator.model_forms import get_ui_name_to_model
+from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.basic.neotraits.api import Attr, Range, List
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.transient.range_parameter import RangeParameter
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
+    SimpleHiddenField, SelectField, MultiSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
 from tvb.simulator.simulator import Simulator
-from tvb.adapters.simulator.model_forms import get_ui_name_to_model
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
-from tvb.adapters.simulator.range_parameter import RangeParameter
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
-from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex, StimuliRegionIndex, SpatioTemporalPatternIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
-    SimpleHiddenField, SelectField, MultiSelectField
-from tvb.core.neocom import h5
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):

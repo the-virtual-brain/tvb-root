@@ -53,7 +53,7 @@ from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -260,6 +260,15 @@ class ABCAdapter(object):
     @abstractmethod
     def get_form_class(self):
         return None
+
+    def get_adapter_fragments(self, view_model):
+        """
+        The result will be used for introspecting and checking operation changed input
+        params from the defaults, to show in web gui.
+        :return: a list of ABCAdapterForm classes, in case the current Adapter GUI
+        will be composed of multiple sub-forms.
+        """
+        return {}
 
     def get_view_model_class(self):
         return self.get_form_class().get_view_model()
@@ -523,13 +532,15 @@ class ABCAdapter(object):
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
 
-    def review_operation_inputs(self, parameters):
-        # TODO: implement this for neoforms
-        """
-        :returns: a list with the inputs from the parameters list that are instances of DataType,\
-            and a dictionary with all parameters which are different than the declared defauts
-        """
-        return {}, None
+    def load_view_model(self, operation):
+        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        input_gid = json.loads(operation.parameters)['gid']
+        view_model_class = self.get_view_model_class()
+        view_model = view_model_class()
+        h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
+        h5_file = ViewModelH5(h5_path, view_model)
+        h5_file.load_into(view_model)
+        return view_model
 
 
 @add_metaclass(ABCMeta)

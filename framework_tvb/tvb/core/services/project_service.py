@@ -36,29 +36,29 @@ Service Layer for the Project entity.
 """
 
 import os
-import six
 import json
 import formencode
-from tvb.core import utils
 from tvb.basic.logger.builder import get_logger
+from tvb.core import utils
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
-from tvb.core.services.flow_service import FlowService
-from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
-from tvb.core.removers_factory import get_remover
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.removers_factory import get_remover
+from tvb.core.services.flow_service import FlowService
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 
 
 def initialize_storage():
@@ -777,7 +777,7 @@ class ProjectService:
                 dt_group = dao.get_datatype_by_id(data_type.fk_datatype_group)
                 datatype_groups[data_type.fk_datatype_group] = dt_group
 
-        datatypes.extend([v for _, v in six.iteritems(datatype_groups)])
+        datatypes.extend([v for v in datatype_groups.values()])
         return datatypes
 
     def _review_operation_inputs(self, operation_gid):
@@ -785,23 +785,19 @@ class ProjectService:
         :returns: A list of DataTypes that are used as input parameters for the specified operation.
                  And a dictionary will all operation parameters different then the default ones.
         """
-        # todo rewrite after neotraits TVB-2687
         operation = dao.get_operation_by_gid(operation_gid)
-        parameters = json.loads(operation.parameters)
         try:
             adapter = ABCAdapter.build_adapter(operation.algorithm)
-            return adapter.review_operation_inputs(parameters)
+            return review_operation_inputs_from_adapter(adapter, operation)
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)
-            inputs_datatypes = []
-            changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
-            for submit_param in parameters.values():
-                self.logger.debug("Searching DT by GID %s" % submit_param)
-                datatype = ABCAdapter.load_entity_by_gid(str(submit_param))
-                if datatype is not None:
-                    inputs_datatypes.append(datatype)
-            return inputs_datatypes, changed_parameters
+            parameters = json.loads(operation.parameters)
+            if 'gid' in parameters.keys():
+                changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
+            else:
+                changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
+            return [], changed_parameters
 
     def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
         """
