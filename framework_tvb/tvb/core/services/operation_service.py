@@ -52,8 +52,8 @@ from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.load import get_class_by_name
-from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
-    BurstConfiguration
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.storage import dao
@@ -309,7 +309,8 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space,
+                                                                   view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
@@ -409,8 +410,8 @@ class OperationService:
         Create and store OperationGroup entity, or return None
         """
         # Standard ranges as accepted from UI
-        range1_values = self.get_range_values(kwargs, self._range_name(1))
-        range2_values = self.get_range_values(kwargs, self._range_name(2))
+        range1_values = self._get_range_values(kwargs, self._range_name(1))
+        range2_values = self._get_range_values(kwargs, self._range_name(2))
         available_args = self.__expand_arguments([(kwargs, None)], range1_values, self._range_name(1))
         available_args = self.__expand_arguments(available_args, range2_values, self._range_name(2))
         is_group = False
@@ -425,7 +426,7 @@ class OperationService:
         last_range_idx = 3
         ranger_name = self._range_name(last_range_idx)
         while ranger_name in kwargs:
-            values_for_range = self.get_range_values(kwargs, ranger_name)
+            values_for_range = self._get_range_values(kwargs, ranger_name)
             available_args = self.__expand_arguments(available_args, values_for_range, ranger_name)
             last_range_idx += 1
             ranger_name = self._range_name(last_range_idx)
@@ -441,7 +442,7 @@ class OperationService:
 
         return available_args, group
 
-    def get_range_values(self, kwargs, ranger_name):
+    def _get_range_values(self, kwargs, ranger_name):
         """
         For the ranger given by ranger_name look in kwargs and return
         the array with all the possible values.

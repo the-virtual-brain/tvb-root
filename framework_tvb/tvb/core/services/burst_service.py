@@ -40,7 +40,6 @@ from tvb.core.entities.model.model_operation import STATUS_CANCELED, STATUS_ERRO
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
-from tvb.core.services.backend_client import BACKEND_CLIENT
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import format_bytes_human, format_timedelta
@@ -110,9 +109,7 @@ class BurstService(object):
         :return: operation instance changed
         """
         operation.mark_complete(operation_status, message)
-        dao.store_entity(operation)
-        operation = dao.get_operation_by_id(operation.id)
-        self.file_helper.write_operation_metadata(operation)
+        operation = dao.store_entity(operation)
         # update burst also
         burst_config = self.get_burst_for_operation_id(operation.id)
         if burst_config is not None:
@@ -177,16 +174,12 @@ class BurstService(object):
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
 
-    def cancel_or_remove_burst(self, burst_id):
+    def remove_burst(self, burst_id):
         """
-        Cancel (if burst is still running) or Remove the burst given by burst_id.
-        :returns True when Remove operation was done and False when Cancel
+        Remove BurstConfiguration, Simulation and DataTypes
         """
         burst_entity = dao.get_burst_by_id(burst_id)
         operation_id = burst_entity.fk_simulation
-        if burst_entity.status == burst_entity.BURST_RUNNING:
-            self.stop_burst(operation_id)
-            return False
 
         # Remove each DataType in current burst.
         service = ProjectService()
@@ -200,13 +193,8 @@ class BurstService(object):
 
         for datatype in datatypes:
             service.remove_datatype(burst_entity.fk_project, datatype.gid, False)
-        return True
 
-    def stop_burst(self, operation_id):
-        """
-        Stop the operation given by the operation id.
-        """
-        return BACKEND_CLIENT.stop_operation(int(operation_id))
+        return True
 
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):

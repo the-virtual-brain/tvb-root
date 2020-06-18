@@ -177,7 +177,7 @@ class TestBurstService(BaseTestCase):
         Test the remove burst method added to burst_service.
         """
         loaded_burst, _ = self._prepare_and_launch_sync_burst()
-        self.burst_service.cancel_or_remove_burst(loaded_burst.id)
+        self.burst_service.remove_burst(loaded_burst.id)
         self._check_burst_removed()
 
 
@@ -213,7 +213,7 @@ class TestBurstService(BaseTestCase):
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
         assert 4 == launched_workflows, "4 workflows should have been launched due to group parameter."
 
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_config.id)
+        got_deleted = self.burst_service.remove_burst(burst_config.id)
         assert got_deleted, "Burst should be deleted"
 
         launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
@@ -230,12 +230,12 @@ class TestBurstService(BaseTestCase):
         burst_entity = self._prepare_and_launch_async_burst(length=20000)
         assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
                          'A 20000 length simulation should still be started immediately after launch.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
+        got_deleted = self.burst_service.remove_burst(burst_entity.id)
         assert not got_deleted, "Burst should be cancelled before deleted."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
         assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
                          'Deleting a running burst should just cancel it first.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
+        got_deleted = self.burst_service.remove_burst(burst_entity.id)
         assert got_deleted, "Burst should be deleted if status is cancelled."
         burst_entity = dao.get_burst_by_id(burst_entity.id)
         assert burst_entity is None, "Removing a canceled burst should delete it from db."
