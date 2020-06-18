@@ -53,7 +53,7 @@ from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
