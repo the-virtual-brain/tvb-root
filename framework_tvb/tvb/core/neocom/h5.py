@@ -219,10 +219,15 @@ def load_view_model(gid, base_dir):
     fname = dir_loader.find_file_name(gid)
     h5_path = os.path.join(base_dir, fname)
 
-    view_model_class = H5File.determine_type(h5_path)
+    return load_view_model_from_file(h5_path)
+
+
+def load_view_model_from_file(filepath):
+    base_dir = os.path.dirname(filepath)
+    view_model_class = H5File.determine_type(filepath)
     view_model = view_model_class()
 
-    with ViewModelH5(h5_path, view_model) as h5_file:
+    with ViewModelH5(filepath, view_model) as h5_file:
         h5_file.load_into(view_model)
         references = h5_file.gather_references()
         for trait_attr, gid in references:

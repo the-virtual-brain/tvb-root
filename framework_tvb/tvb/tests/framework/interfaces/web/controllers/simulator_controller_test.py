@@ -43,7 +43,6 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -587,9 +586,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = dao.store_entity(burst_config)
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
-        h5_path = h5.path_for(storage_path, SimulatorH5, self.session_stored_simulator.gid)
-        with SimulatorH5(h5_path) as h5_file:
-            h5_file.store(self.session_stored_simulator)
+        h5.store_view_model(self.session_stored_simulator, storage_path)
 
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)

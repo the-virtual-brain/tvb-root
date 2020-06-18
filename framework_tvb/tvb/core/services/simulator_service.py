@@ -40,7 +40,7 @@ import uuid
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao, transactional
@@ -125,13 +125,11 @@ class SimulatorService(object):
                 self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
-        with SimulatorH5(simulator_file) as simulator_h5:
-            simulator_gid = simulator_h5.gid.load()
-
+        simulator_vm = h5.load_view_model_from_file(simulator_file)
         metadata = {}
         simulator_id = algorithm.id
         algo_category = algorithm.algorithm_category
-        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_gid,
+        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_vm.gid,
                                             algo_category, None, metadata)
         storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
         self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
@@ -231,10 +229,8 @@ class SimulatorService(object):
         import_service = ImportService()
         simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
 
-        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
-        with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
-            simulator_gid = sim_h5.gid.load()
-        simulator = h5.load_view_model(simulator_gid, simulator_folder)
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
+        simulator = h5.load_view_model_from_file(simulator_h5_filename)
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
