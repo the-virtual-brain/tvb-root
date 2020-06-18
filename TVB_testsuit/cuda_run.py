@@ -71,8 +71,8 @@ class CudaRun:
 		return gpu_data#}}}
 
 
-	def run_simulation(self, weights, lengths, params_matrix, couplings, speeds, logger, args, n_nodes, n_work_items, n_params, nstep, n_inner_steps,
-		buf_len, states, dt, min_speed, pop):
+	def run_simulation(self, weights, lengths, params_matrix, speeds, logger, args, n_nodes, n_work_items, n_params, nstep, n_inner_steps,
+		buf_len, states, dt, min_speed):
 
 		# setup data#{{{
 		data = { 'weights': weights, 'lengths': lengths, 'params': params_matrix.T }
@@ -90,10 +90,8 @@ class CudaRun:
 		# setup CUDA stuff#{{{
 		step_fn = self.make_kernel(
 			source_file=args.filename,
-			# warp_size=32,
-			# block_dim_x=args.n_coupling,
-			warp_size=8,
-			block_dim_x=8,
+			warp_size=32,
+			block_dim_x=args.n_coupling,
 			# ext_options=preproccesor_defines,
 			# caching=args.caching,
 			args=args,
@@ -113,8 +111,7 @@ class CudaRun:
 		#}}}
 
 		# adjust gridDim to keep block size <= 1024 {{{
-		# block_size_lim = 1024
-		block_size_lim = 64
+		block_size_lim = 1024
 		n_coupling_per_block = block_size_lim // args.node_threads
 		n_coupling_blocks = args.n_coupling // n_coupling_per_block
 		if n_coupling_blocks == 0:

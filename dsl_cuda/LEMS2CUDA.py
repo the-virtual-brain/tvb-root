@@ -3,20 +3,24 @@ from mako.template import Template
 
 import os
 import sys
+import inspect
 
 for p in sys.path:
-    print(p)
+	print('spL2C', p)
 
-import dsl
-sys.path.append("{}".format(os.path.dirname(dsl.__file__)))
+# import dsl
+# sys.path.append("{}".format(os.path.dirname(dsl.__file__)))
+# # sys.path.append("{}".format(os.path.dirname(__file__)))
+# x = os.path.join('../../', os.path.dirname(__file__))
+# print('dsl', x)
+
+current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+print('cr', inspect.currentframe())
 
 from lems.model.model import Model
-
-# model file location
-# model_filename = 'Oscillator'
-# model_filename = 'Kuramoto'
-# model_filename = 'Rwongwang'
-model_filename = 'Epileptor'
 
 
 def default_lems_folder():
@@ -34,10 +38,10 @@ def default_template():
     template = Template(filename=tmp_filename)
     return template
 
-def load_model(model_filename):
+def load_model(model_filename, folder=None):
     "Load model from filename"
 
-    fp_xml = lems_file(model_filename)
+    fp_xml = lems_file(model_filename, folder)
 
     model = Model()
     model.import_from_file(fp_xml)
@@ -45,12 +49,12 @@ def load_model(model_filename):
 
     return model
 
-def render_model(model_name, template=None):
+def render_model(model_name, template=None, folder=None):
     # drift dynamics
     # modelist = list()
     # modelist.append(model.component_types[modelname])
 
-    model = load_model(model_name)
+    model = load_model(model_name, folder)
     template = template or default_template()
 
     modellist = model.component_types[model_name]
@@ -103,16 +107,24 @@ def render_model(model_name, template=None):
 
     return model_str
 
-def cuda_templating(model_filename):
+def cuda_templating(model_filename, folder=None):
 
-    modelfile = "{}{}{}{}".format(os.path.dirname(dsl.__file__), '/dsl_cuda/CUDAmodels/', model_filename.lower(), '.c')
+    # modelfile = "{}{}{}{}".format(os.path.dirname(dsl.__file__), '/dsl_cuda/CUDAmodels/', model_filename.lower(), '.c')
+    # modelfile = os.path.join(os.path.dirname(dsl.__file__), 'dsl_cuda', 'CUDAmodels', model_filename.lower() + '.c')
+    # print('f', os.path.dirname(__file__))
+    modelfile = os.path.join(os.path.dirname(__file__), 'CUDAmodels', model_filename.lower() + '.c')
 
     # start templating
-    model_str = render_model(model_filename, template=default_template())
+    model_str = render_model(model_filename, template=default_template(), folder=folder)
 
     # write template to file
     with open(modelfile, "w") as f:
         f.writelines(model_str)
 
+if __name__ == '__main__':
 
-cuda_templating(model_filename)
+    # model_filename = 'Oscillator'
+    # model_filename = 'Kuramoto'
+    # model_filename = 'Rwongwang'
+    model_filename = 'Epileptor'
+    cuda_templating(model_filename)

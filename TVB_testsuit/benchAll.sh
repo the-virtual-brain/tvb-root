@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 
-#BSUB -q normal
-#BSUB -W 00:30
-#BSUB -n 1
-#BSUB -R "span[ptile=1]"
-#BSUB -gpu "num=1:j_exclusive=yes"
-##BSUB -e "./error.%J.er"
-##BSUB -o "./output_%J.out"
-#BSUB -e "./error.er"
-#BSUB -o "./output.out"
-#BSUB -J testbench
+#SBATCH --partition=dp-esb
+#SBATCH -A type1_1
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -o output.out
+#SBATCH -e ./error.er
+#SBATCH --time=00:30:00
+#SBATCH -J benchDSL
 
 # Run the program
+srun python ./cuda_setup.py --model mdlrun --bench bencharg
 
-mpirun python ./tvbRegCudaNumba.py -b bencharg
 
