@@ -42,7 +42,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.factory import TestFactory
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
 TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
@@ -148,15 +147,3 @@ class TestFlowService(TransactionalTestCase):
         assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
         assert adapter.get_form_class() == TestAdapter1Form
         assert adapter.get_view_model() == TestModel
-
-    def test_fire_operation(self):
-        """
-        Test preparation of an adapter and launch mechanism.
-        """
-        adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        test_user = TestFactory.create_user()
-        test_project = TestFactory.create_project(admin=test_user)
-
-        result = self.flow_service.fire_operation(adapter, test_user, test_project.id,
-                                                  view_model=adapter.get_view_model()())
-        assert result.endswith("has finished."), "Operation fail"

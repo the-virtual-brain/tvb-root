@@ -216,8 +216,8 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         current_lconn = common.get_from_session(KEY_LCONN)
         local_connectivity_creator = ABCAdapter.build_adapter_from_class(LocalConnectivityCreator)
-        self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
-                                         common.get_current_project().id, view_model=current_lconn)
+        self.operation_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
+                                              common.get_current_project().id, view_model=current_lconn)
         common.set_important_message("The operation for creating the local connectivity was successfully launched.")
         return self.step_1()
 

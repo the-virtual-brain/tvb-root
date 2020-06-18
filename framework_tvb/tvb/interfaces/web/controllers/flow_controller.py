@@ -58,7 +58,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, using_template
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -84,6 +84,7 @@ class FlowController(BaseController):
         BaseController.__init__(self)
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
+        self.operation_services = OperationService()
 
     @expose_page
     @settings
@@ -187,8 +188,8 @@ class FlowController(BaseController):
         range_param_name = data.pop('range_param_name')
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
-        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project(),
-                                                  int(algorithm_id), int(step_key), **data)
+        self.operation_services.group_operation_launch(common.get_logged_user().id, common.get_current_project(),
+                                                       int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
 
@@ -488,8 +489,8 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(),
-                                                      project_id, view_model=view_model)
+            result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
+                                                            project_id, view_model=view_model)
             # Store input data in session, for informing user of it.
             step = self.flow_service.get_category_by_id(step_key)
             if not step.rawinput:
@@ -696,7 +697,7 @@ class FlowController(BaseController):
     def reloadoperation(self, operation_id, **_):
         """Redirect to Operation Input selection page, 
         with input data already selected."""
-        operation = self.flow_service.load_operation(operation_id)
+        operation = self.operation_services.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
         self.context.add_adapter_to_session(operation.algorithm, None, data)
         category_id = operation.algorithm.fk_category
@@ -713,11 +714,11 @@ class FlowController(BaseController):
         """
         is_group = int(is_group)
         if not is_group:
-            operation = self.flow_service.load_operation(int(operation_id))
+            operation = OperationService.load_operation(int(operation_id))
         else:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
-            operation = self.flow_service.load_operation(int(first_op.id))
+            operation = OperationService.load_operation(int(first_op.id))
         operation.burst.prepare_after_load()
         common.add2session(common.KEY_BURST_CONFIG, operation.burst)
         raise cherrypy.HTTPRedirect("/burst/")
@@ -752,19 +753,19 @@ class FlowController(BaseController):
         """
         operation_id = int(operation_id)
         if int(is_group) == 0:
-            operation = self.flow_service.load_operation(operation_id)
+            operation = OperationService.load_operation(operation_id)
         else:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
-            operation = self.flow_service.load_operation(int(first_op.id))
+            operation = OperationService.load_operation(int(first_op.id))
 
         try:
-            result = OperationService().stop_operation(operation_id)
+            result = OperationService.stop_operation(operation_id)
             if remove_after_stop:
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
                 if current_burst and current_burst.id == operation.burst.id:
                     common.remove_from_session(common.KEY_BURST_CONFIG)
-                BurstService().remove_burst(operation.burst.id)
+                BurstService.remove_burst(operation.burst.id)
 
             return result
         except Exception as ex:
@@ -873,7 +874,7 @@ class FlowController(BaseController):
 
         datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
         operation_grp = datatype_group_ob.parent_operation_group
-        operation_obj = self.flow_service.load_operation(datatype_group_ob.fk_from_operation)
+        operation_obj = OperationService.load_operation(datatype_group_ob.fk_from_operation)
         parameters = json.loads(operation_obj.parameters)
 
         range1name, range1_dict = json.loads(operation_grp.range1)
@@ -881,7 +882,7 @@ class FlowController(BaseController):
         parameters[RANGE_PARAMETER_1] = range1name
         parameters[RANGE_PARAMETER_2] = range2name
 
-        ##change the existing simulator parameters to be min max step types
+        # change the existing simulator parameters to be min max step types
         range1_dict = {constants.ATT_MINVALUE: range_list[0],
                        constants.ATT_MAXVALUE: range_list[1],
                        constants.ATT_STEP: step_list[0]}

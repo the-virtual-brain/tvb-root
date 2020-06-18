@@ -63,6 +63,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.time_series import TimeSeries
 
 try:
@@ -288,7 +289,6 @@ class OperationService:
         h5_file.store(view_model)
         h5_file.close()
 
-
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
         Public method.
@@ -498,11 +498,38 @@ class OperationService:
                 result.append((kw_new, range_new))
         return result
 
-    ##########################################################################################
-    ######## Methods related to stopping and restarting operations start here ################
-    ##########################################################################################
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
+        """
+        Launch an operation, specified by AdapterInstance, for CurrentUser,
+        Current Project and a given set of UI Input Data.
+        """
+        operation_name = str(adapter_instance.__class__.__name__)
+        try:
+            self.logger.info("Starting operation " + operation_name)
+            project = dao.get_project_by_id(project_id)
 
-    def stop_operation(self, operation_id):
+            result = self.initiate_operation(current_user, project, adapter_instance, visible,
+                                             model_view=view_model, **data)
+            self.logger.info("Finished operation launch:" + operation_name)
+            return result
+
+        except TVBException as excep:
+            self.logger.exception("Could not launch operation " + operation_name +
+                                  " with the given set of input data, because: " + excep.message)
+            raise OperationException(excep.message, excep)
+        except Exception as excep:
+            self.logger.exception("Could not launch operation " + operation_name + " with the given set of input data!")
+            raise OperationException(str(excep))
+
+    @staticmethod
+    def load_operation(operation_id):
+        """ Retrieve previously stored Operation from DB, and load operation.burst attribute"""
+        operation = dao.get_operation_by_id(operation_id)
+        operation.burst = dao.get_burst_for_operation_id(operation_id)
+        return operation
+
+    @staticmethod
+    def stop_operation(operation_id):
         """
         Stop the operation given by the operation id.
         """

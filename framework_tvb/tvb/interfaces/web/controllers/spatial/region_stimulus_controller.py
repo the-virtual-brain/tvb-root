@@ -268,8 +268,8 @@ class RegionStimulusController(SpatioTemporalController):
         display_name = common.get_from_session(KEY_REGION_STIMULUS_NAME)
         current_stimulus_region.display_name = display_name
         region_stimulus_creator = ABCAdapter.build_adapter_from_class(RegionStimulusCreator)
-        self.flow_service.fire_operation(region_stimulus_creator, common.get_logged_user(),
-                                         common.get_current_project().id, view_model=current_stimulus_region)
+        self.operation_service.fire_operation(region_stimulus_creator, common.get_logged_user(),
+                                              common.get_current_project().id, view_model=current_stimulus_region)
         common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
     @cherrypy.expose

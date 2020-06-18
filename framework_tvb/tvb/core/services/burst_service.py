@@ -174,7 +174,8 @@ class BurstService(object):
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
 
-    def remove_burst(self, burst_id):
+    @staticmethod
+    def remove_burst(burst_id):
         """
         Remove BurstConfiguration, Simulation and DataTypes
         """

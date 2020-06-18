@@ -44,6 +44,7 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
 from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
@@ -93,7 +94,7 @@ def import_conn_zip(project_id, zip_path):
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
 
-    FlowService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
+    OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
 
 
 def fire_simulation(project_id, simulator):

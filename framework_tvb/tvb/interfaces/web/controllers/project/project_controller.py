@@ -47,6 +47,7 @@ import tvb.core.entities.model.model_operation as model
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
@@ -488,7 +489,7 @@ class ProjectController(BaseController):
         operation_id = op_details.operation_id
 
         display_reload_btn = True
-        operation = self.flow_service.load_operation(operation_id)
+        operation = OperationService.load_operation(operation_id)
 
         if (operation.fk_operation_group is not None) or (operation.burst is not None):
             display_reload_btn = False
@@ -803,21 +804,21 @@ class ProjectController(BaseController):
                 op_inputs_in_groups = self.project_service.get_operations_for_datatype_group(selected_dt.id,
                                                                                              selected_filter,
                                                                                              only_in_groups=True)
-                #create graph nodes
+                # create graph nodes
                 dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs, [], [selected_dt],
                                                                                  op_inputs, item_gid)
                 parent_op = [graph_structures.NodeStructure.build_structure_for_operation_group(parent_op_group.gid)]
                 op_inputs_in_groups = self._create_operation_group_nodes(op_inputs_in_groups)
                 op_inputs.extend(op_inputs_in_groups)
             else:
-                parent_op = self.flow_service.load_operation(selected_dt.fk_from_operation)
+                parent_op = OperationService.load_operation(selected_dt.fk_from_operation)
                 dt_inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(parent_op.gid,
                                                                                                selected_filter)
                 op_inputs = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter)
                 op_inputs_in_groups = self.project_service.get_operations_for_datatype(selected_dt.gid, selected_filter,
                                                                                        only_in_groups=True)
                 dt_outputs = self.project_service.get_results_for_operation(parent_op.id, selected_filter)
-                #create graph nodes
+                # create graph nodes
                 dt_inputs, parent_op, dt_outputs, op_inputs = self._create_nodes(dt_inputs, [parent_op], dt_outputs,
                                                                                  op_inputs, item_gid)
                 op_inputs_in_groups = self._create_operation_group_nodes(op_inputs_in_groups)
@@ -830,7 +831,6 @@ class ProjectController(BaseController):
         branch = graph_structures.GraphComponent(dt_inputs, parent_op, dt_outputs, op_inputs)
         graph = graph_structures.FullGraphStructure([branch])
         return graph.prepare_for_json()
-
 
     def _create_nodes(self, dt_inputs, parent_op, dt_outputs, op_inputs, item_gid=None):
         """Expected a list of DataTypes, Parent Operation, Outputs, and returns NodeStructure entities."""
