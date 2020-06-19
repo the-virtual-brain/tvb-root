@@ -190,7 +190,6 @@ class SimulatorService(object):
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
                     h5.store_view_model(simulator, storage_path)
-                    # SimulatorSerializer().serialize_simulator(simulator, None, storage_path)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
@@ -228,7 +227,8 @@ class SimulatorService(object):
         simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
 
         simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
-        simulator = h5.load_view_model_from_file(simulator_h5_filename)
+        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
+        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
