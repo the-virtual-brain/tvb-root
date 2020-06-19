@@ -61,10 +61,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits.forms import Form, DataTypeSelectField, TraitDataTypeSelectField
-
-ATT_METHOD = "python_method"
-ATT_PARAMETERS = "parameters_prefix"
+from tvb.core.neotraits.forms import Form
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -123,19 +120,35 @@ def nan_allowed():
 class ABCAdapterForm(Form):
     @staticmethod
     def get_required_datatype():
+        """
+        Each Adapter's computation is based on a main Datatype. This method should keep the class of it.
+        This Datatype will be stored to DB at introspection time.
+        :return: DataType class
+        """
         raise NotImplementedError
 
-    # TODO: This keeps filters for the required_datatype. Only to be in DB at introspection?
     @staticmethod
     def get_filters():
+        """
+        Should keep filters for the required_datatype. These filters are stored in DB at introspection time.
+        :return: FilterChain
+        """
         raise NotImplementedError
 
     @staticmethod
     def get_input_name():
+        """
+        The Form's input name for the required_datatype. Will be stored in DB at introspection time.
+        :return: str
+        """
         raise NotImplementedError
 
     @staticmethod
     def get_view_model():
+        """
+        Should keep the ViewModel class that corresponds to the current Adapter.
+        :return: ViewModel class
+        """
         raise NotImplementedError
 
     def get_traited_datatype(self):
@@ -145,35 +158,11 @@ class ABCAdapterForm(Form):
         """
         return None
 
-    def _get_original_field_name(self, field):
-        start_idx = len(self.prefix) + 1 if (self.prefix != '') else 0
-        return field.name[start_idx:]
-
-    # TODO: Used to support original flow (pass form values as kwargs). Also for the asynchronous launch
-    def get_dict(self):
-        attrs_dict = {}
-        for field in self.fields:
-            attrs_dict.update({field.name: field.data})
-        attrs_dict.update({self.RANGE_1_NAME: self.range_1})
-        attrs_dict.update({self.RANGE_2_NAME: self.range_2})
-        return attrs_dict
-
     def fill_from_post_plus_defaults(self, form_data):
         self.fill_from_trait(self.get_view_model()())
         for field in self.fields:
             if field.name in form_data:
                 field.fill_from_post(form_data)
-
-    def get_form_values(self):
-        attrs_dict = {}
-        for field in self.fields:
-            field_name = self._get_original_field_name(field)
-            if isinstance(field, DataTypeSelectField) or isinstance(field, TraitDataTypeSelectField):
-                field_data = field.get_dt_from_db()
-            else:
-                field_data = field.data
-            attrs_dict.update({field_name: field_data})
-        return attrs_dict
 
 
 @add_metaclass(ABCMeta)
@@ -189,7 +178,6 @@ class ABCAdapter(object):
     KEY_VALUE = constants.ATT_VALUE
     KEY_DEFAULT = constants.ATT_DEFAULT
     KEY_DATATYPE = "datatype"
-    KEY_DISABLED = "disabled"
     KEY_FILTERABLE = "filterable"
 
     # model.Algorithm instance that will be set for each adapter created by in build_adapter method
