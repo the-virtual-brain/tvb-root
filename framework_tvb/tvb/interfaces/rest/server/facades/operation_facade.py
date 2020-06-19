@@ -35,7 +35,7 @@ from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.exceptions import ProjectServiceException
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
@@ -83,7 +83,7 @@ class OperationFacade:
         except ProjectServiceException:
             raise InvalidIdentifierException()
 
-        algorithm = FlowService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
+        algorithm = AlgorithmService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
         if algorithm is None:
             raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
 

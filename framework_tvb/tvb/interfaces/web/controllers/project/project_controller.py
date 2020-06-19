@@ -308,8 +308,8 @@ class ProjectController(BaseController):
             return session_filtes
 
         else:
-            sim_group = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                            IntrospectionRegistry.SIMULATOR_CLASS)
+            sim_group = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
             new_filters = StaticFiltersFactory.build_operations_filters(sim_group, common.get_logged_user().id)
             common.add2session(self.KEY_OPERATION_FILTERS, new_filters)
             return new_filters
@@ -342,7 +342,7 @@ class ProjectController(BaseController):
         datatype_gid = datatype_details.gid
         categories, has_operations_warning = {}, False
         if not entity.invalid:
-            categories, has_operations_warning = self.flow_service.get_launchable_algorithms(datatype_gid)
+            categories, has_operations_warning = self.algorithm_service.get_launchable_algorithms(datatype_gid)
 
         is_group = False
         if datatype_details.operation_group_id is not None:
@@ -495,7 +495,7 @@ class ProjectController(BaseController):
             display_reload_btn = False
         else:
             op_categ_id = operation.algorithm.fk_category
-            raw_categories = self.flow_service.get_raw_categories()
+            raw_categories = self.algorithm_service.get_raw_categories()
             for category in raw_categories:
                 if category.id == op_categ_id:
                     display_reload_btn = False
@@ -553,7 +553,7 @@ class ProjectController(BaseController):
         Returns the html which displays a dialog which allows the user
         to upload certain data into the application.
         """
-        upload_algorithms = self.flow_service.get_upload_algorithms()
+        upload_algorithms = self.algorithm_service.get_upload_algorithms()
 
         flow_controller = FlowController()
         algorithms_interface = {}
@@ -603,7 +603,7 @@ class ProjectController(BaseController):
             raise cherrypy.HTTPRedirect(success_link)
 
         project = self.project_service.find_project(project_id)
-        algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         FlowController().execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
@@ -645,13 +645,13 @@ class ProjectController(BaseController):
         Delegate the creation of the actual link to the flow service.
         """
         if not string2bool(str(is_group)):
-            self.flow_service.create_link([link_data], project_id)
+            self.algorithm_service.create_link([link_data], project_id)
         else:
             all_data = self.project_service.get_datatype_in_group(link_data)
             # Link all Dts in group and the DT_Group entity
             data_ids = [data.id for data in all_data]
             data_ids.append(int(link_data))
-            self.flow_service.create_link(data_ids, project_id)
+            self.algorithm_service.create_link(data_ids, project_id)
 
 
     @cherrypy.expose
@@ -662,12 +662,12 @@ class ProjectController(BaseController):
         Delegate the creation of the actual link to the flow service.
         """
         if not string2bool(str(is_group)):
-            self.flow_service.remove_link(link_data, project_id)
+            self.algorithm_service.remove_link(link_data, project_id)
         else:
             all_data = self.project_service.get_datatype_in_group(link_data)
             for data in all_data:
-                self.flow_service.remove_link(data.id, project_id)
-            self.flow_service.remove_link(int(link_data), project_id)
+                self.algorithm_service.remove_link(data.id, project_id)
+            self.algorithm_service.remove_link(int(link_data), project_id)
 
 
     @cherrypy.expose

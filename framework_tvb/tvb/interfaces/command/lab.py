@@ -43,7 +43,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
@@ -101,8 +101,8 @@ def fire_simulation(project_id, simulator):
     project = dao.get_project_by_id(project_id)
     assert isinstance(simulator, Simulator)
     # Load the SimulatorAdapter algorithm from DB
-    cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
+    cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                      IntrospectionRegistry.SIMULATOR_CLASS)
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()

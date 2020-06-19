@@ -47,7 +47,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
 
 
-class FlowService(object):
+class AlgorithmService(object):
     """
     Service Layer for Algorithms manipulation (e.g. find all Uploaders, Filter algo by category, etc)
     """
@@ -146,7 +146,8 @@ class FlowService(object):
         categories_ids = [categ.id for categ in categories]
         return dao.get_adapters_from_categories(categories_ids)
 
-    def get_analyze_groups(self):
+    @staticmethod
+    def get_analyze_groups():
         """
         :return: list of AlgorithmTransientGroup entities
         """
@@ -159,7 +160,7 @@ class FlowService(object):
             # For empty groups, this time, we fill the actual adapter
             group = AlgorithmTransientGroup(adapter.group_name or adapter.displayname,
                                             adapter.group_description or adapter.description)
-            group = self._find_group(groups_list, group)
+            group = AlgorithmService._find_group(groups_list, group)
             group.children.append(adapter)
         return categories[0], groups_list
 

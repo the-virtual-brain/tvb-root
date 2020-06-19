@@ -235,7 +235,7 @@ class SimulatorController(BurstBaseController):
         self.burst_service = BurstService()
         self.simulator_service = SimulatorService()
         self.files_helper = FilesHelper()
-        self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(
+        self.cached_simulator_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS)
 
     def _update_last_loaded_fragment_url(self, current_url):

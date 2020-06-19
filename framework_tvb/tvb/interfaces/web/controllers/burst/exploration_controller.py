@@ -36,7 +36,6 @@
 import urllib.request, urllib.parse, urllib.error
 import cherrypy
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
@@ -70,13 +69,13 @@ class ParameterExplorationController(BaseController):
         If this is not the case fallback to the continous PSE viewer.
         If none are available return: None.
         """
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
+                                                                             IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_FLOT
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                             IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         if self._is_compatible(algorithm, datatype_group_gid):
             return PSE_ISO
 
@@ -106,7 +105,7 @@ class ParameterExplorationController(BaseController):
         if size_metric == 'None' or size_metric == "undefined":
             size_metric = None
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             IntrospectionRegistry.DISCRETE_PSE_ADAPTER_MODULE,
             IntrospectionRegistry.DISCRETE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
@@ -158,8 +157,8 @@ class ParameterExplorationController(BaseController):
     @check_user
     def draw_isocline_exploration(self, datatype_group_gid):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                             IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -178,8 +177,8 @@ class ParameterExplorationController(BaseController):
     @expose_json
     def get_metric_matrix(self, datatype_group_gid, metric_name=None):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                             IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:
@@ -196,8 +195,8 @@ class ParameterExplorationController(BaseController):
     @expose_json
     def get_node_matrix(self, datatype_group_gid):
 
-        algorithm = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
-                                                                        IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
+        algorithm = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_MODULE,
+                                                                             IntrospectionRegistry.ISOCLINE_PSE_ADAPTER_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if self._is_compatible(algorithm, datatype_group_gid):
             try:

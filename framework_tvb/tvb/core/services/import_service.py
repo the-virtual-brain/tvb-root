@@ -51,7 +51,7 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -301,7 +301,7 @@ class ImportService(object):
             if not datatype_allready_in_tvb:
                 self.store_datatype(datatype)
             else:
-                FlowService.create_link([datatype_allready_in_tvb.id], project.id)
+                AlgorithmService.create_link([datatype_allready_in_tvb.id], project.id)
 
     def _store_imported_images(self, project):
         """

@@ -94,7 +94,7 @@ class FlowController(BaseController):
         Choose exact action/adapter for current step.
         """
         try:
-            analyze_category, groups = self.flow_service.get_analyze_groups()
+            analyze_category, groups = self.algorithm_service.get_analyze_groups()
             step_name = analyze_category.displayname.lower()
             template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
                                           title="Select an analyzer", displayControl=False)
@@ -156,13 +156,13 @@ class FlowController(BaseController):
     def show_group_of_algorithms(self, step_key, algorithm_ids):
 
         project = common.get_current_project()
-        category = self.flow_service.get_category_by_id(step_key)
+        category = self.algorithm_service.get_category_by_id(step_key)
         algorithms = []
         for i in algorithm_ids.split(','):
             algorithm_id = int(i)
-            algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+            algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
-            adapter_form = self.flow_service.prepare_adapter_form(self.flow_service.prepare_adapter(algorithm), project.id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(self.algorithm_service.prepare_adapter(algorithm), project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -202,7 +202,7 @@ class FlowController(BaseController):
         'data' are arguments for POST
         """
         project = common.get_current_project()
-        algorithm = self.flow_service.get_algorithm_by_identifier(adapter_key)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
@@ -492,7 +492,7 @@ class FlowController(BaseController):
             result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
                                                             project_id, view_model=view_model)
             # Store input data in session, for informing user of it.
-            step = self.flow_service.get_category_by_id(step_key)
+            step = self.algorithm_service.get_category_by_id(step_key)
             if not step.rawinput:
                 self.context.add_adapter_to_session(None, None, copy.deepcopy(data))
             if isinstance(result, list):
@@ -531,14 +531,14 @@ class FlowController(BaseController):
                 self.context.clean_from_session()
 
             group = None
-            category = self.flow_service.get_category_by_id(step_key)
+            category = self.algorithm_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
             if group:
                 title = title + " - " + group.displayname
 
-            adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
+            adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
             template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
@@ -584,7 +584,7 @@ class FlowController(BaseController):
 
     @expose_json
     def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
-        algorithm = self.flow_service.get_algorithm_by_identifier(algo_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = ABCAdapter.load_entity_by_gid(entity_gid)
         storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
@@ -675,7 +675,7 @@ class FlowController(BaseController):
         if not (project_id and int(project_id) and (algorithm_id is not None) and int(algorithm_id)):
             return ""
 
-        algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         if is_upload:
             submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algorithm_id)
         else:
@@ -798,7 +798,7 @@ class FlowController(BaseController):
         selection retrieval common to selection component and connectivity selection
         """
         curent_project = common.get_current_project()
-        selections = self.flow_service.get_selections_for_project(curent_project.id, datatype_gid)
+        selections = self.algorithm_service.get_selections_for_project(curent_project.id, datatype_gid)
         names, sel_values = [], []
 
         for selection in selections:
@@ -822,7 +822,7 @@ class FlowController(BaseController):
             # client sends integers as strings:
             selection = json.dumps([int(s) for s in json.loads(data['selection'])])
             datatype_gid = data['datatype_gid']
-            self.flow_service.save_measure_points_selection(ui_name, selection, datatype_gid, sel_project_id)
+            self.algorithm_service.save_measure_points_selection(ui_name, selection, datatype_gid, sel_project_id)
             return [True, 'Selection saved successfully.']
 
         else:

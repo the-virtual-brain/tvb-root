@@ -43,7 +43,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -75,8 +75,8 @@ if __name__ == "__main__":
     simulator.simulation_length = 100
 
     # Load the SimulatorAdapter algorithm from DB
-    cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
+    cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                      IntrospectionRegistry.SIMULATOR_CLASS)
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()

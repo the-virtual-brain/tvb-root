@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -70,10 +70,10 @@ class TestBurstService(BaseTestCase):
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
     burst_service = BurstService()
-    flow_service = FlowService()
+    algorithm_service = AlgorithmService()
     operation_service = OperationService()
-    sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                   IntrospectionRegistry.SIMULATOR_CLASS)
+    sim_algorithm = algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                        IntrospectionRegistry.SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
 
 
@@ -283,9 +283,9 @@ class TestBurstService(BaseTestCase):
         """
         Test the launch burst method from burst service.
         """
-        first_step_algo = self.flow_service.get_algorithm_by_module_and_class(
+        first_step_algo = self.algorithm_service.get_algorithm_by_module_and_class(
             'tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        adapter_interface = self.flow_service.prepare_adapter(self.test_project.id, first_step_algo)
+        adapter_interface = self.algorithm_service.prepare_adapter(self.test_project.id, first_step_algo)
         ui_submited_simulator_iface_replica = {}
         kwargs_replica = {}
         for entry in adapter_interface:
@@ -334,7 +334,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that burst is marked as error if invalid data is passed to the first step.
         """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         #Passing invalid kwargs to the 'simulator' component
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
@@ -351,7 +351,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that burst is marked as error if invalid data is passed to the first step.
         """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         #Adapter tries to do an int(test1_val1) so this should fail
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
@@ -387,7 +387,7 @@ class TestBurstService(BaseTestCase):
         """
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
 
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         kwargs_replica = {'test1_val1': '[0, 1, 2]', 'test1_val2': '0', RANGE_PARAMETER_1: 'test1_val1'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
@@ -417,7 +417,7 @@ class TestBurstService(BaseTestCase):
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         SIMULATOR_MODULE = 'tvb.tests.framework.adapters.testadapter1'
         SIMULATOR_CLASS = 'TestAdapter1'
-        algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS).id
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS).id
         kwargs_replica = {'test1_val1': '0', 'test1_val2': '0'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         # Add test_portlet to positions (0,0), (0,1) and (1,0)
@@ -514,7 +514,7 @@ class TestBurstService(BaseTestCase):
         workflow_step_list = []
 
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
-        first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class(
+        first_step_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}
