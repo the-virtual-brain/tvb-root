@@ -42,7 +42,6 @@ from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
-from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -55,6 +54,7 @@ from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.monitors import Bold, Projection, Raw
@@ -247,22 +247,21 @@ class SimulatorController(BurstBaseController):
     @check_user
     def cancel_or_remove_burst(self, burst_id):
         """
-            Cancel or Remove the burst entity given by burst_id.
-            :returns 'reset-new': When currently selected burst was removed. JS will need to reset selection to a new entry
-            :returns 'canceled': When current burst was still running and was just stopped.
-            :returns 'done': When no action is required on the client.
+        Cancel or Remove the burst entity given by burst_id (and all linked entities: op, DTs)
+        :returns True: if the op was successfully.
         """
         burst_id = int(burst_id)
         burst_configuration = self.burst_service.load_burst_configuration(burst_id)
+        remove_after_stop = burst_configuration.status != burst_configuration.BURST_RUNNING
 
-        if burst_configuration.status == burst_configuration.BURST_RUNNING:
-            OperationService().stop_operation(burst_configuration.fk_simulation)
-            return 'canceled'
+        if burst_configuration.fk_operation_group is None:
+            op_id = burst_configuration.fk_simulation
+            is_group = 0
+        else:
+            op_id = burst_configuration.fk_operation_group
+            is_group = 1
 
-        self.burst_service.remove_burst(burst_id)
-        if burst_configuration.id == burst_id:
-            return "reset-new"
-        return 'done'
+        return FlowController().cancel_or_remove_operation(op_id, is_group, remove_after_stop)
 
     @expose_page
     @settings

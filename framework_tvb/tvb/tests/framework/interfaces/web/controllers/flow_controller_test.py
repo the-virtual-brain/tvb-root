@@ -189,7 +189,7 @@ class TestFlowController(BaseControllersTest):
         burst_config = long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
-        self.flow_c.stop_burst_operation(operation.id, 0, False)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
@@ -200,7 +200,7 @@ class TestFlowController(BaseControllersTest):
         for operation in operations:
             assert not operation.has_finished
             operations_group_id = operation.fk_operation_group
-        self.flow_c.stop_burst_operation(operations_group_id, 1, False)
+        self.flow_c.cancel_or_remove_operation(operations_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert operation.status == STATUS_CANCELED
@@ -209,7 +209,7 @@ class TestFlowController(BaseControllersTest):
         burst_config = long_burst_launch()
         operation = self._wait_for_burst_ops(burst_config)[0]
         assert not operation.has_finished
-        self.flow_c.stop_burst_operation(operation.id, 0, True)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
 
@@ -220,7 +220,7 @@ class TestFlowController(BaseControllersTest):
         for operation in operations:
             assert not operation.has_finished
             operations_group_id = operation.fk_operation_group
-        self.flow_c.stop_burst_operation(operations_group_id, 1, True)
+        self.flow_c.cancel_or_remove_operation(operations_group_id, 1, True)
         for operation in operations:
             operation = dao.try_get_operation_by_id(operation.id)
             assert operation is None
@@ -239,7 +239,7 @@ class TestFlowController(BaseControllersTest):
         operations = self._launch_test_algo_on_cluster(**data)
         operation = dao.get_operation_by_id(operations[0].id)
         assert not operation.has_finished
-        self.flow_c.stop_operation(operation.id, 0, False)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
@@ -251,7 +251,7 @@ class TestFlowController(BaseControllersTest):
             operation = dao.get_operation_by_id(operation.id)
             assert not operation.has_finished
             operation_group_id = operation.fk_operation_group
-        self.flow_c.stop_operation(operation_group_id, 1, False)
+        self.flow_c.cancel_or_remove_operation(operation_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert operation.status == STATUS_CANCELED

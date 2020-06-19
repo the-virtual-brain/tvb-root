@@ -28,7 +28,7 @@
 #
 #
 
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -101,11 +101,12 @@ class BurstDAO(RootDAO):
         burst = None
         try:
             burst = self.session.query(BurstConfiguration
-                                       ).filter(BurstConfiguration.fk_simulation == operation_id).first()
+                                       ).filter(or_(BurstConfiguration.fk_simulation == operation_id,
+                                                    BurstConfiguration.fk_operation_group == operation_id)).first()
             if not burst:
                 burst = self.session.query(BurstConfiguration
-                                       ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.id
-                                              ).filter(DataType.fk_from_operation == operation_id).first()
+                                           ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.id
+                                                  ).filter(DataType.fk_from_operation == operation_id).first()
         except NoResultFound:
             self.logger.debug("No burst found for operation id = %s" % (operation_id,))
         except SQLAlchemyError as excep:

@@ -44,6 +44,7 @@ import six
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -162,7 +163,8 @@ class FlowController(BaseController):
             algorithm_id = int(i)
             algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
-            adapter_form = self.algorithm_service.prepare_adapter_form(self.algorithm_service.prepare_adapter(algorithm), project.id)
+            adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -724,52 +726,23 @@ class FlowController(BaseController):
         raise cherrypy.HTTPRedirect("/burst/")
 
     @expose_json
-    def stop_operation(self, operation_id, is_group, remove_after_stop=False):
+    def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
-        result = False
-        if int(is_group) == 0:
-            result = OperationService.stop_operation(operation_id)
-            if remove_after_stop:
-                ProjectService().remove_operation(operation_id)
-        else:
-            op_group = ProjectService.get_operation_group_by_id(operation_id)
-            operations_in_group = ProjectService.get_operations_in_group(op_group)
-            for operation in operations_in_group:
-                tmp_res = OperationService.stop_operation(operation.id)
-                if remove_after_stop:
-                    ProjectService().remove_operation(operation.id)
-                result = result or tmp_res
-        return result
-
-    @expose_json
-    def stop_burst_operation(self, operation_id, is_group, remove_after_stop=False):
-        """
-        For a given operation id that is part of a burst just stop the given burst.
-        :returns True when stopped operation was successfully.
-        """
         operation_id = int(operation_id)
-        if int(is_group) == 0:
-            operation = OperationService.load_operation(operation_id)
-        else:
-            op_group = ProjectService.get_operation_group_by_id(operation_id)
-            first_op = ProjectService.get_operations_in_group(op_group)[0]
-            operation = OperationService.load_operation(int(first_op.id))
+        is_group = int(is_group) != 0
+        # Load before we remove, to have its data in memory here
+        burst_config = BurstService.get_burst_for_operation_id(operation_id)
 
-        try:
-            result = OperationService.stop_operation(operation_id)
-            if remove_after_stop:
-                current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-                if current_burst and current_burst.id == operation.burst.id:
-                    common.remove_from_session(common.KEY_BURST_CONFIG)
-                result = BurstService.remove_burst(operation.burst.id) or result
-
-            return result
-        except Exception as ex:
-            self.logger.exception(ex)
-            return False
+        result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
+        if remove_after_stop:
+            current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
+            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
+                common.remove_from_session(common.KEY_BURST_CONFIG)
+                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
+        return result
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """

@@ -117,7 +117,8 @@ class BurstService(object):
             self.mark_burst_finished(burst_config, burst_status, message)
         return operation
 
-    def get_burst_for_operation_id(self, operation_id):
+    @staticmethod
+    def get_burst_for_operation_id(operation_id):
         return dao.get_burst_for_operation_id(operation_id)
 
     def rename_burst(self, burst_id, new_name):
@@ -173,29 +174,6 @@ class BurstService(object):
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
-
-    @staticmethod
-    def remove_burst(burst_id):
-        """
-        Remove BurstConfiguration, Simulation and DataTypes
-        """
-        burst_entity = dao.get_burst_by_id(burst_id)
-        operation_id = burst_entity.fk_simulation
-
-        # Remove each DataType in current burst.
-        service = ProjectService()
-        datatypes = dao.get_results_for_operation(operation_id)
-        service.remove_operation(operation_id)
-
-        # Remove burst first to delete work-flow steps which still hold foreign keys to operations.
-        correct = dao.remove_entity(burst_entity.__class__, burst_id)
-        if not correct:
-            raise RemoveDataTypeException("Could not remove Burst entity!")
-
-        for datatype in datatypes:
-            service.remove_datatype(burst_entity.fk_project, datatype.gid, False)
-
-        return True
 
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):

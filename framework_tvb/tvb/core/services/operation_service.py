@@ -62,6 +62,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.project_service import ProjectService
 from tvb.core.services.backend_client import BACKEND_CLIENT
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.time_series import TimeSeries
@@ -529,8 +530,28 @@ class OperationService:
         return operation
 
     @staticmethod
-    def stop_operation(operation_id):
+    def stop_operation(operation_id, is_group=False, remove_after_stop=False):
+        # type: (int, bool, bool) -> bool
         """
-        Stop the operation given by the operation id.
+        Stop (also named Cancel) the operation given by operation_id,
+        and potentially also remove it after (with all linked data).
+        In case the Operation has a linked Burst, remove that too.
+        :param operation_id: ID for Operation (or OperationGroup) to be canceled/removed
+        :param is_group: When true stop all the operations from that group.
+        :param remove_after_stop: if True, also remove the operation(s) after stopping
+        :returns True if the stop step was successfully
         """
-        return BACKEND_CLIENT.stop_operation(int(operation_id))
+        result = False
+        if is_group:
+            op_group = ProjectService.get_operation_group_by_id(operation_id)
+            operations_in_group = ProjectService.get_operations_in_group(op_group)
+            for operation in operations_in_group:
+                result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
+        else:
+            result = BACKEND_CLIENT.stop_operation(operation_id)
+            if remove_after_stop:
+                burst_config = dao.get_burst_for_operation_id(operation_id)
+                ProjectService().remove_operation(operation_id)
+                if burst_config is not None:
+                    result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
+        return result

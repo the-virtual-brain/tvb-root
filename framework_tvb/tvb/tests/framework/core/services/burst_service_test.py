@@ -172,15 +172,6 @@ class TestBurstService(BaseTestCase):
         loaded_burst = dao.get_burst_by_id(burst_config.id)
         assert loaded_burst.name == "new_burst_name", "Burst was not renamed properly."
 
-    def test_remove_burst(self):
-        """
-        Test the remove burst method added to burst_service.
-        """
-        loaded_burst, _ = self._prepare_and_launch_sync_burst()
-        self.burst_service.remove_burst(loaded_burst.id)
-        self._check_burst_removed()
-
-
     def test_branch_burst(self):
         """
         Test the branching of an existing burst.
@@ -200,46 +191,6 @@ class TestBurstService(BaseTestCase):
         sim_states = self.count_all_entities(SimulationHistoryIndex)
         assert 2 == ts_regions, "An operation group should have been created for each step."
         assert 2 == sim_states, "An dataType group should have been created for each step."
-
-
-    def test_remove_group_burst(self):
-        """
-        Same remove burst but for a burst that contains group of workflows launched as
-        it would be from a Parameter Space Exploration. Check that the workflows are also
-        deleted with the burst.
-        """
-        burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=60)
-
-        launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        assert 4 == launched_workflows, "4 workflows should have been launched due to group parameter."
-
-        got_deleted = self.burst_service.remove_burst(burst_config.id)
-        assert got_deleted, "Burst should be deleted"
-
-        launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        assert 0 == launched_workflows, "No workflows should remain after delete."
-
-        burst_config = dao.get_burst_by_id(burst_config.id)
-        assert burst_config is None, "Removing a canceled burst should delete it from db."
-
-
-    def test_remove_started_burst(self):
-        """
-        Try removing a started burst, which should result in it getting canceled.
-        """
-        burst_entity = self._prepare_and_launch_async_burst(length=20000)
-        assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
-                         'A 20000 length simulation should still be started immediately after launch.'
-        got_deleted = self.burst_service.remove_burst(burst_entity.id)
-        assert not got_deleted, "Burst should be cancelled before deleted."
-        burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
-                         'Deleting a running burst should just cancel it first.'
-        got_deleted = self.burst_service.remove_burst(burst_entity.id)
-        assert got_deleted, "Burst should be deleted if status is cancelled."
-        burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert burst_entity is None, "Removing a canceled burst should delete it from db."
-
 
     def test_burst_delete_with_project(self):
         """
