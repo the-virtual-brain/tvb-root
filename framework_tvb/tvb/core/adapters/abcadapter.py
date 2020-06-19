@@ -46,14 +46,15 @@ from functools import wraps
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
+from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits
 from tvb.core.adapters import constants
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -486,6 +487,31 @@ class ABCAdapter(object):
         h5_path = h5.path_for_stored_index(dt_index)
         dt, _ = h5.load_with_references(h5_path)
         return dt
+
+    def view_model_to_has_traits(self, view_model):
+        # type: (ViewModel) -> HasTraits
+        has_traits_class = view_model.linked_has_traits
+        has_traits = has_traits_class()
+        view_model_class = type(view_model)
+        if not has_traits_class:
+            raise Exception("There is no linked HasTraits for this ViewModel {}".format(type(view_model)))
+        for attr_name in has_traits_class.declarative_attrs:
+            view_model_class_attr = getattr(view_model_class, attr_name)
+            view_model_attr = getattr(view_model, attr_name)
+            if isinstance(view_model_class_attr, DataTypeGidAttr) and view_model_attr:
+                attr_value = self.load_with_references(view_model_attr)
+            elif isinstance(view_model_class_attr, Attr) and isinstance(view_model_attr, ViewModel):
+                attr_value = self.view_model_to_has_traits(view_model_attr)
+            elif isinstance(view_model_class_attr, List) and len(view_model_attr) > 0 and isinstance(view_model_attr[0],
+                                                                                                     ViewModel):
+                attr_value = list()
+                for view_model_elem in view_model_attr:
+                    elem = self.view_model_to_has_traits(view_model_elem)
+                    attr_value.append(elem)
+            else:
+                attr_value = view_model_attr
+            setattr(has_traits, attr_name, attr_value)
+        return has_traits
 
     @staticmethod
     def build_adapter_from_class(adapter_class):

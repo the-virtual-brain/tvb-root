@@ -51,15 +51,12 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.patterns import StimuliSurface
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 
@@ -159,83 +156,14 @@ class SimulatorAdapter(ABCAsynchronous):
         """
         return [TimeSeriesIndex, SimulationHistoryIndex]
 
-    def _prepare_simulator_from_view_model(self, view_model):
-        simulator = Simulator()
-        simulator.gid = view_model.gid
-
-        conn = self.load_traited_by_gid(view_model.connectivity)
-        simulator.connectivity = conn
-
-        simulator.conduction_speed = view_model.conduction_speed
-        simulator.coupling = view_model.coupling
-
-        rm_surface = None
-
-        if view_model.surface:
-            simulator.surface = Cortex()
-            rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
-            rm = h5.load_from_index(rm_index)
-
-            rm_surface_index = self.load_entity_by_gid(rm_index.fk_surface_gid)
-            rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
-            rm.surface = rm_surface
-            rm.connectivity = conn
-
-            simulator.surface.region_mapping_data = rm
-            if simulator.surface.local_connectivity:
-                lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
-                assert lc.surface.gid == rm_index.fk_surface_gid
-                lc.surface = rm_surface
-                simulator.surface.local_connectivity = lc
-
-        if view_model.stimulus:
-            stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
-            stimulus = h5.load_from_index(stimulus_index)
-            simulator.stimulus = stimulus
-
-            if isinstance(stimulus, StimuliSurface):
-                simulator.stimulus.surface = rm_surface
-            else:
-                simulator.stimulus.connectivity = simulator.connectivity
-
-        simulator.model = view_model.model
-        simulator.integrator = view_model.integrator
-        simulator.initial_conditions = view_model.initial_conditions
-        simulator.simulation_length = view_model.simulation_length
-
-        monitors = list()
-        for monitor_vm in view_model.monitors:
-            monitor = monitor_vm.to_has_traits()
-            if issubclass(type(monitor_vm), EEGViewModel):
-                monitor.projection = self.load_traited_by_gid(monitor_vm.projection)
-                monitor.sensors = self.load_traited_by_gid(monitor_vm.sensors)
-                if monitor_vm.region_mapping:
-                    monitor.region_mapping = self.load_traited_by_gid(monitor_vm.region_mapping)
-            monitors.append(monitor)
-
-        simulator.monitors = monitors
-
-        # TODO: why not load history here?
-        # if view_model.history:
-        #     history_index = dao.get_datatype_by_gid(view_model.history.hex)
-        #     history = h5.load_from_index(history_index)
-        #     assert isinstance(history, SimulationHistory)
-        #     history.fill_into(self.algorithm)
-        return simulator
-
     def configure(self, view_model):
         # type: (SimulatorAdapterModel) -> None
         """
         Make preparations for the adapter launch.
         """
         self.log.debug("%s: Configuring simulator adapter..." % str(self))
-        self.algorithm = self._prepare_simulator_from_view_model(view_model)
+        self.algorithm = self.view_model_to_has_traits(view_model)
         self.branch_simulation_state_gid = view_model.history_gid
-
-        # for monitor in self.algorithm.monitors:
-        #     if issubclass(monitor, Projection):
-        #         # TODO: add a service that loads a RM with Surface and Connectivity
-        #         pass
 
         try:
             self.algorithm.preconfigure()

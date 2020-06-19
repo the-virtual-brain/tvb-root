@@ -44,34 +44,39 @@ from tvb.datatypes.patterns import SpatioTemporalPattern
 
 
 class MonitorViewModel(ViewModel, Monitor):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return Monitor
 
 
 class RawViewModel(MonitorViewModel, Raw):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return Raw
 
 
 class SubSampleViewModel(MonitorViewModel, SubSample):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return SubSample
 
 
 class SpatialAverageViewModel(MonitorViewModel, SpatialAverage):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return SpatialAverage
 
 
 class GlobalAverageViewModel(MonitorViewModel, GlobalAverage):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return GlobalAverage
 
 
 class TemporalAverageViewModel(MonitorViewModel, TemporalAverage):
-    """"""
-
-    def to_has_traits(self):
-        temporal_average = TemporalAverage()
-        temporal_average.gid = self.gid
-        temporal_average.period = self.period
-        temporal_average.variables_of_interest = self.variables_of_interest
-        return temporal_average
+    @property
+    def linked_has_traits(self):
+        return TemporalAverage
 
 
 class ProjectionViewModel(MonitorViewModel, Projection):
@@ -81,6 +86,10 @@ class ProjectionViewModel(MonitorViewModel, Projection):
         label=Projection.region_mapping.label,
         doc=Projection.region_mapping.doc
     )
+
+    @property
+    def linked_has_traits(self):
+        return Projection
 
 
 class EEGViewModel(ProjectionViewModel, EEG):
@@ -96,15 +105,9 @@ class EEGViewModel(ProjectionViewModel, EEG):
         doc=EEG.sensors.doc
     )
 
-    def to_has_traits(self):
-        eeg = EEG()
-        eeg.gid = self.gid
-        eeg.period = self.period
-        eeg.variables_of_interest = self.variables_of_interest
-        eeg.obsnoise = self.obsnoise
-        eeg.reference = self.reference
-        eeg.sigma = self.sigma
-        return eeg
+    @property
+    def linked_has_traits(self):
+        return EEG
 
 
 class MEGViewModel(ProjectionViewModel, MEG):
@@ -120,6 +123,10 @@ class MEGViewModel(ProjectionViewModel, MEG):
         doc=MEG.sensors.doc
     )
 
+    @property
+    def linked_has_traits(self):
+        return MEG
+
 
 class iEEGViewModel(ProjectionViewModel, iEEG):
     projection = DataTypeGidAttr(
@@ -134,16 +141,29 @@ class iEEGViewModel(ProjectionViewModel, iEEG):
         doc=iEEG.sensors.doc
     )
 
+    @property
+    def linked_has_traits(self):
+        return iEEG
+
 
 class BoldViewModel(MonitorViewModel, Bold):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return Bold
 
 
 class BoldRegionROIViewModel(BoldViewModel, BoldRegionROI):
-    """"""
+    @property
+    def linked_has_traits(self):
+        return BoldRegionROI
 
 
 class CortexViewModel(ViewModel, Cortex):
+
+    @property
+    def linked_has_traits(self):
+        return Cortex
+
     surface_gid = DataTypeGidAttr(
         linked_datatype=CorticalSurface
     )
@@ -163,6 +183,11 @@ class CortexViewModel(ViewModel, Cortex):
 
 
 class SimulatorAdapterModel(ViewModel, Simulator):
+
+    @property
+    def linked_has_traits(self):
+        return Simulator
+
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         required=Simulator.connectivity.required,
