@@ -809,14 +809,6 @@ class Bold(Monitor):
         default=20000.,
         doc= """Duration of the hrf kernel""",)
         #order=-1)
-    
-    rsHRF_file = Attr(
-        field_type = str,
-        label="resting-state HRF for each region of the connectome",
-        default=None,
-        required=False,
-        doc="path for the txt file which contains the rsHRF for all the regions of the connectome (all the values should be floats)."
-    )
 
     _interim_period = None
     _interim_istep = None
@@ -824,7 +816,6 @@ class Bold(Monitor):
     _stock_steps = None
     _stock_time = None
     _stock_sample_rate = 2 ** -2
-    _from_file = 0
     hemodynamic_response_function = None
 
     def compute_hrf(self):
@@ -840,42 +831,28 @@ class Bold(Monitor):
         stock_time_max    = magic_number/1000.0                                # [s]
         stock_time_step   = stock_time_max / self._stock_steps                 # [s]
         self._stock_time  = numpy.arange(0.0, stock_time_max, stock_time_step) # [s]
-        self.log.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)     
-        if self._from_file == 0:                                                                    # if the input has not been obtained from file
-            #Compute the HRF kernel
-            G = self.hrf_kernel.evaluate(self._stock_time)
+        self.log.debug("Bold requires %d steps for HRF kernel convolution", self._stock_steps)            # if the input has not been obtained from file
+        #Compute the HRF kernel
+        G = self.hrf_kernel.evaluate(self._stock_time)
+        if isinstance(self.hrf_kernel, equations.RestingStateHRF): 
+            #rsHRF for each region, reversed and upsampled to self._stock_steps
+            self.hemodynamic_response_function = G 
+        else :
             #Reverse it, need it into the past for matrix-multiply of stock
             G = G[::-1]
             self.hemodynamic_response_function = G[numpy.newaxis, :]
-        else:                                                                                       # if the input has been obtained from file
-            from scipy import signal                                                                # importing the relevant library for upsampling
-            temp = self.hemodynamic_response_function                                              
-            upsample = lambda x : signal.resample_poly(x[::-1], self._stock_steps, temp.shape[1])   # upsampling the temp signal
-            self.hemodynamic_response_function = numpy.apply_along_axis(upsample, 1, temp)          # its shape is (regions x self._stock_steps)
         #Interim stock configuration
         self._interim_period = 1.0 / self._stock_sample_rate #period in ms
         self._interim_istep = int(round(self._interim_period / self.dt)) # interim period in integration time steps
         self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
-                  self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
-
-    def get_hrf(self, nodes):
-        """
-        Uses the stored region wise  resting-state HRF
-        """
-        self.hemodynamic_response_function = numpy.loadtxt(self.rsHRF_file, dtype=float) # taking the input from the file
-        if self.hemodynamic_response_function.shape[0] != nodes:                         # the file does not have rsHRF for every region of the simulation
-            self.log.debug("Unexpected EOF, the number of rsHRF in not equal to the number of regions. Switching to compute_hrf")
-            self._from_file = 0                                                          # to specify that the input was not obtained from a file
-        else:
-            self._from_file = 1                                                          # to specify that the input was obtained from a file
-        self.compute_hrf()                                                               
+                  self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)                                                       
 
     def config_for_sim(self, simulator):
         super(Bold, self).config_for_sim(simulator)
-        if self.rsHRF_file != None:                 # to check if the rsHRF input file has been provided
-            self.get_hrf(simulator.number_of_nodes) # passing the number of regions expected in the input-file
-        else:
-            self.compute_hrf()                      # if the HRF was computed instead
+        self.compute_hrf()
+        if isinstance(self.hrf_kernel, equations.RestingStateHRF):                          # if HRF has been obtained from a file
+            if self.hemodynamic_response_function.shape[0] != simulator.number_of_nodes:    # if the number of nodes do not match for the input and simulator
+                self.log.error("Unexpect File Input! Expected Input of shape: %d, Obtained Input of Shape: %d", simulator.number_of_nodes, self.hemodynamic_response_function.shape[0])
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
         self.log.debug("BOLD inner buffer %s %.2f MB" % (
@@ -898,8 +875,8 @@ class Bold(Monitor):
             hrf = numpy.roll(self.hemodynamic_response_function,
                              ((step//self._interim_istep % self._stock_steps) - 1),
                              axis=1)
-            if self._from_file == 1:            # rsHRF has been obtained from a file
-                for i in range(hrf.shape[0]):   # convolving for all the regions separately
+            if isinstance(self.hrf_kernel, equations.RestingStateHRF):           # rsHRF has been obtained from a file
+                for i in range(hrf.shape[0]):                                    # convolving for all the nodes separately
                     if i == 0:
                         bold = numpy.expand_dims(numpy.tensordot(self._stock.transpose(1, 2, 0, 3)[:,i,:,:], hrf[i], axes=([1], [0])), axis = 0)
                     else:

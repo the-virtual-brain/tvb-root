@@ -580,3 +580,23 @@ class MixtureOfGammas(HRFKernelEquation):
 
         return numexpr.evaluate(self.equation, global_dict=self.parameters)
 
+class RestingStateHRF(HRFKernelEquation):
+    
+    _ui_name = "HRF Kernel: resting-state HRF"
+
+    equation = Final(
+        label="Region Wise Resting-State Hemodynamic Response Function",
+        default = "N/A"
+    )
+
+    rsHRF_filename = Attr(
+        field_type=str,
+        label="Filename which contains the required rsHRF",
+        default = None
+    )
+
+    def evaluate(self, var):
+        from scipy import signal                                                               
+        hrf_load=numpy.loadtxt(self.rsHRF_filename)                                          # obtaining input from file
+        upsample=lambda x : signal.resample_poly(x[::-1], var.shape[0], hrf_load.shape[1])   # upsampling the hrf_load signal
+        return  numpy.apply_along_axis(upsample, 1, hrf_load)                                # its shape is (regions x self._stock_steps) 
