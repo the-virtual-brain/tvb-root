@@ -45,8 +45,6 @@ from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesSu
 from tvb.datatypes.time_series import TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG
 from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
-from tvb.datatypes.cortex import Cortex
-from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
@@ -134,4 +132,3 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(ValueWrapper, ValueWrapperH5, ValueWrapperIndex)
-    REGISTRY.register_datatype(Cortex, CortexH5, None)
