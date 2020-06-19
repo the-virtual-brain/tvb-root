@@ -32,9 +32,8 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import pytest
 import cherrypy
-from tvb.adapters.simulator.simulator_adapter import CortexViewModel
+from tvb.core.entities.file.simulator.view_model import CortexViewModel
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController

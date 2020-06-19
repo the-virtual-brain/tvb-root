@@ -42,7 +42,6 @@ from formencode import validators
 from simplejson import JSONEncoder
 from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 import tvb.core.entities.model.model_operation as model
 from tvb.core.entities.transient import graph_structures
@@ -451,20 +450,19 @@ class ProjectController(BaseController):
                                   "datatype_id": datatype_id}
         return template_specification
 
-
     @expose_fragment("overlay")
     def get_operation_details(self, entity_gid, is_group=False, back_page='burst'):
         """
         Returns the HTML which contains the details for the given operation.
         """
         if string2bool(str(is_group)):
-            ### we have an OperationGroup entity.
+            # we have an OperationGroup entity.
             template_specification = self._compute_operation_details(entity_gid, True)
-            #I expect that all the operations from a group are visible or not
+            # I expect that all the operations from a group are visible or not
             template_specification["nodeType"] = graph_structures.NODE_OPERATION_GROUP_TYPE
 
         else:
-            ### we have a simple Operation
+            # we have a simple Operation
             template_specification = self._compute_operation_details(entity_gid)
             template_specification["displayRelevantButton"] = True
             template_specification["nodeType"] = graph_structures.NODE_OPERATION_TYPE

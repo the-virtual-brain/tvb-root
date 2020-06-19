@@ -35,25 +35,27 @@
 import uuid
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION
+from tvb.adapters.simulator.subforms_mapping import DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrField, TraitDataTypeSelectField, \
-    SelectField
+from tvb.core.neotraits.forms import DataTypeSelectField, FormField, SimpleStrField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.equations import Sigmoid, PulseTrain
+from tvb.datatypes.equations import Sigmoid, PulseTrain, TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
-from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
-    def __init__(self, project_id):
-        super(StimulusSurfaceSelectorForm, self).__init__()
-        self.project_id = project_id
+    def __init__(self, project_id=None):
+        super(StimulusSurfaceSelectorForm, self).__init__(project_id=project_id)
         self.surface_stimulus = DataTypeSelectField(StimuliSurfaceIndex, self, name='existentEntitiesSelect',
                                                     label='Load Surface Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
@@ -63,6 +65,9 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
+    spatial = Attr(field_type=FiniteSupportEquation, label="Spatial Equation", default=Sigmoid())
+    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+
     surface = DataTypeGidAttr(
         linked_datatype=CorticalSurface,
         label=StimuliSurface.surface.label
@@ -74,18 +79,21 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
     default_spatial = Sigmoid
     default_temporal = PulseTrain
+    choices_temporal = get_ui_name_to_equation_dict()
+    choices_spatial = {GAUSSIAN_EQUATION: choices_temporal.get(GAUSSIAN_EQUATION),
+                       DOUBLE_GAUSSIAN_EQUATION: choices_temporal.get(DOUBLE_GAUSSIAN_EQUATION),
+                       SIGMOID_EQUATION: choices_temporal.get(SIGMOID_EQUATION)}
 
-    def __init__(self, spatial_equation_choices, temporal_equation_choices, project_id):
-        super(SurfaceStimulusCreatorForm, self).__init__()
-        self.project_id = project_id
+    def __init__(self, project_id=None):
+        super(SurfaceStimulusCreatorForm, self).__init__(project_id=project_id)
 
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',
-                                   choices=spatial_equation_choices,
+                                   choices=self.choices_spatial,
                                    subform=get_form_for_equation(self.default_spatial))
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
-                                    choices=temporal_equation_choices,
+                                    choices=self.choices_temporal,
                                     subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
@@ -113,7 +121,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
         self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self,
-                                                self.NAME_SPATIAL_PARAMS_DIV)
+                                               self.NAME_SPATIAL_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 
     def get_rendering_dict(self):
@@ -191,9 +199,8 @@ class SurfaceStimulusCreator(ABCSynchronous):
 
 class StimulusRegionSelectorForm(ABCAdapterForm):
 
-    def __init__(self, project_id):
-        super(StimulusRegionSelectorForm, self).__init__()
-        self.project_id = project_id
+    def __init__(self, project_id=None):
+        super(StimulusRegionSelectorForm, self).__init__(project_id=project_id)
         self.region_stimulus = DataTypeSelectField(StimuliRegionIndex, self, name='existentEntitiesSelect',
                                                    label='Load Region Stimulus')
         self.display_name = SimpleStrField(self, name='display_name', label='Display name')
@@ -203,6 +210,8 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
+    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+
     connectivity = DataTypeGidAttr(
         field_type=uuid.UUID,
         linked_datatype=Connectivity,
@@ -218,14 +227,13 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
 class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
     default_temporal = PulseTrain
+    choices = get_ui_name_to_equation_dict()
 
-    def __init__(self, equation_choices, project_id):
-        super(RegionStimulusCreatorForm, self).__init__()
-        self.project_id = project_id
-
+    def __init__(self, project_id=None):
+        super(RegionStimulusCreatorForm, self).__init__(project_id=project_id)
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
-                                    choices=equation_choices, subform=get_form_for_equation(self.default_temporal))
+                                    choices=self.choices, subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
     def get_view_model():

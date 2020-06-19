@@ -29,7 +29,7 @@
 #
 from abc import abstractmethod
 from tvb.basic.neotraits.api import NArray
-from tvb.adapters.simulator.range_parameter import RangeParameter
+from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import Form
 
 

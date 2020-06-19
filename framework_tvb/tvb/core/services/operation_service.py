@@ -43,7 +43,6 @@ import zipfile
 import sys
 from copy import copy
 from cgi import FieldStorage
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
     choices
@@ -65,7 +64,6 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 try:
     from cherrypy._cpreqbody import Part
@@ -201,7 +199,7 @@ class OperationService:
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
 
-        OperationService._store_view_model(stored_metric_operation, sim_operation.project, view_model)
+        self._store_view_model(stored_metric_operation, sim_operation.project, view_model)
         return stored_metric_operation
 
     def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
@@ -277,7 +275,7 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            OperationService._store_view_model(operation, project, view_model)
+            self._store_view_model(operation, project, view_model)
 
         return operations, group
 
@@ -289,19 +287,6 @@ class OperationService:
         h5_file.store(view_model)
         h5_file.close()
 
-    def load_view_model(self, adapter_instance, operation):
-        storage_path = self.file_helper.get_project_folder(operation.project, str(operation.id))
-        input_gid = json.loads(operation.parameters)['gid']
-        # TODO: review location, storage_path, op params deserialization
-        if isinstance(adapter_instance, SimulatorAdapter):
-            view_model = SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
-        else:
-            view_model_class = adapter_instance.get_view_model_class()
-            view_model = view_model_class()
-            h5_path = h5.path_for(storage_path, ViewModelH5, input_gid)
-            h5_file = ViewModelH5(h5_path, view_model)
-            h5_file.load_into(view_model)
-        return view_model
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
@@ -322,14 +307,13 @@ class OperationService:
             user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
-            view_model = self.load_view_model(adapter_instance, operation)
+            view_model = adapter_instance.load_view_model(operation)
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
-            ## Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
-            operation.parameters = json.dumps(kwargs)
+            # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
             if nr_datatypes > 0:
-                #### Write operation meta-XML only if some result are returned
+                # Write operation meta-XML only if some result are returned
                 self.file_helper.write_operation_metadata(operation)
             dao.store_entity(operation)
             adapter_form = adapter_instance.get_form()

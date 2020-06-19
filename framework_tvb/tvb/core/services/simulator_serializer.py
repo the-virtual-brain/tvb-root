@@ -32,11 +32,11 @@
 """
 
 import uuid
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator import h5_factory
 from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.simulator.monitors import Projection, EEG, MEG, iEEG

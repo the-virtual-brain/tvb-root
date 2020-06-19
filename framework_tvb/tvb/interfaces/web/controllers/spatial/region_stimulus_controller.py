@@ -93,14 +93,10 @@ class RegionStimulusController(SpatioTemporalController):
     MSG_MISSING_CONNECTIVITY = "There is no structural Connectivity in the current project. " \
                                "Please upload one to continue!"
 
-    def __init__(self):
-        SpatioTemporalController.__init__(self)
-        self.equation_choices = get_ui_name_to_equation_dict()
-
     @cherrypy.expose
     def set_connectivity(self, **param):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        connectivity_form_field = RegionStimulusCreatorForm(self.equation_choices, common.get_current_project().id).connectivity
+        connectivity_form_field = RegionStimulusCreatorForm(common.get_current_project().id).connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
         conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value.hex)
@@ -146,7 +142,7 @@ class RegionStimulusController(SpatioTemporalController):
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = common.get_from_session(KEY_REGION_STIMULUS_NAME)
 
-        region_stim_creator_form = RegionStimulusCreatorForm(self.equation_choices, project_id)
+        region_stim_creator_form = RegionStimulusCreatorForm(project_id)
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             conn = try_get_last_datatype(project_id, ConnectivityIndex)
             if conn is None:

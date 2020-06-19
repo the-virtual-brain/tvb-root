@@ -36,10 +36,10 @@ import os.path
 import shutil
 import zipfile
 from contextlib import closing
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
