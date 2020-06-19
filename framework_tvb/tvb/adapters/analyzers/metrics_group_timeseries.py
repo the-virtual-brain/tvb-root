@@ -41,9 +41,9 @@ Analyzer used to calculate a single measure for TimeSeries.
 import uuid
 import numpy
 import json
-from collections import OrderedDict
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.neotraits._attr import List
+from tvb.config import choices
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
@@ -51,21 +51,8 @@ from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
-# Import metrics here, so that Traits will find them and return them as known subclasses
-import tvb.analyzers.metric_kuramoto_index
-import tvb.analyzers.metric_proxy_metastability
-import tvb.analyzers.metric_variance_global
-import tvb.analyzers.metric_variance_of_node_variance
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-
-ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
-
-algo_names = list(ALGORITHMS)
-algo_names.sort()
-choices = OrderedDict()
-for name in algo_names:
-    choices[name] = name
 
 
 class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
