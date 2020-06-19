@@ -91,7 +91,7 @@ class SimulatorService(object):
         setattr(current_attr, range_param_name_list[-1], range_parameter_value)
 
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo,
-                                            session_stored_simulator, simulation_state_gid):
+                                            session_stored_simulator):
         try:
             metadata = {}
             metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
@@ -101,8 +101,6 @@ class SimulatorService(object):
                                                 algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             h5.store_view_model(session_stored_simulator, storage_path)
-            # TODO: hanlde simulation_state_gid
-            # SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, storage_path)
             burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 

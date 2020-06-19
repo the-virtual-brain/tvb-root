@@ -82,8 +82,7 @@ if __name__ == "__main__":
     simulator_service = SimulatorService()
     launched_operation = simulator_service.async_launch_and_prepare_simulation(BurstConfiguration(project.id),
                                                                                project.administrator, project,
-                                                                               cached_simulator_algorithm, simulator,
-                                                                               None)
+                                                                               cached_simulator_algorithm, simulator)
 
     # wait for the operation to finish
     while not launched_operation.has_finished:

@@ -1058,7 +1058,6 @@ class SimulatorController(BurstBaseController):
         if burst_name != 'none_undefined':
             session_burst_config.name = burst_name
 
-        simulation_state_index_gid = None
         if launch_mode == self.burst_service.LAUNCH_BRANCH:
             parent_burst = session_burst_config.parent_burst_object
             count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
@@ -1070,7 +1069,7 @@ class SimulatorController(BurstBaseController):
                                             "it!" % session_burst_config.name)
                 self.logger.error(exc)
                 raise exc
-            simulation_state_index_gid = simulation_state_index[0].gid
+            session_stored_simulator.history_gid = simulation_state_index[0].gid
 
         session_burst_config.start_time = datetime.now()
         session_burst_config = dao.store_entity(session_burst_config)
@@ -1081,8 +1080,7 @@ class SimulatorController(BurstBaseController):
                                               'user': user,
                                               'project': project,
                                               'simulator_algo': self.cached_simulator_algorithm,
-                                              'session_stored_simulator': session_stored_simulator,
-                                              'simulation_state_gid': simulation_state_index_gid})
+                                              'session_stored_simulator': session_stored_simulator})
             thread.start()
             return {'id': session_burst_config.id}
         except BurstServiceException as e:
