@@ -697,7 +697,7 @@ class FlowController(BaseController):
     def reloadoperation(self, operation_id, **_):
         """Redirect to Operation Input selection page, 
         with input data already selected."""
-        operation = self.operation_services.load_operation(operation_id)
+        operation = OperationService.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
         self.context.add_adapter_to_session(operation.algorithm, None, data)
         category_id = operation.algorithm.fk_category
@@ -729,17 +729,16 @@ class FlowController(BaseController):
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
-        operation_service = OperationService()
         result = False
         if int(is_group) == 0:
-            result = operation_service.stop_operation(operation_id)
+            result = OperationService.stop_operation(operation_id)
             if remove_after_stop:
                 ProjectService().remove_operation(operation_id)
         else:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             operations_in_group = ProjectService.get_operations_in_group(op_group)
             for operation in operations_in_group:
-                tmp_res = operation_service.stop_operation(operation.id)
+                tmp_res = OperationService.stop_operation(operation.id)
                 if remove_after_stop:
                     ProjectService().remove_operation(operation.id)
                 result = result or tmp_res
