@@ -43,16 +43,15 @@ import zipfile
 import sys
 from copy import copy
 from cgi import FieldStorage
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
-    choices
 from tvb.basic.exceptions import TVBException
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.config import choices, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -64,6 +63,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.datatypes.time_series import TimeSeries
 
 try:
     from cherrypy._cpreqbody import Part
@@ -172,12 +172,13 @@ class OperationService:
             self.launch_operation(operation.id, True)
 
     def _prepare_metric_operation(self, sim_operation):
-        # type: (Operation) -> None
-        metric_algo = dao.get_algorithm_by_module(TimeseriesMetricsAdapter.__module__,
-                                                  TimeseriesMetricsAdapter.__name__)
-        time_series_index = dao.get_generic_entity(TimeSeriesIndex, sim_operation.id, 'fk_from_operation')[0]
+        # type: (Operation) -> Operation
+        metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE,
+                                                  MEASURE_METRICS_CLASS)
+        datatype_index = h5.REGISTRY.get_index_for_datatype(TimeSeries)
+        time_series_index = dao.get_generic_entity(datatype_index, sim_operation.id, 'fk_from_operation')[0]
 
-        view_model = TimeseriesMetricsAdapterModel()
+        view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
         view_model.time_series = time_series_index.gid
         view_model.algorithms = tuple(choices.values())
 

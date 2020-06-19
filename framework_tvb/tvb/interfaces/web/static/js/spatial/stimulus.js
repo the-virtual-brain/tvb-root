@@ -35,7 +35,7 @@ var StimView;
 function main(weights, selectionGID) {
     StimView = new TVBUI.RegionAssociatorView({
         selectionGID: selectionGID,
-        onPut: STIM_saveWeightForSelectedNodes,
+        onPut: _STIM_saveWeightForSelectedNodes,
         prepareSubmitData: function () {
             console.warn('This should not happen. Stimulus page does not use the submit logic of RegionAssociatorView. ');
             return false;
@@ -59,7 +59,7 @@ function _STIM_server_update_scaling() {
 /**
  * Saves the given weight for all the selected nodes.
  */
-function STIM_saveWeightForSelectedNodes() {
+function _STIM_saveWeightForSelectedNodes() {
     const weightElement = $("#current_weight");
     let newWeight = parseFloat(weightElement.val());
     if (!isNaN(newWeight)) {
@@ -70,7 +70,6 @@ function STIM_saveWeightForSelectedNodes() {
         weightElement.val("");
         _STIM_server_update_scaling();
     }
-    return newWeight;
 }
 
 
