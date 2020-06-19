@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
-import sys
-import numpy as np
 import os.path
 import numpy as np
-import itertools
-import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
-import pytools
 import time
-import argparse
-import logging
-import scipy.io as io
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -124,7 +116,6 @@ class CudaRun:
 		assert n_coupling_per_block * n_coupling_blocks == args.n_coupling #}}}
 		logger.info('gpu_data[lengts] %s', gpu_data['lengths'].shape)
 		logger.info('nnodes %r', n_nodes)
-		# logger.info('gpu_data[lengths] %r', gpu_data['lengths'])
 
 		# run simulation#{{{
 		logger.info('submitting work')

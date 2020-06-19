@@ -6,29 +6,12 @@ import time
 import logging
 import itertools
 import argparse
+import os, sys
 
-import os, sys, inspect
-
-current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
-
-# sys.path.append("{}{}".format(parent_dir, '/NeuroML/'))
-# print('pd', parent_dir)
-# for p in sys.path:
-# 	print('sp', p)
-
-# from dsl_cuda import LEMS2CUDA
-
-np.set_printoptions(threshold=sys.maxsize)
+sys.path.insert(0, os.path.join(os.getcwd(), os.pardir))
+import LEMS2CUDA
 
 rgn.seed(79)
-
-# class testthis:
-#
-# 	def __init__(self):
-# 		self.args = self.parse_args()
-
 
 class TVB_test:
 
@@ -139,25 +122,38 @@ class TVB_test:
 
 		logger.info('result OK')
 
-	def cuda(self, logger, pop):
+	def start_cuda(self, logger):
 		logger.info('start Cuda run')
 		from cuda_run import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,
 										   self.n_inner_steps, self.buf_len, self.states, self.dt, self.min_speed)
-		# logger.info('tavg_data %f', tavg_data)
 
 		# Todo: fix this for cuda
-		self.check_results(self.n_nodes, self.n_work_items, tavg_data, self.weights, self.speeds, self.couplings, logger, self.args)
+		# self.check_results(self.n_nodes, self.n_work_items, tavg_data, self.weights, self.speeds, self.couplings, logger, self.args)
 
-		return tavg_data
+	def set_CUDAmodel_dir(self):
+		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir,'CUDAmodels',
+								 self.args.model.lower() + '.c')
 
-	def startsim(self, pop):
+	def set_states(self):
+		if 'kuramoto' in self.args.model.lower():
+			self.states = 1
+		elif 'oscillator' in self.args.model.lower():
+			self.states = 2
+		elif 'wongwang' in self.args.model.lower():
+			self.states = 2
+		elif 'montbrio' in self.args.model.lower():
+			self.states = 2
+		elif 'epileptor' in self.args.model.lower():
+			self.states = 6
+
+	def startsim(self):
 
 		tic = time.time()
 		logging.basicConfig(level=logging.DEBUG if self.args.verbose else logging.INFO)
-		logger = logging.getLogger('[tvbBench.py]')
+		logger = logging.getLogger('[TVB_CUDA]')
 
 		logger.info('dt %f', self.dt)
 		logger.info('nstep %d', self.nstep)
@@ -177,30 +173,18 @@ class TVB_test:
 		logger.info('min_speed %f', self.min_speed)
 		logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
 
-		tac = time.time()
-		logger.info("Setup in: {}".format(tac - tic))
+		self.set_CUDAmodel_dir()
 
-		self.args.filename = "{}{}{}{}".format(parent_dir, '/dsl_cuda/CUDAmodels/', self.args.model.lower(), '.c')
-		# self.args.filename = os.path.join(os.path.dirname(tvb.__file__), 'dsl_cuda', 'CUDAmodels', self.args.model.lower() + '.c')
-
-		logger.info('modellow %s', self.args.model.lower())
-
-		if ('kuramoto' in self.args.model.lower()):
-			self.states = 1
-		elif 'oscillator' in self.args.model.lower():
-			self.states = 2
-		elif 'wongwang' in self.args.model.lower():
-			self.states = 2
-		elif 'montbrio' in self.args.model.lower():
-			self.states = 2
-		elif 'epileptor' in self.args.model.lower():
-			self.states = 6
+		self.set_states()
 
 		logger.info('number of states %d', self.states)
 		logger.info('filename %s', self.args.filename)
 		logger.info('model %s', self.args.model)
 
-		tavg = self.cuda(logger, pop)
+		tac = time.time()
+		logger.info("Setup in: {}".format(tac - tic))
+
+		self.start_cuda(logger)
 
 		toc = time.time()
 		elapsed = toc - tic
@@ -208,13 +192,13 @@ class TVB_test:
 		logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
 		logger.info('finished')
 
-		return tavg
-
 
 if __name__ == '__main__':
 
-	zelf = TVB_test()
-	# zelf = testthis()
-	LEMS2CUDA.cuda_templating(zelf.args.model, '../dsl_cuda/XMLmodels/')
+	example = TVB_test()
 
-	tavg = zelf.startsim(zelf.args.model)
+	# start templating the model specified on cli
+	LEMS2CUDA.cuda_templating(example.args.model, '../../dsl_cuda/XMLmodels/')
+
+	# start simulation with templated model
+	example.startsim()

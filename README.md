@@ -180,7 +180,11 @@ for (unsigned int j_node = 0; j_node < n_node; j_node++)
 ```
 
 
-# Running
+# Running an example
+To run an example of a GPU generated model according to an existing or home-created xml file execute:
+./runthings cuda [modelname] located in /tvb-hpc/dsl/dsl_cuda/example. The cuda parameter indicates a cuda simulation 
+is to be started  and the [modelname] paramaters is the model that needs to be simulated.
+
 Place model file in directory and execute cuda_templating('modelname') function. Resulting model will be
 placed in the CUDA model directory
 
