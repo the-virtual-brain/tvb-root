@@ -339,7 +339,7 @@ class TestOperationService(BaseTestCase):
         """
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
         test_user = TestFactory.create_user(username="test_user_fire_sim")
-        test_project = TestFactory.create_project(admin=test_user)
+        test_project = TestFactory.create_project(admin=test_user, name="test_project_fire_sim")
 
         result = OperationService().fire_operation(adapter, test_user, test_project.id,
                                                    view_model=adapter.get_view_model()())
