@@ -608,9 +608,9 @@ function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
         url: urlBase,
         success: function (r) {
             if (r.toLowerCase() === 'true') {
-                displayMessage("The operation was successfully removed.", "infoMessage")
+                displayMessage("The operation was successfully stopped/removed.", "infoMessage")
             } else {
-                displayMessage("Could not remove operation.", 'warningMessage');
+                displayMessage("Could not stop/remove operation.", 'warningMessage');
             }
             if (removeAfter) {
                 refreshOperations();

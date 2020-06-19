@@ -765,7 +765,7 @@ class FlowController(BaseController):
                 current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
                 if current_burst and current_burst.id == operation.burst.id:
                     common.remove_from_session(common.KEY_BURST_CONFIG)
-                BurstService.remove_burst(operation.burst.id)
+                result = BurstService.remove_burst(operation.burst.id) or result
 
             return result
         except Exception as ex:

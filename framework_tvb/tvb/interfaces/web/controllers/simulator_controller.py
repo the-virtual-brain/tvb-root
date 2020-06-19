@@ -254,17 +254,17 @@ class SimulatorController(BurstBaseController):
         """
         burst_id = int(burst_id)
         session_burst = common.get_from_session(common.KEY_BURST_CONFIG)
+
         if session_burst.status == session_burst.BURST_RUNNING:
-            removed = OperationService().stop_operation(session_burst.fk_simulation)
-        else:
-            removed = BurstService().remove_burst(burst_id)
-        if removed:
-            if session_burst.id == burst_id:
-                return "reset-new"
-            return 'done'
-        else:
+            OperationService().stop_operation(session_burst.fk_simulation)
             # Burst was stopped since it was running
             return 'canceled'
+
+        BurstService().remove_burst(burst_id)
+        if session_burst.id == burst_id:
+            return "reset-new"
+        return 'done'
+
 
     @expose_page
     @settings

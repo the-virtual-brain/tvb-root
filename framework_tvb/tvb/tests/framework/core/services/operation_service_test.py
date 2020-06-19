@@ -338,7 +338,7 @@ class TestOperationService(BaseTestCase):
         Test preparation of an adapter and launch mechanism.
         """
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
-        test_user = TestFactory.create_user()
+        test_user = TestFactory.create_user(username="test_user_fire_sim")
         test_project = TestFactory.create_project(admin=test_user)
 
         result = OperationService().fire_operation(adapter, test_user, test_project.id,
