@@ -33,8 +33,7 @@
 """
 
 import numpy
-from tvb.basic.neotraits._attr import NArray
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, NArray
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -46,6 +45,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
+
 
 class ConnectivityCreatorModel(ViewModel):
 

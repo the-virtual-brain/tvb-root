@@ -29,12 +29,11 @@
 #
 import os
 import shutil
-
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neotraits._h5core import ViewModelH5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
