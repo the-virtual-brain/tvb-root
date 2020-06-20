@@ -44,6 +44,7 @@ import six
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -58,7 +59,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, using_template
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -84,6 +85,7 @@ class FlowController(BaseController):
         BaseController.__init__(self)
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
+        self.operation_services = OperationService()
 
     @expose_page
     @settings
@@ -93,7 +95,7 @@ class FlowController(BaseController):
         Choose exact action/adapter for current step.
         """
         try:
-            analyze_category, groups = self.flow_service.get_analyze_groups()
+            analyze_category, groups = self.algorithm_service.get_analyze_groups()
             step_name = analyze_category.displayname.lower()
             template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
                                           title="Select an analyzer", displayControl=False)
@@ -155,13 +157,14 @@ class FlowController(BaseController):
     def show_group_of_algorithms(self, step_key, algorithm_ids):
 
         project = common.get_current_project()
-        category = self.flow_service.get_category_by_id(step_key)
+        category = self.algorithm_service.get_category_by_id(step_key)
         algorithms = []
         for i in algorithm_ids.split(','):
             algorithm_id = int(i)
-            algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+            algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
-            adapter_form = self.flow_service.prepare_adapter_form(self.flow_service.prepare_adapter(algorithm), project.id)
+            adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -187,8 +190,8 @@ class FlowController(BaseController):
         range_param_name = data.pop('range_param_name')
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
-        OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project(),
-                                                  int(algorithm_id), int(step_key), **data)
+        self.operation_services.group_operation_launch(common.get_logged_user().id, common.get_current_project(),
+                                                       int(algorithm_id), int(step_key), **data)
         redirect_url = self._compute_back_link('operations', common.get_current_project())
         raise cherrypy.HTTPRedirect(redirect_url)
 
@@ -201,7 +204,7 @@ class FlowController(BaseController):
         'data' are arguments for POST
         """
         project = common.get_current_project()
-        algorithm = self.flow_service.get_algorithm_by_identifier(adapter_key)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(adapter_key)
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
@@ -488,10 +491,10 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            result = self.flow_service.fire_operation(adapter_instance, common.get_logged_user(),
-                                                      project_id, view_model=view_model)
+            result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
+                                                            project_id, view_model=view_model)
             # Store input data in session, for informing user of it.
-            step = self.flow_service.get_category_by_id(step_key)
+            step = self.algorithm_service.get_category_by_id(step_key)
             if not step.rawinput:
                 self.context.add_adapter_to_session(None, None, copy.deepcopy(data))
             if isinstance(result, list):
@@ -530,14 +533,14 @@ class FlowController(BaseController):
                 self.context.clean_from_session()
 
             group = None
-            category = self.flow_service.get_category_by_id(step_key)
+            category = self.algorithm_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
             if group:
                 title = title + " - " + group.displayname
 
-            adapter_instance = self.flow_service.prepare_adapter(stored_adapter)
+            adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.flow_service.prepare_adapter_form(adapter_instance, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
             template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
@@ -583,7 +586,7 @@ class FlowController(BaseController):
 
     @expose_json
     def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
-        algorithm = self.flow_service.get_algorithm_by_identifier(algo_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = ABCAdapter.load_entity_by_gid(entity_gid)
         storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
@@ -674,7 +677,7 @@ class FlowController(BaseController):
         if not (project_id and int(project_id) and (algorithm_id is not None) and int(algorithm_id)):
             return ""
 
-        algorithm = self.flow_service.get_algorithm_by_identifier(algorithm_id)
+        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         if is_upload:
             submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algorithm_id)
         else:
@@ -696,7 +699,7 @@ class FlowController(BaseController):
     def reloadoperation(self, operation_id, **_):
         """Redirect to Operation Input selection page, 
         with input data already selected."""
-        operation = self.flow_service.load_operation(operation_id)
+        operation = OperationService.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
         self.context.add_adapter_to_session(operation.algorithm, None, data)
         category_id = operation.algorithm.fk_category
@@ -713,64 +716,33 @@ class FlowController(BaseController):
         """
         is_group = int(is_group)
         if not is_group:
-            operation = self.flow_service.load_operation(int(operation_id))
+            operation = OperationService.load_operation(int(operation_id))
         else:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
-            operation = self.flow_service.load_operation(int(first_op.id))
+            operation = OperationService.load_operation(int(first_op.id))
         operation.burst.prepare_after_load()
         common.add2session(common.KEY_BURST_CONFIG, operation.burst)
         raise cherrypy.HTTPRedirect("/burst/")
 
     @expose_json
-    def stop_operation(self, operation_id, is_group, remove_after_stop=False):
+    def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
-        operation_service = OperationService()
-        result = False
-        if int(is_group) == 0:
-            result = operation_service.stop_operation(operation_id)
-            if remove_after_stop:
-                ProjectService().remove_operation(operation_id)
-        else:
-            op_group = ProjectService.get_operation_group_by_id(operation_id)
-            operations_in_group = ProjectService.get_operations_in_group(op_group)
-            for operation in operations_in_group:
-                tmp_res = operation_service.stop_operation(operation.id)
-                if remove_after_stop:
-                    ProjectService().remove_operation(operation.id)
-                result = result or tmp_res
-        return result
-
-    @expose_json
-    def stop_burst_operation(self, operation_id, is_group, remove_after_stop=False):
-        """
-        For a given operation id that is part of a burst just stop the given burst.
-        :returns True when stopped operation was successfully.
-        """
         operation_id = int(operation_id)
-        if int(is_group) == 0:
-            operation = self.flow_service.load_operation(operation_id)
-        else:
-            op_group = ProjectService.get_operation_group_by_id(operation_id)
-            first_op = ProjectService.get_operations_in_group(op_group)[0]
-            operation = self.flow_service.load_operation(int(first_op.id))
+        is_group = int(is_group) != 0
+        # Load before we remove, to have its data in memory here
+        burst_config = BurstService.get_burst_for_operation_id(operation_id)
 
-        try:
-            burst_service = BurstService()
-            result = burst_service.stop_burst(operation.burst)
-            if remove_after_stop:
-                current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-                if current_burst and current_burst.id == operation.burst.id:
-                    common.remove_from_session(common.KEY_BURST_CONFIG)
-                result = burst_service.cancel_or_remove_burst(operation.burst.id) or result
-
-            return result
-        except Exception as ex:
-            self.logger.exception(ex)
-            return False
+        result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
+        if remove_after_stop:
+            current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
+            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
+                common.remove_from_session(common.KEY_BURST_CONFIG)
+                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
+        return result
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """
@@ -798,7 +770,7 @@ class FlowController(BaseController):
         selection retrieval common to selection component and connectivity selection
         """
         curent_project = common.get_current_project()
-        selections = self.flow_service.get_selections_for_project(curent_project.id, datatype_gid)
+        selections = self.algorithm_service.get_selections_for_project(curent_project.id, datatype_gid)
         names, sel_values = [], []
 
         for selection in selections:
@@ -822,7 +794,7 @@ class FlowController(BaseController):
             # client sends integers as strings:
             selection = json.dumps([int(s) for s in json.loads(data['selection'])])
             datatype_gid = data['datatype_gid']
-            self.flow_service.save_measure_points_selection(ui_name, selection, datatype_gid, sel_project_id)
+            self.algorithm_service.save_measure_points_selection(ui_name, selection, datatype_gid, sel_project_id)
             return [True, 'Selection saved successfully.']
 
         else:
@@ -874,7 +846,7 @@ class FlowController(BaseController):
 
         datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
         operation_grp = datatype_group_ob.parent_operation_group
-        operation_obj = self.flow_service.load_operation(datatype_group_ob.fk_from_operation)
+        operation_obj = OperationService.load_operation(datatype_group_ob.fk_from_operation)
         parameters = json.loads(operation_obj.parameters)
 
         range1name, range1_dict = json.loads(operation_grp.range1)
@@ -882,7 +854,7 @@ class FlowController(BaseController):
         parameters[RANGE_PARAMETER_1] = range1name
         parameters[RANGE_PARAMETER_2] = range2name
 
-        ##change the existing simulator parameters to be min max step types
+        # change the existing simulator parameters to be min max step types
         range1_dict = {constants.ATT_MINVALUE: range_list[0],
                        constants.ATT_MAXVALUE: range_list[1],
                        constants.ATT_STEP: step_list[0]}

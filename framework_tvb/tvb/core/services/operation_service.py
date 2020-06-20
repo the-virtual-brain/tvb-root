@@ -52,8 +52,8 @@ from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.load import get_class_by_name
-from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
-    BurstConfiguration
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.storage import dao
@@ -62,7 +62,9 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.project_service import ProjectService
 from tvb.core.services.backend_client import BACKEND_CLIENT
+from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.time_series import TimeSeries
 
 try:
@@ -288,7 +290,6 @@ class OperationService:
         h5_file.store(view_model)
         h5_file.close()
 
-
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
         Public method.
@@ -309,7 +310,8 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space, view_model=view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space,
+                                                                   view_model=view_model)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
@@ -409,8 +411,8 @@ class OperationService:
         Create and store OperationGroup entity, or return None
         """
         # Standard ranges as accepted from UI
-        range1_values = self.get_range_values(kwargs, self._range_name(1))
-        range2_values = self.get_range_values(kwargs, self._range_name(2))
+        range1_values = self._get_range_values(kwargs, self._range_name(1))
+        range2_values = self._get_range_values(kwargs, self._range_name(2))
         available_args = self.__expand_arguments([(kwargs, None)], range1_values, self._range_name(1))
         available_args = self.__expand_arguments(available_args, range2_values, self._range_name(2))
         is_group = False
@@ -425,7 +427,7 @@ class OperationService:
         last_range_idx = 3
         ranger_name = self._range_name(last_range_idx)
         while ranger_name in kwargs:
-            values_for_range = self.get_range_values(kwargs, ranger_name)
+            values_for_range = self._get_range_values(kwargs, ranger_name)
             available_args = self.__expand_arguments(available_args, values_for_range, ranger_name)
             last_range_idx += 1
             ranger_name = self._range_name(last_range_idx)
@@ -441,7 +443,7 @@ class OperationService:
 
         return available_args, group
 
-    def get_range_values(self, kwargs, ranger_name):
+    def _get_range_values(self, kwargs, ranger_name):
         """
         For the ranger given by ranger_name look in kwargs and return
         the array with all the possible values.
@@ -497,12 +499,59 @@ class OperationService:
                 result.append((kw_new, range_new))
         return result
 
-    ##########################################################################################
-    ######## Methods related to stopping and restarting operations start here ################
-    ##########################################################################################
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
+        """
+        Launch an operation, specified by AdapterInstance, for CurrentUser,
+        Current Project and a given set of UI Input Data.
+        """
+        operation_name = str(adapter_instance.__class__.__name__)
+        try:
+            self.logger.info("Starting operation " + operation_name)
+            project = dao.get_project_by_id(project_id)
 
-    def stop_operation(self, operation_id):
+            result = self.initiate_operation(current_user, project, adapter_instance, visible,
+                                             model_view=view_model, **data)
+            self.logger.info("Finished operation launch:" + operation_name)
+            return result
+
+        except TVBException as excep:
+            self.logger.exception("Could not launch operation " + operation_name +
+                                  " with the given set of input data, because: " + excep.message)
+            raise OperationException(excep.message, excep)
+        except Exception as excep:
+            self.logger.exception("Could not launch operation " + operation_name + " with the given set of input data!")
+            raise OperationException(str(excep))
+
+    @staticmethod
+    def load_operation(operation_id):
+        """ Retrieve previously stored Operation from DB, and load operation.burst attribute"""
+        operation = dao.get_operation_by_id(operation_id)
+        operation.burst = dao.get_burst_for_operation_id(operation_id)
+        return operation
+
+    @staticmethod
+    def stop_operation(operation_id, is_group=False, remove_after_stop=False):
+        # type: (int, bool, bool) -> bool
         """
-        Stop the operation given by the operation id.
+        Stop (also named Cancel) the operation given by operation_id,
+        and potentially also remove it after (with all linked data).
+        In case the Operation has a linked Burst, remove that too.
+        :param operation_id: ID for Operation (or OperationGroup) to be canceled/removed
+        :param is_group: When true stop all the operations from that group.
+        :param remove_after_stop: if True, also remove the operation(s) after stopping
+        :returns True if the stop step was successfully
         """
-        return BACKEND_CLIENT.stop_operation(int(operation_id))
+        result = False
+        if is_group:
+            op_group = ProjectService.get_operation_group_by_id(operation_id)
+            operations_in_group = ProjectService.get_operations_in_group(op_group)
+            for operation in operations_in_group:
+                result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
+        else:
+            result = BACKEND_CLIENT.stop_operation(operation_id)
+            if remove_after_stop:
+                burst_config = dao.get_burst_for_operation_id(operation_id)
+                ProjectService().remove_operation(operation_id)
+                if burst_config is not None:
+                    result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
+        return result

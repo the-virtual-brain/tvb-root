@@ -42,7 +42,7 @@ import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
@@ -61,15 +61,15 @@ class BaseController(object):
         self.logger = get_logger(self.__class__.__module__)
 
         self.user_service = UserService()
-        self.flow_service = FlowService()
+        self.algorithm_service = AlgorithmService()
 
         self.analyze_category_link = '/flow/step_analyzers'
         self.analyze_adapters = None
 
         self.connectivity_tab_link = '/flow/step_connectivity'
-        view_category = self.flow_service.get_visualisers_category()
-        conn_id = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.CONNECTIVITY_MODULE,
-                                                                      IntrospectionRegistry.CONNECTIVITY_CLASS).id
+        view_category = self.algorithm_service.get_visualisers_category()
+        conn_id = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.CONNECTIVITY_MODULE,
+                                                                           IntrospectionRegistry.CONNECTIVITY_CLASS).id
         connectivity_link = self.get_url_adapter(view_category.id, conn_id)
 
         self.connectivity_submenu = [dict(title="Large Scale Connectivity", link=connectivity_link,
@@ -79,8 +79,9 @@ class BaseController(object):
                                           subsection=WebStructure.SUB_SECTION_LOCAL_CONNECTIVITY,
                                           description="Create or view existent Local Connectivity entities.")]
 
-        allen_algo = self.flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.ALLEN_CREATOR_MODULE,
-                                                                         IntrospectionRegistry.ALLEN_CREATOR_CLASS)
+        allen_algo = self.algorithm_service.get_algorithm_by_module_and_class(
+            IntrospectionRegistry.ALLEN_CREATOR_MODULE,
+            IntrospectionRegistry.ALLEN_CREATOR_CLASS)
         if allen_algo and not allen_algo.removed:
             # Only add the Allen Creator if AllenSDK is installed
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
@@ -346,7 +347,7 @@ class BaseController(object):
         """
         project = common.get_current_project()
         if project is not None:
-            fns, sta, err, canceled, pending = self.flow_service.get_operation_numbers(project.id)
+            fns, sta, err, canceled, pending = self.algorithm_service.get_operation_numbers(project.id)
             project.operations_finished = fns
             project.operations_started = sta
             project.operations_error = err

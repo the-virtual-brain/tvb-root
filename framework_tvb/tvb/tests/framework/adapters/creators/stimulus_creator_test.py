@@ -37,7 +37,7 @@ from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, Surfac
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -96,8 +96,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 2.0
 
-        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id,
-                                     view_model=view_model)
+        OperationService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id,
+                                          view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
@@ -138,8 +138,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 0.0
 
-        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id,
-                                     view_model=view_model)
+        OperationService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id,
+                                          view_model=view_model)
         surface_stimulus_index = TestFactory.get_entity(self.test_project, StimuliSurfaceIndex)
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'

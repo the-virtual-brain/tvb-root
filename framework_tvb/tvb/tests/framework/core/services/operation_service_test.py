@@ -42,7 +42,6 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
-from tvb.core.services.flow_service import FlowService
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
 from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -97,7 +96,7 @@ class TestOperationService(BaseTestCase):
         adapter_instance = ABCAdapter.build_adapter(algo)
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         ## Create Group of operations
-        FlowService().fire_operation(adapter_instance, self.test_user, self.test_project.id)
+        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 1, "Expected one operation group"
@@ -333,3 +332,15 @@ class TestOperationService(BaseTestCase):
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
         assert operation.status, model_operation.STATUS_FINISHED == "Operation shouldn't have been canceled!"
+
+    def test_fire_operation(self):
+        """
+        Test preparation of an adapter and launch mechanism.
+        """
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        test_user = TestFactory.create_user(username="test_user_fire_sim")
+        test_project = TestFactory.create_project(admin=test_user, name="test_project_fire_sim")
+
+        result = OperationService().fire_operation(adapter, test_user, test_project.id,
+                                                   view_model=adapter.get_view_model()())
+        assert result.endswith("has finished."), "Operation fail"

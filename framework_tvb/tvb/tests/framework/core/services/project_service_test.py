@@ -44,7 +44,7 @@ from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
@@ -492,7 +492,7 @@ class TestProjectService(TransactionalTestCase):
         expected_links.append(dt_to_link.gid)
 
         # Actually create the links from Prj2 into Prj1
-        FlowService().create_link(link_ids, project.id)
+        AlgorithmService().create_link(link_ids, project.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
         dts_in_tree = dao.get_data_in_project(project.id)

@@ -591,13 +591,9 @@ function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId)
 }
 
 
-function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
+function cancelOrRemoveOperation(operationId, isGroup, removeAfter) {
 
-    let urlBase = "/flow/stop_operation/";
-    if (isBurst) {
-        urlBase = "/flow/stop_burst_operation/";
-    }
-    urlBase += operationId + '/' + isGroup;
+    let urlBase = "/flow/cancel_or_remove_operation/"+ operationId + '/' + isGroup;
     if (removeAfter) {
         urlBase += '/True';
     }
@@ -608,9 +604,9 @@ function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
         url: urlBase,
         success: function (r) {
             if (r.toLowerCase() === 'true') {
-                displayMessage("The operation was successfully removed.", "infoMessage")
+                displayMessage("The operation was successfully stopped/removed.", "infoMessage")
             } else {
-                displayMessage("Could not remove operation.", 'warningMessage');
+                displayMessage("Could not stop/remove operation.", 'warningMessage');
             }
             if (removeAfter) {
                 refreshOperations();
@@ -621,30 +617,6 @@ function _stopOperationsOrBurst(operationId, isGroup, isBurst, removeAfter) {
         }
     });
 }
-
-
-function stopOperation(operationId, isGroup) {
-    // Take an operation Identifier and reload previously selected input parameters for it.
-    _stopOperationsOrBurst(operationId, isGroup, false, false);
-}
-
-function stopBurstOperation(operationId, isGroup) {
-    // Take an operation Identifier and reload previously selected input parameters for it.
-    _stopOperationsOrBurst(operationId, isGroup, true, false);
-}
-
-
-function deleteOperation(operationId, isGroup) {
-    // Delete a operation that was not part of a Burst
-    _stopOperationsOrBurst(operationId, isGroup, false, true);
-}
-
-
-function deleteBurstOperation(operationId, isGroup) {
-    // Delete a operation that was part of a burst launch
-    _stopOperationsOrBurst(operationId, isGroup, true, true);
-}
-
 
 function resetOperationFilters(submitFormId) {
     //Reset all the filters set for the operation page.
