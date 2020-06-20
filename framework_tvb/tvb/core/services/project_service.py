@@ -54,7 +54,7 @@ from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.removers_factory import get_remover
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
@@ -211,7 +211,7 @@ class ProjectService:
                         result["datatype_group_gid"] = datatype_group.gid
                         result["gid"] = operation_group.gid
                         ## Filter only viewers for current DataTypeGroup entity:
-                        result["view_groups"] = FlowService().get_visualizers_for_group(datatype_group.gid)
+                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None

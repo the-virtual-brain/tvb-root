@@ -69,7 +69,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -247,7 +246,7 @@ class TestFactory(object):
     def launch_importer(importer_class, view_model, user, project_id):
         # type: (type, ViewModel, User, int) -> None
         importer = ABCAdapter.build_adapter_from_class(importer_class)
-        FlowService().fire_operation(importer, user, project_id, view_model=view_model)
+        OperationService().fire_operation(importer, user, project_id, view_model=view_model)
 
     @staticmethod
     def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):

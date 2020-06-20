@@ -273,8 +273,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         try:
             current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
             surface_stimulus_creator = ABCAdapter.build_adapter_from_class(SurfaceStimulusCreator)
-            self.flow_service.fire_operation(surface_stimulus_creator, common.get_logged_user(),
-                                             common.get_current_project().id, view_model=current_surface_stim)
+            self.operation_service.fire_operation(surface_stimulus_creator, common.get_logged_user(),
+                                                  common.get_current_project().id, view_model=current_surface_stim)
             common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
         except (NameError, ValueError, SyntaxError):

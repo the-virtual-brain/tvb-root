@@ -43,8 +43,6 @@ from tvb.core.entities.load import try_get_last_datatype, get_filtered_datatypes
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_datatype import DataType, Project
 from tvb.core.neocom import h5
-from tvb.core.services.import_service import ImportService
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.datatypes.surfaces import CORTICAL
@@ -61,8 +59,6 @@ class TestRemove(TransactionalTestCase):
         """
         Prepare the database before each test.
         """
-        self.import_service = ImportService()
-        self.flow_service = FlowService()
         self.project_service = ProjectService()
         self.test_user = TestFactory.create_user()
 

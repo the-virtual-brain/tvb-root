@@ -54,6 +54,7 @@ from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.monitors import Bold, Projection, Raw
@@ -234,12 +235,33 @@ class SimulatorController(BurstBaseController):
         self.burst_service = BurstService()
         self.simulator_service = SimulatorService()
         self.files_helper = FilesHelper()
-        self.cached_simulator_algorithm = self.flow_service.get_algorithm_by_module_and_class(
+        self.cached_simulator_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS)
 
     def _update_last_loaded_fragment_url(self, current_url):
         self.last_loaded_form_url = current_url
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, self.last_loaded_form_url)
+
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @check_user
+    def cancel_or_remove_burst(self, burst_id):
+        """
+        Cancel or Remove the burst entity given by burst_id (and all linked entities: op, DTs)
+        :returns True: if the op was successfully.
+        """
+        burst_id = int(burst_id)
+        burst_configuration = self.burst_service.load_burst_configuration(burst_id)
+        remove_after_stop = burst_configuration.status != burst_configuration.BURST_RUNNING
+
+        if burst_configuration.fk_operation_group is None:
+            op_id = burst_configuration.fk_simulation
+            is_group = 0
+        else:
+            op_id = burst_configuration.fk_operation_group
+            is_group = 1
+
+        return FlowController().cancel_or_remove_operation(op_id, is_group, remove_after_stop)
 
     @expose_page
     @settings
@@ -796,7 +818,7 @@ class SimulatorController(BurstBaseController):
         for monitor in monitors:
             if type(monitor).__name__ == current_monitor_name:
                 index = monitors.index(monitor)
-                if index < len(monitors)-1:
+                if index < len(monitors) - 1:
                     return monitors[index + 1], index
 
         # Currently at the last monitor
@@ -907,7 +929,8 @@ class SimulatorController(BurstBaseController):
         next_form, form_action_url, is_launch_fragment, monitor_name = \
             self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, session_stored_burst)
 
-        previous_form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL, current_monitor)
+        previous_form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
+                                                          current_monitor)
         rendering_rules = SimulatorFragmentRenderingRules(next_form, form_action_url,
                                                           previous_form_action_url,
                                                           is_simulator_copy, is_simulator_load,
@@ -1054,12 +1077,11 @@ class SimulatorController(BurstBaseController):
         if burst_name != 'none_undefined':
             session_burst_config.name = burst_name
 
-        burst_config_to_store = session_burst_config
         simulation_state_index_gid = None
         if launch_mode == self.burst_service.LAUNCH_BRANCH:
             parent_burst = session_burst_config.parent_burst_object
             count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
-            burst_config_to_store.name = parent_burst.name + "_" + launch_mode + str(count + 1)
+            session_burst_config.name = parent_burst.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
                                                             parent_burst.id, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
@@ -1069,19 +1091,19 @@ class SimulatorController(BurstBaseController):
                 raise exc
             simulation_state_index_gid = simulation_state_index[0].gid
 
-        burst_config_to_store.start_time = datetime.now()
-        dao.store_entity(burst_config_to_store)
+        session_burst_config.start_time = datetime.now()
+        session_burst_config = dao.store_entity(session_burst_config)
 
         try:
             thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_simulation,
-                                      kwargs={'burst_config': burst_config_to_store,
+                                      kwargs={'burst_config': session_burst_config,
                                               'user': user,
                                               'project': project,
                                               'simulator_algo': self.cached_simulator_algorithm,
                                               'session_stored_simulator': session_stored_simulator,
                                               'simulation_state_gid': simulation_state_index_gid})
             thread.start()
-            return {'id': burst_config_to_store.id}
+            return {'id': session_burst_config.id}
         except BurstServiceException as e:
             self.logger.exception('Could not launch burst!')
             return {'error': e.message}

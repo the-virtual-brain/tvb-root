@@ -52,7 +52,7 @@ from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -437,7 +437,7 @@ def value_wrapper_factory():
         view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
 
         adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        op = FlowService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
+        op = OperationService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
         # wait for the operation to finish
         tries = 5
         while not op.has_finished and tries > 0:

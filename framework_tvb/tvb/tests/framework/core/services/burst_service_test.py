@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -70,10 +70,10 @@ class TestBurstService(BaseTestCase):
     INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
 
     burst_service = BurstService()
-    flow_service = FlowService()
+    algorithm_service = AlgorithmService()
     operation_service = OperationService()
-    sim_algorithm = flow_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                   IntrospectionRegistry.SIMULATOR_CLASS)
+    sim_algorithm = algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                        IntrospectionRegistry.SIMULATOR_CLASS)
     local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
 
 
@@ -172,15 +172,6 @@ class TestBurstService(BaseTestCase):
         loaded_burst = dao.get_burst_by_id(burst_config.id)
         assert loaded_burst.name == "new_burst_name", "Burst was not renamed properly."
 
-    def test_remove_burst(self):
-        """
-        Test the remove burst method added to burst_service.
-        """
-        loaded_burst, _ = self._prepare_and_launch_sync_burst()
-        self.burst_service.cancel_or_remove_burst(loaded_burst.id)
-        self._check_burst_removed()
-
-
     def test_branch_burst(self):
         """
         Test the branching of an existing burst.
@@ -200,46 +191,6 @@ class TestBurstService(BaseTestCase):
         sim_states = self.count_all_entities(SimulationHistoryIndex)
         assert 2 == ts_regions, "An operation group should have been created for each step."
         assert 2 == sim_states, "An dataType group should have been created for each step."
-
-
-    def test_remove_group_burst(self):
-        """
-        Same remove burst but for a burst that contains group of workflows launched as
-        it would be from a Parameter Space Exploration. Check that the workflows are also
-        deleted with the burst.
-        """
-        burst_config = self._prepare_and_launch_async_burst(length=1, is_range=True, nr_ops=4, wait_to_finish=60)
-
-        launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        assert 4 == launched_workflows, "4 workflows should have been launched due to group parameter."
-
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_config.id)
-        assert got_deleted, "Burst should be deleted"
-
-        launched_workflows = dao.get_workflows_for_burst(burst_config.id, is_count=True)
-        assert 0 == launched_workflows, "No workflows should remain after delete."
-
-        burst_config = dao.get_burst_by_id(burst_config.id)
-        assert burst_config is None, "Removing a canceled burst should delete it from db."
-
-
-    def test_remove_started_burst(self):
-        """
-        Try removing a started burst, which should result in it getting canceled.
-        """
-        burst_entity = self._prepare_and_launch_async_burst(length=20000)
-        assert BurstConfiguration.BURST_RUNNING == burst_entity.status,\
-                         'A 20000 length simulation should still be started immediately after launch.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
-        assert not got_deleted, "Burst should be cancelled before deleted."
-        burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert BurstConfiguration.BURST_CANCELED == burst_entity.status,\
-                         'Deleting a running burst should just cancel it first.'
-        got_deleted = self.burst_service.cancel_or_remove_burst(burst_entity.id)
-        assert got_deleted, "Burst should be deleted if status is cancelled."
-        burst_entity = dao.get_burst_by_id(burst_entity.id)
-        assert burst_entity is None, "Removing a canceled burst should delete it from db."
-
 
     def test_burst_delete_with_project(self):
         """
@@ -283,9 +234,9 @@ class TestBurstService(BaseTestCase):
         """
         Test the launch burst method from burst service.
         """
-        first_step_algo = self.flow_service.get_algorithm_by_module_and_class(
+        first_step_algo = self.algorithm_service.get_algorithm_by_module_and_class(
             'tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        adapter_interface = self.flow_service.prepare_adapter(self.test_project.id, first_step_algo)
+        adapter_interface = self.algorithm_service.prepare_adapter(self.test_project.id, first_step_algo)
         ui_submited_simulator_iface_replica = {}
         kwargs_replica = {}
         for entry in adapter_interface:
@@ -334,7 +285,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that burst is marked as error if invalid data is passed to the first step.
         """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         #Passing invalid kwargs to the 'simulator' component
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
@@ -351,7 +302,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that burst is marked as error if invalid data is passed to the first step.
         """
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         #Adapter tries to do an int(test1_val1) so this should fail
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
@@ -387,7 +338,7 @@ class TestBurstService(BaseTestCase):
         """
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
 
-        algo_id = self.flow_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class('tvb.tests.framework.adapters.testadapter1',
                                                                       'TestAdapter1').id
         kwargs_replica = {'test1_val1': '[0, 1, 2]', 'test1_val2': '0', RANGE_PARAMETER_1: 'test1_val1'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
@@ -417,7 +368,7 @@ class TestBurstService(BaseTestCase):
         burst_config = self.burst_service.new_burst_configuration(self.test_project.id)
         SIMULATOR_MODULE = 'tvb.tests.framework.adapters.testadapter1'
         SIMULATOR_CLASS = 'TestAdapter1'
-        algo_id = self.flow_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS).id
+        algo_id = self.algorithm_service.get_algorithm_by_module_and_class(SIMULATOR_MODULE, SIMULATOR_CLASS).id
         kwargs_replica = {'test1_val1': '0', 'test1_val2': '0'}
         test_portlet = dao.get_portlet_by_identifier(self.PORTLET_ID)
         # Add test_portlet to positions (0,0), (0,1) and (1,0)
@@ -514,7 +465,7 @@ class TestBurstService(BaseTestCase):
         workflow_step_list = []
 
         stored_dt = datatypes_factory.DatatypesFactory()._store_datatype(Datatype1())
-        first_step_algorithm = self.flow_service.get_algorithm_by_module_and_class(
+        first_step_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             "tvb.tests.framework.adapters.testadapter1", "TestAdapterDatatypeInput")
         metadata = {DataTypeMetaData.KEY_BURST: burst_config.id}
         kwargs = {"test_dt_input": stored_dt.gid, 'test_non_dt_input': '0'}

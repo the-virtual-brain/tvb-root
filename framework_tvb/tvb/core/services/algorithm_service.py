@@ -37,7 +37,6 @@ Code related to launching/duplicating operations is placed here.
 """
 
 from inspect import getmro
-from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -46,28 +45,27 @@ from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.operation_service import OperationService
 
 
-
-class FlowService:
+class AlgorithmService(object):
     """
-    Service Layer for all TVB generic Work-Flow operations.
+    Service Layer for Algorithms manipulation (e.g. find all Uploaders, Filter algo by category, etc)
     """
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
         self.file_helper = FilesHelper()
 
-    def get_category_by_id(self, identifier):
+    @staticmethod
+    def get_category_by_id(identifier):
         """ Pass to DAO the retrieve of category by ID operation."""
         return dao.get_category_by_id(identifier)
-    
+
     @staticmethod
     def get_raw_categories():
         """:returns: AlgorithmCategory list of entities that have results in RAW state (Creators/Uploaders)"""
         return dao.get_raw_categories()
-    
+
     @staticmethod
     def get_visualisers_category():
         """Retrieve all Algorithm categories, with display capability"""
@@ -75,7 +73,7 @@ class FlowService:
         if not result:
             raise ValueError("View Category not found!!!")
         return result[0]
-    
+
     @staticmethod
     def get_algorithm_by_identifier(ident):
         """
@@ -83,15 +81,6 @@ class FlowService:
         Return None, if ID is not found in DB.
         """
         return dao.get_algorithm_by_id(ident)
-
-    
-    @staticmethod
-    def load_operation(operation_id):
-        """ Retrieve previously stored Operation from DB, and load operation.burst attribute"""
-        operation = dao.get_operation_by_id(operation_id)
-        operation.burst = dao.get_burst_for_operation_id(operation_id)
-        return operation
-
 
     @staticmethod
     def get_operation_numbers(proj_id):
@@ -108,7 +97,6 @@ class FlowService:
             self.logger.info('This form does not take defaults from a HasTraits entity')
 
         return form
-
 
     def prepare_adapter(self, stored_adapter):
 
@@ -140,7 +128,6 @@ class FlowService:
             link = Links(data, project_id)
             dao.store_entity(link)
 
-
     @staticmethod
     def remove_link(dt_id, project_id):
         """
@@ -149,30 +136,6 @@ class FlowService:
         link = dao.get_link(dt_id, project_id)
         if link is not None:
             dao.remove_entity(Links, link.id)
-
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
-        """
-        Launch an operation, specified by AdapterInstance, for CurrentUser, 
-        Current Project and a given set of UI Input Data.
-        """
-        operation_name = str(adapter_instance.__class__.__name__)
-        try:
-            self.logger.info("Starting operation " + operation_name)
-            project = dao.get_project_by_id(project_id)
-
-            result = OperationService().initiate_operation(current_user, project, adapter_instance, visible,
-                                                           model_view=view_model, **data)
-            self.logger.info("Finished operation launch:" + operation_name)
-            return result
-
-        except TVBException as excep:
-            self.logger.exception("Could not launch operation " + operation_name +
-                                  " with the given set of input data, because: " + excep.message)
-            raise OperationException(excep.message, excep)
-        except Exception as excep:
-            self.logger.exception("Could not launch operation " + operation_name + " with the given set of input data!")
-            raise OperationException(str(excep))      
-
 
     @staticmethod
     def get_upload_algorithms():
@@ -183,8 +146,8 @@ class FlowService:
         categories_ids = [categ.id for categ in categories]
         return dao.get_adapters_from_categories(categories_ids)
 
-
-    def get_analyze_groups(self):
+    @staticmethod
+    def get_analyze_groups():
         """
         :return: list of AlgorithmTransientGroup entities
         """
@@ -197,10 +160,9 @@ class FlowService:
             # For empty groups, this time, we fill the actual adapter
             group = AlgorithmTransientGroup(adapter.group_name or adapter.displayname,
                                             adapter.group_description or adapter.description)
-            group = self._find_group(groups_list, group)
+            group = AlgorithmService._find_group(groups_list, group)
             group.children.append(adapter)
         return categories[0], groups_list
-
 
     @staticmethod
     def _find_group(groups_list, new_group):
@@ -212,12 +174,10 @@ class FlowService:
         groups_list.append(new_group)
         return new_group
 
-
     def get_visualizers_for_group(self, dt_group_gid):
 
         categories = dao.get_visualisers_categories()
         return self._get_launchable_algorithms(dt_group_gid, categories)[1]
-
 
     def get_launchable_algorithms(self, datatype_gid):
         """
@@ -225,7 +185,8 @@ class FlowService:
         :return: dict(category_name: List AlgorithmTransientGroup)
         """
         categories = dao.get_launchable_categories()
-        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid, categories)
+        datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid,
+                                                                                                       categories)
 
         if isinstance(datatype_instance, DataTypeGroup):
             # If part of a group, update also with specific analyzers of the child datatype
@@ -273,7 +234,6 @@ class FlowService:
 
         return datatype, filtered_adapters, has_operations_warning
 
-
     def _group_adapters_by_category(self, stored_adapters, categories):
         """
         :param stored_adapters: list StoredAdapter
@@ -292,16 +252,14 @@ class FlowService:
             group.children.append(adapter)
         return categories_dict
 
-
     @staticmethod
     def get_generic_entity(entity_type, filter_value, select_field):
         return dao.get_generic_entity(entity_type, filter_value, select_field)
 
-
     ##########################################################################
     ######## Methods below are for MeasurePoint selections ###################
     ##########################################################################
-    
+
     @staticmethod
     def get_selections_for_project(project_id, datatype_gid):
         """
@@ -311,8 +269,7 @@ class FlowService:
         :returns: List of ConnectivitySelection entities.
         """
         return dao.get_selections_for_project(project_id, datatype_gid)
-    
-    
+
     @staticmethod
     def save_measure_points_selection(ui_name, selected_nodes, datatype_gid, project_id):
         """
@@ -329,16 +286,13 @@ class FlowService:
 
         dao.store_entity(select_entity)
 
-
     ##########################################################################
     ##########    Bellow are PSE Filters specific methods   ##################
     ##########################################################################
 
-
     @staticmethod
     def get_stored_pse_filters(datatype_group_gid):
         return dao.get_stored_pse_filters(datatype_group_gid)
-
 
     @staticmethod
     def save_pse_filter(ui_name, datatype_group_gid, threshold_value, applied_on):

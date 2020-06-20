@@ -231,21 +231,12 @@ function cancelOrRemoveBurst(burst_id) {
         type: "POST",
         url: '/burst/cancel_or_remove_burst/' + burst_id,
         showBlockerOverlay: true,
-        success: function (r) {
-            let liParent = document.getElementById("burst_id_" + burst_id);
-            if (r === 'canceled') {
-                if (liParent.className.indexOf(ACTIVE_BURST_CLASS) >= 0) {
-                    liParent.className = ACTIVE_BURST_CLASS + ' burst-canceled burst';
-                } else {
-                    liParent.className = 'burst-canceled burst';
-                }
-                loadBurstHistory();
+        success: function () {
+            loadBurstHistory();
+            if (sessionStoredBurstID === burst_id) {
+                resetToNewBurst();
             } else {
-                let ulGrandparent = document.getElementById("burst-history");
-                ulGrandparent.removeChild(liParent);
-                if (r === 'reset-new') {
-                    resetToNewBurst();
-                }
+                changeBurstHistory(sessionStoredBurstID, false);
             }
         },
         error: function () {

@@ -217,43 +217,22 @@
                                         {% endif %}
 
                                         {% if operation['status'] == model.STATUS_STARTED %}
-                                            {% if operation['burst_name'] != '-' %}
                                                 <button tabindex='3' type="submit" class="action action-stop"
-                                                        onclick="stopBurstOperation('{{ op_id }}',
-                                                                {{ is_group }})">Stop
+                                                        onclick="cancelOrRemoveOperation('{{ op_id }}', {{ is_group }}, false)">Stop
                                                 </button>
-                                            {% else %}
-                                                <button tabindex='3' type="submit" class="action action-stop"
-                                                        onclick="stopOperation('{{ op_id }}',
-                                                                {{ is_group }})">Stop
-                                                </button>
-                                            {% endif %}
                                         {% else %}
                                             <button tabindex='3' type="submit"
                                                     class="action action-stop action-idle" disabled="disabled">Stop
                                             </button>
                                         {% endif %}
 
-                                        {% if operation['burst_name']!='-' %}
-                                            <!--! Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
-                                            {% with %}
-                                                {% set ok_callback = 'deleteBurstOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ');' %}
-                                                <button type="submit" class="action action-remove"
-                                                        title="Remove burst"
-                                                        onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '{{ ok_callback }}'); return false;">
-                                                    O
-                                                </button>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with %}
-                                                {% set ok_callback = 'deleteOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ');' %}
-                                                <button type="submit" class="action action-remove"
-                                                        title="Remove operation"
-                                                        onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '{{ ok_callback }}'); return false;">
-                                                    B
-                                                </button>
-                                            {% endwith %}
-                                        {% endif %}
+                                        {% with %}
+                                            {% set ok_callback = 'cancelOrRemoveOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ', true);' %}
+                                            <button type="submit" class="action action-remove" title="Remove operation"
+                                                    onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '{{ ok_callback }}'); return false;">
+                                                Remove
+                                            </button>
+                                        {% endwith %}
                                     </div>
                                 </td>
                             {% endwith %}

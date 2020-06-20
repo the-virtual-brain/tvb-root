@@ -40,6 +40,8 @@ from tvb.core.entities.model.model_operation import STATUS_CANCELED, STATUS_ERRO
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
+from tvb.core.services.exceptions import RemoveDataTypeException
+from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -107,9 +109,7 @@ class BurstService(object):
         :return: operation instance changed
         """
         operation.mark_complete(operation_status, message)
-        dao.store_entity(operation)
-        operation = dao.get_operation_by_id(operation.id)
-        self.file_helper.write_operation_metadata(operation)
+        operation = dao.store_entity(operation)
         # update burst also
         burst_config = self.get_burst_for_operation_id(operation.id)
         if burst_config is not None:
@@ -117,7 +117,8 @@ class BurstService(object):
             self.mark_burst_finished(burst_config, burst_status, message)
         return operation
 
-    def get_burst_for_operation_id(self, operation_id):
+    @staticmethod
+    def get_burst_for_operation_id(operation_id):
         return dao.get_burst_for_operation_id(operation_id)
 
     def rename_burst(self, burst_id, new_name):
@@ -173,13 +174,6 @@ class BurstService(object):
             else:
                 self.logger.debug("Could not find burst with id=" + str(b_id) + ". Might have been deleted by user!!")
         return result
-
-    # TODO: We should implement these two methods
-    def stop_burst(self, burst):
-        raise NotImplementedError
-
-    def cancel_or_remove_burst(self, burst_id):
-        raise NotImplementedError
 
     @staticmethod
     def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):

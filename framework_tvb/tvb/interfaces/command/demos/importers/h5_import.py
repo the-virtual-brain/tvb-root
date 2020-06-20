@@ -40,28 +40,27 @@ if __name__ == "__main__":
 
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.adapters.uploaders.tvb_importer import TVBImporter
 
 
-## Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
+# Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
 def import_h5(file_path, project_id):
+    service = OperationService()
 
-    flow_service = FlowService()
-
-    ## This ID of a project needs to exists in Db, and it can be taken from the WebInterface:
+    # This ID of a project needs to exists in Db, and it can be taken from the WebInterface:
     project = dao.get_project_by_id(project_id)
 
     adapter_instance = ABCAdapter.build_adapter_from_class(TVBImporter)
 
-    ## Prepare the input algorithms as if they were coming from web UI submit:
+    # Prepare the input algorithms as if they were coming from web UI submit:
     launch_args = {"data_file": file_path}
 
     print("We will try to import file at path " + file_path)
-    ## launch an operation and have the results stored both in DB and on disk
-    launched_operations = flow_service.fire_operation(adapter_instance,
-                                                      project.administrator,
-                                                      project.id,
-                                                      **launch_args)
+    # launch an operation and have the results stored both in DB and on disk
+    launched_operations = service.fire_operation(adapter_instance,
+                                                 project.administrator,
+                                                 project.id,
+                                                 **launch_args)
 
     print("Operation launched. Check the web UI")

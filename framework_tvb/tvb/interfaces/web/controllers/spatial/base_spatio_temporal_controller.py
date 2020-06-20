@@ -39,7 +39,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_burst import PARAM_SURFACE
 from tvb.core.neocom import h5
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -59,7 +59,7 @@ class SpatioTemporalController(BaseController):
 
     def __init__(self):
         BaseController.__init__(self)
-        self.flow_service = FlowService()
+        self.operation_service = OperationService()
         self.logger = get_logger(__name__)
         editable_entities = [dict(link='/spatial/stimulus/region/step_1_submit/1/1', title='Region Stimulus',
                                   subsection='regionstim', description='Create a new Stimulus on Region level'),

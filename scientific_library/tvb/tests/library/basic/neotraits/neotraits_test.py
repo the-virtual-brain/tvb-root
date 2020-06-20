@@ -33,7 +33,6 @@ import uuid
 import numpy
 import numpy as np
 import pytest
-
 from tvb.basic.neotraits._core import TraitProperty
 from tvb.basic.neotraits.api import (
     HasTraits, Attr, NArray, Final, List, trait_property,

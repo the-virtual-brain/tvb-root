@@ -41,14 +41,14 @@ Analyzer used to calculate a single measure for TimeSeries.
 import uuid
 import numpy
 import json
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
-from tvb.basic.neotraits._attr import List
-from tvb.config import choices
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
+from tvb.basic.neotraits.api import List
+from tvb.config import choices, ALGORITHMS
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr

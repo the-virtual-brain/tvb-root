@@ -41,8 +41,7 @@ from tvb.core.adapters.exceptions import IntrospectionException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.services.flow_service import FlowService
-from tvb.tests.framework.core.factory import TestFactory
+from tvb.core.services.algorithm_service import AlgorithmService
 
 TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
 TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
@@ -62,16 +61,15 @@ class InvalidTestAdapter(object):
         pass
 
 
-class TestFlowService(TransactionalTestCase):
+class TestAlgorithmService(TransactionalTestCase):
     """
-    This class contains tests for the tvb.core.services.flow_service module.
+    This class contains tests for the tvb.core.services.algorithm_service module.
     """
 
     def transactional_setup_method(self):
         """ Prepare some entities to work with during tests:"""
 
-        self.flow_service = FlowService()
-
+        self.algorithm_service = AlgorithmService()
         category = dao.get_uploader_categories()[0]
         self.algorithm = dao.store_entity(model_operation.Algorithm(TEST_ADAPTER_VALID_MODULE,
                                                                     TEST_ADAPTER_VALID_CLASS, category.id))
@@ -81,7 +79,7 @@ class TestFlowService(TransactionalTestCase):
 
     def test_get_uploaders(self):
 
-        result = self.flow_service.get_upload_algorithms()
+        result = AlgorithmService.get_upload_algorithms()
         # Not sure if it is correct but I think there are not 29 algorithms anymore here
         assert 19 == len(result)
         found = False
@@ -93,7 +91,7 @@ class TestFlowService(TransactionalTestCase):
 
     def test_get_analyze_groups(self):
 
-        category, groups = self.flow_service.get_analyze_groups()
+        category, groups = AlgorithmService.get_analyze_groups()
         assert category.displayname == 'Analyze'
         assert len(groups) > 1
         assert isinstance(groups[0], model_operation.AlgorithmTransientGroup)
@@ -102,7 +100,7 @@ class TestFlowService(TransactionalTestCase):
 
         group = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
-        result = self.flow_service.get_visualizers_for_group(dt_group.gid)
+        result = self.algorithm_service.get_visualizers_for_group(dt_group.gid)
         # Both discrete and isocline are expected due to the 2 ranges set in the factory
         assert 2 == len(result)
         result_classnames = [res.classname for res in result]
@@ -115,7 +113,7 @@ class TestFlowService(TransactionalTestCase):
         conn = connectivity_factory()
         rm = region_mapping_factory()
         ts = time_series_region_index_factory(connectivity=conn, region_mapping=rm)
-        result, has_operations_warning = self.flow_service.get_launchable_algorithms(ts.gid)
+        result, has_operations_warning = self.algorithm_service.get_launchable_algorithms(ts.gid)
         assert 'Analyze' in result
         assert 'View' in result
         assert has_operations_warning is False
@@ -124,7 +122,7 @@ class TestFlowService(TransactionalTestCase):
         """
         Test for the get_algorithm_by_identifier.
         """
-        algo_ret = self.flow_service.get_algorithm_by_identifier(self.algorithm.id)
+        algo_ret = AlgorithmService.get_algorithm_by_identifier(self.algorithm.id)
         assert algo_ret.id == self.algorithm.id, "ID-s are different!"
         assert algo_ret.module == self.algorithm.module, "Modules are different!"
         assert algo_ret.fk_category == self.algorithm.fk_category, "Categories are different!"
@@ -144,19 +142,7 @@ class TestFlowService(TransactionalTestCase):
         """
         stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
         assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
-        adapter = self.flow_service.prepare_adapter(stored_adapter)
+        adapter = self.algorithm_service.prepare_adapter(stored_adapter)
         assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
         assert adapter.get_form_class() == TestAdapter1Form
         assert adapter.get_view_model() == TestModel
-
-    def test_fire_operation(self):
-        """
-        Test preparation of an adapter and launch mechanism.
-        """
-        adapter = TestFactory.create_adapter(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        test_user = TestFactory.create_user()
-        test_project = TestFactory.create_project(admin=test_user)
-
-        result = self.flow_service.fire_operation(adapter, test_user, test_project.id,
-                                                  view_model=adapter.get_view_model()())
-        assert result.endswith("has finished."), "Operation fail"
