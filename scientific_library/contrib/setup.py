@@ -32,7 +32,7 @@ import os
 import shutil
 import setuptools
 
-TVB_VERSION = "2.0.6"
+TVB_VERSION = "2.0.7"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
