@@ -30,10 +30,8 @@
 
 import os
 import shutil
-import tempfile
-from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.simulator_serializer import SimulatorSerializer
+from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RequestFileKey
@@ -45,9 +43,8 @@ class SimulationApi(MainApi):
     @handle_response
     def fire_simulation(self, project_gid, session_stored_simulator, temp_folder):
         temporary_folder = FilesHelper.create_temp_folder()
-        simulation_state_gid = None
 
-        SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, temporary_folder)
+        h5.store_view_model(session_stored_simulator, temporary_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
         FilesHelper().zip_folder(zip_folder_path, temporary_folder)
         shutil.rmtree(temporary_folder)

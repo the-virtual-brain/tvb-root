@@ -172,7 +172,7 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                                                                                            expected_surface_shape))
 
         projection_matrix_type = determine_projection_type(sensors_index)
-        surface_ht = h5.load_from_index(surface_index, CorticalSurface)
+        surface_ht = h5.load_from_index(surface_index)
         sensors_ht = h5.load_from_index(sensors_index)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,

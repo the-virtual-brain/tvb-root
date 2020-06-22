@@ -55,12 +55,8 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
+from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
-from tvb.core.services.simulator_serializer import SimulatorSerializer
-from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.patterns import StimuliSurface
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 
@@ -72,10 +68,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                                required=True, label="Connectivity",
-                                                doc=Simulator.connectivity.doc,
-                                                conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
+                                                     name=self.get_input_name(), conditions=self.get_filters())
         self.coupling = SelectField(
             Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
             name='coupling', choices=self.coupling_choices)
@@ -89,6 +83,12 @@ class SimulatorAdapterForm(ABCAdapterForm):
             self.connectivity.data = trait.connectivity.hex
         self.coupling.data = trait.coupling.__class__
         self.conduction_speed.data = trait.conduction_speed
+
+    def fill_trait(self, datatype):
+        datatype.connectivity = self.connectivity.value
+        datatype.conduction_speed = self.conduction_speed.value
+        coupling = self.coupling.value
+        datatype.coupling = coupling()
 
     @staticmethod
     def get_view_model():
@@ -154,69 +154,11 @@ class SimulatorAdapter(ABCAsynchronous):
         # For now I think it is ok if we rename this section "Summary" and filter what is shown
         return forms
 
-    def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
-        input_gid = json.loads(operation.parameters)['gid']
-        return SimulatorSerializer().deserialize_simulator(input_gid, storage_path)
-
     def get_output(self):
         """
         :returns: list of classes for possible results of the Simulator.
         """
         return [TimeSeriesIndex, SimulationHistoryIndex]
-
-    def _prepare_simulator_from_view_model(self, view_model):
-        simulator = Simulator()
-        simulator.gid = view_model.gid
-
-        conn = self.load_traited_by_gid(view_model.connectivity)
-        simulator.connectivity = conn
-
-        simulator.conduction_speed = view_model.conduction_speed
-        simulator.coupling = view_model.coupling
-
-        rm_surface = None
-
-        if view_model.surface:
-            simulator.surface = Cortex()
-            rm_index = self.load_entity_by_gid(view_model.surface.region_mapping_data.hex)
-            rm = h5.load_from_index(rm_index)
-
-            rm_surface_index = self.load_entity_by_gid(rm_index.fk_surface_gid)
-            rm_surface = h5.load_from_index(rm_surface_index, CorticalSurface)
-            rm.surface = rm_surface
-            rm.connectivity = conn
-
-            simulator.surface.region_mapping_data = rm
-            if simulator.surface.local_connectivity:
-                lc = self.load_traited_by_gid(view_model.surface.local_connectivity)
-                assert lc.surface.gid == rm_index.fk_surface_gid
-                lc.surface = rm_surface
-                simulator.surface.local_connectivity = lc
-
-        if view_model.stimulus:
-            stimulus_index = self.load_entity_by_gid(view_model.stimulus.hex)
-            stimulus = h5.load_from_index(stimulus_index)
-            simulator.stimulus = stimulus
-
-            if isinstance(stimulus, StimuliSurface):
-                simulator.stimulus.surface = rm_surface
-            else:
-                simulator.stimulus.connectivity = simulator.connectivity
-
-        simulator.model = view_model.model
-        simulator.integrator = view_model.integrator
-        simulator.initial_conditions = view_model.initial_conditions
-        simulator.monitors = view_model.monitors
-        simulator.simulation_length = view_model.simulation_length
-
-        # TODO: why not load history here?
-        # if view_model.history:
-        #     history_index = dao.get_datatype_by_gid(view_model.history.hex)
-        #     history = h5.load_from_index(history_index)
-        #     assert isinstance(history, SimulationHistory)
-        #     history.fill_into(self.algorithm)
-        return simulator
 
     def configure(self, view_model):
         # type: (SimulatorAdapterModel) -> None
@@ -224,13 +166,8 @@ class SimulatorAdapter(ABCAsynchronous):
         Make preparations for the adapter launch.
         """
         self.log.debug("%s: Configuring simulator adapter..." % str(self))
-        self.algorithm = self._prepare_simulator_from_view_model(view_model)
+        self.algorithm = self.view_model_to_has_traits(view_model)
         self.branch_simulation_state_gid = view_model.history_gid
-
-        # for monitor in self.algorithm.monitors:
-        #     if issubclass(monitor, Projection):
-        #         # TODO: add a service that loads a RM with Surface and Connectivity
-        #         pass
 
         try:
             self.algorithm.preconfigure()

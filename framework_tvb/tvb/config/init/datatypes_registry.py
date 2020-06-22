@@ -34,19 +34,17 @@ from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Co
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
 from tvb.datatypes.patterns import StimuliRegion, StimuliSurface, SpatioTemporalPattern
-from tvb.datatypes.projections import ProjectionMatrix
+from tvb.datatypes.projections import ProjectionMatrix, make_proj_matrix
 from tvb.datatypes.region_mapping import RegionVolumeMapping, RegionMapping
-from tvb.datatypes.sensors import Sensors
+from tvb.datatypes.sensors import Sensors, make_sensors
 from tvb.datatypes.spectral import CoherenceSpectrum, ComplexCoherenceSpectrum, FourierSpectrum, WaveletCoefficients
 from tvb.datatypes.structural import StructuralMRI
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, make_surface
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesSurface, TimeSeriesVolume
 from tvb.datatypes.time_series import TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG
 from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
-from tvb.datatypes.cortex import Cortex
-from tvb.core.entities.file.simulator.cortex_h5 import CortexH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
@@ -101,17 +99,17 @@ from tvb.core.neocom.h5 import REGISTRY
 def populate_datatypes_registry():
     REGISTRY.register_datatype(Connectivity, ConnectivityH5, ConnectivityIndex)
     REGISTRY.register_datatype(LocalConnectivity, LocalConnectivityH5, LocalConnectivityIndex)
-    REGISTRY.register_datatype(ProjectionMatrix, ProjectionMatrixH5, ProjectionMatrixIndex)
+    REGISTRY.register_datatype(ProjectionMatrix, ProjectionMatrixH5, ProjectionMatrixIndex, make_proj_matrix)
     REGISTRY.register_datatype(RegionVolumeMapping, RegionVolumeMappingH5, RegionVolumeMappingIndex)
     REGISTRY.register_datatype(RegionMapping, RegionMappingH5, RegionMappingIndex)
-    REGISTRY.register_datatype(Sensors, SensorsH5, SensorsIndex)
+    REGISTRY.register_datatype(Sensors, SensorsH5, SensorsIndex, make_sensors)
     REGISTRY.register_datatype(SimulationHistory, SimulationHistoryH5, SimulationHistoryIndex)
     REGISTRY.register_datatype(CoherenceSpectrum, CoherenceSpectrumH5, CoherenceSpectrumIndex)
     REGISTRY.register_datatype(ComplexCoherenceSpectrum, ComplexCoherenceSpectrumH5, ComplexCoherenceSpectrumIndex)
     REGISTRY.register_datatype(FourierSpectrum, FourierSpectrumH5, FourierSpectrumIndex)
     REGISTRY.register_datatype(WaveletCoefficients, WaveletCoefficientsH5, WaveletCoefficientsIndex)
     REGISTRY.register_datatype(StructuralMRI, StructuralMRIH5, StructuralMRIIndex)
-    REGISTRY.register_datatype(Surface, SurfaceH5, SurfaceIndex)
+    REGISTRY.register_datatype(Surface, SurfaceH5, SurfaceIndex, make_surface)
     REGISTRY.register_datatype(CrossCorrelation, CrossCorrelationH5, CrossCorrelationIndex)
     REGISTRY.register_datatype(TimeSeries, TimeSeriesH5, TimeSeriesIndex)
     REGISTRY.register_datatype(TimeSeriesRegion, TimeSeriesRegionH5, TimeSeriesRegionIndex)
@@ -134,4 +132,3 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(ValueWrapper, ValueWrapperH5, ValueWrapperIndex)
-    REGISTRY.register_datatype(Cortex, CortexH5, None)

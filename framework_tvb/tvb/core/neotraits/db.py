@@ -90,6 +90,8 @@ class HasTraitsIndex(Base):
             cls.__module__, cls.__name__, self.gid[:4], self.id
         )
 
+    def get_subtype_attr(self):
+        return None
 
 def ensure_float(data):
     return numpy.float64(data)

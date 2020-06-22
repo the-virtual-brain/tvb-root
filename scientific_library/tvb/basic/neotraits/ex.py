@@ -45,8 +45,11 @@ class TraitError(Exception):
         return '\n'.join(lines)
 
 
-
 class TraitAttributeError(TraitError, AttributeError):
+    pass
+
+
+class TraitFinalAttributeError(TraitAttributeError, AttributeError):
     pass
 
 

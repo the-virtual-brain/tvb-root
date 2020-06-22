@@ -41,6 +41,9 @@ class ViewModel(HasTraits):
         - support UI names for attrs with choices
     """
 
+    def linked_has_traits(self):
+        return HasTraits
+
 
 class Str(Attr):
     def __init__(self, field_type=str, default=None, doc='', label='', required=True,

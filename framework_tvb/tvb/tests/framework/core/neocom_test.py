@@ -28,8 +28,15 @@
 #
 #
 import os
+
 import numpy
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
+from tvb.datatypes.projections import ProjectionSurfaceEEG
+from tvb.simulator.integrators import HeunStochastic
 
 
 def test_store_load(tmpdir, connectivity_factory):
@@ -47,3 +54,69 @@ def test_store_load_rec(tmpdir, connectivity_factory, region_mapping_factory):
 
     rmap = load_from_dir(str(tmpdir), region_mapping.gid, recursive=True)
     numpy.testing.assert_equal(connectivity.weights, rmap.connectivity.weights)
+
+
+def test_store_simulator_view_model(connectivity_index_factory, operation_factory):
+    conn = connectivity_index_factory()
+    sim_view_model = SimulatorAdapterModel()
+    sim_view_model.connectivity = conn.gid
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+
+    h5.store_view_model(sim_view_model, storage_path)
+
+    loaded_sim_view_model = h5.load_view_model(sim_view_model.gid, storage_path)
+
+    assert isinstance(sim_view_model, SimulatorAdapterModel)
+    assert isinstance(loaded_sim_view_model, SimulatorAdapterModel)
+
+
+def test_store_simulator_view_model_noise(connectivity_index_factory, operation_factory):
+    conn = connectivity_index_factory()
+    sim_view_model = SimulatorAdapterModel()
+    sim_view_model.connectivity = conn.gid
+    integrator = HeunStochastic()
+    integrator.noise.noise_seed = 45
+    sim_view_model.integrator = integrator
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+
+    h5.store_view_model(sim_view_model, storage_path)
+
+    loaded_sim_view_model = h5.load_view_model(sim_view_model.gid, storage_path)
+
+    assert isinstance(sim_view_model, SimulatorAdapterModel)
+    assert isinstance(loaded_sim_view_model, SimulatorAdapterModel)
+    assert sim_view_model.integrator.noise.noise_seed == loaded_sim_view_model.integrator.noise.noise_seed == 45
+
+
+def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_index_factory, sensors_index_factory,
+                                        operation_factory):
+    conn = connectivity_index_factory()
+    surface_idx, surface = surface_index_factory(cortical=True)
+    sensors_idx, sensors = sensors_index_factory()
+    proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+    prj_db_db = h5.store_complete(proj, storage_path)
+    prj_db_db.fk_from_operation = op.id
+    dao.store_entity(prj_db_db)
+
+    seeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+    sim_view_model = SimulatorAdapterModel()
+    sim_view_model.connectivity = conn.gid
+    sim_view_model.monitors = [seeg_monitor]
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+
+    h5.store_view_model(sim_view_model, storage_path)
+
+    loaded_sim_view_model = h5.load_view_model(sim_view_model.gid, storage_path)
+
+    assert isinstance(sim_view_model, SimulatorAdapterModel)
+    assert isinstance(loaded_sim_view_model, SimulatorAdapterModel)
+    assert sim_view_model.monitors[0].projection == loaded_sim_view_model.monitors[0].projection
