@@ -1,14 +1,14 @@
 ﻿# TVB CUDA model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda (C) format.
 The LEMS format PR has been adopted and altered to match TVB model names. 
-In LEMSCUDA.py the function "cuda_templating(Model+'_CUDA')" will start the code generation.
-It expects a [model+'_CUDA'].xml file to be present in tvb/dsl_cuda/NeuroML/XMLmodels. 
-The generated file will be placed in tvb/simulator/models.
+In LEMSCUDA.py the function "cuda_templating(Model+'_CUDA', 'path/to/XMLmodels')" will start the code generation.
+It expects a [model+'_CUDA'].xml file to be present in ['path/to/XMLmodels']. 
+The generated file will be placed in ['installpath']'/tvb-hpc/dsl/dsl_cuda/CUDAmodels/'.
 The produced filename is a lower cased [model].py which contains a class named [model].
-In the directory TVB_testsuite the files to run the models on the GPU can be found.
-Execute './runthings cuda Modelname' to start the parameter sweep based simulation.
 
     .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
+    .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
+    .. moduleauthor:: Sandra Diaz <s.diaz@fz-juelich.de>
     
 # The CUDA memory model specification
 ![](GPUmemindex.png)
@@ -29,7 +29,7 @@ Mako templating
 
 # XML LEMS Definitions 
 Based on http://lems.github.io/LEMS/elements.html but attributes are tuned for TVB CUDA models.
-As an example an XML line and its translation to CUDA are given. 
+As an example an XML line and its translation to CUDA are given below.
 
 * Constants\
 If domain = 'none' no domain range will be added.\
@@ -181,12 +181,11 @@ for (unsigned int j_node = 0; j_node < n_node; j_node++)
 
 
 # Running an example
-To run an example of a GPU generated model according to an existing or home-created xml file execute:
-./runthings cuda [modelname] located in /tvb-hpc/dsl/dsl_cuda/example. The cuda parameter indicates a cuda simulation 
-is to be started  and the [modelname] paramaters is the model that needs to be simulated.
-
-Place model file in directory and execute cuda_templating('modelname') function. Resulting model will be
-placed in the CUDA model directory
-
-# TODO
-Add CUDA model validation tests.
+Place an xml model file in directory used for your XML model storage and execute "cuda_templating(Model+'_CUDA',
+'path/to/XMLmodels')" function. The resulting model will be placed in the CUDA model directory.
+The directory 'tvb-hpc/dsl/dsl_cuda/example/' holds an example how to run the model generator and the CUDA model
+on a GPU.
+From this directory, execute './runthings cuda [Modelname]' to start model generation corresponding to an xml file
+and a parameters sweep simulation with the produced model file on a CUDA enabled machine.
+The cuda parameter indicates a cuda simulation is to be started  and the [modelname] paramater is the model 
+that is the target of simulation.
