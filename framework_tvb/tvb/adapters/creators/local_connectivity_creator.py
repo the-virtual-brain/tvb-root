@@ -159,7 +159,7 @@ class LocalConnectivityCreator(ABCAsynchronous):
         local_connectivity.cutoff = view_model.cutoff
         if not self.surface_index:
             self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
-        surface = h5.load_from_index(self.surface_index, dt_class=CorticalSurface)
+        surface = h5.load_from_index(self.surface_index)
         local_connectivity.surface = surface
         local_connectivity.equation = view_model.equation
         local_connectivity.compute_sparse_matrix()

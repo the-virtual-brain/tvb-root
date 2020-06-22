@@ -38,6 +38,7 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.neotraits.view_model import ViewModel
 
 REGISTRY = Registry()
 
@@ -61,17 +62,10 @@ def h5_file_for_index(dt_index_instance):
     return h5_class(h5_path)
 
 
-def index_for_h5_file(source_path):
-    # type: (str) -> typing.Type[DataType]
-    """"""
-    h5_class = H5File.h5_class_from_file(source_path)
-    return REGISTRY.get_index_for_h5file(h5_class)
-
-
-def load_from_index(dt_index, dt_class=None):
-    # type: (DataType, typing.Type[HasTraits]) -> HasTraits
+def load_from_index(dt_index):
+    # type: (DataType) -> HasTraits
     loader = TVBLoader(REGISTRY)
-    return loader.load_from_index(dt_index, dt_class)
+    return loader.load_from_index(dt_index)
 
 
 def load(source_path, with_references=False):
@@ -172,10 +166,19 @@ def store_to_dir(datatype, base_dir, recursive=False):
 
 
 def get_full_class_name(class_entity):
+    # type: (typing.Type[HasTraits]) -> str
+    """
+    Prepare the full class as a str to be stored in H5.
+    """
     return class_entity.__module__ + '.' + class_entity.__name__
 
 
 def store_view_model(view_model, base_dir):
+    # type: (ViewModel, str) -> None
+    """
+    Completely store any ViewModel object to the directory specified by base_dir.
+    It works recursively because there are view models that are serialized in multiple files (eg. SimulatorAdapterModel)
+    """
     h5_path = path_for(base_dir, ViewModelH5, view_model.gid, type(view_model).__name__)
     with ViewModelH5(h5_path, view_model) as h5_file:
         h5_file.store(view_model)
@@ -194,6 +197,10 @@ def store_view_model(view_model, base_dir):
 
 
 def load_view_model(gid, base_dir):
+    # type: (uuid.UUID, str) -> ViewModel
+    """
+    Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
+    """
     dir_loader = DirLoader(base_dir, REGISTRY, False)
     fname = dir_loader.find_file_name(gid)
     h5_path = os.path.join(base_dir, fname)
@@ -202,6 +209,10 @@ def load_view_model(gid, base_dir):
 
 
 def load_view_model_from_file(filepath):
+    # type: (str) -> ViewModel
+    """
+    Load a ViewModel object by reading the H5 file specified by filepath.
+    """
     base_dir = os.path.dirname(filepath)
     view_model_class = H5File.determine_type(filepath)
     view_model = view_model_class()

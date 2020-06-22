@@ -158,7 +158,7 @@ class SurfaceStimulusCreator(ABCSynchronous):
 
         surface_index = SurfaceStimulusCreator.load_entity_by_gid(view_model.surface.hex)
         if load_full_surface:
-            stimuli_surface.surface = h5.load_from_index(surface_index, CorticalSurface)
+            stimuli_surface.surface = h5.load_from_index(surface_index)
         else:
             stimuli_surface.surface = CorticalSurface()
             stimuli_surface.gid = view_model.surface
