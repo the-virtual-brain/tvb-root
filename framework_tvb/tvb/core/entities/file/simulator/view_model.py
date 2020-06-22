@@ -165,7 +165,11 @@ class CortexViewModel(ViewModel, Cortex):
         return Cortex
 
     surface_gid = DataTypeGidAttr(
-        linked_datatype=CorticalSurface
+        linked_datatype=CorticalSurface,
+        label=Simulator.surface.label,
+        default=Simulator.surface.default,
+        required=Simulator.surface.required,
+        doc=Simulator.surface.doc
     )
 
     local_connectivity = DataTypeGidAttr(

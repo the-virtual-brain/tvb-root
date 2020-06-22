@@ -55,7 +55,7 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, FloatField, SelectField
+from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
@@ -68,10 +68,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                                required=True, label="Connectivity",
-                                                doc=Simulator.connectivity.doc,
-                                                conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
+                                                     name=self.get_input_name(), conditions=self.get_filters())
         self.coupling = SelectField(
             Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
             name='coupling', choices=self.coupling_choices)
@@ -85,6 +83,12 @@ class SimulatorAdapterForm(ABCAdapterForm):
             self.connectivity.data = trait.connectivity.hex
         self.coupling.data = trait.coupling.__class__
         self.conduction_speed.data = trait.conduction_speed
+
+    def fill_trait(self, datatype):
+        datatype.connectivity = self.connectivity.value
+        datatype.conduction_speed = self.conduction_speed.value
+        coupling = self.coupling.value
+        datatype.coupling = coupling()
 
     @staticmethod
     def get_view_model():

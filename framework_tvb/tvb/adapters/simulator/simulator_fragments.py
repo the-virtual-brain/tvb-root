@@ -32,27 +32,25 @@ import uuid
 
 import formencode
 from formencode import validators
-from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.basic.neotraits.api import Attr, Range, List
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, ArrayField, SimpleFloatField, \
-    SimpleHiddenField, SelectField, MultiSelectField
+from tvb.core.neotraits.forms import ScalarField, ArrayField, SimpleFloatField, SimpleHiddenField, SelectField, \
+    MultiSelectField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
 from tvb.simulator.simulator import Simulator
+
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
@@ -60,17 +58,16 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
         super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                  values=[CORTICAL])
-        self.surface = DataTypeSelectField(SurfaceIndex, self, name='surface', required=False,
-                                           label=Simulator.surface.label, doc=Simulator.surface.doc,
-                                           conditions=conditions)
+        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, self, name='surface',
+                                                conditions=conditions)
 
-    def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
-        if trait.surface:
-            if hasattr(trait.surface, 'surface_gid'):
-                self.surface.data = trait.surface.surface_gid.hex
+    def fill_trait(self, datatype):
+        surface_gid = self.surface.value
+        if surface_gid:
+            datatype.surface = CortexViewModel()
+            datatype.surface.surface_gid = surface_gid
         else:
-            self.surface.data = None
+            datatype.surface = None
 
 
 class SimulatorRMFragment(ABCAdapterForm):
@@ -80,43 +77,29 @@ class SimulatorRMFragment(ABCAdapterForm):
         if surface_index:
             conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid'], operations=["=="],
                                      values=[str(surface_index.gid)])
-        self.rm = DataTypeSelectField(RegionMappingIndex, self, name='region_mapping', required=True,
-                                      label=Cortex.region_mapping_data.label,
-                                      doc=Cortex.region_mapping_data.doc, conditions=conditions)
-        self.lc = DataTypeSelectField(LocalConnectivityIndex, self, name='local_connectivity',
-                                      label=Cortex.local_connectivity.label, doc=Cortex.local_connectivity.doc,
-                                      conditions=conditions)
-        self.coupling_strength = ArrayField(Cortex.coupling_strength, self)
-
-    def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
-        self.coupling_strength.data = trait.surface.coupling_strength
-        if hasattr(trait.surface, 'region_mapping_data'):
-            self.rm.data = trait.surface.region_mapping_data.hex
-        else:
-            self.rm.data = None
-        if trait.surface.local_connectivity:
-            self.lc.data = trait.surface.local_connectivity.hex
-        else:
-            self.lc.data = None
+        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self, name='region_mapping',
+                                           conditions=conditions)
+        self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self, name='local_connectivity',
+                                           conditions=conditions)
+        self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self)
 
 
 class SimulatorStimulusFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
         super(SimulatorStimulusFragment, self).__init__(prefix, project_id)
+        stimuli_index_class = StimuliRegionIndex
         if is_surface_simulation:
             stimuli_index_class = SpatioTemporalPatternIndex
-        else:
-            stimuli_index_class = StimuliRegionIndex
-        self.stimulus = DataTypeSelectField(stimuli_index_class, self, name='region_stimuli', required=False,
-                                            label=Simulator.stimulus.label, doc=Simulator.stimulus.doc)
+        traited_field = Attr(stimuli_index_class, doc=SimulatorAdapterModel.stimulus.doc,
+                             label=SimulatorAdapterModel.stimulus.label,
+                             required=SimulatorAdapterModel.stimulus.required)
+        self.stimulus = TraitDataTypeSelectField(traited_field, self, name='stimulus')
+
+    def fill_trait(self, datatype):
+        setattr(datatype, self.stimulus.name, self.stimulus.data)
 
     def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
-        if hasattr(trait, 'stimulus') and trait.stimulus is not None:
-            self.stimulus.data = trait.stimulus.hex
-        else:
-            self.stimulus.data = None
+        self.stimulus.from_trait(trait, self.stimulus.name)
 
 
 class SimulatorModelFragment(ABCAdapterForm):
@@ -132,6 +115,9 @@ class SimulatorModelFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         self.model.data = trait.model.__class__
+
+    def fill_trait(self, datatype):
+        datatype.model = self.model.value()
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
@@ -149,6 +135,9 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         self.integrator.data = trait.integrator.__class__
+
+    def fill_trait(self, datatype):
+        datatype.integrator = self.integrator.value()
 
 
 class SimulatorMonitorFragment(ABCAdapterForm):
@@ -251,11 +240,10 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
 
     def _add_field_for_gid(self, param, param_key):
         # type: (RangeParameter, str) -> None
-        pse_param_dt = DataTypeSelectField(h5.REGISTRY.get_index_for_datatype(param.type), self,
-                                           name=self.GID_FIELD.format(param_key), required=True,
-                                           label='Choice for {}'.format(param.name),
-                                           dynamic_conditions=param.range_definition,
-                                           has_all_option=True, show_only_all_option=True)
+        traited_attr = Attr(h5.REGISTRY.get_index_for_datatype(param.type), label='Choice for {}'.format(param.name))
+        pse_param_dt = TraitDataTypeSelectField(traited_attr, self, name=self.GID_FIELD.format(param_key),
+                                                dynamic_conditions=param.range_definition, has_all_option=True,
+                                                show_only_all_option=True)
         self.__setattr__(self.GID_FIELD.format(param_key), pse_param_dt)
 
     @staticmethod

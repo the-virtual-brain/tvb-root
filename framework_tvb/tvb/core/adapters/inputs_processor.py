@@ -29,7 +29,7 @@
 #
 
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
 def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model):
@@ -40,7 +40,7 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if not hasattr(view_model, field.name):
             continue
 
-        if isinstance(field, TraitDataTypeSelectField) or isinstance(field, DataTypeSelectField):
+        if isinstance(field, TraitDataTypeSelectField):
 
             attr_vm = getattr(view_model, field.name)
             data_type = ABCAdapter.load_entity_by_gid(attr_vm)

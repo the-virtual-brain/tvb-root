@@ -36,10 +36,11 @@
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, FormField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -49,9 +50,8 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
-        self.existentEntitiesSelect = DataTypeSelectField(self.get_required_datatype(), self,
-                                                          name='existentEntitiesSelect',
-                                                          label='Load Local Connectivity')
+        traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
+        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
 
     @staticmethod
     def get_required_datatype():
@@ -124,7 +124,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
         self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self,
-                                                self.NAME_EQUATION_PARAMS_DIV)
+                                               self.NAME_EQUATION_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
     def get_rendering_dict(self):
