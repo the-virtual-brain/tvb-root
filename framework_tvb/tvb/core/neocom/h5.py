@@ -29,16 +29,15 @@
 #
 
 import os
-import uuid
 import typing
+import uuid
+
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.storage import dao
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
-from tvb.core.neotraits._h5core import ViewModelH5
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 
 REGISTRY = Registry()
 
@@ -138,8 +137,8 @@ def store(datatype, destination, recursive=False):
         loader.store(datatype, destination)
 
 
-def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
-    # type: (str, typing.Union[str, uuid.UUID], bool, typing.Type[HasTraits]) -> HasTraits
+def load_from_dir(base_dir, gid, recursive=False):
+    # type: (str, typing.Union[str, uuid.UUID], bool) -> HasTraits
     """
     Loads a datatype with the requested gid from the given directory.
     The datatype should have been written with store_to_dir
@@ -149,7 +148,7 @@ def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
     :param recursive: if datatypes contained in this datatype should be loaded as well
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    return loader.load(gid, dt_class=dt_class)
+    return loader.load(gid)
 
 
 def load_with_links_from_dir(base_dir, gid):
@@ -159,26 +158,6 @@ def load_with_links_from_dir(base_dir, gid):
     fname = os.path.join(base_dir, fname)
     tvb_loader = TVBLoader(REGISTRY)
     return tvb_loader.load_with_links(fname)
-
-
-def load_with_references_from_dir(base_dir, gid):
-    # type: (str, typing.Union[uuid.UUID, str]) -> (HasTraits, GenericAttributes)
-    dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    fname = os.path.join(base_dir, fname)
-    tvb_loader = TVBLoader(REGISTRY)
-
-    def load_ht_function(sub_gid, traited_attr):
-        try:
-            dir_loader.find_file_name(sub_gid)
-        except IOError:
-            ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
-            ref_fname = tvb_loader.path_for_stored_index(ref_idx)
-            return tvb_loader.load_with_references(ref_fname)[0]
-
-        return load_with_references_from_dir(base_dir, sub_gid)[0]
-
-    return tvb_loader.load_complete_by_function(fname, load_ht_function, True)
 
 
 def store_to_dir(datatype, base_dir, recursive=False):

@@ -34,6 +34,7 @@ from io import BytesIO
 import flask
 import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.neocom import h5
 from tvb.core.services.simulator_service import SimulatorService
@@ -88,8 +89,8 @@ class TestSimulationResource(RestResourceTest):
         if not os.path.isdir(sim_dir):
             os.makedirs(sim_dir)
 
-        simulator = Simulator()
-        simulator.connectivity = connectivity_factory()
+        simulator = SimulatorAdapterModel()
+        simulator.connectivity = connectivity_factory().gid
         h5.store_view_model(simulator, sim_dir)
 
         zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)

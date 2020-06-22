@@ -59,7 +59,7 @@ class TestSurfaceStimulusController(BaseTransactionalControllerTest):
         assert result_dict['next_step_url'] == '/spatial/stimulus/surface/step_1_submit'
 
     def test_step_2(self, surface_index_factory):
-        surface_index, = surface_index_factory()
+        surface_index, _ = surface_index_factory()
         self.surface_s_c.step_1_submit(1, 1)
         context = get_from_session(KEY_SURFACE_STIMULI)
         context.surface = surface_index.gid

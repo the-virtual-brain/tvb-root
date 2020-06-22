@@ -59,7 +59,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
-from tvb.datatypes.surfaces import Surface, CorticalSurface
+from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.monitors import TemporalAverage
 from tvb.simulator.simulator import Simulator
@@ -250,7 +250,7 @@ def surface_factory():
             edge_max_length=2.0,
             zero_based_triangles=False,
             bi_hemispheric=False,
-            surface_type="surface_cortical",
+            surface_type=CORTICAL,
             valid_for_simulations=valid_for_simulation)
 
     return build

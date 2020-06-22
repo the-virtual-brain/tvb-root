@@ -43,7 +43,8 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, BoldViewModel, \
+    iEEGViewModel, MEGViewModel, EEGViewModel, SubSampleViewModel, TemporalAverageViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -177,7 +178,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
                                           view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
-        self.sess_mock['region_stimuli'] = UUID(region_stimulus_index.gid)
+        self.sess_mock['stimulus'] = region_stimulus_index.gid
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -313,14 +314,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
             common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverage), 'Monitor class is incorrect.'
+        assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverageViewModel), 'Monitor class is incorrect.'
 
     def test_set_monitor_params(self):
         self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
         variable_of_interest_indexes = {'W': 1, 'V - W': 2}
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.8'
-        self.session_stored_simulator.monitors = [SubSample()]
+        self.session_stored_simulator.monitors = [SubSampleViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -367,7 +368,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = eeg_sensors.gid
 
-        self.session_stored_simulator.monitors = [EEG()]
+        self.session_stored_simulator.monitors = [EEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -377,11 +378,11 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
             list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
-        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+        assert self.session_stored_simulator.monitors[0].region_mapping.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == eeg_sensors.gid, \
+        assert self.session_stored_simulator.monitors[0].sensors.hex == eeg_sensors.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+        assert self.session_stored_simulator.monitors[0].projection is not None, \
             "Projection wasn't stored correctly."
 
     def test_set_meg_monitor_params(self):
@@ -408,7 +409,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['sigma'] = 1.0
         self.sess_mock['sensors'] = meg_sensors.gid
 
-        self.session_stored_simulator.monitors = [MEG()]
+        self.session_stored_simulator.monitors = [MEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -418,11 +419,11 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
             list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
-        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+        assert self.session_stored_simulator.monitors[0].region_mapping.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == meg_sensors.gid, \
+        assert self.session_stored_simulator.monitors[0].sensors.hex == meg_sensors.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+        assert self.session_stored_simulator.monitors[0].projection is not None, \
             "Projection wasn't stored correctly."
 
     def test_set_seeg_monitor_params(self):
@@ -449,7 +450,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = seeg_sensors.gid
 
-        self.session_stored_simulator.monitors = [iEEG()]
+        self.session_stored_simulator.monitors = [iEEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -459,11 +460,11 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
             list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
-        assert self.session_stored_simulator.monitors[0].region_mapping.gid.hex == region_mapping.gid, \
+        assert self.session_stored_simulator.monitors[0].region_mapping.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].sensors.gid.hex == seeg_sensors.gid, \
+        assert self.session_stored_simulator.monitors[0].sensors.hex == seeg_sensors.gid, \
             "Region Mapping wasn't set and stored correctly."
-        assert self.session_stored_simulator.monitors[0].projection.gid is not None, \
+        assert self.session_stored_simulator.monitors[0].projection is not None, \
             "Projection wasn't stored correctly."
 
     def test_set_bold_monitor_params(self):
@@ -474,7 +475,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['period'] = '2000.0'
         self.sess_mock['hrf_kernel'] = 'HRF kernel: Volterra Kernel'
 
-        self.session_stored_simulator.monitors = [Bold()]
+        self.session_stored_simulator.monitors = [BoldViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -490,7 +491,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['k_1'] = '5.6'
         self.sess_mock['V_0'] = '0.02'
 
-        self.session_stored_simulator.monitors = [Bold()]
+        self.session_stored_simulator.monitors = [BoldViewModel()]
         self.session_stored_simulator.monitors[0].equation = FirstOrderVolterra()
 
         with patch('cherrypy.session', self.sess_mock, create=True):

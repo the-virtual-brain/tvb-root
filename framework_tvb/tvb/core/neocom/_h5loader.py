@@ -219,13 +219,13 @@ class TVBLoader(object):
             f.load_into(result_dt)
         return result_dt
 
-    def load_complete_by_function(self, file_path, load_ht_function, with_references=False):
-        # type: (str, callable, bool) -> (HasTraits, GenericAttributes)
+    def load_complete_by_function(self, file_path, load_ht_function):
+        # type: (str, callable) -> (HasTraits, GenericAttributes)
         with H5File.from_file(file_path) as f:
             try:
                 datatype_cls = self.registry.get_datatype_for_h5file(f)
             except KeyError:
-                datatype_cls = f.determine_datatype_from_file(with_references)
+                datatype_cls = f.determine_datatype_from_file()
             datatype = datatype_cls()
             f.load_into(datatype)
             ga = f.load_generic_attributes()

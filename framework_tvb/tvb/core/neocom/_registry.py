@@ -39,9 +39,9 @@ from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.db import HasTraitsIndex
-from tvb.datatypes.projections import make_proj_matrix, ProjectionMatrix
+from tvb.core.neotraits.h5 import H5File
+from tvb.datatypes.projections import make_proj_matrix
 from tvb.datatypes.sensors import make_sensors
 from tvb.datatypes.surfaces import make_surface
 

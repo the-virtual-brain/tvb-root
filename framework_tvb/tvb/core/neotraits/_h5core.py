@@ -213,7 +213,7 @@ class H5File(object):
                 ret.append((accessor.trait_attribute, gids))
         return ret
 
-    def determine_datatype_from_file(self, with_references=False):
+    def determine_datatype_from_file(self):
         config_type = self.type.load()
         package, cls_name = config_type.rsplit('.', 1)
         module = importlib.import_module(package)

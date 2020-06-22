@@ -28,19 +28,15 @@
 #
 #
 import os
+
 import numpy
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, Simulator
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir, load_with_references_from_dir
+from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
 from tvb.datatypes.projections import ProjectionSurfaceEEG
-from tvb.datatypes.sensors import SensorsEEG
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator.integrators import HeunStochastic
-from tvb.simulator.monitors import EEG
-from tvb.tests.framework.core.factory import TestFactory
 
 
 def test_store_load(tmpdir, connectivity_factory):
@@ -58,60 +54,6 @@ def test_store_load_rec(tmpdir, connectivity_factory, region_mapping_factory):
 
     rmap = load_from_dir(str(tmpdir), region_mapping.gid, recursive=True)
     numpy.testing.assert_equal(connectivity.weights, rmap.connectivity.weights)
-
-
-def test_load_with_references_from_dir_basic_simulation(simulator_factory):
-    test_user = TestFactory.create_user()
-    test_project = TestFactory.create_project(test_user)
-    sim_folder, sim_gid = simulator_factory(test_user, test_project)
-    simulator, ga = load_with_references_from_dir(sim_folder, sim_gid)
-    assert simulator.simulation_length == 1000.0
-
-
-def test_load_with_references_from_dir_projection_monitor(simulator_factory, surface_index_factory,
-                                                          sensors_index_factory, operation_factory):
-    test_user = TestFactory.create_user()
-    test_project = TestFactory.create_project(test_user)
-    surface_idx, surface = surface_index_factory(cortical=True)
-    sensors_idx, sensors = sensors_index_factory()
-    proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
-
-    op = operation_factory()
-    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-    prj_db_db = h5.store_complete(proj, storage_path)
-    prj_db_db.fk_from_operation = op.id
-    dao.store_entity(prj_db_db)
-
-    seeg_monitor = EEG(projection=proj, sensors=sensors)
-    sim_folder, sim_gid = simulator_factory(test_user, test_project, monitor=seeg_monitor)
-    simulator, ga = load_with_references_from_dir(sim_folder, sim_gid)
-    assert isinstance(simulator.monitors[0], EEG)
-    assert isinstance(simulator.monitors[0].projection, ProjectionSurfaceEEG)
-    assert isinstance(simulator.monitors[0].projection.sensors, SensorsEEG)
-    assert isinstance(simulator.monitors[0].projection.sources, CorticalSurface)
-
-
-def test_load_with_references_from_dir_projection_monitor_same_dir(simulator_factory, surface_index_factory,
-                                                                   sensors_index_factory, operation_factory):
-    test_user = TestFactory.create_user()
-    test_project = TestFactory.create_project(test_user)
-    op = operation_factory()
-    surface_idx, surface = surface_index_factory(cortical=True, op=op)
-    sensors_idx, sensors = sensors_index_factory(op=op)
-    proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
-
-    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-    prj_db_db = h5.store_complete(proj, storage_path)
-    prj_db_db.fk_from_operation = op.id
-    dao.store_entity(prj_db_db)
-
-    seeg_monitor = EEG(projection=proj, sensors=sensors)
-    sim_folder, sim_gid = simulator_factory(test_user, test_project, monitor=seeg_monitor, op=op)
-    simulator, ga = load_with_references_from_dir(sim_folder, sim_gid)
-    assert isinstance(simulator.monitors[0], EEG)
-    assert isinstance(simulator.monitors[0].projection, ProjectionSurfaceEEG)
-    assert isinstance(simulator.monitors[0].projection.sensors, SensorsEEG)
-    assert isinstance(simulator.monitors[0].projection.sources, CorticalSurface)
 
 
 def test_store_simulator_view_model(connectivity_index_factory, operation_factory):
@@ -150,7 +92,8 @@ def test_store_simulator_view_model_noise(connectivity_index_factory, operation_
     assert sim_view_model.integrator.noise.noise_seed == loaded_sim_view_model.integrator.noise.noise_seed == 45
 
 
-def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_index_factory, sensors_index_factory, operation_factory):
+def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_index_factory, sensors_index_factory,
+                                        operation_factory):
     conn = connectivity_index_factory()
     surface_idx, surface = surface_index_factory(cortical=True)
     sensors_idx, sensors = sensors_index_factory()
