@@ -56,12 +56,12 @@ class HPCSimulatorAdapter(SimulatorAdapter):
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
 
-    def load_traited_by_gid(self, data_gid, dt_class=None):
-        # type: (uuid.UUID, typing.Type[HasTraits]) -> HasTraits
+    def load_traited_by_gid(self, data_gid):
+        # type: (uuid.UUID) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid, dt_class=dt_class)
+        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
         return trait
 
     def _try_load_region_mapping(self):
@@ -139,12 +139,12 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
 
-    def load_traited_by_gid(self, data_gid, dt_class=None):
-        # type: (typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+    def load_traited_by_gid(self, data_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid, dt_class=dt_class)
+        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
         return trait
 
     def _get_output_path(self):

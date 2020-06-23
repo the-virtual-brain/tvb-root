@@ -138,8 +138,8 @@ def store(datatype, destination, recursive=False):
         loader.store(datatype, destination)
 
 
-def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
-    # type: (str, typing.Union[str, uuid.UUID], bool, typing.Type[HasTraits]) -> HasTraits
+def load_from_dir(base_dir, gid, recursive=False):
+    # type: (str, typing.Union[str, uuid.UUID], bool) -> HasTraits
     """
     Loads a datatype with the requested gid from the given directory.
     The datatype should have been written with store_to_dir
@@ -149,7 +149,7 @@ def load_from_dir(base_dir, gid, recursive=False, dt_class=None):
     :param recursive: if datatypes contained in this datatype should be loaded as well
     """
     loader = DirLoader(base_dir, REGISTRY, recursive)
-    return loader.load(gid, dt_class=dt_class)
+    return loader.load(gid)
 
 
 def load_with_links_from_dir(base_dir, gid):
