@@ -52,11 +52,6 @@ def wildcardit(name, front=True, back=True):
     return out
 
 
-def ensure_folder(folderpath):
-    if not os.path.isdir(folderpath):
-        os.makedirs(folderpath)
-
-
 def delete_all_files_in_folder(folderpath):
     if os.path.isdir(folderpath):
         for filename in os.listdir(folderpath):
@@ -109,3 +104,23 @@ def write_metadata(meta_dict, h5_file, key_date, key_version, path="/"):
     root[key_version] = 2
     for key, val in meta_dict.items():
         root[key] = val
+
+
+def safe_makedirs(folder):
+    # solution based on https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    if not os.path.isdir(folder):
+        try:
+            # This should work for Python >= 3.2
+            os.makedirs(folder, exist_ok=True)
+        except OSError as exc:  # Python ≥ 2.5
+            try:
+                os.makedirs(folder)
+            except:
+                try:  # just in case errno cannot be imported...
+                    import errno
+                    if exc.errno == errno.EEXIST and os.path.isdir(folder):
+                        pass
+                    else:
+                        raise
+                except:
+                    pass
