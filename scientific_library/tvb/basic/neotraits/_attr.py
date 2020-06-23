@@ -36,7 +36,7 @@ import numpy
 import types
 import typing
 from ._declarative_base import _Attr, MetaType
-from .ex import TraitValueError, TraitTypeError, TraitAttributeError
+from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
@@ -183,7 +183,7 @@ class Attr(_Attr):
             #           getattr with a default value swallows that exception and returns false
             present_value = getattr(instance, self.field_name, None)
             if present_value is not None:
-                raise TraitAttributeError("can't write final attribute")
+                raise TraitFinalAttributeError("can't write final attribute")
 
         value = self._validate_set(instance, value)
 

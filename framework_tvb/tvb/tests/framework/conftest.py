@@ -42,6 +42,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -57,9 +58,10 @@ from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.sensors import Sensors
-from tvb.datatypes.surfaces import Surface, CorticalSurface
+from tvb.datatypes.sensors import Sensors, SensorsEEG
+from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
+from tvb.simulator.monitors import TemporalAverage
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
@@ -248,7 +250,7 @@ def surface_factory():
             edge_max_length=2.0,
             zero_based_triangles=False,
             bi_hemispheric=False,
-            surface_type="surface_cortical",
+            surface_type=CORTICAL,
             valid_for_simulations=valid_for_simulation)
 
     return build
@@ -256,15 +258,15 @@ def surface_factory():
 
 @pytest.fixture()
 def surface_index_factory(surface_factory, operation_factory):
-    def build(data=4, op=None):
-        surface = surface_factory(data)
+    def build(data=4, op=None, cortical=False):
+        surface = surface_factory(data, cortical=cortical)
         if op is None:
             op = operation_factory()
 
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         surface_db = h5.store_complete(surface, storage_path)
         surface_db.fk_from_operation = op.id
-        return dao.store_entity(surface_db)
+        return dao.store_entity(surface_db), surface
 
     return build
 
@@ -309,6 +311,16 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
 @pytest.fixture()
 def sensors_factory():
     def build(type="EEG", nr_sensors=3):
+        if type == "EEG":
+            return SensorsEEG(
+                sensors_type=type,
+                labels=numpy.array(["s"] * nr_sensors),
+                locations=numpy.ones((nr_sensors, 3)),
+                number_of_sensors=nr_sensors,
+                has_orientation=True,
+                orientations=numpy.zeros((nr_sensors, 3)),
+                usable=numpy.array([True] * nr_sensors)
+            )
         return Sensors(
             sensors_type=type,
             labels=numpy.array(["s"] * nr_sensors),
@@ -318,6 +330,21 @@ def sensors_factory():
             orientations=numpy.zeros((nr_sensors, 3)),
             usable=numpy.array([True] * nr_sensors)
         )
+
+    return build
+
+
+@pytest.fixture()
+def sensors_index_factory(sensors_factory, operation_factory):
+    def build(type="EEG", nr_sensors=3, op=None):
+        sensors = sensors_factory(type, nr_sensors)
+        if op is None:
+            op = operation_factory()
+
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        sensors_db = h5.store_complete(sensors, storage_path)
+        sensors_db.fk_from_operation = op.id
+        return dao.store_entity(sensors_db), sensors
 
     return build
 
@@ -599,5 +626,20 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         lconn_db = h5.store_complete(lconn, storage_path)
         lconn_db.fk_from_operation = op.id
         return dao.store_entity(lconn_db), lconn
+
+    return build
+
+
+@pytest.fixture()
+def simulator_factory(connectivity_index_factory, operation_factory):
+    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverage()):
+        model = SimulatorAdapterModel(monitors=[monitor])
+        if not op:
+            op = operation_factory(test_user=user, test_project=project)
+        model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        h5.store_view_model(model, storage_path)
+
+        return storage_path, model.gid
 
     return build

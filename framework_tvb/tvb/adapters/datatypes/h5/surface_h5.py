@@ -108,6 +108,9 @@ class SurfaceH5(H5File):
         self.split_slices.store(self._split_slices)
         self.split_triangles.store(self._split_triangles)
 
+    def read_subtype_attr(self):
+        return self.surface_type.load()
+
     def center(self):
         """
         Compute the center of the surface as the mean spot on all the three axes.

@@ -43,7 +43,6 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -189,9 +188,7 @@ class TestExporters(TransactionalTestCase):
         burst_configuration = dao.store_entity(burst_configuration)
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(operation.id))
-        h5_path = h5.path_for(storage_path, SimulatorH5, simulator.gid)
-        with SimulatorH5(h5_path) as h5_file:
-            h5_file.store(simulator)
+        h5.store_view_model(simulator, storage_path)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 

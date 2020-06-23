@@ -33,17 +33,17 @@
 """
 
 import os
+
 import pytest
-from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.exceptions import FileStructureException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model import model_project, model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-
 
 root_storage = TvbProfile.current.TVB_STORAGE
 
@@ -51,7 +51,7 @@ root_storage = TvbProfile.current.TVB_STORAGE
 class TestFilesHelper(TransactionalTestCase):
     """
     This class contains tests for the tvb.core.entities.file.files_helper module.
-    """ 
+    """
     PROJECT_NAME = "test_proj"
 
     def transactional_setup_method(self):
@@ -70,7 +70,7 @@ class TestFilesHelper(TransactionalTestCase):
         """ Test standard flows for check created. """
         self.files_helper.check_created()
         assert os.path.exists(root_storage), "Storage not created!"
-        
+
         self.files_helper.check_created(os.path.join(root_storage, "test"))
         assert os.path.exists(root_storage), "Storage not created!"
         assert os.path.exists(os.path.join(root_storage, "test")), "Test directory not created!"
@@ -82,7 +82,7 @@ class TestFilesHelper(TransactionalTestCase):
         """
         project_path = self.files_helper.get_project_folder(self.test_project)
         assert os.path.exists(project_path), "Folder doesn't exist"
-        
+
         folder_path = self.files_helper.get_project_folder(self.test_project, "43")
         assert os.path.exists(project_path), "Folder doesn't exist"
         assert os.path.exists(folder_path), "Folder doesn't exist"
@@ -96,7 +96,7 @@ class TestFilesHelper(TransactionalTestCase):
     def test_rename_structure_same_name(self):
         """ Try to rename the folder structure of a project. Same name. """
         self.files_helper.get_project_folder(self.test_project)
-        
+
         with pytest.raises(FileStructureException):
             self.files_helper.rename_project_structure(self.test_project.name, self.PROJECT_NAME)
 
@@ -104,7 +104,7 @@ class TestFilesHelper(TransactionalTestCase):
         """ Check that remove project structure deletes the corresponding folder. Standard flow. """
         full_path = self.files_helper.get_project_folder(self.test_project)
         assert os.path.exists(full_path), "Folder was not created."
-        
+
         self.files_helper.remove_project_structure(self.test_project.name)
         assert not os.path.exists(full_path), "Project folder not deleted."
 
@@ -144,8 +144,8 @@ class TestFilesHelper(TransactionalTestCase):
             assert str(value) == str(found_dict[key])
         # Now validate that operation metaData can be also updated
         assert "new_group_name" != found_dict['user_group']
-        self.files_helper.update_operation_metadata(self.PROJECT_NAME, "new_group_name", operation.id) 
-        found_dict = XMLReader(expected_file).read_metadata()  
+        self.files_helper.update_operation_metadata(self.PROJECT_NAME, "new_group_name", operation.id)
+        found_dict = XMLReader(expected_file).read_metadata()
         assert "new_group_name" == found_dict['user_group']
 
     def test_remove_dt_happy_flow(self, dummy_datatype_index_factory):
@@ -178,10 +178,11 @@ class TestFilesHelper(TransactionalTestCase):
         assert os.path.exists(old_file_path), "Test file was not created!"
         full_path = h5.path_for_stored_index(datatype)
         self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1", full_path)
-        
+
         assert not os.path.exists(old_file_path), "Test file was not moved!"
         datatype.fk_from_operation = 43
-        new_file_path = os.path.join(self.files_helper.get_project_folder(self.PROJECT_NAME + '2', "1"), old_file_path.split("\\")[-1])
+        new_file_path = os.path.join(self.files_helper.get_project_folder(self.PROJECT_NAME + '2', "1"),
+                                     os.path.basename(old_file_path))
         assert os.path.exists(new_file_path), "Test file was not created!"
 
     def test_find_relative_path(self):
@@ -215,7 +216,7 @@ class TestFilesHelper(TransactionalTestCase):
         assert os.path.isdir(folder_name), "Folder should be created."
         self.files_helper.remove_folder(folder_name)
         assert not os.path.isdir(folder_name), "Folder should be deleted."
-        
+
     def test_remove_folder_non_existing_ignore_exc(self):
         """
         Pass an open file pointer, but ignore exceptions.

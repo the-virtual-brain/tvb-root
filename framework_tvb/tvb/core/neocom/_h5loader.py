@@ -62,7 +62,7 @@ class Loader(object):
         # type: (str) -> HasTraits
 
         with H5File.from_file(source) as f:
-            datatype_cls = self.registry.get_datatype_for_h5file(type(f))
+            datatype_cls = self.registry.get_datatype_for_h5file(f)
             datatype = datatype_cls()
             f.load_into(datatype)
             return datatype
@@ -122,7 +122,7 @@ class DirLoader(object):
         sub_dt_refs = []
 
         with H5File.from_file(os.path.join(self.base_dir, fname)) as f:
-            datatype_cls = self.registry.get_datatype_for_h5file(type(f))
+            datatype_cls = self.registry.get_datatype_for_h5file(f)
             datatype = datatype_cls()
             f.load_into(datatype)
 
@@ -163,7 +163,7 @@ class DirLoader(object):
         """
         where will this Loader expect to find a file of this format and with this gid
         """
-        datatype_cls = self.registry.get_datatype_for_h5file(h5_file_class)
+        datatype_cls = self.registry.get_base_datatype_for_h5file(h5_file_class)
         return self.path_for_has_traits(datatype_cls, gid)
 
     def _get_has_traits_classname(self, has_traits_class):
@@ -203,17 +203,17 @@ class TVBLoader(object):
 
         return os.path.join(operation_folder, fname)
 
-    def path_for(self, operation_dir, h5_file_class, gid):
+    def path_for(self, operation_dir, h5_file_class, gid, dt_class=None):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
         return os.path.join(operation_dir, fname)
 
-    def load_from_index(self, dt_index, dt_class=None):
-        # type: (DataType, typing.Type[HasTraits]) -> HasTraits
+    def load_from_index(self, dt_index):
+        # type: (DataType) -> HasTraits
         h5_path = self.path_for_stored_index(dt_index)
         h5_file_class = self.registry.get_h5file_for_index(dt_index.__class__)
-        traits_class = dt_class or self.registry.get_datatype_for_index(dt_index.__class__)
+        traits_class = self.registry.get_datatype_for_index(dt_index)
         with h5_file_class(h5_path) as f:
             result_dt = traits_class()
             f.load_into(result_dt)
@@ -222,7 +222,10 @@ class TVBLoader(object):
     def load_complete_by_function(self, file_path, load_ht_function):
         # type: (str, callable) -> (HasTraits, GenericAttributes)
         with H5File.from_file(file_path) as f:
-            datatype_cls = self.registry.get_datatype_for_h5file(type(f))
+            try:
+                datatype_cls = self.registry.get_datatype_for_h5file(f)
+            except KeyError:
+                datatype_cls = f.determine_datatype_from_file()
             datatype = datatype_cls()
             f.load_into(datatype)
             ga = f.load_generic_attributes()
@@ -231,7 +234,13 @@ class TVBLoader(object):
         for traited_attr, sub_gid in sub_dt_refs:
             if sub_gid is None:
                 continue
+            is_monitor = False
+            if isinstance(sub_gid, list):
+                sub_gid = sub_gid[0]
+                is_monitor = True
             ref_ht = load_ht_function(sub_gid, traited_attr)
+            if is_monitor:
+                ref_ht = [ref_ht]
             setattr(datatype, traited_attr.field_name, ref_ht)
 
         return datatype, ga
@@ -239,14 +248,16 @@ class TVBLoader(object):
     def load_with_references(self, file_path):
         def load_ht_function(sub_gid, traited_attr):
             ref_idx = dao.get_datatype_by_gid(sub_gid.hex, load_lazy=False)
-            ref_ht = self.load_from_index(ref_idx, traited_attr.field_type)
+            ref_ht = self.load_from_index(ref_idx)
             return ref_ht
 
         return self.load_complete_by_function(file_path, load_ht_function)
 
     def load_with_links(self, file_path):
         def load_ht_function(sub_gid, traited_attr):
-            ref_ht = traited_attr.field_type()
+            # Used traited_attr.default for cases similar to ProjectionMonitor which has obsnoise of type Noise and
+            # it cannot be instantiated due to abstract methods, while the default is Additive()
+            ref_ht = traited_attr.default or traited_attr.field_type()
             ref_ht.gid = sub_gid
             return ref_ht
 

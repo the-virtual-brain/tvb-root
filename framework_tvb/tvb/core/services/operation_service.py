@@ -285,10 +285,7 @@ class OperationService:
     @staticmethod
     def _store_view_model(operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
-        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid)
-        h5_file = ViewModelH5(h5_path, view_model)
-        h5_file.store(view_model)
-        h5_file.close()
+        h5.store_view_model(view_model, storage_path)
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """

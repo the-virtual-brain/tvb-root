@@ -40,16 +40,16 @@ import uuid
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 from tvb.simulator.simulator import Simulator
 
 
@@ -91,7 +91,7 @@ class SimulatorService(object):
         setattr(current_attr, range_param_name_list[-1], range_parameter_value)
 
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo,
-                                            session_stored_simulator, simulation_state_gid):
+                                            session_stored_simulator):
         try:
             metadata = {}
             metadata.update({DataTypeMetaData.KEY_BURST: burst_config.id})
@@ -100,7 +100,7 @@ class SimulatorService(object):
             operation = self._prepare_operation(project.id, user.id, simulator_id, session_stored_simulator.gid,
                                                 algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-            SimulatorSerializer().serialize_simulator(session_stored_simulator, simulation_state_gid, storage_path)
+            h5.store_view_model(session_stored_simulator, storage_path)
             burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
@@ -123,13 +123,11 @@ class SimulatorService(object):
                 self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
-        with SimulatorH5(simulator_file) as simulator_h5:
-            simulator_gid = simulator_h5.gid.load()
-
+        simulator_vm = h5.load_view_model_from_file(simulator_file)
         metadata = {}
         simulator_id = algorithm.id
         algo_category = algorithm.algorithm_category
-        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_gid,
+        operation = self._prepare_operation(project.id, user_id, simulator_id, simulator_vm.gid,
                                             algo_category, None, metadata)
         storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
         self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
@@ -191,7 +189,7 @@ class SimulatorService(object):
                                                         {DataTypeMetaData.KEY_BURST: burst_config.id}, ranges)
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-                    SimulatorSerializer().serialize_simulator(simulator, None, storage_path)
+                    h5.store_view_model(simulator, storage_path)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
@@ -228,10 +226,9 @@ class SimulatorService(object):
         import_service = ImportService()
         simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
 
-        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(Simulator)
-        with SimulatorH5(os.path.join(simulator_folder, simulator_h5_filename)) as sim_h5:
-            simulator_gid = sim_h5.gid.load()
-        simulator = SimulatorSerializer.deserialize_simulator(simulator_gid, simulator_folder)
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
+        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
+        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config

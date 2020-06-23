@@ -112,8 +112,7 @@ def fire_simulation(project_id, simulator):
     dao.store_entity(burst)
 
     launched_operation = simulator_service.async_launch_and_prepare_simulation(burst, project.administrator, project,
-                                                                               cached_simulator_algorithm, simulator,
-                                                                               None)
+                                                                               cached_simulator_algorithm, simulator)
     LOG.info("Operation launched ....")
     return launched_operation
 
