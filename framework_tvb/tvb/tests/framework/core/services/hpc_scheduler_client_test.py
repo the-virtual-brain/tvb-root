@@ -35,9 +35,15 @@
 import os
 import shutil
 
+import numpy
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.view_model import EEGViewModel
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -79,28 +85,67 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert 'dummy1.txt' in list_plain_dir
         assert 'dummy2.txt' in list_plain_dir
 
-    def test_do_operation_launch(self, simulator_factory, mocker):
-        def dummy_method():
+    def test_do_operation_launch(self, simulator_factory, operation_factory, mocker):
+        def _update_operation_status(status, simulator_gid, base_url):
+            pass
+
+        def _request_passfile_dummy(simulator_gid, base_url, passfile_folder):
             pass
 
         # Prepare encrypted dir
-        sim_folder, sim_gid = simulator_factory(self.test_user, self.test_project)
-        job_encrypted_inputs = [os.path.join(sim_folder, encrypted_file) for encrypted_file in os.listdir(sim_folder)]
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=op)
+        self.encryption_handler = EncryptionHandler(sim_gid)
+        job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
         self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
         encrypted_dir = self.encryption_handler.get_encrypted_dir()
 
-        mocker.patch('_request_passfile', dummy_method)
-        mocker.patch('_update_operation_status', dummy_method)
+        mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)
+        mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
 
         # Call do_operation_launch similarly to CSCS env
         do_operation_launch(sim_gid.hex, 1000, False, '')
-        assert len(os.listdir(encrypted_dir)) == 6
+        assert len(os.listdir(encrypted_dir)) > 6
 
+    def test_prepare_inputs(self, operation_factory, simulator_factory):
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=op)
+        hpc_client = HPCSchedulerClient()
+        input_files = hpc_client._prepare_input(op, sim_gid)
+        assert len(input_files) == 6
+
+    def test_prepare_inputs_with_surface(self, operation_factory, simulator_factory):
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=op, with_surface=True)
+        hpc_client = HPCSchedulerClient()
+        input_files = hpc_client._prepare_input(op, sim_gid)
+        assert len(input_files) == 9
+
+    def test_prepare_inputs_with_eeg_monitor(self, operation_factory, simulator_factory, surface_index_factory,
+                                             sensors_index_factory):
+        surface_idx, surface = surface_index_factory(cortical=True)
+        sensors_idx, sensors = sensors_index_factory()
+        proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
+
+        op = operation_factory()
+        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        prj_db_db = h5.store_complete(proj, storage_path)
+        prj_db_db.fk_from_operation = op.id
+        dao.store_entity(prj_db_db)
+
+        eeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+
+        sim_folder, sim_gid = simulator_factory(op=op, monitor=eeg_monitor)
+        hpc_client = HPCSchedulerClient()
+        input_files = hpc_client._prepare_input(op, sim_gid)
+        assert len(input_files) == 10
 
     def teardown_method(self):
         encrypted_dir = self.encryption_handler.get_encrypted_dir()
-        shutil.rmtree(encrypted_dir)
+        if os.path.isdir(encrypted_dir):
+            shutil.rmtree(encrypted_dir)
         passfile = self.encryption_handler.get_password_file()
-        os.remove(passfile)
+        if os.path.exists(passfile):
+            os.remove(passfile)
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()

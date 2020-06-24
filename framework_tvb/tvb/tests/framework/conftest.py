@@ -47,6 +47,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
@@ -61,7 +62,6 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
-from tvb.simulator.monitors import TemporalAverage
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
@@ -275,7 +275,7 @@ def surface_index_factory(surface_factory, operation_factory):
 def region_mapping_factory(surface_factory, connectivity_factory):
     def build(surface=None, connectivity=None):
         if not surface:
-            surface = surface_factory(5)
+            surface = surface_factory(5, cortical=True)
         if not connectivity:
             connectivity = connectivity_factory(2)
         return RegionMapping(
@@ -631,12 +631,19 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
 
 
 @pytest.fixture()
-def simulator_factory(connectivity_index_factory, operation_factory):
-    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverage()):
+def simulator_factory(connectivity_index_factory, operation_factory, region_mapping_index_factory):
+    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverageViewModel(), with_surface=False):
         model = SimulatorAdapterModel(monitors=[monitor])
         if not op:
             op = operation_factory(test_user=user, test_project=project)
-        model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        if not with_surface:
+            model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        if with_surface:
+            rm_idx = region_mapping_index_factory()
+            model.connectivity = rm_idx.fk_connectivity_gid
+            model.surface = CortexViewModel()
+            model.surface.surface_gid = rm_idx.fk_surface_gid
+            model.surface.region_mapping_data = rm_idx.gid
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         h5.store_view_model(model, storage_path)
 
