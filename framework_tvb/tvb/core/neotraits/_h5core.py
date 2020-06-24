@@ -203,11 +203,6 @@ class H5File(object):
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         return self.generic_attributes
 
-    def gather_references_gids(self):
-        references = self.gather_references()
-        references_gids = [reference[1] for reference in references]
-        return references_gids
-
     def gather_references(self):
         ret = []
         for accessor in self.iter_accessors():
@@ -307,3 +302,18 @@ class ViewModelH5(H5File):
             else:
                 ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)
+
+    def gather_references_by_uuid(self):
+        """
+        Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
+        references towards existent Datatypes (eg. Connectivity) as Uuid.
+        Thus, the method gather_references will return only references towards other ViewModels, and we need this
+        method to gather also the other references.
+        """
+        ret = []
+        for accessor in self.iter_accessors():
+            if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
+                if accessor.field_name is 'gid':
+                    continue
+                ret.append((accessor.trait_attribute, accessor.load()))
+        return ret

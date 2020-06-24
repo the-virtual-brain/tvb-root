@@ -39,10 +39,10 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
+from tvb.core.neocom import h5
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler
-from tvb.core.services.simulator_serializer import SimulatorSerializer
 
 log = get_logger('tvb.core.operation_hpc_launcher')
 
@@ -70,7 +70,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         plain_input_dir = '/root/plain'
         encyrption_handler.decrypt_results_to_dir(plain_input_dir)
         log.info("Current wdir is: {}".format(plain_input_dir))
-        view_model = SimulatorSerializer().deserialize_simulator(simulator_gid, plain_input_dir)
+        view_model = h5.load_view_model(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, base_url)
         adapter_instance._prelaunch(None, None, available_disk_space, view_model)

@@ -35,14 +35,11 @@
 
 import json
 import os
-import shutil
 import typing
 import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
-from time import sleep
-
 import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
@@ -52,15 +49,14 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.simulator_h5 import SimulatorH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED, \
     STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
@@ -116,36 +112,13 @@ class HPCSchedulerClient(BackendClient):
     file_handler = FilesHelper()
 
     @staticmethod
-    def _gather_file_list(base_h5_file, file_list):
-        # type: (H5File, list) -> None
-        references = base_h5_file.gather_references_gids()
-        for reference in references:
-            if reference is None:
-                continue
-            try:
-                # TODO: nicer way to identify files?
-                index = dao.get_datatype_by_gid(reference.hex)
-                reference_h5_path = h5.path_for_stored_index(index)
-                reference_h5_file = h5.h5_file_for_index(index)
-            except Exception:
-                reference_h5_path = base_h5_file.get_reference_path(reference)
-                reference_h5_file = H5File.from_file(reference_h5_path)
-            if reference_h5_path not in file_list:
-                file_list.append(reference_h5_path)
-            HPCSchedulerClient._gather_file_list(reference_h5_file, file_list)
-            reference_h5_file.close()
-
-    @staticmethod
     def _prepare_input(operation, simulator_gid):
         # type: (Operation, str) -> list
         storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
-        simulator_in_path = h5.path_for(storage_path, SimulatorH5, simulator_gid)
-
-        input_files_list = []
-        with SimulatorH5(simulator_in_path) as simulator_h5:
-            HPCSchedulerClient._gather_file_list(simulator_h5, input_files_list)
-        input_files_list.append(simulator_in_path)
-        return input_files_list
+        input_files = []
+        ABCAdapter.gather_all_references_of_view_model(simulator_gid, storage_path, input_files)
+        input_files = list(set(input_files))
+        return input_files
 
     @staticmethod
     def _configure_job(simulator_gid, available_space, is_group_launch):
@@ -165,13 +138,13 @@ class HPCSchedulerClient(BackendClient):
         return my_job, bash_entrypoint
 
     @staticmethod
-    def listdir(working_dir, base='/'):
+    def _listdir(working_dir, base='/'):
         # type: (Storage, str) -> dict
         """
         We took this code from pyunicore Storage.listdir method and extended it to use a subdirectory.
         Looking at the method signature, it should have had this behavior, but the 'base' argument is not used later
         inside the method code.
-        TODO: Probably will be fixed soon in their API, so we could delete this.
+        Probably will be fixed soon in their API, so we could delete this.
         :return: dict of {str: PathFile} objects
         """
         ret = {}
@@ -192,10 +165,6 @@ class HPCSchedulerClient(BackendClient):
         burst_service = BurstService()
         index_list = []
 
-        LOGGER.info("Marking operation {} as finished...".format(operation.id))
-        operation.mark_complete(STATUS_FINISHED)
-        dao.store_entity(operation)
-
         for filename in result_filenames:
             index = h5.index_for_h5_file(filename)()
             # TODO: don't load full TS in memory and make this read nicer
@@ -213,7 +182,6 @@ class HPCSchedulerClient(BackendClient):
                     dao.get_generic_entity(DataTypeGroup, operation.fk_operation_group, 'fk_operation_group')[0]
                 index.fk_datatype_group = datatype_group.id
 
-            # TODO: update status during operation run
             if operation.fk_operation_group:
                 parent_burst = \
                     dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
@@ -343,39 +311,10 @@ class HPCSchedulerClient(BackendClient):
         return available_space
 
     @staticmethod
-    # TODO: Remove this
-    def _monitor_job(job):
-        # type: (Job) -> (Storage, str)
-        LOGGER.info(job.properties)
-        # TODO: better monitoring?
-        LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
-        files_encryption_key_uploaded = False
-        sleep_period = 5
-        while True:
-            # Read current job status
-            status = job.properties[HPCSettings.JOB_STATUS_KEY]
-
-            # Check if the current job is complete
-            if status in (HPCJobStatus.SUCCESSFUL.value, HPCJobStatus.FAILED.value):
-                break
-            LOGGER.info("Job is still running. Status: {}".format(status))
-
-            # Upload user tokens which will be used to
-            if status == HPCJobStatus.READY.value and not files_encryption_key_uploaded:
-                LOGGER.info("Upload files encryption key")
-                # HPCSchedulerClient._upload_file_with_pyunicore(job.working_dir, "Files encryption key path")
-                files_encryption_key_uploaded = True
-                sleep_period = 10
-            sleep(sleep_period)
-
-        LOGGER.info("Job finished with status: {}".format(status))
-        return job.working_dir, status
-
-    @staticmethod
     def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> list
         output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSimulatorAdapter.OUTPUT_FOLDER
-        output_list = HPCSchedulerClient.listdir(working_dir, output_subfolder)
+        output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
         encryption_handler = EncryptionHandler(simulator_gid)
         encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)

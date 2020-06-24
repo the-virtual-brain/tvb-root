@@ -161,6 +161,19 @@ def load_with_links_from_dir(base_dir, gid):
     return tvb_loader.load_with_links(fname)
 
 
+def load_with_references_from_dir(base_dir, gid):
+    # type: (str, typing.Union[uuid.UUID, str]) -> HasTraits
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    fname = os.path.join(base_dir, fname)
+    tvb_loader = TVBLoader(REGISTRY)
+
+    def load_ht_function(sub_gid, traited_attr):
+        return dir_loader.load(sub_gid)
+
+    return tvb_loader.load_complete_by_function(fname, load_ht_function)
+
+
 def store_to_dir(datatype, base_dir, recursive=False):
     # type: (HasTraits, str, bool) -> None
     """
@@ -203,15 +216,19 @@ def store_view_model(view_model, base_dir):
                 store_view_model(model_attr, base_dir)
 
 
+def determine_filepath(gid, base_dir):
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    h5_path = os.path.join(base_dir, fname)
+    return h5_path
+
+
 def load_view_model(gid, base_dir):
     # type: (uuid.UUID, str) -> ViewModel
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """
-    dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    h5_path = os.path.join(base_dir, fname)
-
+    h5_path = determine_filepath(gid, base_dir)
     return load_view_model_from_file(h5_path)
 
 

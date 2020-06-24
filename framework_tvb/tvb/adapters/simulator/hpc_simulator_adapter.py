@@ -64,6 +64,11 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
         return trait
 
+    def load_with_references(self, dt_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+        dt, _ = h5.load_with_references_from_dir(self.storage_path, dt_gid)
+        return dt
+
     def _try_load_region_mapping(self):
         return None, None
 
