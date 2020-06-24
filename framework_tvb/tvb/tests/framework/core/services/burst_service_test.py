@@ -191,7 +191,7 @@ class TestBurstService(BaseTestCase):
         """
         Test that on removal of a project all burst related data is cleared.
         """
-        self._prepare_and_launch_sync_burst()
+        TestFactory.store_burst(self.test_project.id)
         ProjectService().remove_project(self.test_project.id)
         self._check_burst_removed()
 

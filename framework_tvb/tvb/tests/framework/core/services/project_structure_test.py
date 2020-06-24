@@ -48,6 +48,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.filters.factory import StaticFiltersFactory
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
@@ -324,11 +325,12 @@ class TestProjectStructure(TransactionalTestCase):
         view_model = BaseBCTModel()
         view_model.connectivity = conn.gid
         adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        value_wrapper = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter, view_model)[0]
+        result = OperationService().fire_operation(adapter, self.test_user, self.test_project.id,
+                                                   view_model=view_model)
 
         conn.visible = False
         dao.store_entity(conn)
-        operation = dao.get_operation_by_id(value_wrapper.fk_from_operation)
+        operation = dao.get_operation_by_id(result[0].id)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.relevant_filter)
