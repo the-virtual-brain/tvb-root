@@ -53,6 +53,8 @@ from scipy import linalg
 from scipy._lib._util import check_random_state
 from six import moves
 from six import string_types
+from sklearn.utils import check_array
+from sklearn.utils.validation import FLOAT_DTYPES
 
 
 def _sym_decorrelation(W):
@@ -298,6 +300,7 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
                   " should be one of 'logcosh', 'exp', 'cube' or callable"
                   % fun)
 
+    X = _validate_and_transpose_data(X, copy=whiten, dtype=FLOAT_DTYPES, ensure_min_samples=2)
     n, p = X.shape
 
     if not whiten and n_components is not None:
@@ -385,3 +388,9 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
             else:
                 return None, W, S
 
+
+def _validate_and_transpose_data(X, **check_params):
+    # Validate input data for ICA
+
+    X = check_array(X, **check_params)
+    return X.T
