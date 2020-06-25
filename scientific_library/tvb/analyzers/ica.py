@@ -95,7 +95,7 @@ class FastICA(HasTraits):
         for mode in range(n_mode):
             for var in range(n_svar):
                 sl = Ellipsis, var, mode
-                K[sl], W[sl], src[sl] = fastica(data[:, var, :, mode].T, self.n_components)
+                K[sl], W[sl], src[sl] = fastica(data[:, var, :, mode], self.n_components)
 
         return mode_decompositions.IndependentComponents(source=self.time_series, component_time_series=src,
                                                          prewhitening_matrix=K, unmixing_matrix=W, n_components=n_comp)
