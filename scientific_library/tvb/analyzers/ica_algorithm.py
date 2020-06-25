@@ -298,7 +298,7 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
                   " should be one of 'logcosh', 'exp', 'cube' or callable"
                   % fun)
 
-    X = X.T
+    X = validate_and_transpose_source(X)
     n, p = X.shape
 
     if not whiten and n_components is not None:
@@ -385,4 +385,31 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
                 return None, W, S, n_iter
             else:
                 return None, W, S
+
+
+def validate_and_transpose_source(X):
+    # Raise error if input is scalar or 1D
+    if X.ndim == 0:
+        raise ValueError(
+            "Expected 2D array, got scalar array instead:\narray={}.\n"
+            "Reshape your data either using array.reshape(-1, 1) if "
+            "your data has a single feature or array.reshape(1, -1) "
+            "if it contains a single sample.".format(X))
+    if X.ndim == 1:
+        raise ValueError(
+            "Expected 2D array, got 1D array instead:\narray={}.\n"
+            "Reshape your data either using array.reshape(-1, 1) if "
+            "your data has a single feature or array.reshape(1, -1) "
+            "if it contains a single sample.".format(X))
+
+    if numpy.issubdtype(X.dtype, numpy.floating) and X.dtype.itemsize < 8:
+        sum_result = numpy.sum(X, dtype=numpy.float64)
+    else:
+        sum_result = numpy.sum(X)
+    is_finite = numpy.isfinite(sum_result)
+
+    if not is_finite:
+        raise ValueError("Input contains infinity or a value too large for {}.".format(X.dtype))
+
+    return X.T
 
