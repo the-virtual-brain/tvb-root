@@ -37,6 +37,7 @@ given action are described here.
 
 import copy
 import json
+import os
 from http import HTTPStatus
 import cherrypy
 import formencode
