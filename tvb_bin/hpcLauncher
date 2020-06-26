@@ -7,7 +7,7 @@ start=$SECONDS
 
 echo "Start docker container"
 mkdir TVB_STORAGE
-srun -C mc /apps/daint/system/opt/sarus/1.1.0/bin/sarus --debug run --mount=type=bind,source=$PWD/data,destination=$5 --mount=type=bind,source=$PWD/TVB_STORAGE,destination=/root/TVB_STORAGE --mount=type=bind,source=$HOME,destination=$6 thevirtualbrain/tvb-run:tvb-hpc /bin/bash -c "/opt/conda/envs/tvb-run/bin/python -m tvb.core.operation_hpc_launcher $1 $2 $3 $4"
+srun -C mc /apps/daint/system/opt/sarus/1.1.0/bin/sarus --debug run --mount=type=bind,source=$PWD/data,destination=$5 --mount=type=bind,source=$PWD/TVB_STORAGE,destination=/root/TVB_STORAGE --mount=type=bind,source=$HOME,destination=$6 thevirtualbrain/tvb-run:tvb-hpc /bin/bash -c "/opt/conda/envs/tvb-run/bin/python -m tvb.core.operation_hpc_launcher $1 $2 $3 $4 $7"
 
 duration=$(( SECONDS - start ))
 

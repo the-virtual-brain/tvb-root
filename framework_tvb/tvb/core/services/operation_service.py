@@ -572,15 +572,14 @@ class OperationService:
         HPCSchedulerClient().update_db_with_results(operation, h5_filenames)
 
     @staticmethod
-    def handle_hpc_status_changed(burst_config, new_status):
-        # type: (BurstConfiguration, str) -> None
+    def handle_hpc_status_changed(operation, simulator_gid, new_status):
+        # type: (Operation, str, str) -> None
 
-        operation = dao.get_operation_by_id(burst_config.fk_simulation)
         switcher = {
             STATUS_ERROR: OperationService._operation_error,
             STATUS_CANCELED: OperationService._operation_canceled,
             STATUS_STARTED: OperationService._operation_started,
-            STATUS_FINISHED: partial(OperationService._operation_finished, simulator_gid=burst_config.simulator_gid)
+            STATUS_FINISHED: partial(OperationService._operation_finished, simulator_gid=simulator_gid)
         }
         update_func = switcher.get(new_status, lambda: "Invalid operation status")
         update_func(operation)

@@ -50,7 +50,6 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.adapters import constants
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
@@ -66,9 +65,9 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
     expose_endpoint
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -230,7 +229,7 @@ class FlowController(BaseController):
             self._populate_section(algorithm, template_specification, is_burst)
         else:
             if (('Referer' not in cherrypy.request.headers or
-                ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
+                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
                     and 'View' in algorithm.algorithm_category.displayname):
                 # Avoid reset in case of Visualizers, as a supplementary GET
                 not_reset = True
@@ -385,7 +384,6 @@ class FlowController(BaseController):
         applied on arrays.
         """
         return {"sum": "Sum", "average": "Average"}
-
 
     # @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
@@ -550,7 +548,8 @@ class FlowController(BaseController):
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form),
+                                          title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
@@ -823,8 +822,8 @@ class FlowController(BaseController):
             for i, (name, Val) in enumerate(self.PSE_names_list):
                 if name == config_name:
                     self.PSE_names_list[i] = (config_name, (
-                        data['threshold_value'] + "," + data['threshold_type'] + "," + data[
-                            'not_presence']))  # replace the previous occurence of the config name, and carry on.
+                            data['threshold_value'] + "," + data['threshold_type'] + "," + data[
+                        'not_presence']))  # replace the previous occurence of the config name, and carry on.
                     self.get_pse_filters()
                     return [True, 'Selected Text stored, and selection updated']
             self.PSE_names_list.append(
@@ -879,8 +878,22 @@ class FlowController(BaseController):
 
         return [True, 'Stored the exploration material successfully']
 
+    def _validate_request_params(self, simulator_gid, operation_id):
+        operation = dao.get_operation_by_id(operation_id)
+        if not operation:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
+
+        op_params = json.loads(operation.parameters)
+        if 'gid' not in op_params:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
+
+        if op_params['gid'] != simulator_gid:
+            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid simulator gid")
+
+        return operation
+
     @expose_endpoint
-    def update_status(self, simulator_gid, **data):
+    def update_status(self, simulator_gid, operation_id, **data):
         if cherrypy.request.method != 'PUT':
             raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
 
@@ -893,22 +906,17 @@ class FlowController(BaseController):
             raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
                                      "Invalid status.")
 
-        burst_config = dao.get_generic_entity(BurstConfiguration, simulator_gid, "simulator_gid")
-        if len(burst_config) == 0:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
-                                     "Invalid simulator gid.")
+        operation = self._validate_request_params(simulator_gid, operation_id)
 
-        OperationService.handle_hpc_status_changed(burst_config[0], new_status)
+        OperationService.handle_hpc_status_changed(operation, simulator_gid, new_status)
 
     @expose_endpoint
-    def encryption_config(self, simulator_gid):
+    def encryption_config(self, simulator_gid, operation_id):
+        self.logger.info("Received a request for passfile with gid: {}".format(simulator_gid))
         if cherrypy.request.method != 'GET':
             raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
 
-        burst_config = dao.get_generic_entity(BurstConfiguration, simulator_gid, "simulator_gid")
-        if len(burst_config) == 0:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
-                                     "Invalid simulator gid.")
+        self._validate_request_params(simulator_gid, operation_id)
 
         encryption_handler = EncryptionHandler(simulator_gid)
         file_path = encryption_handler.get_password_file()

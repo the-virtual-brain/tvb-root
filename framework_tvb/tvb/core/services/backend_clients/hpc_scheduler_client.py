@@ -53,7 +53,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import has_finished, STATUS_FINISHED, Operation, STATUS_CANCELED, \
+from tvb.core.entities.model.model_operation import has_finished, Operation, STATUS_CANCELED, \
     STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
@@ -121,8 +121,8 @@ class HPCSchedulerClient(BackendClient):
         return input_files
 
     @staticmethod
-    def _configure_job(simulator_gid, available_space, is_group_launch):
-        # type: (str, int, bool) -> (dict, list)
+    def _configure_job(simulator_gid, available_space, is_group_launch, operation_id):
+        # type: (str, int, bool, int) -> (dict, list)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
@@ -132,7 +132,7 @@ class HPCSchedulerClient(BackendClient):
         my_job = {}
         my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
         my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url,
-                                                inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT]
+                                                inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT, operation_id]
         my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
 
         return my_job, bash_entrypoint
@@ -279,7 +279,7 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
         job_config, job_script = HPCSchedulerClient._configure_job(simulator_gid, available_space,
-                                                                   is_group_launch)
+                                                                   is_group_launch, operation.id)
 
         LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
         encryption_handler = EncryptionHandler(simulator_gid)
@@ -320,7 +320,8 @@ class HPCSchedulerClient(BackendClient):
         HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
-        h5_filenames = encryption_handler.decrypt_results_to_dir(operation_dir, from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
+        h5_filenames = encryption_handler.decrypt_results_to_dir(operation_dir,
+                                                                 from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
 
         LOGGER.info(working_dir.properties)
         LOGGER.info(working_dir.listdir())

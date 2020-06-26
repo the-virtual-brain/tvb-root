@@ -60,27 +60,27 @@ def _encrypt_results(adapter_instance, encryption_handler):
     encryption_handler.encrypt_inputs(output_plain_files, adapter_instance.OUTPUT_FOLDER)
 
 
-def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url):
+def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id):
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
         encyrption_handler = EncryptionHandler(simulator_gid)
-        _request_passfile(simulator_gid, base_url, os.path.dirname(encyrption_handler.get_password_file()))
+        _request_passfile(simulator_gid, operation_id, base_url, os.path.dirname(encyrption_handler.get_password_file()))
         plain_input_dir = '/root/plain'
         encyrption_handler.decrypt_results_to_dir(plain_input_dir)
         log.info("Current wdir is: {}".format(plain_input_dir))
         view_model = h5.load_view_model(simulator_gid, plain_input_dir)
         adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
-        _update_operation_status(STATUS_STARTED, simulator_gid, base_url)
+        _update_operation_status(STATUS_STARTED, simulator_gid, operation_id, base_url)
         adapter_instance._prelaunch(None, None, available_disk_space, view_model)
         _encrypt_results(adapter_instance, encyrption_handler)
-        _update_operation_status(STATUS_FINISHED, simulator_gid, base_url)
+        _update_operation_status(STATUS_FINISHED, simulator_gid, operation_id, base_url)
 
     except Exception as excep:
         log.error("Could not execute operation {}".format(str(sys.argv[1])))
         log.exception(excep)
-        _update_operation_status(STATUS_ERROR, simulator_gid, base_url)
+        _update_operation_status(STATUS_ERROR, simulator_gid, operation_id, base_url)
 
 
 # TODO: extract common rest api parts
@@ -95,10 +95,10 @@ def _save_file(file_path, response):
     return file_path
 
 
-def _request_passfile(simulator_gid, base_url, passfile_folder):
-    # type: (str, str, str) -> str
+def _request_passfile(simulator_gid, operation_id, base_url, passfile_folder):
+    # type: (str, str, str, str) -> str
     try:
-        req_params = "{}/flow/encryption_config/{}".format(base_url, simulator_gid)
+        req_params = "{}/flow/encryption_config/{}/{}".format(base_url, simulator_gid, operation_id)
         log.info('URL is: {}'.format(req_params))
         response = _build_secured_request().get(req_params)
         log.info('Response is: {}'.format(response))
@@ -114,10 +114,10 @@ def _request_passfile(simulator_gid, base_url, passfile_folder):
             "Failed to request passfile from TVB server {} for simulator {}".format(base_url, simulator_gid))
 
 
-def _update_operation_status(status, simulator_gid, base_url):
-    # type: (str, str, str) -> None
+def _update_operation_status(status, simulator_gid, operation_id, base_url):
+    # type: (str, str, str, str) -> None
     try:
-        req_params = "{}/flow/update_status/{}".format(base_url, simulator_gid)
+        req_params = "{}/flow/update_status/{}/{}".format(base_url, simulator_gid, operation_id)
         log.info('URL is: {}'.format(req_params))
         response = _build_secured_request().put(req_params, data={
             UPDATE_STATUS_KEY: status,
@@ -156,5 +156,6 @@ if __name__ == '__main__':
     available_disk_space = sys.argv[2]
     is_group_launch = json.loads(sys.argv[3].lower())
     base_url = sys.argv[4]
+    operation_id = sys.argv[5]
 
-    do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url)
+    do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id)
