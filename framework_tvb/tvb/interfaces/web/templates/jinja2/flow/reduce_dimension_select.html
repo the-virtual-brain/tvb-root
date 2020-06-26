@@ -20,8 +20,7 @@
                 {% for idx in ((data | length) | xrange) %}
                     <td>
                         <select id="dimId_{{ select_name }}_{{ parameters_prefix }}_{{ idx }}"
-                                name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}' multiple='multiple'
-                                onchange="updateShapeLabel('{{ select_name }}', '{{ parameters_prefix }}', {{ idx }})">
+                                name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}' multiple='multiple'>
                             {% for idx2 in ((data[idx][0] | length) | xrange) %}
                                 {% if (idx in selected_items) and (idx2 in selected_items[idx]) %}
                                     <option value='{{ data[idx][1][idx2] }}' selected="selected">{{ data[idx][0][idx2] }}</option>
@@ -38,8 +37,7 @@
             <tr>
                 {% for idx in ((data | length) | xrange) %}
                     <td>
-                        <select id="funcId_{{ select_name }}_{{ parameters_prefix }}_{{ idx }}" name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}'
-                                onchange="updateShapeLabel('{{ select_name }}', '{{ parameters_prefix }}',{{ idx }})">
+                        <select id="funcId_{{ select_name }}_{{ parameters_prefix }}_{{ idx }}" name='{{ select_name }}_{{ parameters_prefix }}_{{ idx }}'>
                                 <option value='func_none'>None</option>
 
                                  {% for key, value in data[idx][2].items() %}

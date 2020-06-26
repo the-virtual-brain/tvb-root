@@ -1,6 +1,5 @@
 <p class="field-data">
-<select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1"
-        onchange="updateDivContent('data_time_series', this, ''); updateDatatypeDiv(this)" title="Fully Loaded!">
+<select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1">
 {% for option in field.options() %}
     <option value="{{ option.value }}" {{ 'selected' if option.checked }} class="form-control">{{ option.label }}</option>
 {% endfor %}
