@@ -569,6 +569,8 @@ class OperationService:
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
         h5_filenames = HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
+        operation.mark_complete(STATUS_FINISHED)
+        dao.store_entity(operation)
         HPCSchedulerClient().update_db_with_results(operation, h5_filenames)
 
     @staticmethod
