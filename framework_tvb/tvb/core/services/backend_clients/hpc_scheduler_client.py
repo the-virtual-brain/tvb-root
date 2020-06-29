@@ -184,7 +184,7 @@ class HPCSchedulerClient(BackendClient):
 
             if operation.fk_operation_group:
                 parent_burst = \
-                    dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'operation_group_id')[0]
+                    dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'fk_operation_group')[0]
                 operations_in_group = dao.get_operations_in_group(operation.fk_operation_group)
                 if parent_burst.metric_operation_group_id:
                     operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
