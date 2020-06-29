@@ -60,18 +60,17 @@ def _encrypt_results(adapter_instance, encryption_handler):
     encryption_handler.encrypt_inputs(output_plain_files, adapter_instance.OUTPUT_FOLDER)
 
 
-def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id):
+def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id, plain_dir='/root/plain'):
     try:
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
         encyrption_handler = EncryptionHandler(simulator_gid)
         _request_passfile(simulator_gid, operation_id, base_url, os.path.dirname(encyrption_handler.get_password_file()))
-        plain_input_dir = '/root/plain'
-        encyrption_handler.decrypt_results_to_dir(plain_input_dir)
-        log.info("Current wdir is: {}".format(plain_input_dir))
-        view_model = h5.load_view_model(simulator_gid, plain_input_dir)
-        adapter_instance = HPCSimulatorAdapter(plain_input_dir, is_group_launch)
+        encyrption_handler.decrypt_results_to_dir(plain_dir)
+        log.info("Current wdir is: {}".format(plain_dir))
+        view_model = h5.load_view_model(simulator_gid, plain_dir)
+        adapter_instance = HPCSimulatorAdapter(plain_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, operation_id, base_url)
         adapter_instance._prelaunch(None, None, available_disk_space, view_model)
         _encrypt_results(adapter_instance, encyrption_handler)

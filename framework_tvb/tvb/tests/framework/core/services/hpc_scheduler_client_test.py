@@ -36,6 +36,7 @@ import os
 import shutil
 
 import numpy
+from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
@@ -48,9 +49,18 @@ from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
+def _update_operation_status(status, simulator_gid, op_id, base_url):
+    pass
+
+
+def _request_passfile_dummy(simulator_gid, op_id, base_url, passfile_folder):
+    pass
+
+
 class TestHPCSchedulerClient(BaseTestCase):
 
     def setup_method(self):
+        self.files_helper = FilesHelper()
         self.encryption_handler = EncryptionHandler('123')
         self.clean_database()
         self.test_user = TestFactory.create_user()
@@ -85,13 +95,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert 'dummy1.txt' in list_plain_dir
         assert 'dummy2.txt' in list_plain_dir
 
-    def test_do_operation_launch(self, simulator_factory, operation_factory, mocker):
-        def _update_operation_status(status, simulator_gid, base_url):
-            pass
-
-        def _request_passfile_dummy(simulator_gid, base_url, passfile_folder):
-            pass
-
+    def test_do_operation_launch(self, simulator_factory, operation_factory, mocker, tmpdir):
         # Prepare encrypted dir
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=op)
@@ -104,8 +108,32 @@ class TestHPCSchedulerClient(BaseTestCase):
         mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
 
         # Call do_operation_launch similarly to CSCS env
-        do_operation_launch(sim_gid.hex, 1000, False, '')
-        assert len(os.listdir(encrypted_dir)) > 6
+        plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
+        do_operation_launch(sim_gid.hex, 1000, False, '', op.id, plain_dir)
+        assert len(os.listdir(encrypted_dir)) == 7
+        output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        assert os.path.exists(output_path)
+        assert len(os.listdir(output_path)) == 2
+
+    def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker, tmpdir):
+        # Prepare encrypted dir
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=op)
+        self.encryption_handler = EncryptionHandler(sim_gid)
+        job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
+        self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
+        encrypted_dir = self.encryption_handler.get_encrypted_dir()
+
+        mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)
+        mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
+
+        # Call do_operation_launch similarly to CSCS env
+        plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
+        do_operation_launch(sim_gid.hex, 1000, True, '', op.id, plain_dir)
+        assert len(os.listdir(encrypted_dir)) == 7
+        output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        assert os.path.exists(output_path)
+        assert len(os.listdir(output_path)) == 2
 
     def test_prepare_inputs(self, operation_factory, simulator_factory):
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
@@ -147,5 +175,5 @@ class TestHPCSchedulerClient(BaseTestCase):
         passfile = self.encryption_handler.get_password_file()
         if os.path.exists(passfile):
             os.remove(passfile)
-        FilesHelper().remove_project_structure(self.test_project.name)
+        self.files_helper.remove_project_structure(self.test_project.name)
         self.clean_database()

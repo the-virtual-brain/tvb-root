@@ -53,6 +53,10 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+        self.available_disk_space = available_disk_space
+        super(HPCSimulatorAdapter, self)._prelaunch(operation, uid, available_disk_space, view_model, **kwargs)
+
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
 
@@ -111,8 +115,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
         for dt in simulation_results:
             if issubclass(type(dt), TimeSeriesIndex):
-                metric_result = self._compute_metrics_for_pse_launch(dt)
-                simulation_results.append(metric_result)
+                self._compute_metrics_for_pse_launch(dt)
 
         return simulation_results
 
@@ -121,13 +124,11 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_vm = TimeseriesMetricsAdapterModel()
         metric_vm.time_series = time_series_index.gid
         metric_vm.algorithms = tuple(choices.values())
-        metric_adapter = HPCTimeseriesMetricsAdapter(self.storage_path, time_series_index)
-        metric_result = metric_adapter.launch(metric_vm)
-        return metric_result
+        metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
+        metric_adapter._prelaunch(None, None, self.available_disk_space, metric_vm)
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
-    OUTPUT_FOLDER = 'output'
 
     def __init__(self, storage_path, input_time_series_index):
         super(HPCTimeseriesMetricsAdapter,self).__init__()
@@ -153,7 +154,22 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         return trait
 
     def _get_output_path(self):
-        output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
-        if not os.path.isdir(output_path):
-            os.mkdir(output_path)
-        return output_path
+        return self.storage_path
+
+    def _extract_operation_data(self, operation=None):
+        """
+        Do nothing for HPC run.
+        :param operation: None
+        """
+
+    def _update_operation_entity(self, operation, required_disk_space):
+        """
+        """
+
+    def _capture_operation_results(self, result):
+        """
+        """
+        return "", 1
+
+    def _ensure_enough_resources(self, available_disk_space, view_model):
+        return 0
