@@ -62,7 +62,9 @@ class BurstConfigurationH5(H5File):
         burst_config.status = self.status.load()
         burst_config.error_message = self.error_message.load()
         burst_config.start_time = string2date(self.start_time.load())
-        burst_config.finish_time = string2date(self.finish_time.load())
+        finish_time = self.finish_time.load()
+        if finish_time and finish_time != 'None':
+            burst_config.finish_time = string2date(finish_time)
         burst_config.simulator_gid = self.simulator.load().hex
         try:
             burst_config.range1 = self.range1.load()

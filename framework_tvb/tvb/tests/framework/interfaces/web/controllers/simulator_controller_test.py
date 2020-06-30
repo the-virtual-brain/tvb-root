@@ -50,6 +50,7 @@ from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation, Linear
 from tvb.datatypes.surfaces import CORTICAL
@@ -831,13 +832,17 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
     def _prepare_burst_for_export(self):
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        burst_config = BurstConfiguration(self.test_project.id)
-        burst_config.fk_simulation = op.id
-        burst_config.simulator_gid = self.session_stored_simulator.gid.hex
-        burst_config = dao.store_entity(burst_config)
-
         storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
+
+        burst_service = BurstService()
+        burst_config = BurstConfiguration(self.test_project.id)
+        burst_config.name = "Test_Burst"
+        burst_config.start_time = datetime.now()
+        burst_config = dao.store_entity(burst_config)
+        burst_config = burst_service.update_simulation_fields(burst_config.id, op.id,
+                                                              self.session_stored_simulator.gid)
+        burst_service.store_burst_configuration(burst_config, storage_path)
         return burst_config
 
     def test_export(self):
