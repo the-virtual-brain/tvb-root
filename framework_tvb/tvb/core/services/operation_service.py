@@ -42,7 +42,6 @@ import json
 import zipfile
 import sys
 from copy import copy
-from cgi import FieldStorage
 from tvb.basic.exceptions import TVBException
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
@@ -60,26 +59,16 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.backend_client import BACKEND_CLIENT
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.time_series import TimeSeries
 
-try:
-    from cherrypy._cpreqbody import Part
-    # cover cases when the web interface is not available.
-except Exception:
-    Part = FieldStorage
-
-TEMPORARY_PREFIX = ".tmp"
 
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2
 
-UIKEY_SUBJECT = "RESERVEDsubject"
-UIKEY_USERGROUP = "RESERVEDusergroup"
 
 
 class OperationService:
