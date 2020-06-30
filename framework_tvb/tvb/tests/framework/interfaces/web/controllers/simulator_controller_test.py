@@ -28,9 +28,12 @@
 #
 #
 
-import pytest
 import numpy
-import tvb_data
+import tvb_data.connectivity
+import tvb_data.surfaceData
+import tvb_data.sensors
+import tvb_data.regionMapping
+import tvb_data.projectionMatrix
 from os import path
 from uuid import UUID
 from cherrypy._cpreqbody import Part
@@ -91,7 +94,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert not result_dict['errors'], 'Some errors were encountered!'
 
     def test_set_connectivity(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
@@ -108,9 +111,9 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert rendering_rules['renderer'].form_action_url == '/burst/set_coupling_params', "Form action url was not " \
                                                                                             "set correctly"
         assert rendering_rules['renderer'].last_form_url == '/burst/set_coupling_params', "Last form url was not" \
-                                                                                         "set correctly"
+                                                                                          "set correctly"
         assert rendering_rules['renderer'].previous_form_action_url == '/burst/set_connectivity', "Previous form url" \
-                                                                                                 "was not set correctly"
+                                                                                                  "was not set correctly"
         assert rendering_rules['renderer'].include_next_button
         assert rendering_rules['renderer'].include_previous_button
 
@@ -126,7 +129,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.coupling.b[0] == [0.0], "b value was not set correctly."
 
     def test_set_surface(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
@@ -146,13 +149,13 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.surface is None, "Surface should not be set."
 
     def test_set_cortex_without_local_connectivity(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
-        text_file = path.join(path.dirname(tvb_data.__file__), 'regionMapping', 'regionMapping_16k_76.txt')
+        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
 
@@ -174,13 +177,13 @@ class TestSimulationController(BaseTransactionalControllerTest):
             "coupling_strength was not set correctly."
 
     def test_set_cortex_with_local_connectivity(self, local_connectivity_index_factory):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
-        text_file = path.join(path.dirname(tvb_data.__file__), 'regionMapping', 'regionMapping_16k_76.txt')
+        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
 
@@ -211,7 +214,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.stimulus is None, "Stimulus should not be set."
 
     def test_set_stimulus(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
         connectivity_index = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         weight_array = numpy.zeros(connectivity_index.number_of_regions)
 
@@ -437,13 +440,13 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert not rendering_rules['renderer'].include_next_button, 'Next button should not be displayed!'
 
     def set_region_mapping(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_76.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        zip_path = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
 
-        text_file = path.join(path.dirname(tvb_data.__file__), 'regionMapping', 'regionMapping_16k_76.txt')
+        text_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, text_file, surface.gid,
                                                            connectivity.gid)
         return region_mapping
@@ -451,14 +454,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_set_eeg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        eeg_sensors_file = path.join(path.dirname(tvb_data.__file__), 'sensors', 'eeg_unitvector_62.txt')
+        eeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
         eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
 
-        surface_file = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
-        eeg_projection_file = path.join(path.dirname(tvb_data.__file__), 'projectionMatrix',
+        eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_eeg_62_surface_16k.mat')
         eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
                                                                eeg_sensors.gid, surface.gid)
@@ -492,14 +495,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_set_meg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        meg_sensors_file = path.join(path.dirname(tvb_data.__file__), 'sensors', 'meg_brainstorm_276.txt')
+        meg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_brainstorm_276.txt')
         meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['MEG Sensors'])
 
-        surface_file = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
-        meg_projection_file = path.join(path.dirname(tvb_data.__file__), 'projectionMatrix',
+        meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_meg_276_surface_16k.npy')
         meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
                                                                meg_sensors.gid, surface.gid)
@@ -533,14 +536,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_set_seeg_monitor_params(self):
         region_mapping = self.set_region_mapping()
 
-        seeg_sensors_file = path.join(path.dirname(tvb_data.__file__), 'sensors', 'seeg_588.txt')
+        seeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_588.txt')
         seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_sensors_file,
                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
 
-        surface_file = path.join(path.dirname(tvb_data.__file__), 'surfaceData', 'cortex_16384.zip')
+        surface_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, surface_file, CORTICAL, True)
 
-        seeg_projection_file = path.join(path.dirname(tvb_data.__file__), 'projectionMatrix',
+        seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                          'projection_seeg_588_surface_16k.npy')
         seeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
                                                                 seeg_sensors.gid, surface.gid)
@@ -628,7 +631,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert len(burst_parameters['burst_list']) == 3, "The burst configurations where not stored."
 
     def test_reset_simulator_configuration(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         self.sess_mock['connectivity'] = connectivity.gid
@@ -683,9 +686,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
             "Some error happened at renaming, probably because of invalid new name."
         assert dao.get_bursts_for_project(self.test_project.id)[0].name == new_name, "Name wasn't actually changed."
 
-
     def test_copy_simulator_configuration(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
@@ -719,9 +721,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert rendering_rules['renderer'].load_readonly, 'Fragments should be read-only!'
         assert rendering_rules['renderer'].disable_fields, 'Fragments should be read-only!'
 
-
     def test_load_burst(self):
-        zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
@@ -843,10 +844,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
     def test_export(self):
         burst_config = self._prepare_burst_for_export()
-
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)
-
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             result = self.simulator_controller.export(str(burst[0].id))
@@ -859,7 +858,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         assert result_dict['overlay_title'] == 'Upload', 'Incorrect overlay title!'
         assert result_dict['overlay_description'] == 'Simulation ZIP', 'Incorrect overlay description!'
-        assert result_dict['overlay_content_template'] == 'burst/upload_burst_overlay', 'Incorrect upload burst overlay!'
+        assert result_dict['overlay_content_template'] == 'burst/upload_burst_overlay', 'Incorrect upload overlay!'
         assert result_dict['overlay_class'] == 'dialog-upload', 'Incorrect dialog-upload!'
         assert result_dict['first_fragment_url'] == '/burst/set_connectivity'
         assert not result_dict['errors'], 'Some errors were encountered!'
@@ -867,20 +866,12 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_load_simulator_configuration_from_zip(self):
         self.init()
         burst_config = self._prepare_burst_for_export()
-
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)
-        cherrypy.request.method = "POST"
-
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             result = self.simulator_controller.export(str(burst[0].id))
 
-        data = {'uploadedfile': Part(result.input.name, HeaderMap({
-                'Content-Disposition': 'form-data; name="uploadedfile"; filename="{}"'.format(
-                    path.basename(result.input.name)),
-                'Content-Type': 'application/x-zip-compressed'
-        }), '')}
-        data['uploadedfile'].file = data['uploadedfile'].make_file()
-        self._expect_redirect('/settings/settings', self.simulator_controller.load_simulator_configuration_from_zip,
+        data = {'uploadedfile': Part(result.input.name, HeaderMap({}), '')}
+        self._expect_redirect('/burst/', self.simulator_controller.load_simulator_configuration_from_zip,
                               **data)
