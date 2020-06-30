@@ -1,32 +1,6 @@
-# -*- coding: utf-8 -*-
-#
-#
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
-#
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
-#
-# This program is free software: you can redistribute it and/or modify it under the
-# terms of the GNU General Public License as published by the Free Software Foundation,
-# either version 3 of the License, or (at your option) any later version.
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this
-# program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#
-#   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
-#
-#
+#  Copyright 2020 Forschungszentrum Jülich GmbH and Aix-Marseille Université
+# "Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements; and to You under the Apache License, Version 2.0. "
+
 
 """
 Defines a set Interface input and output of TVB.
@@ -35,32 +9,8 @@ Defines a set Interface input and output of TVB.
 
 """
 from tvb.simulator.monitors import Raw, NArray, Float
+from tvb.simulator.history import NDArray,Dim
 import numpy
-
-
-class HistoryProxy:
-    def copy_inst(self, history):
-        """
-        Copy the value of an instance without proxy
-        :param history: History proxy
-        """
-        # copy the import element for define all the object
-        for key in dir(history):
-            try:
-                if key[0] != '_':
-                    setattr(self, key, getattr(history, key))
-            except AttributeError:
-                pass
-            except TypeError:
-                pass
-        # copy all elements
-        for key in dir(history):
-            try:
-                if key[0] != '_':
-                    setattr(self, key, getattr(history, key))
-            except AttributeError:
-                pass
-
 
 class Interface_co_simulation(Raw):
     id_proxy = NArray(
@@ -77,66 +27,109 @@ class Interface_co_simulation(Raw):
     def config_for_sim(self, simulator):
         # configuration of all monitor
         super(Interface_co_simulation, self).config_for_sim(simulator)
+        # add some internal variable
         self._id_node = \
         numpy.where(numpy.logical_not(numpy.isin(numpy.arange(0, simulator.number_of_nodes, 1), self.id_proxy)))[0]
         self._nb_step_time = numpy.int(self.time_synchronize / simulator.integrator.dt)
+        self.period = simulator.integrator.dt
 
-        # ####### WARNING:Change the instance simulator for taking in count the proxy ########
-        # overwrite of the simulator for update the proxy value
-        class Simulator_proxy(type(simulator)):
-            # Modify the call method of the simulator in order to update the proxy value
-            def __call__(self, simulation_length=None, random_state=None, proxy_data=None):
-                if hasattr(self.history, 'update_proxy') and proxy_data is not None:
-                    self.history.update_proxy(self.current_step, proxy_data)
-                return super(type(simulator), self).__call__(simulation_length=simulation_length,
-                                                             random_state=random_state)
-
-        # change the class of the simulator
-        simulator.__class__ = Simulator_proxy
-
-        def coupling(step):
-            return simulator._loop_compute_node_coupling(step)
-
-        self.coupling = coupling
-
-        # ####### WARNING:Change the instance history for taking in count the proxy #########
+        # ####### WARNING:Create a new instance of history for taking in count the proxy (replace the old history) #########
         id_proxy = self.id_proxy
+        id_node = self._id_node
         dt = simulator.integrator.dt
+        # find the minimum of delay supported for the simulation
         delay_proxy = simulator.history.delays[id_proxy, :]
-        delay_proxy = delay_proxy[:, id_proxy]
+        delay_proxy = delay_proxy[:, id_node]
         min_delay =  -numpy.min(delay_proxy, initial=numpy.Inf, where=delay_proxy != 0.0)
         if min_delay == -numpy.Inf:
             min_delay = numpy.iinfo(numpy.int32).min
         else:
             min_delay = int(-numpy.min(delay_proxy, initial=numpy.Inf, where=delay_proxy != 0.0))
+        class History_proxy(simulator.history.__class__):
+            n_proxy = Dim()
+            # WARNING same dimension than the buffer in history. (the dimension can be reduce to the minimum of delay)
+            # The precision are different for take in count of the input precision
+            # The creation of buffer for proxy because it's impossible to replace the data in the buffer of state variable
+            buffer_proxy = NDArray(('n_time', 'n_cvar', 'n_proxy', 'n_mode'), numpy.float64, read_only=False)
 
-        class History_proxy(HistoryProxy, simulator.history.__class__):
-            def __init__(self):
-                pass
+            def __init__(self, weights, delays, cvars, n_mode):
+                super(History_proxy, self).__init__(weights, delays, cvars, n_mode)
+                self.n_proxy = id_proxy.shape[0]
 
-            # WARNING should be change if the histiry are different (the actal update is the same all history
+            # Update the proxy buffer with the new data
             def update_proxy(self, step, data):
                 """
                 update the history with the new value
                 :param step: the current step
                 """
                 if id_proxy.size != 0:
-                    step_n = data[0] / dt - step  # the index of the buffer
+                    step_n = data[0] / dt - step # the index of the buffer
+                    # TODO need to check if not missing values ( for moment is not robust)
+                    # the following works because the simulation length have the same dimension then the data
+                    if numpy.rint(numpy.max(step_n)).astype(int)>-min_delay:
+                        raise Exception('ERROR missing value for the run')
                     if any(step_n > self.n_time):  # check if there are not too much data
                         raise Exception('ERROR too early')
-                    if any(numpy.rint(step_n).astype(int) < min_delay):  # check if it's not missing value
-                        # WARNING doesn't in count the modification of delay
-                        raise Exception('ERROR too late')
-                    indice = numpy.expand_dims(numpy.rint(step_n + step).astype(int) % self.n_time, 1)
+                    indice = numpy.rint(step_n + step).astype(int) % self.n_time
                     if indice.size != numpy.unique(indice).size:  # check if the index is correct
-                        raise Exception('ERRROR two times are the same')
-                    self.buffer[indice, :, id_proxy, :] = data[1]
+                        raise Exception('ERROR two times are the same')
+                    self.buffer_proxy[indice] = numpy.reshape(data[1],(indice.shape[0],self.n_cvar,self.n_proxy,self.n_mode))
 
-        new_history = History_proxy()
-        new_history.copy_inst(simulator.history)
+            # query of the value of the proxy
+            def query_proxy(self,step):
+                return self.buffer_proxy[(step - 1) % self.n_time]
+
+            # WARNING should be change if the function update of the history change  (the actual update is the same all history)
+            def update(self, step, new_state):
+                self.buffer[step % self.n_time][:,id_node] = new_state[:,id_node][self.cvars]
+                self.buffer[step % self.n_time][:,id_proxy] = self.buffer_proxy[step % self.n_time]
+
+        # ####### WARNING:Change the instance simulator for taking in count the proxy ########
+        # overwrite of the simulator for update the proxy value
+        mask = numpy.ones(len(simulator.model.state_variables), numpy.bool)
+        mask[simulator.model.cvar] = False
+        class Simulator_proxy(type(simulator)):
+            no_cvar_index =  NArray(label="Index of not coupling variable",
+                                         default=mask)
+            # Modify the call method of the simulator in order to update the proxy value
+            # for the integration in TVB, it's just to modify the state variable after the after the integration scheme
+            def __call__(self, simulation_length=None, random_state=None, proxy_data=None):
+                if hasattr(self.history, 'update_proxy') and proxy_data is not None:
+                    if int(numpy.around(simulation_length / dt)) != proxy_data[0].shape[0]:
+                        raise Exception('mission value in the proxy data')
+                    self.history.update_proxy(self.current_step, proxy_data)
+                yield from super(type(simulator), self).__call__(simulation_length=simulation_length,
+                                                         random_state=random_state)
+                # update the current state
+                self.current_state[self.model.cvar,id_proxy,:] = self.history.query_proxy(self.current_step+1)
+                self.current_state[self.no_cvar_index][:,id_proxy,:] = numpy.NAN
+
+            def _loop_monitor_output(self, step, state):
+                # modify the state variable before the record of the monitor
+                state[self.model.cvar, id_proxy, :] = self.history.query_proxy(step+1)
+                return super(type(simulator), self)._loop_monitor_output(step, state)
+
+        # change the class of the simulator
+        simulator.__class__ = Simulator_proxy
+
+        # WARNING this is the simplification of the initialisation of the history
+        # if the the function __loop_history change, the initialisation can change
+        # create the new history and initialise it
+        new_history = History_proxy(
+            simulator.connectivity.weights,
+            simulator.connectivity.idelays,
+            simulator.model.cvar,
+            simulator.model.number_of_modes)
+        new_history.initialize(simulator.history.buffer)
+
+        # replace the history
         del simulator.history  # remove old history
-        # add a method for update the history
         simulator.history = new_history
+
+        # Save the function coupling for the return the coupling of proxy node in the sample
+        def coupling(step):
+            return simulator._loop_compute_node_coupling(step)
+        self.coupling = coupling
 
     def sample(self, step, state):
         """
@@ -146,8 +139,6 @@ class Interface_co_simulation(Raw):
         :return:
         """
         self.step = step
-        time = numpy.empty((2,), dtype=object)
-        time[:] = [step * self.dt, (step + self._nb_step_time) * self.dt]
-        result = numpy.empty((2,), dtype=object)
-        result[:] = [state[:, self._id_node, :], self.coupling(step + self._nb_step_time)[:, self.id_proxy, :]]
+        time = (step + self._nb_step_time) * self.period
+        result= self.coupling(step + self._nb_step_time)[:, self.id_proxy, :]
         return [time, result]

@@ -6,9 +6,9 @@ import numpy as np
 import numpy.random as rgn
 
 weight = np.array([[5,2,4,0],[8,5,4,1],[6,1,7,9],[10,0,5,6]])
-delay = np.array([[7,8,5,1],[9,3,7,9],[4,3,2,8],[9,10,11,5]])
+delay = np.array([[7,8,5,1],[0,3,7,9],[4,3,2,8],[9,10,11,5]])
 resolution_simulation = 0.1
-time_synchronize = np.min(delay)
+time_synchronize = 0.1*10
 proxy_id_1 = [1]
 not_proxy_id_1 = np.where(np.logical_not(np.isin(np.arange(0,weight.shape[0],1), proxy_id_1)))[0]
 proxy_id_2 = [0,2]
@@ -18,18 +18,16 @@ not_proxy_id_2 = np.where(np.logical_not(np.isin(np.arange(0,weight.shape[0],1),
 rgn.seed(42)
 sim_ref = tvb_sim(weight, delay,[], resolution_simulation, time_synchronize)
 time,result_ref = sim_ref(time_synchronize)
-delai_input_1 = [time,result_ref[:,proxy_id_1][:,:,0]]
 
 # simulation with one proxy
 rgn.seed(42)
 sim_1 = tvb_sim(weight, delay,proxy_id_1, resolution_simulation, time_synchronize)
-time,result_1 = sim_1(time_synchronize,delai_input_1)
-delai_input_2 = [time,result_ref[:,proxy_id_2][:,:,0]]
+time,result_1 = sim_1(time_synchronize,[time,result_ref[:,proxy_id_1][:,:,0]])
 
 # simulation_2 with one proxy
 rgn.seed(42)
 sim_2 = tvb_sim(weight, delay,proxy_id_2, resolution_simulation, time_synchronize)
-time,result_2 = sim_2(time_synchronize,delai_input_2)
+time,result_2 = sim_2(time_synchronize,[time,result_1[:,proxy_id_2][:,:,0]])
 
 print("COMPARE PROXY 1 ---------------")
 diff_1 = np.where(np.squeeze(result_ref,axis=2)[0] != np.squeeze(result_1,axis=2)[0])
@@ -54,10 +52,8 @@ max_error_s_1 = 0.0
 max_error_s_2 = 0.0
 for i in range(0,100):
     time,result_ref = sim_ref(time_synchronize)
-    delai_input_1 = [time, result_ref[:, proxy_id_1][:, :, 0]]
-    time,result_1 = sim_1(time_synchronize,delai_input_1)
-    delai_input_2 = [time, result_ref[:, proxy_id_2][:, :, 0]]
-    time,result_2 = sim_2(time_synchronize,delai_input_2)
+    time,result_1 = sim_1(time_synchronize,[time,result_ref[:,proxy_id_1][:,:,0]])
+    time,result_2 = sim_2(time_synchronize,[time,result_1[:,proxy_id_2][:,:,0]])
 
     print("COMPARE PROXY 1 ---------------")
     if np.max(np.abs(result_ref- result_1)) > max_error_s_1:

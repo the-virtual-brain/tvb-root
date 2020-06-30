@@ -1,7 +1,10 @@
+#  Copyright 2020 Forschungszentrum Jülich GmbH and Aix-Marseille Université
+# "Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements; and to You under the Apache License, Version 2.0. "
+
 import tvb.simulator.lab as lab
 import numpy as np
 import numpy.random as rgn
-from tvb.simulator.Interface_co_simulation_parallel import Interface_co_simulation
+from nest_elephant_tvb.simulation.file_tvb.Interface_co_simulation_parallel import Interface_co_simulation
 rgn.seed(42)
 
 def tvb_model (dt,weigth,delay,id_proxy):
@@ -35,10 +38,9 @@ def tvb_model (dt,weigth,delay,id_proxy):
     heunint = lab.integrators.HeunDeterministic(dt=dt,bounded_state_variable_indices=np.array([0]),state_variable_boundaries=np.array([[0.0, 1.0]]))
     return (populations,white_matter,white_matter_coupling,heunint,id_proxy)
 
-def tvb_init(dt,parameters,time_synchronize,initial_condition):
+def tvb_init(parameters,time_synchronize,initial_condition):
     """
         To initialise Nest and to create the connectom model
-    :param dt: the resolution of the monitor
     :param: (model,connectivity,coupling,integrator) : parameter for the simulation without monitor
     :param: initial_condition: the initial condition of the model
     :return:
@@ -48,8 +50,8 @@ def tvb_init(dt,parameters,time_synchronize,initial_condition):
     """
     model,connectivity,coupling,integrator,id_proxy = parameters
     #Initialise some Monitors with period in physical time
-    monitors = (lab.monitors.Raw(period=dt,variables_of_interest=np.array(0)),
-                Interface_co_simulation(period=dt,id_proxy=np.asarray(id_proxy,dtype=np.int),time_synchronize=time_synchronize))
+    monitors = (lab.monitors.Raw(variables_of_interest=np.array(0)),
+                Interface_co_simulation(id_proxy=np.asarray(id_proxy,dtype=np.int),time_synchronize=time_synchronize))
 
     #Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
     sim = lab.simulator.Simulator(model = model,
@@ -75,13 +77,12 @@ def tvb_simulation (time,sim,data_proxy):
         data_proxy[1] = np.reshape(data_proxy[1],(data_proxy[1].shape[0],data_proxy[1].shape[1],1,1))
     result=sim.run(proxy_data=data_proxy,simulation_length=time)
     time = result[0][0]
-    rate = result[1][1][:,0]
     s = result[0][1][:,0]
-    return time,rate,s
+    return time,s
 
 class tvb_sim:
 
-    def __init__(self,weight,delay,id_proxy,resolution_simulation, resolution_record,time_synchronize,initial_condition=None):
+    def __init__(self,weight,delay,id_proxy,resolution_simulation, time_synchronize,initial_condition=None):
         """
         initialise the simulator
         :param weight: weight on the connexion
@@ -93,9 +94,9 @@ class tvb_sim:
         """
         self.nb_node = weight.shape[0]-len(id_proxy)
         model = tvb_model(resolution_simulation,weight,delay,id_proxy)
-        self.sim = tvb_init(resolution_record,model,time_synchronize,initial_condition)
+        self.sim = tvb_init(model,time_synchronize,initial_condition)
 
-    def __call__(self,time,proxy_data=None,s=False):
+    def __call__(self,time,proxy_data=None):
         """
         run simulation for t biological
         :param time: the time of the simulation
@@ -104,11 +105,8 @@ class tvb_sim:
         :return:
             the result of time, the firing rate and the state of the network
         """
-        time,rate,s_out=tvb_simulation(time,self.sim,proxy_data)
-        if s :
-            return time, rate[0], s_out
-        else:
-            return time,rate[0]
+        time,s_out=tvb_simulation(time,self.sim,proxy_data)
+        return time, s_out
 
 
 

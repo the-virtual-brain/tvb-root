@@ -1,5 +1,8 @@
+#  Copyright 2020 Forschungszentrum Jülich GmbH and Aix-Marseille Université
+# "Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements; and to You under the Apache License, Version 2.0. "
+
 import tvb.simulator.lab as lab
-from tvb.simulator.Interface_co_simulation_parallel import Interface_co_simulation
+from nest_elephant_tvb.simulation.file_tvb.Interface_co_simulation_parallel import Interface_co_simulation
 import numpy as np
 
 # reference simulation
