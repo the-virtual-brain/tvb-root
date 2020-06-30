@@ -33,12 +33,12 @@
 """
 
 import os
-import shutil
-import pyAesCrypt
 import random
+import shutil
 import string
 import uuid
 
+import pyAesCrypt
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 
@@ -123,6 +123,10 @@ class EncryptionHandler(object):
         encrypted_files = [os.path.join(encryption_dir, enc_file) for enc_file in os.listdir(encryption_dir)]
         return encrypted_files
 
+    def _determine_plain_filename(self, dir, encrypted_file):
+        # type: (str, str) -> str
+        return os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
+
     def decrypt_results_to_dir(self, dir, from_subdir=None):
         # type: (str, str) -> list
         """
@@ -141,10 +145,32 @@ class EncryptionHandler(object):
 
         plain_files = []
         for encrypted_file in os.listdir(encrypted_dir):
-            plain_file = os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
+            plain_file = self._determine_plain_filename(dir, encrypted_file)
             encrypted_file_full = os.path.join(encrypted_dir, encrypted_file)
             try:
                 pyAesCrypt.decryptFile(encrypted_file_full, plain_file, password, self.buffer_size)
+                plain_files.append(plain_file)
+            except ValueError:
+                LOGGER.info('Could not decrypt file {}'.format(encrypted_file))
+
+        return plain_files
+
+    def decrypt_files_to_dir(self, files, dir):
+        # type: (list, str) -> list
+        """
+        Given a list of encrypted files, decrypt them,
+        then move plain files to the location specified by :param dir
+        """
+        password = self._read_password(self.get_password_file())
+
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+
+        plain_files = []
+        for encrypted_file in files:
+            plain_file = self._determine_plain_filename(dir, encrypted_file)
+            try:
+                pyAesCrypt.decryptFile(encrypted_file, plain_file, password, self.buffer_size)
                 plain_files.append(plain_file)
             except ValueError:
                 LOGGER.info('Could not decrypt file {}'.format(encrypted_file))

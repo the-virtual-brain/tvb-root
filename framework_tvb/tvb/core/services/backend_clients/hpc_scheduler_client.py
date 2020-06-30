@@ -40,6 +40,7 @@ import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
+
 import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
@@ -51,12 +52,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import has_finished, Operation, STATUS_CANCELED, \
-    STATUS_ERROR, OperationProcessIdentifier
+from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
-from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
@@ -157,56 +154,34 @@ class HPCSchedulerClient(BackendClient):
                 ret[path] = unicore_client.PathFile(working_dir, path_url, path)
         return ret
 
-    def update_db_with_results(self, operation, result_filenames):
-        # type: (Operation, list) -> (str, int)
+    def update_datatype_groups(self):
+        # TODO: update column count_results
+        pass
+
+    def update_db_with_results(self, operation, sim_h5_filenames, metric_operation, metric_h5_filename):
+        # type: (Operation, list, Operation, str) -> (str, int)
         """
         Generate corresponding Index entities for the resulted H5 files and insert them in DB.
         """
         burst_service = BurstService()
         index_list = []
 
-        for filename in result_filenames:
-            index = h5.index_for_h5_file(filename)()
-            # TODO: don't load full TS in memory and make this read nicer
-            try:
-                datatype, ga = h5.load_with_references(filename)
-                index.fill_from_has_traits(datatype)
-                index.fill_from_generic_attributes(ga)
-            except TypeError:
-                with DatatypeMeasureH5(filename) as dti_h5:
-                    index.metrics = json.dumps(dti_h5.metrics.load())
-                    index.source_gid = dti_h5.analyzed_datatype.load().hex
-            index.fk_from_operation = operation.id
-            if operation.fk_operation_group:
-                datatype_group = \
-                    dao.get_generic_entity(DataTypeGroup, operation.fk_operation_group, 'fk_operation_group')[0]
-                index.fk_datatype_group = datatype_group.id
+        burst_config = burst_service.get_burst_for_operation_id(operation.id)
+        all_indexes = burst_service.prepare_indexes_for_simulation_results(operation, sim_h5_filenames, burst_config)
+        if burst_config.fk_operation_group:
+            metric_index = burst_service.prepare_index_for_metric_result(metric_operation, metric_h5_filename,
+                                                                         burst_config)
+            all_indexes.append(metric_index)
 
-            if operation.fk_operation_group:
-                parent_burst = \
-                    dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'fk_operation_group')[0]
-                operations_in_group = dao.get_operations_in_group(operation.fk_operation_group)
-                if parent_burst.metric_operation_group_id:
-                    operations_in_group.extend(dao.get_operations_in_group(parent_burst.metric_operation_group_id))
-                for operation in operations_in_group:
-                    if not has_finished(operation.status):
-                        break
-                    if parent_burst is not None:
-                        burst_service.mark_burst_finished(parent_burst)
-                        index.fk_parent_burst = parent_burst.id
-            else:
-                parent_burst = burst_service.get_burst_for_operation_id(operation.id)
-                if parent_burst is not None:
-                    burst_service.mark_burst_finished(parent_burst)
-                    index.fk_parent_burst = parent_burst.id
-
+        for index in all_indexes:
             index = dao.store_entity(index)
             index_list.append(index)
 
         sim_adapter = SimulatorAdapter()
         mesage, _ = sim_adapter.fill_existing_indexes(operation, index_list)
 
-        # TODO: for PSE set FK towards datatype group on results
+        burst_service.update_finished_burst_status(burst_config)
+        # self.update_datatype_groups()
         return mesage
 
     @staticmethod
@@ -311,21 +286,38 @@ class HPCSchedulerClient(BackendClient):
         return available_space
 
     @staticmethod
-    def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
-        # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> list
+    def _stage_out_results(working_dir, simulator_gid):
+        # type: (Storage, typing.Union[uuid.UUID, str]) -> list
         output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSimulatorAdapter.OUTPUT_FOLDER
         output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
         encryption_handler = EncryptionHandler(simulator_gid)
         encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
-        HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
-
-        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
-        h5_filenames = encryption_handler.decrypt_results_to_dir(operation_dir,
-                                                                 from_subdir=HPCSimulatorAdapter.OUTPUT_FOLDER)
+        encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         LOGGER.info(working_dir.properties)
         LOGGER.info(working_dir.listdir())
-        return h5_filenames
+        return encrypted_files
+
+    @staticmethod
+    def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
+        # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> (list, Operation, str)
+        encrypted_files = HPCSchedulerClient._stage_out_results(working_dir, simulator_gid)
+        encryption_handler = EncryptionHandler(simulator_gid)
+
+        simulation_results = list()
+        metric_op = None
+        metric_file = None
+        for encrypted_file in encrypted_files:
+            if os.path.basename(encrypted_file).startswith(DatatypeMeasureH5.file_name_base()):
+                metric_op_dir, metric_op = BurstService.prepare_metrics_operation(encrypted_file, operation)
+                metric_files = encryption_handler.decrypt_files_to_dir([encrypted_file], metric_op_dir)
+                metric_file = metric_files[0]
+            else:
+                simulation_results.append(encrypted_file)
+
+        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
+        h5_filenames = EncryptionHandler(simulator_gid).decrypt_files_to_dir(simulation_results, operation_dir)
+        return h5_filenames, metric_op, metric_file
 
     @staticmethod
     def _run_hpc_job(operation_identifier):
@@ -343,15 +335,18 @@ class HPCSchedulerClient(BackendClient):
 
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):
-        # type: (str, dict) -> None
+        # type: (str, dict) -> list
         if not os.path.isdir(encrypted_dir_path):
             os.makedirs(encrypted_dir_path)
 
+        encrypted_files = list()
         for output_filename, output_filepath in output_list.items():
             if type(output_filepath) is not unicore_client.PathFile:
                 continue
             filename = os.path.join(encrypted_dir_path, os.path.basename(output_filename))
             output_filepath.download(filename)
+            encrypted_files.append(filename)
+        return encrypted_files
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):

@@ -568,10 +568,11 @@ class OperationService:
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
-        h5_filenames = HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
+        sim_h5_filenames, metric_op, metric_h5_filename =\
+            HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
         operation.mark_complete(STATUS_FINISHED)
         dao.store_entity(operation)
-        HPCSchedulerClient().update_db_with_results(operation, h5_filenames)
+        HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):

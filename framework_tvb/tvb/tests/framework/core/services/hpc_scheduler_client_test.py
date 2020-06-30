@@ -31,22 +31,29 @@
 """
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
-
+import json
 import os
 import shutil
+import uuid
 
 import numpy
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
+from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.tests.framework.core.base_testcase import BaseTestCase
-from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.core.factory import TestFactory, STATUS_FINISHED
 
 
 def _update_operation_status(status, simulator_gid, op_id, base_url):
@@ -93,6 +100,20 @@ class TestHPCSchedulerClient(BaseTestCase):
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == len(os.listdir(encrypted_dir))
         assert 'dummy1.txt' in list_plain_dir
+        assert 'dummy2.txt' in list_plain_dir
+
+    def test_decrypt_files(self, tmpdir):
+        # Prepare encrypted dir
+        job_inputs = self._prepare_dummy_files(tmpdir)
+        enc_files = self.encryption_handler.encrypt_inputs(job_inputs)
+
+        # Unencrypt data
+        out_dir = os.path.join(str(tmpdir), 'output')
+        os.mkdir(out_dir)
+        self.encryption_handler.decrypt_files_to_dir([enc_files[1]], out_dir)
+        list_plain_dir = os.listdir(out_dir)
+        assert len(list_plain_dir) == 1
+        assert 'dummy1.txt' not in list_plain_dir
         assert 'dummy2.txt' in list_plain_dir
 
     def test_do_operation_launch(self, simulator_factory, operation_factory, mocker, tmpdir):
@@ -167,6 +188,32 @@ class TestHPCSchedulerClient(BaseTestCase):
         hpc_client = HPCSchedulerClient()
         input_files = hpc_client._prepare_input(op, sim_gid)
         assert len(input_files) == 10
+
+    def test_prepare_metrics_operation(self, operation_factory, datatype_measure_factory, time_series_index_factory):
+        range_values = json.dumps({'range1': [1, 2, 3], 'range2': [4, 5, 6]})
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project, range_values=range_values)
+        op_group = OperationGroup(self.test_project.id)
+        op_group=dao.store_entity(op_group)
+
+        op.fk_operation_group = op_group.id
+        op = dao.store_entity(op)
+
+        metric_op_group = OperationGroup(self.test_project.id)
+        metric_op_group=dao.store_entity(metric_op_group)
+        bc = BurstConfiguration(self.test_project.id)
+        bc.fk_operation_group = op_group.id
+        bc.fk_metric_operation_group = metric_op_group.id
+        dao.store_entity(bc)
+        source = time_series_index_factory()
+
+        datatype_measure_index = datatype_measure_factory(source, op, op)
+        dt_h5_file = h5.path_for_stored_index(datatype_measure_index)
+        with DatatypeMeasureH5(dt_h5_file) as dt_h5:
+            dt_h5.metrics.store(datatype_measure_index.metrics)
+            dt_h5.analyzed_datatype.store(uuid.UUID(source.gid))
+        metric_op_dir, metric_op = BurstService().prepare_metrics_operation(dt_h5_file, op)
+        assert metric_op.status == STATUS_FINISHED
+        assert metric_op.fk_operation_group == bc.fk_metric_operation_group
 
     def teardown_method(self):
         encrypted_dir = self.encryption_handler.get_encrypted_dir()
