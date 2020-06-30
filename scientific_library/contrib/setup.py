@@ -33,7 +33,7 @@ import shutil
 import setuptools
 
 TVB_VERSION = "2.0.7"
-CONTRIB_DEPENDENCIES = ["tvb-library", "xarray"]
+CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
