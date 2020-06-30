@@ -53,6 +53,7 @@ from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.common import KEY_ADAPTER
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
@@ -304,6 +305,8 @@ class SimulatorController(BurstBaseController):
                                                           last_form_url=self.last_loaded_form_url,
                                                           last_request_type=cherrypy.request.method,
                                                           is_first_fragment=True)
+
+        common.add2session(KEY_ADAPTER, '13')
 
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)

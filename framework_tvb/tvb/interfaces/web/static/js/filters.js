@@ -131,37 +131,14 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
     }
     //Make a request to get new data
     doAjaxCall({
-        async: false,  //todo: Is this sync really needed? It slows down the page.
-        type: 'GET', //todo: why is this a get? a post with the json seems better.
-        url: "/flow/get_filtered_datatypes/" + name + "/" + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
-        success: function (r) {
-            var elements = document.getElementsByName(name);
-            //Look for the previous select input whose data needs to be refreshed
-            if (elements.length > 1) {
-                //If more than one was found it's because of multiple algorithms
-                //We need to get only the one corresponding to the current algorithm
-                for (var i = 0; i < elements.length; i++) {
-                    var parent = elements[i].parentNode;
-                    //In case more components with the same name exist look for the
-                    //parent's div id
-                    while (parent.id == '' || parent.id == null) {
-                        parent = parent.parentNode;
-                    }
-                    if (divId != null && divId.indexOf(parent.id) !== -1) {
-                        //Remove the childs from this div and then recreate the components
-                        //using the html returned by the ajax call
-                        replaceSelect(elements[i].parentNode, r, name);
-                    }
-                }
-            } else if (elements.length === 1) {
-                replaceSelect(elements[0].parentNode, r, name);
-            } else {
-                displayMessage("Filter could not be applied!" + name, "infoMessage");
-                return;
-            }
-            displayMessage("Filters applied...");
+        type: 'POST',
+        url: "/flow/get_filtered_datatypes/" + name + '/' + $.toJSON(gatheredData),
+        success: function (response) {
+            var new_field = document.createRange().createContextualFragment(response);
+            var select_field = document.getElementById(name);
+            select_field.parentNode.replaceChild(new_field.children[0], select_field);
         },
-        error: function (r) {
+        error: function (response) {
             displayMessage("Invalid filter data.", "errorMessage");
         }
     });
