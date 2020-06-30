@@ -36,8 +36,6 @@ import tvb_data.regionMapping
 import tvb_data.projectionMatrix
 from os import path
 from uuid import UUID
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
 from mock import patch
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
@@ -872,6 +870,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             result = self.simulator_controller.export(str(burst[0].id))
 
-        data = {'uploadedfile': Part(result.input.name, HeaderMap({}), '')}
+        data = {'uploadedfile': result.input.name}
         self._expect_redirect('/burst/', self.simulator_controller.load_simulator_configuration_from_zip,
                               **data)
+        assert common.get_from_session(common.KEY_IS_SIMULATOR_COPY) is True
+        assert common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) is False
