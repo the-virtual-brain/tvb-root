@@ -315,7 +315,8 @@ class HPCSchedulerClient(BackendClient):
             else:
                 simulation_results.append(encrypted_file)
 
-        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(operation.project, str(operation.id))
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project, str(operation.id))
         h5_filenames = EncryptionHandler(simulator_gid).decrypt_files_to_dir(simulation_results, operation_dir)
         return h5_filenames, metric_op, metric_file
 
