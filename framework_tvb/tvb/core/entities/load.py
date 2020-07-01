@@ -34,6 +34,8 @@ Higher level entity loading.
 """
 import importlib
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
