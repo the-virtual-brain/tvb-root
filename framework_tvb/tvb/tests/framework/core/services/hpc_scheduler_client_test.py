@@ -37,9 +37,7 @@ import shutil
 import uuid
 
 import numpy
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
-from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
@@ -113,10 +111,10 @@ class TestHPCSchedulerClient(BaseTestCase):
         self.encryption_handler.decrypt_files_to_dir([enc_files[1]], out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == 1
-        assert 'dummy1.txt' not in list_plain_dir
-        assert 'dummy2.txt' in list_plain_dir
+        assert os.path.basename(enc_files[0]).replace('.aes', '') not in list_plain_dir
+        assert os.path.basename(enc_files[1]).replace('.aes', '') in list_plain_dir
 
-    def test_do_operation_launch(self, simulator_factory, operation_factory, mocker, tmpdir):
+    def test_do_operation_launch(self, simulator_factory, operation_factory, mocker):
         # Prepare encrypted dir
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=op)
@@ -136,7 +134,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert os.path.exists(output_path)
         assert len(os.listdir(output_path)) == 2
 
-    def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker, tmpdir):
+    def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker):
         # Prepare encrypted dir
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=op)

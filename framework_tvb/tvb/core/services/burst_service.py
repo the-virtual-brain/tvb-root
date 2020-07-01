@@ -277,7 +277,6 @@ class BurstService(object):
         return index
 
     def update_finished_burst_status(self, burst_config):
-        burst_service = BurstService()
         if burst_config.fk_operation_group:
             operations_in_group = dao.get_operations_in_group(burst_config.fk_operation_group)
             if burst_config.fk_metric_operation_group:
@@ -290,7 +289,7 @@ class BurstService(object):
                     break
             self.logger.debug(
                 'All operations in burst {} have finished. Will update burst status'.format(burst_config.id))
-        burst_service.mark_burst_finished(burst_config)
+        self.mark_burst_finished(burst_config)
 
     @staticmethod
     def prepare_metrics_operation(file, operation):

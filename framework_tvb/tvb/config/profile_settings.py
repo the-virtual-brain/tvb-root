@@ -36,13 +36,13 @@ TVB global configurations are predefined/read from here, for working with Framew
 
 import os
 import sys
+
 from tvb.basic.config import stored
-from tvb.basic.config.settings import DBSettings
 from tvb.basic.config.profile_settings import BaseSettingsProfile
+from tvb.basic.config.settings import DBSettings
 from tvb.basic.logger import builder
 from tvb.basic.logger.builder import LoggerBuilder
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
-
 
 
 class WebSettingsProfile(BaseSettingsProfile):
@@ -99,7 +99,6 @@ class TestSQLiteProfile(WebSettingsProfile):
     CODE_CHECKED_TO_VERSION = sys.maxsize
     TRADE_CRASH_SAFETY_FOR_SPEED = True
 
-
     def __init__(self):
         super(TestSQLiteProfile, self).__init__()
 
@@ -115,13 +114,17 @@ class TestSQLiteProfile(WebSettingsProfile):
         self.db.DB_URL = 'sqlite:///' + os.path.join(self.TVB_STORAGE, "tvb-database.db")
         self.db.SELECTED_DB = 'sqlite'
 
+        self.hpc.CRYPT_DATADIR = self.manager.get_attribute(stored.KEY_CRYPT_DATADIR,
+                                                            os.path.join(self.TVB_STORAGE, '.data'))
+        self.hpc.CRYPT_PASSDIR = self.manager.get_attribute(stored.KEY_CRYPT_PASSDIR,
+                                                            os.path.join(self.TVB_STORAGE, '.pass'))
+        self.hpc.CRYPT_GROUP = self.manager.get_attribute(stored.KEY_CRYPT_GROUP, 'root')
 
     def initialize_profile(self, change_logger_in_dev=False):
         super(TestSQLiteProfile, self).initialize_profile(change_logger_in_dev=change_logger_in_dev)
 
         from tvb.core.utils import get_matlab_executable
         self.MATLAB_EXECUTABLE = get_matlab_executable()
-
 
     def initialize_for_deployment(self):
         """
