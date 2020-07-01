@@ -41,6 +41,7 @@ from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.model_forms import get_form_for_model
@@ -450,9 +451,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
                                                            connectivity.gid)
         return region_mapping
 
-    def test_set_eeg_monitor_params(self):
-        region_mapping = self.set_region_mapping()
-
+    def set_eeg(self):
         eeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt')
         eeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, eeg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
@@ -462,15 +461,19 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_eeg_62_surface_16k.mat')
-        eeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
+        eeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
                                                                eeg_sensors.gid, surface.gid)
+        return eeg_sensors, eeg_projection
 
+    def test_set_eeg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
+        eeg_sensors, eeg_projection = self.set_eeg()
         self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
         variable_of_interest_indexes = {'W': 1, 'V - W': 2}
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = eeg_projections.gid
+        self.sess_mock['projection'] = eeg_projection.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = eeg_sensors.gid
 
@@ -491,9 +494,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].projection is not None, \
             "Projection wasn't stored correctly."
 
-    def test_set_meg_monitor_params(self):
-        region_mapping = self.set_region_mapping()
-
+    def set_meg(self):
         meg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'meg_brainstorm_276.txt')
         meg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, meg_sensors_file,
                                                  SensorsImporterModel.OPTIONS['MEG Sensors'])
@@ -503,15 +504,20 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_meg_276_surface_16k.npy')
-        meg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
+        meg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
                                                                meg_sensors.gid, surface.gid)
+        return meg_sensors, meg_projection
+
+    def test_set_meg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
+        meg_sensors, meg_projection = self.set_meg()
 
         self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
         variable_of_interest_indexes = {'W': 1, 'V - W': 2}
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = meg_projections.gid
+        self.sess_mock['projection'] = meg_projection.gid
         self.sess_mock['sigma'] = 1.0
         self.sess_mock['sensors'] = meg_sensors.gid
 
@@ -532,9 +538,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].projection is not None, \
             "Projection wasn't stored correctly."
 
-    def test_set_seeg_monitor_params(self):
-        region_mapping = self.set_region_mapping()
-
+    def set_seeg(self):
         seeg_sensors_file = path.join(path.dirname(tvb_data.sensors.__file__), 'seeg_588.txt')
         seeg_sensors = TestFactory.import_sensors(self.test_user, self.test_project, seeg_sensors_file,
                                                   SensorsImporterModel.OPTIONS['Internal Sensors'])
@@ -544,15 +548,20 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                          'projection_seeg_588_surface_16k.npy')
-        seeg_projections = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
+        seeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
                                                                 seeg_sensors.gid, surface.gid)
+        return seeg_sensors, seeg_projection
+
+    def test_set_seeg_monitor_params(self):
+        region_mapping = self.set_region_mapping()
+        seeg_sensors, seeg_projection = self.set_seeg()
 
         self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
         variable_of_interest_indexes = {'W': 1, 'V - W': 2}
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.75'
         self.sess_mock['region_mapping'] = region_mapping.gid
-        self.sess_mock['projection'] = seeg_projections.gid
+        self.sess_mock['projection'] = seeg_projection.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = seeg_sensors.gid
 
@@ -590,6 +599,44 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
                list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
+
+    def test_set_multiple_monitor_params(self):
+        self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')
+        variable_of_interest_indexes = {'W': 1, 'V - W': 2}
+
+        region_mapping = self.set_region_mapping()
+        eeg_sensors, eeg_projection = self.set_eeg()
+
+        self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
+        self.sess_mock['period'] = '0.75'
+        self.sess_mock['sigma'] = "1.0"
+        self.sess_mock['spatial_mask'] = ''
+        self.sess_mock['default_mask'] = 'hemispheres'
+        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['sensors'] = eeg_sensors.gid
+        self.sess_mock['projection'] = eeg_projection.gid
+
+        self.session_stored_simulator.monitors = [SpatialAverageViewModel(), TemporalAverageViewModel(), EEGViewModel()]
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.set_monitor_params('SpatialAverageViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('TemporalAverageViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
+
+        assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
+               list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
+        assert self.session_stored_simulator.monitors[0].default_mask == 'hemispheres', \
+            'Default mask was not set correctly on Spatial Average Monitor.'
+        assert self.session_stored_simulator.monitors[1].period == 0.75,\
+            "Period was not set correctly on Temporal Average Monitor."
+        assert self.session_stored_simulator.monitors[2].region_mapping.hex == region_mapping.gid, \
+            "Region Mapping wasn't set and stored correctly on EEG Monitor."
+        assert self.session_stored_simulator.monitors[2].sensors.hex == eeg_sensors.gid, \
+            "Region Mapping wasn't set and stored correctly on EEG Monitor."
+        assert self.session_stored_simulator.monitors[2].projection is not None, \
+            "Projection wasn't stored correctly on EEG Monitor."
 
     def test_set_monitor_equation(self):
         self.sess_mock['tau_s'] = '0.8'
@@ -770,6 +817,47 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.launch_simulation(launch_mode, **self.sess_mock._data)
 
         assert burst_config.status == 'running', 'Simulation launching has failed!'
+
+    def test_launch_branch_simulation(self):
+        zip_path = path.join(path.dirname(tvb_data.connectivity.__file__), 'connectivity_66.zip')
+        connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+
+        self.sess_mock['input_simulation_name_id'] = 'HappySimulation'
+        self.sess_mock['simulation_length'] = '10'
+        launch_mode = 'branch'
+
+        op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
+        burst_config = BurstConfiguration(self.test_project.id)
+        burst_config.fk_simulation = op.id
+        burst_config.simulator_gid = self.session_stored_simulator.gid.hex
+        burst_config.name = 'Test'
+        dao.store_entity(burst_config)
+
+        self.sess_mock['burst_id'] = str(burst_config.id)
+        self.sess_mock['connectivity'] = connectivity.gid
+        self.sess_mock['conduction_speed'] = "3.0"
+        self.sess_mock['coupling'] = "Sigmoidal"
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.set_connectivity(**self.sess_mock._data)
+
+        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        h5.store_view_model(self.session_stored_simulator, storage_path)
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
+            copied_burst = common.get_from_session(KEY_BURST_CONFIG)
+
+        simulation_history_index = SimulationHistoryIndex(fk_parent_burst=burst_config.id)
+        dao.store_entity(simulation_history_index)
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.simulator_controller.launch_simulation(launch_mode, **self.sess_mock._data)
+
+        assert copied_burst.status == 'running', 'Branch launching has failed!'
 
     def test_setup_pse(self):
         self.sess_mock['input_simulation_name_id'] = 'simulation_1'
