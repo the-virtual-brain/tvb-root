@@ -37,7 +37,7 @@ pipeline {
                     unstash 'step1'
                     powershell 'cd framework_tvb; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ..'
                     powershell 'cd scientific_library; C:/miniconda/envs/tvb-run/python.exe setup.py develop; cd..'
-                    powershell 'cd scientific_library/contrib; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ../..'
+                    powershell 'cd tvb_contrib; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ../..'
                     powershell 'cd tvb_bin; C:/miniconda/envs/tvb-run/python.exe setup.py develop; cd ..'
                     powershell 'cd tvb_build; C:/miniconda/envs/tvb-run/python.exe setup.py develop --no-deps; cd ..'
                     powershell 'cd tvb_build; C:/miniconda/envs/tvb-run/python.exe build_from_conda.py'

@@ -5,7 +5,7 @@ cd ..
 rm -Rf dist
 mkdir dist
 
-declare -a folders2pack=("framework_tvb" "scientific_library")
+declare -a folders2pack=("framework_tvb" "scientific_library" "tvb_contrib")
 if [[ "$1" != "" ]]; then
     echo "Received param: " "$1"
     folders2pack=("$1")
@@ -27,19 +27,9 @@ for pipPackage in "${folders2pack[@]}"; do
     cd ..
 done
 
-## Package TVB Contrib
 echo "============================="
-echo " Packing: TVB Contrib"
+echo " Packing: tvb-rest-client"
 echo "============================="
-cd scientific_library/contrib
-python setup.py sdist
-python setup.py bdist_wheel
-mv dist/* ../../dist/
-rm -R dist
-rm -R build
-cd ../..
-
-## Now package tvb-rest-client
 cd framework_tvb
 mv setup.py setup_bck.py
 mv setup_rest_client.py setup.py
