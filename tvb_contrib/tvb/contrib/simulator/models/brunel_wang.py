@@ -35,16 +35,16 @@ Based on the Brunel and Wang model.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-from tvb.basic.profile import TvbProfile
-TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
 
 import inspect
 import numpy
-from tvb.basic.neotraits.api import NArray, Range, List, Final
-import tvb.datatypes.lookup_tables as lookup_tables
+import tvb.contrib.scripts.datatypes.lookup_tables as lookup_tables
 import tvb.simulator.models as models
+from tvb.basic.neotraits.api import NArray, Range, List, Final
 from tvb.simulator.common import get_logger
+from tvb.basic.profile import TvbProfile
 
+TvbProfile.set_profile(TvbProfile.TEST_LIBRARY_PROFILE)
 LOG = get_logger(__name__)
 
 
@@ -354,7 +354,6 @@ class BrunelWang(models.Model):
     #                                      label="Nerf Table",
     #                                      doc="""Nerf Table (description).""")
 
-
     def __init__(self, **kwargs):
         """
         May need to put kwargs back if we can't get them from trait...
@@ -365,42 +364,39 @@ class BrunelWang(models.Model):
 
         super(BrunelWang, self).__init__(**kwargs)
 
-        #self._state_variables = ["E", "I"]
+        # self._state_variables = ["E", "I"]
         self._nvar = 2
 
         self.cvar = numpy.array([0, 1], dtype=numpy.int32)
 
-        #Derived parameters
-        self.crho1_e  = None
-        self.crho1_i  = None
-        self.crho2_e  = None
-        self.crho2_i  = None
+        # Derived parameters
+        self.crho1_e = None
+        self.crho1_i = None
+        self.crho2_e = None
+        self.crho2_i = None
         self.csigma_e = None
         self.csigma_i = None
-        self.tauNMDA  = None
+        self.tauNMDA = None
 
-        self.Text_e   = None
-        self.Text_i   = None
-        self.TAMPA_e  = None
-        self.TAMPA_i  = None
-        self.T_ei     = None
-        self.T_ii     = None
+        self.Text_e = None
+        self.Text_i = None
+        self.TAMPA_e = None
+        self.TAMPA_i = None
+        self.T_ei = None
+        self.T_ii = None
 
         self.pool_fractions = None
 
-
-        #NOTE: We could speed up this model simplifying some the phi and psi functions
-        #above. However it was decided that functions should be the same as
+        # NOTE: We could speed up this model simplifying some the phi and psi functions
+        # above. However it was decided that functions should be the same as
         # in the original paper.
 
         # integral
-        #self.vector_nerf = lambda z: numpy.exp(z**2) * (scipy.special.erf(z) + 1)
-        #integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])
-        #self.vint = numpy.vectorize(integral)
+        # self.vector_nerf = lambda z: numpy.exp(z**2) * (scipy.special.erf(z) + 1)
+        # integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])
+        # self.vint = numpy.vectorize(integral)
 
         LOG.debug('%s: inited.' % repr(self))
-
-
 
     def configure(self):
         """  """
@@ -413,7 +409,7 @@ class BrunelWang(models.Model):
         self.psi_table.configure()
         self.nerf_table.configure()
 
-        #self.optimize()
+        # self.optimize()
 
     def optimize(self, fnname='optdfun'):
         """
@@ -431,7 +427,7 @@ class BrunelWang(models.Model):
 
         decl += '\n'.join(inspect.getsource(self.dfun).split('\n')[1:]).replace("self.", "")
         dikt = {'vint': self.vint, 'array': numpy.array, 'int32': numpy.int32, 'numpy': numpy}
-        #print decl
+        # print decl
         exec(decl, dikt)
         self.dfun = dikt[fnname]
 
@@ -482,7 +478,7 @@ class BrunelWang(models.Model):
 
         E = state_variables[0, :]
         I = state_variables[1, :]
-        #A = state_variables[2, :]
+        # A = state_variables[2, :]
 
         # where and how to add local coupling
 
@@ -528,12 +524,11 @@ class BrunelWang(models.Model):
         vsigma_i = numpy.sqrt((self.vi - self.VE) ** 2 * vtau_i * \
                               self.csigma_i * self.nuext)
 
-        #tauAMPA_over_vtau_e
+        # tauAMPA_over_vtau_e
         k_e = self.tauAMPA / vtau_e
         k_i = self.tauAMPA / vtau_i
 
-
-        #integration limits
+        # integration limits
         alpha_e = (self.Vthr - vmu_e) / vsigma_e * (1.0 + 0.5 * k_e) + \
                   1.03 * numpy.sqrt(k_e) - 0.5 * k_e
         alpha_e = numpy.where(alpha_e > 19, 19, alpha_e)
@@ -602,7 +597,7 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
 
-    #Initialise Models in their default state:
+    # Initialise Models in their default state:
     BW = BrunelWang()
 
     LOG.info("Model initialised in its default state without error...")
@@ -613,8 +608,6 @@ if __name__ == "__main__":
     from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
     import tvb.simulator.integrators
 
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
+    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2 ** -5)
     ppi_fig = PhasePlaneInteractive(model=BW, integrator=INTEGRATOR)
     ppi_fig.show()
-
-
