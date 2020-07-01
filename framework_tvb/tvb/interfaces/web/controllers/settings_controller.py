@@ -282,7 +282,6 @@ class SettingsForm(formencode.Schema):
     URL_VALUE = validators.UnicodeString(not_empty=True)
     DEPLOY_CLUSTER = validators.Bool()
     CLUSTER_SCHEDULER = validators.UnicodeString(not_empty=True)
-    RUN_ON_HPC = validators.Bool()
 
     KEYCLOAK_CONFIGURATION = validators.UnicodeString(not_empty=True)
     KEYCLOAK_WEB_CONFIGURATION = validators.UnicodeString()
