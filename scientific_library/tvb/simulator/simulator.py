@@ -260,7 +260,7 @@ class Simulator(HasTraits):
         # either sparse pandas.Series or xarray.DataArray or numpy.array
         if self.spike_stimulus is not None:
             target1 = list(self.spike_stimulus.keys())[0]
-            if self.spike_stimulus[target1].__class__.__name__ == "Series":
+            if self.spike_stimulus[target1].__class__.__name__.find("Series") > -1:
                 self._spike_stimulus_fun = \
                     lambda target, step: self.spike_stimulus[target][step].to_xarray().values
             elif self.spike_stimulus[target1].__class__.__name__ == "DataArray":
