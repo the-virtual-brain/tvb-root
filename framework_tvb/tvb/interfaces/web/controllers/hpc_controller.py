@@ -45,7 +45,7 @@ from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
 from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
 from tvb.core.services.encryption_handler import EncryptionHandler
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_endpoint
 
@@ -89,7 +89,7 @@ class HPCController(object):
 
         operation = self._validate_request_params(simulator_gid, operation_id)
 
-        OperationService.handle_hpc_status_changed(operation, simulator_gid, new_status)
+        HPCOperationService.handle_hpc_status_changed(operation, simulator_gid, new_status)
 
     @expose_endpoint
     def encryption_config(self, simulator_gid, operation_id):

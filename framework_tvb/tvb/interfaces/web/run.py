@@ -37,7 +37,7 @@ import importlib
 import time
 from subprocess import Popen, PIPE
 
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
 
 STARTUP_TIC = time.time()
@@ -125,7 +125,7 @@ def init_cherrypy(arguments=None):
     # Register housekeeping job
     if TvbProfile.current.hpc.IS_HPC_RUN:
         cherrypy.engine.housekeeper = cherrypy.process.plugins.BackgroundTask(
-            TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, OperationService.check_operations_job)
+            TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
     #### HTTP Server is fired now ######  

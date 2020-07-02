@@ -42,9 +42,7 @@ import os
 import sys
 import zipfile
 from copy import copy
-from functools import partial
 
-from pyunicore.client import Job, Transport
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -58,22 +56,18 @@ from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation, \
-    STATUS_CANCELED, STATUS_STARTED, STATUS_PENDING
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import OperationException
-from tvb.datatypes.time_series import TimeSeries
 from tvb.core.services.backend_client_factory import BackendClientFactory
-from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
 from tvb.core.services.burst_service import BurstService
-
+from tvb.core.services.exceptions import OperationException
+from tvb.core.services.project_service import ProjectService
+from tvb.datatypes.time_series import TimeSeries
 
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2
-
 
 
 class OperationService:
@@ -546,72 +540,3 @@ class OperationService:
                 if burst_config is not None:
                     result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
         return result
-
-    @staticmethod
-    def _operation_error(operation):
-        operation.mark_complete(STATUS_ERROR)
-        dao.store_entity(operation)
-
-    @staticmethod
-    def _operation_canceled(operation):
-        operation.mark_complete(STATUS_CANCELED)
-        dao.store_entity(operation)
-
-    @staticmethod
-    def _operation_started(operation):
-        operation.start_now()
-        dao.store_entity(operation)
-
-    @staticmethod
-    def _operation_finished(operation, simulator_gid):
-        op_ident = dao.get_operation_process_for_operation(operation.id)
-        # TODO: Handle login
-        job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
-                  op_ident.job_id)
-        sim_h5_filenames, metric_op, metric_h5_filename =\
-            HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
-        operation.mark_complete(STATUS_FINISHED)
-        dao.store_entity(operation)
-        HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
-
-    @staticmethod
-    def handle_hpc_status_changed(operation, simulator_gid, new_status):
-        # type: (Operation, str, str) -> None
-
-        switcher = {
-            STATUS_ERROR: OperationService._operation_error,
-            STATUS_CANCELED: OperationService._operation_canceled,
-            STATUS_STARTED: OperationService._operation_started,
-            STATUS_FINISHED: partial(OperationService._operation_finished, simulator_gid=simulator_gid)
-        }
-        update_func = switcher.get(new_status, lambda: "Invalid operation status")
-        update_func(operation)
-
-    @staticmethod
-    def check_operations_job():
-        logger = get_logger("HPC-Sync-Job")
-        operations = dao.get_operations()
-        if operations is None or len(operations) == 0:
-            logger.info("There aren't any simulations in status PENDING or RUNNING")
-            return
-
-        for operation in operations:
-            try:
-                op_ident = dao.get_operation_process_for_operation(operation.id)
-                if op_ident is not None:
-                    transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
-                    job = Job(transport, op_ident.job_id)
-                    job_status = job.properties['status']
-                    if job.is_running():
-                        if operation.status == STATUS_PENDING and job_status == HPCJobStatus.READY.value:
-                            OperationService._operation_started(operation)
-                        logger.info("CSCS job status: {} for operation {}.".format(job_status, operation.id))
-                        return
-                    logger.info("Job for operation {} has status {}".format(operation.id, job_status))
-                    if job_status == HPCJobStatus.SUCCESSFUL.value:
-                        simulator_gid = json.loads(operation.parameters)['gid']
-                        OperationService._operation_finished(operation, simulator_gid)
-                    else:
-                        OperationService._operation_error(operation)
-            except Exception:
-                logger.error("There was an error on background processing process for operation {}".format(operation.id), exc_info=True)
