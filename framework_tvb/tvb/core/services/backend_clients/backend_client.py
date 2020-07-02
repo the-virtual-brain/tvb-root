@@ -28,28 +28,28 @@
 #
 #
 
-from tvb.basic.neotraits.api import Attr, HasTraits
-from tvb.core.neotraits.h5 import H5File, Scalar
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
+from abc import abstractmethod
 
 
-class ValueWrapper(HasTraits):
-    data_value = Attr(str)
-    data_type = Attr(str)
-    data_name = Attr(str)
+class BackendClient(object):
+    """
+    Interface for a backend client that runs operations asynchronously on a specific environment
+    """
 
-    @property
-    def value(self):
-        if "int" == self.data_type.lower():
-            return int(self.data_value)
-        if "float" == self.data_type.lower():
-            return float(self.data_value)
-        return self.data_value
+    @staticmethod
+    @abstractmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        """
+        Start operation asynchronously
+        """
 
-
-class ValueWrapperH5(H5File):
-
-    def __init__(self, path):
-        super(ValueWrapperH5, self).__init__(path)
-        self.data_value = Scalar(ValueWrapper.data_value, self)
-        self.data_type = Scalar(ValueWrapper.data_type, self)
-        self.data_name = Scalar(ValueWrapper.data_name, self)
+    @staticmethod
+    @abstractmethod
+    def stop_operation(operation_id):
+        """
+        Stop the thread for a given operation id
+        """

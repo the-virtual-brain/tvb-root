@@ -37,38 +37,37 @@ Module in charge with Launching an operation (creating the Operation entity as w
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import os
 import json
-import zipfile
+import os
 import sys
+import zipfile
 from copy import copy
+
 from tvb.basic.exceptions import TVBException
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.basic.logger.builder import get_logger
 from tvb.config import choices, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import get_class_by_name
-from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2
-from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
+    BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
+from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.backend_client import BACKEND_CLIENT
 from tvb.core.services.exceptions import OperationException
+from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.time_series import TimeSeries
-
 
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2
-
 
 
 class OperationService:
@@ -335,7 +334,7 @@ class OperationService:
         """ Initiate operation on cluster"""
         for operation in operations:
             try:
-                BACKEND_CLIENT.execute(str(operation.id), current_username, adapter_instance)
+                BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
             except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
@@ -534,7 +533,7 @@ class OperationService:
             for operation in operations_in_group:
                 result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
         else:
-            result = BACKEND_CLIENT.stop_operation(operation_id)
+            result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
                 burst_config = dao.get_burst_for_operation_id(operation_id)
                 ProjectService().remove_operation(operation_id)

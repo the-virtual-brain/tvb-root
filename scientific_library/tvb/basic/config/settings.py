@@ -184,6 +184,33 @@ class ClusterSettings(object):
         return None
 
 
+class HPCSettings(object):
+    """
+    HPC related specifications
+    """
+    HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
+
+    UNICORE_RESOURCER_KEY = 'Resources'
+    UNICORE_ARGS_KEY = 'Arguments'
+    UNICORE_EXE_KEY = 'Executable'
+
+    JOB_STATUS_KEY = 'status'
+    JOB_MOUNT_POINT_KEY = 'mountPoint'
+
+    CRYPT_BUFFER_SIZE = 64 * 1024
+    CRYPT_PASS_SIZE = 64
+
+    # Specify if the current process is executing an operation (via hpcLauncher)
+    IN_OPERATION_EXECUTION_PROCESS = False
+
+    def __init__(self, manager):
+        self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
+        self.BACKGROUND_JOB_INTERVAL = manager.get_attribute(stored.KEY_HPC_INTERVAL, 60, int)
+        self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
+        self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
+        self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
+
+
 class WebSettings(object):
     """
     Web related specifications

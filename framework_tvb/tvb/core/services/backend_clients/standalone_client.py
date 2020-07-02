@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -35,18 +35,18 @@
 """
 
 import os
-import sys
+import queue
 import signal
-import queue as queue
-import threading
+import sys
 from subprocess import Popen, PIPE
-from tvb.basic.profile import TvbProfile
+from threading import Thread, Event
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.services.burst_service import BurstService
-from tvb.core.utils import parse_json_parameters
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
-
+from tvb.core.services.backend_clients.backend_client import BackendClient
+from tvb.core.services.burst_service import BurstService
 
 LOGGER = get_logger(__name__)
 
@@ -57,17 +57,15 @@ for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
     LOCKS_QUEUE.put(1)
 
 
-class OperationExecutor(threading.Thread):
+class OperationExecutor(Thread):
     """
     Thread in charge for starting an operation, used both on cluster and with stand-alone installations.
     """
 
-
     def __init__(self, op_id):
-        threading.Thread.__init__(self)
+        Thread.__init__(self)
         self.operation_id = op_id
-        self._stop_ev = threading.Event()
-
+        self._stop_ev = Event()
 
     def run(self):
         """
@@ -118,16 +116,13 @@ class OperationExecutor(threading.Thread):
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
 
-
     def _stop(self):
         """ Mark current thread for stop"""
         self._stop_ev.set()
 
-
     def stopped(self):
         """Check if current thread was marked for stop."""
         return self._stop_ev.isSet()
-
 
     @staticmethod
     def stop_pid(pid):
@@ -154,11 +149,10 @@ class OperationExecutor(threading.Thread):
         return True
 
 
-class StandAloneClient(object):
+class StandAloneClient(BackendClient):
     """
     Instead of communicating with a back-end cluster, fire locally a new thread.
     """
-
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
@@ -166,7 +160,6 @@ class StandAloneClient(object):
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
         thread.start()
-
 
     @staticmethod
     def stop_operation(operation_id):
@@ -201,89 +194,3 @@ class StandAloneClient(object):
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
 
         return stopped
-
-
-class ClusterSchedulerClient(object):
-    # TODO: fix this with neoforms
-    """
-    Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing behind
-    the cluster job scheduling process..
-    """
-
-
-    @staticmethod
-    def _run_cluster_job(operation_identifier, user_name_label, adapter_instance):
-        """
-        Threaded Popen
-        It is the function called by the ClusterSchedulerClient in a Thread.
-        This function starts a new process.
-        """
-        # Load operation so we can estimate the execution time
-        operation = dao.get_operation_by_id(operation_identifier)
-        kwargs = parse_json_parameters(operation.parameters)
-        # kwargs = adapter_instance.prepare_ui_inputs(kwargs)
-        time_estimate = int(adapter_instance.get_execution_time_approximation(**kwargs))
-        hours = int(time_estimate / 3600)
-        minutes = (int(time_estimate) % 3600) / 60
-        seconds = int(time_estimate) % 60
-        # Anything lower than 5 hours just use default walltime
-        if hours < 5:
-            walltime = "05:00:00"
-        else:
-            if hours < 10:
-                hours = "0%d" % hours
-            else:
-                hours = str(hours)
-            walltime = "%s:%s:%s" % (hours, str(minutes), str(seconds))
-
-        call_arg = TvbProfile.current.cluster.SCHEDULE_COMMAND % (operation_identifier, user_name_label, walltime)
-        LOGGER.info(call_arg)
-        process_ = Popen([call_arg], stdout=PIPE, shell=True)
-        job_id = process_.stdout.read().replace('\n', '').split(TvbProfile.current.cluster.JOB_ID_STRING)[-1]
-        LOGGER.info("Got jobIdentifier = %s for CLUSTER operationID = %s" % (job_id, operation_identifier))
-        operation_identifier = OperationProcessIdentifier(operation_identifier, job_id=job_id)
-        dao.store_entity(operation_identifier)
-
-
-    @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        """Call the correct system command to submit a job to the cluster."""
-        thread = threading.Thread(target=ClusterSchedulerClient._run_cluster_job,
-                                  kwargs={'operation_identifier': operation_id,
-                                          'user_name_label': user_name_label,
-                                          'adapter_instance': adapter_instance})
-        thread.start()
-
-
-    @staticmethod
-    def stop_operation(operation_id):
-        """
-        Stop a thread for a given operation id
-        """
-        operation = dao.try_get_operation_by_id(operation_id)
-        if not operation or operation.has_finished:
-            LOGGER.warning("Operation already stopped or not found is given to stop job: %s" % operation_id)
-            return True
-
-        operation_process = dao.get_operation_process_for_operation(operation_id)
-        result = 0
-        # Try to kill only if operation job process is not None
-        if operation_process is not None:
-            stop_command = TvbProfile.current.cluster.STOP_COMMAND % operation_process.job_id
-            LOGGER.info("Stopping cluster operation: %s" % stop_command)
-            result = os.system(stop_command)
-            if result != 0:
-                LOGGER.error("Stopping cluster operation was unsuccessful. Try following status with '" +
-                             TvbProfile.current.cluster.STATUS_COMMAND + "'" % operation_process.job_id)
-
-        BurstService().persist_operation_state(operation, STATUS_CANCELED)
-
-        return result == 0
-
-
-if TvbProfile.current.cluster.IS_DEPLOY:
-    # Return an entity capable to submit jobs to the cluster.
-    BACKEND_CLIENT = ClusterSchedulerClient()
-else:
-    # Return a thread launcher.
-    BACKEND_CLIENT = StandAloneClient()

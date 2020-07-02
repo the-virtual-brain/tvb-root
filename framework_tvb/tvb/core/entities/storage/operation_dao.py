@@ -35,7 +35,7 @@ DAO operations related to Algorithms and User Operations are defined here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from sqlalchemy import or_, and_
+from sqlalchemy import and_
 from sqlalchemy import func as func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -114,6 +114,15 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
+    def get_operations(self, status=[STATUS_PENDING, STATUS_STARTED], algorithm_classname="SimulatorAdapter"):
+        try:
+            result = self.session.query(Operation).join(Algorithm) \
+                .filter(Algorithm.classname == algorithm_classname) \
+                .filter(Operation.status.in_(status)).all()
+            return result
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
 
     def is_upload_operation(self, operation_gid):
         """

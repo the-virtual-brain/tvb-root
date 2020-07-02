@@ -31,32 +31,35 @@
 """
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
+import uuid
+from copy import deepcopy
+from time import sleep
 
 import numpy
-from time import sleep
-from tvb.core.services.burst_service import BurstService
-from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.model.model_burst import *
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.model_operation import STATUS_STARTED, OperationPossibleStatus, STATUS_FINISHED
+from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
+from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.burst_service import BurstService, STATUS_FOR_OPERATION
+from tvb.core.services.operation_service import OperationService
+from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
-from tvb.core.entities.model.model_burst import *
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.operation_service import OperationService
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+from tvb.tests.framework.adapters.storeadapter import StoreAdapter
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-import copy
 
 
 class TestBurstService(BaseTestCase):
@@ -74,8 +77,7 @@ class TestBurstService(BaseTestCase):
     operation_service = OperationService()
     sim_algorithm = algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                         IntrospectionRegistry.SIMULATOR_CLASS)
-    local_simulation_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-
+    local_simulation_params = deepcopy(SIMULATOR_PARAMETERS)
 
     def setup_method(self):
         """
@@ -89,14 +91,12 @@ class TestBurstService(BaseTestCase):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
 
-
     def teardown_method(self):
         """
         Remove project folders and clean up database.
         """
         FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()
-
 
     def test_clone_burst_configuration(self):
         """
@@ -109,7 +109,6 @@ class TestBurstService(BaseTestCase):
         assert cloned_burst.name == first_burst.name, 'Cloned burst should have the same name'
         assert cloned_burst.id is None, 'id should be none for cloned entry.'
 
-
     def test_store_burst_config(self):
         """
         Test that a burst entity is properly stored in db.
@@ -119,7 +118,6 @@ class TestBurstService(BaseTestCase):
         stored_entity = dao.get_burst_by_id(burst_config.id)
         assert stored_entity is not None, 'Burst was not stored properly.'
         self._compare_bursts(burst_config, stored_entity)
-
 
     def _compare_bursts(self, first_burst, second_burst):
         """
@@ -131,14 +129,12 @@ class TestBurstService(BaseTestCase):
         assert first_burst.range1 == second_burst.range1, "Statuses not equal for bursts."
         assert first_burst.range2 == second_burst.range2, "Statuses not equal for bursts."
 
-
     def test_getavailablebursts_none(self):
         """
         Test that an empty list is returned if no data is available in db.
         """
         bursts = self.burst_service.get_available_bursts(self.test_project.id)
         assert bursts == [], "Unexpected result returned : %s" % (bursts,)
-
 
     def test_get_available_bursts_happy(self):
         """
@@ -160,7 +156,6 @@ class TestBurstService(BaseTestCase):
                          "Incorrect bursts retrieved for project %s." % second_project
         assert set(test_project_bursts) == set(returned_test_project_bursts),\
                          "Incorrect bursts retrieved for project %s." % self.test_project
-
 
     def test_rename_burst(self, operation_factory):
         """
@@ -200,10 +195,9 @@ class TestBurstService(BaseTestCase):
         ProjectService().remove_project(self.test_project.id)
         self._check_burst_removed()
 
-
     def test_sync_burst_launch(self):
         """
-        A full test for launching a burst. 
+        A full test for launching a burst.
         First create the workflow steps and launch the burst.
         Then check that only operation created is for the first adapter from the portlet. The
         second should be viewed as a visualizer.
@@ -228,7 +222,6 @@ class TestBurstService(BaseTestCase):
                          "Different static params after burst load for visualizer."
         assert visualizer.dynamic_param == workflow_step_list[0].dynamic_param,\
                          "Different static params after burst load for visualizer."
-
 
     def test_launch_burst(self):
         """
@@ -257,8 +250,6 @@ class TestBurstService(BaseTestCase):
         # Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config)
 
-
-
     def test_load_group_burst(self):
         """
         Launch a group adapter and load it afterwards and check that a group_id is properly loaded.
@@ -280,7 +271,6 @@ class TestBurstService(BaseTestCase):
         datatype_measures = self.count_all_entities(DatatypeMeasureIndex)
         assert 3 == datatype_measures
 
-
     def test_launch_burst_invalid_simulator_parameters(self):
         """
         Test that burst is marked as error if invalid data is passed to the first step.
@@ -295,8 +285,6 @@ class TestBurstService(BaseTestCase):
         burst_config = dao.get_burst_by_id(burst_id)
         #Wait maximum x seconds for burst to finish
         self._wait_for_burst(burst_config, error_expected=True)
-
-
 
     def test_launch_burst_invalid_simulator_data(self):
         """
@@ -330,7 +318,6 @@ class TestBurstService(BaseTestCase):
         for datatype in dt_groups:
             assert 4 == datatype.count_results, "Should have 4 datatypes in group"
 
-
     def test_launch_group_burst_no_metric(self):
         """
         Test the launch burst method from burst service. Try to launch a burst with test adapter which has
@@ -357,7 +344,6 @@ class TestBurstService(BaseTestCase):
         dt_groups = self.count_all_entities(DataTypeGroup)
         assert 5 == op_groups, "An operation group should have been created for each step."
         assert 5 == dt_groups, "An dataType group should have been created for each step."
-
 
     def test_load_tab_configuration(self):
         """
@@ -392,7 +378,6 @@ class TestBurstService(BaseTestCase):
                 else:
                     assert portlet is None, "Before loading the tab configuration all portlets should be none"
 
-
     def _wait_for_burst(self, burst_config, error_expected=False, timeout=500):
         """
         Method that just waits until a burst configuration is finished or a maximum timeout is reached.
@@ -422,13 +407,12 @@ class TestBurstService(BaseTestCase):
 
         return burst_config
 
-
     def _prepare_and_launch_async_burst(self, length=4, is_range=False, nr_ops=0, wait_to_finish=0):
         """
         Launch an asynchronous burst with a simulation having all the default parameters, only the length received as
         a parameters. This is launched with actual simulator and not with a dummy test adapter as replacement.
         :param length: the length of the simulation in milliseconds. This is also used in case we need
-            a group burst, in which case we will have `nr_ops` simulations with lengths starting from 
+            a group burst, in which case we will have `nr_ops` simulations with lengths starting from
             `length` to `length + nr_ops` milliseconds
         :param is_range: a boolean which switches between a group burst and a non group burst.
             !! even if `is_range` is `True` you still need a non-zero positive `nr_ops` to have an actual group burst
@@ -451,7 +435,6 @@ class TestBurstService(BaseTestCase):
         if wait_to_finish:
             burst_config = self._wait_for_burst(burst_config, timeout=wait_to_finish)
         return burst_config
-
 
     def _prepare_and_launch_sync_burst(self):
         """
@@ -482,7 +465,6 @@ class TestBurstService(BaseTestCase):
         dao.remove_datatype(stored_dt.gid)
         return loaded_burst, workflow_step_list
 
-
     def _check_burst_removed(self):
         """
         Test that a burst was properly removed. This means checking that the burst entity,
@@ -500,7 +482,6 @@ class TestBurstService(BaseTestCase):
         assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
         assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
 
-
     def _prepare_simulation_params(self, length, is_range=False, no_ops=0):
 
         connectivity = self._burst_create_connectivity()
@@ -515,7 +496,6 @@ class TestBurstService(BaseTestCase):
             launch_params[RANGE_PARAMETER_1] = None
 
         return launch_params
-
 
     def _burst_create_connectivity(self):
         """
@@ -533,3 +513,81 @@ class TestBurstService(BaseTestCase):
         adapter_instance = StoreAdapter([connectivity])
         self.operation_service.initiate_prelaunch(self.operation, adapter_instance, {})
         return connectivity
+
+    def test_prepare_metrics_operation(self, operation_factory, pse_burst_configuration_factory):
+        burst = pse_burst_configuration_factory(self.test_project)
+
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        op.fk_operation_group = burst.fk_operation_group
+        op = dao.store_entity(op)
+
+        db_ops = dao.get_operations_in_group(burst.fk_metric_operation_group)
+        assert len(db_ops) == 0
+        metric_op_dir, metric_op = self.burst_service.prepare_metrics_operation(op)
+        assert metric_op.status == STATUS_FINISHED
+        assert metric_op.fk_operation_group == burst.fk_metric_operation_group
+        db_ops = dao.get_operations_in_group(burst.fk_metric_operation_group)
+        assert len(db_ops) == 1
+        assert metric_op.fk_launched_in == op.fk_launched_in
+        assert metric_op.visible is False
+
+    def test_prepare_index_for_metric_result(self, operation_factory, pse_burst_configuration_factory):
+        burst = pse_burst_configuration_factory(self.test_project)
+
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        op.fk_operation_group = burst.fk_metric_operation_group
+        op = dao.store_entity(op)
+
+        op_dir = FilesHelper().get_operation_folder(op.project.name, op.id)
+        dm_gid = uuid.uuid4()
+        dm_h5_file = h5.path_for(op_dir, DatatypeMeasureH5, dm_gid)
+        with DatatypeMeasureH5(dm_h5_file) as dm_h5:
+            dm_h5.gid.store(dm_gid)
+            dm_h5.metrics.store({'a': 0, 'b': 1})
+            dm_h5.analyzed_datatype.store(dm_gid)
+
+        db_measures = dao.get_generic_entity(DatatypeMeasureIndex, dm_gid.hex, 'gid')
+        assert len(db_measures) == 0
+        metric_dt_group = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+        nr_dts_in_group = dao.count_datatypes_in_group(metric_dt_group.id)
+        assert nr_dts_in_group == 0
+        index = self.burst_service.prepare_index_for_metric_result(op, dm_h5_file, burst)
+        dao.store_entity(index)
+        db_measures = dao.get_generic_entity(DatatypeMeasureIndex, dm_gid.hex, 'gid')
+        assert len(db_measures) > 0
+        metric_dt_group = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+        nr_dts_in_group = dao.count_datatypes_in_group(metric_dt_group.id)
+        assert nr_dts_in_group == 1
+
+    def test_update_finished_burst_status(self, operation_factory, pse_burst_configuration_factory):
+        for status in OperationPossibleStatus:
+            burst = pse_burst_configuration_factory(self.test_project)
+
+            op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+            op.fk_operation_group = burst.fk_operation_group
+            dao.store_entity(op)
+
+            op_metric = operation_factory(test_user=self.test_user, test_project=self.test_project,
+                                          operation_status=status)
+            op_metric.fk_operation_group = burst.fk_metric_operation_group
+            dao.store_entity(op_metric)
+
+            assert burst.status == BurstConfiguration.BURST_RUNNING
+            self.burst_service.update_burst_status(burst)
+            burst = dao.get_burst_by_id(burst.id)
+            assert burst.status == STATUS_FOR_OPERATION[op_metric.status]
+
+    def test_update_finished_burst_status_simple_simulation(self, operation_factory, pse_burst_configuration_factory):
+        for status in OperationPossibleStatus:
+            op = operation_factory(test_user=self.test_user, test_project=self.test_project, operation_status=status)
+            dao.store_entity(op)
+
+            burst = pse_burst_configuration_factory(self.test_project)
+            burst.fk_operation_group = None
+            burst.fk_simulation = op.id
+            dao.store_entity(burst)
+
+            assert burst.status == BurstConfiguration.BURST_RUNNING
+            self.burst_service.update_burst_status(burst)
+            burst = dao.get_burst_by_id(burst.id)
+            assert burst.status == STATUS_FOR_OPERATION[status]

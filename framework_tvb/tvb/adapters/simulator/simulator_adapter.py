@@ -40,6 +40,7 @@ Few supplementary steps are done here:
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
+
 import json
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
@@ -52,6 +53,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
@@ -266,8 +268,7 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.algorithm.configure(full_configure=False)
         if self.branch_simulation_state_gid is not None:
-            history_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
-            history = h5.load_from_index(history_index)
+            history = self.load_traited_by_gid(self.branch_simulation_state_gid)
             assert isinstance(history, SimulationHistory)
             history.fill_into(self.algorithm)
 
@@ -293,9 +294,11 @@ class SimulatorAdapter(ABCAsynchronous):
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
+            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
+            self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
+            ts_h5.store_generic_attributes(GenericAttributes())
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
 
@@ -320,7 +323,7 @@ class SimulatorAdapter(ABCAsynchronous):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self.storage_path)
+            history_index = h5.store_complete(simulation_history, self._get_output_path())
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")

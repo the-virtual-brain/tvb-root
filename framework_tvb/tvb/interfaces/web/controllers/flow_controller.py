@@ -41,25 +41,25 @@ import cherrypy
 import formencode
 import numpy
 import six
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters import constants
-from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.services.burst_service import BurstService
-from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.neocom import h5
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.neocom import h5
+from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -221,7 +221,7 @@ class FlowController(BaseController):
             self._populate_section(algorithm, template_specification, is_burst)
         else:
             if (('Referer' not in cherrypy.request.headers or
-                ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
+                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
                     and 'View' in algorithm.algorithm_category.displayname):
                 # Avoid reset in case of Visualizers, as a supplementary GET
                 not_reset = True
@@ -376,7 +376,6 @@ class FlowController(BaseController):
         applied on arrays.
         """
         return {"sum": "Sum", "average": "Average"}
-
 
     # @expose_fragment("flow/type2component/datatype2select_simple")
     def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
@@ -541,7 +540,8 @@ class FlowController(BaseController):
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
-            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form), title=title)
+            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form),
+                                          title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
             return template_specification
@@ -814,8 +814,8 @@ class FlowController(BaseController):
             for i, (name, Val) in enumerate(self.PSE_names_list):
                 if name == config_name:
                     self.PSE_names_list[i] = (config_name, (
-                        data['threshold_value'] + "," + data['threshold_type'] + "," + data[
-                            'not_presence']))  # replace the previous occurence of the config name, and carry on.
+                            data['threshold_value'] + "," + data['threshold_type'] + "," + data[
+                        'not_presence']))  # replace the previous occurence of the config name, and carry on.
                     self.get_pse_filters()
                     return [True, 'Selected Text stored, and selection updated']
             self.PSE_names_list.append(
