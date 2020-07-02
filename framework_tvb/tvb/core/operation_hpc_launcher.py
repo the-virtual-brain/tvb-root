@@ -97,7 +97,7 @@ def _save_file(file_path, response):
 def _request_passfile(simulator_gid, operation_id, base_url, passfile_folder):
     # type: (str, str, str, str) -> str
     try:
-        req_params = "{}/flow/encryption_config/{}/{}".format(base_url, simulator_gid, operation_id)
+        req_params = "{}/hpc/encryption_config/{}/{}".format(base_url, simulator_gid, operation_id)
         log.info('URL is: {}'.format(req_params))
         response = _build_secured_request().get(req_params)
         log.info('Response is: {}'.format(response))
@@ -116,7 +116,7 @@ def _request_passfile(simulator_gid, operation_id, base_url, passfile_folder):
 def _update_operation_status(status, simulator_gid, operation_id, base_url):
     # type: (str, str, str, str) -> None
     try:
-        req_params = "{}/flow/update_status/{}/{}".format(base_url, simulator_gid, operation_id)
+        req_params = "{}/hpc/update_status/{}/{}".format(base_url, simulator_gid, operation_id)
         log.info('URL is: {}'.format(req_params))
         response = _build_secured_request().put(req_params, data={
             UPDATE_STATUS_KEY: status,

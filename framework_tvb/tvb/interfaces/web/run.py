@@ -38,6 +38,7 @@ import time
 from subprocess import Popen, PIPE
 
 from tvb.core.services.operation_service import OperationService
+from tvb.interfaces.web.controllers.hpc_controller import HPCController
 
 STARTUP_TIC = time.time()
 
@@ -110,6 +111,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
+    cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 

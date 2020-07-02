@@ -37,13 +37,10 @@ given action are described here.
 
 import copy
 import json
-import os
-from http import HTTPStatus
 import cherrypy
 import formencode
 import numpy
 import six
-from cherrypy.lib.static import serve_file
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -51,12 +48,8 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import OperationPossibleStatus
-from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
@@ -65,8 +58,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
-    expose_endpoint
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
@@ -877,48 +869,3 @@ class FlowController(BaseController):
                                                   datatype_group_ob, **parameters)
 
         return [True, 'Stored the exploration material successfully']
-
-    def _validate_request_params(self, simulator_gid, operation_id):
-        operation = dao.get_operation_by_id(operation_id)
-        if not operation:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
-
-        op_params = json.loads(operation.parameters)
-        if 'gid' not in op_params:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
-
-        if op_params['gid'] != simulator_gid:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid simulator gid")
-
-        return operation
-
-    @expose_endpoint
-    def update_status(self, simulator_gid, operation_id, **data):
-        if cherrypy.request.method != 'PUT':
-            raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
-
-        if UPDATE_STATUS_KEY not in data:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
-                                     "Invalid request. {} body param is missing.".format(UPDATE_STATUS_KEY))
-
-        new_status = data[UPDATE_STATUS_KEY]
-        if new_status not in OperationPossibleStatus:
-            raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST,
-                                     "Invalid status.")
-
-        operation = self._validate_request_params(simulator_gid, operation_id)
-
-        OperationService.handle_hpc_status_changed(operation, simulator_gid, new_status)
-
-    @expose_endpoint
-    def encryption_config(self, simulator_gid, operation_id):
-        self.logger.info("Received a request for passfile with gid: {}".format(simulator_gid))
-        if cherrypy.request.method != 'GET':
-            raise cherrypy.HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
-
-        self._validate_request_params(simulator_gid, operation_id)
-
-        encryption_handler = EncryptionHandler(simulator_gid)
-        file_path = encryption_handler.get_password_file()
-
-        return serve_file(file_path, "application/x-download", "attachment", os.path.basename(file_path))
