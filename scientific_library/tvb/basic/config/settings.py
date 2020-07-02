@@ -209,7 +209,6 @@ class HPCSettings(object):
         self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
         self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
         self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
-        self.CRYPT_GROUP = manager.get_attribute(stored.KEY_CRYPT_GROUP)
 
 
 class WebSettings(object):

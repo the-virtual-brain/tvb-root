@@ -118,7 +118,6 @@ class TestSQLiteProfile(WebSettingsProfile):
                                                             os.path.join(self.TVB_STORAGE, '.data'))
         self.hpc.CRYPT_PASSDIR = self.manager.get_attribute(stored.KEY_CRYPT_PASSDIR,
                                                             os.path.join(self.TVB_STORAGE, '.pass'))
-        self.hpc.CRYPT_GROUP = self.manager.get_attribute(stored.KEY_CRYPT_GROUP, 'root')
 
     def initialize_profile(self, change_logger_in_dev=False):
         super(TestSQLiteProfile, self).initialize_profile(change_logger_in_dev=change_logger_in_dev)

@@ -34,7 +34,6 @@
 
 import os
 import random
-import shutil
 import string
 import uuid
 
@@ -66,11 +65,9 @@ class EncryptionHandler(object):
         return self.encrypted_dir_name_regex.format(dir_gid)
 
     def _generate_dirs(self):
-        group = TvbProfile.current.hpc.CRYPT_GROUP
         for dirr in [self.enc_data_dir, self.pass_dir]:
             if not os.path.isdir(dirr):
-                os.makedirs(dirr, mode=0o770)
-                shutil.chown(dirr, group=group)
+                os.makedirs(dirr)
 
     def _generate_password(self):
         password_file = self.get_password_file()
