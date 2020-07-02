@@ -49,7 +49,7 @@ log = get_logger('tvb.core.operation_hpc_launcher')
 UPDATE_STATUS_KEY = "NEW_STATUS"
 
 if __name__ == '__main__':
-    TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
+    TvbProfile.set_profile(TvbProfile.WEB_PROFILE, True)
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 

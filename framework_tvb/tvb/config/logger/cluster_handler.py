@@ -32,11 +32,12 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import os
 import logging
+import os
 from logging.handlers import MemoryHandler
-from tvb.basic.profile import TvbProfile
+
 from tvb.basic.logger.simple_handler import SimpleTimedRotatingFileHandler
+from tvb.basic.profile import TvbProfile
 
 
 class ClusterTimedRotatingFileHandler(MemoryHandler):
@@ -61,7 +62,7 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
         """
         # Formatting string
         format_str = '%(asctime)s - %(levelname)s'
-        if TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS:
+        if TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS or TvbProfile.current.hpc.IN_OPERATION_EXECUTION_PROCESS:
             log_file = self.ASYNC_OP_LOG_FILE
             if TvbProfile.current.cluster.IS_RUNNING_ON_CLUSTER_NODE:
                 node_name = TvbProfile.current.cluster.CLUSTER_NODE_NAME
@@ -70,10 +71,7 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
             else:
                 format_str += ' [proc:' + str(os.getpid()) + '] '
         else:
-            if TvbProfile.current.hpc.IN_OPERATION_EXECUTION_PROCESS:
-                log_file = self.ASYNC_OP_LOG_FILE
-            else:
-                log_file = self.WEB_LOG_FILE
+            log_file = self.WEB_LOG_FILE
 
         format_str += ' - %(name)s - %(message)s'
 
