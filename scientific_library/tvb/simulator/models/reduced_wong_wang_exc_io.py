@@ -42,31 +42,41 @@ def _numba_update_non_state_variables(S, c, a, b, d, w, jn, r, g, io, newS):
     "Gufunc for reduced Wong-Wang model equations."
 
     newS[0] = S[0]  # S
+    newS[1] = S[1]  # Rint
 
     cc = g[0]*jn[0]*c[0]
-    newS[3] = w[0] * jn[0] * S[0] + io[0] + cc  # I
+    newS[4] = w[0] * jn[0] * S[0] + io[0] + cc  # I
     if r[0] <= 0.0:
-        x = a[0]*newS[3] - b[0]
+        # R computed in TVB
+        x = a[0]*newS[4] - b[0]
         h = x / (1 - numpy.exp(-d[0]*x))
-        newS[1] = h     # R
+        newS[2] = h     # R
     else:
-        newS[1] = S[1]  # R
-
-    newS[2] = S[2]      # Rin
+        # R updated from Spiking Network model
+        # Rate has to be scaled down from the Spiking neural model rate range to the TVB one
+        if S[1] < 40.0:  # Rint
+            # For low activity
+            R = numpy.sqrt(S[1])
+        else:
+            # For high activity
+            R = 0.0000050 * g[0] * S[1] ** 2
+        newS[2] = R
+    newS[3] = S[3]  # Rin
 
 
 @guvectorize([(float64[:],)*6], '(n)' + ',()'*4 + '->(n)', nopython=True)
 def _numba_dfun(S, g, t, r, tr, dx):
     "Gufunc for reduced Wong-Wang model equations."
-
-    dx[0] = - (S[0] / t[0]) + (1.0 - S[0]) * S[1] * g[0]
     if r[0] > 0.0:
-        dx[1] = (- S[1] + S[2]) / tr[0]
+        # Integrate rate from Spiking Network
+        # Rint
+        dx[1] = (- S[1] + S[3]) / tr[0]
     else:
         dx[1] = 0.0
-    dx[2] = 0.0
-    dx[3] = 0.0
-
+    dx[0] = - (S[0] / t[0]) + (1.0 - S[0]) * S[2] * g[0]   # S
+    dx[2] = 0.0  # R
+    dx[3] = 0.0  # Rin
+    dx[4] = 0.0  # I
 
 class ReducedWongWangExcIO(TVBReducedWongWang):
 
@@ -159,13 +169,14 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
 
     tau_rin = NArray(
         label=r":math:`\tau_rin_e`",
-        default=numpy.array([1., ]),
+        default=numpy.array([100., ]),
         domain=Range(lo=1., hi=100., step=1.0),
         doc="""[ms]. Excitatory population instant spiking rate time constant.""")
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_boundaries = Final(
         default={"S": numpy.array([0.0, 1.0]),
+                 "Rint": numpy.array([0.0, None]),
                  "R": numpy.array([0.0, None]),
                  "Rin": numpy.array([0.0, None]),
                  "I": numpy.array([None, None])},
@@ -176,6 +187,7 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
 
     state_variable_range = Final(
         default={"S": numpy.array([0.0, 1.0]),
+                 "Rint": numpy.array([0.0, 1000.0]),
                  "R": numpy.array([0.0, 1000.0]),
                  "Rin": numpy.array([0.0, 1000.0]),
                  "I": numpy.array([0.0, 2.0])},
@@ -185,12 +197,12 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=('S', 'R', 'Rin', 'I'),
-        default=('S', 'R', 'Rin', 'I'),
+        choices=('S', 'Rint', 'R', 'Rin', 'I'),
+        default=('S', 'Rint', 'R', 'Rin', 'I'),
         doc="""default state variables to be monitored""")
 
-    state_variables = ['S', 'R', 'Rin', 'I']
-    _nvar = 4
+    state_variables = ['S', 'Rint', 'R', 'Rin', 'I']
+    _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def update_derived_parameters(self):
@@ -232,7 +244,8 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         # by any integration scheme
 
         S = state_variables[0, :]  # synaptic gating dynamics
-        R = state_variables[1, :]  # Rates
+        Rint = state_variables[1, :]  # Rates from Spiking Network, integrated
+        R = state_variables[2, :]  # Rates
 
         c_0 = coupling[0, :]
 
@@ -241,15 +254,23 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
 
         coupling = self.G * self.J_N * (c_0 + lc_0)
 
+        # Currents
         I = self.w * self.J_N * S + self.I_o + coupling
-
         x = self.a * I - self.b
-        # Only rates with R <= 0 0 will be updated by TVB.
-        R = numpy.where(self._Rin, R, x / (1 - numpy.exp(-self.d * x)))
 
-        # We now update the state_variable vector with the new rates:
-        state_variables[1, :] = R
-        state_variables[3, :] = I
+        # Rates
+        # Only rates with _Rin <= 0 0 will be updated by TVB.
+        # The rest, are updated from the Spiking Network
+        R = numpy.where(self._Rin,
+                        # Downscale rates coming from the Spiking Network
+                        numpy.where(Rint < 40,
+                                    numpy.sqrt(Rint),      # Low activity scaling
+                                    0.0000050 *self.G * Rint ** 2),  # High activity scaling,
+                        x / (1 - numpy.exp(-self.d * x)))
+
+        # We now update the state_variable vector with the new rates and currents:
+        state_variables[2, :] = R
+        state_variables[4, :] = I
 
         return state_variables
 
@@ -268,22 +289,23 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
             state_variables = \
                 self.update_non_state_variables(state_variables, coupling, local_coupling, use_numba=False)
 
-        S = state_variables[0, :]     # Synaptic gating dynamics
-        R = state_variables[1, :]    # Rates
-        Rin = state_variables[2, :]  # input instant spiking rates
+        S = state_variables[0, :]    # Synaptic gating dynamics
+        Rint = state_variables[1, :]  # Rates from Spiking Network, integrated
+        R = state_variables[2, :]    # Rates
+        Rin = state_variables[3, :]  # input instant spiking rates
 
         # Synaptic gating dynamics
         dS = - (S / self.tau_s) + (1 - S) * R * self.gamma
 
         # Rates
-        # Low pass filtering, linear dynamics for variables updated from the spiking network
+        # Low pass filtering, linear dynamics for rates updated from the spiking network
         # No dynamics in the case of TVB rates
-        dR = numpy.where(self._Rin, (- R + Rin) / self.tau_rin, 0.0)
+        dRint = numpy.where(self._Rin, (- Rint + Rin) / self.tau_rin, 0.0)
 
-        # Rin and I are always non-state variables:
+        # R, Rin and I are always non-state variables:
         dummy = 0.0*dS
-        #                                  dRin   dI
-        derivative = numpy.array([dS, dR, dummy, dummy])
+        #                                     dR     dRin   dI
+        derivative = numpy.array([dS, dRint, dummy, dummy,dummy])
 
         return derivative
 
