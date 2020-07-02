@@ -31,27 +31,21 @@
 """
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
-import json
 import os
 import shutil
-import uuid
 
 import numpy
-from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
-from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.tests.framework.core.base_testcase import BaseTestCase
-from tvb.tests.framework.core.factory import TestFactory, STATUS_FINISHED
+from tvb.tests.framework.core.factory import TestFactory
 
 
 def _update_operation_status(status, simulator_gid, op_id, base_url):
@@ -134,10 +128,8 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert os.path.exists(output_path)
         assert len(os.listdir(output_path)) == 2
 
-    def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker):
+    def _do_operation_launch_pse(self, op, sim_gid, mocker):
         # Prepare encrypted dir
-        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
-        sim_folder, sim_gid = simulator_factory(op=op)
         self.encryption_handler = EncryptionHandler(sim_gid)
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
         self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
@@ -153,6 +145,12 @@ class TestHPCSchedulerClient(BaseTestCase):
         output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
         assert os.path.exists(output_path)
         assert len(os.listdir(output_path)) == 2
+        return output_path
+
+    def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker):
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=op)
+        self._do_operation_launch_pse(op, sim_gid, mocker)
 
     def test_prepare_inputs(self, operation_factory, simulator_factory):
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
@@ -187,31 +185,28 @@ class TestHPCSchedulerClient(BaseTestCase):
         input_files = hpc_client._prepare_input(op, sim_gid)
         assert len(input_files) == 10
 
-    def test_prepare_metrics_operation(self, operation_factory, datatype_measure_factory, time_series_index_factory):
-        range_values = json.dumps({'range1': [1, 2, 3], 'range2': [4, 5, 6]})
-        op = operation_factory(test_user=self.test_user, test_project=self.test_project, range_values=range_values)
-        op_group = OperationGroup(self.test_project.id)
-        op_group=dao.store_entity(op_group)
+    def test_stage_out_to_operation_folder(self, mocker, operation_factory, simulator_factory,
+                                           pse_burst_configuration_factory):
+        burst = pse_burst_configuration_factory(self.test_project)
+        op = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        op.fk_operation_group = burst.fk_operation_group
+        dao.store_entity(op)
 
-        op.fk_operation_group = op_group.id
-        op = dao.store_entity(op)
+        sim_folder, sim_gid = simulator_factory(op=op)
+        burst.simulator_gid = sim_gid.hex
+        dao.store_entity(burst)
 
-        metric_op_group = OperationGroup(self.test_project.id)
-        metric_op_group=dao.store_entity(metric_op_group)
-        bc = BurstConfiguration(self.test_project.id)
-        bc.fk_operation_group = op_group.id
-        bc.fk_metric_operation_group = metric_op_group.id
-        dao.store_entity(bc)
-        source = time_series_index_factory()
+        output_path = self._do_operation_launch_pse(op, sim_gid, mocker)
 
-        datatype_measure_index = datatype_measure_factory(source, op, op)
-        dt_h5_file = h5.path_for_stored_index(datatype_measure_index)
-        with DatatypeMeasureH5(dt_h5_file) as dt_h5:
-            dt_h5.metrics.store(datatype_measure_index.metrics)
-            dt_h5.analyzed_datatype.store(uuid.UUID(source.gid))
-        metric_op_dir, metric_op = BurstService().prepare_metrics_operation(dt_h5_file, op)
-        assert metric_op.status == STATUS_FINISHED
-        assert metric_op.fk_operation_group == bc.fk_metric_operation_group
+        def _stage_out_dummy(dir, sim_gid):
+            return [os.path.join(output_path, enc_file) for enc_file in os.listdir(output_path)]
+
+        mocker.patch.object(HPCSchedulerClient, '_stage_out_results', _stage_out_dummy)
+        sim_results_files, metric_op, metric_file = HPCSchedulerClient.stage_out_to_operation_folder(None, op, sim_gid)
+        assert op.id != metric_op.id
+        assert os.path.exists(metric_file)
+        assert len(sim_results_files) == 1
+        assert os.path.exists(sim_results_files[0])
 
     def teardown_method(self):
         encrypted_dir = self.encryption_handler.get_encrypted_dir()

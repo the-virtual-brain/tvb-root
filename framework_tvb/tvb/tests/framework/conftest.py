@@ -27,21 +27,23 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import datetime
 import json
+import os
+import os.path
+import uuid
 from time import sleep
+
 import numpy
 import pytest
-import os.path
-import os
-import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
@@ -49,6 +51,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
@@ -648,5 +651,34 @@ def simulator_factory(connectivity_index_factory, operation_factory, region_mapp
         h5.store_view_model(model, storage_path)
 
         return storage_path, model.gid
+
+    return build
+
+
+@pytest.fixture()
+def pse_burst_configuration_factory():
+    def build(project):
+        range_1 = ["row1", [1, 2, 10]]
+        range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group = dao.store_entity(group)
+        group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group_ms = dao.store_entity(group_ms)
+
+        datatype_group = DataTypeGroup(group)
+        datatype_group.no_of_ranges = 2
+        datatype_group.count_results = 10
+        dao.store_entity(datatype_group)
+
+        dt_group_ms = DataTypeGroup(group_ms)
+        dao.store_entity(dt_group_ms)
+
+        burst = BurstConfiguration(project.id, name='test_burst')
+        burst.simulator_gid = uuid.uuid4().hex
+        burst.fk_operation_group = group.id
+        burst.fk_metric_operation_group = group_ms.id
+        burst = dao.store_entity(burst)
+        return burst
 
     return build

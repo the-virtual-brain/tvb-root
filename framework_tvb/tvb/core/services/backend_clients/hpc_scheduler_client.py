@@ -180,7 +180,7 @@ class HPCSchedulerClient(BackendClient):
         sim_adapter = SimulatorAdapter()
         mesage, _ = sim_adapter.fill_existing_indexes(operation, index_list)
 
-        burst_service.update_finished_burst_status(burst_config)
+        burst_service.update_burst_status(burst_config)
         # self.update_datatype_groups()
         return mesage
 
@@ -309,7 +309,7 @@ class HPCSchedulerClient(BackendClient):
         metric_file = None
         for encrypted_file in encrypted_files:
             if os.path.basename(encrypted_file).startswith(DatatypeMeasureH5.file_name_base()):
-                metric_op_dir, metric_op = BurstService.prepare_metrics_operation(encrypted_file, operation)
+                metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
                 metric_files = encryption_handler.decrypt_files_to_dir([encrypted_file], metric_op_dir)
                 metric_file = metric_files[0]
             else:

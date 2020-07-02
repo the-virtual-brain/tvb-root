@@ -266,6 +266,7 @@ class BurstService(object):
         self.logger.debug("Preparing index for metric result in operation {}...".format(operation.id))
         index = DatatypeMeasureIndex()
         with DatatypeMeasureH5(result_filename) as dti_h5:
+            index.gid = dti_h5.gid.load().hex
             index.metrics = json.dumps(dti_h5.metrics.load())
             index.fk_source_gid = dti_h5.analyzed_datatype.load().hex
         index.fk_from_operation = operation.id
@@ -276,23 +277,40 @@ class BurstService(object):
         self.logger.debug("Prepared index {} for results in operation {}...".format(index.summary_info, operation.id))
         return index
 
-    def update_finished_burst_status(self, burst_config):
+    def _update_pse_burst_status(self, burst_config):
+        operations_in_group = dao.get_operations_in_group(burst_config.fk_operation_group)
+        if burst_config.fk_metric_operation_group:
+            operations_in_group.extend(dao.get_operations_in_group(burst_config.fk_metric_operation_group))
+        operation_statuses = list()
+        for operation in operations_in_group:
+            if not has_finished(operation.status):
+                self.logger.debug(
+                    'Operation {} in group {} is not finished, burst status will not be updated'.format(
+                        operation.id, operation.fk_operation_group))
+                return
+            operation_statuses.append(operation.status)
+        self.logger.debug(
+            'All operations in burst {} have finished. Will update burst status'.format(burst_config.id))
+        if STATUS_ERROR in operation_statuses:
+            self.mark_burst_finished(burst_config, BurstConfiguration.BURST_ERROR,
+                                     'Some operations in PSE have finished with errors')
+        elif STATUS_CANCELED in operation_statuses:
+            self.mark_burst_finished(burst_config, BurstConfiguration.BURST_CANCELED)
+        else:
+            self.mark_burst_finished(burst_config)
+
+    def update_burst_status(self, burst_config):
         if burst_config.fk_operation_group:
-            operations_in_group = dao.get_operations_in_group(burst_config.fk_operation_group)
-            if burst_config.fk_metric_operation_group:
-                operations_in_group.extend(dao.get_operations_in_group(burst_config.fk_metric_operation_group))
-            for operation in operations_in_group:
-                if not has_finished(operation.status):
-                    self.logger.debug(
-                        'Operation {} in group {} is not finished, burst status will not be updated'.format(
-                            operation.id, operation.fk_operation_group))
-                    break
-            self.logger.debug(
-                'All operations in burst {} have finished. Will update burst status'.format(burst_config.id))
-        self.mark_burst_finished(burst_config)
+            self._update_pse_burst_status(burst_config)
+        else:
+            operation = dao.get_operation_by_id(burst_config.fk_simulation)
+            message = operation.additional_info
+            if len(message) == 0:
+                message = None
+            self.mark_burst_finished(burst_config, STATUS_FOR_OPERATION[operation.status], message)
 
     @staticmethod
-    def prepare_metrics_operation(file, operation):
+    def prepare_metrics_operation(operation):
         parent_burst = dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'fk_operation_group')[0]
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         range_values = operation.range_values
@@ -305,6 +323,6 @@ class BurstService(object):
                                      meta=meta_str, status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
                                      range_values=range_values)
         metric_operation.visible = False
-        dao.store_entity(metric_operation)
-        op_dir = FilesHelper().get_project_folder(operation.project, str(operation.id))
+        metric_operation = dao.store_entity(metric_operation)
+        op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
         return op_dir, metric_operation
