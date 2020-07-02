@@ -38,16 +38,17 @@ Analyzer used to calculate a single measure for TimeSeries.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import uuid
-import numpy
 import json
-from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
+import uuid
+
+import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.neotraits.api import List
 from tvb.config import choices, ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
