@@ -50,10 +50,10 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
+from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
@@ -113,7 +113,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (Operation, str) -> list
         storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
         input_files = []
-        ABCAdapter.gather_all_references_of_view_model(simulator_gid, storage_path, input_files)
+        h5.gather_all_references_of_view_model(simulator_gid, storage_path, input_files)
         input_files = list(set(input_files))
         return input_files
 

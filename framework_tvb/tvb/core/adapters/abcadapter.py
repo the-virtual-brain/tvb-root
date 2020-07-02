@@ -60,7 +60,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 
@@ -568,47 +568,6 @@ class ABCAdapter(object):
         storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
         input_gid = json.loads(operation.parameters)['gid']
         return h5.load_view_model(input_gid, storage_path)
-
-    @staticmethod
-    def gather_all_references_by_index(h5_file, ref_files):
-        refs = h5_file.gather_references()
-        for _, gid in refs:
-            if not gid:
-                continue
-            index = ABCAdapter.load_entity_by_gid(gid)
-            h5_file = h5.h5_file_for_index(index)
-            ref_files.append(h5_file.path)
-            ABCAdapter.gather_all_references_by_index(h5_file, ref_files)
-
-    @staticmethod
-    def gather_all_references_of_view_model(gid, base_dir, ref_files):
-        vm_path = h5.determine_filepath(gid, base_dir)
-        ref_files.append(vm_path)
-        view_model_class = H5File.determine_type(vm_path)
-        view_model = view_model_class()
-
-        with ViewModelH5(vm_path, view_model) as vm_h5:
-            references = vm_h5.gather_references()
-            uuids = vm_h5.gather_references_by_uuid()
-
-            for _, gid in references:
-                if not gid:
-                    continue
-                if isinstance(gid, (list, tuple)):
-                    for list_gid in gid:
-                        ABCAdapter.gather_all_references_of_view_model(list_gid, base_dir, ref_files)
-                else:
-                    ABCAdapter.gather_all_references_of_view_model(gid, base_dir, ref_files)
-
-            uuid_files = []
-            for _, gid in uuids:
-                if not gid:
-                    continue
-                index = ABCAdapter.load_entity_by_gid(gid)
-                h5_file = h5.h5_file_for_index(index)
-                uuid_files.append(h5_file.path)
-                ABCAdapter.gather_all_references_by_index(h5_file, uuid_files)
-            ref_files.extend(uuid_files)
 
 
 @add_metaclass(ABCMeta)
