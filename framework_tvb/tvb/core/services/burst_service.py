@@ -27,21 +27,25 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import json
 import os
 from datetime import datetime
+
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.logger.builder import get_logger
+from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import OperationGroup, STATUS_PENDING, STATUS_STARTED, STATUS_FINISHED
+from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.model.model_operation import OperationGroup, STATUS_PENDING, STATUS_STARTED, STATUS_FINISHED, \
+    has_finished, Operation
 from tvb.core.entities.model.model_operation import STATUS_CANCELED, STATUS_ERROR
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
-from tvb.core.services.exceptions import RemoveDataTypeException
-from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -235,3 +239,90 @@ class BurstService(object):
             default_simulation_name = burst.name
 
         return default_simulation_name, simulation_number
+
+    def prepare_indexes_for_simulation_results(self, operation, result_filenames, burst):
+        indexes = list()
+        self.logger.debug("Preparing indexes for simulation results in operation {}...".format(operation.id))
+        for filename in result_filenames:
+            index = h5.index_for_h5_file(filename)()
+            # TODO: don't load full TS in memory and make this read nicer
+            datatype, ga = h5.load_with_references(filename)
+            index.fill_from_has_traits(datatype)
+            index.fill_from_generic_attributes(ga)
+            index.fk_parent_burst = burst.id
+            index.fk_from_operation = operation.id
+            if operation.fk_operation_group:
+                datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+                self.logger.debug(
+                    "Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
+                index.fk_datatype_group = datatype_group.id
+            self.logger.debug(
+                "Prepared index {} for file {} in operation {}".format(index.summary_info, filename, operation.id))
+            indexes.append(index)
+        self.logger.debug("Prepared {} indexes for results in operation {}...".format(len(indexes), operation.id))
+        return indexes
+
+    def prepare_index_for_metric_result(self, operation, result_filename, burst):
+        self.logger.debug("Preparing index for metric result in operation {}...".format(operation.id))
+        index = DatatypeMeasureIndex()
+        with DatatypeMeasureH5(result_filename) as dti_h5:
+            index.gid = dti_h5.gid.load().hex
+            index.metrics = json.dumps(dti_h5.metrics.load())
+            index.fk_source_gid = dti_h5.analyzed_datatype.load().hex
+        index.fk_from_operation = operation.id
+        index.fk_parent_burst = burst.id
+        datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+        self.logger.debug("Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
+        index.fk_datatype_group = datatype_group.id
+        self.logger.debug("Prepared index {} for results in operation {}...".format(index.summary_info, operation.id))
+        return index
+
+    def _update_pse_burst_status(self, burst_config):
+        operations_in_group = dao.get_operations_in_group(burst_config.fk_operation_group)
+        if burst_config.fk_metric_operation_group:
+            operations_in_group.extend(dao.get_operations_in_group(burst_config.fk_metric_operation_group))
+        operation_statuses = list()
+        for operation in operations_in_group:
+            if not has_finished(operation.status):
+                self.logger.debug(
+                    'Operation {} in group {} is not finished, burst status will not be updated'.format(
+                        operation.id, operation.fk_operation_group))
+                return
+            operation_statuses.append(operation.status)
+        self.logger.debug(
+            'All operations in burst {} have finished. Will update burst status'.format(burst_config.id))
+        if STATUS_ERROR in operation_statuses:
+            self.mark_burst_finished(burst_config, BurstConfiguration.BURST_ERROR,
+                                     'Some operations in PSE have finished with errors')
+        elif STATUS_CANCELED in operation_statuses:
+            self.mark_burst_finished(burst_config, BurstConfiguration.BURST_CANCELED)
+        else:
+            self.mark_burst_finished(burst_config)
+
+    def update_burst_status(self, burst_config):
+        if burst_config.fk_operation_group:
+            self._update_pse_burst_status(burst_config)
+        else:
+            operation = dao.get_operation_by_id(burst_config.fk_simulation)
+            message = operation.additional_info
+            if len(message) == 0:
+                message = None
+            self.mark_burst_finished(burst_config, STATUS_FOR_OPERATION[operation.status], message)
+
+    @staticmethod
+    def prepare_metrics_operation(operation):
+        parent_burst = dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'fk_operation_group')[0]
+        metric_operation_group_id = parent_burst.fk_metric_operation_group
+        range_values = operation.range_values
+        metadata = {DataTypeMetaData.KEY_BURST: parent_burst.id}
+        # metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, {})
+        meta_str = json.dumps(metadata)
+        metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+
+        metric_operation = Operation(operation.fk_launched_by, operation.fk_launched_in, metric_algo.id, '',
+                                     meta=meta_str, status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
+                                     range_values=range_values)
+        metric_operation.visible = False
+        metric_operation = dao.store_entity(metric_operation)
+        op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
+        return op_dir, metric_operation

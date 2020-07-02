@@ -35,33 +35,34 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import os
-import json
-import uuid
-import psutil
-import numpy
 import importlib
+import json
+import os
 import typing
-from functools import wraps
-from datetime import datetime
+import uuid
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
+from functools import wraps
+
+import numpy
+import psutil
 from six import add_metaclass
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
-from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters import constants
+from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
+from tvb.core.adapters.exceptions import NoMemoryAvailableException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
-from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits.forms import Form
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -326,20 +327,16 @@ class ABCAdapter(object):
         else:
             self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
 
-    @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
-        """
-        Method to wrap LAUNCH.
-        Will prepare data, and store results on return. 
-        """
+    def _extract_operation_data(self, operation):
         self.meta_data.update(json.loads(operation.meta_data))
-        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        operation = dao.get_operation_by_id(operation.id)
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        self.configure(view_model)
-
+    def _ensure_enough_resources(self, available_disk_space, view_model):
         # Compare the amount of memory the current algorithms states it needs,
         # with the average between the RAM available on the OS and the free memory at the current moment.
         # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
@@ -362,10 +359,28 @@ class ABCAdapter(object):
             msg = ("You only have %.2f GB of disk space available but the operation you "
                    "launched might require %.2f Stopping execution...")
             raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
+        return required_disk_space
 
+    def _update_operation_entity(self, operation, required_disk_space):
         operation.start_now()
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
+
+    def fill_existing_indexes(self, operation, index_list):
+        self._extract_operation_data(operation)
+        self._prepare_generic_attributes()
+        return self._capture_operation_results(index_list)
+
+    @nan_not_allowed()
+    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+        """
+        Method to wrap LAUNCH.
+        Will prepare data, and store results on return.
+        """
+        self._extract_operation_data(operation)
+        self.configure(view_model)
+        required_disk_size = self._ensure_enough_resources(available_disk_space, view_model)
+        self._update_operation_entity(operation, required_disk_size)
 
         self._prepare_generic_attributes(uid)
         result = self.launch(view_model)
@@ -451,6 +466,9 @@ class ABCAdapter(object):
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
 
+    def _get_output_path(self):
+        return self.storage_path
+
     @staticmethod
     def load_entity_by_gid(data_gid):
         """
@@ -469,8 +487,9 @@ class ABCAdapter(object):
         index = ABCAdapter.load_entity_by_gid(data_gid)
         return h5.load_from_index(index)
 
-    def load_with_references(self, dt_gid, dt_class=None):
-        # type: (typing.Union[uuid.UUID, str], typing.Type[HasTraits]) -> HasTraits
+    @staticmethod
+    def load_with_references(dt_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
         dt_index = ABCAdapter.load_entity_by_gid(dt_gid)
         h5_path = h5.path_for_stored_index(dt_index)
         dt, _ = h5.load_with_references(h5_path)

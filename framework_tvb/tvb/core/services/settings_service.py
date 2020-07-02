@@ -125,9 +125,8 @@ class SettingsService(object):
                                          'value': TvbProfile.current.cluster.CLUSTER_SCHEDULER, 'type': 'select',
                                          'options': TvbProfile.current.cluster.ACCEPTED_SCHEDULERS},
             self.KEY_ADMIN_DISPLAY_NAME: {'label': 'Administrator Display Name',
-                                  'value': TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
-                                  'type': 'text', 'readonly': not first_run},
-
+                                          'value': TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
+                                          'type': 'text', 'readonly': not first_run},
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                   'type': 'text', 'readonly': not first_run,

@@ -1,6 +1,17 @@
 <!-- ============================= -->
 <!--          User Login Page      -->
 <!-- ============================= -->
+<script>
+	function setBaseUrl() {
+		baseUrl = window.location.origin
+		doAjaxCall({
+			type: 'GET',
+			url: '/user/base_url',
+			data: 'url='+ baseUrl
+		})
+	}
+	setBaseUrl()
+</script>
 <div id="main">
 	<form method="post" id="user_login_form">
 		{% if keycloakConfigWebFile is not defined%}

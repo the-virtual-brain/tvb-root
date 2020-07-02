@@ -656,7 +656,7 @@ class SimulatorController(BurstBaseController):
     def _get_variables_of_interest_indexes(all_variables, chosen_variables):
         indexes = {}
 
-        if not isinstance(chosen_variables, list):
+        if not isinstance(chosen_variables, (list, tuple)):
             chosen_variables = [chosen_variables]
 
         for variable in chosen_variables:

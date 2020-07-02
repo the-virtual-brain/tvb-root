@@ -38,16 +38,17 @@ Analyzer used to calculate a single measure for TimeSeries.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import uuid
-import numpy
 import json
-from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
+import uuid
+
+import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.neotraits.api import List
 from tvb.config import choices, ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
@@ -160,7 +161,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
             algorithms = list(ALGORITHMS)
 
         self.log.debug("time_series shape is %s" % str(self.input_shape))
-        dt_timeseries = h5.load_from_index(self.input_time_series_index)
+        dt_timeseries = self.load_traited_by_gid(self.input_time_series_index.gid)
 
         metrics_results = {}
         for algorithm_name in algorithms:
@@ -192,7 +193,7 @@ class TimeseriesMetricsAdapter(ABCAsynchronous):
         result.fk_source_gid = self.input_time_series_index.gid
         result.metrics = json.dumps(metrics_results)
 
-        result_path = h5.path_for(self.storage_path, DatatypeMeasureH5, result.gid)
+        result_path = h5.path_for(self._get_output_path(), DatatypeMeasureH5, result.gid)
         with DatatypeMeasureH5(result_path) as result_h5:
             result_h5.metrics.store(metrics_results)
             result_h5.analyzed_datatype.store(dt_timeseries)

@@ -37,6 +37,9 @@ import importlib
 import time
 from subprocess import Popen, PIPE
 
+from tvb.core.services.hpc_operation_service import HPCOperationService
+from tvb.interfaces.web.controllers.hpc_controller import HPCController
+
 STARTUP_TIC = time.time()
 
 import os
@@ -108,6 +111,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
+    cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
@@ -117,6 +121,12 @@ def init_cherrypy(arguments=None):
     # This tools clean up files on disk (mainly after export)
     cherrypy.tools.cleanup = Tool('on_end_request', RequestHandler.clean_files_on_disk)
     # ----------------- End register additional request handlers ----------------
+
+    # Register housekeeping job
+    if TvbProfile.current.hpc.IS_HPC_RUN:
+        cherrypy.engine.housekeeper = cherrypy.process.plugins.BackgroundTask(
+            TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
+        cherrypy.engine.housekeeper.start()
 
     #### HTTP Server is fired now ######  
     cherrypy.engine.start()

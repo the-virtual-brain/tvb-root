@@ -58,6 +58,7 @@ class H5File(object):
     This class implements reading and writing to a *specific* h5 based file format.
     A subclass of this defines a new file format.
     """
+    KEY_WRITTEN_BY = 'written_by'
     is_new_file = False
 
     def __init__(self, path):
@@ -69,7 +70,7 @@ class H5File(object):
 
         # common scalar headers
         self.gid = Uuid(HasTraits.gid, self)
-        self.written_by = Scalar(Attr(str), self, name='written_by')
+        self.written_by = Scalar(Attr(str), self, name=self.KEY_WRITTEN_BY)
         self.create_date = Scalar(Attr(str), self, name='create_date')
 
         # Generic attributes descriptors
@@ -235,17 +236,23 @@ class H5File(object):
         return cls
 
     @staticmethod
-    def from_file(path):
+    def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]
         base_dir, fname = os.path.split(path)
         storage_manager = HDF5StorageManager(base_dir, fname)
         meta = storage_manager.get_metadata()
-        h5file_class_fqn = meta.get('written_by')
+        h5file_class_fqn = meta.get(H5File.KEY_WRITTEN_BY)
         if h5file_class_fqn is None:
             return H5File(path)
         package, cls_name = h5file_class_fqn.rsplit('.', 1)
         module = importlib.import_module(package)
         cls = getattr(module, cls_name)
+        return cls
+
+    @staticmethod
+    def from_file(path):
+        # type: (str) -> H5File
+        cls = H5File.h5_class_from_file(path)
         return cls(path)
 
     def __repr__(self):
@@ -295,3 +302,18 @@ class ViewModelH5(H5File):
             else:
                 ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)
+
+    def gather_references_by_uuid(self):
+        """
+        Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
+        references towards existent Datatypes (eg. Connectivity) as Uuid.
+        Thus, the method gather_references will return only references towards other ViewModels, and we need this
+        method to gather also the other references.
+        """
+        ret = []
+        for accessor in self.iter_accessors():
+            if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
+                if accessor.field_name is 'gid':
+                    continue
+                ret.append((accessor.trait_attribute, accessor.load()))
+        return ret

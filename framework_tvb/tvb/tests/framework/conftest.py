@@ -27,27 +27,31 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import datetime
 import json
+import os
+import os.path
+import uuid
 from time import sleep
+
 import numpy
 import pytest
-import os.path
-import os
-import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex, ValueWrapperIndex
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesRegionIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
@@ -61,7 +65,6 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
-from tvb.simulator.monitors import TemporalAverage
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
@@ -275,7 +278,7 @@ def surface_index_factory(surface_factory, operation_factory):
 def region_mapping_factory(surface_factory, connectivity_factory):
     def build(surface=None, connectivity=None):
         if not surface:
-            surface = surface_factory(5)
+            surface = surface_factory(5, cortical=True)
         if not connectivity:
             connectivity = connectivity_factory(2)
         return RegionMapping(
@@ -631,15 +634,51 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
 
 
 @pytest.fixture()
-def simulator_factory(connectivity_index_factory, operation_factory):
-    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverage()):
+def simulator_factory(connectivity_index_factory, operation_factory, region_mapping_index_factory):
+    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverageViewModel(), with_surface=False):
         model = SimulatorAdapterModel(monitors=[monitor])
         if not op:
             op = operation_factory(test_user=user, test_project=project)
-        model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        if not with_surface:
+            model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        if with_surface:
+            rm_idx = region_mapping_index_factory()
+            model.connectivity = rm_idx.fk_connectivity_gid
+            model.surface = CortexViewModel()
+            model.surface.surface_gid = rm_idx.fk_surface_gid
+            model.surface.region_mapping_data = rm_idx.gid
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         h5.store_view_model(model, storage_path)
 
         return storage_path, model.gid
+
+    return build
+
+
+@pytest.fixture()
+def pse_burst_configuration_factory():
+    def build(project):
+        range_1 = ["row1", [1, 2, 10]]
+        range_2 = ["row2", [0.1, 0.3, 0.5]]
+
+        group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group = dao.store_entity(group)
+        group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        group_ms = dao.store_entity(group_ms)
+
+        datatype_group = DataTypeGroup(group)
+        datatype_group.no_of_ranges = 2
+        datatype_group.count_results = 10
+        dao.store_entity(datatype_group)
+
+        dt_group_ms = DataTypeGroup(group_ms)
+        dao.store_entity(dt_group_ms)
+
+        burst = BurstConfiguration(project.id, name='test_burst')
+        burst.simulator_gid = uuid.uuid4().hex
+        burst.fk_operation_group = group.id
+        burst.fk_metric_operation_group = group_ms.id
+        burst = dao.store_entity(burst)
+        return burst
 
     return build

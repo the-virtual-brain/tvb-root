@@ -34,6 +34,7 @@ import uuid
 
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
@@ -60,6 +61,13 @@ def h5_file_for_index(dt_index_instance):
     h5_path = path_for_stored_index(dt_index_instance)
     h5_class = REGISTRY.get_h5file_for_index(type(dt_index_instance))
     return h5_class(h5_path)
+
+
+def index_for_h5_file(source_path):
+    # type: (str) -> typing.Type[DataType]
+    """"""
+    h5_class = H5File.h5_class_from_file(source_path)
+    return REGISTRY.get_index_for_h5file(h5_class)
 
 
 def load_from_index(dt_index):
@@ -154,6 +162,19 @@ def load_with_links_from_dir(base_dir, gid):
     return tvb_loader.load_with_links(fname)
 
 
+def load_with_references_from_dir(base_dir, gid):
+    # type: (str, typing.Union[uuid.UUID, str]) -> HasTraits
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    fname = os.path.join(base_dir, fname)
+    tvb_loader = TVBLoader(REGISTRY)
+
+    def load_ht_function(sub_gid, traited_attr):
+        return dir_loader.load(sub_gid)
+
+    return tvb_loader.load_complete_by_function(fname, load_ht_function)
+
+
 def store_to_dir(datatype, base_dir, recursive=False):
     # type: (HasTraits, str, bool) -> None
     """
@@ -196,15 +217,19 @@ def store_view_model(view_model, base_dir):
                 store_view_model(model_attr, base_dir)
 
 
+def determine_filepath(gid, base_dir):
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_name(gid)
+    h5_path = os.path.join(base_dir, fname)
+    return h5_path
+
+
 def load_view_model(gid, base_dir):
     # type: (uuid.UUID, str) -> ViewModel
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """
-    dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    h5_path = os.path.join(base_dir, fname)
-
+    h5_path = determine_filepath(gid, base_dir)
     return load_view_model_from_file(h5_path)
 
 
@@ -232,3 +257,44 @@ def load_view_model_from_file(filepath):
                 loaded_ref = load_view_model(gid, base_dir)
             setattr(view_model, trait_attr.field_name, loaded_ref)
     return view_model
+
+
+def gather_all_references_by_index(h5_file, ref_files):
+    refs = h5_file.gather_references()
+    for _, gid in refs:
+        if not gid:
+            continue
+        index = load_entity_by_gid(gid.hex)
+        h5_file = h5_file_for_index(index)
+        ref_files.append(h5_file.path)
+        gather_all_references_by_index(h5_file, ref_files)
+
+
+def gather_all_references_of_view_model(gid, base_dir, ref_files):
+    vm_path = determine_filepath(gid, base_dir)
+    ref_files.append(vm_path)
+    view_model_class = H5File.determine_type(vm_path)
+    view_model = view_model_class()
+
+    with ViewModelH5(vm_path, view_model) as vm_h5:
+        references = vm_h5.gather_references()
+        uuids = vm_h5.gather_references_by_uuid()
+
+        for _, gid in references:
+            if not gid:
+                continue
+            if isinstance(gid, (list, tuple)):
+                for list_gid in gid:
+                    gather_all_references_of_view_model(list_gid, base_dir, ref_files)
+            else:
+                gather_all_references_of_view_model(gid, base_dir, ref_files)
+
+        uuid_files = []
+        for _, gid in uuids:
+            if not gid:
+                continue
+            index = load_entity_by_gid(gid.hex)
+            h5_file = h5_file_for_index(index)
+            uuid_files.append(h5_file.path)
+            gather_all_references_by_index(h5_file, uuid_files)
+        ref_files.extend(uuid_files)
