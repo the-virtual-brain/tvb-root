@@ -241,6 +241,8 @@ class FlowController(BaseController):
             template_specification[common.KEY_DISPLAY_MENU] = True
             template_specification[common.KEY_BACK_PAGE] = back_page_link
 
+        common.add2session(common.KEY_ADAPTER, adapter_key)
+
         template_specification[common.KEY_ADAPTER] = adapter_key
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
         self.fill_default_attributes(template_specification, algorithm.displayname)
@@ -252,7 +254,7 @@ class FlowController(BaseController):
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
         """
-        algorithm_id = common.get_from_session(KEY_ADAPTER)
+        algorithm_id = common.get_from_session(common.KEY_ADAPTER)
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
