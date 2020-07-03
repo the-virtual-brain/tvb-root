@@ -52,7 +52,7 @@ pipeline {
         stage ('Start rest server') {
             steps {
                 sh 'docker ps -f name=${REST_CONTAINER} -q | xargs --no-run-if-empty docker container stop'
-                sh 'docker container ls -a -fname=${REST_CONTAINER} -q | xargs -r docker container rm'
+                sh 'docker container ls -a -fname=${REST_CONTAINER} -q | true && xargs -r docker container rm '
                 writeFile file: 'keycloak/keycloak_config.json', text: params.KC_CONFIG
                 sh 'docker run -p 9090:9090 -d -v "/opt/jenkins_home/workspace/$JOB_NAME/keycloak/":/home/tvb_user/keycloak_config --name ${REST_CONTAINER} ${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG} /bin/bash -c "source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"'
                 //wait for REST server initialization
