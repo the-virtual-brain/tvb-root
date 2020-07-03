@@ -259,6 +259,10 @@ class TraitDataTypeSelectField(TraitField):
     def get_dynamic_filters(self):
         return FilterChain().get_filters_for_type(self.datatype_index)
 
+    @property
+    def get_form_filters(self):
+        return self.conditions
+
     def _get_values_from_db(self):
         all_conditions = FilterChain()
         all_conditions += self.conditions
