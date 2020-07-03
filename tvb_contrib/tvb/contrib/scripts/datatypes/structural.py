@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,31 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+.. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+from tvb.contrib.scripts.datatypes.base import BaseModel
+from tvb.basic.neotraits.api import Attr
+from tvb.datatypes.structural import StructuralMRI as TVBStructuralMRI
+
+
+class StructuralMRI(TVBStructuralMRI, BaseModel):
+
+    def to_tvb_instance(self, datatype=TVBStructuralMRI, **kwargs):
+        return super(StructuralMRI, self).to_tvb_instance(datatype, **kwargs)
+
+
+class T1(StructuralMRI):
+    weighting = Attr(str, label="MRI weighting", default="T1")  # eg, "T1", "T2", "T2*", "PD", ...
+
+
+class T2(StructuralMRI):
+    weighting = Attr(str, label="MRI weighting", default="T2")  # eg, "T1", "T2", "T2*", "PD", ...
+
+
+class Flair(StructuralMRI):
+    weighting = Attr(str, label="MRI weighting", default="Flair")  # eg, "T1", "T2", "T2*", "PD", ...
+
+
+class B0(StructuralMRI):
+    weighting = Attr(str, label="MRI weighting", default="B0")  # eg, "T1", "T2", "T2*", "PD", ...

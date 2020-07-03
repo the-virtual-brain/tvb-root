@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,15 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+We want tvb package to extend over 3 folders:
+tvb_library, tvb_framework and tvb_contrib.
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+from pkgutil import extend_path
+
+try:
+    __path__ = extend_path(__path__, __name__)
+
+except NameError:
+    # Ignore __path__ not defined when called from sphinx
+    __path__ = [__name__]

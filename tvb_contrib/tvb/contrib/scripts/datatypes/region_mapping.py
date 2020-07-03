@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,29 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+.. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+from tvb.contrib.scripts.datatypes.base import BaseModel
+from tvb.datatypes.region_mapping import RegionMapping as TVBRegionMapping
+from tvb.datatypes.region_mapping import RegionVolumeMapping as TVBRegionVolumeMapping
+
+
+class RegionMapping(TVBRegionMapping, BaseModel):
+
+    def to_tvb_instance(self, datatype=TVBRegionMapping, **kwargs):
+        return super(RegionMapping, self).to_tvb_instance(datatype, **kwargs)
+
+
+class CorticalRegionMapping(RegionMapping):
+    pass
+
+
+class SubcorticalRegionMapping(RegionMapping):
+    pass
+
+
+class RegionVolumeMapping(TVBRegionVolumeMapping, BaseModel):
+
+    def to_tvb_instance(self, **kwargs):
+        return super(RegionVolumeMapping, self).to_tvb_instance(TVBRegionVolumeMapping, **kwargs)

@@ -13,9 +13,9 @@ cd scientific_library
 python setup.py develop
 cd ..
 
-cd scientific_library/contrib
+cd tvb_contrib
 python setup.py develop --no-deps
-cd ../..
+cd ..
 
 cd tvb_bin
 python setup.py develop

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,36 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+Logs and errors
+
+.. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+
+def raise_value_error(msg, logger=None):
+    if logger is not None:
+        logger.error("\n\nValueError: " + msg + "\n")
+    raise ValueError(msg)
+
+
+def raise_error(msg, logger=None):
+    if logger is not None:
+        logger.error("\n\nError: " + msg + "\n")
+    raise Exception(msg)
+
+
+def raise_import_error(msg, logger=None):
+    if logger is not None:
+        logger.error("\n\nImportError: " + msg + "\n")
+    raise ImportError(msg)
+
+
+def raise_not_implemented_error(msg, logger=None):
+    if logger is not None:
+        logger.error("\n\nNotImplementedError: " + msg + "\n")
+    raise NotImplementedError(msg)
+
+
+def warning(msg, logger=None):
+    if logger is not None:
+        logger.warning("\n" + msg + "\n")

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,18 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+.. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+import numpy as np
+
+
+def parcellation_correspondence(inds_from, labels_from, labels_to):
+    inds_to = []
+    for ind in inds_from:
+        lbl = labels_from[ind]
+        inds_to.append(np.where(labels_to == lbl)[0][0])
+    if len(inds_to) != 1:
+        return inds_to
+    else:
+        return inds_to[0]

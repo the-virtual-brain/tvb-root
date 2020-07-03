@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
+#  See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
@@ -29,10 +27,23 @@
 #
 
 """
-TVB DataTypes, as a dictionary between multiple algorithms.
+.. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-__all__ = ["connectivity", "equations", "fcd", "graph", "local_connectivity",
-           "mode_decompositions", "patterns", "projections",
-           "region_mapping", "sensors", "structural", "spectral", "surfaces",
-           "temporal_correlations", "time_series", "tracts", "volumes"]
+import numpy as np
+from tvb.basic.logger.builder import get_logger
+
+
+class HeadService(object):
+    logger = get_logger(__name__)
+
+    def sensors_in_electrodes_disconnectivity(self, sensors, sensors_labels=[]):
+        if len(sensors_labels) < 2:
+            sensors_labels = sensors.labels
+        n_sensors = len(sensors_labels)
+        elec_labels, elec_inds = sensors.group_sensors_to_electrodes(sensors_labels)
+        if len(elec_labels) >= 2:
+            disconnectivity = np.ones((n_sensors, n_sensors))
+            for ch in elec_inds:
+                disconnectivity[np.meshgrid(ch, ch)] = 0.0
+        return disconnectivity
