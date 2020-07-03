@@ -154,7 +154,7 @@ class Attr(_Attr):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            if isinstance(self.default, types.FunctionType):
+            if self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType):
                 default = self.default()
             else:
                 default = self.default
