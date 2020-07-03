@@ -371,8 +371,7 @@ class Projection(Monitor):
 
     region_mapping = Attr(
         RegionMapping,
-        required=False,
-        label="region mapping",  #order=3,
+        label="Region Mapping",  #order=3,
         doc="A region mapping specifies how vertices of a surface correspond to given regions in the"
             " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
             " simulation but is optional for a surface simulation.")

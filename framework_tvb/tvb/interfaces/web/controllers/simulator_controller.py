@@ -797,6 +797,22 @@ class SimulatorController(BurstBaseController):
                 SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, current_monitor)
             return rendering_rules.to_dict()
 
+        if isinstance(monitor, Projection) and cherrypy.request.method == 'POST':
+            # load region mapping
+            region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
+            region_mapping = h5.load_from_index(region_mapping_index)
+            monitor.region_mapping = region_mapping.gid
+
+            # load sensors and projection
+            sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
+            sensors = h5.load_from_index(sensors_index)
+
+            projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
+            projection = h5.load_from_index(projection_surface_index)
+
+            monitor.sensors = sensors.gid
+            monitor.projection = projection.gid
+
         rendering_rules.previous_form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                                           type(monitor).__name__)
         return self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, rendering_rules)
