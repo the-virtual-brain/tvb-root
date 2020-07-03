@@ -92,10 +92,6 @@ def _get_imported_model(model):
 
 
 _module_models = {
-    'reducedwongwangt': [ModelsEnum.REDUCEDWONGWANGT],
-    'reducedwongwang': [ModelsEnum.REDUCEDWONGWANG],
-    'montbrio': [ModelsEnum.MONTBRIO],
-    'generic2doscillator': [ModelsEnum.GENERIC2DOSCILLATOR],
     'base': [ModelsEnum.BASE_MODEL],
     'epileptor': [ModelsEnum.EPILEPTOR, ModelsEnum.EPILEPTOR_2D],
     'epileptor_rs': [ModelsEnum.EPILEPTOR_RS],
