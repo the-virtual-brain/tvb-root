@@ -34,7 +34,7 @@ pipeline {
                 withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
                     powershell 'cd tvb_build; cmd /c if exist build rd /s /q build; cd ..'
                     unstash 'step1'
-                    powershell 'cd tvb_build; conda init powershell; activate tvb-run; ./install_full_tvb.bat; python build_from_conda.py'
+                    powershell 'cd tvb_build; conda env list; conda activate tvb-run; activate tvb-run; ./install_full_tvb.bat; python build_from_conda.py'
                 }
                 archiveArtifacts artifacts: 'tvb_build/build/TVB_Windows*.zip'
             }
@@ -42,7 +42,7 @@ pipeline {
         stage ('Tests on SqLite') {
             steps {
                 withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
-                    powershell 'cd tvb_build; conda init powershell; activate tvb-run; ./install_full_tvb.bat; cd ../tvb_bin; ./run_tests.bat; exit 0'
+                    powershell 'cd tvb_build; activate tvb-run; ./install_full_tvb.bat; cd ../tvb_bin; ./run_tests.bat; exit 0'
                 }
                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
