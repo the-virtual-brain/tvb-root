@@ -9,6 +9,7 @@ SHELL ["cmd", "/S", "/C"]
 # Install miniconda
 RUN start /wait "" C:\\TEMP\\miniconda.exe /InstallationType=AllUsers /RegisterPython=1 /S /D=C:\miniconda
 RUN setx /M PATH "%PATH%;C:\miniconda\Scripts"
+RUN conda init powershell
 
 # Prepare tvb-run env
 RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
@@ -26,6 +27,4 @@ ADD https://zenodo.org/record/3688773/files/tvb-data.zip C:\\TEMP\\tvb_data.zip
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
 RUN activate tvb-run && python C:\\tvb_data\\setup.py develop
 
-
-RUN conda init powershell
 CMD ["cmd", "activate tvb-run"]
