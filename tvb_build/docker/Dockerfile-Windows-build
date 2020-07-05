@@ -25,6 +25,7 @@ RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32
 # Download and install tvb data
 ADD https://zenodo.org/record/3688773/files/tvb-data.zip C:\\TEMP\\tvb_data.zip
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
+RUN dir C:\\tvb_data
 RUN activate tvb-run && python C:\\tvb_data\\setup.py develop
 
 CMD ["cmd", "activate tvb-run"]

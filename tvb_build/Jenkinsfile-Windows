@@ -35,8 +35,6 @@ pipeline {
                     powershell 'cd tvb_build; cmd /c if exist build rd /s /q build; cd ..'
                     unstash 'step1'
                     powershell 'cd tvb_build; cmd /k "activate tvb-run & install_full_tvb.bat & python build_from_conda.py"'
-                    powershell 'dir C:/python/lib/site-packages/'
-                    powershell 'dir C:/miniconda/envs/tvb-run/lib/site-packages/'
                 }
                 archiveArtifacts artifacts: 'tvb_build/build/TVB_Windows*.zip'
             }
