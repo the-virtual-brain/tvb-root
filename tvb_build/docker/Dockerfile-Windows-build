@@ -20,12 +20,11 @@ RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab flask 
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
 RUN activate tvb-run && pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
-RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN activate tvb-run && pip install typing tvb-gdist==2.0.1 BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
 
 # Download and install tvb data
 ADD https://zenodo.org/record/3688773/files/tvb-data.zip C:\\TEMP\\tvb_data.zip
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
-RUN powershell.exe -NoP -NonI -Command "dir 'C:\\tvb_data\\tvb_data'"
 RUN activate tvb-run && cd c:\\tvb_data && python setup.py develop
 
 CMD ["cmd", "activate tvb-run"]
