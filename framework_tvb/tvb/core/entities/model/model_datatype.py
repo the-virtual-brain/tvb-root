@@ -229,6 +229,7 @@ class DataTypeMatrix(DataType):
     array_data_min = Column(Float)
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
+    has_volume_mapping = Column(Boolean, nullable=False, default=False)
 
     def fill_from_has_traits(self, datatype):
         super(DataTypeMatrix, self).fill_from_has_traits(datatype)

@@ -30,6 +30,8 @@
 
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
+from tvb.core.entities.storage import dao
 from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -76,3 +78,6 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
+        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, datatype.connectivity.gid.hex, 'fk_connectivity_gid')
+        if rvm_list:
+            self.has_volume_mapping =True

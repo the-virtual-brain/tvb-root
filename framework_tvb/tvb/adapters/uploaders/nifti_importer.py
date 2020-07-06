@@ -35,6 +35,7 @@
 
 import os
 import numpy
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.basic.exceptions import ValidationException
 from tvb.basic.neotraits.api import Attr
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
@@ -53,7 +54,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
-from tvb.core.entities.storage import transactional
+from tvb.core.entities.storage import transactional, dao
 from tvb.core.neotraits.forms import TraitUploadField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
@@ -243,6 +244,7 @@ class NIFTIImporter(ABCUploader):
                 connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
                 rm = self._create_region_map(volume_ht, connectivity_index, view_model.apply_corrections,
                                              view_model.mappings_file, view_model.title)
+                self.set_volume_mapping(view_model)
                 return [volume_idx, rm]
 
             if self.parser.has_time_dimension:
@@ -257,3 +259,11 @@ class NIFTIImporter(ABCUploader):
             logger = get_logger(__name__)
             logger.exception(excep)
             raise LaunchException(excep)
+
+    def set_volume_mapping(self, view_model):
+        conn_measure_index_list = dao.get_generic_entity(ConnectivityMeasureIndex, view_model.connectivity.hex,
+                                                         "fk_connectivity_gid")
+        for conn_measure_index in conn_measure_index_list:
+            if not conn_measure_index.has_volume_mapping:
+                conn_measure_index.has_volume_mapping = True
+                dao.store_entity(conn_measure_index)

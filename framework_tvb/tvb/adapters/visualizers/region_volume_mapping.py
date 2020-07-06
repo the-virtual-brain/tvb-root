@@ -308,7 +308,8 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=[">="], values=[2])
+        return FilterChain(fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
+                           operations=["==", "=="], values=[True, True])
 
     @staticmethod
     def get_input_name():
@@ -385,7 +386,8 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     @staticmethod
     def get_filters():
-        return FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
+        return FilterChain(fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
+                           operations=["==", "=="], values=[1, True])
 
 
 class ConnectivityMeasureVolumeVisualizer(_MappedArrayVolumeBase):
