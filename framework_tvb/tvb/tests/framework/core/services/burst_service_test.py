@@ -54,7 +54,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+# from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -77,7 +77,7 @@ class TestBurstService(BaseTestCase):
     operation_service = OperationService()
     sim_algorithm = algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
                                                                         IntrospectionRegistry.SIMULATOR_CLASS)
-    local_simulation_params = deepcopy(SIMULATOR_PARAMETERS)
+    # local_simulation_params = deepcopy(SIMULATOR_PARAMETERS)
 
     def setup_method(self):
         """
