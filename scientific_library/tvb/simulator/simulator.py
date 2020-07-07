@@ -408,13 +408,12 @@ class Simulator(HasTraits):
     def _update_and_bound_history(self, history):
         self.bound_and_clamp(history)
         # If there are non-state variables, they need to be updated for history:
-        try:
+        if hasattr(self.model, "update_initial_conditions_non_state_variables"):
             update_initial_conditions = self.model.update_initial_conditions_non_state_variables
-        except:
-            try:
-                update_initial_conditions = self.model.update_non_state_variables
-            except:
-                return history
+        elif hasattr(self.model, "update_non_state_variables"):
+            update_initial_conditions = self.model.update_non_state_variables
+        else:
+            return history
         # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
         # in the extreme case where all state variables are cvars as well, we set:
         node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
@@ -422,16 +421,14 @@ class Simulator(HasTraits):
             history[:, i_time] = \
                 update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0, use_numba=self.use_numba)
         self.bound_and_clamp(history)
+        return history
 
     def update_state(self, state, node_coupling, local_coupling=0.0):
         # If there are non-state variables, they need to be updated for the initial condition:
-        try:
-            self.model.update_non_state_variables
-        except:
-            return state
-        state = \
-            self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
-        self.bound_and_clamp(state)
+        if hasattr(self.model, "update_non_state_variables"):
+            state = \
+                self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
+            self.bound_and_clamp(state)
         return state
 
     def _print_progression_message(self, step, n_steps):
