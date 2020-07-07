@@ -107,8 +107,7 @@ function _FIL_gatherData(divId){
     return { fields: fields, operations: operations, values: values};
 }
 
-function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gatheredData) {
-    var divId = parentDivId + divSufix;
+function refreshData(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
@@ -124,15 +123,10 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
         return;
     }
 
-    // This argument is required by the server.
-    // If absent set a falsy default as updateDivContent() checks for it. Has to be a string because it's in the url.
-    if (parentDivId === ""){
-        parentDivId = " ";
-    }
     //Make a request to get new data
     doAjaxCall({
         type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + name + '/' + $.toJSON(gatheredData),
+        url: "/flow/get_filtered_datatypes/" + name + '/' + datatypeIndex + '/' + $.toJSON(gatheredData),
         success: function (response) {
             var new_field = document.createRange().createContextualFragment(response);
             var select_field = document.getElementById(name);

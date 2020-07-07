@@ -41,12 +41,14 @@ import cherrypy
 import formencode
 import numpy
 import six
+import sys
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
@@ -58,8 +60,8 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array, \
+    expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -249,27 +251,28 @@ class FlowController(BaseController):
         return template_specification
 
     def get_filtered_datatypes(self, name, parent_div, tree_session_key, filters):
-        # TODO: fix this use-case
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
         """
-        algorithm_id = common.get_from_session(common.KEY_ADAPTER)
-        algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
-        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        name_start_index = datatype_index_path.rfind('.')
+        datatype_index_name = datatype_index_path[name_start_index+1:]
+        index_class = getattr(sys.modules[datatype_index_path[: name_start_index]], datatype_index_name)
+        filters_dict = json.loads(filters)
 
-        project_id = common.get_current_project().id
-        form = adapter_instance.get_form()(project_id=project_id)
-        current_node = getattr(form, name)
-        if current_node is None:
-            raise Exception("Could not find node :" + name)
+        fields = []
+        operations = []
+        values = []
 
-        new_filter = json.loads(filters)
-        chain_filter = FilterChain(fields=new_filter['fields'], operations=new_filter['operations'],
-                                   values=new_filter['values'])
-        current_node.conditions = chain_filter
+        for idx in range(len(filters_dict['fields'])):
+            fields.append(filters_dict['fields'][idx])
+            operations.append(filters_dict['operations'][idx])
+            values.append(filters_dict['values'][idx])
 
-        return {'field': current_node}
+        filter = FilterChain(fields=fields, operations=operations, values=values)
+        project = common.get_current_project()
+        filtered_datatypes = get_filtered_datatypes(project.id, index_class, filter)
+        return filtered_datatypes
 
     def _get_node(self, input_tree, name):
         """

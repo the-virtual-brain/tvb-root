@@ -8,7 +8,7 @@
 {% if field.draw_dynamic_conditions_buttons %}
     <div class="field-adapters" id="{{ field.owner.name }}{{ field.name }}data_select">
         <input type="button" tabindex='1' value="Add Filter" onclick="addFilter('{{ field.owner.name }}' + '{{ field.name }}' + 'data_select', {{ field.get_dynamic_filters }})">
-        <input type="button" tabindex='1' value="Apply Filters" onclick="refreshData('{{ field.owner.name }}', '{{ field.name }}' + 'data_select', '{{ field.name }}', 'defaultTree')">
+        <input type="button" tabindex='1' value="Apply Filters" onclick="refreshData('{{ (field.datatype_index | string)[8:-2] }}', '{{ field.name }}' + 'data_select', '{{ field.name }}')">
 
         {% with %}
             {% set form_filters = field.get_form_filters %}
@@ -16,9 +16,9 @@
             {% for idx in range(form_filters.fields | length) %}
                 <div>
                     <label></label>
-                        <select hidden><option value={{ form_filters.fields[idx] }}></option></select>
-                        <select hidden><option value={{ form_filters.operations[idx] }}></option></select>
-                        <input type="hidden" value={{ form_filters.values[idx] }}>
+                        <select hidden><option value='{{ form_filters.fields[idx] }}'></option></select>
+                        <select hidden><option value='{{ form_filters.operations[idx] }}'></option></select>
+                        <input type="hidden" value='{{ form_filters.values[idx] }}'>
                 </div>
 
             {% endfor %}
