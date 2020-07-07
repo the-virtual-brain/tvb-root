@@ -49,7 +49,7 @@ DATATYPE_REMOVERS = {
     "SurfaceIndex": SurfaceRemover,
     "LocalConnectivityIndex": SurfaceRemover,
     "ConnectivityIndex": ConnectivityRemover,
-    "RegionVolumeMappingIndex": ConnectivityRemover,
+    "RegionVolumeMappingIndex": VolumeRemover,
     "RegionMappingIndex": RegionMappingRemover,
     "TimeSeriesRegionIndex": RegionVolumeMappingRemover,
     "SensorsIndex": SensorRemover,

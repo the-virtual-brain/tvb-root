@@ -52,11 +52,6 @@ class ConnectivityRemover(ABCRemover):
             associated_stim = dao.get_generic_entity(StimuliRegionIndex, self.handled_datatype.gid, key)
             associated_mes = dao.get_generic_entity(ConnectivityMeasureIndex, self.handled_datatype.gid, key)
             associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, key)
-            conn_measure_index_list = dao.get_generic_entity(ConnectivityMeasureIndex, self.handled_datatype.fk_connectivity_gid, key)
-            for conn_measure_index in conn_measure_index_list:
-                if conn_measure_index.has_volume_mapping:
-                    conn_measure_index.has_volume_mapping = False
-                    dao.store_entity(conn_measure_index)
             msg = "Connectivity cannot be removed as it is used by at least one "
 
             if len(associated_ts) > 0:

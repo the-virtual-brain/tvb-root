@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
@@ -51,6 +52,14 @@ class VolumeRemover(ABCRemover):
                                                     'fk_volume_gid')
             associated_s_mri = dao.get_generic_entity(StructuralMRIIndex, self.handled_datatype.gid,
                                                       'fk_volume_gid')
+
+            if hasattr(self.handled_datatype, "fk_connectivity_gid"):
+                conn_measure_index_list = dao.get_generic_entity(ConnectivityMeasureIndex,
+                                                                 self.handled_datatype.fk_connectivity_gid, "fk_connectivity_gid")
+                for conn_measure_index in conn_measure_index_list:
+                    if conn_measure_index.has_volume_mapping:
+                        conn_measure_index.has_volume_mapping = False
+                        dao.store_entity(conn_measure_index)
 
             error_msg = "Volume cannot be removed because is still used by a "
 

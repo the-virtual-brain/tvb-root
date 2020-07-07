@@ -309,7 +309,7 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
-                           operations=["==", "=="], values=[True, True])
+                           operations=[">=", "=="], values=[2, True])
 
     @staticmethod
     def get_input_name():

@@ -78,6 +78,6 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
-        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, datatype.connectivity.gid.hex, 'fk_connectivity_gid')
+        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
         if rvm_list:
             self.has_volume_mapping =True
