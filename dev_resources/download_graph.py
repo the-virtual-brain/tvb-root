@@ -43,7 +43,7 @@ def plot_download_numbers(quarters, dist_count, pypi_count=None, file_name="down
 
     pyplot.legend(fontsize=10)
     pyplot.xticks(x, quarters, rotation=25)
-    pyplot.ylim(ymin=0, ymax=3000)
+    # pyplot.ylim(ymin=0, ymax=3000)
     pyplot.ylabel("Count")
     pyplot.xlabel("Year & " + ("Quarter" if is_quarter else "Month"))
     pyplot.title("TVB Download numbers over the years")

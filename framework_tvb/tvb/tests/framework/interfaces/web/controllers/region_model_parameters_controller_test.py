@@ -42,7 +42,6 @@ from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import ModelsEnum
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 import tvb.interfaces.web.controllers.common as common
 
 

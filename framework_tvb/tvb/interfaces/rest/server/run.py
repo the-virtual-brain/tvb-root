@@ -84,7 +84,7 @@ def initialize_flask():
     app.json_encoder = CustomFlaskEncoder
 
     # creating an API object
-    api = RestApi(app, title="Rest services for TVB", doc="/doc/")
+    api = RestApi(app, title="Rest services for TVB", doc="/doc/", version=TvbProfile.current.version.CURRENT_VERSION)
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")

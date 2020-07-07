@@ -29,6 +29,7 @@
 #
 
 import abc
+import types
 import uuid
 import numpy
 import numpy as np
@@ -883,3 +884,30 @@ def test_perf_trait(benchmark):
         arr = NArray(shape=(Dim.any, Dim.any), default=numpy.eye(3))
 
     benchmark(access_attr, A())
+
+
+def test_function_attribute():
+    def func1():
+        return 2.0
+
+    def func2():
+        return "Hello!"
+
+    class A(HasTraits):
+        a = Attr(field_type=types.FunctionType)
+        b = Attr(field_type=types.FunctionType, default=lambda: 1)
+        c = Attr(field_type=types.FunctionType, default=func1)
+
+    ainst = A()
+    ainst.a = func2
+    val_a = ainst.a()
+    val_b = ainst.b()
+    val_c = ainst.c()
+    assert val_a == "Hello!"
+    assert val_b == 1
+    assert val_c == 2.0
+
+    with pytest.raises(TypeError):
+        # out of bounds
+        ainst.c = "Not a function"
+

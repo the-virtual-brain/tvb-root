@@ -44,7 +44,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+# from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
 class TestFlowController(BaseControllersTest):
@@ -71,7 +71,7 @@ class TestFlowController(BaseControllersTest):
         def build(is_range=False):
             self.burst_c.index()
             connectivity = connectivity_factory()
-            launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
+            launch_params = {} #copy.deepcopy(SIMULATOR_PARAMETERS)
             launch_params['connectivity'] = connectivity.gid.hex
             launch_params['simulation_length'] = '10000'
             if is_range:
