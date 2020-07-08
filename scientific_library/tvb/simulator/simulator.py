@@ -287,6 +287,7 @@ class Simulator(HasTraits):
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
+
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
@@ -407,28 +408,26 @@ class Simulator(HasTraits):
 
     def _update_and_bound_history(self, history):
         self.bound_and_clamp(history)
-        # If there are non-state variables, they need to be updated for history:
-        if hasattr(self.model, "update_initial_conditions_non_state_variables"):
-            update_initial_conditions = self.model.update_initial_conditions_non_state_variables
-        elif hasattr(self.model, "update_non_state_variables"):
-            update_initial_conditions = self.model.update_non_state_variables
-        else:
-            return history
-        # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
-        # in the extreme case where all state variables are cvars as well, we set:
-        node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
-        for i_time in range(history.shape[1]):
-            history[:, i_time] = \
-                update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0, use_numba=self.use_numba)
-        self.bound_and_clamp(history)
+        if self.model._update_non_state_variables:
+            # If there are non-state variables, they need to be updated for history:
+            if hasattr(self.model, "update_initial_conditions_non_state_variables"):
+                update_initial_conditions = self.model.update_initial_conditions_non_state_variables
+            else:
+                update_initial_conditions = self.model.update_non_state_variables
+            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
+            # in the extreme case where all state variables are cvars as well, we set:
+            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
+            for i_time in range(history.shape[1]):
+                history[:, i_time] = \
+                    update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0, use_numba=self.use_numba)
+            self.bound_and_clamp(history)
         return history
 
     def update_state(self, state, node_coupling, local_coupling=0.0):
         # If there are non-state variables, they need to be updated for the initial condition:
-        if hasattr(self.model, "update_non_state_variables"):
-            state = \
+        state = \
                 self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
-            self.bound_and_clamp(state)
+        self.bound_and_clamp(state)
         return state
 
     def _print_progression_message(self, step, n_steps):
@@ -510,7 +509,8 @@ class Simulator(HasTraits):
                 self._apply_spike_stimulus(step)
 
             # Update any non-state variables and apply any boundaries again to the new state t_step:
-            state = self.update_state(state, node_coupling, local_coupling)
+            if self.model._update_non_state_variables:
+                state = self.update_state(state, node_coupling, local_coupling)
 
             # Now direct the new state t_step to history buffer and monitors
             self._loop_update_history(step, n_reg, state)

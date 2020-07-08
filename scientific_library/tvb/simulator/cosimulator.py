@@ -251,7 +251,8 @@ class CoSimulator(Simulator):
                     self._apply_spike_stimulus(step)
 
                 # Update any non-state variables and apply any boundaries again to the new state t_step:
-                state = self.update_state(state, node_coupling, local_coupling)
+                if self.model._update_non_state_variables:
+                    state = self.update_state(state, node_coupling, local_coupling)
 
                 # Now direct the new state t_step to history buffer and monitors
                 self._loop_update_history(step, n_reg, state)
