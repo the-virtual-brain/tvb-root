@@ -28,6 +28,8 @@
 
 """
 Models based on Wong-Wang's work.
+.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
+
 
 """
 
