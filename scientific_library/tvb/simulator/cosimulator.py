@@ -32,10 +32,8 @@
 This is the module responsible for co-simulation of TVB with spiking simulators.
 It inherits the Simulator class.
 
-.. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
-.. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 .. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
+
 
 """
 import time

@@ -42,6 +42,7 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
+.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
 
 """
 import abc
