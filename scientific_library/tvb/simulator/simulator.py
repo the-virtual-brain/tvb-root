@@ -461,7 +461,7 @@ class Simulator(HasTraits):
         if self._spike_stimulus_fun:
             self._apply_spike_stimulus(init_step)
 
-        # Update any non-state variables and apply any boundaries again to the new state t_step:
+        # Update any non-state variables and apply any boundaries again to the modified initial condition:
         if self.model._update_non_state_variables:
             state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
                                                           use_numba=self.use_numba)
