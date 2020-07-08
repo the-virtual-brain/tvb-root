@@ -868,12 +868,11 @@ class TimeSeries(HasTraits):
 
     def plot_map(self, **kwargs):
         if kwargs.pop("per_variable", False):
-            outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
                 var_ts = self[:, var]
                 var_ts.name = ": ".join([var_ts.name, var])
-                outputs.append(var_ts.plot_map(**kwargs))
-            return outputs
+                var_ts.plot_map(**kwargs)
+            return
         time, labels_ordering, plotter_config, kwargs = \
             self._prepare_plot_args(**kwargs)
         # Usually variables
