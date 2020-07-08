@@ -425,9 +425,7 @@ class Simulator(HasTraits):
 
     def update_state(self, state, node_coupling, local_coupling=0.0):
         # If there are non-state variables, they need to be updated for the initial condition:
-        if self.model._update_non_state_variables:
-            state = \
-                    self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
+        state = self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
         self.bound_and_clamp(state)
         return state
 
