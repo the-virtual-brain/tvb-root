@@ -28,6 +28,8 @@
 
 """
 Wilson-Cowan equations based model definition.
+.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
+
 
 """
 import numpy

@@ -28,6 +28,7 @@
 
 """
 Oscillator builders.
+.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
 
 """
 import numexpr
