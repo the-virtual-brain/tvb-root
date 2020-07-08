@@ -51,6 +51,7 @@ class Model(HasTraits):
     cvar = None
     stvar = None
     state_variable_boundaries = None
+    _update_non_state_variables = False
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -90,6 +91,8 @@ class Model(HasTraits):
         if self.stvar is None:
             self.stvar = self.cvar.copy()
         super(Model, self).configure()
+        if hasattr(self, "update_non_state_variables"):
+            self._update_non_state_variables = True
         self.update_derived_parameters()
         self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
