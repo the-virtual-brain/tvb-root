@@ -48,9 +48,11 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import REGISTRY
+from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -271,8 +273,16 @@ class FlowController(BaseController):
 
         filter = FilterChain(fields=fields, operations=operations, values=values)
         project = common.get_current_project()
-        filtered_datatypes = get_filtered_datatypes(project.id, index_class, filter)
-        return filtered_datatypes
+
+        form = Form(project_id=project.id, draw_ranges=True)
+        data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class()))
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter)
+
+        options_response = ''
+        for option in select_field.options():
+            options_response = options_response + '<option value=' + '"' + option.value + '"' + ' class="form-control">' + option.label + '</option>'
+
+        return options_response
 
     def _get_node(self, input_tree, name):
         """

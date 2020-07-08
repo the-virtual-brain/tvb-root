@@ -128,9 +128,8 @@ function refreshData(datatypeIndex, divId, name, gatheredData) {
         type: 'POST',
         url: "/flow/get_filtered_datatypes/" + name + '/' + datatypeIndex + '/' + $.toJSON(gatheredData),
         success: function (response) {
-            var new_field = document.createRange().createContextualFragment(response);
             var select_field = document.getElementById(name);
-            select_field.parentNode.replaceChild(new_field.children[0], select_field);
+            select_field.innerHTML = response;
         },
         error: function (response) {
             displayMessage("Invalid filter data.", "errorMessage");
