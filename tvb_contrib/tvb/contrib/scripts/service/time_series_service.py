@@ -38,9 +38,8 @@ from scipy.signal import convolve, detrend, hilbert
 from six import string_types
 from tvb.basic.logger.builder import get_logger
 from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSEEG, LABELS_ORDERING
-from tvb.contrib.scripts.utils.computations_utils import select_greater_values_array_inds, \
-    select_by_hierarchical_group_metric_clustering
 from tvb.contrib.scripts.utils.data_structures_utils import ensure_list
+from tvb.contrib.scripts.utils.log_error_utils import warning, raise_value_error
 from tvb.contrib.scripts.utils.time_series_utils import abs_envelope, spectrogram_envelope, filter_data, \
     decimate_signals, \
     normalize_signals
@@ -171,32 +170,35 @@ class TimeSeriesService(object):
         if n_ts > 0:
             out_time_series, select_funs = self.select(time_series_list[0], **kwargs)
             if n_ts > 1:
+                dim_label = out_time_series.get_dimension_name(dim)
                 for id, time_series in enumerate(time_series_list[1:]):
                     if np.float32(out_time_series.sample_period) != np.float32(time_series.sample_period):
-                        raise_value_error("Timeseries concatenation failed!\n"
+                        raise ValueError("Timeseries concatenation failed!\n"
                                           "Timeseries %d have a different time step %s \n "
                                           "than the concatenated ones %s!" %
                                           (id, str(np.float32(time_series.sample_period)),
                                            str(np.float32(out_time_series.sample_period))))
                     else:
                         time_series = self.select(time_series, select_funs)[0]
-                        # try:
-                        out_time_series.data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
-                        if len(out_time_series.get_dimension_labels(dim)) > 0:
-                            if len(time_series.get_dimension_labels(dim)) > 0:
-                                dim_label = out_time_series.get_dimension_name(dim)
-                                out_time_series.labels_dimensions[dim_label] = \
-                                    np.array(ensure_list(out_time_series.get_dimension_labels(dim)) +
-                                             ensure_list(time_series.get_dimension_labels(dim)))
+                        labels_dimensions = dict(out_time_series.labels_dimensions)
+                        out_labels = out_time_series.get_dimension_labels(dim)
+                        if out_labels is not None and len(out_labels) == out_time_series.shape[dim]:
+                            time_series_labels = time_series.get_dimension_labels(dim)
+                            if time_series_labels is not None and len(time_series_labels) == time_series.shape[dim]:
+                                labels_dimensions[dim_label] =\
+                                    np.array(ensure_list(out_labels) + ensure_list(time_series_labels))
                             else:
-                                raise_value_error("TimeSeries to concatenate %s \n "
-                                                  "has no dimension labels across the concatenation axis,\n"
-                                                  "unlike the TimeSeries to be appended to: %s!"
-                                                  % (str(time_series), str(out_time_series)))
-                        # except:
-                        #     raise_value_error("Timeseries concatenation failed!\n"
-                        #                       "Timeseries %d have a shape %s and the concatenated ones %s!" %
-                        #                       (id, str(out_time_series.shape), str(time_series.shape)))
+                                del labels_dimensions[dim_label]
+                                warning("Dimension labels for dimensions %s cannot be concatenated! "
+                                        "Deleting them!" % dim_label)
+                        try:
+                            out_data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
+                        except:
+                            raise_value_error("Timeseries concatenation failed!\n"
+                                              "Timeseries %d have a shape %s and the concatenated ones %s!" %
+                                              (id, str(out_time_series.shape), str(time_series.shape)))
+                        out_time_series = out_time_series.duplicate(data=out_data,
+                                                                    labels_dimensions=labels_dimensions)
                 return out_time_series
             else:
                 return out_time_series
@@ -209,29 +211,36 @@ class TimeSeriesService(object):
         for time_series in time_series_generator:
             if first:
                 out_time_series, select_funs = self.select(time_series, **kwargs)
+                dim_label = out_time_series.get_dimension_name(dim)
                 first = False
             else:
                 if np.float32(out_time_series.sample_period) != np.float32(time_series.sample_period):
-                    raise_value_error("Timeseries concatenation failed!\n"
-                                      "Timeseries have a different time step %s \n "
-                                      "than the concatenated ones %s!" %
-                                      (str(np.float32(time_series.sample_period)),
-                                       str(np.float32(out_time_series.sample_period))))
+                    raise ValueError("Timeseries concatenation failed!\n"
+                                     "Timeseries have a different time step %s \n "
+                                     "than the concatenated ones %s!" %
+                                     (str(np.float32(time_series.sample_period)),
+                                      str(np.float32(out_time_series.sample_period))))
                 else:
                     time_series = self.select(time_series, select_funs)[0]
-                    # try:
-                    out_time_series.data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
-                    if len(out_time_series.get_dimension_labels(dim)) > 0:
-                        if len(time_series.get_dimension_labels(dim)) > 0:
-                            dim_label = out_time_series.get_dimension_name(dim)
-                            out_time_series.labels_dimensions[dim_label] = \
-                                np.array(ensure_list(out_time_series.get_dimension_labels(dim)) +
-                                         ensure_list(time_series.get_dimension_labels(dim)))
+                    labels_dimensions = dict(out_time_series.labels_dimensions)
+                    out_labels = out_time_series.get_dimension_labels(dim)
+                    if out_labels is not None and len(out_labels) == out_time_series.shape[dim]:
+                        time_series_labels = time_series.get_dimension_labels(dim)
+                        if time_series_labels is not None and len(time_series_labels) == time_series.shape[dim]:
+                            labels_dimensions[dim_label] = \
+                                np.array(ensure_list(out_labels) + ensure_list(time_series_labels))
                         else:
-                            raise_value_error("TimeSeries to concatenate %s \n "
-                                              "has no dimension labels across the concatenation axis,\n"
-                                              "unlike the TimeSeries to be appended to: %s!"
-                                              % (str(time_series), str(out_time_series)))
+                            del labels_dimensions[dim_label]
+                            warning("Dimension labels for dimensions %s cannot be concatenated! "
+                                    "Deleting them!" % dim_label)
+                    try:
+                        out_data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
+                    except:
+                        raise_value_error("Timeseries concatenation failed!\n"
+                                          "Timeseries have a shape %s and the concatenated ones %s!" %
+                                          (str(out_time_series.shape), str(time_series.shape)))
+                    out_time_series = out_time_series.duplicate(data=out_data,
+                                                                labels_dimensions=labels_dimensions)
         if out_time_series is None:
             raise_value_error("Cannot concatenate empty list of TimeSeries!")
 
@@ -258,53 +267,53 @@ class TimeSeriesService(object):
     def concatenate_modes_generator(self, time_series_generator, **kwargs):
         return self.concatenate_generator(time_series_generator, 3, **kwargs)
 
-    def select_by_metric(self, time_series, metric, metric_th=None, metric_percentile=None, nvals=None):
-        selection = np.unique(select_greater_values_array_inds(metric, metric_th, metric_percentile, nvals))
-        return time_series.get_subspace_by_index(selection), selection
-
-    def select_by_power(self, time_series, power=np.array([]), power_th=None):
-        if len(power) != time_series.number_of_labels:
-            power = self.power(time_series)
-        return self.select_by_metric(time_series, power, power_th)
-
-    def select_by_hierarchical_group_metric_clustering(self, time_series, distance, disconnectivity=np.array([]),
-                                                       metric=None, n_groups=10, members_per_group=1):
-        selection = np.unique(select_by_hierarchical_group_metric_clustering(distance, disconnectivity, metric,
-                                                                             n_groups, members_per_group))
-        return time_series.get_subspace_by_index(selection), selection
-
-    def select_by_correlation_power(self, time_series, correlation=np.array([]), disconnectivity=np.array([]),
-                                    power=np.array([]), n_groups=10, members_per_group=1):
-        if correlation.shape[0] != time_series.number_of_labels:
-            correlation = self.correlation(time_series)
-        if len(power) != time_series.number_of_labels:
-            power = self.power(time_series)
-        return self.select_by_hierarchical_group_metric_clustering(time_series, 1 - correlation,
-                                                                   disconnectivity, power, n_groups, members_per_group)
-
-    def select_by_projection_power(self, time_series, projection=np.array([]),
-                                   disconnectivity=np.array([]), power=np.array([]),
-                                   n_groups=10, members_per_group=1):
-        if len(power) != time_series.number_of_labels:
-            power = self.power(time_series)
-        return self.select_by_hierarchical_group_metric_clustering(time_series, 1 - np.corrcoef(projection),
-                                                                   disconnectivity, power, n_groups, members_per_group)
-
-    def select_by_rois_proximity(self, time_series, proximity, proximity_th=None, percentile=None, n_signals=None):
-        initial_selection = range(time_series.number_of_labels)
-        selection = []
-        for prox in proximity:
-            selection += (
-                np.array(initial_selection)[select_greater_values_array_inds(prox, proximity_th,
-                                                                             percentile, n_signals)]).tolist()
-        selection = np.unique(selection)
-        return time_series.get_subspace_by_index(selection), selection
-
-    def select_by_rois(self, time_series, rois, all_labels):
-        for ir, roi in rois:
-            if not (isinstance(roi, string_types)):
-                rois[ir] = all_labels[roi]
-        return time_series.get_subspace_by_label(rois), rois
+    # def select_by_metric(self, time_series, metric, metric_th=None, metric_percentile=None, nvals=None):
+    #     selection = np.unique(select_greater_values_array_inds(metric, metric_th, metric_percentile, nvals))
+    #     return time_series.get_subspace_by_index(selection), selection
+    #
+    # def select_by_power(self, time_series, power=np.array([]), power_th=None):
+    #     if len(power) != time_series.number_of_labels:
+    #         power = self.power(time_series)
+    #     return self.select_by_metric(time_series, power, power_th)
+    #
+    # def select_by_hierarchical_group_metric_clustering(self, time_series, distance, disconnectivity=np.array([]),
+    #                                                    metric=None, n_groups=10, members_per_group=1):
+    #     selection = np.unique(select_by_hierarchical_group_metric_clustering(distance, disconnectivity, metric,
+    #                                                                          n_groups, members_per_group))
+    #     return time_series.get_subspace_by_index(selection), selection
+    #
+    # def select_by_correlation_power(self, time_series, correlation=np.array([]), disconnectivity=np.array([]),
+    #                                 power=np.array([]), n_groups=10, members_per_group=1):
+    #     if correlation.shape[0] != time_series.number_of_labels:
+    #         correlation = self.correlation(time_series)
+    #     if len(power) != time_series.number_of_labels:
+    #         power = self.power(time_series)
+    #     return self.select_by_hierarchical_group_metric_clustering(time_series, 1 - correlation,
+    #                                                                disconnectivity, power, n_groups, members_per_group)
+    #
+    # def select_by_projection_power(self, time_series, projection=np.array([]),
+    #                                disconnectivity=np.array([]), power=np.array([]),
+    #                                n_groups=10, members_per_group=1):
+    #     if len(power) != time_series.number_of_labels:
+    #         power = self.power(time_series)
+    #     return self.select_by_hierarchical_group_metric_clustering(time_series, 1 - np.corrcoef(projection),
+    #                                                                disconnectivity, power, n_groups, members_per_group)
+    #
+    # def select_by_rois_proximity(self, time_series, proximity, proximity_th=None, percentile=None, n_signals=None):
+    #     initial_selection = range(time_series.number_of_labels)
+    #     selection = []
+    #     for prox in proximity:
+    #         selection += (
+    #             np.array(initial_selection)[select_greater_values_array_inds(prox, proximity_th,
+    #                                                                          percentile, n_signals)]).tolist()
+    #     selection = np.unique(selection)
+    #     return time_series.get_subspace_by_index(selection), selection
+    #
+    # def select_by_rois(self, time_series, rois, all_labels):
+    #     for ir, roi in rois:
+    #         if not (isinstance(roi, string_types)):
+    #             rois[ir] = all_labels[roi]
+    #     return time_series.get_subspace_by_label(rois), rois
 
     def compute_seeg(self, source_time_series, sensors, projection=None, sum_mode="lin", **kwargs):
         if np.all(sum_mode == "exp"):
