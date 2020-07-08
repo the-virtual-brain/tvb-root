@@ -40,6 +40,7 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class SpikingWongWangExcIOInhI(Model):
     _N_E_max = 200
+    _n_regions = 0
     __n_E = []
     __n_I = []
     __E = {}
@@ -376,33 +377,53 @@ class SpikingWongWangExcIOInhI(Model):
         except:
             return numpy.array(x[0])
 
+    def _prepare_indices(self):
+        __n_E = []
+        __n_I = []
+        __E = {}
+        __I = {}
+        self.__n_E = None
+        self.__n_I = None
+        self.__E = None
+        self.__I = None
+        # Initialize all non-state variables, as well as t_ref, to 0, i.e., assuming no spikes in history.
+        for ii in range(self._n_regions):  # For every region node....
+            __n_E.append(self._n_E(ii))
+            __n_I.append(self._n_I(ii))
+            __E[ii] = numpy.arange(__n_E[-1]).astype('i')  # excitatory neurons' indices
+            __I[ii] = numpy.arange(self._N_E_max, self._N_E_max + __n_I[-1]).astype('i')  # inhibitory neurons' indices
+        self.__n_E = __n_E
+        self.__n_I = __n_I
+        self.__E = __E
+        self.__I = __I
+
     # Return number of excitatory neurons/modes per region
     def _n_E(self, i_region):
-        if self.__n_E is not None:
-            return self.__n_E[i_region]
-        else:
-            return int(self._region(self.N_E, i_region).item())
+        # if self.__n_E is not None:
+        return self.__n_E[i_region]
+        # else:
+        #     return int(self._region(self.N_E, i_region).item())
 
     # Return number of inhibitory neurons/modes per region
     def _n_I(self, i_region):
-        if self.__n_I is not None:
-            return self.__n_I[i_region]
-        else:
-            return int(self._region(self.N_I, i_region).item())
+        # if self.__n_I is not None:
+        return self.__n_I[i_region]
+        # else:
+        #     return int(self._region(self.N_I, i_region).item())
 
     # Return indices of excitatory neurons/modes per region
     def _E(self, i_region):
-        if self.__E is not None:
-            return self.__E[i_region]
-        else:
-            return numpy.arange(self._n_E(i_region)).astype('i')
+        # if self.__E is not None:
+        return self.__E[i_region]
+        # else:
+        #     return numpy.arange(self._n_E(i_region)).astype('i')
 
     # Return indices of inhibitory neurons/modes per region
     def _I(self, i_region):
-        if self.__I is not None:
-            return self.__I[i_region]
-        else:
-            return numpy.arange(self._N_E_max, self._N_E_max + self._n_I(i_region)).astype('i')
+        # if self.__I is not None:
+        return self.__I[i_region]
+        # else:
+        #     return numpy.arange(self._N_E_max, self._N_E_max + self._n_I(i_region)).astype('i')
 
     # Return x variables of excitatory/inhibitory neurons/modes per region
     def _x_E_I(self, x, i_region, E_I):
@@ -473,36 +494,11 @@ class SpikingWongWangExcIOInhI(Model):
         # 4. s_GABA
         state_variables[3, ii, _E] = 0.0
 
-    def update_initial_conditions_non_state_variables(self, state_variables, coupling, local_coupling=0.0,
-                                                      use_numba=False):
-        __n_E = []
-        __n_I = []
-        __E = {}
-        __I = {}
-        self.__n_E = None
-        self.__n_I = None
-        self.__E = None
-        self.__I = None
-        # Initialize all non-state variables, as well as t_ref, to 0, i.e., assuming no spikes in history.
-        state_variables[6:] = 0.0
-        for ii in range(state_variables.shape[1]):  # For every region node....
-            __n_E.append(self._n_E(ii))
-            __n_I.append(self._n_I(ii))
-            __E[ii] = numpy.arange(__n_E[-1]).astype('i')  # excitatory neurons' indices
-            __I[ii] = numpy.arange(self._N_E_max, self._N_E_max + __n_I[-1]).astype('i')  # inhibitory neurons' indices
-            # Make sure that all empty positions are set to 0.0, if any:
-            self._zero_empty_positions(state_variables, __E[ii], __I[ii], ii)
-            # Set  inhibitory synapses for excitatory neurons & excitatory synapses for inhibitory neurons to 0.0...
-            self._zero_cross_synapses(state_variables, __E[ii], __I[ii], ii)
-        self.__n_E = __n_E
-        self.__n_I = __n_I
-        self.__E = __E
-        self.__I = __I
-        return state_variables
-
     def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=False):
-
-        for ii in range(state_variables.shape[1]):  # For every region node....
+        if self._n_regions == 0:
+            self._n_regions = state_variables.shape[1]
+            self._prepare_indices()
+        for ii in range(self._n_regions):  # For every region node....
             _E = self._E(ii)  # excitatory neurons' indices
             _I = self._I(ii)  # inhibitory neurons' indices
 
@@ -663,7 +659,10 @@ class SpikingWongWangExcIOInhI(Model):
 
         derivative = 0.0 * state_variables
 
-        for ii in range(state_variables.shape[1]):  # For every region node....
+        if self._n_regions == 0:
+            self._n_regions = state_variables.shape[1]
+            self._prepare_indices()
+        for ii in range(self._n_regions):  # For every region node....
 
             # Excitatory neurons:
 

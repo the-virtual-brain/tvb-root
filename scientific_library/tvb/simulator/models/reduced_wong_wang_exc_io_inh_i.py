@@ -189,12 +189,6 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                 setattr(self, var, numpy.array([0.0, ]))
                 setattr(self, "_" + var, numpy.array([False, ]))
 
-    def update_initial_conditions_non_state_variables(self, state_variables, coupling, local_coupling=0.0,
-                                                      use_numba=False):
-        # Set R, Rin and I to 0.0. Keep potentially noisy initial condition only for S
-        state_variables[2:] = 0.0
-        return state_variables
-
     def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
         if use_numba:
             state_variables = \

@@ -406,29 +406,6 @@ class Simulator(HasTraits):
             # ...use the integrator's clamp_state
             self.integrator.clamp_state(state)
 
-    def _update_and_bound_history(self, history):
-        self.bound_and_clamp(history)
-        if self.model._update_non_state_variables:
-            # If there are non-state variables, they need to be updated for history:
-            if hasattr(self.model, "update_initial_conditions_non_state_variables"):
-                update_initial_conditions = self.model.update_initial_conditions_non_state_variables
-            else:
-                update_initial_conditions = self.model.update_non_state_variables
-            # Assuming that node_coupling can have a maximum number of dimensions equal to the state variables,
-            # in the extreme case where all state variables are cvars as well, we set:
-            node_coupling = numpy.zeros((history.shape[0], 1, history.shape[2], self.model.number_of_modes))
-            for i_time in range(history.shape[1]):
-                history[:, i_time] = \
-                    update_initial_conditions(history[:, i_time], node_coupling[:, 0], 0.0, use_numba=self.use_numba)
-            self.bound_and_clamp(history)
-        return history
-
-    def update_state(self, state, node_coupling, local_coupling=0.0):
-        # If there are non-state variables, they need to be updated for the initial condition:
-        state = self.model.update_non_state_variables(state, node_coupling, local_coupling, use_numba=self.use_numba)
-        self.bound_and_clamp(state)
-        return state
-
     def _print_progression_message(self, step, n_steps):
         if step - self.current_step >= self._tic_point:
             toc = time.time() - self._tic
@@ -483,7 +460,12 @@ class Simulator(HasTraits):
         self._loop_update_stimulus(init_step, stimulus)
         if self._spike_stimulus_fun:
             self._apply_spike_stimulus(init_step)
-        state = self.update_state(state, node_coupling, local_coupling)
+
+        # Update any non-state variables and apply any boundaries again to the new state t_step:
+        if self.model._update_non_state_variables:
+            state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                          use_numba=self.use_numba)
+            self.bound_and_clamp(state)
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
@@ -509,7 +491,9 @@ class Simulator(HasTraits):
 
             # Update any non-state variables and apply any boundaries again to the new state t_step:
             if self.model._update_non_state_variables:
-                state = self.update_state(state, node_coupling, local_coupling)
+                state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                              use_numba=self.use_numba)
+                self.bound_and_clamp(state)
 
             # Now direct the new state t_step to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
@@ -570,10 +554,8 @@ class Simulator(HasTraits):
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
-        # Make sure that history values are bounded,
-        # and any possible non-state variables are initialized
-        # based on state variable ones (but with no coupling yet...)
-        self._update_and_bound_history(numpy.swapaxes(history, 0, 1))
+        # Make sure that history values are bounded
+        self.bound_and_clamp(history)
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
