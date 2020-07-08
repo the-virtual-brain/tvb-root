@@ -184,7 +184,13 @@ class CoSimulator(Simulator):
             self._loop_update_stimulus(init_step, stimulus)
             if self._spike_stimulus_fun:
                 self._apply_spike_stimulus(init_step)
-            state = self.update_state(state, node_coupling, local_coupling)
+
+            # Update any non-state variables and apply any boundaries again to the modified initial condition:
+            if self.model._update_non_state_variables:
+                state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                              use_numba=self.use_numba)
+                self.bound_and_clamp(state)
+
             # NOTE!!!: we don't update TVB from spikeNet initial condition,
             # since there is no output yet from spikeNet
 
@@ -250,7 +256,9 @@ class CoSimulator(Simulator):
 
                 # Update any non-state variables and apply any boundaries again to the new state t_step:
                 if self.model._update_non_state_variables:
-                    state = self.update_state(state, node_coupling, local_coupling)
+                    state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                                  use_numba=self.use_numba)
+                    self.bound_and_clamp(state)
 
                 # Now direct the new state t_step to history buffer and monitors
                 self._loop_update_history(step, n_reg, state)
