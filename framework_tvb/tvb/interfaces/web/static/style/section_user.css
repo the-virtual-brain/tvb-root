@@ -383,31 +383,26 @@ margin: 68px 0 0 155px;
 
 body#s-user aside.credits a {
 background: transparent 0 0 no-repeat;
+background-size: 100%;
 margin: 0 0 30px 155px;
 overflow: hidden;
 text-indent: -1000em;
+width: 180px;
 }
 
 body#s-user aside.credits .unimed {
-background-image: url("./img/logo_uni_aixmarseille_white.png");
-height: 72px;
-margin-top: 30px;
-margin-left: 75px;
-width: 244px;
+background-image: url("./img/logo_amu.svg");
+height: 70px;
 }
 
 body#s-user aside.credits .baycrest {
 background-image: url("./img/logo_baycrest.svg");
 height: 80px;
-width: 200px;
-margin-left: 95px;
 }
 
 body#s-user aside.credits .charite {
 background-image: url("./img/logo_charite.svg");
-height: 100px;
-width: 190px;
-margin-left: 95px;
+height: 80px;
 }
 
 /* !============================================================================ */
