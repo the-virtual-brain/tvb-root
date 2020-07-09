@@ -28,14 +28,14 @@
 #
 #
 
-from sqlalchemy import Column, Integer, ForeignKey, String
+from sqlalchemy import Column, Integer, ForeignKey, String, Boolean
 from sqlalchemy.orm import relationship
-from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
-from tvb.core.entities.storage import dao
-from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex, RegionMappingIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
+from tvb.core.entities.storage import dao
+from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 
 
 class CovarianceIndex(DataTypeMatrix):
@@ -74,10 +74,30 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
     connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
                                 primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid)
 
+    has_surface_mapping = Column(Boolean, nullable=False, default=False)
+
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
+        self.title = datatype.title
+
+        rm_list = dao.get_generic_entity(RegionMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rm_list:
+            self.has_surface_mapping = True
+
         rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
         if rvm_list:
-            self.has_volume_mapping =True
+            self.has_volume_mapping = True
+        else:
+            self.has_volume_mapping = False
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of regions field
+        """
+        display_name = super(ConnectivityMeasureIndex, self).display_name
+        if self.title:
+            display_name = display_name + " - " + str(self.title)[:30]
+        return display_name

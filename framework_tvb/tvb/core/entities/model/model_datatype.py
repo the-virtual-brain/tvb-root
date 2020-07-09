@@ -142,6 +142,13 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def after_store(self):
+        """
+        Put here code (as a trigger after storage) to be executed by
+        ABCAdapter after the current DT is stored in DB
+        """
+        pass
+
     def __repr__(self):
         msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
         return msg % (str(self.id), self.gid, self.type, self.module,
@@ -229,7 +236,9 @@ class DataTypeMatrix(DataType):
     array_data_min = Column(Float)
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
-    has_volume_mapping = Column(Boolean, nullable=False, default=False)
+    # has_volume_mapping will only be changed by ConnectivityMeasureIndex subclass,
+    # for the rest the default approx is enough
+    has_volume_mapping = Column(Boolean, nullable=False, default=True)
 
     def fill_from_has_traits(self, datatype):
         super(DataTypeMatrix, self).fill_from_has_traits(datatype)
@@ -239,6 +248,13 @@ class DataTypeMatrix(DataType):
             self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
             self.shape = json.dumps(datatype.array_data.shape)
             self.ndim = len(datatype.array_data.shape)
+
+    @property
+    def parsed_shape(self):
+        try:
+            return json.loads(self.shape)
+        except:
+            return ()
 
 
 class DataTypeGroup(DataType):
