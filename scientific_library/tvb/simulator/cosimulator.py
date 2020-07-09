@@ -107,15 +107,17 @@ class CoSimulator(Simulator):
         # Setup Spiking Simulator configure() and Run() method
         self.configure_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.configure
         self.run_spiking_simulator = self.tvb_spikeNet_interface.spiking_network.Run
-        if len(self.tvb_spikeNet_interface.spikeNet_to_tvb_params) > 0:
-            # Create TVB model parameter for SpikeNet to target
-            dummy = numpy.zeros((self.connectivity.number_of_regions,)).reshape(self._spatial_param_reshape)
-            dummy[self.tvb_spikeNet_interface.spiking_nodes_ids] = 1.0
-            for param in self.tvb_spikeNet_interface.spikeNet_to_tvb_params:
-                setattr(self.model, param, dummy)
-            self.model.update_derived_parameters()
         # Configure tvb-spikeNet interface
         self.tvb_spikeNet_interface.configure(self.model)
+        # Create TVB model parameter for SpikeNet to target
+        if len(self.tvb_spikeNet_interface.spikeNet_to_tvb_params) > 0:
+            for param, tvb_indices in self.tvb_spikeNet_interface.spikeNet_to_tvb_params.items():
+                dummy = numpy.zeros((self.connectivity.number_of_regions,)).reshape(self._spatial_param_reshape)
+                dummy[tvb_indices] = 1.0
+                setattr(self.model, param, numpy.array(dummy))
+            del dummy
+        self.model.update_derived_parameters()
+
         # If there are Spiking nodes and are represented exclusively in Spiking Network...
         if self.tvb_spikeNet_interface.exclusive_nodes and len(self.tvb_spikeNet_interface.spiking_nodes_ids) > 0:
             # ...set the respective connectivity weights among them to zero:
@@ -186,10 +188,7 @@ class CoSimulator(Simulator):
                 self._apply_spike_stimulus(init_step)
 
             # Update any non-state variables and apply any boundaries again to the modified initial condition:
-            if self.model._update_non_state_variables:
-                state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                              use_numba=self.use_numba)
-                self.bound_and_clamp(state)
+            self.update_non_state_variables(state, node_coupling, local_coupling)
 
             # NOTE!!!: we don't update TVB from spikeNet initial condition,
             # since there is no output yet from spikeNet
@@ -230,7 +229,19 @@ class CoSimulator(Simulator):
                 if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                     raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
 
-                # 4. Update the new TVB state t_step with the new spikeNet state t_step
+                # 4. Prepare next TVB time step integration
+
+                # Prepare coupling and stimulus, if any, at time t_step, i.e., for next time iteration
+                # and, therefore, for the new TVB state t_step+1:
+                node_coupling = self._loop_compute_node_coupling(step)
+                self._loop_update_stimulus(step, stimulus)
+                if self._spike_stimulus_fun:
+                    self._apply_spike_stimulus(step)
+
+                # Update any non-state variables and apply any boundaries again to the new state t_step:
+                self.update_non_state_variables(state, node_coupling, local_coupling)
+
+                # 5. Update the new TVB state t_step with the new spikeNet state t_step
                 if updateTVBstateFromSpikeNet:
                     # SpikeNet state t_(step) -> TVB state t_(step)
                     # Update the new TVB state variable with the new SpikeNet state,
@@ -244,21 +255,8 @@ class CoSimulator(Simulator):
                     # !!! Deprecate it since we have introduced dynamic non-state variables !!!
                     # self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
                     self.bound_and_clamp(state)
-
-                # 5. Prepare next TVB time step integration
-
-                # Prepare coupling and stimulus at time t_step, i.e., for next time iteration
-                # and, therefore, for the new TVB state t_step+1, if any:
-                node_coupling = self._loop_compute_node_coupling(step)
-                self._loop_update_stimulus(step, stimulus)
-                if self._spike_stimulus_fun:
-                    self._apply_spike_stimulus(step)
-
-                # Update any non-state variables and apply any boundaries again to the new state t_step:
-                if self.model._update_non_state_variables:
-                    state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                                  use_numba=self.use_numba)
-                    self.bound_and_clamp(state)
+                    # Update any non-state variables and apply any boundaries again to the modified new state t_step:
+                    self.update_non_state_variables(state, node_coupling, local_coupling)
 
                 # Now direct the new state t_step to history buffer and monitors
                 self._loop_update_history(step, n_reg, state)
