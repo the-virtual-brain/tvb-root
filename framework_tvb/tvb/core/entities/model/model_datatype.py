@@ -252,7 +252,7 @@ class DataTypeMatrix(DataType):
     @property
     def parsed_shape(self):
         try:
-            return json.loads(self.shape)
+            return tuple(json.loads(self.shape))
         except:
             return ()
 

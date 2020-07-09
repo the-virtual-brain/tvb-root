@@ -32,6 +32,7 @@ from tvb.core.adapters.arguments_serialisation import preprocess_space_parameter
 from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.adapters.datatypes.h5.structural_h5 import VolumetricDataMixin
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
@@ -74,6 +75,8 @@ class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
         voxel = self.array_data[slices][0, 0, 0]
         if voxel != -1:
             conn_index = load_entity_by_gid(self.connectivity.load().hex)
-            return conn_index.region_labels[int(voxel)]
+            with h5.h5_file_for_index(conn_index) as conn_h5:
+                labels = conn_h5.region_labels.load()
+                return labels[int(voxel)]
         else:
             return 'background'

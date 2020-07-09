@@ -82,6 +82,13 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
         self.title = datatype.title
 
+        self.has_volume_mapping = False
+        self.has_surface_mapping = False
+
+        no_reg = datatype.connectivity.number_of_regions
+        if not (no_reg in self.parsed_shape):
+            return
+
         rm_list = dao.get_generic_entity(RegionMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
         if rm_list:
             self.has_surface_mapping = True
@@ -89,8 +96,7 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
         if rvm_list:
             self.has_volume_mapping = True
-        else:
-            self.has_volume_mapping = False
+
 
     @property
     def display_name(self):
