@@ -53,6 +53,7 @@ def _numba_update_non_state_variables(S, c, a, b, d, w, jn, r, g, io, newS):
         x = a[0]*newS[4] - b[0]
         h = x / (1 - numpy.exp(-d[0]*x))
         newS[2] = h     # R
+        newS[3] = 0.0   # Rin
     else:
         # R updated from Spiking Network model
         # Rate has to be scaled down from the Spiking neural model rate range to the TVB one
@@ -63,7 +64,7 @@ def _numba_update_non_state_variables(S, c, a, b, d, w, jn, r, g, io, newS):
             # For high activity
             R = 0.0000050 * g[0] * S[1] ** 2
         newS[2] = R
-    newS[3] = S[3]  # Rin
+        newS[3] = S[3]  # Rin
 
 
 @guvectorize([(float64[:],)*6], '(n)' + ',()'*4 + '->(n)', nopython=True)
@@ -74,11 +75,13 @@ def _numba_dfun(S, g, t, r, tr, dx):
         # Rint
         dx[1] = (- S[1] + S[3]) / tr[0]
     else:
+        # TVB computation
         dx[1] = 0.0
     dx[0] = - (S[0] / t[0]) + (1.0 - S[0]) * S[2] * g[0]   # S
     dx[2] = 0.0  # R
     dx[3] = 0.0  # Rin
     dx[4] = 0.0  # I
+
 
 class ReducedWongWangExcIO(TVBReducedWongWang):
 
@@ -241,6 +244,7 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
 
         S = state_variables[0, :]  # synaptic gating dynamics
         Rint = state_variables[1, :]  # Rates from Spiking Network, integrated
+        Rin = state_variables[3, :]  # Input rates from Spiking Network
 
         c_0 = coupling[0, :]
 
@@ -263,8 +267,11 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
                                     0.0000050 *self.G * Rint ** 2),  # High activity scaling,
                         x / (1 - numpy.exp(-self.d * x)))
 
+        Rin = numpy.where(self._Rin, Rin, 0.0)  # Reset to 0 the Rin for nodes not updated by Spiking Network
+
         # We now update the state_variable vector with the new rates and currents:
         state_variables[2, :] = R
+        state_variables[3, :] = Rin
         state_variables[4, :] = I
 
         return state_variables
