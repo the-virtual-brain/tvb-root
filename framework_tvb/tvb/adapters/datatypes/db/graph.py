@@ -97,7 +97,7 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
         """
         Overwrite from superclass and add number of regions field
         """
-        display_name = super(ConnectivityMeasureIndex, self).display_name
+        result = super(ConnectivityMeasureIndex, self).display_name
         if self.title:
-            display_name = display_name + " - " + str(self.title)[:30]
-        return display_name
+            result = result + " - " + (self.title if len(self.title) < 50 else self.title[:46] + "...")
+        return result
