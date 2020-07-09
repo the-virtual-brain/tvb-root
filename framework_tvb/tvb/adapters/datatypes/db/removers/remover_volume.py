@@ -46,20 +46,10 @@ class VolumeRemover(ABCRemover):
         Called when a Surface is to be removed.
         """
         if not skip_validation:
-            associated_ts = dao.get_generic_entity(TimeSeriesVolumeIndex, self.handled_datatype.gid,
-                                                   'fk_volume_gid')
-            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid,
-                                                    'fk_volume_gid')
-            associated_s_mri = dao.get_generic_entity(StructuralMRIIndex, self.handled_datatype.gid,
-                                                      'fk_volume_gid')
-
-            if hasattr(self.handled_datatype, "fk_connectivity_gid"):
-                conn_measure_index_list = dao.get_generic_entity(ConnectivityMeasureIndex,
-                                                                 self.handled_datatype.fk_connectivity_gid, "fk_connectivity_gid")
-                for conn_measure_index in conn_measure_index_list:
-                    if conn_measure_index.has_volume_mapping:
-                        conn_measure_index.has_volume_mapping = False
-                        dao.store_entity(conn_measure_index)
+            key = 'fk_volume_gid'
+            associated_ts = dao.get_generic_entity(TimeSeriesVolumeIndex, self.handled_datatype.gid, key)
+            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, key)
+            associated_s_mri = dao.get_generic_entity(StructuralMRIIndex, self.handled_datatype.gid, key)
 
             error_msg = "Volume cannot be removed because is still used by a "
 

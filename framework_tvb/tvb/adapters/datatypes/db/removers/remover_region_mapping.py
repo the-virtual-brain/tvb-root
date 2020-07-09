@@ -27,8 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
+from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcremover import ABCRemover
 from tvb.core.services.exceptions import RemoveDataTypeException
@@ -38,18 +40,16 @@ class RegionMappingRemover(ABCRemover):
     """
     RegionMapping specific validations at remove time.
     """
-    FIELD_NAME = "fk_region_mapping_gid"
-    CLASS_NAME = "RegionMappingIndex"
 
     def remove_datatype(self, skip_validation=False):
         """
         Called when a Sensor is to be removed.
         """
         if not skip_validation:
-            tsr = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, self.FIELD_NAME)
-            error_msg = "%s cannot be removed because is still used by %d TimeSeries Region entities."
+            tsr = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, "fk_region_mapping_gid")
+            error_msg = "RegionMappingIndex cannot be removed because is still used by %d TimeSeries Region entities."
             if tsr:
-                raise RemoveDataTypeException(error_msg % (self.CLASS_NAME, len(tsr)))
+                raise RemoveDataTypeException(error_msg % (len(tsr)))
 
         ABCRemover.remove_datatype(self, skip_validation)
 
@@ -59,5 +59,32 @@ class RegionVolumeMappingRemover(RegionMappingRemover):
     RegionVolumeMapping specific validations at remove time.
     """
 
-    FIELD_NAME = "fk_region_mapping_volume_gid"
-    CLASS_NAME = "RegionVolumeMappingIndex"
+    def remove_datatype(self, skip_validation=False):
+        """
+        Called when a Sensor is to be removed.
+        """
+        if not skip_validation:
+            tsr = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid,
+                                         "fk_region_mapping_volume_gid")
+            tracts = dao.get_generic_entity(TractsIndex, self.handled_datatype.gid,
+                                            "fk_region_volume_map_gid")
+            error_msg = "RegionVolumeMappingIndex cannot be removed because is still used by %d %s entities."
+            if len(tsr) > 0:
+                raise RemoveDataTypeException(error_msg % (len(tsr), "TimeSeries"))
+            if len(tracts) > 0:
+                raise RemoveDataTypeException(error_msg % (len(tsr), "Tract"))
+
+        conn_gid = self.handled_datatype.fk_connectivity_gid
+        if conn_gid is not None:  # it is not required
+            conn_measure_list = dao.get_generic_entity(ConnectivityMeasureIndex, conn_gid,
+                                                       "fk_connectivity_gid")
+            others_rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, conn_gid,
+                                                     'fk_connectivity_gid')
+            if len(others_rvm_list) <= 1:
+                # Only the current RegionVolumeMappingIndex is compatible
+                for conn_measure_index in conn_measure_list:
+                    if conn_measure_index.has_volume_mapping:
+                        conn_measure_index.has_volume_mapping = False
+                        dao.store_entity(conn_measure_index)
+
+        ABCRemover.remove_datatype(self, skip_validation)

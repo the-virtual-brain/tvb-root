@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import CovarianceIndex, CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex, IndependentComponentsIndex
@@ -48,6 +48,7 @@ class TimeseriesRemover(ABCRemover):
         if not skip_validation:
             key = 'fk_source_gid'
 
+            associated_fcd = dao.get_generic_entity(FcdIndex, self.handled_datatype.gid, key)
             associated_cv = dao.get_generic_entity(CovarianceIndex, self.handled_datatype.gid, key)
             associated_pca = dao.get_generic_entity(PrincipalComponentsIndex, self.handled_datatype.gid, key)
             associated_is = dao.get_generic_entity(IndependentComponentsIndex, self.handled_datatype.gid, key)
@@ -61,6 +62,8 @@ class TimeseriesRemover(ABCRemover):
 
             msg = "TimeSeries cannot be removed as it is used by at least one "
 
+            if len(associated_fcd) > 0:
+                raise RemoveDataTypeException(msg + " FCD.")
             if len(associated_cv) > 0:
                 raise RemoveDataTypeException(msg + " Covariance.")
             if len(associated_pca) > 0:
