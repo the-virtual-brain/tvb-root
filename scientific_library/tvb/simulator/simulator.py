@@ -363,7 +363,7 @@ class Simulator(HasTraits):
         if any(outputi is not None for outputi in output):
             return output
 
-    def __call__(self, simulation_length=None, random_state=None):
+    def __call__(self, simulation_length=None, random_state=None, test_step=True):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
@@ -388,7 +388,10 @@ class Simulator(HasTraits):
         state = self.current_state
 
         # integration loop
-        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        if test_step:
+            n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        else:
+            n_steps = numpy.rint(self.simulation_length / self.integrator.dt).astype(int)
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # needs implementing by hsitory + coupling?
             node_coupling = self._loop_compute_node_coupling(step)
