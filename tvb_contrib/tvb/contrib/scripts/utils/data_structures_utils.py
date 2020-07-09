@@ -844,6 +844,24 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         return {"data": data, "dims": list(coords.keys()), "coords": coords, "name": name}
 
 
+def concatenate_heterogeneous_DataArrays(data, dim_name, data_name="", fill_value=np.nan, dims=None):
+    from xarray import concat
+    from pandas import Index
+    data_names = ensure_list(data.keys())
+    if isinstance(data, dict):  # dict
+        data = ensure_list(data.values())
+        name = data_name
+    else:  # pd.Series
+        name = data.name
+        data = ensure_list(data.values)
+    # assuming a pandas Series due to heterogeneity of populations in among brain regions:
+    data = concat(data, Index(data_names, name=dim_name), fill_value=fill_value)
+    data.name = name
+    if dims:
+        data = data.transpose(*dims)
+    return data
+
+
 def property_to_fun(property):
     if hasattr(property, "__call__"):
         return property
