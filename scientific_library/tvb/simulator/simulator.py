@@ -431,6 +431,12 @@ class Simulator(HasTraits):
         for target_parameter in self.spike_stimulus.keys():
             setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step-1))
 
+    def update_non_state_variables(self, state, node_coupling, local_coupling):
+        if self.model._update_non_state_variables:
+            state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                          use_numba=self.use_numba)
+            self.bound_and_clamp(state)
+
     def __call__(self, simulation_length=None, random_state=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -463,10 +469,7 @@ class Simulator(HasTraits):
             self._apply_spike_stimulus(init_step)
 
         # Update any non-state variables and apply any boundaries again to the modified initial condition:
-        if self.model._update_non_state_variables:
-            state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                          use_numba=self.use_numba)
-            self.bound_and_clamp(state)
+        self.update_non_state_variables(state, node_coupling, local_coupling)
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
@@ -492,10 +495,7 @@ class Simulator(HasTraits):
                 self._apply_spike_stimulus(step)
 
             # Update any non-state variables and apply any boundaries again to the new state t_step:
-            if self.model._update_non_state_variables:
-                state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                              use_numba=self.use_numba)
-                self.bound_and_clamp(state)
+            self.update_non_state_variables(state, node_coupling, local_coupling)
 
             # Now direct the new state t_step to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
