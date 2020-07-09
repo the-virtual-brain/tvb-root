@@ -278,12 +278,13 @@ class Simulator(HasTraits):
 
         """
         # TODO: temporary hack because numba dfuns fail for multiple modes
-        if self.use_numba and self.model.number_of_modes == 1:
-            self._dfun = self.model.dfun
-        else:
+        self._dfun = self.model.dfun
+        if not self.use_numba or self.model.number_of_modes > 1:
             self.use_numba = False
-            self._dfun = self.model._numpy_dfun
+            if hasattr(self.model, "_numpy_dfun"):
+                self._dfun = self.model._numpy_dfun
             self._spatial_param_reshape = (-1, 1)
+
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
