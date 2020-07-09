@@ -479,6 +479,10 @@ class Simulator(HasTraits):
             self._tic_point = self._tic_ratio * n_steps
         end_step = init_step + n_steps
         for step in range(init_step, end_step):
+            # Prepare coupling and stimulus at time t_step, i.e., for next time iteration
+            # and, therefore, for the new TVB state t_step+1, if any:
+            node_coupling = self._loop_compute_node_coupling(step)
+            self._loop_update_stimulus(step, stimulus)
 
             # Integrate TVB to get the new TVB state t_step
             state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
@@ -487,10 +491,6 @@ class Simulator(HasTraits):
             # if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
             #     raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
 
-            # Prepare coupling and stimulus at time t_step, i.e., for next time iteration
-            # and, therefore, for the new TVB state t_step+1, if any:
-            node_coupling = self._loop_compute_node_coupling(step)
-            self._loop_update_stimulus(step, stimulus)
             if self._spike_stimulus_fun:
                 self._apply_spike_stimulus(step)
 
