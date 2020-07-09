@@ -52,23 +52,27 @@ def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, 
                                     # S_i
     newS[6] = wp[0] * jnSe - ji[0] * S[1] + we[0] * io[0] + cc + ie[0]  # I_e
     if re[0] <= 0.0:
+        # TVB computation
         x = ae[0]*newS[6] - be[0]
         h = x / (1 - numpy.exp(-de[0]*x))
         newS[2] = h     # R_e
+        newS[4] = 0.0   # Rin_e
     else:
+        # Updating from spiking network
         newS[2] = S[2]  # R_e
+        newS[4] = S[4]  # Rin_e
 
                     # S_i
     newS[7] = jnSe - S[1] + wi[0] * io[0] + l[0] * cc   # I_i
     if ri[0] <= 0.0:
+        # TVB computation
         x = ai[0]*newS[7] - bi[0]
         h = x / (1 - numpy.exp(-di[0]*x))
         newS[3] = h     # R_i
+        newS[5] = 0.0   # Rin_i
     else:
         newS[3] = S[3]  # R_i
-
-    newS[4] = S[4]      # Rin_e
-    newS[5] = S[5]      # Rin_i
+        newS[5] = S[5]  # Rin_i
 
 
 @guvectorize([(float64[:],)*10], '(n)' + ',()'*8 + '->(n)', nopython=True)
@@ -77,16 +81,20 @@ def _numba_dfun(S, ge, te, re, tre, gi, ti, ri, tri, dx):
 
     dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * S[2] * ge[0]
     if re[0] > 0.0:
+        # Integrating input from spiking network
         dx[2] = (- S[2] + S[4]) / tre[0]
     else:
+        # TVB computation
         dx[2] = 0.0
     dx[4] = 0.0
     dx[6] = 0.0
 
     dx[1] = - (S[1] / ti[0]) + S[3] * gi[0]
     if ri[0] > 0.0:
+        # Integrating input from spiking network
         dx[3] = (- S[3] + S[5]) / tri[0]
     else:
+        # TVB computation
         dx[3] = 0.0
     dx[5] = 0.0
     dx[7] = 0.0
@@ -211,6 +219,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
 
         S = state_variables[:2, :]  # synaptic gating dynamics
         R = state_variables[2:4, :]  # Rates
+        Rin = state_variables[4:6, :]  # Input rates from spiking network
 
         c_0 = coupling[0, :]
 
@@ -227,16 +236,22 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         x_e = self.a_e * I_e - self.b_e
         # Only rates with R_e <= 0 0 will be updated by TVB.
         R_e = numpy.where(self._Rin_e, R[0], x_e / (1 - numpy.exp(-self.d_e * x_e)))
+        # ...and their Rin_e should be zero:
+        Rin_e = numpy.where(self._Rin_e, Rin[0], 0.0)
 
         I_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
 
         x_i = self.a_i * I_i - self.b_i
         # Only rates with R_i < 0 will be updated by TVB.
         R_i = numpy.where(self._Rin_i, R[1], x_i / (1 - numpy.exp(-self.d_i * x_i)))
+        # ...and their Rin_i should be zero:
+        Rin_i = numpy.where(self._Rin_i, Rin[1], 0.0)
 
         # We now update the state_variable vector with the new rates:
         state_variables[2, :] = R_e
         state_variables[3, :] = R_i
+        state_variables[4, :] = Rin_e
+        state_variables[5, :] = Rin_i
         state_variables[6, :] = I_e
         state_variables[7, :] = I_i
 
