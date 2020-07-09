@@ -369,7 +369,7 @@ class Simulator(HasTraits):
             # ...use the integrator's clamp_state
             self.integrator.clamp_state(state)
 
-    def __call__(self, simulation_length=None, random_state=None):
+    def __call__(self, simulation_length=None, random_state=None, test_step=True):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
@@ -394,7 +394,10 @@ class Simulator(HasTraits):
         state = self.current_state
 
         # integration loop
-        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        if test_step:
+            n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        else:
+            n_steps = numpy.rint(self.simulation_length / self.integrator.dt).astype(int)
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # TODO HO methods compute coupling inside scheme
             node_coupling = self._loop_compute_node_coupling(step)
