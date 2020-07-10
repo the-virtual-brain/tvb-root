@@ -249,6 +249,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         result_index.labels_ordering = self.input_time_series_index.labels_ordering
         result_index.labels_dimensions = self.input_time_series_index.labels_dimensions
         result_index.has_volume_mapping = self.input_time_series_index.has_volume_mapping
+        result_index.has_surface_mapping = self.input_time_series_index.has_surface_mapping
         result_index.title = self.input_time_series_index.title
 
     def _fill_result_h5(self, result_h5, input_h5):
