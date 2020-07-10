@@ -28,6 +28,12 @@
 #
 #
 
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+"""
+
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String, Boolean
 from sqlalchemy.orm import relationship
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -62,7 +68,7 @@ class CorrelationCoefficientsIndex(DataTypeMatrix):
     def fill_from_has_traits(self, datatype):
         # type: (CorrelationCoefficients)  -> None
         super(CorrelationCoefficientsIndex, self).fill_from_has_traits(datatype)
-        self.labels_ordering = datatype.labels_ordering
+        self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.fk_source_gid = datatype.source.gid.hex
 
 
