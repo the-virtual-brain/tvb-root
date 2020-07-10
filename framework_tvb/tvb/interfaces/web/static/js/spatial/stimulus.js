@@ -70,6 +70,7 @@ function _STIM_saveWeightForSelectedNodes() {
         weightElement.val("");
         _STIM_server_update_scaling();
     }
+    return newWeight;
 }
 
 
