@@ -32,6 +32,7 @@
 
 import re
 from collections import OrderedDict
+import itertools
 from copy import deepcopy
 import numpy as np
 from tvb.contrib.scripts.utils.log_error_utils import warning, raise_value_error, raise_import_error
@@ -354,6 +355,32 @@ def flatten_list(lin, sort=False):
 
 def flatten_tuple(t, sort=False):
     return tuple(flatten_list(list(t), sort))
+
+
+def extract_integer_intervals(iterable, print=False):
+    def generator(iterable):
+        iterable = sorted(set(iterable))
+        for key, group in itertools.groupby(enumerate(iterable),
+                                            lambda t: t[1] - t[0]):
+            group = list(group)
+            yield [group[0][1], group[-1][1]]
+
+    if print:
+        output = ""
+        for element in generator(iterable):
+            if element[0] == element[1]:
+                output += "%d, " % element[0]
+            else:
+                output += "%d...%d, " % tuple(element)
+        output = output[:-2]
+    else:
+        output = []
+        for element in generator(iterable):
+            if element[0] == element[1]:
+                output.append([element[0]])
+            else:
+                output.append(element)
+    return output
 
 
 def set_list_item_by_reference_safely(ind, item, lst):
