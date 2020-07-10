@@ -33,6 +33,7 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 
 """
 
@@ -40,17 +41,16 @@ import json
 import uuid
 import numpy
 from scipy.signal.signaltools import correlate
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
-from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
+from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.info import narray_describe
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -389,24 +389,12 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
             labels_ordering[0] = ts_labels_ordering[2]
             labels_ordering[1] = ts_labels_ordering[2]
 
-        corr_coef_index = CorrelationCoefficientsIndex()
-        corr_coef_h5_path = h5.path_for(self.storage_path, CorrelationCoefficientsH5, corr_coef_index.gid)
-        with CorrelationCoefficientsH5(corr_coef_h5_path) as corr_coef_h5:
-            corr_coef_h5.array_data.store(result)
-            corr_coef_h5.source.store(view_model.time_series)
-            corr_coef_h5.labels_ordering.store(json.dumps(tuple(labels_ordering)))
-            corr_coef_h5.gid.store(uuid.UUID(corr_coef_index.gid))
-            ts_array_metadata = corr_coef_h5.array_data.get_cached_metadata()
-            corr_coef_index.ndim = len(corr_coef_h5.array_data.shape)
+        corr_coef = CorrelationCoefficients()
+        corr_coef.array_data = result
+        corr_coef.source = TimeSeries(gid=view_model.time_series)
+        corr_coef.labels_ordering = labels_ordering
 
-        corr_coef_index.fk_source_gid = self.input_time_series_index.gid
-        corr_coef_index.subtype = type(corr_coef_index).__name__
-        corr_coef_index.labels_ordering = json.dumps(labels_ordering)
-        corr_coef_index.array_data_min = ts_array_metadata.min
-        corr_coef_index.array_data_max = ts_array_metadata.max
-        corr_coef_index.array_data_mean = ts_array_metadata.mean
-
-        return corr_coef_index
+        return h5.store_complete(corr_coef, self.storage_path)
 
     def _compute_correlation_coefficients(self, ts_h5, t_start, t_end):
         """

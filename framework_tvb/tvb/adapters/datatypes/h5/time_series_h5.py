@@ -27,6 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+"""
+
 import json
 from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.arguments_serialisation import *
@@ -54,7 +60,7 @@ class TimeSeriesH5(H5File):
         self.sample_period_unit = Scalar(TimeSeries.sample_period_unit, self)
         self.sample_rate = Scalar(Float(), self, name="sample_rate")
 
-        # omitted has_surface_mapping, has_volume_mapping, indexing props, to be removed fro datatype too
+        # omitted has_surface_mapping, has_volume_mapping, as they are indexing props to be filled only in DB
 
         # experiment: load header data eagerly, see surface for a lazy approach
         # as we do not explicitly make a difference between opening for read or write

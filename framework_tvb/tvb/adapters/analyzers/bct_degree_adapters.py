@@ -52,6 +52,7 @@ class Degree(BaseBCT):
         measure_index = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree")
         return [measure_index]
 
+
 class DegreeIOD(Degree):
     """
     """
@@ -67,8 +68,10 @@ class DegreeIOD(Degree):
         result = self.execute_matlab(self._matlab_code, data=data)
         measure_index1 = self.build_connectivity_measure(result, 'id', connectivity, "Node indegree")
         measure_index2 = self.build_connectivity_measure(result, 'od', connectivity, "Node outdegree")
-        measure_index3 = self.build_connectivity_measure(result, 'deg', connectivity, "Node degree (indegree + outdegree)")
+        measure_index3 = self.build_connectivity_measure(result, 'deg', connectivity,
+                                                         "Node degree (indegree + outdegree)")
         return [measure_index1, measure_index2, measure_index3]
+
 
 class JointDegree(Degree):
     """
@@ -83,12 +86,15 @@ class JointDegree(Degree):
 
         result = self.execute_matlab(self._matlab_code, data=data)
         measure_index = self.build_connectivity_measure(result, 'J', connectivity,
-                                                  "'Joint Degree JOD= ' +str(result['J_od'])+ ', JID= ' +str(result['J_id'])+ ', JBL= ' +str(result['J_bl'])",
-                                                  "Connectivity Nodes", "Connectivity Nodes")
+                                                        "Joint Degree JOD=" + str(result['J_od']) +
+                                                        ", JID=" + str(result['J_id']) +
+                                                        ", JBL=" + str(result['J_bl']),
+                                                        "Connectivity Nodes", "Connectivity Nodes")
         value1 = self.build_int_value_wrapper(result, 'J_od', "Number of vertices with od > id")
         value2 = self.build_int_value_wrapper(result, 'J_id', "Number of vertices with id > od")
         value3 = self.build_int_value_wrapper(result, 'J_bl', "Number of vertices with id = od")
         return [measure_index, value1, value2, value3]
+
 
 class MatchingIndex(Degree):
     """
@@ -103,10 +109,11 @@ class MatchingIndex(Degree):
 
         result = self.execute_matlab(self._matlab_code, data=data)
         measure_index1 = self.build_connectivity_measure(result, 'Min', connectivity,
-                                                   "Matching index for incoming connections")
+                                                         "Matching index for incoming connections")
         measure_index2 = self.build_connectivity_measure(result, 'Mout', connectivity,
-                                                   "Matching index for outgoing connections")
-        measure_index3 = self.build_connectivity_measure(result, 'Mall', connectivity, "Matching index for all connections")
+                                                         "Matching index for outgoing connections")
+        measure_index3 = self.build_connectivity_measure(result, 'Mall', connectivity,
+                                                         "Matching index for all connections")
         return [measure_index1, measure_index2, measure_index3]
 
 
@@ -116,7 +123,6 @@ class Strength(Degree):
     _ui_name = "Strength: Directed weighted connection matrix"
     _ui_description = bct_description("strengths_und.m")
     _matlab_code = "strength = strengths_und(CIJ);"
-
 
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
@@ -134,7 +140,6 @@ class StrengthISOS(Strength):
     _ui_description = bct_description("strengths_dir.m")
     _matlab_code = "[is,os,strength] = strengths_dir(CIJ);"
 
-
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         data = {'CIJ': connectivity.weights}
@@ -143,7 +148,7 @@ class StrengthISOS(Strength):
         measure_index1 = self.build_connectivity_measure(result, 'is', connectivity, "Node instrength")
         measure_index2 = self.build_connectivity_measure(result, 'os', connectivity, "Node outstrength")
         measure_index3 = self.build_connectivity_measure(result, 'strength', connectivity,
-                                                   "Node strength (instrength + outstrength)")
+                                                         "Node strength (instrength + outstrength)")
         return [measure_index1, measure_index2, measure_index3]
 
 
@@ -154,17 +159,19 @@ class StrengthWeights(Strength):
     _ui_description = bct_description("strengths_und_sign.m")
     _matlab_code = "[Spos,Sneg,vpos,vneg] = strengths_und_sign(CIJ);"
 
-
     def launch(self, view_model):
         connectivity = self.get_connectivity(view_model)
         data = {'CIJ': connectivity.weights}
 
         result = self.execute_matlab(self._matlab_code, data=data)
-        measure_index1 = self.build_connectivity_measure(result, 'Spos', connectivity, "Nodal strength of positive weights")
-        measure_index2 = self.build_connectivity_measure(result, 'Sneg', connectivity, "Nodal strength of negative weights")
+        measure_index1 = self.build_connectivity_measure(result, 'Spos', connectivity,
+                                                         "Nodal strength of positive weights")
+        measure_index2 = self.build_connectivity_measure(result, 'Sneg', connectivity,
+                                                         "Nodal strength of negative weights")
         value1 = self.build_float_value_wrapper(result, 'vpos', "Total positive weight")
         value2 = self.build_float_value_wrapper(result, 'vneg', "Total negative weight")
         return [measure_index1, measure_index2, value1, value2]
+
 
 class DensityDirected(BaseBCT):
     """
