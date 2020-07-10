@@ -233,10 +233,10 @@ class CoSimulator(Simulator):
 
                 # Prepare coupling and stimulus, if any, at time t_step, i.e., for next time iteration
                 # and, therefore, for the new TVB state t_step+1:
-                node_coupling = self._loop_compute_node_coupling(step)
-                self._loop_update_stimulus(step, stimulus)
+                node_coupling = self._loop_compute_node_coupling(step+1)
+                self._loop_update_stimulus(step+1, stimulus)
                 if self._spike_stimulus_fun:
-                    self._apply_spike_stimulus(step)
+                    self._apply_spike_stimulus(step+1)
 
                 # Update any non-state variables and apply any boundaries again to the new state t_step:
                 self.update_non_state_variables(state, node_coupling, local_coupling)
