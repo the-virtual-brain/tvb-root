@@ -34,28 +34,17 @@
 
 from uuid import UUID
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.services.burst_service import BurstService
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.operation_service import OperationService
-from tvb.core.services.project_service import ProjectService
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.time_series import TimeSeriesRegion
-# from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
-from tvb.tests.framework.adapters.storeadapter import StoreAdapter
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
 from tvb.tests.framework.datatypes.datatype2 import Datatype2
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
 class TestBurstService(BaseTestCase):
@@ -64,14 +53,9 @@ class TestBurstService(BaseTestCase):
     we launch operations in different threads and the transactional operator only rolls back 
     sessions bounded to the current thread transaction.
     """
-    PORTLET_ID = "TA1TA2"
-    # This should not be present in portlets.xml
-    INVALID_PORTLET_ID = "this_is_not_a_non_existent_test_portlet_ID"
-
     burst_service = BurstService()
-    algorithm_service = AlgorithmService()
-    operation_service = OperationService()
-    sim_algorithm = algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+    sim_algorithm = AlgorithmService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                         IntrospectionRegistry.SIMULATOR_CLASS)
 
     def setup_method(self):
         """
@@ -142,14 +126,14 @@ class TestBurstService(BaseTestCase):
                                         self.burst_service.get_available_bursts(self.test_project.id)]
         returned_second_project_bursts = [burst.id for burst in
                                           self.burst_service.get_available_bursts(second_project.id)]
-        assert len(test_project_bursts) == len(returned_test_project_bursts),\
-                         "Incorrect bursts retrieved for project %s." % self.test_project
-        assert len(second_project_bursts) == len(returned_second_project_bursts),\
-                         "Incorrect bursts retrieved for project %s." % second_project
-        assert set(second_project_bursts) == set(returned_second_project_bursts),\
-                         "Incorrect bursts retrieved for project %s." % second_project
-        assert set(test_project_bursts) == set(returned_test_project_bursts),\
-                         "Incorrect bursts retrieved for project %s." % self.test_project
+        assert len(test_project_bursts) == len(returned_test_project_bursts), \
+            "Incorrect bursts retrieved for project %s." % self.test_project
+        assert len(second_project_bursts) == len(returned_second_project_bursts), \
+            "Incorrect bursts retrieved for project %s." % second_project
+        assert set(second_project_bursts) == set(returned_second_project_bursts), \
+            "Incorrect bursts retrieved for project %s." % second_project
+        assert set(test_project_bursts) == set(returned_test_project_bursts), \
+            "Incorrect bursts retrieved for project %s." % self.test_project
 
     def test_rename_burst(self, operation_factory):
         """

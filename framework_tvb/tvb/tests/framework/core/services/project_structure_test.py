@@ -32,7 +32,7 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import json
+
 import os
 import numpy
 import pytest
@@ -42,7 +42,6 @@ from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDir
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.model.model_operation import OperationGroup, Operation
 from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
@@ -363,11 +362,11 @@ class TestProjectStructure(TransactionalTestCase):
         dao.store_entity(conn)
 
         operation1 = Operation(self.test_user.id, self.test_project.id, algorithm1.id,
-                              json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
+                               json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
         operation1.fk_operation_grup = group.id
 
         operation2 = Operation(self.test_user.id, self.test_project.id, algorithm2.id,
-                              json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
+                               json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
         operation2.fk_operation_grup = group.id
 
         dao.store_entities([operation1, operation2])
