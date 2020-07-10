@@ -107,7 +107,7 @@ function _FIL_gatherData(divId){
     return { fields: fields, operations: operations, values: values};
 }
 
-function refreshData(datatypeIndex, divId, name, gatheredData) {
+function applyFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
@@ -126,10 +126,16 @@ function refreshData(datatypeIndex, divId, name, gatheredData) {
     //Make a request to get new data
     doAjaxCall({
         type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + name + '/' + datatypeIndex + '/' + $.toJSON(gatheredData),
+        url: "/flow/get_filtered_datatypes/" + datatypeIndex + '/' + $.toJSON(gatheredData),
         success: function (response) {
             var select_field = document.getElementById(name);
-            select_field.innerHTML = response;
+
+            for(var i=0; i<select_field.options.length; i++){
+                if(select_field.options[i].text !== "None" && select_field.options[i].text !== "All"){
+                    select_field.removeChild(select_field.options[i]);
+                }
+            }
+            select_field.append(response);
         },
         error: function (response) {
             displayMessage("Invalid filter data.", "errorMessage");
@@ -179,7 +185,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         };
 
         if (!linkedData.linked_elem_parent_name && !linkedData.linked_elem_parent_option) {
-            refreshData("", elemName + 'data_select', elemName, treeSessionKey, filterData);
+            applyFilters("", elemName + 'data_select', elemName, treeSessionKey, filterData);
         }
 
         var linkedInputName = linkedData.linked_elem_parent_name + "_parameters_option_";
@@ -188,7 +194,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         if (linkedData.linked_elem_parent_option) {
             linkedInputName = linkedInputName + linkedData.linked_elem_parent_option + "_" + elemName;
             parentDivID += linkedData.linked_elem_parent_option;
-            refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+            applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
         } else {
             $("select[id^='" + linkedInputName + "']").each(function () {
                 if ($(this)[0].id.indexOf("_" + elemName) < 0) {
@@ -197,7 +203,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
                 var option_name = $(this)[0].id.replace("_" + elemName, '').replace(linkedInputName, '');
                 linkedInputName = $(this)[0].id;
                 parentDivID += option_name; // todo : possible bug. option names will be concatenated many times if this each runs more than once
-                refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+                applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
             });
         }
     }

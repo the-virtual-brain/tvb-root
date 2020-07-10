@@ -252,7 +252,7 @@ class FlowController(BaseController):
         self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
 
-    def get_filtered_datatypes(self, name, parent_div, tree_session_key, filters):
+    def get_filtered_datatypes(self, datatype_index_path, filters):
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.

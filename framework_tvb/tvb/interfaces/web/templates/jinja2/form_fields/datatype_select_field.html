@@ -1,3 +1,5 @@
+<script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
+
 <div class="field-data">
 <select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1"
         onchange="updateDivContent('data_time_series', this, ''); updateDatatypeDiv(this)" title="Fully Loaded!">
@@ -8,7 +10,7 @@
 {% if field.draw_dynamic_conditions_buttons %}
     <div class="field-adapters" id="{{ field.owner.name }}{{ field.name }}data_select">
         <input type="button" tabindex='1' value="Add Filter" onclick="addFilter('{{ field.owner.name }}' + '{{ field.name }}' + 'data_select', {{ field.get_dynamic_filters }})">
-        <input type="button" tabindex='1' value="Apply Filters" onclick="refreshData('{{ (field.datatype_index | string)[8:-2] }}', '{{ field.name }}' + 'data_select', '{{ field.name }}')">
+        <input type="button" tabindex='1' value="Apply Filters" onclick="applyFilters('{{ (field.datatype_index | string)[8:-2] }}', '{{ field.name }}' + 'data_select', '{{ field.name }}')">
 
         {% with %}
             {% set form_filters = field.get_form_filters %}
