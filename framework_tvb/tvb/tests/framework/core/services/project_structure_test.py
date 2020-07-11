@@ -347,28 +347,21 @@ class TestProjectStructure(TransactionalTestCase):
         """
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
+        conn.visible = False
+        dao.store_entity(conn)
 
         group = OperationGroup(self.test_project.id, "group", "range1[1..2]")
         group = dao.store_entity(group)
 
         view_model = BaseBCTModel()
         view_model.connectivity = conn.gid
-        adapter1 = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
+        algorithm = adapter.stored_adapter
 
-        algorithm1 = adapter1.stored_adapter
-        algorithm2 = adapter1.stored_adapter
-
-        conn.visible = False
-        dao.store_entity(conn)
-
-        operation1 = Operation(self.test_user.id, self.test_project.id, algorithm1.id,
+        operation1 = Operation(self.test_user.id, self.test_project.id, algorithm.id,
                                json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
-        operation1.fk_operation_grup = group.id
-
-        operation2 = Operation(self.test_user.id, self.test_project.id, algorithm2.id,
+        operation2 = Operation(self.test_user.id, self.test_project.id, algorithm.id,
                                json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
-        operation2.fk_operation_grup = group.id
-
         dao.store_entities([operation1, operation2])
 
         OperationService()._store_view_model(operation1, dao.get_project_by_id(self.test_project.id), view_model)
