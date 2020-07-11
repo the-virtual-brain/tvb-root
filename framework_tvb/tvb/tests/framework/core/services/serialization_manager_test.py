@@ -31,15 +31,16 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-from tvb.simulator.simulator import Simulator
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.services.burst_config_serialization import INTEGRATOR_PARAMETERS, MODEL_PARAMETERS, SerializationManager
-from tvb.simulator.integrators import HeunStochastic
-from tvb.simulator.models import ModelsEnum
-from tvb.tests.framework.core.factory import TestFactory
+
 from os import path
 import tvb_data
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.services.burst_config_serialization import SerializationManager
+from tvb.simulator.simulator import Simulator
+from tvb.simulator.integrators import HeunStochastic
+from tvb.simulator.models import ModelsEnum
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
 class TestSerializationManager(TransactionalTestCase):
@@ -55,17 +56,6 @@ class TestSerializationManager(TransactionalTestCase):
 
         self.s_manager = SerializationManager(sim_conf)
         self.empty_manager = SerializationManager(None)
-
-    def test_get_params_dict(self):
-        d = self.s_manager._get_params_dict()
-        mp = d[MODEL_PARAMETERS]
-        ip = d[INTEGRATOR_PARAMETERS]
-        # test model param deserialization
-        assert [5] == mp['tauT'].tolist()
-        assert [{'step': 0.1, 'maxValue': 1, 'minValue': 0.7}] == mp['taux'].tolist()
-        # test integrator param deserialization
-        assert 0.09765625 == ip['dt']
-        assert [0.00123] == ip['noise_parameters']['nsig'].tolist()
 
     def test_group_parameter_values_by_name(self):
         gp = SerializationManager.group_parameter_values_by_name(
