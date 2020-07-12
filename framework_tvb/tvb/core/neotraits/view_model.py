@@ -29,6 +29,7 @@
 #
 
 import uuid
+import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.ex import TraitAttributeError
 
@@ -56,8 +57,8 @@ class DataTypeGidAttr(Attr):
     Keep a GID but also link the type of DataType it should point to
     """
 
-    def __init__(self, linked_datatype, field_type=uuid.UUID, filters=None, default=None, doc='', label='', required=True,
-                 final=False, choices=None):
+    def __init__(self, linked_datatype, field_type=uuid.UUID, filters=None, default=None, doc='', label='',
+                 required=True, final=False, choices=None):
         super(DataTypeGidAttr, self).__init__(field_type, default, doc, label, required, final, choices)
         self.linked_datatype = linked_datatype
         self.filters = filters
@@ -76,3 +77,13 @@ class EquationAttr(Attr):
     """
     # TODO: there are places where we need eq params as a nested form. Figure out a proper model
     """
+
+
+def replace_nan_values(input_data):
+    """ Replace NAN values with a given values"""
+    is_any_value_nan = False
+    if not numpy.isfinite(input_data).all():
+        for idx in range(len(input_data)):
+            input_data[idx] = numpy.nan_to_num(input_data[idx])
+        is_any_value_nan = True
+    return is_any_value_nan
