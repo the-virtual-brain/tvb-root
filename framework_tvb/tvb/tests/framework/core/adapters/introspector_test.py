@@ -37,6 +37,7 @@ import tvb.tests.framework.adapters
 from tvb.config.algorithm_categories import AlgorithmCategoryConfig
 from tvb.config.init.initializer import Introspector
 from tvb.config.init.introspector_registry import import_adapters
+from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -85,3 +86,11 @@ class TestIntrospector(BaseTestCase):
                 nr_adapters_mod3 += 1
 
         assert nr_adapters_mod3 == 3
+
+    def teardown_method(self):
+        all_categories = dao.get_algorithm_categories()
+        category_ids = [cat.id for cat in all_categories if cat.displayname == TestCategory.category_name]
+        adapters = dao.get_adapters_from_categories(category_ids)
+        for algorithm in adapters:
+            dao.remove_entity(Algorithm, algorithm.id)
+        dao.remove_entity(AlgorithmCategory, category_ids[0])
