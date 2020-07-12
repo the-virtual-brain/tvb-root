@@ -36,6 +36,7 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 import json
+import numpy
 import typing
 from datetime import datetime
 from copy import copy
@@ -236,6 +237,7 @@ class DataTypeMatrix(DataType):
     array_data_min = Column(Float)
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
+    array_has_nan = Column(Boolean, default=False)
     # has_volume_mapping will only be changed by ConnectivityMeasureIndex subclass,
     # for the rest the default approx is enough
     has_volume_mapping = Column(Boolean, nullable=False, default=True)
@@ -246,6 +248,7 @@ class DataTypeMatrix(DataType):
 
         if hasattr(datatype, "array_data"):
             self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+            self.array_has_nan = numpy.isnan(datatype.array_data).any()
             self.shape = json.dumps(datatype.array_data.shape)
             self.ndim = len(datatype.array_data.shape)
 
