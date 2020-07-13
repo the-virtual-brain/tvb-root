@@ -366,7 +366,8 @@ class SimulatorController(BurstBaseController):
     @staticmethod
     def _prepare_cortex_fragment(session_stored_simulator, rendering_rules):
         surface_index = ABCAdapter.load_entity_by_gid(session_stored_simulator.surface.surface_gid)
-        rm_fragment = SimulatorRMFragment('', common.get_current_project().id, surface_index)
+        rm_fragment = SimulatorRMFragment('', common.get_current_project().id, surface_index,
+                                          session_stored_simulator.connectivity)
         rm_fragment.fill_from_trait(session_stored_simulator.surface)
 
         rendering_rules.form = rm_fragment
@@ -653,9 +654,8 @@ class SimulatorController(BurstBaseController):
     @staticmethod
     def _check_cortical_for_spatial_average(connectivity, form, is_surface_simulation):
         connectivity_index = ABCAdapter.load_entity_by_gid(connectivity)
-        connectivity = h5.load_from_index(connectivity_index)
 
-        if is_surface_simulation is False and (connectivity.cortical is None or len(set(connectivity.cortical)) != 2):
+        if is_surface_simulation is False and connectivity_index.cortical_mask is False:
             form.default_mask.disabled = True
 
     @staticmethod
@@ -769,7 +769,7 @@ class SimulatorController(BurstBaseController):
             form = get_form_for_monitor(type(monitor))(indexes)
             form.fill_from_post(data)
 
-            if isinstance(form, SpatialAverageMonitorForm) and form.default_mask.data is None:
+            if hasattr(form, 'default_mask') and form.default_mask.data is None:
                 form.default_mask.data = 'hemispheres'
 
             form.fill_trait(monitor)

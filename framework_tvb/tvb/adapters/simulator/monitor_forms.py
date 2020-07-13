@@ -126,7 +126,7 @@ class SpatialAverageMonitorForm(MonitorForm):
     def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
-        self.default_mask = ScalarField(SpatialAverage.default_mask, self)
+        self.default_mask = ScalarField(SpatialAverage.default_mask,  self)
 
 
 class GlobalAverageMonitorForm(MonitorForm):
