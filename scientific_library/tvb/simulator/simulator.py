@@ -559,7 +559,8 @@ class Simulator(HasTraits):
                 self.current_step += ic_shape[0] - 1
 
         # Make sure that history values are bounded
-        self.bound_and_clamp(history)
+        for it in range(history.shape[0]):
+            history[it] = self.bound_and_clamp(history[it])
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
