@@ -432,9 +432,9 @@ class Simulator(HasTraits):
             setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step-1))
 
     def update_non_state_variables(self, state, node_coupling, local_coupling):
-        if self.model._update_non_state_variables:
-            state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                          use_numba=self.use_numba)
+        state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                      use_numba=self.use_numba)
+        if state is not None:
             self.bound_and_clamp(state)
 
     def __call__(self, simulation_length=None, random_state=None):
