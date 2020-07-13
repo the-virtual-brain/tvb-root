@@ -387,11 +387,11 @@ class SpikingWongWangExcIOInhI(Model):
         self.__E = None
         self.__I = None
         # Initialize all non-state variables, as well as t_ref, to 0, i.e., assuming no spikes in history.
-        for ii in range(self._n_regions):  # For every region node....
-            __n_E.append(self._n_E(ii))
-            __n_I.append(self._n_I(ii))
-            __E[ii] = numpy.arange(__n_E[-1]).astype('i')  # excitatory neurons' indices
-            __I[ii] = numpy.arange(self._N_E_max, self._N_E_max + __n_I[-1]).astype('i')  # inhibitory neurons' indices
+        for i_region in range(self._n_regions):  # For every region node....
+            __n_E.append(int(self._region(self.N_E, i_region).item()))
+            __n_I.append(int(self._region(self.N_I, i_region).item()))
+            __E[i_region] = numpy.arange(__n_E[-1]).astype('i')  # excitatory neurons' indices
+            __I[i_region] = numpy.arange(self._N_E_max, self._N_E_max + __n_I[-1]).astype('i')  # inhibitory neurons' indices
         self.__n_E = __n_E
         self.__n_I = __n_I
         self.__E = __E
