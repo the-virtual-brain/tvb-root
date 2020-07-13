@@ -36,8 +36,7 @@ from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
-from tvb.adapters.simulator.monitor_forms import get_form_for_monitor, SpatialAverageMonitorForm, \
-    SpatialAverageViewModel
+from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
@@ -46,7 +45,7 @@ from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel, \
-    AdditiveNoiseViewModel, BoldViewModel, RawViewModel
+    AdditiveNoiseViewModel, BoldViewModel, RawViewModel, ProjectionViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -652,13 +651,6 @@ class SimulatorController(BurstBaseController):
         return first_monitor_index, last_loaded_fragment_url
 
     @staticmethod
-    def _check_cortical_for_spatial_average(connectivity, form, is_surface_simulation):
-        connectivity_index = ABCAdapter.load_entity_by_gid(connectivity)
-
-        if is_surface_simulation is False and connectivity_index.cortical_mask is False:
-            form.default_mask.disabled = True
-
-    @staticmethod
     def _prepare_final_fragment(session_stored_simulator, rendering_rules):
         session_stored_burst = common.get_from_session(common.KEY_BURST_CONFIG)
         default_simulation_name, simulation_number = BurstService.prepare_name(session_stored_burst,
@@ -698,15 +690,9 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             self._update_last_loaded_fragment_url(last_loaded_fragment_url)
 
-        indexes = self.simulator_service.determine_indexes_for_chose_variables_of_interest(session_stored_simulator)
-
         monitor = session_stored_simulator.monitors[first_monitor_index]
-        form = get_form_for_monitor(type(monitor))(indexes, '', common.get_current_project().id)
+        form = get_form_for_monitor(type(monitor))(session_stored_simulator, '', common.get_current_project().id)
         form.fill_from_trait(monitor)
-
-        if isinstance(monitor, SpatialAverageViewModel):
-            self._check_cortical_for_spatial_average(session_stored_simulator.connectivity, form,
-                                                     session_stored_simulator.is_surface_simulation)
 
         rendering_rules = SimulatorFragmentRenderingRules(form, last_loaded_fragment_url,
                                                           SimulatorWizzardURLs.SET_MONITORS_URL, is_simulator_copy,
@@ -727,11 +713,7 @@ class SimulatorController(BurstBaseController):
         if not next_monitor:
             return self._prepare_final_fragment(session_stored_simulator, rendering_rules)
 
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
-
-        next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
+        next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, '', common.get_current_project().id)
         next_form.fill_from_trait(next_monitor)
 
         form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
@@ -763,15 +745,9 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == POST_REQUEST:
-            chosen_variables = data['variables_of_interest']
-            all_variables = session_stored_simulator.model.variables_of_interest
-            indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
-            form = get_form_for_monitor(type(monitor))(indexes)
+            is_simulator_copy = False
+            form = get_form_for_monitor(type(monitor))(session_stored_simulator)
             form.fill_from_post(data)
-
-            if hasattr(form, 'default_mask') and form.default_mask.data is None:
-                form.default_mask.data = 'hemispheres'
-
             form.fill_trait(monitor)
 
             if isinstance(monitor, BoldViewModel):
@@ -797,7 +773,7 @@ class SimulatorController(BurstBaseController):
                 SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, current_monitor)
             return rendering_rules.to_dict()
 
-        if isinstance(monitor, Projection) and cherrypy.request.method == 'POST':
+        if isinstance(monitor, ProjectionViewModel) and cherrypy.request.method == 'POST':
             # load region mapping
             region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
             region_mapping = h5.load_from_index(region_mapping_index)
