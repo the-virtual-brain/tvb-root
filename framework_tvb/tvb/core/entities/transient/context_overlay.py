@@ -211,7 +211,7 @@ class DataTypeOverlayDetails(CommonDetails):
         self.metadata[self.DATA_STATE] = {"name": "State"}
 
         self.datatype_title = None
-        self.metadata[self.DATA_TITLE] = {"name": "Title", "disabled": "True"}
+        self.metadata[self.DATA_TITLE] = {"name": "Display Name", "disabled": "True"}
 
         self.subject = None
         self.metadata[self.DATA_SUBJECT] = {"name": "Subject"}
@@ -290,5 +290,4 @@ class DataTypeOverlayDetails(CommonDetails):
             self.operation_label = datatype_result.parent_operation.user_group
 
         ### Populate Scientific attributes
-        if hasattr(datatype_result, 'summary_info') and datatype_result.summary_info is not None:
-            self.add_scientific_fields(datatype_result.summary_info)
+        self.add_scientific_fields(datatype_result.summary_info)

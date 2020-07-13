@@ -29,12 +29,13 @@
 #
 from sqlalchemy import Column, Integer, ForeignKey, Float, String
 from sqlalchemy.orm import relationship
-from tvb.core.entities.model.model_datatype import DataType, DataTypeMatrix
-from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.neotraits.db import from_ndarray
+from tvb.core.entities.storage import dao
+from tvb.core.entities.model.model_datatype import DataType, DataTypeMatrix
+from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
 
 class RegionMappingIndex(DataType):
@@ -60,6 +61,18 @@ class RegionMappingIndex(DataType):
         self.fk_surface_gid = datatype.surface.gid.hex
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
 
+    def after_store(self):
+        """
+        In case associated ConnectivityMeasureIndex entities already exist in the system and
+        they are compatible with the current RegionMappingIndex, change their flag `has_surface_mapping` True
+        """
+        conn_measure_index_list = dao.get_generic_entity("tvb.adapters.datatypes.db.graph.ConnectivityMeasureIndex",
+                                                         self.fk_connectivity_gid, "fk_connectivity_gid")
+        for conn_measure_index in conn_measure_index_list:
+            if not conn_measure_index.has_surface_mapping:
+                conn_measure_index.has_surface_mapping = True
+                dao.store_entity(conn_measure_index)
+
 
 class RegionVolumeMappingIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
@@ -78,3 +91,15 @@ class RegionVolumeMappingIndex(DataTypeMatrix):
         super(RegionVolumeMappingIndex, self).fill_from_has_traits(datatype)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
         self.fk_volume_gid = datatype.volume.gid.hex
+
+    def after_store(self):
+        """
+        In case associated ConnectivityMeasureIndex entities already exist in the system and
+        they are compatible with the current RegionVolumeMappingIndex, change their flag `has_volume_mapping` True
+        """
+        conn_measure_index_list = dao.get_generic_entity("tvb.adapters.datatypes.db.graph.ConnectivityMeasureIndex",
+                                                         self.fk_connectivity_gid, "fk_connectivity_gid")
+        for conn_measure_index in conn_measure_index_list:
+            if not conn_measure_index.has_volume_mapping:
+                conn_measure_index.has_volume_mapping = True
+                dao.store_entity(conn_measure_index)

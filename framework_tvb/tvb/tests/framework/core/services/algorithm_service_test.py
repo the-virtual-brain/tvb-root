@@ -75,7 +75,7 @@ class TestAlgorithmService(TransactionalTestCase):
                                                                     TEST_ADAPTER_VALID_CLASS, category.id))
 
     def transactional_teardown_method(self):
-        dao.remove_entity(model_operation.Algorithm, self.algorithm)
+        dao.remove_entity(model_operation.Algorithm, self.algorithm.id)
 
     def test_get_uploaders(self):
 

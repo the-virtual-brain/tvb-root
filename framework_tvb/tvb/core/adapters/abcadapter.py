@@ -426,6 +426,7 @@ class ABCAdapter(object):
                 with H5File.from_file(associated_file) as f:
                     f.store_generic_attributes(self.generic_attributes)
             dao.store_entity(res)
+            res.after_store()
             group_type = res.type
             count_stored += 1
 

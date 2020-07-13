@@ -32,9 +32,11 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
+from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
@@ -103,8 +105,7 @@ class TestRemove(TransactionalTestCase):
         """
         Tries to remove an used surface
         """
-        filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                             values=[CORTICAL])
+        filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
         mapping = try_get_last_datatype(self.test_project.id, RegionMappingIndex)
         surface = try_get_last_datatype(self.test_project.id, SurfaceIndex, filter)
         assert mapping is not None, "There should be one Mapping."
@@ -144,10 +145,9 @@ class TestRemove(TransactionalTestCase):
         """
         self._remove_entity(LocalConnectivityIndex, 1)
         self._remove_entity(RegionMappingIndex, 1)
-        # Remove Surfaces
-        # SqlAlchemy has no uniform way to retrieve Surface as base (wild-character for polymorphic_identity)
+        self._remove_entity(ProjectionMatrixIndex, 3)
         self._remove_entity(SurfaceIndex, 6)
-        # Remove a Connectivity
+        self._remove_entity(ConnectivityAnnotationsIndex, 1)
         self._remove_entity(ConnectivityIndex, 1)
 
     def test_remove_time_series(self, time_series_region_index_factory):

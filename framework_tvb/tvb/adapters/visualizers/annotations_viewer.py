@@ -37,7 +37,6 @@ from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.annotation import *
-from tvb.basic.profile import TvbProfile
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator

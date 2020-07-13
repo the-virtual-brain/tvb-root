@@ -502,36 +502,24 @@ def datatype_measure_factory():
 def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory,
                            operation_factory):
     def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
-
+        # TODO This is not real, we miss a ViewModel stored
         # there store the name and the (hi, lo, step) value of the range parameters
         range_1 = ["row1", [1, 2, 10]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
-
         # there are the actual numbers in the interval
         range_values_1 = [1, 3, 5, 7, 9]
         range_values_2 = [0.1, 0.4]
 
         user = user_factory()
-
         if project is None:
             project = project_factory(user)
 
-        # Create an algorithm
-        alg_category = AlgorithmCategory('one', True)
-        dao.store_entity(alg_category)
-        ad = Algorithm(IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS,
-                       alg_category.id)
         algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
                                                 IntrospectionRegistry.SIMULATOR_CLASS)
 
-        if algorithm is None:
-            algorithm = dao.store_entity(ad)
-
-        # Create meta
+        # Create operation
         meta = {DataTypeMetaData.KEY_SUBJECT: "Datatype Factory User",
                 DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-
-        # Create operation
         operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project, meta=meta)
 
         group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
@@ -542,10 +530,11 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
         datatype_group.no_of_ranges = 2
         datatype_group.count_results = 10
-
         datatype_group = dao.store_entity(datatype_group)
 
         dt_group_ms = DataTypeGroup(group_ms, subject=subject, state=state, operation_id=operation.id)
+        datatype_group.no_of_ranges = 2
+        datatype_group.count_results = 10
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group

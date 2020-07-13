@@ -35,28 +35,28 @@
 
 import os
 import numpy
-from tvb.basic.exceptions import ValidationException
-from tvb.basic.neotraits.api import Attr
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
-from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.region_mapping import RegionVolumeMapping
-from tvb.datatypes.structural import StructuralMRI
-from tvb.datatypes.time_series import TimeSeriesVolume
-from tvb.datatypes.volumes import Volume
 from tvb.adapters.uploaders.nifti.parser import NIFTIParser
-from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import ParseException, LaunchException
-from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.exceptions import ValidationException
+from tvb.basic.neotraits.api import Attr
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.core.adapters.exceptions import ParseException, LaunchException
+from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import TraitUploadField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.region_mapping import RegionVolumeMapping
+from tvb.datatypes.structural import StructuralMRI
+from tvb.datatypes.time_series import TimeSeriesVolume
+from tvb.datatypes.volumes import Volume
 
 
 class NIFTIImporterModel(UploaderViewModel):
