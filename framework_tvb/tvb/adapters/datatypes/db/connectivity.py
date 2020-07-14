@@ -49,6 +49,7 @@ class ConnectivityIndex(DataType):
     tract_lengths_mean = Column(Float)
 
     cortical_mask = Column(Boolean)
+    hemispheres_mask = Column(Boolean)
 
     # TODO: keep these metadata?
     # weights_non_zero_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
@@ -67,6 +68,10 @@ class ConnectivityIndex(DataType):
         self.cortical_mask = True
         if datatype.cortical is None or len(set(datatype.cortical)) != 2:
             self.cortical_mask = False
+
+        self.hemispheres_mask = True
+        if datatype.hemispheres is None or len(set(datatype.hemispheres)) != 2:
+            self.hemispheres_mask = False
 
         self.number_of_regions = datatype.number_of_regions
         self.number_of_connections = datatype.number_of_connections

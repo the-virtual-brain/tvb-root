@@ -45,7 +45,7 @@ from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel, \
-    AdditiveNoiseViewModel, BoldViewModel, RawViewModel, ProjectionViewModel
+    AdditiveNoiseViewModel, BoldViewModel, RawViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -772,22 +772,6 @@ class SimulatorController(BurstBaseController):
             rendering_rules.previous_form_action_url = self.build_monitor_url(
                 SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, current_monitor)
             return rendering_rules.to_dict()
-
-        if isinstance(monitor, ProjectionViewModel) and cherrypy.request.method == 'POST':
-            # load region mapping
-            region_mapping_index = ABCAdapter.load_entity_by_gid(data['region_mapping'])
-            region_mapping = h5.load_from_index(region_mapping_index)
-            monitor.region_mapping = region_mapping.gid
-
-            # load sensors and projection
-            sensors_index = ABCAdapter.load_entity_by_gid(data['sensors'])
-            sensors = h5.load_from_index(sensors_index)
-
-            projection_surface_index = ABCAdapter.load_entity_by_gid(data['projection'])
-            projection = h5.load_from_index(projection_surface_index)
-
-            monitor.sensors = sensors.gid
-            monitor.projection = projection.gid
 
         rendering_rules.previous_form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                                           type(monitor).__name__)

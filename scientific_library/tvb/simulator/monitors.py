@@ -216,10 +216,12 @@ class SpatialAverage(Monitor):
 
     """
     _ui_name = "Spatial average with temporal sub-sample"
+    CORTICAL = "cortical"
+    HEMISPHERES = "hemispheres"
 
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
-        label="An index mask of nodes into areas",
+        label="Spatial Mask",
         required=False,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
@@ -228,9 +230,10 @@ class SpatialAverage(Monitor):
 
     default_mask = Attr(
         str,
-        choices=("cortical", "hemispheres"),
-        default="hemispheres",
+        choices=(CORTICAL, HEMISPHERES),
+        default=None,
         label="Default Mask",
+        required=False,
         doc=("Fallback in case spatial mask is none and no surface provided" 
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
@@ -248,20 +251,14 @@ class SpatialAverage(Monitor):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask == 'cortical':
-                    if conn is not None and conn.cortical is not None and conn.cortical.size > 0:
-                        ## Use as spatial-mask cortical/non cortical areas
-                        self.spatial_mask = numpy.array([int(c) for c in conn.cortical])
-                    else:
-                        msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        raise Exception(msg)
-                if self.default_mask == 'hemispheres':
-                    if conn is not None and conn.hemispheres is not None and conn.hemispheres.size > 0:
-                        ## Use as spatial-mask left/right hemisphere
-                        self.spatial_mask = numpy.array([int(h) for h in conn.hemispheres])
-                    else:
-                        msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        raise Exception(msg)
+                if self.default_mask == self.CORTICAL:
+                    self.spatial_mask = numpy.array([int(c) for c in conn.cortical])
+                elif self.default_mask == self.HEMISPHERES:
+                    self.spatial_mask = numpy.array([int(h) for h in conn.hemispheres])
+                else:
+                    msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
+                          " simulations when using SpatioTemporal monitor!"
+                    raise Exception(msg)
 
         number_of_nodes = simulator.number_of_nodes
         if self.spatial_mask.size != number_of_nodes:
