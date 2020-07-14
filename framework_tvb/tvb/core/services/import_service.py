@@ -42,6 +42,7 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
@@ -50,6 +51,7 @@ from tvb.core.entities.model.model_operation import ResultFigure, Operation
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
@@ -336,9 +338,15 @@ class ImportService(object):
                 shutil.rmtree(new_operation_path)
                 shutil.move(old_operation_folder, new_operation_path)
 
-            operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path, operation_entity,
-                                                                             datatype_group)
-            self._store_imported_datatypes_in_db(project, operation_datatypes, dt_burst_mappings, burst_ids_mapping)
+                if operation.algorithm.classname != SimulatorAdapter.stored_adapter.classname:
+                    operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
+                                                                                     operation_entity,
+                                                                                     datatype_group)
+                else:
+                    burst_config = BurstService().load_burst_configuration_from_folder(new_operation_path, project)
+                    operation_datatypes = [burst_config]
+
+                self._store_imported_datatypes_in_db(project, operation_datatypes, dt_burst_mappings, burst_ids_mapping)
             imported_operations.append(operation_entity)
 
         return imported_operations

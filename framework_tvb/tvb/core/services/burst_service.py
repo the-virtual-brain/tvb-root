@@ -37,6 +37,7 @@ from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_PENDING, STATUS_STARTED, STATUS_FINISHED, \
@@ -221,6 +222,7 @@ class BurstService(object):
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
+            bc_h5.store_generic_attributes(GenericAttributes())
 
     def load_burst_configuration_from_folder(self, simulator_folder, project):
         bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
