@@ -126,7 +126,7 @@ class MonitorForm(Form):
 
 class RawMonitorForm(Form):
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(RawMonitorForm, self).__init__(prefix, project_id)
 
 
