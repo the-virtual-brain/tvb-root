@@ -35,9 +35,9 @@ A displayer for covariance.
 
 """
 
-from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
-from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
+from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import Covariance
@@ -73,8 +73,9 @@ class CovarianceVisualizerForm(ABCAdapterForm):
         return None
 
 
-class CovarianceVisualizer(MappedArrayVisualizer):
+class CovarianceVisualizer(ABCMappedArraySVGVisualizer):
     _ui_name = "Covariance Visualizer"
+    _ui_subsection = "covariance"
 
     def get_form_class(self):
         return CovarianceVisualizerForm
@@ -82,8 +83,8 @@ class CovarianceVisualizer(MappedArrayVisualizer):
     def launch(self, view_model):
         # type: (CovarianceVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
-        # get data from corr datatype
-        time_series_index = self.load_entity_by_gid(view_model.datatype.hex)
-        labels, matrix = self._extract_labels_and_data_matrix(time_series_index)
-        pars = self.compute_params(matrix, 'Covariance matrix plot', labels=labels)
+        covariance_gid = view_model.datatype
+        covariance_index = self.load_entity_by_gid(covariance_gid)
+        labels = self.extract_source_labels(covariance_index)
+        pars = self.compute_params_from_index(covariance_index, 'Covariance matrix plot', labels=[labels, labels])
         return self.build_display_result("matrix/svg_view", pars)

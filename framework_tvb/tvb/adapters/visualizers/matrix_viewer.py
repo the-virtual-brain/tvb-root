@@ -29,69 +29,44 @@
 #
 
 """
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Andrei Mihai <mihai.andrei@codemart.ro>
-
 """
 
 import json
+import uuid
 import numpy
 from six import add_metaclass
 from abc import ABCMeta
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.adapters.datatypes.db.spectral import DataTypeMatrix
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.arguments_serialisation import parse_slice, slice_str
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.adapters.datatypes.db.spectral import DataTypeMatrix
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 
-# TODO: rewrite, necessary to read whole matrix?
-def compute_2d_view(matrix, slice_s):
-    """
-    Create a 2d view of the matrix using the suggested slice
-    If the given slice is invalid or fails to produce a 2d array the default is used
-    which selects the first 2 dimensions.
-    If the matrix is complex the real part is shown
-    :param matrix: main input. It can have more then 2D
-    :param slice_s: a string representation of a slice
-    :return: (a 2d array,  the slice used to make it, is_default_returned)
-    """
-    default = (slice(None), slice(None)) + tuple(0 for _ in range(matrix.ndim - 2))  # [:,:,0,0,0,0 etc]
-
-    try:
-        if slice_s is not None:
-            matrix_slice = parse_slice(slice_s)
-        else:
-            matrix_slice = slice(None)
-
-        m = matrix[matrix_slice]
-
-        if m.ndim > 2:  # the slice did not produce a 2d array, treat as error
-            raise ValueError(str(matrix.shape))
-
-    except (IndexError, ValueError):  # if the slice could not be parsed or it failed to produce a 2d array
-        matrix_slice = default
-
-    slice_used = slice_str(matrix_slice)
-    return matrix[matrix_slice].astype(float), slice_used, matrix_slice == default
-
-
 @add_metaclass(ABCMeta)
-class MappedArraySVGVisualizerMixin(ABCSpaceDisplayer):
+class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
     """
-    To be mixed in a ABCDisplayer
+    To be inherited by visualizers for DataTypeMatrix subclasses
     """
 
-    def get_required_memory_size(self, datatype):
-        input_size = datatype.read_data_shape()
-        return numpy.prod(input_size) / input_size[0] * 8.0
+    def get_required_memory_size(self, view_model):
+        # type: (MatrixVisualizerModel) -> float
+        """Return required memory."""
+        dtm_index = self.load_entity_by_gid(view_model.datatype.hex)
+        input_size = dtm_index.parsed_shape
+        return numpy.prod(input_size) * 8.0
 
-    def generate_preview(self, datatype, **kwargs):
-        result = self.launch(datatype)
+    def generate_preview(self, view_model, **kwargs):
+        # type: (MatrixVisualizerModel, dict) -> dict
+        result = self.launch(view_model)
         result["isPreview"] = True
         return result
 
@@ -106,42 +81,79 @@ class MappedArraySVGVisualizerMixin(ABCSpaceDisplayer):
         return dict(matrix_data=matrix_data,
                     matrix_shape=matrix_shape)
 
-    def compute_params(self, matrix, viewer_title, given_slice=None, labels=None):
+    @staticmethod
+    def compute_2d_view(dtm_index, slice_s):
+        # type: (DataTypeMatrix, tuple) -> numpy.array
+        """
+        Create a 2d view of the matrix using the suggested slice
+        If the given slice is invalid or fails to produce a 2d array the default is used
+        which selects the first 2 dimensions.
+        If the matrix is complex the real part is shown
+        :param dtm_index: main input. It can have more then 2D
+        :param slice_s: a string representation of a slice
+        :return: (a 2d array,  the slice used to make it, is_default_returned)
+        """
+        default = (slice(None), slice(None)) + tuple(0 for _ in range(dtm_index.ndim - 2))  # [:,:,0,0,0,0 etc]
+        result_2d = None
+        slice_used = None
+
+        try:
+            if slice_s is not None:
+                matrix_slice = parse_slice(slice_s)
+            else:
+                matrix_slice = slice(None)
+            slice_used = slice_str(matrix_slice)
+
+            with h5.h5_file_for_index(dtm_index) as h5_file:
+                result_2d = h5_file.array_data[matrix_slice]
+                result_2d = result_2d.astype(float)
+            if result_2d.ndim > 2:  # the slice did not produce a 2d array, treat as error
+                raise ValueError(str(dtm_index.shape))
+
+        except (IndexError, ValueError):  # if the slice could not be parsed or it failed to produce a 2d array
+            matrix_slice = default
+
+        return result_2d, slice_used, matrix_slice == default
+
+    def process_new_shape(self, dtm_gid, given_slice=None):
+        # Public, to be called on slice refresh from
+        dtm_index = self.load_entity_by_gid(dtm_gid)
+        matrix2d, slice_used, is_default_slice = self.compute_2d_view(dtm_index, given_slice)
+        return self.compute_raw_matrix_params(matrix2d)
+
+    def compute_params_from_index(self, dtm_index, title_suffix, given_slice=None, labels=None):
+        # type: (DataTypeMatrix, str, tuple, list) -> dict
         """
         Prepare a 2d matrix to display
         :param labels: optional labels for the matrix
-        :param viewer_title: title for the matrix display
-        :param matrix: input matrix
+        :param title_suffix: title for the matrix display
+        :param dtm_gid: input DatTYpeMatrix GUID to be displayed
         :param given_slice: a string representation of a slice. This slice should cut a 2d view from matrix
         If the matrix is not 2d and the slice will not make it 2d then a default slice is used
         """
-        matrix2d, slice_used, is_default_slice = compute_2d_view(matrix, given_slice)
+        matrix2d, slice_used, is_default_slice = self.compute_2d_view(dtm_index, given_slice)
+        return self.compute_params(dtm_index, matrix2d, title_suffix, labels, given_slice, slice_used, is_default_slice)
 
+    def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
+                       given_slice=None, slice_used=None, is_default_slice=True):
+        # type: (DataTypeMatrix, numpy.array, str, list, tuple, tuple, bool) -> dict
         view_pars = self.compute_raw_matrix_params(matrix2d)
-        view_pars.update(original_matrix_shape=str(matrix.shape),
-                         show_slice_info=given_slice is not None,
+        view_pars.update(original_matrix_shape=dtm_index.shape,
+                         show_slice_info=True,
                          given_slice=given_slice,
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
-                         viewer_title=viewer_title,
-                         title=viewer_title,
+                         viewer_title=title_suffix,
+                         title=dtm_index.display_name + title_suffix,
                          matrix_labels=json.dumps(labels))
         return view_pars
 
-    def _extract_labels_and_data_matrix(self, datatype_index):
-        """
-        If datatype has a source attribute of type TimeSeriesRegion
-        then the labels of the associated connectivity are returned.
-        Else None
-        """
-        with h5.h5_file_for_index(datatype_index) as datatype_h5:
-            matrix = datatype_h5.array_data[:]
-
-        source_index = self.load_entity_by_gid(datatype_index.fk_source_gid)
+    def extract_source_labels(self, datatype_matrix):
+        # type: (DataTypeMatrix) -> list
+        source_index = self.load_entity_by_gid(datatype_matrix.fk_source_gid)
         with h5.h5_file_for_index(source_index) as source_h5:
             labels = self.get_space_labels(source_h5)
-
-        return [labels, labels], matrix
+        return labels
 
 
 class MatrixVisualizerModel(ViewModel):
@@ -182,7 +194,7 @@ class MatrixVisualizerForm(ABCAdapterForm):
         return DataTypeMatrix
 
 
-class MappedArrayVisualizer(MappedArraySVGVisualizerMixin):
+class MappedArrayVisualizer(ABCMappedArraySVGVisualizer):
     _ui_name = "Matrix Visualizer"
     _ui_subsection = "matrix"
 
@@ -191,12 +203,7 @@ class MappedArrayVisualizer(MappedArraySVGVisualizerMixin):
 
     def launch(self, view_model):
         # type: (MatrixVisualizerModel) -> dict
-        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
-        with h5.h5_file_for_index(datatype_index) as h5_file:
-            matrix = h5_file.array_data.load()
-
-        matrix2d, _, _ = compute_2d_view(matrix, view_model.slice)
-        title = datatype_index.display_name + " matrix plot"
-
-        pars = self.compute_params(matrix, title, view_model.slice)
+        dtm_gid = view_model.datatype
+        dtm_index = self.load_entity_by_gid(dtm_gid)
+        pars = self.compute_params_from_index(dtm_index, "Matrix Plot", view_model.slice)
         return self.build_display_result("matrix/svg_view", pars)

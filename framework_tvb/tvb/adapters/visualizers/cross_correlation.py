@@ -29,15 +29,18 @@
 #
 
 """
-A displayer for cross correlation.
+A visualizer for cross correlation.
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
-from tvb.core.adapters.abcadapter import ABCAdapterForm
+
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
+from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.temporal_correlations import CrossCorrelation
@@ -73,7 +76,7 @@ class CrossCorrelationVisualizerForm(ABCAdapterForm):
         return None
 
 
-class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin):
+class CrossCorrelationVisualizer(ABCMappedArraySVGVisualizer):
     _ui_name = "Cross Correlation Visualizer"
     _ui_subsection = "correlation"
 
@@ -83,8 +86,11 @@ class CrossCorrelationVisualizer(MappedArraySVGVisualizerMixin):
     def launch(self, view_model):
         # type: (CrossCorrelationVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
-        time_series_index = self.load_entity_by_gid(view_model.datatype.hex)
-        labels, matrix = self._extract_labels_and_data_matrix(time_series_index)
-        matrix = matrix.mean(axis=0)[:, :, 0, 0]
-        pars = self.compute_params(matrix, 'Correlation matrix plot', labels=labels)
+        correlation_gid = view_model.datatype
+        correlation_index = self.load_entity_by_gid(correlation_gid)
+        labels = self.extract_source_labels(correlation_index)
+        with h5.load_from_index(correlation_index) as dt_h5:
+            matrix = dt_h5.array_data[:]
+            matrix = matrix.mean(axis=0)[:, :, 0, 0]
+        pars = self.compute_params(correlation_index, matrix, 'Correlation matrix plot', labels=[labels, labels])
         return self.build_display_result("matrix/svg_view", pars)
