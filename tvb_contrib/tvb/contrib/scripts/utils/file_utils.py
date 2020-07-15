@@ -96,6 +96,14 @@ def delete_all_files_in_folder(folderpath):
                 print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
+def delete_folder_safely(folderpath):
+    if os.path.isdir(folderpath):
+        try:
+            shutil.rmtree(folderpath)
+        except Exception as e:
+            print('Failed to delete %s.\nReason: %s' % (folderpath, e))
+
+
 def change_filename_or_overwrite_with_wildcard(path, overwrite=True):
     wild_path = path + "*"
     existing_files = glob.glob(path + "*")
