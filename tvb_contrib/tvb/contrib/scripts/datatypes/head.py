@@ -45,8 +45,7 @@ from tvb.contrib.scripts.utils.file_utils import insensitive_glob
 from tvb.datatypes.connectivity import Connectivity as TVBConnectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity as TVBLocalConnectivity
-from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY, SEEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY
-from tvb.datatypes.projections import ProjectionMatrix as TVBProjectionMatrix
+from tvb.datatypes.projections import ProjectionMatrix as TVBProjectionMatrix, ProjectionsType
 from tvb.datatypes.projections import ProjectionSurfaceEEG as TVBProjectionSurfaceEEG
 from tvb.datatypes.projections import ProjectionSurfaceMEG as TVBProjectionSurfaceMEG
 from tvb.datatypes.projections import ProjectionSurfaceSEEG as TVBProjectionSurfaceSEEG
@@ -125,7 +124,7 @@ class Head(HasTraits):
                 self.region_volume_mapping.configure()
         for s_type, p_type, s_datatype, p_datatype \
                 in zip(["eeg", "seeg", "meg"],
-                       [EEG_POLYMORPHIC_IDENTITY, SEEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY],
+                       [ProjectionsType.EEG_POLYMORPHIC_IDENTITY.value, ProjectionsType.SEEG_POLYMORPHIC_IDENTITY.value, ProjectionsType.MEG_POLYMORPHIC_IDENTITY.value],
                        [TVBSensorsEEG, TVBSensorsInternal, TVBSensorsMEG],
                        [TVBProjectionSurfaceEEG, TVBProjectionSurfaceSEEG, TVBProjectionSurfaceMEG]):
             sensor_name = "%s_sensors" % s_type

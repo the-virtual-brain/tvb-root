@@ -30,28 +30,17 @@
 .. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-from enum import Enum
 import numpy as np
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.contrib.scripts.utils.data_structures_utils import labels_to_inds, monopolar_to_bipolar, \
     split_string_text_numbers
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, NArray
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, \
-    INTERNAL_POLYMORPHIC_IDENTITY
-from tvb.datatypes.sensors import Sensors as TVBSensors
+from tvb.datatypes.sensors import Sensors as TVBSensors, SensorTypes
 from tvb.datatypes.sensors import SensorsEEG as TVBSensorsEEG
 from tvb.datatypes.sensors import SensorsInternal as TVBSensorsInternal
 from tvb.datatypes.sensors import SensorsMEG as TVBSensorsMEG
 from tvb.simulator.plot.utils import ensure_list
-
-
-# TODO: Move this ENUM in library an replace hardcoded sensor types strings from there
-class SensorTypes(Enum):
-    TYPE_EEG = EEG_POLYMORPHIC_IDENTITY
-    TYPE_MEG = MEG_POLYMORPHIC_IDENTITY
-    TYPE_INTERNAL = INTERNAL_POLYMORPHIC_IDENTITY
-    TYPE_SEEG = "SEEG"
 
 
 class Sensors(TVBSensors, BaseModel):
