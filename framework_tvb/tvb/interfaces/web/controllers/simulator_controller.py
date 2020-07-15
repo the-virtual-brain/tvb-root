@@ -35,7 +35,6 @@ from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
@@ -45,7 +44,7 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, TemporalAverageViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -57,7 +56,9 @@ from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseContro
 from tvb.interfaces.web.controllers.common import KEY_ADAPTER
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.simulator.integrators import IntegratorStochastic
+from tvb.simulator.coupling import Linear
+from tvb.simulator.integrators import IntegratorStochastic, HeunDeterministic
+from tvb.simulator.models.oscillator import Generic2dOscillator
 from tvb.simulator.monitors import Bold, Raw
 from tvb.simulator.noise import Additive
 
@@ -316,7 +317,9 @@ class SimulatorController(BurstBaseController):
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
-            session_stored_simulator = SimulatorAdapterModel()
+            session_stored_simulator = SimulatorAdapterModel(coupling=Linear(), model=Generic2dOscillator(),
+                                                             integrator=HeunDeterministic(),
+                                                             monitors=(TemporalAverageViewModel(),))
             common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
 
         form.fill_from_trait(session_stored_simulator)
@@ -335,6 +338,7 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_COUPLING_PARAMS_URL)
             form.fill_from_post(data)
+            self.simulator_service.reset_at_connectivity_change(is_simulator_copy, form, session_stored_simulator)
             form.fill_trait(session_stored_simulator)
 
         next_form = get_form_for_coupling(type(session_stored_simulator.coupling))()
@@ -407,6 +411,7 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             form = SimulatorSurfaceFragment()
             form.fill_from_post(data)
+            self.simulator_service.reset_at_surface_change(is_simulator_copy, form, session_stored_simulator)
             form.fill_trait(session_stored_simulator)
 
             if session_stored_simulator.surface:
@@ -644,17 +649,6 @@ class SimulatorController(BurstBaseController):
         return self._prepare_monitor_form(session_stored_simulator, rendering_rules)
 
     @staticmethod
-    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
-        indexes = {}
-
-        if not isinstance(chosen_variables, (list, tuple)):
-            chosen_variables = [chosen_variables]
-
-        for variable in chosen_variables:
-            indexes[variable] = all_variables.index(variable)
-        return indexes
-
-    @staticmethod
     def _build_list_of_monitors(monitor_names, session_simulator):
         monitor_dict = get_ui_name_to_monitor_dict(session_simulator.is_surface_simulation)
         monitor_classes = []
@@ -738,9 +732,7 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             self._update_last_loaded_fragment_url(last_loaded_fragment_url)
 
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+        indexes = self.simulator_service.determine_indexes_for_chose_variables_of_interest(session_stored_simulator)
 
         monitor = session_stored_simulator.monitors[first_monitor_index]
         form = get_form_for_monitor(type(monitor))(indexes, '', common.get_current_project().id)
@@ -767,7 +759,7 @@ class SimulatorController(BurstBaseController):
 
         all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
         chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+        indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
 
         next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
         next_form.fill_from_trait(next_monitor)
@@ -806,7 +798,7 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             chosen_variables = data['variables_of_interest']
             all_variables = session_stored_simulator.model.variables_of_interest
-            indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+            indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
             form = get_form_for_monitor(type(monitor))(indexes)
             form.fill_from_post(data)
             form.fill_trait(monitor)

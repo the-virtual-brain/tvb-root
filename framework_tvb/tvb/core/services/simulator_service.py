@@ -37,6 +37,7 @@ import json
 import os
 import shutil
 import uuid
+
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -50,7 +51,7 @@ from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.simulator.simulator import Simulator
+from tvb.simulator.integrators import IntegratorStochastic
 
 
 class SimulatorService(object):
@@ -59,6 +60,48 @@ class SimulatorService(object):
         self.burst_service = BurstService()
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
+
+    @staticmethod
+    def get_variables_of_interest_indexes(all_variables, chosen_variables):
+        indexes = {}
+
+        if not isinstance(chosen_variables, (list, tuple)):
+            chosen_variables = [chosen_variables]
+
+        for variable in chosen_variables:
+            indexes[variable] = all_variables.index(variable)
+        return indexes
+
+    def determine_indexes_for_chose_variables_of_interest(self, session_stored_simulator):
+        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+        chosen_variables = session_stored_simulator.model.variables_of_interest
+        indexes = self.get_variables_of_interest_indexes(all_variables, chosen_variables)
+        return indexes
+
+    def _reset_model(self, session_stored_simulator):
+        session_stored_simulator.model = type(session_stored_simulator.model)()
+        vi_indexes = self.determine_indexes_for_chose_variables_of_interest(session_stored_simulator)
+        vi_indexes = numpy.array(list(vi_indexes.values()))
+        for monitor in session_stored_simulator.monitors:
+            monitor.variables_of_interest = vi_indexes
+
+    def reset_at_connectivity_change(self, is_simulator_copy, form, session_stored_simulator):
+        """
+        In case the user copies a simulation and changes the Connectivity, we want to reset the Model and Noise
+        parameters because they might not fit to the new Connectivity's nr of regions.
+        """
+        if is_simulator_copy and form.connectivity.value != session_stored_simulator.connectivity:
+            self._reset_model(session_stored_simulator)
+            if issubclass(type(session_stored_simulator.integrator), IntegratorStochastic):
+                session_stored_simulator.integrator.noise = type(session_stored_simulator.integrator.noise)()
+
+    def reset_at_surface_change(self, is_simulator_copy, form, session_stored_simulator):
+        """
+        In case the user copies a surface-simulation and changes the Surface, we want to reset the Model
+        parameters because they might not fit to the new Surface's nr of vertices.
+        """
+        if is_simulator_copy and session_stored_simulator.surface and form.surface.value != session_stored_simulator.surface.surface_gid:
+            self._reset_model(session_stored_simulator)
 
     @transactional
     def _prepare_operation(self, project_id, user_id, simulator_id, simulator_gid, algo_category, op_group, metadata,
@@ -75,8 +118,8 @@ class SimulatorService(object):
                               meta=meta_str, range_values=ranges)
 
         self.logger.info("Saving Operation(userId=" + str(user_id) + ", projectId=" + str(project_id) + "," +
-                          str(metadata) + ", algorithmId=" + str(simulator_id) + ", ops_group= " +
-                          str(op_group_id) + ", params=" + str(operation_parameters) + ")")
+                         str(metadata) + ", algorithmId=" + str(simulator_id) + ", ops_group= " +
+                         str(op_group_id) + ", params=" + str(operation_parameters) + ")")
 
         operation = dao.store_entity(operation)
         # TODO: prepare portlets/handle operation groups/no workflows
@@ -101,7 +144,8 @@ class SimulatorService(object):
                                                 algo_category, None, metadata)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             h5.store_view_model(session_stored_simulator, storage_path)
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id, session_stored_simulator.gid)
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id,
+                                                                       session_stored_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
@@ -196,7 +240,8 @@ class SimulatorService(object):
 
             first_operation = operations[0]
             storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id, first_simulator.gid)
+            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id,
+                                                                       first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
                                            fk_parent_burst=burst_config.id,

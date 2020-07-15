@@ -60,6 +60,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
 from tvb.simulator.coupling import Coupling
+from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.simulator import Simulator
 
 
