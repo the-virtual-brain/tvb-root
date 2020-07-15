@@ -579,7 +579,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(None, None, SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method,
-                                                          is_noise_fragment=True)
+                                                          is_noise_fragment=False)
 
         if not isinstance(session_stored_simulator.integrator, IntegratorStochastic):
             return self._prepare_monitor_form(session_stored_simulator, rendering_rules)

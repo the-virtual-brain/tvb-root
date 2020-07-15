@@ -58,11 +58,8 @@ class OperationApi(MainApi):
 
     @handle_response
     def launch_operation(self, project_gid, algorithm_class, view_model, temp_folder):
-        h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid)
-
-        h5_file = ViewModelH5(h5_file_path, view_model)
-        h5_file.store(view_model)
-        h5_file.close()
+        h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid, type(view_model).__name__)
+        h5.store_view_model(view_model, temp_folder)
 
         model_file_obj = open(h5_file_path, 'rb')
         files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: (os.path.basename(h5_file_path), model_file_obj)}

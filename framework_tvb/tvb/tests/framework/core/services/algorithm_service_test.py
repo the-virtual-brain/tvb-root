@@ -140,9 +140,8 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         Test preparation of an adapter.
         """
-        stored_adapter = dao.get_algorithm_by_module(TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS)
-        assert isinstance(stored_adapter, model_operation.Algorithm), "Something went wrong with valid data!"
-        adapter = self.algorithm_service.prepare_adapter(stored_adapter)
+        assert isinstance(self.algorithm, model_operation.Algorithm), "Can not find Adapter!"
+        adapter = self.algorithm_service.prepare_adapter(self.algorithm)
         assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
         assert adapter.get_form_class() == TestAdapter1Form
         assert adapter.get_view_model() == TestModel

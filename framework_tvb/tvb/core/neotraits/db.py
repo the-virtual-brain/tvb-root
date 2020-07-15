@@ -29,10 +29,9 @@
 #
 
 import uuid
-from datetime import datetime
 import numpy
-from sqlalchemy import Column, Integer, Text, DateTime
-from sqlalchemy import String, Boolean
+from datetime import datetime
+from sqlalchemy import Column, Integer, Text, DateTime, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 SCALAR_MAPPING = {
@@ -40,7 +39,6 @@ SCALAR_MAPPING = {
     int: Integer,
     str: String
 }
-
 
 Base = declarative_base(name='DeclarativeBase')
 
@@ -92,6 +90,7 @@ class HasTraitsIndex(Base):
 
     def get_subtype_attr(self):
         return None
+
 
 def ensure_float(data):
     return numpy.float64(data)
