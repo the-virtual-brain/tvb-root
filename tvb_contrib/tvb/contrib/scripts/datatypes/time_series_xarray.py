@@ -376,7 +376,7 @@ class TimeSeries(HasTraits):
         elif isinstance(data, np.ndarray):
             self.from_numpy(data, **kwargs)
         elif isinstance(data, self.__class__):
-            attributes = data.__dict__.items()
+            attributes = data.__dict__
             attributes.update(**kwargs)
             for attr, val in attributes.items():
                 setattr(self, attr, val)
