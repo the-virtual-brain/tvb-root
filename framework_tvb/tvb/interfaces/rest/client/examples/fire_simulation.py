@@ -35,8 +35,8 @@ Example of launching a simulation and an analyzer from within the REST client AP
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
