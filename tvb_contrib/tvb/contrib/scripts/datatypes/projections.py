@@ -29,6 +29,7 @@
 """
 .. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
+from enum import Enum
 
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.datatypes.projections import ProjectionMatrix as TVBProjectionMatrix
@@ -37,14 +38,16 @@ from tvb.datatypes.projections import ProjectionSurfaceSEEG as TVBProjectionSurf
 from tvb.datatypes.projections import ProjectionSurfaceMEG as TVBProjectionSurfaceMEG
 
 
+class TvbProjectionType(Enum):
+    eeg = TVBProjectionSurfaceEEG
+    seeg = TVBProjectionSurfaceSEEG
+    meg = TVBProjectionSurfaceMEG
+
+
 def get_TVB_proj_type(s_type):
-    if s_type.lower() == "eeg":
-        return TVBProjectionSurfaceEEG
-    elif s_type.lower() == "seeg":
-        return TVBProjectionSurfaceSEEG
-    elif s_type.lower() == "meg":
-        return TVBProjectionSurfaceMEG
-    else:
+    try:
+        return TvbProjectionType[s_type.lower()].value
+    except KeyError:
         return TVBProjectionMatrix
 
 
