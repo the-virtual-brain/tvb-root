@@ -79,7 +79,8 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)
-        datatype.noise = self.noise.data()
+        if type(datatype.noise) != self.noise.data:
+            datatype.noise = self.noise.data()
 
     def fill_from_trait(self, trait):
         # type: (Integrator) -> None

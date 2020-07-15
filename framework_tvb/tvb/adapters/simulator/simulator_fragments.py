@@ -64,8 +64,9 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
         if surface_gid:
-            datatype.surface = CortexViewModel()
-            datatype.surface.surface_gid = surface_gid
+            if not datatype.surface or (datatype.surface and datatype.surface.surface_gid != surface_gid):
+                datatype.surface = CortexViewModel()
+                datatype.surface.surface_gid = surface_gid
         else:
             datatype.surface = None
 
@@ -117,7 +118,8 @@ class SimulatorModelFragment(ABCAdapterForm):
         self.model.data = trait.model.__class__
 
     def fill_trait(self, datatype):
-        datatype.model = self.model.value()
+        if type(datatype.model) != self.model.value:
+            datatype.model = self.model.value()
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
@@ -137,7 +139,8 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator.data = trait.integrator.__class__
 
     def fill_trait(self, datatype):
-        datatype.integrator = self.integrator.value()
+        if type(datatype.integrator) != self.integrator.value:
+            datatype.integrator = self.integrator.value()
 
 
 class SimulatorMonitorFragment(ABCAdapterForm):

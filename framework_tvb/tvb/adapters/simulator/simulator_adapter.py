@@ -90,7 +90,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         datatype.connectivity = self.connectivity.value
         datatype.conduction_speed = self.conduction_speed.value
         coupling = self.coupling.value
-        datatype.coupling = coupling()
+        if type(datatype.coupling) != coupling:
+            datatype.coupling = coupling()
 
     @staticmethod
     def get_view_model():
