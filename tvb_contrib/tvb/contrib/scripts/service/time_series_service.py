@@ -164,51 +164,10 @@ class TimeSeriesService(object):
             time_series = fun(time_series)
         return time_series, select_funs
 
-    def concatenate(self, time_series_list, dim, **kwargs):
-        time_series_list = ensure_list(time_series_list)
-        n_ts = len(time_series_list)
-        if n_ts > 0:
-            out_time_series, select_funs = self.select(time_series_list[0], **kwargs)
-            if n_ts > 1:
-                dim_label = out_time_series.get_dimension_name(dim)
-                for id, time_series in enumerate(time_series_list[1:]):
-                    if np.float32(out_time_series.sample_period) != np.float32(time_series.sample_period):
-                        raise ValueError("Timeseries concatenation failed!\n"
-                                          "Timeseries %d have a different time step %s \n "
-                                          "than the concatenated ones %s!" %
-                                          (id, str(np.float32(time_series.sample_period)),
-                                           str(np.float32(out_time_series.sample_period))))
-                    else:
-                        time_series = self.select(time_series, select_funs)[0]
-                        labels_dimensions = dict(out_time_series.labels_dimensions)
-                        out_labels = out_time_series.get_dimension_labels(dim)
-                        if out_labels is not None and len(out_labels) == out_time_series.shape[dim]:
-                            time_series_labels = time_series.get_dimension_labels(dim)
-                            if time_series_labels is not None and len(time_series_labels) == time_series.shape[dim]:
-                                labels_dimensions[dim_label] =\
-                                    np.array(ensure_list(out_labels) + ensure_list(time_series_labels))
-                            else:
-                                del labels_dimensions[dim_label]
-                                warning("Dimension labels for dimensions %s cannot be concatenated! "
-                                        "Deleting them!" % dim_label)
-                        try:
-                            out_data = np.concatenate([out_time_series.data, time_series.data], axis=dim)
-                        except:
-                            raise_value_error("Timeseries concatenation failed!\n"
-                                              "Timeseries %d have a shape %s and the concatenated ones %s!" %
-                                              (id, str(out_time_series.shape), str(time_series.shape)))
-                        out_time_series = out_time_series.duplicate(data=out_data,
-                                                                    labels_dimensions=labels_dimensions)
-                return out_time_series
-            else:
-                return out_time_series
-        else:
-            raise_value_error("Cannot concatenate empty list of TimeSeries!")
-
-    def concatenate_generator(self, time_series_generator, dim, **kwargs):
+    def concatenate(self, time_series_gen_or_seq, dim, **kwargs):
         out_time_series = None
         first = True
-        for time_series in time_series_generator:
+        for time_series in time_series_gen_or_seq:
             if first:
                 out_time_series, select_funs = self.select(time_series, **kwargs)
                 dim_label = out_time_series.get_dimension_name(dim)
@@ -246,26 +205,20 @@ class TimeSeriesService(object):
 
         return out_time_series
 
-    def concatenate_in_time(self, time_series_list, **kwargs):
-        return self.concatenate(time_series_list, 0, **kwargs)
+    def concatenate_in_time(self, time_series_gen_or_seq, **kwargs):
+        return self.concatenate(time_series_gen_or_seq, 0, **kwargs)
 
-    def concatenate_variables(self, time_series_list, **kwargs):
-        return self.concatenate(time_series_list, 1, **kwargs)
+    def concatenate_variables(self, time_series_gen_or_seq, **kwargs):
+        return self.concatenate(time_series_gen_or_seq, 1, **kwargs)
 
-    def concatenate_variables_generator(self, time_series_generator, **kwargs):
-        return self.concatenate_generator(time_series_generator, 1, **kwargs)
+    def concatenate_in_space(self, time_series_gen_or_seq, **kwargs):
+        return self.concatenate(time_series_gen_or_seq, 2, **kwargs)
 
-    def concatenate_in_space(self, time_series_list, **kwargs):
-        return self.concatenate(time_series_list, 2, **kwargs)
+    def concatenate_samples(self, time_series_gen_or_seq, **kwargs):
+        return self.concatenate(time_series_gen_or_seq, 3, **kwargs)
 
-    def concatenate_samples(self, time_series_list, **kwargs):
-        return self.concatenate(time_series_list, 3, **kwargs)
-
-    def concatenate_modes(self, time_series_list, **kwargs):
-        return self.concatenate(time_series_list, 3, **kwargs)
-
-    def concatenate_modes_generator(self, time_series_generator, **kwargs):
-        return self.concatenate_generator(time_series_generator, 3, **kwargs)
+    def concatenate_modes(self, time_series_gen_or_seq, **kwargs):
+        return self.concatenate(time_series_gen_or_seq, 3, **kwargs)
 
     # def select_by_metric(self, time_series, metric, metric_th=None, metric_percentile=None, nvals=None):
     #     selection = np.unique(select_greater_values_array_inds(metric, metric_th, metric_percentile, nvals))
