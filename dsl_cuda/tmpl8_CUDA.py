@@ -183,7 +183,7 @@ __global__ void ${modelname}(
             // rec_n is used for the scaling over nodes
             % for m in range(len(coupling)):
                 % for cdp in (coupling[m].derived_parameters):
-                    % if cdp.expression:
+                    % if cdp.expression and (cdp.expression !='None' and cdp.expression !='none'):
             ${cdp.name} *= ${cdp.expression};
                     % endif /
                 % endfor
