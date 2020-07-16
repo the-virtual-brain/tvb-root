@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
@@ -40,12 +41,9 @@ class PrincipalComponentsIndex(DataType):
     fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
-    subtype = Column(String)
-
     def fill_from_has_traits(self, datatype):
         # type: (PrincipalComponents)  -> None
         super(PrincipalComponentsIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
         self.fk_source_gid = datatype.source.gid
 
 
@@ -55,10 +53,13 @@ class IndependentComponentsIndex(DataType):
     fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
-    subtype = Column(String)
+    ndim = Column(Integer, default=0)
+    shape = Column(String, nullable=True)
 
     def fill_from_has_traits(self, datatype):
         # type: (IndependentComponents)  -> None
         super(IndependentComponentsIndex, self).fill_from_has_traits(datatype)
-        self.subtype = datatype.__class__.__name__
         self.fk_source_gid = datatype.source.gid.hex
+
+        self.shape = json.dumps(datatype.unmixing_matrix.shape)
+        self.ndim = len(datatype.unmixing_matrix.shape)

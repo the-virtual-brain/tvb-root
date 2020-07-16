@@ -105,11 +105,12 @@ class ICA(ABCMappedArraySVGVisualizer):
         # HACK: dump only a 2D array
         ica_gid = view_model.datatype
         ica_index = self.load_entity_by_gid(ica_gid)
-        with h5.load_from_index(ica_index) as h5_file:
+        with h5.h5_file_for_index(ica_index) as h5_file:
             unmixing_matrix = h5_file.unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
             prewhitening_matrix = h5_file.prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
 
         Cinv = unmixing_matrix.dot(prewhitening_matrix)
-        title = 'ICA region contribution', '(Ellipsis, %d, 0)' % (view_model.i_svar)
-        pars = self.compute_params(ica_index, Cinv, title)
+        title = 'ICA region contribution'
+        labels = '(Ellipsis, %d, 0)' % (view_model.i_svar)
+        pars = self.compute_params(ica_index, Cinv, title, labels=labels)
         return self.build_display_result("matrix/svg_view", pars)

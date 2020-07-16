@@ -89,7 +89,7 @@ class CrossCorrelationVisualizer(ABCMappedArraySVGVisualizer):
         correlation_gid = view_model.datatype
         correlation_index = self.load_entity_by_gid(correlation_gid)
         labels = self.extract_source_labels(correlation_index)
-        with h5.load_from_index(correlation_index) as dt_h5:
+        with h5.h5_file_for_index(correlation_index) as dt_h5:
             matrix = dt_h5.array_data[:]
             matrix = matrix.mean(axis=0)[:, :, 0, 0]
         pars = self.compute_params(correlation_index, matrix, 'Correlation matrix plot', labels=[labels, labels])
