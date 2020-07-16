@@ -325,10 +325,7 @@ class SimulatorController(BurstBaseController):
         form.fill_from_trait(session_stored_simulator)
         return form
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_connectivity(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -351,10 +348,7 @@ class SimulatorController(BurstBaseController):
                                                           cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_coupling_params(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -394,10 +388,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_STIMULUS_URL
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_surface(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -424,10 +415,7 @@ class SimulatorController(BurstBaseController):
             return self._prepare_cortex_fragment(session_stored_simulator, rendering_rules)
         return self._prepare_stimulus_fragment(session_stored_simulator, rendering_rules, False)
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_cortex(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -444,10 +432,7 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method)
         return self._prepare_stimulus_fragment(session_stored_simulator, rendering_rules, True)
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_stimulus(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -470,10 +455,7 @@ class SimulatorController(BurstBaseController):
                                                           is_surface_simulation=session_stored_simulator.is_surface_simulation)
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_model(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -495,10 +477,7 @@ class SimulatorController(BurstBaseController):
                                                           cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_model_params(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -520,10 +499,7 @@ class SimulatorController(BurstBaseController):
                                                           cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_integrator(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -556,10 +532,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_MONITORS_URL
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_integrator_params(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -593,10 +566,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules.is_noise_fragment = True
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_noise_params(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -626,10 +596,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_noise_equation_params(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -711,10 +678,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules.is_pse_launch = session_stored_burst.is_pse_burst()
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_monitors(self, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
@@ -783,10 +747,7 @@ class SimulatorController(BurstBaseController):
         # Currently at the last monitor
         return None, len(monitors) - 1
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_monitor_params(self, current_monitor, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         next_monitor, current_monitor_index = self._get_current_index_and_next_monitor(
@@ -830,10 +791,7 @@ class SimulatorController(BurstBaseController):
                                                                           type(monitor).__name__)
         return self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, rendering_rules)
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_monitor_equation(self, current_monitor, **data):
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         next_monitor, current_monitor_index = self._get_current_index_and_next_monitor(
@@ -862,10 +820,7 @@ class SimulatorController(BurstBaseController):
 
         return self._handle_next_fragment_for_monitors(session_stored_simulator, next_monitor, rendering_rules)
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def setup_pse(self, **data):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
@@ -904,10 +859,7 @@ class SimulatorController(BurstBaseController):
 
         return param1, param2
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def set_pse_params(self, **data):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
@@ -937,9 +889,6 @@ class SimulatorController(BurstBaseController):
         return rendering_rules.to_dict()
 
     @expose_json
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
     def launch_pse(self, **data):
         all_range_parameters = self.range_parameters.get_all_range_parameters()
         range_param1, range_param2 = SimulatorPSERangeFragment.fill_from_post(all_range_parameters, **data)
@@ -971,9 +920,6 @@ class SimulatorController(BurstBaseController):
             return {'error': e.message}
 
     @expose_json
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
     def launch_simulation(self, launch_mode, **data):
         current_form = SimulatorFinalFragment()
         session_burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
@@ -1051,10 +997,7 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_BURST_CONFIG, burst_config)
         return self._prepare_last_fragment_by_burst_type(burst_config)
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def load_burst_read_only(self, burst_config_id):
         try:
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
@@ -1079,10 +1022,7 @@ class SimulatorController(BurstBaseController):
             common.remove_from_session(common.KEY_BURST_CONFIG)
             raise
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         burst_config_copy = burst_config.clone()
@@ -1104,10 +1044,7 @@ class SimulatorController(BurstBaseController):
                                                           is_first_fragment=True)
         return rendering_rules.to_dict()
 
-    @cherrypy.expose
-    @using_template("simulator_fragment")
-    @handle_error(redirect=False)
-    @check_user
+    @expose_fragment('simulator_fragment')
     def reset_simulator_configuration(self):
         common.add2session(common.KEY_SIMULATOR_CONFIG, None)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
