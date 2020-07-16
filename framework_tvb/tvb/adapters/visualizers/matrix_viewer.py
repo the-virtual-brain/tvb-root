@@ -35,7 +35,6 @@
 """
 
 import json
-import uuid
 import numpy
 from six import add_metaclass
 from abc import ABCMeta
@@ -81,9 +80,8 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         return dict(matrix_data=matrix_data,
                     matrix_shape=matrix_shape)
 
-    @staticmethod
-    def compute_2d_view(dtm_index, slice_s):
-        # type: (DataTypeMatrix, tuple) -> numpy.array
+    def compute_2d_view(self, dtm_index, slice_s):
+        # type: (DataTypeMatrix, str) -> (numpy.array, str, bool)
         """
         Create a 2d view of the matrix using the suggested slice
         If the given slice is invalid or fails to produce a 2d array the default is used
@@ -94,35 +92,34 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         :return: (a 2d array,  the slice used to make it, is_default_returned)
         """
         default = (slice(None), slice(None)) + tuple(0 for _ in range(dtm_index.ndim - 2))  # [:,:,0,0,0,0 etc]
-        result_2d = None
-        slice_used = None
+        slice_used = default
 
         try:
-            if slice_s is not None:
-                matrix_slice = parse_slice(slice_s)
-            else:
-                matrix_slice = slice(None)
-            slice_used = slice_str(matrix_slice)
+            if slice_s is not None and slice_s != "":
+                slice_used = parse_slice(slice_s)
+        except ValueError:  # if the slice could not be parsed
+            self.log.warning("failed to parse the slice")
 
+        try:
             with h5.h5_file_for_index(dtm_index) as h5_file:
-                result_2d = h5_file.array_data[matrix_slice]
+                result_2d = h5_file.array_data[slice_used]
                 result_2d = result_2d.astype(float)
             if result_2d.ndim > 2:  # the slice did not produce a 2d array, treat as error
                 raise ValueError(str(dtm_index.shape))
+        except (ValueError, IndexError, TypeError):  # if the slice failed to produce a 2d array
+            self.log.warning("failed to produce a 2d array")
+            return self.compute_2d_view(dtm_index, "")
 
-        except (IndexError, ValueError):  # if the slice could not be parsed or it failed to produce a 2d array
-            matrix_slice = default
-
-        return result_2d, slice_used, matrix_slice == default
+        return result_2d, slice_str(slice_used), slice_used == default
 
     def process_new_shape(self, dtm_gid, given_slice=None):
         # Public, to be called on slice refresh from
         dtm_index = self.load_entity_by_gid(dtm_gid)
-        matrix2d, slice_used, is_default_slice = self.compute_2d_view(dtm_index, given_slice)
+        matrix2d, _, _ = self.compute_2d_view(dtm_index, given_slice)
         return self.compute_raw_matrix_params(matrix2d)
 
     def compute_params_from_index(self, dtm_index, title_suffix, given_slice=None, labels=None):
-        # type: (DataTypeMatrix, str, tuple, list) -> dict
+        # type: (DataTypeMatrix, str, str, list) -> dict
         """
         Prepare a 2d matrix to display
         :param labels: optional labels for the matrix
@@ -136,7 +133,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
 
     def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
                        given_slice=None, slice_used=None, is_default_slice=True):
-        # type: (DataTypeMatrix, numpy.array, str, list, tuple, tuple, bool) -> dict
+        # type: (DataTypeMatrix, numpy.array, str, list, str, str, bool) -> dict
         view_pars = self.compute_raw_matrix_params(matrix2d)
         view_pars.update(original_matrix_shape=dtm_index.shape,
                          show_slice_info=True,
@@ -144,7 +141,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
                          viewer_title=title_suffix,
-                         title=dtm_index.display_name + title_suffix,
+                         title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))
         return view_pars
 
