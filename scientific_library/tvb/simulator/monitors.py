@@ -222,7 +222,7 @@ class SpatialAverage(Monitor):
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
         label="Spatial Mask",
-        required=False,
+        required=HEMISPHERES,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
             for mapping a surface based simulation back to the regions used in 
@@ -368,7 +368,8 @@ class Projection(Monitor):
 
     region_mapping = Attr(
         RegionMapping,
-        label="Region Mapping",  #order=3,
+        label="Region Mapping",
+        required=False,
         doc="A region mapping specifies how vertices of a surface correspond to given regions in the"
             " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
             " simulation but is optional for a surface simulation.")
@@ -566,21 +567,21 @@ class EEG(Projection):
 
     projection = Attr(
         projections_module.ProjectionSurfaceEEG,
-        default=None, label='Projection matrix',  #order=2,
+        default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
     reference = Attr(
         str, required=False,
-        label="EEG Reference",  #order=5,
+        label="EEG Reference",
         doc='EEG Electrode to be used as reference, or "average" to '
             'apply an average reference. If none is provided, the '
             'produced time-series are the idealized or reference-free.')
 
-    sensors = Attr(sensors_module.SensorsEEG, required=True, label="EEG Sensors",  #order=1,
+    sensors = Attr(sensors_module.SensorsEEG, required=True, label="EEG Sensors",
                    doc='Sensors to use for this EEG monitor')
 
     sigma = Float(
-        default=1.0,  #order=4,
+        default=1.0,
         label="Conductivity (w/o projection)",
         doc='When a projection matrix is not used, this provides '
             'the value of conductivity in the formula for the single '
@@ -649,7 +650,7 @@ class MEG(Projection):
         sensors_module.SensorsMEG,
         label = "MEG Sensors",
         default = None,
-        required = True,  #order=1,
+        required = True,
         doc="The set of MEG sensors for which the forward solution will be calculated.")
 
 
@@ -706,14 +707,14 @@ class iEEG(Projection):
 
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
-        default=None, label='Projection matrix',  #order=2,
+        default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
     sigma = Float(label="conductivity", default=1.0)  #, order=4)
 
     sensors = Attr(
         sensors_module.SensorsInternal,
-        label="Internal brain sensors", default=None, required=True,  #order=1,
+        label="Internal brain sensors", default=None, required=True,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
 
 
@@ -804,7 +805,7 @@ class Bold(Monitor):
         label="Duration (ms)",
         default=20000.,
         doc= """Duration of the hrf kernel""",)
-        #order=-1)
+
 
     _interim_period = None
     _interim_istep = None
