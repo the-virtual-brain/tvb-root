@@ -90,10 +90,11 @@ def test_store_simulator_view_model_noise(connectivity_index_factory, operation_
     assert sim_view_model.integrator.noise.noise_seed == loaded_sim_view_model.integrator.noise.noise_seed == 45
 
 
-def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_index_factory, sensors_index_factory,
-                                        operation_factory):
+def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_index_factory, region_mapping_factory,
+                                        sensors_index_factory, operation_factory):
     conn = connectivity_index_factory()
     surface_idx, surface = surface_index_factory(cortical=True)
+    region_mapping = region_mapping_factory()
     sensors_idx, sensors = sensors_index_factory()
     proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
@@ -104,6 +105,7 @@ def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_inde
     dao.store_entity(prj_db_db)
 
     seeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+    seeg_monitor.region_mapping = region_mapping.gid.hex
     sim_view_model = SimulatorAdapterModel()
     sim_view_model.connectivity = conn.gid
     sim_view_model.monitors = [seeg_monitor]

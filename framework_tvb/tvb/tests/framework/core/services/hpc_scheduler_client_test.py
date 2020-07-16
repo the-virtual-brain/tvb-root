@@ -166,9 +166,10 @@ class TestHPCSchedulerClient(BaseTestCase):
         input_files = hpc_client._prepare_input(op, sim_gid)
         assert len(input_files) == 9
 
-    def test_prepare_inputs_with_eeg_monitor(self, operation_factory, simulator_factory, surface_index_factory,
-                                             sensors_index_factory):
+    def test_prepare_inputs_with_eeg_monitor(self, operation_factory, simulator_factory, region_mapping_factory,
+                                             surface_index_factory, sensors_index_factory):
         surface_idx, surface = surface_index_factory(cortical=True)
+        region_mapping = region_mapping_factory()
         sensors_idx, sensors = sensors_index_factory()
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
@@ -179,6 +180,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         dao.store_entity(prj_db_db)
 
         eeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+        eeg_monitor.region_mapping = region_mapping.gid.hex
 
         sim_folder, sim_gid = simulator_factory(op=op, monitor=eeg_monitor)
         hpc_client = HPCSchedulerClient()

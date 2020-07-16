@@ -90,20 +90,13 @@ class MonitorForm(Form):
         self.session_stored_simulator = session_stored_simulator
         self.project_id = project_id
         self.period = ScalarField(Monitor.period, self)
-
-        variables_of_interest_indexes = {}
+        self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
             all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
             chosen_variables = session_stored_simulator.model.variables_of_interest
+            self.set_variables_of_interest(all_variables, chosen_variables)
 
-            if not isinstance(chosen_variables, (list, tuple)):
-                chosen_variables = [chosen_variables]
-
-            for variable in chosen_variables:
-                variables_of_interest_indexes[variable] = all_variables.index(variable)
-
-        self.variables_of_interest_indexes = variables_of_interest_indexes
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
                                                       self, name='variables_of_interest')
@@ -120,6 +113,25 @@ class MonitorForm(Form):
     def fill_trait(self, datatype):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
+
+    def fill_from_post(self, form_data):
+        super(MonitorForm, self).fill_from_post(form_data)
+        all_variables = self.session_stored_simulator.model.variables_of_interest
+        chosen_variables = form_data['variables_of_interest']
+        self.set_variables_of_interest(all_variables, chosen_variables)
+
+    def set_variables_of_interest(self, all_variables, chosen_variables):
+        variables_of_interest_indexes = {}
+
+        if not isinstance(chosen_variables, (list, tuple)):
+            chosen_variables = [chosen_variables]
+
+        for variable in chosen_variables:
+            variables_of_interest_indexes[variable] = all_variables.index(variable)
+
+        self.variables_of_interest_indexes = variables_of_interest_indexes
+
+
 
     # TODO: We should review the code here, we could probably reduce the number of  classes that are used here
 
