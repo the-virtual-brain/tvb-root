@@ -129,13 +129,14 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
         url: "/flow/get_filtered_datatypes/" + datatypeIndex + '/' + $.toJSON(gatheredData),
         success: function (response) {
             var select_field = document.getElementById(name);
+            var t = document.createRange().createContextualFragment(response);
+            var i, length = select_field.options.length - 1;
 
-            for(var i=0; i<select_field.options.length; i++){
-                if(select_field.options[i].text !== "None" && select_field.options[i].text !== "All"){
-                    select_field.removeChild(select_field.options[i]);
-                }
+            for(i=length; i >= 0; i--){
+                select_field.remove(i);
             }
-            select_field.append(response);
+
+            select_field.appendChild(t);
         },
         error: function (response) {
             displayMessage("Invalid filter data.", "errorMessage");

@@ -252,6 +252,9 @@ class FlowController(BaseController):
         self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
 
+    @expose_fragment('form_fields/options_field')
+    @settings
+    @context_selected
     def get_filtered_datatypes(self, datatype_index_path, filters):
         """
         Given the name from the input tree, the dataType required and a number of
@@ -278,11 +281,7 @@ class FlowController(BaseController):
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class()))
         select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter)
 
-        options_response = ''
-        for option in select_field.options():
-            options_response = options_response + '<option value=' + '"' + option.value + '"' + ' class="form-control">' + option.label + '</option>'
-
-        return options_response
+        return {'options': select_field.options()}
 
     def _get_node(self, input_tree, name):
         """
