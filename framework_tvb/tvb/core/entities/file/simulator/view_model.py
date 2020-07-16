@@ -204,7 +204,7 @@ class TemporalAverageViewModel(MonitorViewModel, TemporalAverage):
 class ProjectionViewModel(MonitorViewModel, Projection):
     region_mapping = DataTypeGidAttr(
         linked_datatype=RegionMapping,
-        required=Projection.region_mapping.required,
+        required=True,
         label=Projection.region_mapping.label,
         doc=Projection.region_mapping.doc
     )

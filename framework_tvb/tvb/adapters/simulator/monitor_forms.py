@@ -170,7 +170,14 @@ class ProjectionMonitorForm(MonitorForm):
 
     def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(ProjectionMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
-        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self, name='region_mapping')
+
+        rm_filter = None
+        if session_stored_simulator.is_surface_simulation:
+            rm_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=['=='],
+                                    values=[session_stored_simulator.surface.region_mapping_data.hex])
+
+        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self,
+                                                       name='region_mapping', conditions=rm_filter)
 
 
 class EEGMonitorForm(ProjectionMonitorForm):
