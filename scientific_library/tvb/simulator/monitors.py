@@ -222,7 +222,7 @@ class SpatialAverage(Monitor):
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
         label="Spatial Mask",
-        required=HEMISPHERES,
+        required=False,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
             for mapping a surface based simulation back to the regions used in 
@@ -231,7 +231,7 @@ class SpatialAverage(Monitor):
     default_mask = Attr(
         str,
         choices=(CORTICAL, HEMISPHERES),
-        default=None,
+        default=HEMISPHERES,
         label="Default Mask",
         required=False,
         doc=("Fallback in case spatial mask is none and no surface provided" 
