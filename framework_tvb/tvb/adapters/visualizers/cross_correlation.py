@@ -93,4 +93,5 @@ class CrossCorrelationVisualizer(ABCMappedArraySVGVisualizer):
             matrix = dt_h5.array_data[:]
             matrix = matrix.mean(axis=0)[:, :, 0, 0]
         pars = self.compute_params(correlation_index, matrix, 'Correlation matrix plot', labels=[labels, labels])
+        pars['show_slice_info'] = False
         return self.build_display_result("matrix/svg_view", pars)
