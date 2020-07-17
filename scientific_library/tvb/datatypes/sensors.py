@@ -49,7 +49,6 @@ class SensorTypes(Enum):
     TYPE_EEG = "EEG"
     TYPE_MEG = "MEG"
     TYPE_INTERNAL = "Internal"
-    TYPE_SEEG = "SEEG"
 
 
 class Sensors(HasTraits):

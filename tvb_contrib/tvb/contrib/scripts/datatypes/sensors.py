@@ -151,7 +151,7 @@ class SensorsInternal(Sensors, TVBSensorsInternal):
             return np.unique(sensors_inds)
 
     def group_sensors_to_electrodes(self, labels=None):
-        if self.sensors_type == SensorTypes.TYPE_SEEG.value:
+        if self.sensors_type == SensorTypes.TYPE_INTERNAL.value:
             if labels is None:
                 labels = self.labels
             sensor_names = np.array(split_string_text_numbers(labels))
@@ -186,7 +186,7 @@ class SensorsInternal(Sensors, TVBSensorsInternal):
 
 
 class SensorsSEEG(SensorsInternal):
-    sensors_type = Attr(str, default=SensorTypes.TYPE_SEEG.value, required=False)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_INTERNAL.value, required=False)
 
     def to_tvb_instance(self, **kwargs):
         return super(SensorsSEEG, self).to_tvb_instance(TVBSensorsInternal, **kwargs)

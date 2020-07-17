@@ -157,7 +157,7 @@ class EEGMonitorForm(ProjectionMonitorForm):
                                     values=[SensorTypes.TYPE_EEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.EEG_POLYMORPHIC_IDENTITY.value])
+                                        values=[ProjectionsType.EEG.value])
 
         self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)
@@ -172,10 +172,10 @@ class MEGMonitorForm(ProjectionMonitorForm):
         super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_MEG.value)
+                                    values=[SensorTypes.TYPE_MEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.MEG_POLYMORPHIC_IDENTITY.value])
+                                        values=[ProjectionsType.MEG.value])
 
         self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)
@@ -188,10 +188,10 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         super(iEEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_SEEG.value])
+                                    values=[SensorTypes.TYPE_INTERNAL.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.SEEG_POLYMORPHIC_IDENTITY.value])
+                                        values=[ProjectionsType.SEEG.value])
 
         self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)

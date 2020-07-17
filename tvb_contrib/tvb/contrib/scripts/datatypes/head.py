@@ -124,7 +124,7 @@ class Head(HasTraits):
                 self.region_volume_mapping.configure()
         for s_type, p_type, s_datatype, p_datatype \
                 in zip(["eeg", "seeg", "meg"],
-                       [ProjectionsType.EEG_POLYMORPHIC_IDENTITY.value, ProjectionsType.SEEG_POLYMORPHIC_IDENTITY.value, ProjectionsType.MEG_POLYMORPHIC_IDENTITY.value],
+                       [ProjectionsType.EEG.value, ProjectionsType.SEEG.value, ProjectionsType.MEG.value],
                        [TVBSensorsEEG, TVBSensorsInternal, TVBSensorsMEG],
                        [TVBProjectionSurfaceEEG, TVBProjectionSurfaceSEEG, TVBProjectionSurfaceMEG]):
             sensor_name = "%s_sensors" % s_type
