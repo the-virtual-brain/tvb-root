@@ -307,8 +307,8 @@ class WebAdminSettings(object):
         # Admin's email used when creating first user
         self.ADMINISTRATOR_EMAIL = manager.get_attribute(stored.KEY_ADMIN_EMAIL, self.DEFAULT_ADMIN_EMAIL)
 
-        # Admins GID
-        self.ADMINISTRATOR_GIDS = manager.get_attribute(stored.KEY_ADMIN_GIDS, "").split(",")
+        # Admins group
+        self.ADMINISTRATORS_GROUP = manager.get_attribute(stored.KEY_ADMINS_GROUP, "")
 
 
 class DBSettings(object):
