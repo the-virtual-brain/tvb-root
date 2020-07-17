@@ -218,6 +218,7 @@ class SpatialAverage(Monitor):
     _ui_name = "Spatial average with temporal sub-sample"
     CORTICAL = "cortical"
     HEMISPHERES = "hemispheres"
+    REGION_MAPPING = "region mapping"
 
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
@@ -230,7 +231,7 @@ class SpatialAverage(Monitor):
 
     default_mask = Attr(
         str,
-        choices=(CORTICAL, HEMISPHERES),
+        choices=(CORTICAL, HEMISPHERES, REGION_MAPPING),
         default=HEMISPHERES,
         label="Default Mask",
         required=False,

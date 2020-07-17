@@ -155,6 +155,7 @@ class SpatialAverageMonitorForm(MonitorForm):
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
         self.default_mask = ScalarField(SpatialAverage.default_mask,  self)
 
+
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
         connectivity_index = ABCAdapter.load_entity_by_gid(self.session_stored_simulator.connectivity)
@@ -165,6 +166,10 @@ class SpatialAverageMonitorForm(MonitorForm):
 
             if connectivity_index.has_hemispheres_mask is False:
                 self.default_mask.choices.pop(SpatialAverage.HEMISPHERES)
+
+        else:
+            self.default_mask.data = SpatialAverage.REGION_MAPPING
+            self.default_mask.disabled = True
 
 class GlobalAverageMonitorForm(MonitorForm):
 
