@@ -123,12 +123,28 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
         return;
     }
 
+    var dt_class_start_index = datatypeIndex.lastIndexOf('.');
+    var dt_module = datatypeIndex.substring(0, dt_class_start_index);
+    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
+
+    var select_field = document.getElementById(name);
+    var has_all_option = false;
+    var has_none_option = false;
+
+    if (select_field.options[0].innerHTML === "None"){
+        has_none_option = true;
+    }
+
+    if (select_field.options[select_field.options.length - 1].innerHTML === "All"){
+        has_all_option = true;
+    }
+
     //Make a request to get new data
     doAjaxCall({
         type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + datatypeIndex + '/' + $.toJSON(gatheredData),
+        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
+            has_all_option + '/' + has_none_option,
         success: function (response) {
-            var select_field = document.getElementById(name);
             var t = document.createRange().createContextualFragment(response);
             var i, length = select_field.options.length - 1;
 

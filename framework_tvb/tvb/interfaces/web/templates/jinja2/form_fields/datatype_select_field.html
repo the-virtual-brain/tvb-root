@@ -1,6 +1,4 @@
-<script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
-
-<div class="field-data">
+<p class="field-data">
 <select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1"
         onchange="updateDivContent('data_time_series', this, ''); updateDatatypeDiv(this)" title="Fully Loaded!">
 {% for option in field.options() %}
@@ -27,4 +25,4 @@
         {% endwith %}
     </div>
 {% endif %}
-</div>
+</p>

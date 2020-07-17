@@ -245,8 +245,6 @@ class FlowController(BaseController):
             template_specification[common.KEY_DISPLAY_MENU] = True
             template_specification[common.KEY_BACK_PAGE] = back_page_link
 
-        common.add2session(common.KEY_ADAPTER, adapter_key)
-
         template_specification[common.KEY_ADAPTER] = adapter_key
         template_specification[ABCDisplayer.KEY_IS_ADAPTER] = True
         self.fill_default_attributes(template_specification, algorithm.displayname)
@@ -255,14 +253,12 @@ class FlowController(BaseController):
     @expose_fragment('form_fields/options_field')
     @settings
     @context_selected
-    def get_filtered_datatypes(self, datatype_index_path, filters):
+    def get_filtered_datatypes(self, dt_module, dt_class, filters, has_all_option, has_none_option):
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
         """
-        name_start_index = datatype_index_path.rfind('.')
-        datatype_index_name = datatype_index_path[name_start_index+1:]
-        index_class = getattr(sys.modules[datatype_index_path[: name_start_index]], datatype_index_name)
+        index_class = getattr(sys.modules[dt_module], dt_class)()
         filters_dict = json.loads(filters)
 
         fields = []
@@ -278,8 +274,11 @@ class FlowController(BaseController):
         project = common.get_current_project()
 
         form = Form(project_id=project.id, draw_ranges=True)
-        data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class()))
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter)
+        data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
+        data_type_gid_attr.required = not string2bool(has_none_option)
+
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter,
+                                                has_all_option=string2bool(has_all_option))
 
         return {'options': select_field.options()}
 

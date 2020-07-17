@@ -518,6 +518,10 @@ class DatatypeDAO(RootDAO):
                         ).filter(DataType.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
+
+            if hasattr(datatype_class, 'time_series_type'):
+                query = query.filter(Operation.id == BurstConfiguration.fk_simulation)
+
             if filters:
                 filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_class')
                 if filter_str is not None:
