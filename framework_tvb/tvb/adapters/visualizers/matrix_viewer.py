@@ -118,19 +118,6 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         matrix2d, _, _ = self.compute_2d_view(dtm_index, given_slice)
         return self.compute_raw_matrix_params(matrix2d)
 
-    def compute_params_from_index(self, dtm_index, title_suffix, given_slice=None, labels=None):
-        # type: (DataTypeMatrix, str, str, list) -> dict
-        """
-        Prepare a 2d matrix to display
-        :param labels: optional labels for the matrix
-        :param title_suffix: title for the matrix display
-        :param dtm_gid: input DatTYpeMatrix GUID to be displayed
-        :param given_slice: a string representation of a slice. This slice should cut a 2d view from matrix
-        If the matrix is not 2d and the slice will not make it 2d then a default slice is used
-        """
-        matrix2d, slice_used, is_default_slice = self.compute_2d_view(dtm_index, given_slice)
-        return self.compute_params(dtm_index, matrix2d, title_suffix, labels, given_slice, slice_used, is_default_slice)
-
     def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
                        given_slice=None, slice_used=None, is_default_slice=True):
         # type: (DataTypeMatrix, numpy.array, str, list, str, str, bool) -> dict
@@ -140,6 +127,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          given_slice=given_slice,
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
+                         has_complex_numbers=dtm_index.array_has_imaginary,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))
@@ -147,10 +135,19 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
 
     def extract_source_labels(self, datatype_matrix):
         # type: (DataTypeMatrix) -> list
-        source_index = self.load_entity_by_gid(datatype_matrix.fk_source_gid)
-        with h5.h5_file_for_index(source_index) as source_h5:
-            labels = self.get_space_labels(source_h5)
-        return labels
+        if hasattr(datatype_matrix, "fk_connectivity_gid"):
+            conn_idx = self.load_entity_by_gid(datatype_matrix.fk_connectivity_gid)
+            with h5.h5_file_for_index(conn_idx) as conn_h5:
+                labels = list(conn_h5.region_labels.load())
+            return labels
+
+        if hasattr(datatype_matrix, "fk_source_gid"):
+            source_index = self.load_entity_by_gid(datatype_matrix.fk_source_gid)
+            with h5.h5_file_for_index(source_index) as source_h5:
+                labels = self.get_space_labels(source_h5)
+            return labels
+
+        return None
 
 
 class MatrixVisualizerModel(ViewModel):
@@ -202,5 +199,14 @@ class MappedArrayVisualizer(ABCMappedArraySVGVisualizer):
         # type: (MatrixVisualizerModel) -> dict
         dtm_gid = view_model.datatype
         dtm_index = self.load_entity_by_gid(dtm_gid)
-        pars = self.compute_params_from_index(dtm_index, "Matrix Plot", view_model.slice)
-        return self.build_display_result("matrix/svg_view", pars)
+        labels = self.extract_source_labels(dtm_index)
+        matrix2d, slice_used, is_default_slice = self.compute_2d_view(dtm_index, view_model.slice)
+
+        if matrix2d is None or labels is None or len(labels) != matrix2d.shape[0] or len(labels) != matrix2d.shape[1]:
+            labels = None
+        else:
+            labels = [labels, labels]
+
+        params = self.compute_params(dtm_index, matrix2d, "Matrix Plot", labels,
+                                     view_model.slice, slice_used, is_default_slice)
+        return self.build_display_result("matrix/svg_view", params)
