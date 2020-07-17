@@ -9,6 +9,12 @@
     <h4>{{ title }}</h4>
     <div id="svg-viewer"></div>
 
+    {% if has_complex_numbers %}
+        <div class="matrix-info">
+            <p>Matrix <span>has complex numbers!</span> Here we only display the real part.</p>
+        </div>
+    {% endif %}
+
     {% if show_slice_info %}
 
         <div class="slice-info">

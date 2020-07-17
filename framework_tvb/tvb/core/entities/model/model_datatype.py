@@ -237,8 +237,8 @@ class DataTypeMatrix(DataType):
     array_data_min = Column(Float)
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
-    array_has_nan = Column(Boolean, default=False)
-    array_has_imaginary = Column(Boolean, default=False)
+    array_is_finite = Column(Boolean, default=True)
+    array_has_complex = Column(Boolean, default=False)
     # has_volume_mapping will currently be changed for ConnectivityMeasureIndex subclass
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
 
@@ -248,8 +248,8 @@ class DataTypeMatrix(DataType):
 
         if hasattr(datatype, "array_data"):
             self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-            self.array_has_nan = numpy.isnan(datatype.array_data).any()
-            self.array_has_imaginary = numpy.iscomplex(datatype.array_data).any()
+            self.array_is_finite = numpy.isfinite(datatype.array_data).all()
+            self.array_has_complex = numpy.iscomplex(datatype.array_data).any()
             self.shape = json.dumps(datatype.array_data.shape)
             self.ndim = len(datatype.array_data.shape)
 

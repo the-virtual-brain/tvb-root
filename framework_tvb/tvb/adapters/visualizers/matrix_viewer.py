@@ -127,7 +127,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          given_slice=given_slice,
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
-                         has_complex_numbers=dtm_index.array_has_imaginary,
+                         has_complex_numbers=dtm_index.array_has_complex,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))

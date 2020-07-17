@@ -27,8 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import json
-from sqlalchemy import Column, Integer, ForeignKey, String
+import numpy
+from sqlalchemy import Column, Integer, ForeignKey, String, Boolean
 from sqlalchemy.orm import relationship
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -55,6 +57,7 @@ class IndependentComponentsIndex(DataType):
 
     ndim = Column(Integer, default=0)
     shape = Column(String, nullable=True)
+    array_has_complex = Column(Boolean, default=False)
 
     def fill_from_has_traits(self, datatype):
         # type: (IndependentComponents)  -> None
@@ -63,3 +66,4 @@ class IndependentComponentsIndex(DataType):
 
         self.shape = json.dumps(datatype.unmixing_matrix.shape)
         self.ndim = len(datatype.unmixing_matrix.shape)
+        self.array_has_complex = numpy.iscomplex(datatype.unmixing_matrix).any()
