@@ -41,7 +41,7 @@ from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY
+from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -86,7 +86,7 @@ class TestSensorViewers(TransactionalTestCase):
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
                                    SensorsImporterModel.OPTIONS['EEG Sensors'])
         field = FilterChain.datatype + '.sensors_type'
-        filters = FilterChain('', [field], [EEG_POLYMORPHIC_IDENTITY], ['=='])
+        filters = FilterChain('', [field], [SensorTypes.TYPE_EEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         # Import EEGCap
@@ -122,7 +122,7 @@ class TestSensorViewers(TransactionalTestCase):
                                    SensorsImporterModel.OPTIONS['MEG Sensors'])
 
         field = FilterChain.datatype + '.sensors_type'
-        filters = FilterChain('', [field], [MEG_POLYMORPHIC_IDENTITY], ['=='])
+        filters = FilterChain('', [field], [SensorTypes.TYPE_MEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         viewer = SensorsViewer()

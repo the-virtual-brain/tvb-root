@@ -29,22 +29,26 @@
 """
 .. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
+from enum import Enum
 
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.datatypes.projections import ProjectionMatrix as TVBProjectionMatrix
 from tvb.datatypes.projections import ProjectionSurfaceEEG as TVBProjectionSurfaceEEG
 from tvb.datatypes.projections import ProjectionSurfaceSEEG as TVBProjectionSurfaceSEEG
 from tvb.datatypes.projections import ProjectionSurfaceMEG as TVBProjectionSurfaceMEG
+from tvb.datatypes.sensors import SensorTypes
+
+
+class TvbProjectionType(Enum):
+    eeg = TVBProjectionSurfaceEEG
+    internal = TVBProjectionSurfaceSEEG
+    meg = TVBProjectionSurfaceMEG
 
 
 def get_TVB_proj_type(s_type):
-    if s_type.lower() == "eeg":
-        return TVBProjectionSurfaceEEG
-    elif s_type.lower() == "seeg":
-        return TVBProjectionSurfaceSEEG
-    elif s_type.lower() == "meg":
-        return TVBProjectionSurfaceMEG
-    else:
+    try:
+        return TvbProjectionType[s_type.value.lower()].value
+    except (KeyError, AttributeError):
         return TVBProjectionMatrix
 
 
@@ -84,7 +88,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix, TVBProjectionSurfaceEEG):
     @classmethod
     def from_tvb_file(cls, source_file, matlab_data_name=None, is_brainstorm=False,
                       return_tvb_instance=False, **kwargs):
-        return cls._from_tvb_projection_file("eeg", source_file, matlab_data_name, is_brainstorm,
+        return cls._from_tvb_projection_file(SensorTypes.TYPE_EEG, source_file, matlab_data_name, is_brainstorm,
                                              return_tvb_instance, **kwargs)
 
 
@@ -96,7 +100,7 @@ class ProjectionSurfaceSEEG(ProjectionMatrix, TVBProjectionSurfaceSEEG):
     @classmethod
     def from_tvb_file(cls, source_file, matlab_data_name=None, is_brainstorm=False,
                       return_tvb_instance=False, **kwargs):
-        return cls._from_tvb_projection_file("seeg", source_file, matlab_data_name, is_brainstorm,
+        return cls._from_tvb_projection_file(SensorTypes.TYPE_INTERNAL, source_file, matlab_data_name, is_brainstorm,
                                              return_tvb_instance, **kwargs)
 
 
@@ -108,5 +112,5 @@ class ProjectionSurfaceMEG(ProjectionMatrix, TVBProjectionSurfaceMEG):
     @classmethod
     def from_tvb_file(cls, source_file, matlab_data_name=None, is_brainstorm=False,
                       return_tvb_instance=False, **kwargs):
-        return cls._from_tvb_projection_file("meg", source_file, matlab_data_name, is_brainstorm,
+        return cls._from_tvb_projection_file(SensorTypes.TYPE_MEG, source_file, matlab_data_name, is_brainstorm,
                                              return_tvb_instance, **kwargs)

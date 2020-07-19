@@ -28,17 +28,13 @@
 #
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY as EEG_S
-from tvb.datatypes.sensors import MEG_POLYMORPHIC_IDENTITY as MEG_S
-from tvb.datatypes.sensors import INTERNAL_POLYMORPHIC_IDENTITY as SEEG_S
-from tvb.datatypes.projections import EEG_POLYMORPHIC_IDENTITY as EEG_P
-from tvb.datatypes.projections import MEG_POLYMORPHIC_IDENTITY as MEG_P
-from tvb.datatypes.projections import SEEG_POLYMORPHIC_IDENTITY as SEEG_P
+from tvb.datatypes.projections import ProjectionsType
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField, SelectField, \
     TraitDataTypeSelectField
 from tvb.basic.neotraits.api import List
 import numpy
+from tvb.datatypes.sensors import SensorTypes
 
 
 def get_monitor_to_form_dict():
@@ -158,10 +154,10 @@ class EEGMonitorForm(ProjectionMonitorForm):
         super(EEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[EEG_S])
+                                    values=[SensorTypes.TYPE_EEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[EEG_P])
+                                        values=[ProjectionsType.EEG.value])
 
         self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)
@@ -176,10 +172,10 @@ class MEGMonitorForm(ProjectionMonitorForm):
         super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[MEG_S])
+                                    values=[SensorTypes.TYPE_MEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[MEG_P])
+                                        values=[ProjectionsType.MEG.value])
 
         self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)
@@ -192,10 +188,10 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         super(iEEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SEEG_S])
+                                    values=[SensorTypes.TYPE_INTERNAL.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[SEEG_P])
+                                        values=[ProjectionsType.SEEG.value])
 
         self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self, name='projection',
                                                    conditions=projection_filter)

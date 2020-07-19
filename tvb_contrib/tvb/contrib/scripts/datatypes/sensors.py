@@ -30,28 +30,17 @@
 .. moduleauthor:: Dionysios Perdikis <Denis@tvb.invalid>
 """
 
-from enum import Enum
 import numpy as np
 from tvb.contrib.scripts.datatypes.base import BaseModel
 from tvb.contrib.scripts.utils.data_structures_utils import labels_to_inds, monopolar_to_bipolar, \
     split_string_text_numbers
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, NArray
-from tvb.datatypes.sensors import EEG_POLYMORPHIC_IDENTITY, MEG_POLYMORPHIC_IDENTITY, \
-    INTERNAL_POLYMORPHIC_IDENTITY
-from tvb.datatypes.sensors import Sensors as TVBSensors
+from tvb.datatypes.sensors import Sensors as TVBSensors, SensorTypes
 from tvb.datatypes.sensors import SensorsEEG as TVBSensorsEEG
 from tvb.datatypes.sensors import SensorsInternal as TVBSensorsInternal
 from tvb.datatypes.sensors import SensorsMEG as TVBSensorsMEG
 from tvb.simulator.plot.utils import ensure_list
-
-
-# TODO: Move this ENUM in library an replace hardcoded sensor types strings from there
-class SensorTypes(Enum):
-    TYPE_EEG = EEG_POLYMORPHIC_IDENTITY
-    TYPE_MEG = MEG_POLYMORPHIC_IDENTITY
-    TYPE_INTERNAL = INTERNAL_POLYMORPHIC_IDENTITY
-    TYPE_SEEG = "SEEG"
 
 
 class Sensors(TVBSensors, BaseModel):
@@ -162,7 +151,7 @@ class SensorsInternal(Sensors, TVBSensorsInternal):
             return np.unique(sensors_inds)
 
     def group_sensors_to_electrodes(self, labels=None):
-        if self.sensors_type == SensorTypes.TYPE_SEEG.value:
+        if self.sensors_type == SensorTypes.TYPE_INTERNAL.value:
             if labels is None:
                 labels = self.labels
             sensor_names = np.array(split_string_text_numbers(labels))
@@ -197,7 +186,7 @@ class SensorsInternal(Sensors, TVBSensorsInternal):
 
 
 class SensorsSEEG(SensorsInternal):
-    sensors_type = Attr(str, default=SensorTypes.TYPE_SEEG.value, required=False)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_INTERNAL.value, required=False)
 
     def to_tvb_instance(self, **kwargs):
         return super(SensorsSEEG, self).to_tvb_instance(TVBSensorsInternal, **kwargs)
