@@ -112,12 +112,6 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
 
         return result_2d, slice_str(slice_used), slice_used == default
 
-    def process_new_shape(self, dtm_gid, given_slice=None):
-        # Public, to be called on slice refresh from
-        dtm_index = self.load_entity_by_gid(dtm_gid)
-        matrix2d, _, _ = self.compute_2d_view(dtm_index, given_slice)
-        return self.compute_raw_matrix_params(matrix2d)
-
     def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
                        given_slice=None, slice_used=None, is_default_slice=True):
         # type: (DataTypeMatrix, numpy.array, str, list, str, str, bool) -> dict
