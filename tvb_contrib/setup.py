@@ -30,15 +30,15 @@ import os
 import shutil
 import setuptools
 
-TVB_VERSION = "2.0.7"
+CONTRIB_VERSION = "2.0.8"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
-TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Marmaduke Woodman"
+TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman"
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
 setuptools.setup(name='tvb-contrib',
-                 version=TVB_VERSION,
+                 version=CONTRIB_VERSION,
                  packages=setuptools.find_packages(),
                  include_package_data=True,
                  install_requires=CONTRIB_DEPENDENCIES,
