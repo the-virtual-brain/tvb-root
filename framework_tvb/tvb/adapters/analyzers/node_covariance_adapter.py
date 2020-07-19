@@ -35,6 +35,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
+import json
 import uuid
 import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr
@@ -160,14 +161,18 @@ class NodeCovarianceAdapter(ABCAsynchronous):
                     small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
                     partial_cov = self._compute_node_covariance(small_ts, ts_h5)
                     covariance_h5.write_data_slice(partial_cov.array_data)
-            ts_array_metadata = covariance_h5.array_data.get_cached_metadata()
+            array_metadata = covariance_h5.array_data.get_cached_metadata()
 
         covariance_index.fk_source_gid = self.input_time_series_index.gid
         covariance_index.subtype = type(covariance_index).__name__
-        covariance_index.array_data_min = ts_array_metadata.min
-        covariance_index.array_data_max = ts_array_metadata.max
-        covariance_index.array_data_mean = ts_array_metadata.mean
+        covariance_index.array_data_min = array_metadata.min
+        covariance_index.array_data_max = array_metadata.max
+        covariance_index.array_data_mean = array_metadata.mean
+        covariance_index.array_is_finite = array_metadata.is_finite
+        covariance_index.array_has_complex = array_metadata.has_complex
+        covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
         covariance_index.ndim = len(covariance_h5.array_data.shape)
+        # TODO write this part better, by moving into the Model fill_from...
 
         covariance_h5.gid.store(uuid.UUID(covariance_index.gid))
         covariance_h5.source.store(view_model.time_series)
