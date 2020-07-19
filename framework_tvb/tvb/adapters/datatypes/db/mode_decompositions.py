@@ -40,7 +40,8 @@ from tvb.core.entities.model.model_datatype import DataType
 class PrincipalComponentsIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid),
+                           nullable=not PrincipalComponents.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     def fill_from_has_traits(self, datatype):
@@ -52,7 +53,8 @@ class PrincipalComponentsIndex(DataType):
 class IndependentComponentsIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not PrincipalComponents.source.required)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid),
+                           nullable=not PrincipalComponents.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     ndim = Column(Integer, default=0)
@@ -67,3 +69,10 @@ class IndependentComponentsIndex(DataType):
         self.shape = json.dumps(datatype.unmixing_matrix.shape)
         self.ndim = len(datatype.unmixing_matrix.shape)
         self.array_has_complex = numpy.iscomplex(datatype.unmixing_matrix).any()
+
+    @property
+    def parsed_shape(self):
+        try:
+            return tuple(json.loads(self.shape))
+        except:
+            return ()

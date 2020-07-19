@@ -40,6 +40,7 @@ from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsI
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.arguments_serialisation import slice_str
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -101,16 +102,23 @@ class ICA(ABCMappedArraySVGVisualizer):
     def launch(self, view_model):
         # type: (ICAModel) -> dict
         """Construct data for visualization and launch it."""
-        # get data from IndependentComponents datatype, convert to json
-        # HACK: dump only a 2D array
         ica_gid = view_model.datatype
         ica_index = self.load_entity_by_gid(ica_gid)
+
+        slice_given = slice_str((slice(None), slice(None), slice(view_model.i_svar), slice(view_model.i_mode)))
+        if view_model.i_svar < 0 or view_model.i_svar >= ica_index.parsed_shape[2]:
+            view_model.i_svar = 0
+        if view_model.i_mode < 0 or view_model.i_mode >= ica_index.parsed_shape[3]:
+            view_model.i_mode = 0
+        slice_used = slice_str((slice(None), slice(None), slice(view_model.i_svar), slice(view_model.i_mode)))
+
         with h5.h5_file_for_index(ica_index) as h5_file:
             unmixing_matrix = h5_file.unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
             prewhitening_matrix = h5_file.prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
-
         Cinv = unmixing_matrix.dot(prewhitening_matrix)
-        title = 'ICA region contribution'
-        labels = '(Ellipsis, %d, 0)' % (view_model.i_svar)
-        pars = self.compute_params(ica_index, Cinv, title, labels=labels)
+
+        title = 'ICA region contribution -- (Ellipsis, %d, 0)' % (view_model.i_svar)
+        labels = self.extract_source_labels(ica_index)
+        pars = self.compute_params(ica_index, Cinv, title, [labels, labels],
+                                   slice_given, slice_used, slice_given != slice_used)
         return self.build_display_result("matrix/svg_view", pars)
