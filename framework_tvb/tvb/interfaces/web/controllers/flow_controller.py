@@ -41,6 +41,7 @@ import cherrypy
 import formencode
 import numpy
 import six
+import sys
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -49,6 +50,9 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import REGISTRY
+from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -58,8 +62,8 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array, \
+    expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -246,64 +250,37 @@ class FlowController(BaseController):
         self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
 
-    # @expose_fragment("flow/type2component/datatype2select_simple")
-    def getfiltereddatatypes(self, name, parent_div, tree_session_key, filters):
-        # TODO: fix this use-case
+    @expose_fragment('form_fields/options_field')
+    @settings
+    @context_selected
+    def get_filtered_datatypes(self, dt_module, dt_class, filters, has_all_option, has_none_option):
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
         """
-        previous_tree = self.context.get_session_tree_for_key(tree_session_key)
-        if previous_tree is None:
-            common.set_error_message("Adapter Interface not in session for filtering!")
-            raise cherrypy.HTTPRedirect("/tvb?error=True")
-        current_node = self._get_node(previous_tree, name)
-        if current_node is None:
-            raise Exception("Could not find node :" + name)
-        datatype = current_node[ABCAdapter.KEY_DATATYPE]
+        index_class = getattr(sys.modules[dt_module], dt_class)()
+        filters_dict = json.loads(filters)
 
-        filters = json.loads(filters)
-        availablefilter = json.loads(FilterChain.get_filters_for_type(datatype))
-        for i, filter_ in enumerate(filters[FILTER_FIELDS]):
-            # Check for filter input of type 'date' as these need to be converted
-            if filter_ in availablefilter and availablefilter[filter_][FILTER_TYPE] == 'date':
-                try:
-                    temp_date = string2date(filters[FILTER_VALUES][i], False)
-                    filters[FILTER_VALUES][i] = temp_date
-                except ValueError:
-                    raise
-        # In order for the filter object not to "stack up" on multiple calls to
-        # this method, create a deepCopy to work with
-        if constants.ELEM_CONDITIONS in current_node:
-            new_filter = copy.deepcopy(current_node[constants.ELEM_CONDITIONS])
-        else:
-            new_filter = FilterChain()
-        new_filter.fields.extend(filters[FILTER_FIELDS])
-        new_filter.operations.extend(filters[FILTER_OPERATIONS])
-        new_filter.values.extend(filters[FILTER_VALUES])
-        # Get dataTypes that match the filters from DB then populate with values
-        values, total_count = [], 0
-        # Create a dictionary that matches what the template expects
-        parameters = {ABCAdapter.KEY_NAME: name,
-                      ABCAdapter.KEY_FILTERABLE: availablefilter,
-                      ABCAdapter.KEY_TYPE: constants.TYPE_SELECT,
-                      ABCAdapter.KEY_OPTIONS: values,
-                      ABCAdapter.KEY_DATATYPE: datatype}
+        fields = []
+        operations = []
+        values = []
 
-        if total_count > MAXIMUM_DATA_TYPES_DISPLAYED:
-            parameters[KEY_WARNING] = WARNING_OVERFLOW
+        for idx in range(len(filters_dict['fields'])):
+            fields.append(filters_dict['fields'][idx])
+            operations.append(filters_dict['operations'][idx])
+            values.append(filters_dict['values'][idx])
 
-        if constants.ATT_REQUIRED in current_node:
-            parameters[constants.ATT_REQUIRED] = current_node[constants.ATT_REQUIRED]
-            if len(values) > 0 and string2bool(str(parameters[constants.ATT_REQUIRED])):
-                parameters[ABCAdapter.KEY_DEFAULT] = str(values[-1][ABCAdapter.KEY_VALUE])
-        previous_selected = self.context.get_current_default(name)
-        if previous_selected in [str(vv['value']) for vv in values]:
-            parameters[ABCAdapter.KEY_DEFAULT] = previous_selected
+        filter = FilterChain(fields=fields, operations=operations, values=values)
+        project = common.get_current_project()
 
-        template_specification = {"inputRow": parameters, "disabled": False,
-                                  "parentDivId": parent_div, common.KEY_SESSION_TREE: tree_session_key}
-        return self.fill_default_attributes(template_specification)
+        form = Form(project_id=project.id, draw_ranges=True)
+        data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
+        data_type_gid_attr.required = not string2bool(has_none_option)
+
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter,
+                                                has_all_option=string2bool(has_all_option))
+
+        return {'options': select_field.options()}
 
     def _get_node(self, input_tree, name):
         """

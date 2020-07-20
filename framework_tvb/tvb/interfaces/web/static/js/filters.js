@@ -107,8 +107,7 @@ function _FIL_gatherData(divId){
     return { fields: fields, operations: operations, values: values};
 }
 
-function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gatheredData) {
-    var divId = parentDivId + divSufix;
+function applyFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
@@ -124,44 +123,38 @@ function refreshData(parentDivId, divSufix, name, sessionStoredTreeKey, gathered
         return;
     }
 
-    // This argument is required by the server.
-    // If absent set a falsy default as updateDivContent() checks for it. Has to be a string because it's in the url.
-    if (parentDivId === ""){
-        parentDivId = " ";
+    var dt_class_start_index = datatypeIndex.lastIndexOf('.');
+    var dt_module = datatypeIndex.substring(0, dt_class_start_index);
+    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
+
+    var select_field = document.getElementById(name);
+    var has_all_option = false;
+    var has_none_option = false;
+
+    if (select_field.options[0].innerHTML === "None"){
+        has_none_option = true;
     }
+
+    if (select_field.options[select_field.options.length - 1].innerHTML === "All"){
+        has_all_option = true;
+    }
+
     //Make a request to get new data
     doAjaxCall({
-        async: false,  //todo: Is this sync really needed? It slows down the page.
-        type: 'GET', //todo: why is this a get? a post with the json seems better.
-        url: "/flow/getfiltereddatatypes/" + name + "/" + parentDivId + '/' + sessionStoredTreeKey + '/' + $.toJSON(gatheredData),
-        success: function (r) {
-            var elements = document.getElementsByName(name);
-            //Look for the previous select input whose data needs to be refreshed
-            if (elements.length > 1) {
-                //If more than one was found it's because of multiple algorithms
-                //We need to get only the one corresponding to the current algorithm
-                for (var i = 0; i < elements.length; i++) {
-                    var parent = elements[i].parentNode;
-                    //In case more components with the same name exist look for the
-                    //parent's div id
-                    while (parent.id == '' || parent.id == null) {
-                        parent = parent.parentNode;
-                    }
-                    if (divId != null && divId.indexOf(parent.id) !== -1) {
-                        //Remove the childs from this div and then recreate the components
-                        //using the html returned by the ajax call
-                        replaceSelect(elements[i].parentNode, r, name);
-                    }
-                }
-            } else if (elements.length === 1) {
-                replaceSelect(elements[0].parentNode, r, name);
-            } else {
-                displayMessage("Filter could not be applied!" + name, "infoMessage");
-                return;
+        type: 'POST',
+        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
+            has_all_option + '/' + has_none_option,
+        success: function (response) {
+            var t = document.createRange().createContextualFragment(response);
+            var i, length = select_field.options.length - 1;
+
+            for(i=length; i >= 0; i--){
+                select_field.remove(i);
             }
-            displayMessage("Filters applied...");
+
+            select_field.appendChild(t);
         },
-        error: function (r) {
+        error: function (response) {
             displayMessage("Invalid filter data.", "errorMessage");
         }
     });
@@ -209,7 +202,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         };
 
         if (!linkedData.linked_elem_parent_name && !linkedData.linked_elem_parent_option) {
-            refreshData("", elemName + 'data_select', elemName, treeSessionKey, filterData);
+            applyFilters("", elemName + 'data_select', elemName, treeSessionKey, filterData);
         }
 
         var linkedInputName = linkedData.linked_elem_parent_name + "_parameters_option_";
@@ -218,7 +211,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         if (linkedData.linked_elem_parent_option) {
             linkedInputName = linkedInputName + linkedData.linked_elem_parent_option + "_" + elemName;
             parentDivID += linkedData.linked_elem_parent_option;
-            refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+            applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
         } else {
             $("select[id^='" + linkedInputName + "']").each(function () {
                 if ($(this)[0].id.indexOf("_" + elemName) < 0) {
@@ -227,7 +220,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
                 var option_name = $(this)[0].id.replace("_" + elemName, '').replace(linkedInputName, '');
                 linkedInputName = $(this)[0].id;
                 parentDivID += option_name; // todo : possible bug. option names will be concatenated many times if this each runs more than once
-                refreshData(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+                applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
             });
         }
     }

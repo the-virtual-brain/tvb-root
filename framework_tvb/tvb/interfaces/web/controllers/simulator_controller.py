@@ -53,6 +53,7 @@ from tvb.core.neocom import h5
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.common import KEY_ADAPTER
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.simulator.integrators import IntegratorStochastic
