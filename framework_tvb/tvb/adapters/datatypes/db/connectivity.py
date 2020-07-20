@@ -65,14 +65,8 @@ class ConnectivityIndex(DataType):
         # type: (Connectivity)  -> None
         super(ConnectivityIndex, self).fill_from_has_traits(datatype)
 
-        self.has_cortical_mask = True
-        if datatype.cortical is None or len(set(datatype.cortical)) != 2:
-            self.has_cortical_mask = False
-
-        self.has_hemispheres_mask = True
-        if datatype.hemispheres is None or len(set(datatype.hemispheres)) != 2:
-            self.has_hemispheres_mask = False
-
+        self.has_cortical_mask = datatype.cortical is not None
+        self.has_hemispheres_mask = datatype.hemispheres is not None
         self.number_of_regions = datatype.number_of_regions
         self.number_of_connections = datatype.number_of_connections
         self.undirected = datatype.undirected

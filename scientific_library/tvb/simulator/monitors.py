@@ -239,6 +239,19 @@ class SpatialAverage(Monitor):
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
 
+    def _support_bool_mask(self, mask):
+        """
+        Ensure we support also the case of a boolean mask (eg: connectivity.cortical) with all values being 1,
+        by transforming them all to 0.
+        Otherwise, the later check not numpy.all(areas == numpy.arange(number_of_areas)) would fail for all regions
+        being cortical or in one hemisphere.
+        """
+        spatial_mask = numpy.array([int(val) for val in mask])
+        unique_mask = numpy.unique(spatial_mask)
+        if len(unique_mask) == 1 and unique_mask[0] == 1:
+            return numpy.zeros(len(spatial_mask), dtype=numpy.int)
+        return spatial_mask
+
     def config_for_sim(self, simulator):
 
         # initialize base attributes
@@ -253,9 +266,9 @@ class SpatialAverage(Monitor):
             else:
                 conn = simulator.connectivity
                 if self.default_mask == self.CORTICAL:
-                    self.spatial_mask = numpy.array([int(c) for c in conn.cortical])
+                    self.spatial_mask = self._support_bool_mask(conn.cortical)
                 elif self.default_mask == self.HEMISPHERES:
-                    self.spatial_mask = numpy.array([int(h) for h in conn.hemispheres])
+                    self.spatial_mask = self._support_bool_mask(conn.hemispheres)
                 else:
                     msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
                           " simulations when using SpatioTemporal monitor!"
