@@ -100,7 +100,8 @@ class SimulatorService(object):
         In case the user copies a surface-simulation and changes the Surface, we want to reset the Model
         parameters because they might not fit to the new Surface's nr of vertices.
         """
-        if is_simulator_copy and session_stored_simulator.surface and form.surface.value != session_stored_simulator.surface.surface_gid:
+        if is_simulator_copy and (session_stored_simulator.surface is None and form.surface.value
+                                  or session_stored_simulator.surface and form.surface.value != session_stored_simulator.surface.surface_gid):
             self._reset_model(session_stored_simulator)
 
     @transactional
