@@ -306,8 +306,6 @@ class SimulatorController(BurstBaseController):
                                                           last_request_type=cherrypy.request.method,
                                                           is_first_fragment=True)
 
-        common.add2session(KEY_ADAPTER, '13')
-
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)
 
