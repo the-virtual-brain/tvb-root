@@ -131,11 +131,11 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
     var has_all_option = false;
     var has_none_option = false;
 
-    if (select_field.options[0].innerHTML === "None"){
+    if (select_field.options[0] && select_field.options[0].innerHTML === "None"){
         has_none_option = true;
     }
 
-    if (select_field.options[select_field.options.length - 1].innerHTML === "All"){
+    if (select_field.options[select_field.options.length - 1] && select_field.options[select_field.options.length - 1].innerHTML === "All"){
         has_all_option = true;
     }
 
@@ -145,13 +145,15 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
         url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
             has_all_option + '/' + has_none_option,
         success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            var i, length = select_field.options.length - 1;
+            if (!response) {
+                displayMessage(`No results for the ${name} filtering!`, "warningMessage");
 
-            for(i=length; i >= 0; i--){
+            }
+            const t = document.createRange().createContextualFragment(response);
+            let i, length = select_field.options.length - 1;
+            for (i = length; i >= 0; i--) {
                 select_field.remove(i);
             }
-
             select_field.appendChild(t);
         },
         error: function (response) {
