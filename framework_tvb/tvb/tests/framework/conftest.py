@@ -52,7 +52,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, AlgorithmCategory, Algorithm
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -292,18 +292,24 @@ def region_mapping_factory(surface_factory, connectivity_factory):
 
 @pytest.fixture()
 def region_mapping_index_factory(region_mapping_factory, operation_factory):
-    def build(op=None):
+    def build(op=None, conn_gid=None, surface_gid=None):
         region_mapping = region_mapping_factory()
         if op is None:
             op = operation_factory()
 
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        surface_db = h5.store_complete(region_mapping.surface, storage_path)
-        surface_db.fk_from_operation = op.id
-        dao.store_entity(surface_db)
-        conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
-        conn_db.fk_from_operation = op.id
-        dao.store_entity(conn_db)
+        if not surface_gid:
+            surface_db = h5.store_complete(region_mapping.surface, storage_path)
+            surface_db.fk_from_operation = op.id
+            dao.store_entity(surface_db)
+        else:
+            region_mapping.surface.gid = uuid.UUID(surface_gid)
+        if not conn_gid:
+            conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
+            conn_db.fk_from_operation = op.id
+            dao.store_entity(conn_db)
+        else:
+            region_mapping.connectivity.gid = uuid.UUID(conn_gid)
         rm_db = h5.store_complete(region_mapping, storage_path)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
@@ -624,12 +630,15 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
 
 @pytest.fixture()
 def simulator_factory(connectivity_index_factory, operation_factory, region_mapping_index_factory):
-    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverageViewModel(), with_surface=False):
+    def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverageViewModel(), with_surface=False,
+              conn_gid=None):
         model = SimulatorAdapterModel()
         model.monitors = [monitor]
         if not op:
             op = operation_factory(test_user=user, test_project=project)
-        if not with_surface:
+        if conn_gid:
+            model.connectivity = conn_gid
+        if not with_surface and not conn_gid:
             model.connectivity = connectivity_index_factory(nr_regions, op).gid
         if with_surface:
             rm_idx = region_mapping_index_factory()

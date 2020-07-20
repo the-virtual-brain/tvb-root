@@ -166,10 +166,10 @@ class TestHPCSchedulerClient(BaseTestCase):
         input_files = hpc_client._prepare_input(op, sim_gid)
         assert len(input_files) == 9
 
-    def test_prepare_inputs_with_eeg_monitor(self, operation_factory, simulator_factory, region_mapping_index_factory,
-                                             surface_index_factory, sensors_index_factory):
+    def test_prepare_inputs_with_eeg_monitor(self, operation_factory, simulator_factory, surface_index_factory,
+                                             sensors_index_factory, region_mapping_index_factory,
+                                             connectivity_index_factory):
         surface_idx, surface = surface_index_factory(cortical=True)
-        region_mapping = region_mapping_index_factory()
         sensors_idx, sensors = sensors_index_factory()
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
@@ -179,13 +179,16 @@ class TestHPCSchedulerClient(BaseTestCase):
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)
 
-        eeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
-        eeg_monitor.region_mapping = region_mapping.gid
+        connectivity = connectivity_index_factory(76, op)
+        rm_index = region_mapping_index_factory(conn_gid=connectivity.gid, surface_gid=surface_idx.gid)
 
-        sim_folder, sim_gid = simulator_factory(op=op, monitor=eeg_monitor)
+        eeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+        eeg_monitor.region_mapping = rm_index.gid
+
+        sim_folder, sim_gid = simulator_factory(op=op, monitor=eeg_monitor, conn_gid=connectivity.gid)
         hpc_client = HPCSchedulerClient()
         input_files = hpc_client._prepare_input(op, sim_gid)
-        assert len(input_files) == 13
+        assert len(input_files) == 11
 
     def test_stage_out_to_operation_folder(self, mocker, operation_factory, simulator_factory,
                                            pse_burst_configuration_factory):
