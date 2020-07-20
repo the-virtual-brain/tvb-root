@@ -161,6 +161,8 @@ class SpatialAverageMonitorForm(MonitorForm):
         connectivity_index = ABCAdapter.load_entity_by_gid(self.session_stored_simulator.connectivity)
 
         if self.session_stored_simulator.is_surface_simulation is False:
+            self.default_mask.choices.pop(SpatialAverage.REGION_MAPPING)
+
             if connectivity_index.has_cortical_mask is False:
                 self.default_mask.choices.pop(SpatialAverage.CORTICAL)
 
