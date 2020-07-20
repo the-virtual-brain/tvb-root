@@ -512,15 +512,14 @@ class DatatypeDAO(RootDAO):
                                        func.max(text('"OPERATION_GROUPS_1".name')),
                                        func.max(DataType.user_tag_1)
                         ).join((Operation, datatype_class.fk_from_operation == Operation.id)
+                        ).outerjoin((BurstConfiguration, datatype_class.fk_from_operation ==
+                                     BurstConfiguration.fk_simulation)
                         ).outerjoin(Links
                         ).outerjoin((OperationGroup, Operation.fk_operation_group ==
                                      OperationGroup.id), aliased=True
                         ).filter(DataType.invalid == False
                         ).filter(or_(Operation.fk_launched_in == project_id,
                                      Links.fk_to_project == project_id))
-
-            if hasattr(datatype_class, 'time_series_type'):
-                query = query.filter(Operation.id == BurstConfiguration.fk_simulation)
 
             if filters:
                 filter_str = filters.get_sql_filter_equivalent(datatype_to_check='datatype_class')
