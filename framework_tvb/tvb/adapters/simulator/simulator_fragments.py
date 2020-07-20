@@ -87,18 +87,6 @@ class SimulatorRMFragment(ABCAdapterForm):
                                            conditions=lc_conditions)
         self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self)
 
-    def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
-        self.coupling_strength.data = trait.coupling_strength
-        if hasattr(trait, 'region_mapping_data'):
-            self.rm.data = trait.region_mapping_data.hex
-        else:
-            self.rm.data = None
-        if trait.local_connectivity:
-            self.lc.data = trait.local_connectivity.hex
-        else:
-            self.lc.data = None
-
 
 class SimulatorStimulusFragment(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
