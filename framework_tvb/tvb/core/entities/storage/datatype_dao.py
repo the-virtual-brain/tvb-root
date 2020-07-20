@@ -512,8 +512,8 @@ class DatatypeDAO(RootDAO):
                                        func.max(text('"OPERATION_GROUPS_1".name')),
                                        func.max(DataType.user_tag_1)
                         ).join((Operation, datatype_class.fk_from_operation == Operation.id)
-                        ).outerjoin((BurstConfiguration, datatype_class.fk_from_operation ==
-                                     BurstConfiguration.fk_simulation)
+                        ).outerjoin((BurstConfiguration, datatype_class.fk_parent_burst ==
+                                     BurstConfiguration.id)
                         ).outerjoin(Links
                         ).outerjoin((OperationGroup, Operation.fk_operation_group ==
                                      OperationGroup.id), aliased=True
