@@ -151,11 +151,6 @@ class FigureService:
         # Write image meta data to disk  
         self.file_helper.write_image_metadata(figure)
 
-        if operation:
-            # Force writing operation meta data on disk.
-            # This is important later for operation import
-            self.file_helper.write_operation_metadata(operation)
-
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
         Retrieve from DB all the stored Displayer previews that belongs to the specified session. The

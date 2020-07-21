@@ -300,9 +300,6 @@ class OperationService:
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
-            if nr_datatypes > 0:
-                # Write operation meta-XML only if some result are returned
-                self.file_helper.write_operation_metadata(operation)
             dao.store_entity(operation)
             adapter_form = adapter_instance.get_form()
             try:

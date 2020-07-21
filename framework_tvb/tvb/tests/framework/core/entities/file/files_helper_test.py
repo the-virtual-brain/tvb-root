@@ -126,28 +126,6 @@ class TestFilesHelper(TransactionalTestCase):
         self._dictContainsSubset(expected_dict, found_dict)
         self._dictContainsSubset(found_dict, expected_dict)
 
-    def test_write_operation_metadata(self):
-        """
-        Test that a correct XML is created for an operation.
-        """
-        operation = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        expected_file = self.files_helper.get_operation_meta_file_path(self.PROJECT_NAME, operation.id)
-        assert not os.path.exists(expected_file)
-        self.files_helper.write_operation_metadata(operation)
-        assert os.path.exists(expected_file)
-        operation_meta = XMLReader(expected_file).read_metadata()
-        loaded_operation = model_operation.Operation(None, None, None, None)
-        loaded_operation.from_dict(operation_meta, dao, user_id=self.test_user.id)
-        expected_dict = operation.to_dict()[1]
-        found_dict = loaded_operation.to_dict()[1]
-        for key, value in expected_dict.items():
-            assert str(value) == str(found_dict[key])
-        # Now validate that operation metaData can be also updated
-        assert "new_group_name" != found_dict['user_group']
-        self.files_helper.update_operation_metadata(self.PROJECT_NAME, "new_group_name", operation.id)
-        found_dict = XMLReader(expected_file).read_metadata()
-        assert "new_group_name" == found_dict['user_group']
-
     def test_remove_dt_happy_flow(self, dummy_datatype_index_factory):
         """
         Happy flow for removing a file related to a DataType.

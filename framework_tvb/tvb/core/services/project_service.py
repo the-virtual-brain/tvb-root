@@ -404,7 +404,6 @@ class ProjectService:
             op = dao.get_operation_by_id(op.id)
             # end hack
             op.visible = is_visible
-            self.structure_helper.write_operation_metadata(op)
             dao.store_entity(op)
 
         def set_group_descendants_visibility(operation_group_id):
@@ -575,8 +574,6 @@ class ProjectService:
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
-                    new_op_loaded = dao.get_operation_by_id(new_op.id)
-                    self.structure_helper.write_operation_metadata(new_op_loaded)
                     full_path = h5.path_for_stored_index(datatype)
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
                     datatype.fk_from_operation = new_op.id
@@ -607,7 +604,6 @@ class ProjectService:
             for dt in reversed(datatypes_for_op):
                 self.remove_datatype(operation.project.id, dt.gid, False)
             dao.remove_entity(Operation, operation.id)
-            self.structure_helper.remove_operation_data(operation.project.name, operation_id)
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -657,8 +653,6 @@ class ProjectService:
                 ### Do not remove Operation in case DataType still exist referring it.
                 continue
             correct = correct and dao.remove_entity(Operation, operation_id)
-            ## Make sure Operation folder is removed
-            self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
 
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))

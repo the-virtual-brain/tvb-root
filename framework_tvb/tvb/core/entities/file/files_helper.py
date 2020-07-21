@@ -186,39 +186,6 @@ class FilesHelper(object):
         complete_path = os.path.join(complete_path, self.TVB_OPERARATION_FILE)
         return complete_path
 
-    def write_operation_metadata(self, operation):
-        """
-        :param operation: DB stored operation instance.
-        """
-        project_name = operation.project.name
-        op_path = self.get_operation_meta_file_path(project_name, operation.id)
-        _, equivalent_dict = operation.to_dict()
-        meta_entity = GenericMetaData(equivalent_dict)
-        XMLWriter(meta_entity).write(op_path)
-        os.chmod(op_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
-
-    def update_operation_metadata(self, project_name, new_group_name, operation_id, is_group=False):
-        """
-        Update operation meta data.
-        :param is_group: when FALSE, use parameter 'new_group_name' for direct assignment on operation.user_group
-        when TRUE, update  operation.operation_group.name = parameter 'new_group_name'
-        """
-        op_path = self.get_operation_meta_file_path(project_name, operation_id)
-        if not os.path.exists(op_path):
-            self.logger.warning("Trying to update an operation-meta file which does not exist."
-                                " It could happen in a group where partial entities have errors!")
-            return
-        op_meta_data = XMLReader(op_path).read_metadata()
-
-        if is_group:
-            group_meta_str = op_meta_data[DataTypeMetaData.KEY_FK_OPERATION_GROUP]
-            group_meta = json.loads(group_meta_str)
-            group_meta[DataTypeMetaData.KEY_OPERATION_GROUP_NAME] = new_group_name
-            op_meta_data[DataTypeMetaData.KEY_FK_OPERATION_GROUP] = json.dumps(group_meta)
-        else:
-            op_meta_data[DataTypeMetaData.KEY_OPERATION_TAG] = new_group_name
-        XMLWriter(op_meta_data).write(op_path)
-
     def remove_operation_data(self, project_name, operation_id):
         """
         Remove H5 storage fully.

@@ -187,14 +187,8 @@ class ExportManager:
         op.start_now()
         op.mark_complete(model_operation.STATUS_FINISHED)
 
-        # write operation.xml to disk
-        files_helper.write_operation_metadata(op)
         op_folder = files_helper.get_operation_folder(op.project.name, op.id)
-        operation_xml = files_helper.get_operation_meta_file_path(op.project.name, op.id)
         op_folder_name = os.path.basename(op_folder)
-
-        # add operation.xml
-        zip_file.write(operation_xml, op_folder_name + '/' + os.path.basename(operation_xml))
 
         # add linked datatypes to archive in the import operation
         for pth in linked_paths:
@@ -203,7 +197,6 @@ class ExportManager:
 
         # remove these files, since we only want them in export archive
         files_helper.remove_folder(op_folder)
-
 
     def _export_bursts(self, project, project_datatypes, zip_file):
 
