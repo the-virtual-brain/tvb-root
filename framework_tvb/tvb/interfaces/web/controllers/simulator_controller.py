@@ -44,7 +44,8 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, TemporalAverageViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel, \
+    AdditiveNoiseViewModel, BoldViewModel, RawViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -55,11 +56,6 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.simulator.coupling import Linear
-from tvb.simulator.integrators import IntegratorStochastic, HeunDeterministic
-from tvb.simulator.models.oscillator import Generic2dOscillator
-from tvb.simulator.monitors import Bold, Raw
-from tvb.simulator.noise import Additive
 
 GET_REQUEST = 'GET'
 POST_REQUEST = 'POST'
@@ -316,9 +312,7 @@ class SimulatorController(BurstBaseController):
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
-            session_stored_simulator = SimulatorAdapterModel(coupling=Linear(), model=Generic2dOscillator(),
-                                                             integrator=HeunDeterministic(),
-                                                             monitors=(TemporalAverageViewModel(),))
+            session_stored_simulator = SimulatorAdapterModel()
             common.add2session(common.KEY_SIMULATOR_CONFIG, session_stored_simulator)
 
         form.fill_from_trait(session_stored_simulator)
@@ -541,7 +535,7 @@ class SimulatorController(BurstBaseController):
             form = get_form_for_integrator(type(session_stored_simulator.integrator))()
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator)
-            if isinstance(session_stored_simulator.integrator, IntegratorStochastic):
+            if isinstance(session_stored_simulator.integrator, IntegratorStochasticViewModel):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITORS_URL)
@@ -551,7 +545,7 @@ class SimulatorController(BurstBaseController):
                                                           self.last_loaded_form_url, cherrypy.request.method,
                                                           is_noise_fragment=False)
 
-        if not isinstance(session_stored_simulator.integrator, IntegratorStochastic):
+        if not isinstance(session_stored_simulator.integrator, IntegratorStochasticViewModel):
             return self._prepare_monitor_form(session_stored_simulator, rendering_rules)
 
         integrator_noise_fragment = get_form_for_noise(type(session_stored_simulator.integrator.noise))()
@@ -575,7 +569,7 @@ class SimulatorController(BurstBaseController):
             form = get_form_for_noise(type(session_stored_simulator.integrator.noise))()
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator.noise)
-            if isinstance(session_stored_simulator.integrator.noise, Additive):
+            if isinstance(session_stored_simulator.integrator.noise, AdditiveNoiseViewModel):
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_MONITORS_URL)
             else:
                 self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL)
@@ -584,7 +578,7 @@ class SimulatorController(BurstBaseController):
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method)
 
-        if isinstance(session_stored_simulator.integrator.noise, Additive):
+        if isinstance(session_stored_simulator.integrator.noise, AdditiveNoiseViewModel):
             return self._prepare_monitor_form(session_stored_simulator, rendering_rules)
 
         equation_form = get_form_for_equation(type(session_stored_simulator.integrator.noise.b))()
@@ -646,10 +640,10 @@ class SimulatorController(BurstBaseController):
         # if the first monitor is Raw, it must be skipped because it does not have parameters
         # also if the only monitor is Raw, the parameters setting phase must be skipped entirely
         first_monitor_index = 0
-        if len(monitors) == 1 and isinstance(monitors[0], Raw):
+        if len(monitors) == 1 and isinstance(monitors[0], RawViewModel):
             return first_monitor_index, SimulatorWizzardURLs.SETUP_PSE_URL
 
-        if isinstance(monitors[0], Raw):
+        if isinstance(monitors[0], RawViewModel):
             first_monitor_index = 1
         last_loaded_fragment_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                           type(monitors[first_monitor_index]).__name__)
@@ -706,7 +700,7 @@ class SimulatorController(BurstBaseController):
                                                           is_simulator_load, self.last_loaded_form_url,
                                                           cherrypy.request.method)
 
-        if isinstance(monitor, Raw) and len(session_stored_simulator.monitors) == 1:
+        if isinstance(monitor, RawViewModel) and len(session_stored_simulator.monitors) == 1:
             return self._prepare_final_fragment(session_stored_simulator, rendering_rules)
 
         monitor_name = self._prepare_monitor_legend(session_stored_simulator.is_surface_simulation, monitor)
@@ -763,7 +757,7 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post(data)
             form.fill_trait(monitor)
 
-            if isinstance(monitor, Bold):
+            if isinstance(monitor, BoldViewModel):
                 last_loaded_fragment_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
                                                                   current_monitor)
             elif next_monitor is not None:
@@ -776,7 +770,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(None, None, None, is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method)
 
-        if isinstance(monitor, Bold):
+        if isinstance(monitor, BoldViewModel):
             next_form = get_form_for_equation(type(monitor.hrf_kernel))()
             next_form.fill_from_trait(monitor.hrf_kernel)
             rendering_rules.form = next_form
