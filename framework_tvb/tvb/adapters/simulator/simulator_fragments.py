@@ -69,16 +69,22 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
 
 
 class SimulatorRMFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, surface_index=None):
+    def __init__(self, prefix='', project_id=None, surface_index=None, connectivity_gid=None):
         super(SimulatorRMFragment, self).__init__(prefix, project_id)
-        conditions = None
+        rm_conditions = None
+        lc_conditions = None
         if surface_index:
-            conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid'], operations=["=="],
-                                     values=[str(surface_index.gid)])
+            rm_conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
+                                             FilterChain.datatype + '.fk_connectivity_gid'],
+                                     operations=["==", "=="],
+                                     values=[str(surface_index.gid), str(connectivity_gid.hex)])
+            lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
+                                        values=[rm_conditions.values[0]])
         self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self, name='region_mapping',
-                                           conditions=conditions)
+                                           conditions=rm_conditions)
+
         self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self, name='local_connectivity',
-                                           conditions=conditions)
+                                           conditions=lc_conditions)
         self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self)
 
 

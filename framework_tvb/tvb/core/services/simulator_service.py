@@ -39,6 +39,7 @@ import shutil
 import uuid
 
 import numpy
+from tvb.adapters.simulator.monitor_forms import MonitorForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -61,26 +62,9 @@ class SimulatorService(object):
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
 
-    @staticmethod
-    def get_variables_of_interest_indexes(all_variables, chosen_variables):
-        indexes = {}
-
-        if not isinstance(chosen_variables, (list, tuple)):
-            chosen_variables = [chosen_variables]
-
-        for variable in chosen_variables:
-            indexes[variable] = all_variables.index(variable)
-        return indexes
-
-    def determine_indexes_for_chose_variables_of_interest(self, session_stored_simulator):
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = self.get_variables_of_interest_indexes(all_variables, chosen_variables)
-        return indexes
-
     def _reset_model(self, session_stored_simulator):
         session_stored_simulator.model = type(session_stored_simulator.model)()
-        vi_indexes = self.determine_indexes_for_chose_variables_of_interest(session_stored_simulator)
+        vi_indexes = MonitorForm.determine_indexes_for_chosen_vars_of_interest(session_stored_simulator)
         vi_indexes = numpy.array(list(vi_indexes.values()))
         for monitor in session_stored_simulator.monitors:
             monitor.variables_of_interest = vi_indexes

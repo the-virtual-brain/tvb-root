@@ -26,14 +26,15 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+
+import numpy
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.projections import ProjectionsType
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField, SelectField, \
     TraitDataTypeSelectField
-from tvb.basic.neotraits.api import List
-import numpy
+from tvb.datatypes.projections import ProjectionsType
 from tvb.datatypes.sensors import SensorTypes
 
 
@@ -84,11 +85,17 @@ def get_form_for_monitor(monitor_class):
 
 class MonitorForm(Form):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(MonitorForm, self).__init__(prefix, project_id)
+        self.session_stored_simulator = session_stored_simulator
         self.project_id = project_id
         self.period = ScalarField(Monitor.period, self)
-        self.variables_of_interest_indexes = variables_of_interest_indexes
+        self.variables_of_interest_indexes = {}
+
+        if session_stored_simulator is not None:
+            self.variables_of_interest_indexes = self.determine_indexes_for_chosen_vars_of_interest(
+                session_stored_simulator)
+
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
                                                       self, name='variables_of_interest')
@@ -106,52 +113,100 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
 
+    def fill_from_post(self, form_data):
+        super(MonitorForm, self).fill_from_post(form_data)
+        all_variables = self.session_stored_simulator.model.variables_of_interest
+        chosen_variables = form_data['variables_of_interest']
+        self.variables_of_interest_indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
+
+    @staticmethod
+    def determine_indexes_for_chosen_vars_of_interest(session_stored_simulator):
+        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+        chosen_variables = session_stored_simulator.model.variables_of_interest
+        indexes = MonitorForm._get_variables_of_interest_indexes(all_variables, chosen_variables)
+        return indexes
+
+    @staticmethod
+    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
+        variables_of_interest_indexes = {}
+
+        if not isinstance(chosen_variables, (list, tuple)):
+            chosen_variables = [chosen_variables]
+
+        for variable in chosen_variables:
+            variables_of_interest_indexes[variable] = all_variables.index(variable)
+        return variables_of_interest_indexes
+
     # TODO: We should review the code here, we could probably reduce the number of  classes that are used here
 
 
 class RawMonitorForm(Form):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(RawMonitorForm, self).__init__(prefix, project_id)
 
 
 class SubSampleMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(SubSampleMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(SubSampleMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(SpatialAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
         self.default_mask = ScalarField(SpatialAverage.default_mask, self)
+
+    def fill_from_trait(self, trait):
+        super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
+        connectivity_index = ABCAdapter.load_entity_by_gid(self.session_stored_simulator.connectivity)
+
+        if self.session_stored_simulator.is_surface_simulation is False:
+            self.default_mask.choices.pop(SpatialAverage.REGION_MAPPING)
+
+            if connectivity_index.has_cortical_mask is False:
+                self.default_mask.choices.pop(SpatialAverage.CORTICAL)
+
+            if connectivity_index.has_hemispheres_mask is False:
+                self.default_mask.choices.pop(SpatialAverage.HEMISPHERES)
+
+        else:
+            self.default_mask.data = SpatialAverage.REGION_MAPPING
+            self.default_mask.disabled = True
 
 
 class GlobalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(GlobalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(GlobalAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
 
 class TemporalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(TemporalAverageMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(TemporalAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(ProjectionMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
-        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self, name='region_mapping')
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(ProjectionMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+
+        rm_filter = None
+        if session_stored_simulator.is_surface_simulation:
+            rm_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=['=='],
+                                    values=[session_stored_simulator.surface.region_mapping_data.hex])
+
+        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self,
+                                                       name='region_mapping', conditions=rm_filter)
 
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(EEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(EEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_EEG.value])
@@ -168,8 +223,8 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(MEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_MEG.value])
@@ -184,8 +239,8 @@ class MEGMonitorForm(ProjectionMonitorForm):
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(iEEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(iEEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_INTERNAL.value])
@@ -201,8 +256,8 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(BoldMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(BoldMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
 
@@ -223,5 +278,5 @@ class BoldMonitorForm(MonitorForm):
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):
 
-    def __init__(self, variables_of_interest_indexes={}, prefix='', project_id=None):
-        super(BoldRegionROIMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
+        super(BoldRegionROIMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)

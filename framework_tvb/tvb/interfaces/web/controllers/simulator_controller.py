@@ -365,7 +365,8 @@ class SimulatorController(BurstBaseController):
     @staticmethod
     def _prepare_cortex_fragment(session_stored_simulator, rendering_rules):
         surface_index = ABCAdapter.load_entity_by_gid(session_stored_simulator.surface.surface_gid)
-        rm_fragment = SimulatorRMFragment('', common.get_current_project().id, surface_index)
+        rm_fragment = SimulatorRMFragment('', common.get_current_project().id, surface_index,
+                                          session_stored_simulator.connectivity)
         rm_fragment.fill_from_trait(session_stored_simulator.surface)
 
         rendering_rules.form = rm_fragment
@@ -689,10 +690,8 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             self._update_last_loaded_fragment_url(last_loaded_fragment_url)
 
-        indexes = self.simulator_service.determine_indexes_for_chose_variables_of_interest(session_stored_simulator)
-
         monitor = session_stored_simulator.monitors[first_monitor_index]
-        form = get_form_for_monitor(type(monitor))(indexes, '', common.get_current_project().id)
+        form = get_form_for_monitor(type(monitor))(session_stored_simulator, '', common.get_current_project().id)
         form.fill_from_trait(monitor)
 
         rendering_rules = SimulatorFragmentRenderingRules(form, last_loaded_fragment_url,
@@ -714,11 +713,7 @@ class SimulatorController(BurstBaseController):
         if not next_monitor:
             return self._prepare_final_fragment(session_stored_simulator, rendering_rules)
 
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
-
-        next_form = get_form_for_monitor(type(next_monitor))(indexes, '', common.get_current_project().id)
+        next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, '', common.get_current_project().id)
         next_form.fill_from_trait(next_monitor)
 
         form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
@@ -750,10 +745,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == POST_REQUEST:
-            chosen_variables = data['variables_of_interest']
-            all_variables = session_stored_simulator.model.variables_of_interest
-            indexes = self.simulator_service.get_variables_of_interest_indexes(all_variables, chosen_variables)
-            form = get_form_for_monitor(type(monitor))(indexes)
+            form = get_form_for_monitor(type(monitor))(session_stored_simulator)
             form.fill_from_post(data)
             form.fill_trait(monitor)
 
