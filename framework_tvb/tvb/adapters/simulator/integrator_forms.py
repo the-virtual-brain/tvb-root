@@ -29,25 +29,29 @@
 #
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
-from tvb.simulator.integrators import *
+from tvb.basic.neotraits.api import Attr
+from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
+    EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
+    VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
+    Dop853StochasticViewModel, IntegratorViewModel, NoiseViewModel
+from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.neotraits.forms import Form, ScalarField, SelectField
-from tvb.simulator.noise import Noise
 
 
 def get_integrator_to_form_dict():
     integrator_class_to_form = {
-        HeunDeterministic: HeunDeterministicIntegratorForm,
-        HeunStochastic: HeunStochasticIntegratorForm,
-        EulerDeterministic: EulerDeterministicIntegratorForm,
-        EulerStochastic: EulerStochasticIntegratorForm,
-        RungeKutta4thOrderDeterministic: RungeKutta4thOrderDeterministicIntegratorForm,
-        Identity: IdentityIntegratorForm,
-        VODE: VODEIntegratorForm,
-        VODEStochastic: VODEStochasticIntegratorForm,
-        Dopri5: Dopri5IntegratorForm,
-        Dopri5Stochastic: Dopri5StochasticIntegratorForm,
-        Dop853: Dop853IntegratorForm,
-        Dop853Stochastic: Dop853StochasticIntegratorForm
+        HeunDeterministicViewModel: HeunDeterministicIntegratorForm,
+        HeunStochasticViewModel: HeunStochasticIntegratorForm,
+        EulerDeterministicViewModel: EulerDeterministicIntegratorForm,
+        EulerStochasticViewModel: EulerStochasticIntegratorForm,
+        RungeKutta4thOrderDeterministicViewModel: RungeKutta4thOrderDeterministicIntegratorForm,
+        IdentityViewModel: IdentityIntegratorForm,
+        VODEViewModel: VODEIntegratorForm,
+        VODEStochasticViewModel: VODEStochasticIntegratorForm,
+        Dopri5ViewModel: Dopri5IntegratorForm,
+        Dopri5StochasticViewModel: Dopri5StochasticIntegratorForm,
+        Dop853ViewModel: Dop853IntegratorForm,
+        Dop853StochasticViewModel: Dop853StochasticIntegratorForm
     }
     return integrator_class_to_form
 
@@ -63,7 +67,7 @@ class IntegratorForm(Form):
 
     def __init__(self, prefix=''):
         super(IntegratorForm, self).__init__(prefix)
-        self.dt = ScalarField(Integrator.dt, self)
+        self.dt = ScalarField(IntegratorViewModel.dt, self)
 
 
 class IntegratorStochasticForm(IntegratorForm):
@@ -74,15 +78,16 @@ class IntegratorStochasticForm(IntegratorForm):
         self.noise_choices = get_ui_name_to_noise_dict()
         default_noise = list(self.noise_choices.values())[0]
 
-        self.noise = SelectField(Attr(Noise, label='Noise', default=default_noise), self, name='noise',
+        self.noise = SelectField(Attr(NoiseViewModel, label='Noise', default=default_noise), self, name='noise',
                                  choices=self.noise_choices, subform=get_form_for_noise(default_noise))
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)
-        datatype.noise = self.noise.data()
+        if type(datatype.noise) != self.noise.data:
+            datatype.noise = self.noise.data()
 
     def fill_from_trait(self, trait):
-        # type: (Integrator) -> None
+        # type: (IntegratorStochasticViewModel) -> None
         self.noise.data = trait.noise.__class__
 
 

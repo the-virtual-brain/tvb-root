@@ -34,11 +34,11 @@
 
 import json
 import cherrypy
+from tvb.core.entities.file.simulator.view_model import HeunStochasticViewModel
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.simulator.integrators import EulerStochastic, HeunStochastic
 
 
 class TestNoiseConfigurationController(BaseTransactionalControllerTest):
@@ -53,7 +53,7 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
         simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
         connectivity = connectivity_factory()
         simulator.connectivity = connectivity.gid
-        simulator.integrator = HeunStochastic()
+        simulator.integrator = HeunStochasticViewModel()
 
         # a noise configuration in the format expected by submit. Assumes Generic2dOscillator model.
         nodes_range = list(range(connectivity.number_of_regions))

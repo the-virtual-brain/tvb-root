@@ -29,9 +29,12 @@
 #
 from enum import Enum
 from functools import partial
-from tvb.simulator.integrators import *
+
+from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
+    EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
+    VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
+    Dop853StochasticViewModel, AdditiveNoiseViewModel, MultiplicativeNoiseViewModel
 from tvb.datatypes.equations import *
-from tvb.simulator.noise import Additive, Multiplicative
 
 LINEAR_EQUATION = 'Linear'
 GAUSSIAN_EQUATION = 'Gaussian'
@@ -61,26 +64,26 @@ def get_ui_name_to_equation_dict():
 
 def get_ui_name_to_noise_dict():
     ui_name_to_noise = {
-        'Additive': Additive,
-        'Multiplicative': Multiplicative
+        'Additive': AdditiveNoiseViewModel,
+        'Multiplicative': MultiplicativeNoiseViewModel
     }
     return ui_name_to_noise
 
 
 def get_ui_name_to_integrator_dict():
     ui_name_to_integrator = {
-        'Heun': HeunDeterministic,
-        'Stochastic Heun': HeunStochastic,
-        'Euler': EulerDeterministic,
-        'Euler-Maruyama': EulerStochastic,
-        'Runge-Kutta 4th order': RungeKutta4thOrderDeterministic,
-        '"Difference equation': Identity,
-        'Variable-order Adams / BDF': VODE,
-        'Stochastic variable-order Adams / BDF': VODEStochastic,
-        'Dormand-Prince, order (4, 5)': Dopri5,
-        'Stochastic Dormand-Prince, order (4, 5)': Dopri5Stochastic,
-        'Dormand-Prince, order 8 (5, 3)': Dop853,
-        'Stochastic Dormand-Prince, order 8 (5, 3)': Dop853Stochastic,
+        'Heun': HeunDeterministicViewModel,
+        'Stochastic Heun': HeunStochasticViewModel,
+        'Euler': EulerDeterministicViewModel,
+        'Euler-Maruyama': EulerStochasticViewModel,
+        'Runge-Kutta 4th order': RungeKutta4thOrderDeterministicViewModel,
+        '"Difference equation': IdentityViewModel,
+        'Variable-order Adams / BDF': VODEViewModel,
+        'Stochastic variable-order Adams / BDF': VODEStochasticViewModel,
+        'Dormand-Prince, order (4, 5)': Dopri5ViewModel,
+        'Stochastic Dormand-Prince, order (4, 5)': Dopri5StochasticViewModel,
+        'Dormand-Prince, order 8 (5, 3)': Dop853ViewModel,
+        'Stochastic Dormand-Prince, order 8 (5, 3)': Dop853StochasticViewModel,
 
     }
     return ui_name_to_integrator

@@ -39,7 +39,7 @@ from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, ge
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.basic.neotraits.api import Attr, Range, List
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
@@ -47,10 +47,7 @@ from tvb.core.neotraits.forms import ScalarField, ArrayField, SimpleFloatField, 
     MultiSelectField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.simulator.integrators import Integrator
 from tvb.simulator.models.base import Model
-from tvb.simulator.simulator import Simulator
-
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
@@ -64,8 +61,9 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
         if surface_gid:
-            datatype.surface = CortexViewModel()
-            datatype.surface.surface_gid = surface_gid
+            if not datatype.surface or (datatype.surface and datatype.surface.surface_gid != surface_gid):
+                datatype.surface = CortexViewModel()
+                datatype.surface.surface_gid = surface_gid
         else:
             datatype.surface = None
 
@@ -109,15 +107,17 @@ class SimulatorModelFragment(ABCAdapterForm):
         default_model = list(self.model_choices.values())[0]
 
         self.model = SelectField(
-            Attr(Model, default=default_model, label=Simulator.model.label, doc=Simulator.model.doc), self,
+            Attr(Model, default=default_model, label=SimulatorAdapterModel.model.label,
+                 doc=SimulatorAdapterModel.model.doc), self,
             choices=self.model_choices, name='model')
 
     def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
+        # type: (SimulatorAdapterModel) -> None
         self.model.data = trait.model.__class__
 
     def fill_trait(self, datatype):
-        datatype.model = self.model.value()
+        if type(datatype.model) != self.model.value:
+            datatype.model = self.model.value()
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
@@ -127,17 +127,19 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator_choices = get_ui_name_to_integrator_dict()
         default_integrator = list(self.integrator_choices.values())[0]
 
-        self.integrator = SelectField(Attr(Integrator, default=default_integrator, label=Simulator.integrator.label,
-                                           doc=Simulator.integrator.doc), self, name='integrator',
-                                      choices=self.integrator_choices,
-                                      subform=get_form_for_integrator(default_integrator))
+        self.integrator = SelectField(
+            Attr(IntegratorViewModel, default=default_integrator, label=SimulatorAdapterModel.integrator.label,
+                 doc=SimulatorAdapterModel.integrator.doc), self, name='integrator',
+            choices=self.integrator_choices,
+            subform=get_form_for_integrator(default_integrator))
 
     def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
+        # type: (SimulatorAdapterModel) -> None
         self.integrator.data = trait.integrator.__class__
 
     def fill_trait(self, datatype):
-        datatype.integrator = self.integrator.value()
+        if type(datatype.integrator) != self.integrator.value:
+            datatype.integrator = self.integrator.value()
 
 
 class SimulatorMonitorFragment(ABCAdapterForm):
@@ -152,7 +154,7 @@ class SimulatorMonitorFragment(ABCAdapterForm):
                                          self, name='monitors')
 
     def fill_from_trait(self, trait):
-        # type: (Simulator) -> None
+        # type: (SimulatorAdapterModel) -> None
         self.monitors.data = [
             get_monitor_to_ui_name_dict(self.is_surface_simulation)[type(monitor)]
             for monitor in trait]
@@ -162,10 +164,10 @@ class SimulatorFinalFragment(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None, default_simulation_name="simulation_1"):
         super(SimulatorFinalFragment, self).__init__(prefix, project_id)
-        self.simulation_length = ScalarField(Simulator.simulation_length, self)
+        self.simulation_length = ScalarField(SimulatorAdapterModel.simulation_length, self)
         self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration',
-                                                default=default_simulation_name,
-                                                label='Simulation name'), self, name='input_simulation_name_id')
+                                                default=default_simulation_name, label='Simulation name'), self,
+                                           name='input_simulation_name_id')
 
     def fill_from_post(self, form_data):
         super(SimulatorFinalFragment, self).fill_from_post(form_data)

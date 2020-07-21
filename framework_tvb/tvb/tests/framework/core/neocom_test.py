@@ -31,12 +31,11 @@ import os
 
 import numpy
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
 from tvb.datatypes.projections import ProjectionSurfaceEEG
-from tvb.simulator.integrators import HeunStochastic
 
 
 def test_store_load(tmpdir, connectivity_factory):
@@ -76,9 +75,8 @@ def test_store_simulator_view_model_noise(connectivity_index_factory, operation_
     conn = connectivity_index_factory()
     sim_view_model = SimulatorAdapterModel()
     sim_view_model.connectivity = conn.gid
-    integrator = HeunStochastic()
-    integrator.noise.noise_seed = 45
-    sim_view_model.integrator = integrator
+    sim_view_model.integrator = HeunStochasticViewModel()
+    sim_view_model.integrator.noise.noise_seed = 45
 
     op = operation_factory()
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))

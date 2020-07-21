@@ -213,7 +213,8 @@ class BoldMonitorForm(MonitorForm):
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
-        datatype.hrf_kernel = self.hrf_kernel.data()
+        if type(datatype.hrf_kernel) != self.hrf_kernel.data:
+            datatype.hrf_kernel = self.hrf_kernel.data()
 
     def fill_from_trait(self, trait):
         super(BoldMonitorForm, self).fill_from_trait(trait)

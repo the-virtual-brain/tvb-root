@@ -42,7 +42,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.simulator.integrators import HeunDeterministic
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -135,7 +134,6 @@ class TestSimulatorAdapter(TransactionalTestCase):
 
         # Modify integration step and simulation length:
         initial_simulation_length = model.simulation_length
-        model.integrator = HeunDeterministic()
         initial_integration_step = model.integrator.dt
 
         for factor in (2, 4, 10):
