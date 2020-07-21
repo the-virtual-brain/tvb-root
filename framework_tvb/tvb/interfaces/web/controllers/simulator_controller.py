@@ -745,7 +745,6 @@ class SimulatorController(BurstBaseController):
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
 
         if cherrypy.request.method == POST_REQUEST:
-            is_simulator_copy = False
             form = get_form_for_monitor(type(monitor))(session_stored_simulator)
             form.fill_from_post(data)
             form.fill_trait(monitor)

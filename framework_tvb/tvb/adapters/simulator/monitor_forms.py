@@ -26,15 +26,15 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+
+import numpy
+from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.projections import ProjectionsType
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField, SelectField, \
     TraitDataTypeSelectField
-from tvb.basic.neotraits.api import List
-import numpy
+from tvb.datatypes.projections import ProjectionsType
 from tvb.datatypes.sensors import SensorTypes
 
 
@@ -93,9 +93,8 @@ class MonitorForm(Form):
         self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
-            all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-            chosen_variables = session_stored_simulator.model.variables_of_interest
-            self.set_variables_of_interest(all_variables, chosen_variables)
+            self.variables_of_interest_indexes = self.determine_indexes_for_chosen_vars_of_interest(
+                session_stored_simulator)
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
@@ -118,9 +117,17 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_from_post(form_data)
         all_variables = self.session_stored_simulator.model.variables_of_interest
         chosen_variables = form_data['variables_of_interest']
-        self.set_variables_of_interest(all_variables, chosen_variables)
+        self.variables_of_interest_indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
 
-    def set_variables_of_interest(self, all_variables, chosen_variables):
+    @staticmethod
+    def determine_indexes_for_chosen_vars_of_interest(session_stored_simulator):
+        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
+        chosen_variables = session_stored_simulator.model.variables_of_interest
+        indexes = MonitorForm._get_variables_of_interest_indexes(all_variables, chosen_variables)
+        return indexes
+
+    @staticmethod
+    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
         variables_of_interest_indexes = {}
 
         if not isinstance(chosen_variables, (list, tuple)):
@@ -128,10 +135,7 @@ class MonitorForm(Form):
 
         for variable in chosen_variables:
             variables_of_interest_indexes[variable] = all_variables.index(variable)
-
-        self.variables_of_interest_indexes = variables_of_interest_indexes
-
-
+        return variables_of_interest_indexes
 
     # TODO: We should review the code here, we could probably reduce the number of  classes that are used here
 
@@ -153,8 +157,7 @@ class SpatialAverageMonitorForm(MonitorForm):
     def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
-        self.default_mask = ScalarField(SpatialAverage.default_mask,  self)
-
+        self.default_mask = ScalarField(SpatialAverage.default_mask, self)
 
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
@@ -172,6 +175,7 @@ class SpatialAverageMonitorForm(MonitorForm):
         else:
             self.default_mask.data = SpatialAverage.REGION_MAPPING
             self.default_mask.disabled = True
+
 
 class GlobalAverageMonitorForm(MonitorForm):
 
