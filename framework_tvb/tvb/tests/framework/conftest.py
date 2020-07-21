@@ -625,7 +625,8 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
 @pytest.fixture()
 def simulator_factory(connectivity_index_factory, operation_factory, region_mapping_index_factory):
     def build(user=None, project=None, op=None, nr_regions=76, monitor=TemporalAverageViewModel(), with_surface=False):
-        model = SimulatorAdapterModel(monitors=[monitor])
+        model = SimulatorAdapterModel()
+        model.monitors = [monitor]
         if not op:
             op = operation_factory(test_user=user, test_project=project)
         if not with_surface:
