@@ -143,7 +143,7 @@ class NodeCoherence(HasTraits):
         spec = spectral.CoherenceSpectrum(
             source=self.time_series,
             nfft=self.nfft,
-            array_data=coh,
+            array_data=coh.astype(numpy.float),
             frequency=freq)
         return spec
 

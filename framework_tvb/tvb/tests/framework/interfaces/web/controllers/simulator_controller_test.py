@@ -58,10 +58,7 @@ from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
 from tvb.simulator.coupling import Sigmoidal
-from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic, Dopri5Stochastic, EulerStochastic
 from tvb.simulator.models import ModelsEnum
-from tvb.simulator.monitors import TemporalAverage, MEG, Bold, SubSample, EEG, iEEG
-from tvb.simulator.noise import Multiplicative
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
@@ -293,7 +290,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_integrator(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.integrator,
-                          HeunDeterministic), "Integrator was not set correctly."
+                          HeunDeterministicViewModel), "Integrator was not set correctly."
 
     def test_set_integrator_params(self):
         self.sess_mock['dt'] = '0.01220703125'
@@ -308,16 +305,16 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['dt'] = '0.01220703125'
         self.sess_mock['noise'] = 'Multiplicative'
 
-        self.session_stored_simulator.integrator = Dopri5Stochastic()
+        self.session_stored_simulator.integrator = Dopri5StochasticViewModel()
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             rendering_rules = self.simulator_controller.set_integrator_params(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.integrator, IntegratorStochastic), \
+        assert isinstance(self.session_stored_simulator.integrator, IntegratorStochasticViewModel), \
             "Coupling should be Stochastic Dormand-Prince."
         assert self.session_stored_simulator.integrator.dt == 0.01220703125, 'dt value was not set correctly.'
-        assert isinstance(self.session_stored_simulator.integrator.noise, Multiplicative), 'Noise class is incorrect.'
+        assert isinstance(self.session_stored_simulator.integrator.noise, MultiplicativeNoiseViewModel), 'Noise class is incorrect.'
         assert rendering_rules['renderer'].is_noise_fragment, 'Noise fragment should be next!'
 
     def test_set_noise_params(self):
@@ -325,7 +322,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['noise_seed'] = '42'
         self.sess_mock['nsig'] = '[1.0]'
 
-        self.session_stored_simulator.integrator = EulerStochastic()
+        self.session_stored_simulator.integrator = EulerStochasticViewModel()
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -342,8 +339,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['nsig'] = '[1.0]'
         self.sess_mock['equation'] = 'Linear'
 
-        self.session_stored_simulator.integrator = EulerStochastic()
-        self.session_stored_simulator.integrator.noise = Multiplicative()
+        self.session_stored_simulator.integrator = EulerStochasticViewModel()
+        self.session_stored_simulator.integrator.noise = MultiplicativeNoiseViewModel()
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -362,8 +359,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['midpoint'] = '1.0'
         self.sess_mock['sigma'] = '0.3'
 
-        self.session_stored_simulator.integrator = Dopri5Stochastic()
-        self.session_stored_simulator.integrator.noise = Multiplicative()
+        self.session_stored_simulator.integrator = Dopri5StochasticViewModel()
+        self.session_stored_simulator.integrator.noise = MultiplicativeNoiseViewModel()
         self.session_stored_simulator.integrator.noise.b = GeneralizedSigmoid()
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -415,10 +412,10 @@ class TestSimulationController(BaseTransactionalControllerTest):
             common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
-        assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverage), \
+        assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverageViewModel), \
             'First monitor class is incorrect.'
-        assert isinstance(self.session_stored_simulator.monitors[1], EEG), 'Second monitor class is incorrect.'
-        assert isinstance(self.session_stored_simulator.monitors[2], MEG), 'Third monitor class is incorrect.'
+        assert isinstance(self.session_stored_simulator.monitors[1], EEGViewModel), 'Second monitor class is incorrect.'
+        assert isinstance(self.session_stored_simulator.monitors[2], MEGViewModel), 'Third monitor class is incorrect.'
 
     def test_set_monitor_params(self):
         self.session_stored_simulator.model.variables_of_interest = ('V', 'W', 'V - W')

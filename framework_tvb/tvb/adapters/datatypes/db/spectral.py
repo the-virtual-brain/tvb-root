@@ -29,10 +29,10 @@
 #
 from sqlalchemy import Column, Integer, ForeignKey, String, Float
 from sqlalchemy.orm import relationship
-from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.neotraits.db import from_ndarray
+from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 
 class FourierSpectrumIndex(DataTypeMatrix):
@@ -59,7 +59,8 @@ class FourierSpectrumIndex(DataTypeMatrix):
 class WaveletCoefficientsIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid), nullable=not WaveletCoefficients.source.required)
+    fk_source_gid = Column(String(32), ForeignKey(TimeSeriesIndex.gid),
+                           nullable=not WaveletCoefficients.source.required)
     source = relationship(TimeSeriesIndex, foreign_keys=fk_source_gid, primaryjoin=TimeSeriesIndex.gid == fk_source_gid)
 
     mother = Column(String, nullable=False)

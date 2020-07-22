@@ -35,18 +35,21 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
+
+import json
 import uuid
 import numpy
-from tvb.analyzers.node_coherence import NodeCoherence
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.analyzers.node_coherence import NodeCoherence
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.datatypes.time_series import TimeSeries
+from tvb.datatypes.spectral import CoherenceSpectrum
 
 
 class NodeCoherenceModel(ViewModel, NodeCoherence):
@@ -105,7 +108,7 @@ class NodeCoherenceAdapter(ABCAsynchronous):
         Store the input shape to be later used to estimate memory usage.
         Also create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -152,7 +155,7 @@ class NodeCoherenceAdapter(ABCAsynchronous):
         dest_path = h5.path_for(self.storage_path, CoherenceSpectrumH5, coherence_spectrum_index.gid)
         coherence_h5 = CoherenceSpectrumH5(dest_path)
         coherence_h5.gid.store(uuid.UUID(coherence_spectrum_index.gid))
-        coherence_h5.source.store(time_series_h5.gid.load())
+        coherence_h5.source.store(view_model.time_series)
         coherence_h5.nfft.store(self.algorithm.nfft)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
@@ -171,12 +174,22 @@ class NodeCoherenceAdapter(ABCAsynchronous):
             partial_coh = self.algorithm.evaluate()
             coherence_h5.write_data_slice(partial_coh)
         coherence_h5.frequency.store(partial_coh.frequency)
+        array_metadata = coherence_h5.array_data.get_cached_metadata()
+        freq_metadata = coherence_h5.frequency.get_cached_metadata()
         coherence_h5.close()
-        coherence_spectrum_index.ndim = len(coherence_h5.array_data.shape)
         time_series_h5.close()
 
+        coherence_spectrum_index.array_data_min = array_metadata.min
+        coherence_spectrum_index.array_data_max = array_metadata.max
+        coherence_spectrum_index.array_data_mean = array_metadata.mean
+        coherence_spectrum_index.array_has_complex = array_metadata.has_complex
+        coherence_spectrum_index.array_is_finite = array_metadata.is_finite
+        coherence_spectrum_index.shape = json.dumps(coherence_h5.array_data.shape)
+        coherence_spectrum_index.ndim = len(coherence_h5.array_data.shape)
         coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid
         coherence_spectrum_index.nfft = partial_coh.nfft
-        coherence_spectrum_index.frequencies = partial_coh.frequency
+        coherence_spectrum_index.frequencies_min = freq_metadata.min
+        coherence_spectrum_index.frequencies_max = freq_metadata.max
+        coherence_spectrum_index.subtype = CoherenceSpectrum.__name__
 
         return coherence_spectrum_index

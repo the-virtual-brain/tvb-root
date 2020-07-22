@@ -131,34 +131,42 @@ class DataSetMetaData(object):
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, min, max, mean):
+    def __init__(self, min, max, mean, is_finite=True, has_complex=False):
         self.min, self.max, self.mean = min, max, mean
+        self.is_finite = is_finite
+        self.has_complex = has_complex
 
     @classmethod
     def from_array(cls, array):
         try:
-            return cls(min=array.min(), max=array.max(), mean=array.mean())
+            return cls(min=array.min(), max=array.max(), mean=array.mean(),
+                       is_finite=numpy.isfinite(array).all(), has_complex=numpy.iscomplex(array).any())
         except (TypeError, ValueError):
             # likely a string array
             return cls(min=None, max=None, mean=None)
 
     @classmethod
     def from_dict(cls, dikt):
-        return cls(min=dikt['Minimum'], max=dikt['Maximum'], mean=dikt['Mean'])
+        return cls(min=dikt['Minimum'], max=dikt['Maximum'], mean=dikt['Mean'],
+                   is_finite=dikt['IsFinite'], has_complex=dikt["HasComplex"])
 
     def to_dict(self):
-        return {'Minimum': self.min, 'Maximum': self.max, 'Mean': self.mean}
+        return {'Minimum': self.min, 'Maximum': self.max, 'Mean': self.mean,
+                'IsFinite': self.is_finite, 'HasComplex': self.has_complex}
 
     def merge(self, other):
         self.min = min(self.min, other.min)
         self.max = max(self.max, other.max)
         self.mean = (self.mean + other.mean) / 2
+        self.is_finite = self.is_finite and other.is_finite
+        self.has_complex = self.has_complex or other.has_complex
 
 
 class DataSet(Accessor):
     """
     A dataset in a h5 file that corresponds to a traited NArray.
     """
+
     def __init__(self, trait_attribute, h5file, name=None, expand_dimension=-1):
         # type: (NArray, H5File, str, int) -> None
         """
@@ -193,7 +201,6 @@ class DataSet(Accessor):
             # this must be a new file, nothing to merge, set the new meta
             meta = new_meta
         self.owner.storage_manager.set_metadata(meta.to_dict(), self.field_name)
-
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
@@ -282,6 +289,7 @@ class Reference(Uuid):
     A reference to another h5 file
     Corresponds to a contained datatype
     """
+
     def store(self, val):
         # type: (HasTraits) -> None
         """
@@ -439,6 +447,7 @@ class Json(Scalar):
             return self.json_decoder().decode(val)
         return json.loads(val)
 
+
 class JsonRange(Scalar):
     """
     Stores and loads a Range in the form of a json in h5.
@@ -484,4 +493,5 @@ class JsonFinal(Json):
             return dict_array
 
     def __init__(self, trait_attribute, h5file, name=None):
-        super(JsonFinal, self).__init__(trait_attribute, h5file, name, self.StateVariablesEncoder, self.StateVariablesDecoder)
+        super(JsonFinal, self).__init__(trait_attribute, h5file, name, self.StateVariablesEncoder,
+                                        self.StateVariablesDecoder)

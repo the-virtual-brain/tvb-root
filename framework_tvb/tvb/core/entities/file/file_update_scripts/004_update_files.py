@@ -72,11 +72,11 @@ def update(input_file):
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
-        projection_type = ProjectionsType.EEG_POLYMORPHIC_IDENTITY.value
+        projection_type = ProjectionsType.EEG.value
         if "SEEG" in class_name:
-            projection_type = ProjectionsType.SEEG_POLYMORPHIC_IDENTITY.value
+            projection_type = ProjectionsType.SEEG.value
         elif "MEG" in class_name:
-            projection_type = ProjectionsType.MEG_POLYMORPHIC_IDENTITY.value
+            projection_type = ProjectionsType.MEG.value
 
         root_metadata[FIELD_PROJECTION_TYPE] = json.dumps(projection_type)
         LOGGER.debug("Setting %s = %s" % (FIELD_PROJECTION_TYPE, projection_type))

@@ -48,6 +48,9 @@ class ConnectivityIndex(DataType):
     tract_lengths_max = Column(Float)
     tract_lengths_mean = Column(Float)
 
+    has_cortical_mask = Column(Boolean)
+    has_hemispheres_mask = Column(Boolean)
+
     # TODO: keep these metadata?
     # weights_non_zero_id = Column(Integer, ForeignKey('narrays.id'), nullable=False)
     # weights_non_zero = relationship(NArrayIndex, foreign_keys=weights_non_zero_id, primaryjoin=NArrayIndex.id == weights_non_zero_id)
@@ -61,11 +64,15 @@ class ConnectivityIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (Connectivity)  -> None
         super(ConnectivityIndex, self).fill_from_has_traits(datatype)
+
+        self.has_cortical_mask = datatype.cortical is not None
+        self.has_hemispheres_mask = datatype.hemispheres is not None
         self.number_of_regions = datatype.number_of_regions
         self.number_of_connections = datatype.number_of_connections
         self.undirected = datatype.undirected
         self.weights_min, self.weights_max, self.weights_mean = from_ndarray(datatype.weights)
         self.tract_lengths_min, self.tract_lengths_max, self.tract_lengths_mean = from_ndarray(datatype.tract_lengths)
+
         # self.weights_non_zero = NArrayIndex.from_ndarray(datatype.weights[datatype.weights.nonzero()])
         # self.tract_lengths_non_zero = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.tract_lengths.nonzero()])
         # self.tract_lengths_connections = NArrayIndex.from_ndarray(datatype.tract_lengths[datatype.weights.nonzero()])

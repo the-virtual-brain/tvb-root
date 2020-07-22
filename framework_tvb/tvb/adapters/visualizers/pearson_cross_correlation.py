@@ -29,20 +29,21 @@
 #
 
 """
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Dan Pop <dan.pop@codemart.ro>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
 
 import json
-import numpy
-from tvb.adapters.visualizers.matrix_viewer import MappedArrayVisualizer
+from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
+from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.neocom import h5
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import CorrelationCoefficients
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
 class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
@@ -76,7 +77,7 @@ class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
         return None
 
 
-class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
+class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
     """
     Viewer for Pearson CorrelationCoefficients.
     Very similar to the CrossCorrelationVisualizer - this one done with Matplotlib
@@ -87,36 +88,26 @@ class PearsonCorrelationCoefficientVisualizer(MappedArrayVisualizer):
     def get_form_class(self):
         return PearsonCorrelationCoefficientVisualizerForm
 
-    def get_required_memory_size(self, view_model):
-        # type: (PearsonCorrelationCoefficientVisualizerModel) -> numpy.ndarray
-        """Return required memory."""
-        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
-        input_size = (datatype_index.data_length_1d, datatype_index.data_length_2d,
-                      datatype_index.data_length_3d, datatype_index.data_length_4d)
-        return numpy.prod(input_size) * 8.0
-
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
+        cc_gid = view_model.datatype.hex
+        cc_index = self.load_entity_by_gid(cc_gid)
+        assert isinstance(cc_index, CorrelationCoefficientsIndex)
+        matrix_shape = cc_index.parsed_shape[0:2]
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype.hex)
-        with datatype_h5_class(datatype_h5_path) as datatype_h5:
-            matrix_shape = datatype_h5.array_data.shape[0:2]
-            ts_gid = datatype_h5.source.load()
-
-        ts_index = self.load_entity_by_gid(ts_gid.hex)
+        ts_gid = cc_index.fk_source_gid
+        ts_index = self.load_entity_by_gid(ts_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
-
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(ts_gid.hex)
-        with ts_h5_class(ts_h5_path) as ts_h5:
+        with h5.h5_file_for_index(ts_index) as ts_h5:
             labels = self.get_space_labels(ts_h5)
+            if not labels:
+                labels = None
 
-        if not labels:
-            labels = None
         pars = dict(matrix_labels=json.dumps([labels, labels]),
                     matrix_shape=json.dumps(matrix_shape),
-                    viewer_title='Cross Corelation Matrix plot',
-                    url_base=URLGenerator.build_h5_url(view_model.datatype.hex, 'get_correlation_data', parameter=''),
+                    viewer_title='Cross Correlation Matrix Plot',
+                    url_base=URLGenerator.build_h5_url(cc_gid, 'get_correlation_data', parameter=''),
                     state_variable=state_list[0],
                     mode=mode_list[0],
                     state_list=state_list,

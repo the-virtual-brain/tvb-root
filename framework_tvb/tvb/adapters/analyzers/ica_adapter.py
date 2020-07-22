@@ -37,16 +37,17 @@ Adapter that uses the traits module to generate interfaces for ICA Analyzer.
 
 import uuid
 import numpy
-from tvb.analyzers.ica import FastICA
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.entities.filters.chain import FilterChain
+import json
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.analyzers.ica import FastICA
+from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.datatypes.time_series import TimeSeries
 
 
 class ICAAdapterModel(ViewModel, FastICA):
@@ -155,7 +156,7 @@ class ICAAdapter(ABCAsynchronous):
         result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
         ica_h5.gid.store(uuid.UUID(ica_index.gid))
-        ica_h5.source.store(time_series_h5.gid.load())
+        ica_h5.source.store(view_model.time_series)
         ica_h5.n_components.store(self.algorithm.n_components)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
@@ -170,6 +171,10 @@ class ICAAdapter(ABCAsynchronous):
             self.algorithm.time_series = small_ts
             partial_ica = self.algorithm.evaluate()
             ica_h5.write_data_slice(partial_ica)
+        array_metadata = ica_h5.unmixing_matrix.get_cached_metadata()
+        ica_index.array_has_complex = array_metadata.has_complex
+        ica_index.shape = json.dumps(ica_h5.unmixing_matrix.shape)
+        ica_index.ndim = len(ica_h5.unmixing_matrix.shape)
         ica_h5.close()
         time_series_h5.close()
 

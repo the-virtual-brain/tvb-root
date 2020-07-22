@@ -60,6 +60,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
 from tvb.simulator.coupling import Coupling
+from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.simulator import Simulator
 
 
@@ -90,7 +91,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         datatype.connectivity = self.connectivity.value
         datatype.conduction_speed = self.conduction_speed.value
         coupling = self.coupling.value
-        datatype.coupling = coupling()
+        if type(datatype.coupling) != coupling:
+            datatype.coupling = coupling()
 
     @staticmethod
     def get_view_model():
