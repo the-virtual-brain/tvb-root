@@ -172,7 +172,7 @@ class MEGMonitorForm(ProjectionMonitorForm):
         super(MEGMonitorForm, self).__init__(variables_of_interest_indexes, prefix, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_MEG.value)
+                                    values=[SensorTypes.TYPE_MEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.MEG_POLYMORPHIC_IDENTITY.value])
