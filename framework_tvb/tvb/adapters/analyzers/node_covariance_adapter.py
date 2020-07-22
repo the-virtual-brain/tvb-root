@@ -168,8 +168,8 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         covariance_index.array_data_min = array_metadata.min
         covariance_index.array_data_max = array_metadata.max
         covariance_index.array_data_mean = array_metadata.mean
-        covariance_index.array_is_finite = array_metadata.is_finite
-        covariance_index.array_has_complex = array_metadata.has_complex
+        covariance_index.array_is_finite = array_metadata.is_finite.item()
+        covariance_index.array_has_complex = array_metadata.has_complex.item()
         covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
         covariance_index.ndim = len(covariance_h5.array_data.shape)
         # TODO write this part better, by moving into the Model fill_from...
