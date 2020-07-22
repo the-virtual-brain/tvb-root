@@ -182,8 +182,8 @@ class NodeCoherenceAdapter(ABCAsynchronous):
         coherence_spectrum_index.array_data_min = array_metadata.min
         coherence_spectrum_index.array_data_max = array_metadata.max
         coherence_spectrum_index.array_data_mean = array_metadata.mean
-        coherence_spectrum_index.array_has_complex = array_metadata.has_complex.item()
-        coherence_spectrum_index.array_is_finite = array_metadata.is_finite.item()
+        coherence_spectrum_index.array_has_complex = array_metadata.has_complex
+        coherence_spectrum_index.array_is_finite = array_metadata.is_finite
         coherence_spectrum_index.shape = json.dumps(coherence_h5.array_data.shape)
         coherence_spectrum_index.ndim = len(coherence_h5.array_data.shape)
         coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid

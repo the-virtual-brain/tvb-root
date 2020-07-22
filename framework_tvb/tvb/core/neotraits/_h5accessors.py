@@ -140,7 +140,8 @@ class DataSetMetaData(object):
     def from_array(cls, array):
         try:
             return cls(min=array.min(), max=array.max(), mean=array.mean(),
-                       is_finite=numpy.isfinite(array).all(), has_complex=numpy.iscomplex(array).any())
+                       is_finite=numpy.isfinite(array).all().item(),
+                       has_complex=numpy.iscomplex(array).any().item())
         except (TypeError, ValueError):
             # likely a string array
             return cls(min=None, max=None, mean=None)
