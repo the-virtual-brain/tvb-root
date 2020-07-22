@@ -172,7 +172,7 @@ class ICAAdapter(ABCAsynchronous):
             partial_ica = self.algorithm.evaluate()
             ica_h5.write_data_slice(partial_ica)
         array_metadata = ica_h5.unmixing_matrix.get_cached_metadata()
-        ica_index.array_has_complex = array_metadata.has_complex
+        ica_index.array_has_complex = array_metadata.has_complex.item()
         ica_index.shape = json.dumps(ica_h5.unmixing_matrix.shape)
         ica_index.ndim = len(ica_h5.unmixing_matrix.shape)
         ica_h5.close()

@@ -68,7 +68,7 @@ class IndependentComponentsIndex(DataType):
 
         self.shape = json.dumps(datatype.unmixing_matrix.shape)
         self.ndim = len(datatype.unmixing_matrix.shape)
-        self.array_has_complex = numpy.iscomplex(datatype.unmixing_matrix).any()
+        self.array_has_complex = numpy.iscomplex(datatype.unmixing_matrix).any().item()
 
     @property
     def parsed_shape(self):
