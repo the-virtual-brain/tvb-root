@@ -32,13 +32,11 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import json
 import os
 import shutil
 import tempfile
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -65,7 +63,6 @@ class FilesHelper(object):
     TVB_ZIP_FILE_EXTENSION = ".zip"
 
     TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
-    TVB_OPERARATION_FILE = "Operation" + TVB_FILE_EXTENSION
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -162,7 +159,7 @@ class FilesHelper(object):
         _, meta_dictionary = project.to_dict()
         self.write_project_metadata_from_dict(proj_path, meta_dictionary)
 
-    ############# OPERATION related METHODS Start Here #########################
+    # Operation related method
     def get_operation_folder(self, project_name, operation_id):
         """
         Computes the folder where operation details are stored
@@ -172,37 +169,8 @@ class FilesHelper(object):
             self.check_created(operation_path)
         return operation_path
 
-    def get_operation_meta_file_path(self, project_name, operation_id):
-        """
-        Retrieve the path to operation meta file
-        
-        :param project_name: name of the current project.
-        :param operation_id: Identifier of Operation in given project
-        :returns: File path for storing Operation meta-data. File might not be yet created,
-            but parent folder exists after this method.
-             
-        """
-        complete_path = self.get_operation_folder(project_name, operation_id)
-        complete_path = os.path.join(complete_path, self.TVB_OPERARATION_FILE)
-        return complete_path
-
-    def remove_operation_data(self, project_name, operation_id):
-        """
-        Remove H5 storage fully.
-        """
-        try:
-            complete_path = self.get_operation_folder(project_name, operation_id)
-            self.logger.debug("Removing: " + str(complete_path))
-            if os.path.isdir(complete_path):
-                shutil.rmtree(complete_path)
-            elif os.path.exists(complete_path):
-                os.remove(complete_path)
-        except Exception:
-            self.logger.exception("Could not remove files")
-            raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
     ####################### DATA-TYPES METHODS Start Here #####################
-
     def remove_datatype_file(self, h5_file):
         """
         Remove H5 storage fully.

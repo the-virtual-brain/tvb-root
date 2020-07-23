@@ -212,27 +212,8 @@ class ImportService(object):
             # bursts_dict, dt_mappings_dict = self._load_burst_info_from_json(new_project_path)
             # burst_ids_mapping = self._import_bursts(project_entity, bursts_dict)
 
-            # Now import project operations
-            self.import_project_operations(project_entity, new_project_path)
             # Import images
             self._store_imported_images(project_entity)
-
-
-    @staticmethod
-    def _append_tmp_to_folders_containing_operations(import_path):
-        """
-        Find folders containing operations and rename them, return the renamed paths
-        """
-        pths = []
-        for root, _, files in os.walk(import_path):
-            if FilesHelper.TVB_OPERARATION_FILE in files:
-                # Found an operation folder - append TMP to its name
-                tmp_op_folder = root + 'tmp'
-                os.rename(root, tmp_op_folder)
-                operation_file_path = os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
-                pths.append(operation_file_path)
-        return pths
-
 
     def _load_operations_from_paths(self, project, op_paths):
         """
@@ -313,36 +294,6 @@ class ImportService(object):
             for file_name in files:
                 if file_name.endswith(FilesHelper.TVB_FILE_EXTENSION):
                     self._populate_image(os.path.join(root, file_name), project.id)
-
-
-    def import_project_operations(self, project, import_path, dt_burst_mappings=None, burst_ids_mapping=None):
-        """
-        This method scans provided folder and identify all operations that needs to be imported
-        """
-        op_paths = self._append_tmp_to_folders_containing_operations(import_path)
-        operations = self._load_operations_from_paths(project, op_paths)
-
-        imported_operations = []
-
-        # Here we process each operation found
-        for operation in operations:
-            self.logger.debug("Importing operation " + str(operation))
-            old_operation_folder, _ = os.path.split(operation.import_file)
-            operation_entity, datatype_group = self.__import_operation(operation)
-
-            # Rename operation folder with the ID of the stored operation
-            new_operation_path = FilesHelper().get_operation_folder(project.name, operation_entity.id)
-            if old_operation_folder != new_operation_path:
-                # Delete folder of the new operation, otherwise move will fail
-                shutil.rmtree(new_operation_path)
-                shutil.move(old_operation_folder, new_operation_path)
-
-            operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path, operation_entity,
-                                                                             datatype_group)
-            self._store_imported_datatypes_in_db(project, operation_datatypes, dt_burst_mappings, burst_ids_mapping)
-            imported_operations.append(operation_entity)
-
-        return imported_operations
 
 
     def _populate_image(self, file_name, project_id):

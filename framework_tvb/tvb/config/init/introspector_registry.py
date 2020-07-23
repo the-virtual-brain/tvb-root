@@ -58,7 +58,7 @@ def import_adapters(adapters_top_module, all_adapter_files):
     """
     @:param adapters_top_module: top module under which the ABCAdapter instances are searched for
     @:param all_adapter_files: list of strings representing python submodules. We will import these,
-    relative to 'adapters_top_module' and .introspect ass concrete subclasses of ABCAdapter defined inside
+    relative to 'adapters_top_module' and introspect ass concrete subclasses of ABCAdapter defined inside
     @:returns: list of ABCAdapter subclasses
     """
     result = []

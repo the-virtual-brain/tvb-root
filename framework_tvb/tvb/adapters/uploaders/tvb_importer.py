@@ -111,9 +111,7 @@ class TVBImporter(ABCUploader):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
-                operations = ImportService().import_project_operations(current_op.project, self.storage_path)
                 shutil.rmtree(tmp_folder)
-                self.nr_of_datatypes += len(operations)
 
             else:
                 # upgrade file if necessary

@@ -92,6 +92,7 @@ def _adapt_epileptor_simulations():
                 op_params[param_model] = epileptor_new
                 ep_op.parameters = json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder)
                 LOGGER.debug("New params:" + ep_op.parameters)
+                files_helper.write_operation_metadata(ep_op)
 
                 burst = dao.get_burst_for_operation_id(ep_op.id)
                 if burst is not None:
