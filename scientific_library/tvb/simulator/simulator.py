@@ -421,8 +421,7 @@ class Simulator(HasTraits):
                 time_string = "%0.1f sec" % toc
             print_this = "\r...%0.1f%% done in %s" % \
                          (100.0 * (step - self.current_step) / n_steps, time_string)
-            sys.stdout.write(print_this)
-            sys.stdout.flush()
+            self.log.info(print_this)
             self._tic_point += self._tic_ratio * n_steps
 
     def _apply_spike_stimulus(self, step):
