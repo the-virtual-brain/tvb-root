@@ -36,10 +36,9 @@ simulation and the method for running the simulation.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
-.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
 
 """
-import sys
+
 import time
 import math
 import numpy
@@ -55,13 +54,8 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
 class Simulator(HasTraits):
-
-    use_numba = True
-    _spatial_param_reshape = (-1, )
-    spike_stimulus = None
-    _spike_stimulus_fun = None
-
-    PRINT_PROGRESSION_MESSAGE = True
+    _spatial_param_reshape = None
+    _dfun = None
 
     """A Simulator assembles components required to perform simulations."""
 
@@ -243,21 +237,6 @@ class Simulator(HasTraits):
                      rm.size, unmapped.size, self.number_of_nodes)
         self._guesstimate_memory_requirement()
 
-    def _config_spike_stimulus(self):
-        # Spike stimulus is either a Dictionary or a pandas.Series of
-        # either sparse pandas.Series or xarray.DataArray or numpy.array
-        if self.spike_stimulus is not None:
-            target1 = list(self.spike_stimulus.keys())[0]
-            if self.spike_stimulus[target1].__class__.__name__.find("Series") > -1:
-                self._spike_stimulus_fun = \
-                    lambda target, step: self.spike_stimulus[target][step].to_xarray().values
-            elif self.spike_stimulus[target1].__class__.__name__ == "DataArray":
-                self._spike_stimulus_fun = \
-                    lambda target, step: self.spike_stimulus[target][step].values
-            else:  # assuming dictionary of numpy arrays
-                self._spike_stimulus_fun = \
-                    lambda target, step: self.spike_stimulus[target][step]
-
     def configure(self, full_configure=True):
         """Configure simulator and its components.
 
@@ -277,15 +256,11 @@ class Simulator(HasTraits):
             The configured Simulator instance.
 
         """
-        # TODO: temporary hack because numba dfuns fail for multiple modes
-        self._dfun = self.model.dfun
-        self._spatial_param_reshape = self.model.spatial_param_reshape
-        if not self.use_numba or self.model.number_of_modes > 1:
-            self.use_numba = False
-            if hasattr(self.model, "_numpy_dfun"):
-                self._dfun = self.model._numpy_dfun
-            self._spatial_param_reshape = (-1, 1)
+        if self._dfun is None:
+            self._dfun = self.model.dfun
 
+        if self._spatial_param_reshape is None:
+            self._spatial_param_reshape = self.model.spatial_param_reshape
 
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
@@ -311,7 +286,6 @@ class Simulator(HasTraits):
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
         self._configure_stimuli()
-        self._config_spike_stimulus()
         # Set delays, provided in physical units, in integration steps.
         self.connectivity.set_idelays(self.integrator.dt)
         self.horizon = self.connectivity.idelays.max() + 1
@@ -409,35 +383,6 @@ class Simulator(HasTraits):
             # ...use the integrator's clamp_state
             self.integrator.clamp_state(state)
 
-    def _print_progression_message(self, step, n_steps):
-        if step - self.current_step >= self._tic_point:
-            toc = time.time() - self._tic
-            if toc > 600:
-                if toc > 7200:
-                    time_string = "%0.1f hours" % (toc / 3600)
-                else:
-                    time_string = "%0.1f min" % (toc / 60)
-            else:
-                time_string = "%0.1f sec" % toc
-            print_this = "\r...%0.1f%% done in %s" % \
-                         (100.0 * (step - self.current_step) / n_steps, time_string)
-            self.log.info(print_this)
-            self._tic_point += self._tic_ratio * n_steps
-
-    def _apply_spike_stimulus(self, step):
-        # We need to go one index step back: i.e., step-1
-        # i.e., assuming that at spike_stimulus[step] we have spikes arriving in the interval t_step-1 -> t_step,
-        # which will be considered for the iteration t_step-1 -> t_step,
-        # i.e., they will be received at t_step - 1 time.
-        for target_parameter in self.spike_stimulus.keys():
-            setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step-1))
-
-    def update_non_state_variables(self, state, node_coupling, local_coupling):
-        state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                      use_numba=self.use_numba)
-        if state is not None:
-            self.bound_and_clamp(state)
-
     def __call__(self, simulation_length=None, random_state=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -451,9 +396,9 @@ class Simulator(HasTraits):
 
         self.calls += 1
         if simulation_length is not None:
-            self.simulation_length = simulation_length
+            self.simulation_length = float(simulation_length)
 
-        # Intialization
+        # intialization
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
         self._handle_random_state(random_state)
@@ -462,52 +407,20 @@ class Simulator(HasTraits):
         stimulus = self._prepare_stimulus()
         state = self.current_state
 
-        # Do for initial condition, i.e., prepare step t0 -> t1:
-        init_step = self.current_step + 1  # the first step in the loop
-        node_coupling = self._loop_compute_node_coupling(init_step)
-        self._loop_update_stimulus(init_step, stimulus)
-        if self._spike_stimulus_fun:
-            self._apply_spike_stimulus(init_step)
-
-        # Update any non-state variables and apply any boundaries again to the modified initial condition:
-        self.update_non_state_variables(state, node_coupling, local_coupling)
-
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        if self.PRINT_PROGRESSION_MESSAGE:
-            self._tic = time.time()
-            self._tic_ratio = 0.1
-            self._tic_point = self._tic_ratio * n_steps
-        end_step = init_step + n_steps
-        for step in range(init_step, end_step):
-
-            # Integrate TVB to get the new TVB state t_step
-            state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
-
-            # TODO Some tests fail due to this, because nan values are generated during simulation....
-            # if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
-            #     raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
-
-            # Prepare coupling and stimulus at time t_step, i.e., for next time iteration
-            # and, therefore, for the new TVB state t_step+1, if any:
-            node_coupling = self._loop_compute_node_coupling(step+1)
-            self._loop_update_stimulus(step+1, stimulus)
-            if self._spike_stimulus_fun:
-                self._apply_spike_stimulus(step+1)
-
-            # Update any non-state variables and apply any boundaries again to the new state t_step:
-            self.update_non_state_variables(state, node_coupling, local_coupling)
-
-            # Now direct the new state t_step to history buffer and monitors
+        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
+            # needs implementing by hsitory + coupling?
+            node_coupling = self._loop_compute_node_coupling(step)
+            self._loop_update_stimulus(step, stimulus)
+            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
-            if self.PRINT_PROGRESSION_MESSAGE:
-                self._print_progression_message(step, n_steps)
 
         self.current_state = state
-        self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
+        self.current_step = self.current_step + n_steps
 
     def _configure_history(self, initial_conditions):
         """
@@ -543,7 +456,7 @@ class Simulator(HasTraits):
                 return self._configure_history(initial_conditions)
             elif ic_shape[1:] != self.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
-                                 % ic_shape[1:], self.good_history_shape[1:])
+                                 % (ic_shape[1:], self.good_history_shape[1:]))
             else:
                 if ic_shape[0] >= self.horizon:
                     self.log.debug("Using last %d time-steps for history.", self.horizon)
@@ -564,7 +477,7 @@ class Simulator(HasTraits):
 
         # create initial state from history
         self.current_state = history[self.current_step % self.horizon].copy()
-        self.log.debug('initial state has shape %r' % (self.current_state.shape,))
+        self.log.debug('initial state has shape %r' % (self.current_state.shape, ))
         if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
             n_reg = self.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
@@ -584,15 +497,15 @@ class Simulator(HasTraits):
 
     def _configure_integrator_noise(self):
         """
-        This enables having noise to be state variable specific and/or to enter 
-        only via specific brain structures, for example it we only want to 
+        This enables having noise to be state variable specific and/or to enter
+        only via specific brain structures, for example it we only want to
         consider noise as an external input entering the brain via appropriate
         thalamic nuclei.
 
         Support 3 possible shapes:
             1) number_of_nodes;
 
-            2) number_of_state_variables; and 
+            2) number_of_state_variables; and
 
             3) (number_of_state_variables, number_of_nodes).
 
@@ -660,7 +573,7 @@ class Simulator(HasTraits):
     # appears to be unused
     def runtime(self, simulation_length):
         """
-        Return an estimated run time (seconds) for the simulator's current 
+        Return an estimated run time (seconds) for the simulator's current
         configuration and a specified simulation length.
 
         """
@@ -682,12 +595,12 @@ class Simulator(HasTraits):
         """
         guesstimate the memory required for this simulator.
 
-        Guesstimate is based on the shape of the dominant arrays, and as such 
+        Guesstimate is based on the shape of the dominant arrays, and as such
         can operate before configuration.
 
         NOTE: Assumes returned/yeilded data is in some sense "taken care of" in
             the world outside the simulator, and so doesn't consider it, making
-            the simulator's history, and surface if present, the dominant 
+            the simulator's history, and surface if present, the dominant
             memory pigs...
 
         """
@@ -706,7 +619,7 @@ class Simulator(HasTraits):
         #     connectivity, there remains the less common issue if no tract_lengths...
         hist_shape = (self.connectivity.tract_lengths.max() / (self.conduction_speed or
                                                                self.connectivity.speed or 3.0) / self.integrator.dt,
-                      self.model.nvar, number_of_nodes, 
+                      self.model.nvar, number_of_nodes,
                       self.model.number_of_modes)
         self.log.debug("Estimated history shape is %r", hist_shape)
 
@@ -722,7 +635,7 @@ class Simulator(HasTraits):
 
         for monitor in self.monitors:
             if not isinstance(monitor, monitors.Bold):
-                stock_shape = (monitor.period / self.integrator.dt, 
+                stock_shape = (monitor.period / self.integrator.dt,
                                len(self.model.variables_of_interest),
                                number_of_nodes,
                                self.model.number_of_modes)
@@ -755,14 +668,14 @@ class Simulator(HasTraits):
 
     def _census_memory_requirement(self):
         """
-        Guesstimate the memory required for this simulator. 
+        Guesstimate the memory required for this simulator.
 
         Guesstimate is based on a census of the dominant arrays after the
         simulator has been configured.
 
         NOTE: Assumes returned/yeilded data is in some sense "taken care of" in
             the world outside the simulator, and so doesn't consider it, making
-            the simulator's history, and surface if present, the dominant 
+            the simulator's history, and surface if present, the dominant
             memory pigs...
 
         """
@@ -808,7 +721,7 @@ class Simulator(HasTraits):
     def _calculate_storage_requirement(self):
         """
         Calculate the storage requirement for the simulator, configured with
-        models, monitors, etc being run for a particular simulation length. 
+        models, monitors, etc being run for a particular simulation length.
         While this is only approximate, it is far more reliable/accurate than
         the memory and runtime guesstimates.
         """
@@ -826,7 +739,6 @@ class Simulator(HasTraits):
 
     def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data."""
-        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
