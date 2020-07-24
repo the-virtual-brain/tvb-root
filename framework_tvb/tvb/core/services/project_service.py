@@ -604,6 +604,7 @@ class ProjectService:
             for dt in reversed(datatypes_for_op):
                 self.remove_datatype(operation.project.id, dt.gid, False)
             dao.remove_entity(Operation, operation.id)
+            self.structure_helper.remove_operation_data(operation.project.name, operation_id)
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -653,6 +654,8 @@ class ProjectService:
                 ### Do not remove Operation in case DataType still exist referring it.
                 continue
             correct = correct and dao.remove_entity(Operation, operation_id)
+            ## Make sure Operation folder is removed
+            self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
 
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))

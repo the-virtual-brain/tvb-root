@@ -159,7 +159,7 @@ class FilesHelper(object):
         _, meta_dictionary = project.to_dict()
         self.write_project_metadata_from_dict(proj_path, meta_dictionary)
 
-    # Operation related method
+    ############# OPERATION related METHODS Start Here #########################
     def get_operation_folder(self, project_name, operation_id):
         """
         Computes the folder where operation details are stored
@@ -168,6 +168,21 @@ class FilesHelper(object):
         if not os.path.exists(operation_path):
             self.check_created(operation_path)
         return operation_path
+
+    def remove_operation_data(self, project_name, operation_id):
+        """
+        Remove H5 storage fully.
+        """
+        try:
+            complete_path = self.get_operation_folder(project_name, operation_id)
+            self.logger.debug("Removing: " + str(complete_path))
+            if os.path.isdir(complete_path):
+                shutil.rmtree(complete_path)
+            elif os.path.exists(complete_path):
+                os.remove(complete_path)
+        except Exception:
+            self.logger.exception("Could not remove files")
+            raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
 
     ####################### DATA-TYPES METHODS Start Here #####################
