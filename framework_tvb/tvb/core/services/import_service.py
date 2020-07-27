@@ -42,7 +42,6 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
@@ -327,7 +326,7 @@ class ImportService(object):
                 imported_operations.append(operation_entity)
             else:
                 start_date = datetime.now()
-                alg = SimulatorAdapter().stored_adapter
+                alg = dao.get_algorithm_by_module(view_model.get_algorithm_module, view_model.get_algorithm_class_name)
 
                 op = self.get_new_operation_for_view_model(project, view_model, alg.id)
                 op.meta_data = '{"from": "Import"}'
@@ -385,7 +384,6 @@ class ImportService(object):
                     h5_file.load_into(dt)
                     dao.store_entity(dt)
                 else:
-                    h5_class = H5File.h5_class_from_file(path)
                     dt, generic_attr = h5.load_with_links(path)
                     index = REGISTRY.get_index_for_h5file(h5_class)()
                     index.fill_from_has_traits(dt)
