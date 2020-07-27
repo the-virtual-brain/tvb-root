@@ -17,4 +17,4 @@ jobs:
           docker run
           -v $PWD:/work -w /work/scientific_library
           docker.pkg.github.com/the-virtual-brain/tvb-root/multiscale
-          pytest -Wignore -n4
+          python -m tvb_nest.examples.example
