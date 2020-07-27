@@ -5,7 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Build image
-        run: docker build -f tvb_build/docker/Dockerfile-multiscale-build -t tvb/multiscale .
-      - name: Run tests
-        run: docker run --rm -v $PWD:/work -w /work/scientific_library tvb/multiscale pytest -Wignore -n2
+      - uses: whoan/docker-build-with-cache-action@v5
+        with:
+          username: the-virtual-brain
+          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: docker.pkg.github.com
+          image_name: multiscale
+          dockerfile: tvb_build/docker/Dockerfile-multiscale-build
