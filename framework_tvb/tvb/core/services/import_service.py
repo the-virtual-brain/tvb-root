@@ -217,38 +217,21 @@ class ImportService(object):
             self._store_imported_images(project_entity)
 
     @staticmethod
-    def _append_tmp_to_folders_containing_operations(import_path):
+    def _append_tmp_to_folder_containing_operation(path):
         """
-        Find folders containing operations and rename them, return the renamed paths
+        Return the renamed path of the operation folder
         """
-        pths = []
-        for root, _, files in os.walk(import_path):
-            if 'Operation.xml' in files:
-                # Found an operation folder - append TMP to its name
-                tmp_op_folder = root + 'tmp'
-                os.rename(root, tmp_op_folder)
-                operation_file_path = os.path.join(tmp_op_folder, 'Operation.xml')
-                pths.append(operation_file_path)
-        return pths
+        tmp_op_folder = path + 'tmp'
+        os.rename(path, tmp_op_folder)
+        return os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
 
-
-    def _load_operations_from_paths(self, project, op_paths):
+    def _load_operation_from_path(self, project, op_path):
         """
-        Load operations from paths containing them.
-        :returns: Operations ordered by start/creation date to be sure data dependency is resolved correct
+        Load operation from path containing it.
         """
-        def by_time(op):
-            return op.start_date or op.create_date or datetime.now()
-
-        operations = []
-
-        for operation_file_path in op_paths:
-            operation = self.__build_operation_from_file(project, operation_file_path)
-            operation.import_file = operation_file_path
-            operations.append(operation)
-
-        operations.sort(key=by_time)
-        return operations
+        operation = self.__build_operation_from_file(project, op_path)
+        operation.import_file = op_path
+        return operation
 
     def _load_datatypes_from_operation_folder(self, op_path, operation_entity, datatype_group):
         """
@@ -315,19 +298,18 @@ class ImportService(object):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
-        view_model_paths = self._get_view_model_and_datatypes_paths(import_path)[0]
-        op_paths = self._append_tmp_to_folders_containing_operations(import_path)
-        operations = self._load_operations_from_paths(project, op_paths)
-
+        operation_paths = self._get_operation_paths(import_path)
         imported_operations = []
 
-        # Here we process each operation found
-        for operation in operations:
-            self.logger.debug("Importing operation " + str(operation))
-            old_operation_folder, _ = os.path.split(operation.import_file)
-            view_model_paths = self._get_view_model_and_datatypes_paths(import_path)[0]
+        for path in operation_paths:
+            vm_paths, dt_paths = self._get_view_model_and_datatypes_paths(path)
+            if not vm_paths:
+                op_path = self._append_tmp_to_folder_containing_operation(path)
+                operation = self._load_operation_from_path(project, op_path)
 
-            if not self._check_vm_paths_contains_operation_path(view_model_paths, old_operation_folder):
+                self.logger.debug("Importing operation " + str(operation))
+                old_operation_folder, _ = os.path.split(operation.import_file)
+
                 operation_entity, datatype_group = self.__import_operation(operation)
 
                 # Rename operation folder with the ID of the stored operation
@@ -337,7 +319,6 @@ class ImportService(object):
                     shutil.rmtree(new_operation_path)
                     shutil.move(old_operation_folder, new_operation_path)
 
-                # if not self._check_vm_paths_contains_operation_path(view_model_paths, new_operation_path):
                 operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
                                                                                  operation_entity,
                                                                                  datatype_group)
@@ -345,7 +326,6 @@ class ImportService(object):
                                                      burst_ids_mapping)
                 imported_operations.append(operation_entity)
             else:
-                vm_paths, dt_paths = self._get_view_model_and_datatypes_paths(old_operation_folder)
                 view_model = self._get_main_view_model(vm_paths)
 
                 alg = SimulatorAdapter().stored_adapter
@@ -358,24 +338,21 @@ class ImportService(object):
                 op.start_date = operation.start_date
                 op.status = operation.status
                 operation_entity = dao.store_entity(op)
+                imported_operations.append(operation_entity)
 
                 # Store the DataTypes in db
                 self._store_datatypes_from_path_in_db(dt_paths)
-            # imported_operations.append(operation_entity)
 
         return imported_operations
+
+    @staticmethod
+    def _get_operation_paths(paths):
+        return [f.path for f in os.scandir(paths) if f.is_dir()]
 
     def get_new_operation_for_view_model(self, project, view_model, alg_id):
         op_param = '{"gid": "' + str(view_model.gid) + '"}'
         op = Operation(project.fk_admin, project.id, alg_id, op_param)
         return op
-
-    @staticmethod
-    def _check_vm_paths_contains_operation_path(view_model_paths, operation_folder_path):
-        for path in view_model_paths:
-            if operation_folder_path in path:
-                return True
-        return False
 
     @staticmethod
     def _get_view_model_and_datatypes_paths(import_path):
