@@ -328,20 +328,22 @@ class ImportService(object):
             else:
                 view_model = self._get_main_view_model(vm_paths)
 
-                alg = SimulatorAdapter().stored_adapter
-                op = self.get_new_operation_for_view_model(project, view_model, alg.id)
-                op.algorithm = alg
-                op.visible = True
-                #todo: replace with new values
-                op.completion_date = operation.completion_date
-                op.create_date = operation.create_date
-                op.start_date = operation.start_date
-                op.status = operation.status
-                operation_entity = dao.store_entity(op)
-                imported_operations.append(operation_entity)
+                if view_model:
+                    alg = SimulatorAdapter().stored_adapter
+                    op = self.get_new_operation_for_view_model(project, view_model, alg.id)
+                    op.algorithm = alg
+                    op.visible = True
+                    #todo: replace with new values
+                    op.completion_date = operation.completion_date
+                    op.create_date = operation.create_date
+                    op.start_date = operation.start_date
+                    op.status = operation.status
+                    operation_entity = dao.store_entity(op)
+                    imported_operations.append(operation_entity)
 
                 # Store the DataTypes in db
-                self._store_datatypes_from_path_in_db(dt_paths)
+                if dt_paths:
+                    self._store_datatypes_from_path_in_db(dt_paths)
 
         return imported_operations
 
