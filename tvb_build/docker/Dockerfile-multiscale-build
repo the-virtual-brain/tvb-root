@@ -189,3 +189,5 @@ RUN echo "source $VENV/bin/activate" >> .bashrc
 CMD $VENV/bin/jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
 
 #CMD /bin/bash
+
+ENV PATH=$VENV/bin:$PATH
