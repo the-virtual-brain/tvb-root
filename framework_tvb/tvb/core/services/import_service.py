@@ -302,8 +302,8 @@ class ImportService(object):
         imported_operations = []
 
         for path in operation_paths:
-            vm_paths, dt_paths = self._get_view_model_and_datatypes_paths(path)
-            if not vm_paths:
+            view_model, dt_paths = self._get_view_model_and_datatypes_paths(path)
+            if not view_model:
                 op_path = self._append_tmp_to_folder_containing_operation(path)
                 operation = self._load_operation_from_path(project, op_path)
 
@@ -326,26 +326,23 @@ class ImportService(object):
                                                      burst_ids_mapping)
                 imported_operations.append(operation_entity)
             else:
-                view_model = self._get_main_view_model(vm_paths)
+                start_date = datetime.now()
+                alg = SimulatorAdapter().stored_adapter
 
-                if view_model:
-                    start_date = datetime.now()
-                    alg = SimulatorAdapter().stored_adapter
-
-                    op = self.get_new_operation_for_view_model(project, view_model, alg.id)
-                    op.meta_data = '{"from": "Import"}'
-                    op.status = STATUS_FINISHED
-                    op.create_date = start_date
-                    op.start_date = start_date
-                    op.algorithm = alg
-                    op.visible = True
-                    op.completion_date = datetime.now()
-                    operation_entity = dao.store_entity(op)
-                    imported_operations.append(operation_entity)
+                op = self.get_new_operation_for_view_model(project, view_model, alg.id)
+                op.meta_data = '{"from": "Import"}'
+                op.status = STATUS_FINISHED
+                op.create_date = start_date
+                op.start_date = start_date
+                op.algorithm = alg
+                op.visible = True
+                op.completion_date = datetime.now()
+                operation_entity = dao.store_entity(op)
+                imported_operations.append(operation_entity)
 
                 # Store the DataTypes in db
                 if dt_paths:
-                    self._store_datatypes_from_path_in_db(dt_paths)
+                    self._store_datatypes_from_path_in_db(dt_paths, op.id)
 
         return imported_operations
 
@@ -360,36 +357,31 @@ class ImportService(object):
 
     @staticmethod
     def _get_view_model_and_datatypes_paths(import_path):
-        vm_paths = []
+        vm = None
         dt_paths = []
         for root, _, files in os.walk(import_path):
             for file in files:
                 if file.endswith(".h5"):
-                    vm_file_oath = root + "\\" + file
+                    vm_file_oath = os.path.join(root, file)
                     h5_class = H5File.h5_class_from_file(vm_file_oath)
                     if h5_class is ViewModelH5:
-                        vm_paths.append(vm_file_oath)
+                        if not vm:
+                            view_model = h5.load_view_model_from_file(vm_file_oath)
+                            if hasattr(view_model, "is_main") and view_model.is_main == True:
+                                vm = view_model
                     else:
                         dt_paths.append(vm_file_oath)
-        return vm_paths, dt_paths
+        return vm, dt_paths
 
     @staticmethod
-    def _get_main_view_model(view_model_paths):
-        if view_model_paths:
-            for main_vm_file_path in view_model_paths:
-                view_model = h5.load_view_model_from_file(main_vm_file_path)
-                if hasattr(view_model, "is_main") and view_model.is_main == True:
-                    return view_model
-        return None
-
-    @staticmethod
-    def _store_datatypes_from_path_in_db(paths):
+    def _store_datatypes_from_path_in_db(paths, op_id):
         if paths:
             for path in paths:
                 h5_class = H5File.h5_class_from_file(path)
                 if h5_class is BurstConfigurationH5:
                     h5_file = H5File.from_file(path)
                     dt = REGISTRY.get_datatype_for_h5file(h5_file)(1)
+                    dt.fk_simulation = op_id
                     h5_file.load_into(dt)
                     dao.store_entity(dt)
                 else:
