@@ -15,6 +15,5 @@ jobs:
       - name: run something in the built image
         run: >
           docker run
-          -v $PWD:/work -w /work/scientific_library
           docker.pkg.github.com/the-virtual-brain/tvb-root/multiscale
           python -m tvb_nest.examples.example
