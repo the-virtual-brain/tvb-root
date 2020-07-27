@@ -48,7 +48,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import ResultFigure, Operation, Algorithm
+from tvb.core.entities.model.model_operation import ResultFigure, Operation, Algorithm, STATUS_FINISHED
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
@@ -329,15 +329,17 @@ class ImportService(object):
                 view_model = self._get_main_view_model(vm_paths)
 
                 if view_model:
+                    start_date = datetime.now()
                     alg = SimulatorAdapter().stored_adapter
+
                     op = self.get_new_operation_for_view_model(project, view_model, alg.id)
+                    op.meta_data = '{"from": "Import"}'
+                    op.status = STATUS_FINISHED
+                    op.create_date = start_date
+                    op.start_date = start_date
                     op.algorithm = alg
                     op.visible = True
-                    #todo: replace with new values
-                    op.completion_date = operation.completion_date
-                    op.create_date = operation.create_date
-                    op.start_date = operation.start_date
-                    op.status = operation.status
+                    op.completion_date = datetime.now()
                     operation_entity = dao.store_entity(op)
                     imported_operations.append(operation_entity)
 
