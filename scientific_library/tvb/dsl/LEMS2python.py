@@ -10,10 +10,11 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 
 from mako.template import Template
 import tvb
-import sys
 import os
-from .NeuroML.lems.model.model import Model
+from tvb.basic.logger.builder import get_logger
+from tvb.dsl.NeuroML.lems.model.model import Model
 
+logger = get_logger(__name__)
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -26,10 +27,10 @@ def lems_file(model_name, folder=None):
     return os.path.join(folder, model_name.lower() + '.xml')
 
 
-def load_model(model_filename):
+def load_model(model_filename, folder=None):
     "Load model from filename"
 
-    fp_xml = lems_file(model_filename)
+    fp_xml = lems_file(model_filename, folder)
 
     # instantiate LEMS lib
     model = Model()
@@ -52,8 +53,8 @@ def default_template():
     return template
 
 
-def render_model(model_name, template=None):
-    model, svboundaries = load_model(model_name)
+def render_model(model_name, template=None, folder=None):
+    model, svboundaries = load_model(model_name, folder)
     template = template or default_template()
     model_str = template.render(
                             dfunname=model_name,
@@ -62,23 +63,28 @@ def render_model(model_name, template=None):
                             svboundaries=svboundaries,
                             exposures=model.component_types[model_name].exposures
                             )
-    # print(model_str)
     return model_str
 
 
-def regTVB_templating(model_filename):
+def regTVB_templating(model_filename, folder=None):
     """
     modelfile.py is placed results into tvb/simulator/models
     for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
-    file_class_name is the name of the produced file and also the class name
-
+    file_class_name is the name of the produced file and also the model's class name
+    the path to XML model files folder can be added with the 2nd argument.
+    example model files:
+        epileptort.xml
+        generic2doscillatort.xml
+        kuramotot.xml
+        montbriot.xml
+        reducedwongwangt.xml
     """
 
     # file locations
-    modelfile = "{}{}{}{}".format(os.path.dirname(tvb.__file__),'/simulator/models/',model_filename.lower(),'.py')
+    modelfile = os.path.join(os.path.dirname(tvb.__file__), 'simulator', 'models', model_filename.lower() + '.py')
 
     # start templating
-    model_str = render_model(model_filename, svboundaries, template=default_template())
+    model_str = render_model(model_filename, template=default_template(), folder=folder)
 
     # write templated model to file
     with open(modelfile, "w") as f:
@@ -105,5 +111,10 @@ def regTVB_templating(model_filename):
                 f.truncate(0)
                 f.seek(0)
                 f.writelines(lines)
-    except:
-        print('unable to add new model to __init__.py')
+    except IOError as e:
+        logger.error('ioerror: %s', e)
+
+if __name__ == "__main__":
+
+    # example run for ReducedWongWang model
+    regTVB_templating('ReducedWongWangT', './NeuroML/XMLmodels/')
