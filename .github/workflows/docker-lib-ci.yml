@@ -12,3 +12,5 @@ jobs:
           registry: docker.pkg.github.com
           image_name: multiscale
           dockerfile: tvb_build/docker/Dockerfile-multiscale-build
+      - name: run something in the built image
+        run: docker run docker.pkg.github.com/the-virtual-brain/tvb-root/multiscale bash -c "which pythonxs"
