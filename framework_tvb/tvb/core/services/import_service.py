@@ -356,8 +356,8 @@ class ImportService(object):
     @staticmethod
     def _get_operation_paths(paths):
         path_list = [f.path for f in os.scandir(paths) if f.is_dir()]
-        sorted_path_list = path_list.sort()
-        return sorted_path_list
+        path_list.sort()
+        return path_list
 
     def get_new_operation_for_view_model(self, project, view_model, alg_id):
         op_param = '{"gid": "' + str(view_model.gid) + '"}'
