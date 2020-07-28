@@ -156,6 +156,12 @@ class ProjectService:
             self.logger.exception("Given Project ID was not found in DB!")
             raise ProjectServiceException(str(excep))
 
+    def find_project_path(self, project_name):
+        """
+        Retrieve project path.
+        """
+        return self.structure_helper.get_project_folder(project_name)
+
     def find_project_lazy_by_gid(self, project_gid):
         """
         Simply retrieve Project entity from Database by gid.

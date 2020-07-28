@@ -877,10 +877,21 @@ function waitForStorageUpdateToEnd() {
  *
  * @param projectId the selected project
  */
-function showDataUploadOverlay(projectId) {
+function showDataUploadOverlay(projectId, projectName) {
     showOverlay("/project/get_data_uploader_overlay/" + projectId, true);
     // Bind the menu events for the online help pop-ups
     setupMenuEvents($('.uploader .adaptersDiv'));
+
+    // Generating keys for RSA encrypting
+    doAjaxCall({
+        type: 'POST',
+        url: '/project/generate_encryption_decryption_keys/' + projectName,
+        success: function (status) {
+            if (status === '0'){
+                displayMessage("Keys where succesfully generated!");
+            }
+        }
+    });
 }
 
 /**

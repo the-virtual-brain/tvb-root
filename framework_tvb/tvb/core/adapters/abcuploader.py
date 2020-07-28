@@ -41,6 +41,7 @@ from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.services.crypto_service import CryptoService
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -68,6 +69,10 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
     Base class of the uploaders
     """
     LOGGER = get_logger(__name__)
+
+    def __init__(self):
+        super(ABCUploader, self).__init__()
+        self.crypto_service = CryptoService()
 
     def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
