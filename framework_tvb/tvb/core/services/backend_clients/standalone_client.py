@@ -43,6 +43,7 @@ from threading import Thread, Event
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
@@ -159,7 +160,10 @@ class StandAloneClient(BackendClient):
         """Start asynchronous operation locally"""
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
-        thread.start()
+        if isinstance(adapter_instance, ABCUploader):
+            thread.run()
+        else:
+            thread.start()
 
     @staticmethod
     def stop_operation(operation_id):
