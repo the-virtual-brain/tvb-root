@@ -464,3 +464,9 @@ function _getSelectedVisibilityFilter() {
 }
 
 
+//-----------------------------------------------------------------------
+//                   Public Key for Cryptography
+//-----------------------------------------------------------------------
+function getPublicKey(){
+    window.location = "/project/download_public_key"
+}
