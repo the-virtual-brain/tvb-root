@@ -220,17 +220,24 @@ class ImportService(object):
         """
         Return the renamed path of the operation folder
         """
-        tmp_op_folder = path + 'tmp'
-        os.rename(path, tmp_op_folder)
-        return os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
+        operation_file_path = None
+        for root, _, files in os.walk(path):
+            if FilesHelper.TVB_OPERARATION_FILE in files:
+                # Found an operation folder - append TMP to its name
+                tmp_op_folder = root + 'tmp'
+                os.rename(root, tmp_op_folder)
+                operation_file_path = os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
+        return operation_file_path
 
     def _load_operation_from_path(self, project, op_path):
         """
         Load operation from path containing it.
         """
-        operation = self.__build_operation_from_file(project, op_path)
-        operation.import_file = op_path
-        return operation
+        if op_path:
+            operation = self.__build_operation_from_file(project, op_path)
+            operation.import_file = op_path
+            return operation
+        return None
 
     def _load_datatypes_from_operation_folder(self, op_path, operation_entity, datatype_group):
         """
@@ -306,24 +313,25 @@ class ImportService(object):
                 op_path = self._append_tmp_to_folder_containing_operation(path)
                 operation = self._load_operation_from_path(project, op_path)
 
-                self.logger.debug("Importing operation " + str(operation))
-                old_operation_folder, _ = os.path.split(operation.import_file)
+                if operation:
+                    self.logger.debug("Importing operation " + str(operation))
+                    old_operation_folder, _ = os.path.split(operation.import_file)
 
-                operation_entity, datatype_group = self.__import_operation(operation)
+                    operation_entity, datatype_group = self.__import_operation(operation)
 
-                # Rename operation folder with the ID of the stored operation
-                new_operation_path = FilesHelper().get_operation_folder(project.name, operation_entity.id)
-                if old_operation_folder != new_operation_path:
-                    # Delete folder of the new operation, otherwise move will fail
-                    shutil.rmtree(new_operation_path)
-                    shutil.move(old_operation_folder, new_operation_path)
+                    # Rename operation folder with the ID of the stored operation
+                    new_operation_path = FilesHelper().get_operation_folder(project.name, operation_entity.id)
+                    if old_operation_folder != new_operation_path:
+                        # Delete folder of the new operation, otherwise move will fail
+                        shutil.rmtree(new_operation_path)
+                        shutil.move(old_operation_folder, new_operation_path)
 
-                operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
-                                                                                 operation_entity,
-                                                                                 datatype_group)
-                self._store_imported_datatypes_in_db(project, operation_datatypes, dt_burst_mappings,
-                                                     burst_ids_mapping)
-                imported_operations.append(operation_entity)
+                    operation_datatypes = self._load_datatypes_from_operation_folder(new_operation_path,
+                                                                                     operation_entity,
+                                                                                     datatype_group)
+                    self._store_imported_datatypes_in_db(project, operation_datatypes, dt_burst_mappings,
+                                                         burst_ids_mapping)
+                    imported_operations.append(operation_entity)
             else:
                 start_date = datetime.now()
                 alg = dao.get_algorithm_by_module(view_model.get_algorithm_module, view_model.get_algorithm_class_name)
