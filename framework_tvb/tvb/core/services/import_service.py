@@ -38,6 +38,7 @@ import os
 import json
 import shutil
 from cgi import FieldStorage
+from collections import OrderedDict
 from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
@@ -356,8 +357,14 @@ class ImportService(object):
     @staticmethod
     def _get_operation_paths(paths):
         path_list = [f.path for f in os.scandir(paths) if f.is_dir()]
-        path_list.sort()
-        return path_list
+        sorted_dir = {}
+        for path in path_list:
+            op_number = os.path.basename(path)
+            sorted_dir[int(op_number)] = path
+
+        sorted_dir = OrderedDict(sorted(sorted_dir.items()))
+
+        return list(sorted_dir.values())
 
     def get_new_operation_for_view_model(self, project, view_model, alg_id):
         op_param = '{"gid": "' + str(view_model.gid) + '"}'
