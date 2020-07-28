@@ -100,7 +100,7 @@ from tvb.core.neocom.h5 import REGISTRY
 # then in a metaclass hook each class creation and populate a map
 def populate_datatypes_registry():
     REGISTRY.register_datatype(Connectivity, ConnectivityH5, ConnectivityIndex)
-    REGISTRY.register_datatype(BurstConfiguration, BurstConfigurationH5, BurstConfiguration)
+    REGISTRY.register_datatype(None, BurstConfigurationH5, BurstConfiguration)
     REGISTRY.register_datatype(LocalConnectivity, LocalConnectivityH5, LocalConnectivityIndex)
     REGISTRY.register_datatype(ProjectionMatrix, ProjectionMatrixH5, ProjectionMatrixIndex, make_proj_matrix)
     REGISTRY.register_datatype(RegionVolumeMapping, RegionVolumeMappingH5, RegionVolumeMappingIndex)

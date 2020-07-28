@@ -341,7 +341,7 @@ class ImportService(object):
 
                 # Store the DataTypes in db
                 if dt_paths:
-                    self._store_datatypes_from_path_in_db(dt_paths, op.id)
+                    self._store_datatypes_from_path_in_db(dt_paths, project.id, op.id)
 
         return imported_operations
 
@@ -373,13 +373,13 @@ class ImportService(object):
         return vm, dt_paths
 
     @staticmethod
-    def _store_datatypes_from_path_in_db(paths, op_id):
+    def _store_datatypes_from_path_in_db(paths, project_id, op_id):
         if paths:
             for path in paths:
                 h5_class = H5File.h5_class_from_file(path)
                 if h5_class is BurstConfigurationH5:
-                    h5_file = H5File.from_file(path)
-                    dt = REGISTRY.get_datatype_for_h5file(h5_file)(1)
+                    h5_file = BurstConfigurationH5(path)
+                    dt = BurstConfiguration(project_id)
                     dt.fk_simulation = op_id
                     h5_file.load_into(dt)
                     dao.store_entity(dt)
