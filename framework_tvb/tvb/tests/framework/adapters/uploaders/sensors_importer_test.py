@@ -33,10 +33,11 @@
 """
 
 import os
+
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
 from tvb.tests.framework.core.factory import TestFactory
 import tvb_data.sensors as demo_data
@@ -107,7 +108,7 @@ class TestSensorsImporter(TransactionalTestCase):
             TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
                                        SensorsImporterModel.OPTIONS['MEG Sensors'])
             raise AssertionError("Import should fail in case of a MEG import without orientation.")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass
 

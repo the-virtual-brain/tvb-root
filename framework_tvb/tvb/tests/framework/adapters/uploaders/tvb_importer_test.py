@@ -40,9 +40,10 @@ import pytest
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -99,7 +100,7 @@ class TestTVBImporter(TransactionalTestCase):
 
         view_model = TVBImporterModel()
         view_model.data_file = import_file_path
-        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project)
 
     def test_zip_import(self, prepare_importer_data):
         """
@@ -133,7 +134,7 @@ class TestTVBImporter(TransactionalTestCase):
         try:
             self._import("invalid_path")
             raise AssertionError("System should throw an exception if trying to import an invalid file")
-        except OperationException:
+        except LaunchException:
             # Expected
             pass
 
@@ -145,6 +146,6 @@ class TestTVBImporter(TransactionalTestCase):
         try:
             self._import(file_path)
             raise AssertionError("System should throw an exception if trying to import a file with wrong format")
-        except OperationException:
+        except IncompatibleFileManagerException:
             # Expected
             pass

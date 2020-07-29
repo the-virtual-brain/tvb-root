@@ -39,7 +39,7 @@ import tvb_data.surfaceData
 import tvb_data.projectionMatrix as dataset
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.core.services.exceptions import OperationException
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -82,7 +82,7 @@ class TestProjectionMatrix(TransactionalTestCase):
             TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
                                                  self.surface.gid)
             raise AssertionError("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
-        except OperationException:
+        except LaunchException:
             pass
 
     def test_happy_flow_surface_import(self):

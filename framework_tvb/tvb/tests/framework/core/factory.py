@@ -246,7 +246,7 @@ class TestFactory(object):
     def launch_importer(importer_class, view_model, user, project_id):
         # type: (type, ViewModel, User, int) -> None
         importer = ABCAdapter.build_adapter_from_class(importer_class)
-        OperationService().fire_operation(importer, user, project_id, view_model=view_model)
+        TestFactory.launch_synchronously(user, project_id, importer, view_model)
 
     @staticmethod
     def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):
@@ -255,7 +255,7 @@ class TestFactory(object):
         view_model.mapping_file = import_file_path
         view_model.surface = surface_gid
         view_model.connectivity = connectivity_gid
-        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project.id)
+        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, RegionMappingIndex)
 
@@ -265,7 +265,7 @@ class TestFactory(object):
         view_model = GIFTISurfaceImporterModel()
         view_model.data_file = path
         view_model.should_center = False
-        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
@@ -279,7 +279,7 @@ class TestFactory(object):
         view_model.should_center = True
         view_model.zero_based_triangles = zero_based
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex, count)
 
@@ -289,7 +289,7 @@ class TestFactory(object):
         view_model = ObjSurfaceImporterModel()
         view_model.data_file = obj_path
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
@@ -299,7 +299,7 @@ class TestFactory(object):
         view_model = SensorsImporterModel()
         view_model.sensors_file = zip_path
         view_model.sensors_type = sensors_type
-        TestFactory.launch_importer(SensorsImporter, view_model, user, project.id)
+        TestFactory.launch_importer(SensorsImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, SensorsIndex)
 
@@ -310,7 +310,7 @@ class TestFactory(object):
         view_model.projection_file = file_path
         view_model.sensors = sensors_gid
         view_model.surface = surface_gid
-        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, ProjectionMatrixIndex)
 
@@ -324,7 +324,7 @@ class TestFactory(object):
         view_model = ZIPConnectivityImporterModel()
         view_model.uploaded = zip_path
         view_model.data_subject = subject
-        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project)
 
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 

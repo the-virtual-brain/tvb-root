@@ -36,6 +36,7 @@ import tvb_data.surfaceData
 import os
 
 from tvb.basic.neotraits.ex import TraitValueError
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -46,7 +47,6 @@ import tvb_data.regionMapping as demo_data
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 
 
@@ -153,21 +153,21 @@ class TestRegionMappingImporter(TransactionalTestCase):
         try:
             TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid region number")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass
 
         try:
             TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid regions number")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass
 
         try:
             TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid region number (negative number)")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass
 

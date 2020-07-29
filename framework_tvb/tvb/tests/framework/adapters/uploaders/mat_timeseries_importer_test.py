@@ -64,7 +64,7 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
         view_model.data_subject = "QL"
         view_model.datatype = self.connectivity.gid
 
-        TestFactory.launch_importer(RegionTimeSeriesImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(RegionTimeSeriesImporter, view_model, self.test_user, self.test_project)
 
         tsr = TestFactory.get_entity(self.test_project, TimeSeriesRegionIndex)
         assert (661, 1, 68, 1) == (tsr.data_length_1d, tsr.data_length_2d, tsr.data_length_3d, tsr.data_length_4d)

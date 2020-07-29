@@ -33,10 +33,11 @@
 """
 
 import os
+
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.services.exceptions import OperationException
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 import tvb_data.gifti as demo_data
 
@@ -101,7 +102,7 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
         try:
             TestFactory.import_surface_gifti(self.test_user, self.test_project, self.WRONG_GII_FILE)
             raise AssertionError("Import should fail in case of a wrong GIFTI format.")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass
 

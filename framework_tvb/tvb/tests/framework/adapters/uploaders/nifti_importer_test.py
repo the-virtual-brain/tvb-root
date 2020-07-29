@@ -41,10 +41,10 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
-from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -86,7 +86,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         view_model.connectivity = connectivity_gid
         view_model.data_subject = "Bla Bla"
 
-        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
         assert 1, count == "Project should contain only one data type."
@@ -180,6 +180,6 @@ class TestNIFTIImporter(TransactionalTestCase):
         try:
             self._import(self.WRONG_NII_FILE)
             raise AssertionError("Import should fail in case of a wrong NIFTI format.")
-        except OperationException:
+        except LaunchException:
             # Expected exception
             pass

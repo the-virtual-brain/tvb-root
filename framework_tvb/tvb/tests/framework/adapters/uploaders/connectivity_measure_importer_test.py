@@ -39,8 +39,8 @@ import tvb_data
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporter
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.uploaders import test_data
@@ -67,7 +67,7 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         view_model.data_file = path
         view_model.dataset_name = "M"
         view_model.connectivity = self.connectivity.gid
-        TestFactory.launch_importer(ConnectivityMeasureImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(ConnectivityMeasureImporter, view_model, self.test_user, self.test_project)
 
     def test_happy_flow(self):
         assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex)
@@ -75,5 +75,5 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         assert 6 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex)
 
     def test_connectivity_mismatch(self):
-        with pytest.raises(OperationException):
+        with pytest.raises(LaunchException):
             self._import('mantini_networks_33.mat')

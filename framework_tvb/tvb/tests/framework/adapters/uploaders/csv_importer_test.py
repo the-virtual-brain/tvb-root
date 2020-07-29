@@ -38,10 +38,10 @@ from os import path
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -95,7 +95,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         view_model.tracts = tracts_tmp
         view_model.data_subject = subject
         view_model.input_data = reference_connectivity_gid
-        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project)
 
     def test_happy_flow_import(self):
         """
@@ -140,5 +140,5 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         filters = FilterChain('', [field], [TEST_SUBJECT_A], ['!='])
         bad_reference_connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex, filters)
 
-        with pytest.raises(OperationException):
+        with pytest.raises(LaunchException):
             self._import_csv_test_connectivity(bad_reference_connectivity.gid, TEST_SUBJECT_A)
