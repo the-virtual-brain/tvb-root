@@ -318,14 +318,14 @@ class SimulatorAdapterModel(ViewModel, Simulator):
     def linked_has_traits(self):
         return Simulator
 
-    #TODO: add get_algorithm_module and get_algorithm_class_name to all modules (for project import)
+    #TODO: add algorithm_module and algorithm_class_name to all modules (for project import)
 
     @property
-    def get_algorithm_module(self):
+    def algorithm_module(self):
         return "tvb.adapters.simulator.simulator_adapter"
 
     @property
-    def get_algorithm_class_name(self):
+    def algorithm_class_name(self):
         return "SimulatorAdapter"
 
     is_main = Attr(

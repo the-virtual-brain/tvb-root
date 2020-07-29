@@ -41,7 +41,7 @@ from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr, Attr
 from tvb.datatypes.connectivity import Connectivity
 
 
@@ -55,6 +55,20 @@ class BRCOImporterModel(UploaderViewModel):
         label='Target Large Scale Connectivity',
         doc='The Connectivity for which these annotations were made'
     )
+
+    is_main = Attr(
+        field_type=bool,
+        default=True,
+        required=False
+    )
+
+    @property
+    def algorithm_module(self):
+        return "tvb.adapters.uploaders.brco_importer"
+
+    @property
+    def algorithm_class_name(self):
+        return "BRCOImporter"
 
 
 class BRCOImporterForm(ABCUploaderForm):

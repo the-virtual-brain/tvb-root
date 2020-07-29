@@ -317,7 +317,7 @@ class ImportService(object):
                     imported_operations.append(operation_entity)
             else:
                 start_date = datetime.now()
-                alg = dao.get_algorithm_by_module(view_model.get_algorithm_module, view_model.get_algorithm_class_name)
+                alg = dao.get_algorithm_by_module(view_model.algorithm_module, view_model.algorithm_class_name)
 
                 op = self.get_new_operation_for_view_model(project, view_model, alg.id)
                 op.meta_data = '{"from": "Import"}'

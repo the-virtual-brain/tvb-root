@@ -71,6 +71,20 @@ class ZIPSurfaceImporterModel(UploaderViewModel):
         label='Center surface using vertex means along axes'
     )
 
+    is_main = Attr(
+        field_type=bool,
+        default=True,
+        required=False
+    )
+
+    @property
+    def algorithm_module(self):
+        return "tvb.adapters.uploaders.zip_surface_importer"
+
+    @property
+    def algorithm_class_name(self):
+        return "ZIPSurfaceImporter"
+
 
 class ZIPSurfaceImporterForm(ABCUploaderForm):
 

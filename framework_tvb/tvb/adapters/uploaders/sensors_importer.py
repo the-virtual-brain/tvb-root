@@ -40,7 +40,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str
+from tvb.core.neotraits.view_model import Str, Attr
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
 
 
@@ -59,6 +59,20 @@ class SensorsImporterModel(UploaderViewModel):
         choices=tuple(OPTIONS.values()),
         default=tuple(OPTIONS.values())[0]
     )
+
+    is_main = Attr(
+        field_type=bool,
+        default=True,
+        required=False
+    )
+
+    @property
+    def algorithm_module(self):
+        return "tvb.adapters.uploaders.sensors_importer"
+
+    @property
+    def algorithm_class_name(self):
+        return "SensorsImporter"
 
 
 class SensorsImporterForm(ABCUploaderForm):

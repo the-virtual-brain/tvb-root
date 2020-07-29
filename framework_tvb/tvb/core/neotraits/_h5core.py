@@ -203,15 +203,20 @@ class H5File(object):
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         return self.generic_attributes
 
-    def gather_references(self):
+    def gather_references(self, datatype_cls=None):
         ret = []
         for accessor in self.iter_accessors():
+            trait_attribute = None
+            if datatype_cls and hasattr(datatype_cls, accessor.field_name):
+                trait_attribute = getattr(datatype_cls, accessor.field_name)
+            if not trait_attribute:
+                trait_attribute = accessor.trait_attribute
             if isinstance(accessor, Reference):
-                ret.append((accessor.trait_attribute, accessor.load()))
+                ret.append((trait_attribute, accessor.load()))
             if isinstance(accessor, ReferenceList):
                 hex_gids = accessor.load()
                 gids = [uuid.UUID(hex_gid) for hex_gid in hex_gids]
-                ret.append((accessor.trait_attribute, gids))
+                ret.append((trait_attribute, gids))
         return ret
 
     def determine_datatype_from_file(self):

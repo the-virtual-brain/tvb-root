@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr, Attr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CORTICAL, Surface
@@ -70,6 +70,20 @@ class RegionMappingImporterModel(UploaderViewModel):
         label='Connectivity',
         required=True, doc='The Connectivity used by uploaded region mapping.'
     )
+
+    is_main = Attr(
+        field_type=bool,
+        default=True,
+        required=False
+    )
+
+    @property
+    def algorithm_module(self):
+        return "tvb.adapters.uploaders.region_mapping_importer"
+
+    @property
+    def algorithm_class_name(self):
+        return "RegionMappingImporter"
 
 
 class RegionMappingImporterForm(ABCUploaderForm):

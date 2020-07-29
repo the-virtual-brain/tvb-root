@@ -89,6 +89,20 @@ class ProjectionMatrixImporterModel(UploaderViewModel):
         doc='The Sensors used in for current projection.'
     )
 
+    is_main = Attr(
+        field_type=bool,
+        default=True,
+        required=False
+    )
+
+    @property
+    def algorithm_module(self):
+        return "tvb.adapters.uploaders.projection_matrix_importer"
+
+    @property
+    def algorithm_class_name(self):
+        return "ProjectionMatrixSurfaceEEGImporter"
+
 
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
