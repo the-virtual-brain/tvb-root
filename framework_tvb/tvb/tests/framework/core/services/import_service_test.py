@@ -43,7 +43,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import ProjectImportException
+from tvb.core.services.exceptions import ImportException
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -139,5 +139,5 @@ class TestImportService(BaseTestCase):
         self.zip_path = ExportManager().export_project(test_project)
         assert self.zip_path is not None, "Exported file is none"
 
-        with pytest.raises(ProjectImportException):
+        with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)

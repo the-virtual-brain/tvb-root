@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Adrian Dordea <adrian.dordea@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
@@ -48,14 +49,13 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import ResultFigure, Operation, Algorithm, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits._h5core import H5File, ViewModelH5
-from tvb.core.services.burst_service import BurstService
-from tvb.core.services.exceptions import ProjectImportException, ServicesBaseException
+from tvb.core.services.exceptions import ImportException, ServicesBaseException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
@@ -83,7 +83,7 @@ class ImportService(object):
 
         if isinstance(uploaded, FieldStorage) or isinstance(uploaded, Part):
             if not uploaded.file:
-                raise ProjectImportException("Please select the archive which contains the project structure.")
+                raise ImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
                 self.files_helper.copy_file(uploaded.file, file_obj)
         else:
@@ -93,7 +93,7 @@ class ImportService(object):
             self.files_helper.unpack_zip(uq_file_name, temp_folder)
         except FileStructureException as excep:
             self.logger.exception(excep)
-            raise ProjectImportException("Bad ZIP archive provided. A TVB exported project is expected!")
+            raise ImportException("Bad ZIP archive provided. A TVB exported project is expected!")
 
     @staticmethod
     def _compute_unpack_path():
@@ -141,7 +141,7 @@ class ImportService(object):
             for project in self.created_projects:
                 project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project.name)
                 shutil.rmtree(project_path)
-            raise ProjectImportException(str(excep))
+            raise ImportException(str(excep))
 
         finally:
             # Now delete uploaded file
@@ -163,24 +163,6 @@ class ImportService(object):
             dt_mappings_dict = bursts_info_dict[DT_BURST_MAP]
         os.remove(bursts_file)
         return bursts_dict, dt_mappings_dict
-
-    @staticmethod
-    def _import_bursts(project_entity, bursts_dict):
-        """
-        Re-create old bursts, but keep a mapping between the id it has here and the old-id it had
-        in the project where they were exported, so we can re-add the datatypes to them.
-        """
-        burst_ids_mapping = {}
-
-        # for old_burst_id in bursts_dict:
-            # burst_information = BurstInformation.load_from_dict(bursts_dict[old_burst_id])
-            # burst_entity = BurstConfiguration(project_entity.id)
-            # burst_entity.from_dict(burst_information.data)
-            # burst_entity = dao.store_entity(burst_entity)
-            # burst_ids_mapping[int(old_burst_id)] = burst_entity.id
-            # We don't need the data in dictionary form anymore, so update it with new BurstInformation object
-            # bursts_dict[old_burst_id] = burst_information
-        return burst_ids_mapping
 
     def _import_projects_from_folder(self, temp_folder):
         """
@@ -467,16 +449,15 @@ class ImportService(object):
         try:
             self.logger.debug("Store datatype: %s with Gid: %s" % (datatype.__class__.__name__, datatype.gid))
             return dao.store_entity(datatype)
-        except MissingDataSetException:
-            self.logger.error("Datatype %s has missing data and could not be imported properly." % (datatype,))
-            os.remove(datatype.get_storage_file_path())
+        except MissingDataSetException as e:
+            self.logger.exception(e)
+            error_msg = "Datatype %s has missing data and could not be imported properly." % (datatype,)
+            raise ImportException(error_msg)
         except IntegrityError as excep:
             self.logger.exception(excep)
             error_msg = "Could not import data with gid: %s. There is already a one with " \
                         "the same name or gid." % datatype.gid
-            # Delete file if can't be imported
-            os.remove(datatype.get_storage_file_path())
-            raise ProjectImportException(error_msg)
+            raise ImportException(error_msg)
 
     def __populate_project(self, project_path):
         """
@@ -495,7 +476,7 @@ class ImportService(object):
             self.logger.exception(excep)
             error_msg = ("Could not import project: %s with gid: %s. There is already a "
                          "project with the same name or gid.") % (project_entity.name, project_entity.gid)
-            raise ProjectImportException(error_msg)
+            raise ImportException(error_msg)
 
     def __build_operation_from_file(self, project, operation_file):
         """
