@@ -39,7 +39,7 @@ from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.services.crypto_service import CryptoService
 
@@ -49,6 +49,8 @@ class ABCUploaderForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
         self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
+        self.encrypted_aes_key = TraitUploadField(UploaderViewModel.encrypted_aes_key, '.pem', self,
+                                                  name='encrypted_aes_key')
         self.temporary_files = []
 
     @staticmethod

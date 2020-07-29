@@ -39,3 +39,8 @@ class UploaderViewModel(ViewModel):
         label='Subject'
     )
 
+    encrypted_aes_key = Str(
+        required=False,
+        label='Encrypted AES Key'
+    )
+
