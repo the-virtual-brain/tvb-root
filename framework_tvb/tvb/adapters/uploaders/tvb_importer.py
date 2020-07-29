@@ -37,6 +37,7 @@ import shutil
 import zipfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
@@ -125,6 +126,7 @@ class TVBImporter(ABCUploader):
                 folder, h5file = os.path.split(view_model.data_file)
                 manager = HDF5StorageManager(folder, h5file)
                 if manager.is_valid_hdf5_file():
+                    datatype = None
                     try:
                         datatype = service.load_datatype_from_file(folder, h5file, self.operation_id,
                                                                    final_storage=self.storage_path)
@@ -132,7 +134,10 @@ class TVBImporter(ABCUploader):
                         self.nr_of_datatypes += 1
                     except ImportException as excep:
                         self.log.exception(excep)
-                        os.remove(view_model.data_file)
+                        if datatype is not None:
+                            target_path = h5.path_for_stored_index(datatype)
+                            if os.path.exists(target_path):
+                                os.remove(target_path)
                         raise LaunchException("Invalid file received as input. " + str(excep))
                 else:
                     raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % view_model.data_file)
