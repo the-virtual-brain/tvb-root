@@ -47,6 +47,8 @@ class ABCUploaderForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
         self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
+        self.encrypted_aes_key = TraitUploadField(UploaderViewModel.encrypted_aes_key, '.pem', self,
+                                                  name='encrypted_aes_key')
         self.temporary_files = []
 
     @staticmethod
