@@ -47,7 +47,6 @@ import tvb.core.entities.model.model_operation as model
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.services.crypto_service import CryptoService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
@@ -608,32 +607,6 @@ class ProjectController(BaseController):
         FlowController().execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
-
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
-    def generate_encryption_decryption_keys(self, project_name):
-        private_key = common.get_from_session(common.KEY_PRIVATE_KEY)
-        # Keys should be generated only once
-        if private_key is None:
-            crypto_service = CryptoService()
-            project_folder = self.project_service.find_project_path(project_name)
-            crypto_service.generate_keys(project_folder)
-            common.add2session(common.KEY_PRIVATE_KEY, crypto_service.private_key)
-
-            return '0'
-
-        return '1'
-
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
-    def download_public_key(self):
-        project = common.get_current_project()
-        project_folder = self.project_service.find_project_path(project.name)
-        pem_file_path, pem_file_name = CryptoService().get_key_path(project_folder)
-
-        return serve_file(pem_file_path, "application/x-download", "attachment", pem_file_name)
 
     @cherrypy.expose
     @handle_error(redirect=False)

@@ -76,6 +76,11 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         """
         self.generic_attributes.subject = view_model.data_subject
 
+        # TODO: After it works for single file uploaders,
+        #  find a way to make it work for 2 or more file uploaders as well
+        trait_upload_field_name = list(self.get_form_class().get_upload_information().keys())[0]
+        self.crypto_service.decrypt_content(view_model, trait_upload_field_name)
+
         return ABCSynchronous._prelaunch(self, operation, view_model, uid, available_disk_space)
 
     def get_required_memory_size(self, view_model):

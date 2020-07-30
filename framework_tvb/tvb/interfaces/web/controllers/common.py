@@ -102,9 +102,6 @@ KEY_OVERLAY_PAGINATION = "show_overlay_pagination"
 KEY_OVERLAY_PREVIOUS = "action_overlay_previous"
 KEY_OVERLAY_NEXT = "action_overlay_next"
 
-# For decrypting
-KEY_PRIVATE_KEY = "private_key"
-
 
 def set_message(msg, m_type=TYPE_INFO):
     """ Set in session a message of a given type"""
