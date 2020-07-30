@@ -207,8 +207,9 @@ class H5File(object):
         ret = []
         for accessor in self.iter_accessors():
             trait_attribute = None
-            if datatype_cls and hasattr(datatype_cls, accessor.field_name):
-                trait_attribute = getattr(datatype_cls, accessor.field_name)
+            if datatype_cls:
+                if hasattr(datatype_cls, accessor.field_name):
+                    trait_attribute = getattr(datatype_cls, accessor.field_name)
             if not trait_attribute:
                 trait_attribute = accessor.trait_attribute
             if isinstance(accessor, Reference):

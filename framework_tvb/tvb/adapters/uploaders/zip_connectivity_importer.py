@@ -66,15 +66,6 @@ class ZIPConnectivityImporterModel(UploaderViewModel):
         doc='Normalization mode for weights'
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.zip_connectivity_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "ZIPConnectivityImporter"
-
-
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):

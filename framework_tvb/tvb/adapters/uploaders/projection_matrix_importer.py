@@ -95,15 +95,6 @@ class ProjectionMatrixImporterModel(UploaderViewModel):
         required=False
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.projection_matrix_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "ProjectionMatrixSurfaceEEGImporter"
-
-
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):

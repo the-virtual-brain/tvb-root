@@ -77,15 +77,6 @@ class ZIPSurfaceImporterModel(UploaderViewModel):
         required=False
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.zip_surface_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "ZIPSurfaceImporter"
-
-
 class ZIPSurfaceImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):

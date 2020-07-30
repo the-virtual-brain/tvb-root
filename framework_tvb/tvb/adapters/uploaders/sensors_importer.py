@@ -66,15 +66,6 @@ class SensorsImporterModel(UploaderViewModel):
         required=False
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.sensors_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "SensorsImporter"
-
-
 class SensorsImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):

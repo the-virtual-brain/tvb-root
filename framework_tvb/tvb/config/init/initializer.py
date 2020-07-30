@@ -188,6 +188,10 @@ class Introspector(object):
                     stored_adapter.id = inst_from_db.id
 
                 stored_adapter = dao.store_entity(stored_adapter, inst_from_db is not None)
+
+                model = adapter_form().get_view_model()()
+                IntrospectionRegistry.VIEW_MODEL2ADAPTER[type(model)] = stored_adapter
+
                 adapter_class.stored_adapter = stored_adapter
 
             except Exception:

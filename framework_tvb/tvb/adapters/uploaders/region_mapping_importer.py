@@ -77,15 +77,6 @@ class RegionMappingImporterModel(UploaderViewModel):
         required=False
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.region_mapping_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "RegionMappingImporter"
-
-
 class RegionMappingImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):

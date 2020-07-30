@@ -62,15 +62,6 @@ class BRCOImporterModel(UploaderViewModel):
         required=False
     )
 
-    @property
-    def algorithm_module(self):
-        return "tvb.adapters.uploaders.brco_importer"
-
-    @property
-    def algorithm_class_name(self):
-        return "BRCOImporter"
-
-
 class BRCOImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
