@@ -206,11 +206,11 @@ class ImportService(object):
         """
         operation_file_path = None
         for root, _, files in os.walk(path):
-            if FilesHelper.TVB_OPERARATION_FILE in files:
+            if "Operation.xml" in files:
                 # Found an operation folder - append TMP to its name
                 tmp_op_folder = root + 'tmp'
                 os.rename(root, tmp_op_folder)
-                operation_file_path = os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
+                operation_file_path = os.path.join(tmp_op_folder, "Operation.xml")
         return operation_file_path
 
     def _load_operation_from_path(self, project, op_path):
