@@ -53,8 +53,8 @@ class CryptoService(object):
         decrypted_content = decryptor.update(encrypted_content)
 
         # Save the decrypted content and update attribute on view model
-        decrypted_content_path = os.path.join(view_model.uploaded, os.pardir)
-        decrypted_content_name = os.path.basename(view_model.uploaded)
+        decrypted_content_path = os.path.join(upload_path, os.pardir)
+        decrypted_content_name = os.path.basename(upload_path)
         extension_index = decrypted_content_name.rfind('.')
         extension = decrypted_content_name[extension_index:]
         decrypted_content_name = decrypted_content_name[:extension_index]
