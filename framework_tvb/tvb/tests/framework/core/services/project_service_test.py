@@ -354,7 +354,7 @@ class TestProjectService(TransactionalTestCase):
 
     def __check_meta_data(self, expected_meta_data, new_datatype):
         """Validate Meta-Data"""
-        mapp_keys = {DataTypeMetaData.KEY_SUBJECT: "subject", DataTypeMetaData.KEY_STATE: "state"}
+        mapp_keys = {DataTypeOverlayDetails.DATA_SUBJECT: "subject", DataTypeOverlayDetails.DATA_STATE: "state"}
         for key, value in expected_meta_data.items():
             if key in mapp_keys:
                 assert value == getattr(new_datatype, mapp_keys[key])
@@ -412,10 +412,8 @@ class TestProjectService(TransactionalTestCase):
         new_datatype = dao.get_datatype_by_gid(gid)
         self.__check_meta_data(new_meta_data, new_datatype)
 
-        # TODO Change bellow to check the Operation ViewModel H5 instead of the old Operation.xml
-        op_path = FilesHelper().get_operation_meta_file_path(inserted_project.name, new_datatype.parent_operation.id)
-        op_meta = XMLReader(op_path).read_metadata()
-        assert op_meta['user_group'] == 'new user group', 'UserGroup not updated!'
+        new_datatype_h5 = h5.h5_file_for_index(new_datatype)
+        assert new_datatype_h5.subject.load() == 'new subject', 'UserGroup not updated!'
 
     def test_update_meta_data_group(self, datatype_group_factory):
         """

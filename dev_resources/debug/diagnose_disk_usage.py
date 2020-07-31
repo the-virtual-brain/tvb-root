@@ -124,9 +124,6 @@ class DiagnoseDiskUsage(object):
             self.print_usage_line(dt.gid[:12], dt.type, dt_actual_disk_size, db_disk_size)
             self.expected_files.add(dt_pth)
 
-        op_xml = self.file_helper.get_operation_meta_file_path(self.project.name, op.id)
-        self.expected_files.add(op_xml)
-
         self.prj_disk_size += op_disk_size
         self.prj_db_size += op_db_size
         self.print_usage_line('', 'total :', op_disk_size, op_db_size)

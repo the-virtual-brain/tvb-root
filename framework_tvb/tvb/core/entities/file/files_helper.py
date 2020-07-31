@@ -32,13 +32,11 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import json
 import os
 import shutil
 import tempfile
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -65,7 +63,6 @@ class FilesHelper(object):
     TVB_ZIP_FILE_EXTENSION = ".zip"
 
     TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
-    TVB_OPERARATION_FILE = "Operation" + TVB_FILE_EXTENSION
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -172,53 +169,6 @@ class FilesHelper(object):
             self.check_created(operation_path)
         return operation_path
 
-    def get_operation_meta_file_path(self, project_name, operation_id):
-        """
-        Retrieve the path to operation meta file
-        
-        :param project_name: name of the current project.
-        :param operation_id: Identifier of Operation in given project
-        :returns: File path for storing Operation meta-data. File might not be yet created,
-            but parent folder exists after this method.
-             
-        """
-        complete_path = self.get_operation_folder(project_name, operation_id)
-        complete_path = os.path.join(complete_path, self.TVB_OPERARATION_FILE)
-        return complete_path
-
-    def write_operation_metadata(self, operation):
-        """
-        :param operation: DB stored operation instance.
-        """
-        project_name = operation.project.name
-        op_path = self.get_operation_meta_file_path(project_name, operation.id)
-        _, equivalent_dict = operation.to_dict()
-        meta_entity = GenericMetaData(equivalent_dict)
-        XMLWriter(meta_entity).write(op_path)
-        os.chmod(op_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
-
-    def update_operation_metadata(self, project_name, new_group_name, operation_id, is_group=False):
-        """
-        Update operation meta data.
-        :param is_group: when FALSE, use parameter 'new_group_name' for direct assignment on operation.user_group
-        when TRUE, update  operation.operation_group.name = parameter 'new_group_name'
-        """
-        op_path = self.get_operation_meta_file_path(project_name, operation_id)
-        if not os.path.exists(op_path):
-            self.logger.warning("Trying to update an operation-meta file which does not exist."
-                                " It could happen in a group where partial entities have errors!")
-            return
-        op_meta_data = XMLReader(op_path).read_metadata()
-
-        if is_group:
-            group_meta_str = op_meta_data[DataTypeMetaData.KEY_FK_OPERATION_GROUP]
-            group_meta = json.loads(group_meta_str)
-            group_meta[DataTypeMetaData.KEY_OPERATION_GROUP_NAME] = new_group_name
-            op_meta_data[DataTypeMetaData.KEY_FK_OPERATION_GROUP] = json.dumps(group_meta)
-        else:
-            op_meta_data[DataTypeMetaData.KEY_OPERATION_TAG] = new_group_name
-        XMLWriter(op_meta_data).write(op_path)
-
     def remove_operation_data(self, project_name, operation_id):
         """
         Remove H5 storage fully.
@@ -234,8 +184,8 @@ class FilesHelper(object):
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
-    ####################### DATA-TYPES METHODS Start Here #####################
 
+    ####################### DATA-TYPES METHODS Start Here #####################
     def remove_datatype_file(self, h5_file):
         """
         Remove H5 storage fully.
