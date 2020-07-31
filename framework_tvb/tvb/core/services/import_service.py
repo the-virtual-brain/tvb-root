@@ -47,7 +47,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
-from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
@@ -318,7 +317,7 @@ class ImportService(object):
                     imported_operations.append(operation_entity)
             else:
                 start_date = datetime.now()
-                alg = IntrospectionRegistry.VIEW_MODEL2ADAPTER[type(view_model)]
+                alg = FilesHelper.VIEW_MODEL2ADAPTER[type(view_model)]
 
                 #import operation only if there is a algolithm
                 if alg:

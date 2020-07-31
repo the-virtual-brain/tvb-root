@@ -120,8 +120,6 @@ class IntrospectionRegistry(object):
         CreateAlgorithmCategoryConfig: import_adapters(tvb.adapters.creators, ALL_CREATORS),
     }
 
-    VIEW_MODEL2ADAPTER = {}
-
     DATATYPES = import_dt_index(tvb.adapters.datatypes.db, ALL_DATATYPES)
 
     PORTLETS_MODULE = tvb.adapters.portlets
