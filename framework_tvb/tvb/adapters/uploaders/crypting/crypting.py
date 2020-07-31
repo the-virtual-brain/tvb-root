@@ -21,7 +21,7 @@ def encrypt_file(path_to_file, path_to_public_key, path_to_encrypted_key):
 
     # Generate the symmetric AES key and mode
     symmetric_key = os.urandom(32)
-    iv = b"a" * 16
+    iv = os.urandom(16)
 
     # Generate a Cipher which uses AES algorithm
     cipher = Cipher(algorithms.AES(symmetric_key), modes.CTR(iv), backend=default_backend())
@@ -48,9 +48,11 @@ def encrypt_file(path_to_file, path_to_public_key, path_to_encrypted_key):
         )
     )
 
+    extended_encrypted_symmetric_key = encrypted_symmetric_key + iv
+
     # Save the encrypted symmetric key
     with open(os.path.join(path_to_encrypted_key, 'encrypted_symmetric_key.pem'), 'wb') as f:
-        f.write(encrypted_symmetric_key)
+        f.write(extended_encrypted_symmetric_key)
 
 
 if __name__ == '__main__':
