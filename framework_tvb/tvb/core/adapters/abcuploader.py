@@ -41,7 +41,11 @@ from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.services.crypto_service import CryptoService
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -74,7 +78,6 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
     def __init__(self):
         super(ABCUploader, self).__init__()
-        self.crypto_service = CryptoService()
 
     def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
         """
@@ -86,9 +89,61 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
         trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
         for upload_field_name in trait_upload_field_names:
-            self.crypto_service.decrypt_content(view_model, upload_field_name)
+            self._decrypt_content(view_model, upload_field_name)
 
         return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
+
+    def _decrypt_content(self, view_model, trait_upload_field_name):
+        if view_model.encrypted_aes_key is None:
+            return
+
+        # Open encrypted file
+        upload_path = getattr(view_model, trait_upload_field_name)
+        with open(upload_path, 'rb') as f:
+            encrypted_content = f.read()
+
+        # Get the encrypted AES symmetric-key
+        with open(view_model.encrypted_aes_key, 'rb') as f:
+            extended_encrypted_aes_key = f.read()
+
+        encrypted_aes_key = extended_encrypted_aes_key[:self.ENCRYPTED_AES_KEY_SIZE]
+        iv = extended_encrypted_aes_key[self.ENCRYPTED_AES_KEY_SIZE:]
+
+        # Read the private key
+        with open("../../adapters/uploaders/keys/private_key.pem", "rb") as key_file:
+            private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+
+        # Decrypt the AES symmetric key using the private key
+        decrypted_aes_key = private_key.decrypt(
+            encrypted_aes_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        # Use the decrypted AES key to decrypt the message
+        cipher = Cipher(algorithms.AES(decrypted_aes_key), modes.CTR(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        decrypted_content = decryptor.update(encrypted_content)
+
+        # Save the decrypted content and update attribute on view model
+        decrypted_content_path = os.path.join(upload_path, os.pardir)
+        decrypted_content_name = os.path.basename(upload_path)
+        extension_index = decrypted_content_name.rfind('.')
+        extension = decrypted_content_name[extension_index:]
+        decrypted_content_name = decrypted_content_name[:extension_index]
+
+        decrypted_download_path = os.path.join(decrypted_content_path, decrypted_content_name + extension)
+        view_model.__setattr__(trait_upload_field_name, decrypted_download_path)
+
+        with open(decrypted_download_path, 'wb') as f:
+            f.write(decrypted_content)
 
     def get_required_memory_size(self, view_model):
         """
