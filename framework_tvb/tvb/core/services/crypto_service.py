@@ -11,9 +11,9 @@ class CryptoService(object):
     _instance = None
     KEY_FOLDER_NAME = 'PUBLIC_KEY'
     KEY_FILE_NAME = 'public_key.pem'
+    ENCRYPTED_AES_KEY_SIZE = 256
 
-    @staticmethod
-    def decrypt_content(view_model, trait_upload_field_name):
+    def decrypt_content(self, view_model, trait_upload_field_name):
         if view_model.encrypted_aes_key is None:
             return
 
@@ -24,7 +24,10 @@ class CryptoService(object):
 
         # Get the encrypted AES symmetric-key
         with open(view_model.encrypted_aes_key, 'rb') as f:
-            encrypted_aes_key = f.read()
+            extended_encrypted_aes_key = f.read()
+
+        encrypted_aes_key = extended_encrypted_aes_key[:self.ENCRYPTED_AES_KEY_SIZE]
+        iv = extended_encrypted_aes_key[self.ENCRYPTED_AES_KEY_SIZE:]
 
         # Read the private key
         with open("../../adapters/uploaders/keys/private_key.pem", "rb") as key_file:
@@ -43,8 +46,6 @@ class CryptoService(object):
                 label=None
             )
         )
-
-        iv = b"a" * 16
 
         # Use the decrypted AES key to decrypt the message
         cipher = Cipher(algorithms.AES(decrypted_aes_key), modes.CTR(iv), backend=default_backend())
