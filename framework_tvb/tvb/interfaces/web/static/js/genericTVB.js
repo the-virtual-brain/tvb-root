@@ -877,7 +877,7 @@ function waitForStorageUpdateToEnd() {
  *
  * @param projectId the selected project
  */
-function showDataUploadOverlay(projectId, projectName) {
+function showDataUploadOverlay(projectId) {
     showOverlay("/project/get_data_uploader_overlay/" + projectId, true);
     // Bind the menu events for the online help pop-ups
     setupMenuEvents($('.uploader .adaptersDiv'));
