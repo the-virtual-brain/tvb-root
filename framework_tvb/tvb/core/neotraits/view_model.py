@@ -42,12 +42,6 @@ class ViewModel(HasTraits):
         - support UI names for attrs with choices
     """
 
-    is_main = Attr(
-        field_type=bool,
-        default=False,
-        required=False
-    )
-
     def linked_has_traits(self):
         return HasTraits
 

@@ -318,12 +318,6 @@ class SimulatorAdapterModel(ViewModel, Simulator):
     def linked_has_traits(self):
         return Simulator
 
-    is_main = Attr(
-        field_type=bool,
-        default=True,
-        required=False
-    )
-
     connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         required=Simulator.connectivity.required,

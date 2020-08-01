@@ -40,7 +40,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, Attr
+from tvb.core.neotraits.view_model import Str
 from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
@@ -54,11 +54,6 @@ class TVBImporterModel(UploaderViewModel):
         label='Please select file to import (h5 or zip)'
     )
 
-    is_main = Attr(
-        field_type=bool,
-        default=True,
-        required=False
-    )
 
 class TVBImporterForm(ABCUploaderForm):
 

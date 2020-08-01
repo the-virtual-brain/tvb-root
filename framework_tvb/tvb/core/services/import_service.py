@@ -338,21 +338,21 @@ class ImportService(object):
 
     @staticmethod
     def _get_view_model_and_datatypes_paths(import_path):
-        vm = None
+        main_view_model = None
         dt_paths = []
         for root, _, files in os.walk(import_path):
             for file in files:
-                if file.endswith(".h5"):
+                if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
                     vm_file_oath = os.path.join(root, file)
                     h5_class = H5File.h5_class_from_file(vm_file_oath)
                     if h5_class is ViewModelH5:
-                        if not vm:
+                        if not main_view_model:
                             view_model = h5.load_view_model_from_file(vm_file_oath)
-                            if hasattr(view_model, "is_main") and view_model.is_main == True:
-                                vm = view_model
+                            if type(view_model) in VIEW_MODEL2ADAPTER.keys():
+                                main_view_model = view_model
                     else:
                         dt_paths.append(vm_file_oath)
-        return vm, dt_paths
+        return main_view_model, dt_paths
 
     @staticmethod
     def _store_datatypes_from_path_in_db(paths, project_id, op_id):

@@ -37,17 +37,17 @@ import numpy
 import shutil
 import zipfile
 import tempfile
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, DataTypeGidAttr, Attr
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CORTICAL, Surface
@@ -71,11 +71,6 @@ class RegionMappingImporterModel(UploaderViewModel):
         required=True, doc='The Connectivity used by uploaded region mapping.'
     )
 
-    is_main = Attr(
-        field_type=bool,
-        default=True,
-        required=False
-    )
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
@@ -160,7 +155,7 @@ class RegionMappingImporter(ABCUploader):
         if len(array_data) != surface_index.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
-                  len(array_data), surface_index.number_of_vertices)
+                      len(array_data), surface_index.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
