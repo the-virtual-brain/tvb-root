@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
