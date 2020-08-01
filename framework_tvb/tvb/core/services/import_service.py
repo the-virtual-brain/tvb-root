@@ -46,6 +46,7 @@ from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.config import VIEW_MODEL2ADAPTER
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -317,9 +318,9 @@ class ImportService(object):
                     imported_operations.append(operation_entity)
             else:
                 start_date = datetime.now()
-                alg = FilesHelper.VIEW_MODEL2ADAPTER[type(view_model)]
+                alg = VIEW_MODEL2ADAPTER[type(view_model)]
 
-                #import operation only if there is a algolithm
+                # import operation only if there is a algolithm
                 if alg:
                     op = self.get_new_operation_for_view_model(project, view_model, alg.id)
                     op.meta_data = '{"from": "Import"}'

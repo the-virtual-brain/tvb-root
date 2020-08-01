@@ -71,3 +71,5 @@ MEASURE_METRICS_MODEL_CLASS = 'TimeseriesMetricsAdapterModel'
 DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'
 
 DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
+
+VIEW_MODEL2ADAPTER = {}

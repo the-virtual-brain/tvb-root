@@ -40,12 +40,12 @@ from types import ModuleType
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.config import VIEW_MODEL2ADAPTER
 from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.code_versions.code_update_manager import CodeUpdateManager
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
@@ -190,8 +190,8 @@ class Introspector(object):
 
                 stored_adapter = dao.store_entity(stored_adapter, inst_from_db is not None)
 
-                model = adapter_form().get_view_model()()
-                FilesHelper.VIEW_MODEL2ADAPTER[type(model)] = stored_adapter
+                view_model_class = adapter_form.get_view_model()
+                VIEW_MODEL2ADAPTER[view_model_class] = stored_adapter
 
                 adapter_class.stored_adapter = stored_adapter
 

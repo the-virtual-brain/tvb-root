@@ -63,7 +63,6 @@ class FilesHelper(object):
     TVB_ZIP_FILE_EXTENSION = ".zip"
 
     TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
-    VIEW_MODEL2ADAPTER = {}
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
