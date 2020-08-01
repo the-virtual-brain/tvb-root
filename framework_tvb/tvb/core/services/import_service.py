@@ -36,7 +36,6 @@
 """
 
 import os
-import json
 import shutil
 from cgi import FieldStorage
 from collections import OrderedDict
@@ -53,18 +52,18 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP, BurstConfiguration
-from tvb.core.neocom.h5 import REGISTRY
-from tvb.core.neotraits._h5core import H5File, ViewModelH5
-from tvb.core.services.exceptions import ImportException, ServicesBaseException
-from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
+from tvb.core.services.exceptions import ImportException, ServicesBaseException
+from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import REGISTRY
+from tvb.core.neotraits._h5core import H5File, ViewModelH5
 
 
 class ImportService(object):
@@ -152,19 +151,6 @@ class ImportService(object):
             if os.path.exists(temp_folder):
                 shutil.rmtree(temp_folder)
 
-    @staticmethod
-    def _load_burst_info_from_json(project_path):
-        bursts_dict = {}
-        dt_mappings_dict = {}
-        bursts_file = os.path.join(project_path, BURST_INFO_FILE)
-        if os.path.isfile(bursts_file):
-            with open(bursts_file) as f:
-                bursts_info_dict = json.load(f)
-            bursts_dict = bursts_info_dict[BURSTS_DICT_KEY]
-            dt_mappings_dict = bursts_info_dict[DT_BURST_MAP]
-        os.remove(bursts_file)
-        return bursts_dict, dt_mappings_dict
-
     def _import_projects_from_folder(self, temp_folder):
         """
         Process each project from the uploaded pack, to extract names.
@@ -186,12 +172,6 @@ class ImportService(object):
                 shutil.move(project_path, new_project_path)
 
             self.created_projects.append(project_entity)
-
-            # Keep a list with all burst that were imported since we will want to also add the workflow
-            # steps after we are finished with importing the operations and datatypes. We need to first
-            # stored bursts since we need to know which new id's they have for operations parent_burst.
-            # bursts_dict, dt_mappings_dict = self._load_burst_info_from_json(new_project_path)
-            # burst_ids_mapping = self._import_bursts(project_entity, bursts_dict)
 
             # Now import project operations
             self.import_project_operations(project_entity, new_project_path)

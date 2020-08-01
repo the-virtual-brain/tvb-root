@@ -35,7 +35,6 @@ Class responsible for all TVB exports (datatype or project).
 """
 
 import os
-import json
 from datetime import datetime
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
@@ -43,14 +42,11 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
-from tvb.core.entities.model.model_burst import BURST_INFO_FILE, BURSTS_DICT_KEY, DT_BURST_MAP
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 
 LOG = get_logger(__name__)
-BURST_PAGE_SIZE = 100
-DATAYPES_PAGE_SIZE = 100
 
 KEY_DT_GID = 'gid'
 KEY_OPERATION_ID = 'operation'
@@ -198,29 +194,6 @@ class ExportManager:
         # remove these files, since we only want them in export archive
         files_helper.remove_folder(op_folder)
 
-    def _export_bursts(self, project, project_datatypes, zip_file):
-
-        bursts_dict = {}
-
-        bursts_count = dao.get_bursts_for_project(project.id, count=True)
-        for start_idx in range(0, bursts_count, BURST_PAGE_SIZE):
-            bursts = dao.get_bursts_for_project(project.id, page_start=start_idx, page_size=BURST_PAGE_SIZE)
-            # for burst in bursts:
-            #     one_info = self._build_burst_export_dict(burst)
-            #     # Save data in dictionary form so we can just save it as a json later on
-            #     bursts_dict[burst.id] = one_info
-
-        datatype_burst_mapping = {}
-        for dt in project_datatypes:
-            datatype_burst_mapping[dt[KEY_DT_GID]] = dt[KEY_BURST_ID]
-
-        project_folder = FilesHelper().get_project_folder(project)
-        bursts_file_name = os.path.join(project_folder, BURST_INFO_FILE)
-        burst_info = {BURSTS_DICT_KEY: bursts_dict,
-                      DT_BURST_MAP: datatype_burst_mapping}
-
-        zip_file.writestr(os.path.basename(bursts_file_name), json.dumps(burst_info))
-
 
     def export_project(self, project, optimize_size=False):
         """
@@ -264,11 +237,9 @@ class ExportManager:
             LOG.debug(str(to_be_exported_folders))
             for pack in to_be_exported_folders:
                 zip_file.write_folder(**pack)
-            LOG.debug("Done exporting files, now we will write the burst configurations...")
-            self._export_bursts(project, project_datatypes, zip_file)
-            LOG.debug("Done exporting burst configurations, now we will export linked DTs")
+            LOG.debug("Done exporting files, now we will export linked DTs")
             self._export_linked_datatypes(project, zip_file)
-            ## Make sure the Project.xml file gets copied:
+            # Make sure the Project.xml file gets copied:
             if optimize_size:
                 LOG.debug("Done linked, now we write the project xml")
                 zip_file.write(files_helper.get_project_meta_file_path(project.name), files_helper.TVB_PROJECT_FILE)

@@ -40,28 +40,15 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.neotraits.db import Base, HasTraitsIndex
 
 NUMBER_OF_PORTLETS_PER_TAB = 4
-KEY_PARAMETER_CHECKED = 'checked'
-KEY_SAVED_VALUE = 'value'
-
-BURST_INFO_FILE = "bursts_info.json"
-BURSTS_DICT_KEY = "bursts_dict"
-DT_BURST_MAP = "dt_mapping"
 
 PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
 
-PARAM_CONNECTIVITY = 'connectivity'
-PARAM_SURFACE = 'surface'
-PARAM_MODEL = 'model'
-PARAM_INTEGRATOR = 'integrator'
-
-PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
-
-
 ## TabConfiguration entity is not moved in the "transient" module, although it's not stored in DB,
 ## because it was directly referenced from the BurstConfiguration old class.
 ## In most of the case, we depend in "transient" module from classed in "model", and not vice-versa.
+
 
 class TabConfiguration():
     """
