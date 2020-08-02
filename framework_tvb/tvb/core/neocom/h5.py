@@ -31,7 +31,7 @@
 import os
 import typing
 import uuid
-
+from datetime import datetime
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
@@ -40,6 +40,7 @@ from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.utils import date2string
 
 REGISTRY = Registry()
 
@@ -204,6 +205,7 @@ def store_view_model(view_model, base_dir):
     with ViewModelH5(h5_path, view_model) as h5_file:
         h5_file.store(view_model)
         h5_file.type.store(get_full_class_name(type(view_model)))
+        h5_file.create_date.store(date2string(datetime.now()))
 
         references = h5_file.gather_references()
         for trait_attr, gid in references:
