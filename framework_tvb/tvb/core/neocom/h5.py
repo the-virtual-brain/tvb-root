@@ -40,7 +40,7 @@ from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import date2string
+from tvb.core.utils import date2string, string2date
 
 REGISTRY = Registry()
 
@@ -247,6 +247,7 @@ def load_view_model_from_file(filepath):
     with ViewModelH5(filepath, view_model) as h5_file:
         h5_file.load_into(view_model)
         references = h5_file.gather_references()
+        view_model.create_date = string2date(h5_file.create_date.load())
         for trait_attr, gid in references:
             if not gid:
                 continue
