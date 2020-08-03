@@ -222,29 +222,30 @@ class ImportService(object):
     def get_directory_ordered_list(self, project, import_path):
         directory_list = {}
         for root, _, files in os.walk(import_path):
-            if "Operation.xml" in files:
+            if "Operation.xml" in files and root not in directory_list.keys():
                 operation_file_path = os.path.join(root, "Operation.xml")
                 operation = self.__build_operation_from_file(project, operation_file_path)
-                directory_list[operation.create_date] = root
+                directory_list[root] = operation.create_date
             else:
                 for file in files:
-                    if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION) and root not in directory_ordered_list.values():
+                    if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION) and root not in directory_list.keys():
                         h5_file = os.path.join(root, file)
                         try:
                             h5_class = H5File.h5_class_from_file(h5_file)
                             if h5_class is ViewModelH5:
                                 create_date = H5File.get_metadata_param(h5_file, "create_date")
-                                directory_list[create_date] = root
+                                directory_list[root] = create_date
                         except Exception as e:
                             self.logger.warning("Unreadable H5 file will be ignored: %s" % h5_file)
-        directory_ordered_list = dict(sorted(directory_list.items()))
-        return list(directory_ordered_list.values())
+        directory_ordered_list = dict(sorted(directory_list.items(), key=lambda tup: tup[1]))
+        return list(directory_ordered_list.keys())
 
     def import_project_operations(self, project, import_path):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         imported_operations = []
+        import_path = "C:\\Users\\adrian.dordea\\PycharmProjects\\TestDefaultData\\Default_Project - Copy"
         directory_ordered_list = self.get_directory_ordered_list(project, import_path)
 
         for path in directory_ordered_list:
