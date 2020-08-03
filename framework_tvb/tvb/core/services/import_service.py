@@ -245,7 +245,6 @@ class ImportService(object):
         This method scans provided folder and identify all operations that needs to be imported
         """
         imported_operations = []
-        import_path = "C:\\Users\\adrian.dordea\\PycharmProjects\\TestDefaultData\\Default_Project - Copy"
         directory_ordered_list = self.get_directory_ordered_list(project, import_path)
 
         for path in directory_ordered_list:
