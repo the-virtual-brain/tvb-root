@@ -219,80 +219,102 @@ class ImportService(object):
                 if metadata_file.endswith(FilesHelper.TVB_FILE_EXTENSION):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
+    def get_directory_ordered_list(self, project, import_path):
+        directory_list = {}
+        for root, _, files in os.walk(import_path):
+            if "Operation.xml" in files:
+                operation_file_path = os.path.join(root, "Operation.xml")
+                operation = self.__build_operation_from_file(project, operation_file_path)
+                directory_list[operation.create_date] = root
+            else:
+                for file in files:
+                    if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION) and root not in directory_ordered_list.values():
+                        h5_file = os.path.join(root, file)
+                        try:
+                            h5_class = H5File.h5_class_from_file(h5_file)
+                            if h5_class is ViewModelH5:
+                                create_date = H5File.get_metadata_param(h5_file, "create_date")
+                                directory_list[create_date] = root
+                        except Exception as e:
+                            self.logger.warning("Unreadable H5 file will be ignored: %s" % h5_file)
+        directory_ordered_list = dict(sorted(directory_list.items()))
+        return list(directory_ordered_list.values())
+
     def import_project_operations(self, project, import_path):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         imported_operations = []
+        directory_ordered_list = self.get_directory_ordered_list(project, import_path)
 
-        for root, _, files in os.walk(import_path):
-            # TODO This LOOP will import operations in a random order.
-            # We should order by Op (in case of XML) Create Date or ViewModel.create_date
-            if "Operation.xml" in files:
-                # Previous Operation format for uploading previous versions of projects
-                operation_file_path = os.path.join(root, "Operation.xml")
-                operation = self.__build_operation_from_file(project, operation_file_path)
-                operation.import_file = operation_file_path
-                self.logger.debug("Importing operation " + str(operation))
-                operation_entity, datatype_group = self.__import_operation(operation)
-                new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                # TODO ViewModel H5 should be created, as we want to preserve only the new structure in the future
-                operation_datatypes = self._load_datatypes_from_operation_folder(root, operation_entity,
-                                                                                 datatype_group, new_op_folder)
-                self._store_imported_datatypes_in_db(project, operation_datatypes)
-                imported_operations.append(operation_entity)
-
-            else:
-                main_view_model = None
-                dt_paths = []
-                all_view_model_files = []
-                for file in files:
-                    if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-                        h5_file = os.path.join(root, file)
-                        try:
-                            h5_class = H5File.h5_class_from_file(h5_file)
-                            if h5_class is ViewModelH5:
-                                all_view_model_files.append(h5_file)
-                                if not main_view_model:
-                                    view_model = h5.load_view_model_from_file(h5_file)
-                                    if type(view_model) in VIEW_MODEL2ADAPTER.keys():
-                                        main_view_model = view_model
-                            else:
-                                file_update_manager = FilesUpdateManager()
-                                file_update_manager.upgrade_file(h5_file)
-                                dt_paths.append(h5_file)
-                        except Exception as e:
-                            self.logger.warning("Unreadable H5 file will be ignored: %s" % h5_file)
-
-                if main_view_model is not None:
-                    alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
-                    operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters='{"gid": "' + main_view_model.gid.hex + '"}',
-                                          meta='{"from": "Import"}', status=STATUS_FINISHED,
-                                          start_date=datetime.now(), completion_date=datetime.now())
-                    operation_entity = dao.store_entity(operation)
-                    dt_group = None  # TODO
-                    imported_operations.append(operation_entity)
-                    # Now we know the target Ope Folder, we move all ViewModel H5 files there
+        for path in directory_ordered_list:
+            for root, _, files in os.walk(path):
+                # We should order by Op (in case of XML) Create Date or ViewModel.create_date
+                if "Operation.xml" in files:
+                    # Previous Operation format for uploading previous versions of projects
+                    operation_file_path = os.path.join(root, "Operation.xml")
+                    operation = self.__build_operation_from_file(project, operation_file_path)
+                    operation.import_file = operation_file_path
+                    self.logger.debug("Importing operation " + str(operation))
+                    operation_entity, datatype_group = self.__import_operation(operation)
                     new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                    for h5_file in all_view_model_files:
-                        shutil.move(h5_file, new_op_folder)
-                    # Store the DataTypes in db
-                    if dt_paths:
-                        dts = []
-                        for dt_path in dt_paths:
-                            folder, filename = os.path.split(dt_path)
-                            dt = self.load_datatype_from_file(folder, filename, operation_entity.id,
-                                                              datatype_group=dt_group, final_storage=new_op_folder,
-                                                              current_project_id=project.id)
-                            if isinstance(dt, BurstConfiguration):
-                                dao.store_entity(dt)
-                            else:
-                                dts.append(dt)
-                        self._store_imported_datatypes_in_db(project, dts)
+                    # TODO ViewModel H5 should be created, as we want to preserve only the new structure in the future
+                    operation_datatypes = self._load_datatypes_from_operation_folder(root, operation_entity,
+                                                                                     datatype_group, new_op_folder)
+                    self._store_imported_datatypes_in_db(project, operation_datatypes)
+                    imported_operations.append(operation_entity)
+
                 else:
-                    self.logger.warning(
-                        "Folder %s will be ignored, as we could not find a main ViewModel serialized" % root)
+                    main_view_model = None
+                    dt_paths = []
+                    all_view_model_files = []
+                    for file in files:
+                        if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                            h5_file = os.path.join(root, file)
+                            try:
+                                h5_class = H5File.h5_class_from_file(h5_file)
+                                if h5_class is ViewModelH5:
+                                    all_view_model_files.append(h5_file)
+                                    if not main_view_model:
+                                        view_model = h5.load_view_model_from_file(h5_file)
+                                        if type(view_model) in VIEW_MODEL2ADAPTER.keys():
+                                            main_view_model = view_model
+                                else:
+                                    file_update_manager = FilesUpdateManager()
+                                    file_update_manager.upgrade_file(h5_file)
+                                    dt_paths.append(h5_file)
+                            except Exception as e:
+                                self.logger.warning("Unreadable H5 file will be ignored: %s" % h5_file)
+
+                    if main_view_model is not None:
+                        alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
+                        operation = Operation(project.fk_admin, project.id, alg.id,
+                                              parameters='{"gid": "' + main_view_model.gid.hex + '"}',
+                                              meta='{"from": "Import"}', status=STATUS_FINISHED,
+                                              start_date=datetime.now(), completion_date=datetime.now())
+                        operation_entity = dao.store_entity(operation)
+                        dt_group = None  # TODO
+                        imported_operations.append(operation_entity)
+                        # Now we know the target Ope Folder, we move all ViewModel H5 files there
+                        new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                        for h5_file in all_view_model_files:
+                            shutil.move(h5_file, new_op_folder)
+                        # Store the DataTypes in db
+                        if dt_paths:
+                            dts = []
+                            for dt_path in dt_paths:
+                                folder, filename = os.path.split(dt_path)
+                                dt = self.load_datatype_from_file(folder, filename, operation_entity.id,
+                                                                  datatype_group=dt_group, final_storage=new_op_folder,
+                                                                  current_project_id=project.id)
+                                if isinstance(dt, BurstConfiguration):
+                                    dao.store_entity(dt)
+                                else:
+                                    dts.append(dt)
+                            self._store_imported_datatypes_in_db(project, dts)
+                    else:
+                        self.logger.warning(
+                            "Folder %s will be ignored, as we could not find a main ViewModel serialized" % root)
 
         return imported_operations
 

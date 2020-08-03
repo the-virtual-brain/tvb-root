@@ -230,10 +230,7 @@ class H5File(object):
     @staticmethod
     def determine_type(path):
         # type: (str) -> typing.Type[HasTraits]
-        base_dir, fname = os.path.split(path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
-        meta = storage_manager.get_metadata()
-        type_class_fqn = meta.get('type')
+        type_class_fqn = H5File.get_metadata_param(path, 'type')
         if type_class_fqn is None:
             return HasTraits
         package, cls_name = type_class_fqn.rsplit('.', 1)
@@ -242,12 +239,16 @@ class H5File(object):
         return cls
 
     @staticmethod
-    def h5_class_from_file(path):
-        # type: (str) -> typing.Type[H5File]
+    def get_metadata_param(path, param):
         base_dir, fname = os.path.split(path)
         storage_manager = HDF5StorageManager(base_dir, fname)
         meta = storage_manager.get_metadata()
-        h5file_class_fqn = meta.get(H5File.KEY_WRITTEN_BY)
+        return meta.get(param)
+
+    @staticmethod
+    def h5_class_from_file(path):
+        # type: (str) -> typing.Type[H5File]
+        h5file_class_fqn = H5File.get_metadata_param(path, H5File.KEY_WRITTEN_BY)
         if h5file_class_fqn is None:
             return H5File(path)
         package, cls_name = h5file_class_fqn.rsplit('.', 1)
