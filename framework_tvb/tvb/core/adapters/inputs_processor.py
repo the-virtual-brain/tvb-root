@@ -40,17 +40,23 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if not hasattr(view_model, field.name):
             continue
 
+        attr_default = None
+        attr_vm = None
+
         if isinstance(field, TraitDataTypeSelectField):
 
-            attr_vm = getattr(view_model, field.name)
+            if hasattr(view_model, field.name):
+                attr_vm = getattr(view_model, field.name)
             data_type = ABCAdapter.load_entity_by_gid(attr_vm)
             if attr_vm:
                 changed_attr[field.label] = data_type.display_name
             inputs_datatypes.append(data_type)
 
         else:
-            attr_default = getattr(form_model, field.name)
-            attr_vm = getattr(view_model, field.name)
+            if hasattr(form_model, field.name):
+                attr_default = getattr(form_model, field.name)
+            if hasattr(view_model, field.name):
+                attr_vm = getattr(view_model, field.name)
             if attr_vm != attr_default:
                 if isinstance(attr_vm, float) or isinstance(attr_vm, int) or isinstance(attr_vm, str):
                     changed_attr[field.label] = attr_vm
