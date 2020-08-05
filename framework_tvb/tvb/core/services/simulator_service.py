@@ -229,11 +229,11 @@ class SimulatorService(object):
                                                                        first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
-                                           fk_parent_burst=burst_config.id,
+                                           fk_parent_burst=burst_config.gid,
                                            state=json.loads(first_operation.meta_data)[DataTypeMetaData.KEY_STATE])
             dao.store_entity(datatype_group)
 
-            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.id)
+            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid)
             dao.store_entity(metrics_datatype_group)
 
             wf_errs = 0

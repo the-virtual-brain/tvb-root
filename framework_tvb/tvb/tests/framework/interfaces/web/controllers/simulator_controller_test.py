@@ -848,7 +848,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
             copied_burst = common.get_from_session(KEY_BURST_CONFIG)
 
-        simulation_history_index = SimulationHistoryIndex(fk_parent_burst=burst_config.id)
+        simulation_history_index = SimulationHistoryIndex(fk_parent_burst=burst_config.gid)
         dao.store_entity(simulation_history_index)
 
         with patch('cherrypy.session', self.sess_mock, create=True):

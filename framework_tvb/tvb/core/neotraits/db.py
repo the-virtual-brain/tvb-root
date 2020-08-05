@@ -72,6 +72,11 @@ class HasTraitsIndex(Base):
                 'polymorphic_on': cls.type_,
                 'polymorphic_identity': cls.__name__
             }
+        elif cls.__name__ == "DataType":
+            return {
+                'polymorphic_identity': cls.__name__,
+                'inherit_condition': cls.id == HasTraitsIndex.id
+            }
         else:
             return {
                 'polymorphic_identity': cls.__name__

@@ -388,7 +388,6 @@ class ImportService(object):
             datatype, generic_attributes = h5.load_with_links(current_file)
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)
             datatype_index = index_class()
-            # TODO datatype_index.fk_parent_burst should be GUID not ID
             datatype_index.fill_from_has_traits(datatype)
             datatype_index.fill_from_generic_attributes(generic_attributes)
 

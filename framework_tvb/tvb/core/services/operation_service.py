@@ -177,7 +177,7 @@ class OperationService:
         metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, {})
         meta_str = json.dumps(metadata)
 
-        parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'id')[0]
+        parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'gid')[0]
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
                                      json.dumps({'gid': view_model.gid.hex}),
@@ -253,11 +253,11 @@ class OperationService:
         operations = dao.store_entities(operations)
 
         if group is not None:
-            burst_id = None
+            burst_gid = None
             if DataTypeMetaData.KEY_BURST in metadata:
-                burst_id = metadata[DataTypeMetaData.KEY_BURST]
+                burst_gid = metadata[DataTypeMetaData.KEY_BURST]
             if existing_dt_group is None:
-                datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
+                datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_gid,
                                                state=metadata[DataTypeMetaData.KEY_STATE])
                 dao.store_entity(datatype_group)
             else:

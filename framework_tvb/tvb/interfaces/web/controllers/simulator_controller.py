@@ -933,7 +933,7 @@ class SimulatorController(BurstBaseController):
             count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
             session_burst_config.name = parent_burst.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
-                                                            parent_burst.id, "fk_parent_burst")
+                                                            parent_burst.gid, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
                 exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
                                             "it!" % session_burst_config.name)
