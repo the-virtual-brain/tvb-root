@@ -356,10 +356,9 @@ class UserService:
     def _extract_user_info(self, keycloak_data):
         email = keycloak_data['email'] if 'email' in keycloak_data else None
         user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
-        client_id = AuthorizationManager().get_keycloak_instance().client_id
-        user_client_roles = user_roles[client_id] if client_id in user_roles else []
+        user_groups = user_roles['group'] if 'group' in user_roles else []
 
-        role = ROLE_ADMINISTRATOR if ROLE_ADMINISTRATOR in user_client_roles else None
+        role = ROLE_ADMINISTRATOR if 'group-{}'.format(TvbProfile.current.web.admin.ADMINISTRATORS_GROUP) in user_groups else None
         if role == ROLE_ADMINISTRATOR:
             self.logger.info("Administrator logged in")
 
