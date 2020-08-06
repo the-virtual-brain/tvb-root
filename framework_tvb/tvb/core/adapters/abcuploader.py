@@ -36,6 +36,7 @@
 import os
 import numpy
 from abc import ABCMeta
+import pyAesCrypt
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -47,8 +48,10 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from tvb.core.services.encryption_handler import EncryptionHandler
+
+ENCRYPTED_AES_KEY_SIZE = 32
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -100,7 +103,8 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
 
         return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 
-    def _decrypt_content(self, view_model, trait_upload_field_name):
+    @staticmethod
+    def _decrypt_content(view_model, trait_upload_field_name):
         if view_model.encrypted_aes_key is None:
             return
 
@@ -108,17 +112,11 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
             raise LaunchException("We can not process Encrypted files at this moment, "
                                   "due to missing PK for decryption! Please contact the administrator!")
 
-        # Open encrypted file
         upload_path = getattr(view_model, trait_upload_field_name)
-        with open(upload_path, 'rb') as f:
-            encrypted_content = f.read()
 
-        # Get the encrypted AES symmetric-key
+        # Get the encrypted password
         with open(view_model.encrypted_aes_key, 'rb') as f:
-            extended_encrypted_aes_key = f.read()
-
-        encrypted_aes_key = extended_encrypted_aes_key[:self.ENCRYPTED_AES_KEY_SIZE]
-        iv = extended_encrypted_aes_key[self.ENCRYPTED_AES_KEY_SIZE:]
+            encrypted_password = f.read()
 
         # Read the private key
         with open(TvbProfile.current.UPLOAD_KEY_PATH, "rb") as key_file:
@@ -128,9 +126,9 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
                 backend=default_backend()
             )
 
-        # Decrypt the AES symmetric key using the private key
-        decrypted_aes_key = private_key.decrypt(
-            encrypted_aes_key,
+        # Decrypt the password using the private key
+        decrypted_password = private_key.decrypt(
+            encrypted_password,
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
@@ -138,23 +136,15 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
             )
         )
 
-        # Use the decrypted AES key to decrypt the message
-        cipher = Cipher(algorithms.AES(decrypted_aes_key), modes.CTR(iv), backend=default_backend())
-        decryptor = cipher.decryptor()
-        decrypted_content = decryptor.update(encrypted_content)
+        decrypted_password = decrypted_password.decode()
 
-        # Save the decrypted content and update attribute on view model
-        decrypted_content_path = os.path.join(upload_path, os.pardir)
-        decrypted_content_name = os.path.basename(upload_path)
-        extension_index = decrypted_content_name.rfind('.')
-        extension = decrypted_content_name[extension_index:]
-        decrypted_content_name = decrypted_content_name[:extension_index]
+        # Get path to decrypted file
+        encryption_handler = EncryptionHandler(view_model.gid.hex)
+        decrypted_download_path = upload_path.replace(encryption_handler.encrypted_suffix, '')
 
-        decrypted_download_path = os.path.join(decrypted_content_path, decrypted_content_name + extension)
+        # Use the decrypted password to decrypt the message
+        pyAesCrypt.decryptFile(upload_path, decrypted_download_path, decrypted_password, encryption_handler.buffer_size)
         view_model.__setattr__(trait_upload_field_name, decrypted_download_path)
-
-        with open(decrypted_download_path, 'wb') as f:
-            f.write(decrypted_content)
 
     def get_required_memory_size(self, view_model):
         """
