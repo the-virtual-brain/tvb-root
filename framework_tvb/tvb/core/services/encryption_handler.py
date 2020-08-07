@@ -40,6 +40,7 @@ import uuid
 import pyAesCrypt
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.interfaces.command.demos.importers.encrypt_data import generate_random_password
 
 LOGGER = get_logger(__name__)
 
@@ -73,8 +74,7 @@ class EncryptionHandler(object):
         password_file = self.get_password_file()
         if os.path.exists(password_file):
             return password_file
-        chars = string.ascii_letters + string.digits
-        password = ''.join(random.choice(chars) for i in range(self.pass_size))
+        password = generate_random_password(self.pass_size)
         with open(password_file, 'w') as fd:
             fd.write(password)
         os.chmod(password_file, 0o440)

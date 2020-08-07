@@ -36,6 +36,8 @@ Launch an operation from the command line
 
 
 ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
+ENCRYPTED_DATA_SUFFIX = '_encrypted'
+DECRYPTED_DATA_SUFFIX = '_decrypted'
 
 if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
@@ -44,36 +46,23 @@ if __name__ == "__main__":
 import os
 import random
 import string
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
-def read_public_key(path_to_public_key):
-    with open(path_to_public_key, "rb") as key_file:
-        public_key = serialization.load_pem_public_key(
-            key_file.read(),
-            backend=default_backend()
-        )
-
-    return public_key
 
 def get_path_to_encrypt(input_path):
     start_extension = input_path.rfind('.')
     path_to_encrypt = input_path[:start_extension]
     extension = input_path[start_extension:]
 
-    return path_to_encrypt + '_encrypted' + extension
+    return path_to_encrypt + ENCRYPTED_DATA_SUFFIX + extension
 
-def generate_password(password_file, pass_size):
-    if os.path.exists(password_file):
-        return password_file
+
+def generate_random_password(pass_size):
     chars = string.ascii_letters + string.digits
     password = ''.join(random.choice(chars) for i in range(pass_size))
-    with open(password_file, 'w') as fd:
-        fd.write(password)
-    os.chmod(password_file, 0o440)
-    return password_file
+    return password
+
 
 def encrypt_password(public_key, symmetric_key):
 

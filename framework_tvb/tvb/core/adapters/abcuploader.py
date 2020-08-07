@@ -49,9 +49,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
-from tvb.core.services.encryption_handler import EncryptionHandler
-
-ENCRYPTED_AES_KEY_SIZE = 32
+from tvb.interfaces.command.demos.importers.encrypt_data import ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -139,11 +137,11 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         decrypted_password = decrypted_password.decode()
 
         # Get path to decrypted file
-        encryption_handler = EncryptionHandler(view_model.gid.hex)
-        decrypted_download_path = upload_path.replace(encryption_handler.encrypted_suffix, '')
+        decrypted_download_path = upload_path.replace(ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX)
 
         # Use the decrypted password to decrypt the message
-        pyAesCrypt.decryptFile(upload_path, decrypted_download_path, decrypted_password, encryption_handler.buffer_size)
+        pyAesCrypt.decryptFile(upload_path, decrypted_download_path, decrypted_password,
+                               TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
         view_model.__setattr__(trait_upload_field_name, decrypted_download_path)
 
     def get_required_memory_size(self, view_model):
