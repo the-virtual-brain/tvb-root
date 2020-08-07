@@ -215,14 +215,16 @@ def curve_elbow_point(vals, interactive):
 
 def spikes_events_to_time_index(spike_time, time):
     if spike_time < time[0] or spike_time > time[-1]:
-        get_logger(__name__).warning("Spike time is outside the input time vector!")
+        return None
     return np.argmin(np.abs(time - spike_time))
 
 
 def compute_spikes_counts(spikes_times, time):
     spikes_counts = np.zeros(time.shape)
     for spike_time in spikes_times:
-        spikes_counts[spikes_events_to_time_index(spike_time, time)] += 1
+        ind = spikes_events_to_time_index(spike_time, time)
+        if ind is not None:
+            spikes_counts[ind] += 1
     return spikes_counts
 
 
