@@ -38,20 +38,21 @@ schemes (region and surface based simulations).
 
 """
 
-import pytest
-import numpy
 import itertools
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.simulator.models import ModelsEnum
-from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.simulator import simulator, models, coupling, integrators, monitors, noise
+
+import numpy
+import pytest
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
-from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.patterns import StimuliRegion
 from tvb.datatypes.equations import Linear
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.patterns import StimuliRegion
+from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.simulator import simulator, coupling, integrators, monitors, noise
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
+from tvb.simulator.models import ModelsEnum
+from tvb.tests.library.base_testcase import BaseTestCase
 
 MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()
@@ -87,7 +88,7 @@ class Simulator(object):
         self.method = None
         self.sim = None
 
-        self.stim_nodes = numpy.r_[10,20]
+        self.stim_nodes = numpy.r_[10, 20]
         self.stim_value = 3.0
 
     def run_simulation(self, simulation_length=2 ** 2):
@@ -153,11 +154,10 @@ class Simulator(object):
                 weights = StimuliRegion.get_default_weights(white_matter.weights.shape[0])
                 weights[self.stim_nodes] = 1.
                 stimulus = StimuliRegion(
-                        temporal=Linear(parameters={"a":0.0, "b":self.stim_value}),
-                        connectivity=white_matter,
-                        weight=weights
+                    temporal=Linear(parameters={"a": 0.0, "b": self.stim_value}),
+                    connectivity=white_matter,
+                    weight=weights
                 )
-
 
         # Order of monitors determines order of returned values.
         self.sim = simulator.Simulator()
@@ -199,10 +199,11 @@ class TestSimulator(BaseTestCase):
         assert len(test_simulator.monitors) == len(result)
 
     def test_integrator_boundaries_config(self):
-        from . models_test import TestBoundsModel
+        from .models_test import TestBoundsModel
         test_simulator = simulator.Simulator()
         test_simulator.model = TestBoundsModel()
         test_simulator.model.configure()
+        test_simulator.integrator = HeunDeterministic()
         test_simulator.integrator.configure()
         test_simulator._configure_integrator_boundaries()
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
@@ -212,29 +213,70 @@ class TestSimulator(BaseTestCase):
                                                  [0.0, max_float], [min_float, max_float]]).astype("float64")
         assert numpy.allclose(state_variable_boundaries,
                               test_simulator.integrator.state_variable_boundaries,
-                              1.0/numpy.finfo("single").max)
+                              1.0 / numpy.finfo("single").max)
+
+    def _config_connectivity(self, test_simulator):
+        test_simulator.connectivity = Connectivity.from_file()
+        test_simulator.connectivity.configure()
+        test_simulator.connectivity.set_idelays(test_simulator.integrator.dt)
+        test_simulator.horizon = test_simulator.connectivity.idelays.max() + 1
+
+    def _assert_history_inside_boundaries(self, test_simulator):
+        for sv_ind in test_simulator.integrator.bounded_state_variable_indices:
+            sv_boundaries = test_simulator.integrator.state_variable_boundaries[sv_ind]
+            assert test_simulator.current_state[sv_ind, :, :].min() >= sv_boundaries[0]
+            assert test_simulator.current_state[sv_ind, :, :].max() <= sv_boundaries[1]
+
+    def test_history_bound_and_clamp_only_bound(self):
+        from .models_test import TestBoundsModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestBoundsModel()
+        test_simulator.model.configure()
+        test_simulator.integrator = HeunDeterministic()
+        test_simulator.integrator.configure()
+        self._config_connectivity(test_simulator)
+
+        test_simulator._configure_history(None)
+        assert numpy.all(test_simulator.integrator.bounded_state_variable_indices is None)
+
+        test_simulator._configure_integrator_boundaries()
+        test_simulator._configure_history(None)
+        assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
+        self._assert_history_inside_boundaries(test_simulator)
+
+    def test_history_bound_and_clamp(self):
+        from .models_test import TestBoundsModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestBoundsModel()
+        test_simulator.model.configure()
+        self._config_connectivity(test_simulator)
+
+        test_simulator.integrator = HeunDeterministic()
+        test_simulator.integrator.clamped_state_variable_indices = numpy.array([1, 2])
+        value_for_clamp = numpy.zeros((2, 76, 1))
+        test_simulator.integrator.clamped_state_variable_values = value_for_clamp
+        test_simulator.integrator.configure()
+        test_simulator._configure_integrator_boundaries()
+
+        test_simulator._configure_history(None)
+        assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)
 
     @pytest.mark.parametrize('default_connectivity', [True, False])
-    def test_simulator_regional_stimulus(self,default_connectivity):
+    def test_simulator_regional_stimulus(self, default_connectivity):
         test_simulator = Simulator()
         test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
         stimulus = test_simulator.sim._prepare_stimulus()
         self.assert_equal(
-                stimulus.shape, 
-                (
-                    test_simulator.sim.model.nvar,
-                    test_simulator.sim.connectivity.number_of_regions,
-                    test_simulator.sim.model.number_of_modes
-                )
+            stimulus.shape,
+            (
+                test_simulator.sim.model.nvar,
+                test_simulator.sim.connectivity.number_of_regions,
+                test_simulator.sim.model.number_of_modes
+            )
         )
 
-        test_simulator.sim._loop_update_stimulus(1,stimulus)
-        self.assert_equal( numpy.count_nonzero(stimulus), len(test_simulator.stim_nodes))
-        assert numpy.allclose( stimulus[test_simulator.sim.model.stvar,test_simulator.stim_nodes,:], 
-                               test_simulator.stim_value,
-                               1.0/numpy.finfo("single").max)
-
-
-
-        
-        
+        test_simulator.sim._loop_update_stimulus(1, stimulus)
+        self.assert_equal(numpy.count_nonzero(stimulus), len(test_simulator.stim_nodes))
+        assert numpy.allclose(stimulus[test_simulator.sim.model.stvar, test_simulator.stim_nodes, :],
+                              test_simulator.stim_value,
+                              1.0 / numpy.finfo("single").max)
