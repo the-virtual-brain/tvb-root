@@ -39,10 +39,12 @@ simulation and the method for running the simulation.
 
 """
 
-import time
 import math
+import time
+
 import numpy
 import scipy.sparse
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
 from tvb.simulator import models, integrators, monitors, coupling
@@ -50,7 +52,6 @@ from tvb.simulator import models, integrators, monitors, coupling
 from .backend import BaseBackend, ReferenceBackend
 from .common import psutil, numpy_add_at
 from .history import SparseHistory
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
@@ -307,7 +308,7 @@ class Simulator(HasTraits):
             stimulus = 0.0
         else:
             # TODO time grid wrong for continuations
-            time = numpy.r_[0.0 : self.simulation_length : self.integrator.dt]
+            time = numpy.r_[0.0: self.simulation_length: self.integrator.dt]
             self.stimulus.configure_time(time.reshape((1, -1)))
             stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
             self.log.debug("stimulus shape is: %s", stimulus.shape)
@@ -332,6 +333,16 @@ class Simulator(HasTraits):
         output = [monitor.record(step, observed) for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
+
+    def bound_and_clamp(self, state):
+        # If there is a state boundary...
+        if self.integrator.state_variable_boundaries is not None:
+            # ...use the integrator's bound_state
+            self.integrator.bound_state(state)
+        # If there is a state clamping...
+        if self.integrator.clamped_state_variable_values is not None:
+            # ...use the integrator's clamp_state
+            self.integrator.clamp_state(state)
 
     def __call__(self, simulation_length=None, random_state=None):
         """
@@ -428,8 +439,9 @@ class Simulator(HasTraits):
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
-        if self.integrator.state_variable_boundaries is not None:
-            self.integrator.bound_state(numpy.swapaxes(history, 0, 1))
+        # Make sure that history values are bounded
+        for it in range(history.shape[0]):
+            self.bound_and_clamp(history[it])
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
@@ -454,22 +466,19 @@ class Simulator(HasTraits):
 
     def _configure_integrator_noise(self):
         """
-        This enables having noise to be state variable specific and/or to enter 
-        only via specific brain structures, for example it we only want to 
+        This enables having noise to be state variable specific and/or to enter
+        only via specific brain structures, for example it we only want to
         consider noise as an external input entering the brain via appropriate
         thalamic nuclei.
 
         Support 3 possible shapes:
             1) number_of_nodes;
 
-            2) number_of_state_variables; and 
+            2) number_of_state_variables; and
 
             3) (number_of_state_variables, number_of_nodes).
 
         """
-
-        noise = self.integrator.noise        
-
         if self.integrator.noise.ntau > 0.0:
             self.integrator.noise.configure_coloured(self.integrator.dt,
                                                      self.good_history_shape[1:])
@@ -489,9 +498,9 @@ class Simulator(HasTraits):
         self.log.debug("Given noise shape is %s", nsig.shape)
         if nsig.shape in (good_nsig_shape, (1,)):
             return
-        elif nsig.shape == (self.model.nvar, ):
+        elif nsig.shape == (self.model.nvar,):
             nsig = nsig.reshape((self.model.nvar, 1, 1))
-        elif nsig.shape == (self.number_of_nodes, ):
+        elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
             nsig = nsig.reshape((self.model.nvar, self.number_of_nodes, 1))
@@ -531,7 +540,7 @@ class Simulator(HasTraits):
     # appears to be unused
     def runtime(self, simulation_length):
         """
-        Return an estimated run time (seconds) for the simulator's current 
+        Return an estimated run time (seconds) for the simulator's current
         configuration and a specified simulation length.
 
         """
@@ -553,12 +562,12 @@ class Simulator(HasTraits):
         """
         guesstimate the memory required for this simulator.
 
-        Guesstimate is based on the shape of the dominant arrays, and as such 
+        Guesstimate is based on the shape of the dominant arrays, and as such
         can operate before configuration.
 
         NOTE: Assumes returned/yeilded data is in some sense "taken care of" in
             the world outside the simulator, and so doesn't consider it, making
-            the simulator's history, and surface if present, the dominant 
+            the simulator's history, and surface if present, the dominant
             memory pigs...
 
         """
@@ -577,15 +586,15 @@ class Simulator(HasTraits):
         #     connectivity, there remains the less common issue if no tract_lengths...
         hist_shape = (self.connectivity.tract_lengths.max() / (self.conduction_speed or
                                                                self.connectivity.speed or 3.0) / self.integrator.dt,
-                      self.model.nvar, number_of_nodes, 
+                      self.model.nvar, number_of_nodes,
                       self.model.number_of_modes)
         self.log.debug("Estimated history shape is %r", hist_shape)
 
         memreq = numpy.prod(hist_shape) * bits_64
         if self.surface:
             memreq += self.surface.number_of_triangles * 3 * bits_32 * 2  # normals
-            memreq += self.surface.number_of_vertices * 3 * bits_64 * 2   # normals
-            memreq += number_of_nodes * number_of_regions * bits_64 * 4   # region_mapping, region_average, region_sum
+            memreq += self.surface.number_of_vertices * 3 * bits_64 * 2  # normals
+            memreq += number_of_nodes * number_of_regions * bits_64 * 4  # region_mapping, region_average, region_sum
             # ???memreq += self.surface.local_connectivity.matrix.nnz * 8
 
         if not hasattr(self.monitors, '__len__'):
@@ -593,7 +602,7 @@ class Simulator(HasTraits):
 
         for monitor in self.monitors:
             if not isinstance(monitor, monitors.Bold):
-                stock_shape = (monitor.period / self.integrator.dt, 
+                stock_shape = (monitor.period / self.integrator.dt,
                                len(self.model.variables_of_interest),
                                number_of_nodes,
                                self.model.number_of_modes)
@@ -622,18 +631,18 @@ class Simulator(HasTraits):
 
         self._memory_requirement_guess = magic_number * memreq
         msg = "Memory requirement estimate: simulation will need about %.1f MB"
-        self.log.info(msg, self._memory_requirement_guess / 2**20)
+        self.log.info(msg, self._memory_requirement_guess / 2 ** 20)
 
     def _census_memory_requirement(self):
         """
-        Guesstimate the memory required for this simulator. 
+        Guesstimate the memory required for this simulator.
 
         Guesstimate is based on a census of the dominant arrays after the
         simulator has been configured.
 
         NOTE: Assumes returned/yeilded data is in some sense "taken care of" in
             the world outside the simulator, and so doesn't consider it, making
-            the simulator's history, and surface if present, the dominant 
+            the simulator's history, and surface if present, the dominant
             memory pigs...
 
         """
@@ -679,7 +688,7 @@ class Simulator(HasTraits):
     def _calculate_storage_requirement(self):
         """
         Calculate the storage requirement for the simulator, configured with
-        models, monitors, etc being run for a particular simulation length. 
+        models, monitors, etc being run for a particular simulation length.
         While this is only approximate, it is far more reliable/accurate than
         the memory and runtime guesstimates.
         """
