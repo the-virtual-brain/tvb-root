@@ -415,9 +415,11 @@ class ABCAdapter(object):
             res.state = self.generic_attributes.state
             res.fk_parent_burst = burst_reference
             res.fk_from_operation = self.operation_id
-            res.framework_metadata = self.meta_data
             res.user_tag_1 = self.generic_attributes.user_tag_1
             res.user_tag_2 = self.generic_attributes.user_tag_2
+            res.user_tag_3 = self.generic_attributes.user_tag_3
+            res.user_tag_4 = self.generic_attributes.user_tag_4
+            res.user_tag_5 = self.generic_attributes.user_tag_5
             res.fk_datatype_group = data_type_group_id
             # Compute size-on disk, in case file-storage is used
             associated_file = h5.path_for_stored_index(res)
