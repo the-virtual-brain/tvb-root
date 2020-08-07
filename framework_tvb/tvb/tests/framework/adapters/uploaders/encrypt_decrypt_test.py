@@ -34,23 +34,27 @@
 
 import tvb_data
 import os
-import shutil
+import pyAesCrypt
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.core.adapters.abcuploader import ABCUploader
-from tvb.core.services.encryption_handler import EncryptionHandler
-from tvb.interfaces.command.demos.importers.encrypt_data import encrypt_password, save_encrypted_password,\
-    ENCRYPTED_PASSWORD_NAME
+from tvb.interfaces.command.demos.importers.encrypt_data import encrypt_password, save_encrypted_password, \
+    ENCRYPTED_PASSWORD_NAME, get_path_to_encrypt, ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX, generate_random_password
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 
 
-class TestEncryptDecryptImporter(TransactionalTestCase):
+class TestEncryptionDecryption(TransactionalTestCase):
 
     # noinspection PyTypeChecker
-    def test_encrypt_decrypt(self):
+    @pytest.mark.parametrize("dir_name, file_name", [('connectivity', 'connectivity_76.zip'),
+                                                     ('surfaceData', 'cortex_2x120k.zip'),
+                                                     ('projectionMatrix', 'projection_meg_276_surface_16k.npy'),
+                                                     ('h5', 'TimeSeriesRegion.h5')])
+    def test_encrypt_decrypt(self, dir_name, file_name):
 
         # Generate a private key and public key
         private_key = rsa.generate_private_key(
@@ -72,18 +76,22 @@ class TestEncryptDecryptImporter(TransactionalTestCase):
         with open(private_key_path, 'wb') as f:
             f.write(pem)
 
-        path_to_file = [os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')]
+        path_to_file = os.path.join(os.path.dirname(tvb_data.__file__), dir_name, file_name)
 
         # Create model for ABCUploader
         connectivity_model = ZIPConnectivityImporterModel()
 
-        # Encrypt file using an AES symmetric key
-        encryption_handler = EncryptionHandler(connectivity_model.gid.hex)
-        encrypted_file = encryption_handler.encrypt_inputs(path_to_file)
+        # Generate password
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = generate_random_password(pass_size)
+
+        # Encrypt files using an AES symmetric key
+        encrypted_file_path = get_path_to_encrypt(path_to_file)
+        buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
+        pyAesCrypt.encryptFile(path_to_file, encrypted_file_path, password, buffer_size)
 
         # Asynchronously encrypt the password used at the previous step for the symmetric encryption
-        password_file = encryption_handler.get_password_file()
-        password = str.encode(encryption_handler._read_password(password_file))
+        password = str.encode(password)
         encrypted_password = encrypt_password(public_key, password)
 
         # Save encrypted password
@@ -91,28 +99,29 @@ class TestEncryptDecryptImporter(TransactionalTestCase):
         path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, ENCRYPTED_PASSWORD_NAME)
 
         # Prepare model for decrypting
-        connectivity_model.uploaded = encrypted_file[0]
+        connectivity_model.uploaded = encrypted_file_path
         connectivity_model.encrypted_aes_key = path_to_encrypted_password
         TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
 
         # Decrypting
         ABCUploader._decrypt_content(connectivity_model, 'uploaded')
 
-        decrypted_file_path = connectivity_model.uploaded.replace(encryption_handler.encrypted_suffix, '')
-        while True:
-            with open(path_to_file[0], 'rb') as f_original:
-                with open(decrypted_file_path, 'rb') as f_decrypted:
-                    original_content_chunk = f_original.read(encryption_handler.buffer_size)
-                    decrypted_content_chunk = f_decrypted.read(encryption_handler.buffer_size)
+        decrypted_file_path = connectivity_model.uploaded.replace(ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX)
+        with open(path_to_file, 'rb') as f_original:
+            with open(decrypted_file_path, 'rb') as f_decrypted:
+                while True:
+                    original_content_chunk = f_original.read(buffer_size)
+                    decrypted_content_chunk = f_decrypted.read(buffer_size)
 
                     assert original_content_chunk == decrypted_content_chunk,\
                         "Original and Decrypted chunks are not equal, so decryption hasn't been done correctly!"
 
                     # check if EOF was reached
-                    if len(original_content_chunk) < encryption_handler.buffer_size:
+                    if len(original_content_chunk) < buffer_size:
                         break
 
         # Clean-up
-        shutil.rmtree(os.path.join(TvbProfile.current.DEFAULT_STORAGE, '.data'))
-        # os.remove(password_file)
-        # os.rmdir(os.path.join(TvbProfile.current.DEFAULT_STORAGE, '.pass'))
+        os.remove(encrypted_file_path)
+        os.remove(decrypted_file_path)
+        os.remove(private_key_path)
+        os.remove(path_to_encrypted_password)
