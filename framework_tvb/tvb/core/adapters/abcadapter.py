@@ -372,7 +372,7 @@ class ABCAdapter(object):
         return self._capture_operation_results(index_list)
 
     @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Method to wrap LAUNCH.
         Will prepare data, and store results on return.
@@ -424,9 +424,9 @@ class ABCAdapter(object):
             # Compute size-on disk, in case file-storage is used
             associated_file = h5.path_for_stored_index(res)
             if os.path.exists(associated_file):
-                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
                 with H5File.from_file(associated_file) as f:
                     f.store_generic_attributes(self.generic_attributes)
+                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
             dao.store_entity(res)
             res.after_store()
             group_type = res.type

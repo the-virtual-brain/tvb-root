@@ -88,12 +88,12 @@ class TVBImporter(ABCUploader):
     def get_output(self):
         return []
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Overwrite method in order to return the correct number of stored datatypes.
         """
         self.nr_of_datatypes = 0
-        msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
+        msg, _ = ABCUploader._prelaunch(self, operation, view_model, uid, available_disk_space)
         return msg, self.nr_of_datatypes
 
     def launch(self, view_model):

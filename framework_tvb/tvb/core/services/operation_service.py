@@ -258,7 +258,7 @@ class OperationService:
                 burst_gid = metadata[DataTypeMetaData.KEY_BURST]
             if existing_dt_group is None:
                 datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_gid,
-                                               state=metadata[DataTypeMetaData.KEY_STATE])
+                                               state=category.defaultdatastate)
                 dao.store_entity(datatype_group)
             else:
                 # Reset count
@@ -295,8 +295,7 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space,
-                                                                   view_model=view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, view_model, unique_id, available_space)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
