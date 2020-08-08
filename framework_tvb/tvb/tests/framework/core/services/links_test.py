@@ -156,7 +156,8 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
     def test_export(self, initialize_linked_projects):
         export_file = self.export_mng.export_project(self.dest_project)
         with TvbZip(export_file) as z:
-            assert 'links-to-external-projects/Operation.xml' in z.namelist()
+            assert sum('links-to-external-projects' in s for s in z.namelist()) == 2,\
+                "Two linked datatypes should have been created!"
 
     def _export_and_remove(self, project):
         """export the project and remove it"""

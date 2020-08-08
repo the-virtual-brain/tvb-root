@@ -248,8 +248,8 @@ class DataTypeMatrix(DataType):
 
         if hasattr(datatype, "array_data"):
             self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-            self.array_is_finite = numpy.isfinite(datatype.array_data).all()
-            self.array_has_complex = numpy.iscomplex(datatype.array_data).any()
+            self.array_is_finite = numpy.isfinite(datatype.array_data).all().item()
+            self.array_has_complex = numpy.iscomplex(datatype.array_data).any().item()
             self.shape = json.dumps(datatype.array_data.shape)
             self.ndim = len(datatype.array_data.shape)
 

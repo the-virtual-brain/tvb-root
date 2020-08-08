@@ -214,9 +214,9 @@ class ImportService(object):
 
             # Now import project operations
             self.import_project_operations(project_entity, new_project_path)
+
             # Import images
             self._store_imported_images(project_entity)
-
 
     @staticmethod
     def _append_tmp_to_folders_containing_operations(import_path):
@@ -225,11 +225,11 @@ class ImportService(object):
         """
         pths = []
         for root, _, files in os.walk(import_path):
-            if FilesHelper.TVB_OPERARATION_FILE in files:
+            if 'Operation.xml' in files:
                 # Found an operation folder - append TMP to its name
                 tmp_op_folder = root + 'tmp'
                 os.rename(root, tmp_op_folder)
-                operation_file_path = os.path.join(tmp_op_folder, FilesHelper.TVB_OPERARATION_FILE)
+                operation_file_path = os.path.join(tmp_op_folder, 'Operation.xml')
                 pths.append(operation_file_path)
         return pths
 
@@ -314,7 +314,6 @@ class ImportService(object):
                 if file_name.endswith(FilesHelper.TVB_FILE_EXTENSION):
                     self._populate_image(os.path.join(root, file_name), project.id)
 
-
     def import_project_operations(self, project, import_path, dt_burst_mappings=None, burst_ids_mapping=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
@@ -343,7 +342,6 @@ class ImportService(object):
             imported_operations.append(operation_entity)
 
         return imported_operations
-
 
     def _populate_image(self, file_name, project_id):
         """

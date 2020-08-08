@@ -33,8 +33,8 @@ from tvb.basic.neotraits.api import List
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField, SelectField, \
-    TraitDataTypeSelectField
+from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField
+from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
 from tvb.datatypes.projections import ProjectionsType
 from tvb.datatypes.sensors import SensorTypes
 
