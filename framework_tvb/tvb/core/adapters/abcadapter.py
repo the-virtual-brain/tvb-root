@@ -40,12 +40,11 @@ import json
 import os
 import typing
 import uuid
+import numpy
+import psutil
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from functools import wraps
-
-import numpy
-import psutil
 from six import add_metaclass
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
@@ -171,15 +170,6 @@ class ABCAdapter(object):
     """
     Root Abstract class for all TVB Adapters. 
     """
-    # todo this constants copy is not nice
-    KEY_TYPE = constants.ATT_TYPE
-    KEY_OPTIONS = constants.ELEM_OPTIONS
-    KEY_ATTRIBUTES = constants.ATT_ATTRIBUTES
-    KEY_NAME = constants.ELEM_NAME
-    KEY_VALUE = constants.ATT_VALUE
-    KEY_DEFAULT = constants.ATT_DEFAULT
-    KEY_DATATYPE = "datatype"
-    KEY_FILTERABLE = "filterable"
 
     # model.Algorithm instance that will be set for each adapter created by in build_adapter method
     stored_adapter = None
