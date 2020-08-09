@@ -32,9 +32,9 @@ import importlib
 import typing
 import os.path
 import uuid
-from datetime import datetime
 import numpy
 import scipy.sparse
+from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits._attr import Final
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
@@ -84,7 +84,7 @@ class H5File(object):
         self.user_tag_3 = Scalar(Attr(str), self, name='user_tag_3')
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
-        self.parent_burst = Scalar(Attr(str, required=False), self, name='parent_burst')
+        self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
 
@@ -184,8 +184,9 @@ class H5File(object):
         self.user_tag_3.store(self.generic_attributes.user_tag_3)
         self.user_tag_4.store(self.generic_attributes.user_tag_4)
         self.user_tag_5.store(self.generic_attributes.user_tag_5)
-        self.parent_burst.store(self.generic_attributes.parent_burst)
         self.visible.store(self.generic_attributes.visible)
+        if self.generic_attributes.parent_burst is not None:
+            self.parent_burst.store(uuid.UUID(self.generic_attributes.parent_burst))
 
     def load_generic_attributes(self):
         # type: () -> GenericAttributes
@@ -201,7 +202,8 @@ class H5File(object):
         self.generic_attributes.visible = self.visible.load()
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         try:
-            self.generic_attributes.parent_burst = self.parent_burst.load()
+            burst = self.parent_burst.load()
+            self.generic_attributes.parent_burst = burst.hex if burst is not None else None
         except MissingDataSetException:
             self.generic_attributes.parent_burst = None
         return self.generic_attributes

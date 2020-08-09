@@ -40,9 +40,9 @@ Module in charge with Launching an operation (creating the Operation entity as w
 import json
 import os
 import sys
+import uuid
 import zipfile
 from copy import copy
-
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -196,6 +196,8 @@ class OperationService:
         op_group_id = None
         if op_group:
             op_group_id = op_group.id
+        if isinstance(view_model_gid, uuid.UUID):
+            view_model_gid = view_model_gid.hex
 
         operation = Operation(user_id, project_id, algorithm.id, json.dumps({'gid': view_model_gid}),
                               op_group_id=op_group_id, range_values=ranges)
