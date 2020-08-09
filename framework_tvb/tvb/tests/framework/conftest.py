@@ -473,7 +473,7 @@ def value_wrapper_factory():
         tries = 5
         while not op.has_finished and tries > 0:
             sleep(5)
-            tries = -1
+            tries = tries - 1
             op = dao.get_operation_by_id(op.id)
 
         value_wrapper = try_get_last_datatype(test_project.id, ValueWrapperIndex)
