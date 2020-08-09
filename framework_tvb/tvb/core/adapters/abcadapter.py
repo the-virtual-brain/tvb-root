@@ -170,11 +170,10 @@ class ABCAdapter(object):
     """
     Root Abstract class for all TVB Adapters. 
     """
-
+    # model.Algorithm instance that will be set for each adapter class created by in build_adapter method
+    stored_adapter = None
 
     def __init__(self):
-        # model.Algorithm instance that will be set for each adapter created by in build_adapter method
-        self.stored_adapter = None
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
         self.file_handler = FilesHelper()
