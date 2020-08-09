@@ -88,7 +88,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
             os.mkdir(output_path)
         return output_path
 
-    def _extract_operation_data(self, operation=None):
+    def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.
         :param operation: None
@@ -156,7 +156,7 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
     def _get_output_path(self):
         return self.storage_path
 
-    def _extract_operation_data(self, operation=None):
+    def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.
         :param operation: None

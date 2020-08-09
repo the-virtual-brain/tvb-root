@@ -156,10 +156,7 @@ class TestFactory(object):
         if test_project is None:
             test_project = TestFactory.create_project(test_user)
 
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
-                              status=operation_status)
+        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, status=operation_status)
         dao.store_entity(operation)
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
@@ -175,14 +172,14 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user)
 
         adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        adapter_inst.meta_data = {DataTypeMetaData.KEY_SUBJECT: subject}
+        adapter_inst.generic_attributes.subject = subject
         args = {RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
         algo = adapter_inst.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -223,7 +220,7 @@ class TestFactory(object):
         if operation is not None:
             burst.name = 'dummy_burst'
             burst.status = BurstConfiguration.BURST_FINISHED
-            burst.start_time = datetime.datetime.now()
+            burst.start_time = datetime.now()
             burst.range1 = '["conduction_speed", {"lo": 50, "step": 1.0, "hi": 100.0}]'
             burst.range2 = '["connectivity", null]'
             burst.fk_simulation = operation.id
@@ -336,7 +333,7 @@ class TestFactory(object):
         if algo_category is None:
             algo_category = dao.get_category_by_id(algorithm.fk_category)
         operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
-                                               {}, True, view_model=view_model)[0][0]
+                                               True, view_model=view_model)[0][0]
         service.initiate_prelaunch(operation, adapter_instance)
 
         operation = dao.get_operation_by_id(operation.id)

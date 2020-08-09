@@ -38,7 +38,6 @@ from abc import ABCMeta
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 
@@ -73,8 +72,6 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
-
-        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: view_model.data_subject})
         self.generic_attributes.subject = view_model.data_subject
 
         return ABCSynchronous._prelaunch(self, operation, view_model, uid, available_disk_space)

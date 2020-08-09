@@ -88,9 +88,6 @@ class TestAdapter3(abcadapter.ABCAsynchronous):
     def get_view_model():
         return TestModel
 
-    def load_view_model(self, operation):
-        return TestModel
-
     def get_form_class(self):
         return TestAdapter3Form
 

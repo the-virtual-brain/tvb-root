@@ -32,10 +32,9 @@ import json
 import os
 import os.path
 import uuid
-from time import sleep
-
 import numpy
 import pytest
+from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
@@ -55,7 +54,6 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
@@ -161,7 +159,7 @@ def project_factory():
 @pytest.fixture()
 def operation_factory(user_factory, project_factory):
     def build(algorithm=None, test_user=None, test_project=None,
-              operation_status=STATUS_FINISHED, parameters="test params", meta=None, range_values=None):
+              operation_status=STATUS_FINISHED, parameters="test params", range_values=None):
         """
         Create persisted operation.
         :param algorithm: When not None, Simulator.
@@ -174,10 +172,7 @@ def operation_factory(user_factory, project_factory):
         if test_project is None:
             test_project = project_factory(test_user)
 
-        if meta is None:
-            meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                    DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
+        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters,
                               status=operation_status, range_values=range_values)
         dao.store_entity(operation)
         # Make sure lazy attributes are correctly loaded.
@@ -524,9 +519,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                                                 IntrospectionRegistry.SIMULATOR_CLASS)
 
         # Create operation
-        meta = {DataTypeMetaData.KEY_SUBJECT: "Datatype Factory User",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project, meta=meta)
+        operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project)
 
         group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
         group = dao.store_entity(group)
@@ -547,7 +540,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         for range_val1 in range_values_1:
             for range_val2 in range_values_2:
                 op = Operation(user.id, project.id, algorithm.id, 'test parameters',
-                               meta=json.dumps(meta), status=STATUS_FINISHED,
+                               status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op.fk_operation_group = group.id
@@ -560,7 +553,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                 dao.store_entity(datatype)
 
                 op_ms = Operation(user.id, project.id, algorithm.id, 'test parameters',
-                                  meta=json.dumps(meta), status=STATUS_FINISHED,
+                                  status=STATUS_FINISHED,
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id

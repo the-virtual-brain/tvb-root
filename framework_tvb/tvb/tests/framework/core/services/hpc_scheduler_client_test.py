@@ -33,7 +33,6 @@
 """
 import os
 import shutil
-
 import numpy
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper

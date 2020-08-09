@@ -280,7 +280,7 @@ class ImportService(object):
                     alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
                     operation = Operation(project.fk_admin, project.id, alg.id,
                                           parameters='{"gid": "' + main_view_model.gid.hex + '"}',
-                                          meta='{"from": "Import"}', status=STATUS_FINISHED,
+                                          status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     operation.create_date = main_view_model.create_date
                     self.logger.debug("Found main ViewModel to create operation for it: " + str(operation))

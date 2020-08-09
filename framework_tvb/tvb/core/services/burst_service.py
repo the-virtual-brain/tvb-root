@@ -42,7 +42,6 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_ERROR, STATUS_STARTED, has_finished
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.utils import format_bytes_human, format_timedelta
@@ -310,16 +309,14 @@ class BurstService(object):
 
     @staticmethod
     def prepare_metrics_operation(operation):
+        # TODO reuse from OperationService and do not duplicate logic here
         parent_burst = dao.get_generic_entity(BurstConfiguration, operation.fk_operation_group, 'fk_operation_group')[0]
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         range_values = operation.range_values
-        metadata = {DataTypeMetaData.KEY_BURST: parent_burst.id}
-        # metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, {})
-        meta_str = json.dumps(metadata)
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
 
         metric_operation = Operation(operation.fk_launched_by, operation.fk_launched_in, metric_algo.id, '',
-                                     meta=meta_str, status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
+                                     status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)

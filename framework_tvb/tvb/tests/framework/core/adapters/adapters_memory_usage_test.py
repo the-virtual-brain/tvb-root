@@ -36,7 +36,7 @@ import json
 import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.entities.model import model_operation
+from tvb.core.entities.model.model_operation import Operation, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
@@ -79,9 +79,8 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         view_model.test = 5
 
         # Prepare operation for launch
-        operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
-                                              json.dumps({'gid': view_model.gid.hex}), json.dumps({}),
-                                              status=model_operation.STATUS_STARTED)
+        operation = Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
+                              json.dumps({'gid': view_model.gid.hex}), status=STATUS_STARTED)
         operation = dao.store_entity(operation)
 
         # Store ViewModel in H5

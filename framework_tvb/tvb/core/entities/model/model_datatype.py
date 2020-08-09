@@ -224,6 +224,7 @@ class DataType(HasTraitsIndex):
         self.user_tag_3 = attrs.user_tag_3
         self.user_tag_4 = attrs.user_tag_4
         self.user_tag_5 = attrs.user_tag_5
+        self.fk_parent_burst = attrs.parent_burst
         self.is_nan = attrs.is_nan
         self.visible = attrs.visible
         self.create_date = attrs.create_date or datetime.now()

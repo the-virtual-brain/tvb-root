@@ -206,6 +206,11 @@ def store_view_model(view_model, base_dir):
         h5_file.store(view_model)
         h5_file.type.store(get_full_class_name(type(view_model)))
         h5_file.create_date.store(date2string(datetime.now()))
+        if hasattr(view_model, "generic_attributes"):
+            h5_file.store_generic_attributes(view_model.generic_attributes)
+        else:
+            # For HasTraits not inheriting from ViewModel (e.g. Linear)
+            h5_file.store_generic_attributes(GenericAttributes())
 
         references = h5_file.gather_references()
         for trait_attr, gid in references:
@@ -248,6 +253,7 @@ def load_view_model_from_file(filepath):
         h5_file.load_into(view_model)
         references = h5_file.gather_references()
         view_model.create_date = string2date(h5_file.create_date.load())
+        view_model.generic_attributes = h5_file.load_generic_attributes()
         for trait_attr, gid in references:
             if not gid:
                 continue
