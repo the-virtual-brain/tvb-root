@@ -41,6 +41,7 @@ from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.adapters.constants import ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.forms import StrField, TraitUploadField
@@ -49,7 +50,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
-from tvb.interfaces.command.demos.importers.encrypt_data import ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -96,16 +96,14 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         self.generic_attributes.subject = view_model.data_subject
 
         trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
-        for upload_field_name in trait_upload_field_names:
-            self._decrypt_content(view_model, upload_field_name)
+        if view_model.encrypted_aes_key is None:
+            for upload_field_name in trait_upload_field_names:
+                self._decrypt_content(view_model, upload_field_name)
 
         return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
 
     @staticmethod
     def _decrypt_content(view_model, trait_upload_field_name):
-        if view_model.encrypted_aes_key is None:
-            return
-
         if TvbProfile.current.UPLOAD_KEY_PATH is None or not os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH):
             raise LaunchException("We can not process Encrypted files at this moment, "
                                   "due to missing PK for decryption! Please contact the administrator!")

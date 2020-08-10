@@ -35,19 +35,14 @@ Launch an operation from the command line
 """
 
 
-ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
-ENCRYPTED_DATA_SUFFIX = '_encrypted'
-DECRYPTED_DATA_SUFFIX = '_decrypted'
-
 if __name__ == "__main__":
     from tvb.basic.profile import TvbProfile
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
 
 import os
-import random
-import string
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from tvb.core.adapters.constants import ENCRYPTED_DATA_SUFFIX, ENCRYPTED_PASSWORD_NAME
 
 
 def get_path_to_encrypt(input_path):
@@ -56,12 +51,6 @@ def get_path_to_encrypt(input_path):
     extension = input_path[start_extension:]
 
     return path_to_encrypt + ENCRYPTED_DATA_SUFFIX + extension
-
-
-def generate_random_password(pass_size):
-    chars = string.ascii_letters + string.digits
-    password = ''.join(random.choice(chars) for i in range(pass_size))
-    return password
 
 
 def encrypt_password(public_key, symmetric_key):
@@ -76,6 +65,7 @@ def encrypt_password(public_key, symmetric_key):
     )
 
     return encrypted_symmetric_key
+
 
 def save_encrypted_password(encrypted_password, path_to_encrypted_password):
 
