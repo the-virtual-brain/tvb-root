@@ -99,7 +99,7 @@ class TestTVBImporter(TransactionalTestCase):
 
         view_model = TVBImporterModel()
         view_model.data_file = import_file_path
-        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project, False)
 
     def test_zip_import(self, prepare_importer_data):
         """

@@ -86,7 +86,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         view_model.connectivity = connectivity_gid
         view_model.data_subject = "Bla Bla"
 
-        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project, False)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
         assert 1, count == "Project should contain only one data type."

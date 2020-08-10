@@ -80,7 +80,7 @@ class TestProjectionMatrix(TransactionalTestCase):
 
         try:
             TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
-                                                 self.surface.gid)
+                                                 self.surface.gid, False)
             raise AssertionError("This was expected not to run! 62 rows in proj matrix, but 65 sensors")
         except OperationException:
             pass
@@ -94,7 +94,7 @@ class TestProjectionMatrix(TransactionalTestCase):
                                  'projection_eeg_65_surface_16k.npy')
 
         TestFactory.import_projection_matrix(self.test_user, self.test_project, file_path, self.sensors.gid,
-                                             self.surface.gid)
+                                             self.surface.gid, False)
 
         dt_count_after = TestFactory.get_entity_count(self.test_project, ProjectionMatrixIndex)
         assert dt_count_before + 1 == dt_count_after

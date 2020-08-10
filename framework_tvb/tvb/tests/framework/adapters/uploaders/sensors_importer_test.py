@@ -69,7 +69,7 @@ class TestSensorsImporter(TransactionalTestCase):
         This method tests import of a file containing EEG sensors.
         """
         eeg_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                                       SensorsImporterModel.OPTIONS['EEG Sensors'])
+                                                       SensorsImporterModel.OPTIONS['EEG Sensors'], False)
 
         expected_size = 62
         assert expected_size == eeg_sensors_index.number_of_sensors
@@ -85,7 +85,7 @@ class TestSensorsImporter(TransactionalTestCase):
         This method tests import of a file containing MEG sensors.
         """
         meg_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.MEG_FILE,
-                                                       SensorsImporterModel.OPTIONS['MEG Sensors'])
+                                                       SensorsImporterModel.OPTIONS['MEG Sensors'], False)
 
         expected_size = 151
         assert expected_size == meg_sensors_index.number_of_sensors
@@ -105,7 +105,7 @@ class TestSensorsImporter(TransactionalTestCase):
         """
         try:
             TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                       SensorsImporterModel.OPTIONS['MEG Sensors'])
+                                       SensorsImporterModel.OPTIONS['MEG Sensors'], False)
             raise AssertionError("Import should fail in case of a MEG import without orientation.")
         except OperationException:
             # Expected exception
@@ -116,7 +116,7 @@ class TestSensorsImporter(TransactionalTestCase):
         This method tests import of a file containing internal sensors.
         """
         internal_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                                            SensorsImporterModel.OPTIONS['Internal Sensors'])
+                                                            SensorsImporterModel.OPTIONS['Internal Sensors'], False)
 
         expected_size = 62
         assert expected_size == internal_sensors_index.number_of_sensors

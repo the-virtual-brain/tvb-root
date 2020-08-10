@@ -60,7 +60,7 @@ class TestObjSurfaceImporter(TransactionalTestCase):
         """
         Test that import works with a file which contains quads and no normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face, FACE)
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face, FACE, False)
 
         surface = h5.load_from_index(surface_index)
         assert 8614 == len(surface.vertex_normals)
@@ -71,7 +71,7 @@ class TestObjSurfaceImporter(TransactionalTestCase):
         """
         Test that import works with an OBJ file which includes normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus, FACE)
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus, FACE, False)
         assert 441 == surface_index.number_of_vertices
         assert 800 == surface_index.number_of_triangles
 

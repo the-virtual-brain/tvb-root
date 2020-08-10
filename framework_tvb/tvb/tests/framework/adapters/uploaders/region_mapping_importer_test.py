@@ -94,14 +94,14 @@ class TestRegionMappingImporter(TransactionalTestCase):
         This method tests import of region mapping without providing a surface or connectivity
         """
         try:
-            TestFactory.import_region_mapping(self.test_user, self. test_project, self.TXT_FILE, None, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self. test_project, self.TXT_FILE, None, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case Surface is missing")
         except TraitValueError:
             # Expected error
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, self.surface.gid, None)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, self.surface.gid, None, False)
             raise AssertionError("Import should fail in case Connectivity is missing")
         except TraitValueError:
             # Expected error
@@ -129,7 +129,7 @@ class TestRegionMappingImporter(TransactionalTestCase):
         """
         This method tests import of region mapping from TXT file
         """
-        region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, import_file, self.surface.gid, self.connectivity.gid)
+        region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, import_file, self.surface.gid, self.connectivity.gid, False)
 
         surface_index = ABCAdapter.load_entity_by_gid(region_mapping_index.fk_surface_gid)
         assert surface_index is not None
@@ -151,21 +151,21 @@ class TestRegionMappingImporter(TransactionalTestCase):
             - negative region number
         """
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1, self.surface.gid, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case of invalid region number")
         except OperationException:
             # Expected exception
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2, self.surface.gid, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case of invalid regions number")
         except OperationException:
             # Expected exception
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3, self.surface.gid, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case of invalid region number (negative number)")
         except OperationException:
             # Expected exception

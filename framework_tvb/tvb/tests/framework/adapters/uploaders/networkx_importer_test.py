@@ -61,7 +61,7 @@ class TestNetworkxImporter(TransactionalTestCase):
 
         view_model = NetworkxImporterModel()
         view_model.data_file = self.upload_file
-        TestFactory.launch_importer(NetworkxConnectivityImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(NetworkxConnectivityImporter, view_model, self.test_user, self.test_project, False)
 
         count_after = self.count_all_entities(ConnectivityIndex)
         assert 1 == count_after

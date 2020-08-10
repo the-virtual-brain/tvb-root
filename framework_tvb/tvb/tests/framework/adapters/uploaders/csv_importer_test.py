@@ -95,7 +95,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         view_model.tracts = tracts_tmp
         view_model.data_subject = subject
         view_model.input_data = reference_connectivity_gid
-        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project, False)
 
     def test_happy_flow_import(self):
         """

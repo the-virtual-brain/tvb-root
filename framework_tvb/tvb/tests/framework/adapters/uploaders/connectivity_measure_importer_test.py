@@ -67,7 +67,7 @@ class TestConnectivityMeasureImporter(TransactionalTestCase):
         view_model.data_file = path
         view_model.dataset_name = "M"
         view_model.connectivity = self.connectivity.gid
-        TestFactory.launch_importer(ConnectivityMeasureImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(ConnectivityMeasureImporter, view_model, self.test_user, self.test_project, False)
 
     def test_happy_flow(self):
         assert 0 == TestFactory.get_entity_count(self.test_project, ConnectivityMeasureIndex)
