@@ -38,13 +38,14 @@ import numpy
 from abc import ABCMeta
 import pyAesCrypt
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes, padding
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 
 
