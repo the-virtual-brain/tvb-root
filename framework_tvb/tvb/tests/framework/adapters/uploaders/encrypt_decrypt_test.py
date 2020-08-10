@@ -43,8 +43,6 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.adapters.constants import ENCRYPTED_PASSWORD_NAME, ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX
 from tvb.core.services.encryption_handler import EncryptionHandler
-from tvb.interfaces.command.demos.importers.encrypt_data import encrypt_password, save_encrypted_password, \
-    get_path_to_encrypt
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 
@@ -88,16 +86,16 @@ class TestEncryptionDecryption(TransactionalTestCase):
         password = EncryptionHandler.generate_random_password(pass_size)
 
         # Encrypt files using an AES symmetric key
-        encrypted_file_path = get_path_to_encrypt(path_to_file)
+        encrypted_file_path = ABCUploader.get_path_to_encrypt(path_to_file)
         buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
         pyAesCrypt.encryptFile(path_to_file, encrypted_file_path, password, buffer_size)
 
         # Asynchronously encrypt the password used at the previous step for the symmetric encryption
         password = str.encode(password)
-        encrypted_password = encrypt_password(public_key, password)
+        encrypted_password = ABCUploader.encrypt_password(public_key, password)
 
         # Save encrypted password
-        save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
+        ABCUploader.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
         path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, ENCRYPTED_PASSWORD_NAME)
 
         # Prepare model for decrypting

@@ -94,6 +94,34 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         return ABCSynchronous._prelaunch(self, operation, view_model, uid, available_disk_space)
 
     @staticmethod
+    def get_path_to_encrypt(input_path):
+        start_extension = input_path.rfind('.')
+        path_to_encrypt = input_path[:start_extension]
+        extension = input_path[start_extension:]
+
+        return path_to_encrypt + ENCRYPTED_DATA_SUFFIX + extension
+
+    @staticmethod
+    def encrypt_password(public_key, symmetric_key):
+
+        encrypted_symmetric_key = public_key.encrypt(
+            symmetric_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return encrypted_symmetric_key
+
+    @staticmethod
+    def save_encrypted_password(encrypted_password, path_to_encrypted_password):
+
+        with open(os.path.join(path_to_encrypted_password, ENCRYPTED_PASSWORD_NAME), 'wb') as f:
+            f.write(encrypted_password)
+
+    @staticmethod
     def _decrypt_content(view_model, trait_upload_field_name):
         if TvbProfile.current.UPLOAD_KEY_PATH is None or not os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH):
             raise LaunchException("We can not process Encrypted files at this moment, "
