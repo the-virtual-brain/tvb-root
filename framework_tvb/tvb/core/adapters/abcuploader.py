@@ -48,6 +48,11 @@ from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 
 
+ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
+ENCRYPTED_DATA_SUFFIX = '_encrypted'
+DECRYPTED_DATA_SUFFIX = '_decrypted'
+
+
 class ABCUploaderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
