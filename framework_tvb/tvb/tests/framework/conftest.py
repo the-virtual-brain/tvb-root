@@ -633,12 +633,14 @@ def simulator_factory(connectivity_index_factory, operation_factory, region_mapp
             model.connectivity = conn_gid
         if not with_surface and not conn_gid:
             model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        model.simulation_length = 100
         if with_surface:
             rm_idx = region_mapping_index_factory()
             model.connectivity = rm_idx.fk_connectivity_gid
             model.surface = CortexViewModel()
             model.surface.surface_gid = rm_idx.fk_surface_gid
             model.surface.region_mapping_data = rm_idx.gid
+            model.simulation_length = 10
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         h5.store_view_model(model, storage_path)
 

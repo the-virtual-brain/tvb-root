@@ -300,7 +300,8 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_h5.store(ts, scalars_only=True, store_references=False)
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
-
+            # Storing GA also here redundant, except for HPC
+            ts_h5.store_generic_attributes(self.generic_attributes)
             ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index

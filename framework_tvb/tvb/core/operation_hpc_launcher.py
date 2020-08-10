@@ -44,7 +44,7 @@ from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler
 
-log = get_logger('tvb.core.operation_hpc_launcher')
+log = get_logger(__name__)
 
 UPDATE_STATUS_KEY = "NEW_STATUS"
 
