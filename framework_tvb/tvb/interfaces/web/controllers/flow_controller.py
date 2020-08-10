@@ -282,24 +282,6 @@ class FlowController(BaseController):
 
         return {'options': select_field.options()}
 
-    def _get_node(self, input_tree, name):
-        """
-        Given a input tree and a variable name, check to see if any default filters exist.
-        """
-        for entry in input_tree:
-            if (ABCAdapter.KEY_DATATYPE in entry and ABCAdapter.KEY_NAME in entry
-                    and str(entry[ABCAdapter.KEY_NAME]) == str(name)):
-                return entry
-            if entry.get(ABCAdapter.KEY_ATTRIBUTES) is not None:
-                in_attr = self._get_node(entry[ABCAdapter.KEY_ATTRIBUTES], name)
-                if in_attr is not None:
-                    return in_attr
-            if entry.get(ABCAdapter.KEY_OPTIONS) is not None:
-                in_options = self._get_node(entry[ABCAdapter.KEY_OPTIONS], name)
-                if in_options is not None:
-                    return in_options
-        return None
-
     def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""
         errors = None

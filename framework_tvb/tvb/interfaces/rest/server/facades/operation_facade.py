@@ -94,9 +94,8 @@ class OperationFacade:
             view_model_h5 = ViewModelH5(model_h5_path, view_model)
             view_model_gid = view_model_h5.gid.load()
 
-            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm.id,
-                                                                 algorithm.algorithm_category, view_model_gid.hex, None,
-                                                                 {})
+            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm,
+                                                                 view_model_gid.hex)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
 
             if isinstance(adapter_instance, ABCUploader):

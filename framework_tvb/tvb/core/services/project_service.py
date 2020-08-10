@@ -564,7 +564,6 @@ class ProjectService:
                                        links[0].fk_to_project,
                                        datatype.parent_operation.fk_from_algo,
                                        datatype.parent_operation.parameters,
-                                       datatype.parent_operation.meta_data,
                                        datatype.parent_operation.status,
                                        datatype.parent_operation.start_date,
                                        datatype.parent_operation.completion_date,

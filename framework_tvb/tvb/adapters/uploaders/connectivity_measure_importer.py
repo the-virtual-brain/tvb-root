@@ -116,17 +116,17 @@ class ConnectivityMeasureImporter(ABCUploader):
                                       ' contains %s nodes' % (node_count, connectivity.number_of_regions))
 
             measures = []
+            self.generic_attributes.user_tag_2 = "conn_%d" % node_count
+
             for i in range(measurement_count):
                 cm_data = data[i, :]
 
                 measure = ConnectivityMeasure()
                 measure.array_data = cm_data
                 measure.connectivity = connectivity
-                measure.title = "Measure for Conn with %d nods" % (node_count)
+                measure.title = "Measure %d for Connectivity with %d nodes." % ((i + 1), node_count)
 
                 cm_idx = h5.store_complete(measure, self.storage_path)
-                cm_idx.user_tag_2 = "nr.-%d" % (i + 1)
-                cm_idx.user_tag_3 = "conn_%d" % node_count
                 measures.append(cm_idx)
             return measures
 

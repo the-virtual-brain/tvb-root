@@ -43,7 +43,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
+from tvb.tests.framework.adapters.testadapter3 import *
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
@@ -88,15 +88,16 @@ class TestOperationService(BaseTestCase):
         """
         Tests if the dataType group is set correct on the dataTypes resulted from the same operation group.
         """
-        # TODO: re-write this to use groups correctly
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
         algo = test_adapter_factory(TestAdapter3)
         adapter_instance = ABCAdapter.build_adapter(algo)
+        view_model = TestModel()
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
-        ## Create Group of operations
-        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id)
+        # Create Group of operations
+        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id,
+                                          view_model=view_model, **data)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 1, "Expected one operation group"
@@ -107,7 +108,7 @@ class TestOperationService(BaseTestCase):
 
         self.operation_service.stop_operation(all_operations[0][0])
         self.operation_service.stop_operation(all_operations[0][1])
-        ## Make sure operations are executed
+        # Make sure operations are executed
         self.operation_service.launch_operation(all_operations[0][0], False)
         self.operation_service.launch_operation(all_operations[0][1], False)
 
@@ -305,8 +306,7 @@ class TestOperationService(BaseTestCase):
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {},
-                                                                  view_model=view_model)
+                                                                  algo_category, view_model=view_model)
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
         operation = dao.get_operation_by_id(operations[0].id)
@@ -324,7 +324,7 @@ class TestOperationService(BaseTestCase):
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {}, view_model=view_model)
+                                                                  algo_category, view_model=view_model)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)
         operation.status = model_operation.STATUS_FINISHED

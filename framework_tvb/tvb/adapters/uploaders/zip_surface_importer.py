@@ -134,7 +134,8 @@ class ZIPSurfaceImporter(ABCUploader):
         if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        self.logger.debug("Start to import surface: '%s' from file: %s" % (view_model.surface_type, view_model.uploaded))
+        self.logger.debug(
+            "Start to import surface: '%s' from file: %s" % (view_model.surface_type, view_model.uploaded))
         try:
             zip_surface = ZipSurfaceParser(view_model.uploaded)
         except IOError:

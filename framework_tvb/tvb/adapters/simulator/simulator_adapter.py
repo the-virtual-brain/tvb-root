@@ -53,14 +53,12 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
 from tvb.simulator.coupling import Coupling
-from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.simulator import Simulator
 
 
@@ -300,10 +298,10 @@ class SimulatorAdapter(ABCAsynchronous):
             self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
-            ts_h5.store_generic_attributes(GenericAttributes())
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
-
+            # Storing GA also here redundant, except for HPC
+            ts_h5.store_generic_attributes(self.generic_attributes)
             ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index

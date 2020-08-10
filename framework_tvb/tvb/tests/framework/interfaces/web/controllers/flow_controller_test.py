@@ -31,7 +31,6 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import copy
 import json
 import cherrypy
 from time import sleep
@@ -44,7 +43,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-# from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
 
 
 class TestFlowController(BaseControllersTest):
@@ -230,7 +228,7 @@ class TestFlowController(BaseControllersTest):
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {}, **data)
+                                                                  algo_category, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations
 

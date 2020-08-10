@@ -36,9 +36,8 @@ Here we define entities for Operations and Algorithms.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import datetime
 import json
-
+from datetime import datetime
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from tvb.basic.logger.builder import get_logger
@@ -212,7 +211,7 @@ class OperationGroup(Base, Exportable):
             range_param3 = RangeParameter.from_json(self.range3)
             new_name += " x " + range_param3.name
 
-        new_name += " - " + date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
+        new_name += " - " + date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
         self.name = new_name
 
 
@@ -244,7 +243,6 @@ class Operation(Base, Exportable):
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default=None)
     gid = Column(String)
     parameters = Column(String)
-    meta_data = Column(String)
     create_date = Column(DateTime)  # Date at which the user generated this entity
     start_date = Column(DateTime)  # Actual time when the operation executions is started (without queue time)
     completion_date = Column(DateTime)  # Time when the operation got status FINISHED/ ERROR or CANCEL set.
@@ -260,15 +258,14 @@ class Operation(Base, Exportable):
     operation_group = relationship(OperationGroup)
     user = relationship(User)
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='',
+    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters,
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
                  user_group=None, range_values=None, estimated_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
         self.parameters = parameters
-        self.meta_data = meta
-        self.create_date = datetime.datetime.now()
+        self.create_date = datetime.now()
         self.start_date = start_date
         self.completion_date = completion_date
         self.status = status
@@ -281,19 +278,19 @@ class Operation(Base, Exportable):
         self.estimated_disk_size = estimated_disk_size
 
     def __repr__(self):
-        return "<Operation(%s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s')>" \
-               % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
-                  self.meta_data, self.status, self.start_date, self.completion_date,
-                  self.fk_operation_group, self.user_group)
+        return "<Operation('%s', %s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s', '%s', '%s', %s)>" \
+               % (self.gid, self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
+                  self.create_date, self.start_date, self.completion_date, self.status, self.visible,
+                  self.fk_operation_group, self.user_group, self.additional_info, self.estimated_disk_size)
 
     def start_now(self):
         """ Update Operation fields at startup: Status and Date"""
-        self.start_date = datetime.datetime.now()
+        self.start_date = datetime.now()
         self.status = STATUS_STARTED
 
     def mark_complete(self, status, additional_info=None):
         """ Update Operation fields on completion: Status and Date"""
-        self.completion_date = datetime.datetime.now()
+        self.completion_date = datetime.now()
         if additional_info is not None:
             self.additional_info = additional_info
         self.status = status

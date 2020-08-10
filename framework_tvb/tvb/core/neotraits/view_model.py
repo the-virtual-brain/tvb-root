@@ -30,8 +30,10 @@
 
 import uuid
 import numpy
+from datetime import datetime
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.ex import TraitAttributeError
+from tvb.core.entities.generic_attributes import GenericAttributes
 
 
 class ViewModel(HasTraits):
@@ -41,6 +43,10 @@ class ViewModel(HasTraits):
         - Equations can be kept the same
         - support UI names for attrs with choices
     """
+    def __init__(self, **kwargs):
+        super(ViewModel, self).__init__(**kwargs)
+        self.create_date = datetime.now()
+        self.generic_attributes = GenericAttributes()
 
     def linked_has_traits(self):
         return HasTraits

@@ -37,11 +37,10 @@ import json
 import os
 import typing
 import uuid
+import pyunicore.client as unicore_client
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
-
-import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
@@ -178,7 +177,9 @@ class HPCSchedulerClient(BackendClient):
             index_list.append(index)
 
         sim_adapter = SimulatorAdapter()
-        mesage, _ = sim_adapter.fill_existing_indexes(operation, index_list)
+        sim_adapter.extract_operation_data(operation)
+        sim_adapter.generic_attributes.parent_burst = burst_config.gid
+        mesage, _ = sim_adapter._capture_operation_results(index_list)
 
         burst_service.update_burst_status(burst_config)
         # self.update_datatype_groups()
