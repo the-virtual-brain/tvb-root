@@ -40,11 +40,11 @@ import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -85,7 +85,7 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return NodeComplexCoherence()
 
 
-class NodeComplexCoherenceAdapter(ABCAsynchronous):
+class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 
     _ui_name = "Complex Coherence of Nodes"

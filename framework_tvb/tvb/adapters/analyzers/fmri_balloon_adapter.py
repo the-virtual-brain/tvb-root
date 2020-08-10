@@ -36,18 +36,19 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import uuid
+
 import numpy
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.analyzers.fmri_balloon import BalloonModel
 from tvb.basic.neotraits.api import Float, Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neocom import h5
+from tvb.core.neotraits.db import prepare_array_shape_meta
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
-from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
 
 
 class BalloonModelAdapterModel(ViewModel):
@@ -128,7 +129,7 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         return BalloonModel()
 
 
-class BalloonModelAdapter(ABCAsynchronous):
+class BalloonModelAdapter(ABCAdapter):
     """
     TVB adapter for calling the BalloonModel algorithm.
     """

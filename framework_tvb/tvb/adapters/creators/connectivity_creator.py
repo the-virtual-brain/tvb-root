@@ -33,22 +33,21 @@
 """
 
 import numpy
-from tvb.basic.neotraits.api import Attr, NArray
-from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAsynchronous
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.basic.neotraits.api import Attr, NArray
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 
 
 class ConnectivityCreatorModel(ViewModel):
-
     original_connectivity = DataTypeGidAttr(
         linked_datatype=Connectivity,
         default=None,
@@ -81,12 +80,14 @@ class ConnectivityCreatorModel(ViewModel):
         required=False,
         doc="""""")
 
+
 class ConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityCreatorForm, self).__init__(prefix, project_id)
         self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity, self,
-                                                         name='original_connectivity', conditions=self.get_filters())
+                                                              name='original_connectivity',
+                                                              conditions=self.get_filters())
         self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights, self)
         self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts, self)
         self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes, self)
@@ -109,7 +110,7 @@ class ConnectivityCreatorForm(ABCAdapterForm):
         return 'original_connectivity'
 
 
-class ConnectivityCreator(ABCAsynchronous):
+class ConnectivityCreator(ABCAdapter):
     """
     This adapter creates a Connectivity.
     """

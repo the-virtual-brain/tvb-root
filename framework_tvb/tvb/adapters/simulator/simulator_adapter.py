@@ -42,22 +42,23 @@ Few supplementary steps are done here:
 """
 
 import json
+
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 
@@ -115,7 +116,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         pass
 
 
-class SimulatorAdapter(ABCAsynchronous):
+class SimulatorAdapter(ABCAdapter):
     """
     Interface between the Simulator and the Framework.
     """

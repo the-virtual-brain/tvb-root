@@ -33,14 +33,15 @@
 """
 
 import uuid
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION
 from tvb.adapters.simulator.subforms_mapping import DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION
 from tvb.basic.neotraits.api import Attr
-from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, SimpleStrField, TraitDataTypeSelectField, SelectField
@@ -129,7 +130,7 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
 
-class SurfaceStimulusCreator(ABCSynchronous):
+class SurfaceStimulusCreator(ABCAdapter):
     """
     The purpose of this adapter is to create a StimuliSurface.
     """
@@ -137,6 +138,7 @@ class SurfaceStimulusCreator(ABCSynchronous):
     KEY_SPATIAL = 'spatial'
     KEY_TEMPORAL = 'temporal'
     KEY_FOCAL_POINTS_TRIANGLES = 'focal_points_triangles'
+    launch_mode = AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def get_form_class(self):
         return SurfaceStimulusCreatorForm
@@ -263,10 +265,11 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
                 'temporal_params_div': self.NAME_TEMPORAL_PARAMS_DIV, 'legend': 'Stimulus interface'}
 
 
-class RegionStimulusCreator(ABCSynchronous):
+class RegionStimulusCreator(ABCAdapter):
     """
     The purpose of this adapter is to create a StimuliRegion.
     """
+    launch_mode = AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def get_form_class(self):
         return RegionStimulusCreatorForm

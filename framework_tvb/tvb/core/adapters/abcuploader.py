@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
@@ -80,11 +80,12 @@ class ABCUploaderForm(ABCAdapterForm):
         return None
 
 
-class ABCUploader(ABCAsynchronous, metaclass=ABCMeta):
+class ABCUploader(ABCAdapter, metaclass=ABCMeta):
     """
     Base class of the uploading algorithms
     """
     LOGGER = get_logger(__name__)
+    launch_mode = AdapterLaunchModeEnum.SYNC_DIFF_MEM
 
     def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
@@ -97,7 +98,7 @@ class ABCUploader(ABCAsynchronous, metaclass=ABCMeta):
             for upload_field_name in trait_upload_field_names:
                 self._decrypt_content(view_model, upload_field_name)
 
-        return ABCAsynchronous._prelaunch(self, operation, view_model, uid, available_disk_space)
+        return ABCAdapter._prelaunch(self, operation, view_model, uid, available_disk_space)
 
     @staticmethod
     def get_path_to_encrypt(input_path):
