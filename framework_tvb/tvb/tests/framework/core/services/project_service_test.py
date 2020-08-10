@@ -46,9 +46,9 @@ from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
@@ -415,31 +415,25 @@ class TestProjectService(TransactionalTestCase):
         new_datatype_h5 = h5.h5_file_for_index(new_datatype)
         assert new_datatype_h5.subject.load() == 'new subject', 'UserGroup not updated!'
 
-    def test_update_meta_data_group(self, datatype_group_factory):
+    def test_update_meta_data_group(self, test_adapter_factory):
         """
         Test the new update metaData for a group of dataTypes.
         """
-        group = datatype_group_factory()
+        test_adapter_factory(adapter_class=TestAdapter3)
+        op_group_id = TestFactory.create_group(test_user=self.test_user)[1]
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "updated_state",
-                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: group.id,
+                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: op_group_id,
                          DataTypeOverlayDetails.CODE_OPERATION_TAG: 'newGroupName'}
         self.project_service.update_metadata(new_meta_data)
-        datatypes = dao.get_datatype_in_group(group.id)
+        datatypes = dao.get_datatype_in_group(op_group_id)
         for datatype in datatypes:
             new_datatype = dao.get_datatype_by_id(datatype.id)
-            assert group.id == new_datatype.parent_operation.fk_operation_group
-            new_group = dao.get_generic_entity(model_operation.OperationGroup, group.id)[0]
+            assert op_group_id == new_datatype.parent_operation.fk_operation_group
+            new_group = dao.get_generic_entity(model_operation.OperationGroup, op_group_id)[0]
             assert new_group.name == "newGroupName"
             self.__check_meta_data(new_meta_data, new_datatype)
-
-    def _create_datatypes(self, dt_factory, nr_of_dts):
-        for idx in range(nr_of_dts):
-            dt = Datatype1()
-            dt.row1 = "value%i" % (idx,)
-            dt.row2 = "value%i" % (idx + 1,)
-            dt_factory._store_datatype(dt)
 
     def test_retrieve_project_full(self, dummy_datatype_index_factory):
         """

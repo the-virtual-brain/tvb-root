@@ -683,10 +683,9 @@ class ProjectService:
                                                               new_data[CommonDetails.CODE_OPERATION_GROUP_ID])
                 if len(all_data_in_group) < 1:
                     raise StructureException("Inconsistent group, can not be updated!")
-                datatype_group = dao.get_generic_entity(DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
-                all_data_in_group.append(datatype_group)
+                # datatype_group = dao.get_generic_entity(DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
+                # all_data_in_group.append(datatype_group)
                 for datatype in all_data_in_group:
-                    new_data[CommonDetails.CODE_GID] = datatype.gid
                     self._edit_data(datatype, new_data, True)
             else:
                 # Get the required DataType and operation from DB to store changes that will be done in XML.

@@ -57,6 +57,9 @@ from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel, SensorsImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
@@ -174,13 +177,18 @@ class TestFactory(object):
 
         adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
         adapter_inst.generic_attributes.subject = subject
-        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
+
+        view_model = adapter_inst.get_view_model()()
+        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': json.dumps({constants.ATT_MINVALUE: 1,
+                                                                     constants.ATT_MAXVALUE: 2.1,
+                                                                     constants.ATT_STEP: 1})}
         algo = adapter_inst.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category,
+                                                view_model=view_model, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
