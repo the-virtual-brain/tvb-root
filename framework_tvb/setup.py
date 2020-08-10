@@ -44,9 +44,9 @@ VERSION = "2.0.9"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "flask", "flask-restplus", "formencode",
-                            "gevent", "h5py", "Jinja2", "networkx", "nibabel", "numpy", "Pillow", "psutil",
-                            "pyAesCrypt", "python-keycloak", "pyunicore",
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "cryptography", "flask", "flask-restplus",
+                            "formencode", "gevent", "h5py", "Jinja2", "networkx", "nibabel", "numpy", "Pillow",
+                            "psutil", "pyAesCrypt", "python-keycloak", "pyunicore",
                             "scikit-learn", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate",
                             "tvb-data", "tvb-gdist", "tvb-library"]
 
