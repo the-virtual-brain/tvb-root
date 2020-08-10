@@ -31,6 +31,7 @@
 """
 
 from collections import OrderedDict
+from copy import deepcopy
 
 import numpy as np
 from scipy.signal import convolve, detrend, hilbert
@@ -40,19 +41,21 @@ from tvb.contrib.scripts.datatypes.time_series import TimeSeriesSEEG, LABELS_ORD
 from tvb.contrib.scripts.utils.data_structures_utils import ensure_list
 from tvb.contrib.scripts.utils.log_error_utils import warning, raise_value_error
 from tvb.contrib.scripts.utils.time_series_utils import abs_envelope, spectrogram_envelope, filter_data, \
-    decimate_signals, normalize_signals
+    decimate_signals, \
+    normalize_signals
 
 
 class TimeSeriesService(object):
     logger = get_logger(__name__)
 
     def __init__(self, logger=get_logger(__name__)):
+
         self.logger = logger
 
     def decimate(self, time_series, decim_ratio, **kwargs):
         if decim_ratio > 1:
             return time_series.duplicate(data=time_series.data[0:time_series.time_length:decim_ratio],
-                                         sample_period=float(decim_ratio*time_series.sample_period), **kwargs)
+                                         sample_period=float(decim_ratio * time_series.sample_period), **kwargs)
         else:
             return time_series.duplicate()
 
