@@ -47,6 +47,6 @@ class UploaderViewModel(ViewModel):
 
     encrypted_aes_key = Str(
         required=False,
-        label='Encrypted AES Key (if your files come encrypted)',
+        label='Encrypted AES Password (if your files come encrypted)',
         doc='Check our demo notebook on how to produce this key and how we expect your files to be encrypted'
     )

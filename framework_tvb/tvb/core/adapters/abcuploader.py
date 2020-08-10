@@ -96,7 +96,7 @@ class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
         self.generic_attributes.subject = view_model.data_subject
 
         trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
-        if view_model.encrypted_aes_key is None:
+        if view_model.encrypted_aes_key is not None:
             for upload_field_name in trait_upload_field_names:
                 self._decrypt_content(view_model, upload_field_name)
 
