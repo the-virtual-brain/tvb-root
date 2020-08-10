@@ -45,6 +45,12 @@ class TvbProjectionType(Enum):
     meg = TVBProjectionSurfaceMEG
 
 
+class TvbProjectionType(Enum):
+    eeg = TVBProjectionSurfaceEEG
+    seeg = TVBProjectionSurfaceSEEG
+    meg = TVBProjectionSurfaceMEG
+
+
 def get_TVB_proj_type(s_type):
     try:
         return TvbProjectionType[s_type.value.lower()].value

@@ -49,6 +49,12 @@ from tvb.datatypes.time_series import TimeSeriesSurface as TimeSeriesSurfaceTVB
 from tvb.datatypes.time_series import TimeSeriesVolume as TimeSeriesVolumeTVB
 from tvb.simulator.plot.utils import ensure_list
 
+from tvb.contrib.scripts.datatypes.base import BaseModel
+from tvb.contrib.scripts.utils.data_structures_utils import is_integer, monopolar_to_bipolar
+
+
+logger = get_logger(__name__)
+
 
 class TimeSeriesDimensions(Enum):
     TIME = "Time"
@@ -207,23 +213,6 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
                 raise IndexError
         return indices
 
-    def _process_slice(self, slice_arg, idx):
-        if isinstance(slice_arg, slice):
-            return self._check_for_string_or_float_slice_indices(slice_arg, idx)
-        else:
-            if isinstance(slice_arg, string_types):
-                return self._get_string_slice_index(slice_arg, idx)
-            else:
-                return slice_arg
-
-    def _process_slice_tuple(self, slice_tuple):
-        n_slices = len(slice_tuple)
-        assert (n_slices >= 0 and n_slices <= self.number_of_dimensions)
-        slice_list = []
-        for idx, current_slice in enumerate(slice_tuple):
-            slice_list.append(self._process_slice(current_slice, idx))
-        return tuple(slice_list)
-
     def _slice_to_indices(self, slices, dim_index):
         indices = []
         for slice in ensure_list(slices):
@@ -256,12 +245,31 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
         if isinstance(slice_start, string_types) or isinstance(slice_start, float):
             slice_start = self._get_index_for_slice_label(slice_start, slice_idx)
         if isinstance(slice_stop, string_types) or isinstance(slice_stop, float):
-            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx)
+            slice_stop = self._get_index_for_slice_label(slice_stop, slice_idx) + 1  # inclusive last label
 
         return slice(slice_start, slice_stop, current_slice.step)
 
     def _get_string_slice_index(self, current_slice_string, slice_idx):
         return self._get_index_for_slice_label(current_slice_string, slice_idx)
+
+    def _process_slice(self, slice_arg, idx):
+        if isinstance(slice_arg, slice):
+            return self._check_for_string_or_float_slice_indices(slice_arg, idx)
+        else:
+            if isinstance(slice_arg, string_types):
+                return self._get_string_slice_index(slice_arg, idx)
+            else:
+                return slice_arg
+
+    def _process_slice_tuple(self, slice_tuple):
+        if not isinstance(slice_tuple, (tuple, list)):
+            slice_tuple = (slice_tuple, )
+        n_slices = len(slice_tuple)
+        assert (n_slices >= 0 and n_slices <= self.number_of_dimensions)
+        slice_list = []
+        for idx, current_slice in enumerate(slice_tuple):
+            slice_list.append(self._process_slice(current_slice, idx))
+        return tuple(slice_list)
 
     def slice_data_across_dimension_by_index(self, indices, dimension, **kwargs):
         dim_index = self.get_dimension_index(dimension)
@@ -371,6 +379,8 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
                        "slice_data_across_dimension_by_%s" %
                        self._index_or_label_or_slice(modes_inputs))(modes_inputs, 3, **kwargs)
 
+    # TODO: Adjust this behavior to TimeSeriesXarray,
+    # i.e., getting, or setting an object of this class
     def __getitem__(self, slice_tuple):
         return self.data[self._process_slice_tuple(slice_tuple)]
 
@@ -421,7 +431,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
 
     @property
     def space_labels(self):
-         return numpy.array(self.labels_dimensions.get(self.labels_ordering[2], []))
+        return numpy.array(self.labels_dimensions.get(self.labels_ordering[2], []))
 
     @property
     def variables_labels(self):
@@ -493,6 +503,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
                 self.start_time = self.time[0]
             if len(self.time) > 1:
                 self.sample_period = numpy.mean(numpy.diff(self.time))
+        self.labels_dimensions[self.labels_ordering[0]] = self.time
         for key, value in self.labels_dimensions.items():
             self.labels_dimensions[key] = list(value)
         self.labels_ordering = list(self.labels_ordering)
