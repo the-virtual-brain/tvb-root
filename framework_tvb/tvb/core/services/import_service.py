@@ -34,7 +34,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import json
 import os
 import shutil
 from cgi import FieldStorage
@@ -304,10 +304,16 @@ class ImportService(object):
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.__import_operation(operation_data.operation)
                 new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                # TODO ViewModel H5 should be created, as we want to preserve only the new structure in the future
                 operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
                                                                                  operation_entity,
                                                                                  datatype_group, new_op_folder)
+                # Create and store view_model from operation
+                view_model = FilesHelper.get_key_by_value(VIEW_MODEL2ADAPTER, operation_entity.algorithm)()
+                view_model = self.fill_view_model(view_model, operation_entity.parameters)
+                h5.store_view_model(view_model, new_op_folder)
+                operation_entity.parameters = '{"gid": "' + view_model.gid.hex + '"}'
+                dao.store_entity(operation_entity)
+
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
                 imported_operations.append(operation_entity)
 
@@ -338,6 +344,22 @@ class ImportService(object):
                                     "operation inside!" % operation_data.operation_folder)
 
         return imported_operations
+
+    def fill_view_model(self, view_model, param_string):
+        if param_string:
+            params = json.loads(param_string)
+            for param in params:
+                new_param_form = self.get_new_param_form(param)
+                declarative_attrs = type(view_model).declarative_attrs
+                if new_param_form in declarative_attrs:
+                    setattr(view_model, new_param_form, params[param])
+        return view_model
+
+    def get_new_param_form(self, old_attribute):
+        if old_attribute[0] == "_":
+            old_attribute = old_attribute[1:]
+        old_attribute = old_attribute.lower()
+        return old_attribute
 
     def _import_image(self, src_folder, metadata_file, project_id, target_images_path):
         """

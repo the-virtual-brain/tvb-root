@@ -99,6 +99,13 @@ class FilesHelper(object):
             self.check_created(complete_path)
         return complete_path
 
+    @staticmethod
+    def get_key_by_value(list, value):
+        for key, val in list.items():
+            if value.classname == val.classname:
+                return key
+        return None
+
     def rename_project_structure(self, project_name, new_name):
         """ Rename Project folder or THROW FileStructureException. """
         try:
