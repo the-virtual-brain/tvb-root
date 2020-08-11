@@ -380,11 +380,6 @@ function selectProject(projectId, formId) {
     // Change hidden project_id and submit
     document.getElementById("hidden_project_id").value = projectId;
     document.getElementById(formId).submit();
-
-    doAjaxCall({
-        url: '/project/clean_simulator_for_project',
-        type: 'POST'
-    });
 }
 
 function exportProject(projectId) {

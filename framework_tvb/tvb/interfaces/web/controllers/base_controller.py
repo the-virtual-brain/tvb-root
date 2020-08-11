@@ -125,22 +125,23 @@ class BaseController(object):
         Set the project passed as parameter as the selected project.
         """
         previous_project = common.get_current_project()
-        ### Update project stored in selection, with latest Project entity from DB.
+        # Update project stored in selection, with latest Project entity from DB.
         members = self.user_service.get_users_for_project("", project.id)[1]
         project.members = members
-        common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
-        common.add2session(common.KEY_PROJECT, project)
 
         if previous_project is None or previous_project.id != project.id:
-            ### Clean Burst selection from session in case of a different project.
-            common.remove_from_session(common.KEY_BURST_CONFIG)
-            ### Store in DB new project selection
+            # Clean Burst selection from session in case of a different project.
+            common.clean_project_data_from_session()
+            # Store in DB new project selection
             user = common.get_from_session(common.KEY_USER)
             if user is not None:
                 self.user_service.save_project_to_user(user.id, project.id)
-            ### Display info message about project change
+            # Display info message about project change
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
+
+        # Add the project entity to session every time, as it might be changed (e.g. after edit)
+        common.add2session(common.KEY_PROJECT, project)
 
     @staticmethod
     def get_url_adapter(step_key, adapter_id, back_page=None):

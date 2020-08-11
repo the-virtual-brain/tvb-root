@@ -182,9 +182,7 @@ class UserController(BaseController):
         user = common.remove_from_session(common.KEY_USER)
         if user is not None:
             self.logger.debug("User " + user.username + " is just logging out!")
-        common.remove_from_session(common.KEY_PROJECT)
-        common.remove_from_session(common.KEY_BURST_CONFIG)
-        common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
+        common.clean_project_data_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()
