@@ -33,15 +33,16 @@
 """
 
 import os
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.services.exceptions import OperationException
-from tvb.adapters.uploaders.gifti.parser import GIFTIParser
+
 import tvb_data.gifti as demo_data
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.exceptions import OperationException
+from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestGIFTISurfaceImporter(TransactionalTestCase):
+class TestGIFTISurfaceImporter(BaseTestCase):
     """
     Unit-tests for GIFTI Surface importer.
     """
@@ -50,14 +51,15 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
     GIFTI_TIME_SERIES_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'sample.time_series.gii')
     WRONG_GII_FILE = os.path.abspath(__file__)
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Gifti_User')
         self.test_project = TestFactory.create_project(self.test_user, "Gifti_Project")
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_surface_gifti_data(self, operation_factory):
@@ -104,4 +106,3 @@ class TestGIFTISurfaceImporter(TransactionalTestCase):
         except OperationException:
             # Expected exception
             pass
-

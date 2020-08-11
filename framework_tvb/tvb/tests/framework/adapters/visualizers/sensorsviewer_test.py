@@ -84,7 +84,7 @@ class TestSensorViewers(TransactionalTestCase):
         # Import Sensors
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                   SensorsImporterModel.OPTIONS['EEG Sensors'], False)
+                                   SensorsImporterModel.OPTIONS['EEG Sensors'])
         field = FilterChain.datatype + '.sensors_type'
         filters = FilterChain('', [field], [SensorTypes.TYPE_EEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
@@ -119,7 +119,7 @@ class TestSensorViewers(TransactionalTestCase):
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'meg_151.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                   SensorsImporterModel.OPTIONS['MEG Sensors'], False)
+                                   SensorsImporterModel.OPTIONS['MEG Sensors'])
 
         field = FilterChain.datatype + '.sensors_type'
         filters = FilterChain('', [field], [SensorTypes.TYPE_MEG.value], ['=='])

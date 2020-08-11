@@ -248,14 +248,7 @@ class TestFactory(object):
         if sync:
             TestFactory.launch_synchronously(user, project, importer, view_model)
         else:
-            op = OperationService().fire_operation(importer, user, project.id, view_model=view_model)[0]
-            # wait for the operation to finish
-            # TODO: wait for launch to finish and launch without transaction
-            tries = 5
-            while not op.has_finished and tries > 0:
-                sleep(15)
-                tries -= 1
-                op = dao.get_operation_by_id(op.id)
+            OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
     @staticmethod
     def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid, sync=True):

@@ -36,19 +36,20 @@
 
 import os
 import shutil
+
 import pytest
-from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.services.exceptions import OperationException
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class TestTVBImporter(TransactionalTestCase):
+class TestTVBImporter(BaseTestCase):
     """
     Unit-tests for TVB importer.
     """
@@ -89,10 +90,11 @@ class TestTVBImporter(TransactionalTestCase):
         self.test_user = user_factory()
         self.test_project = project_factory(self.test_user)
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None):

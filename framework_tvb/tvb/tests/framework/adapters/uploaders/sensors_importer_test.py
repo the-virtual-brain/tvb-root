@@ -33,23 +33,24 @@
 """
 
 import os
-from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.exceptions import OperationException
-from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
-from tvb.tests.framework.core.factory import TestFactory
+
 import tvb_data.sensors as demo_data
+from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
+from tvb.core.services.exceptions import OperationException
+from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestSensorsImporter(TransactionalTestCase):
+class TestSensorsImporter(BaseTestCase):
     """
     Unit-tests for Sensors importer.
     """
     EEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'eeg_unitvector_62.txt.bz2')
     MEG_FILE = os.path.join(os.path.dirname(demo_data.__file__), 'meg_151.txt.bz2')
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         """
         Sets up the environment for running the tests;
         creates a test user, a test project and a `Sensors_Importer`
@@ -58,10 +59,11 @@ class TestSensorsImporter(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user, "Sensors_Project")
         self.importer = SensorsImporter()
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_eeg_sensors(self):
@@ -126,5 +128,3 @@ class TestSensorsImporter(TransactionalTestCase):
         assert expected_size == len(internal_sensors.labels)
         assert expected_size == len(internal_sensors.locations)
         assert (expected_size, 3) == internal_sensors.locations.shape
-
-
