@@ -41,6 +41,7 @@ import sys
 from subprocess import Popen, PIPE
 from threading import Thread, Event
 
+from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
@@ -162,6 +163,9 @@ class StandAloneClient(BackendClient):
         CURRENT_ACTIVE_THREADS.append(thread)
         if adapter_instance.launch_mode is AdapterLaunchModeEnum.SYNC_DIFF_MEM:
             thread.run()
+            operation = dao.get_operation_by_id(operation_id)
+            if operation.additional_info and operation.status == STATUS_ERROR:
+                raise TVBException(operation.additional_info)
         else:
             thread.start()
 

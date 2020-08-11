@@ -317,6 +317,8 @@ class OperationService:
         for operation in operations:
             try:
                 BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
+            except TVBException as ex:
+                self._handle_exception(ex, {}, ex.message, operation)
             except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 

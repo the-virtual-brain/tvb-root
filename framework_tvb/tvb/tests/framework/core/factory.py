@@ -244,6 +244,13 @@ class TestFactory(object):
     @staticmethod
     def launch_importer(importer_class, view_model, user, project, sync=True):
         # type: (type, ViewModel, User, Project, bool) -> None
+        """
+        sync = False will do the normal flow, with Uploaders running synchronously but in a different process. This
+        branch won't be compatible with usage in subclasses of TransactionalTestCase because the upload results won't
+        be available for the unit-test running.
+        sync = True for usage in subclasses of TransactionalTestCase, as data preparation, for example. Won't test the
+        "real" upload flow, but it is very close to that.
+        """
         importer = ABCAdapter.build_adapter_from_class(importer_class)
         if sync:
             TestFactory.launch_synchronously(user, project, importer, view_model)

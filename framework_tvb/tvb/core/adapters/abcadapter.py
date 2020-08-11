@@ -40,17 +40,17 @@ import json
 import os
 import typing
 import uuid
-import numpy
-import psutil
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
 from functools import wraps
+
+import numpy
+import psutil
 from six import add_metaclass
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters import constants
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
