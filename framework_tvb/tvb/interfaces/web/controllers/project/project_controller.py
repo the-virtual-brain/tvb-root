@@ -896,6 +896,15 @@ class ProjectController(BaseController):
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
 
+    @cherrypy.expose
+    @handle_error(redirect=False)
+    @check_user
+    def clean_simulator_for_project(self):
+        common.remove_from_session(common.KEY_SIMULATOR_CONFIG)
+        common.remove_from_session(common.KEY_LAST_LOADED_FORM_URL)
+        common.remove_from_session(common.KEY_BURST_CONFIG)
+        common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+
 
 class EditForm(formencode.Schema):
     """
