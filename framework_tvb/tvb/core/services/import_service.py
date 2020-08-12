@@ -44,10 +44,10 @@ from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.config import VIEW_MODEL2ADAPTER
+from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.tvb_importer_view_model import TVBImporterModel
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
 from tvb.core.entities.model.model_project import Project
@@ -280,7 +280,7 @@ class ImportService(object):
                 if main_view_model is not None:
                     alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
                     operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters=self.get_param_from_view_model_gid(main_view_model),
+                                          parameters=self._get_param_from_view_model_gid(main_view_model),
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     operation.create_date = main_view_model.create_date
@@ -290,7 +290,20 @@ class ImportService(object):
                         Operation2ImportData(operation, root, main_view_model, dt_paths, all_view_model_files))
 
                 elif len(dt_paths) > 0:
-                    retrieved_operations.append(Operation2ImportData(None, root, None, dt_paths))
+                    alg = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
+                    default_adapter = ABCAdapter.build_adapter(alg)
+                    view_model = default_adapter.get_view_model_class()()
+                    view_model.data_file = dt_paths[0]
+                    vm_path = h5.store_view_model(view_model, root)
+                    all_view_model_files.append(vm_path)
+                    operation = Operation(project.fk_admin, project.id, alg.id,
+                                          parameters=self._get_param_from_view_model_gid(view_model),
+                                          status=STATUS_FINISHED,
+                                          start_date=datetime.now(), completion_date=datetime.now())
+                    self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
+
+                    retrieved_operations.append(
+                        Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files))
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
@@ -309,10 +322,9 @@ class ImportService(object):
                                                                                  operation_entity,
                                                                                  datatype_group, new_op_folder)
                 # Create and store view_model from operation
-                view_model = FilesHelper.get_key_by_value(VIEW_MODEL2ADAPTER, operation_entity.algorithm)()
-                view_model = self.fill_view_model(view_model, operation_entity.parameters)
+                view_model = self._get_new_form_view_model(operation_entity)
                 h5.store_view_model(view_model, new_op_folder)
-                operation_entity.parameters = self.get_param_from_view_model_gid(view_model)
+                operation_entity.parameters = self._get_param_from_view_model_gid(view_model)
                 dao.store_entity(operation_entity)
 
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
@@ -340,42 +352,32 @@ class ImportService(object):
                 self._store_imported_datatypes_in_db(project, dts)
 
             else:
-                model = TVBImporterModel()
-                self.create_new_operation_for_model(model, project)
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
-                                    "operation inside!" % operation_data.operation_folder)
+                                    "operation or DTs inside!" % operation_data.operation_folder)
 
         return imported_operations
 
-    def create_new_operation_for_model(self, view_model, project):
-        alg = VIEW_MODEL2ADAPTER[type(view_model)]
-        operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters=self.get_param_from_view_model_gid(view_model),
-                                          status=STATUS_FINISHED,
-                                          start_date=datetime.now(), completion_date=datetime.now())
-        operation.create_date = view_model.create_date
-        operation.parameters = self.get_param_from_view_model_gid(view_model)
-        dao.store_entity(operation)
-
     @staticmethod
-    def get_param_from_view_model_gid(view_model):
+    def _get_param_from_view_model_gid(view_model):
         return '{"gid": "' + view_model.gid.hex + '"}'
 
-    def fill_view_model(self, view_model, param_string):
-        if param_string:
-            params = json.loads(param_string)
-            for param in params:
-                new_param_form = self.get_new_param_form(param)
-                declarative_attrs = type(view_model).declarative_attrs
-                if new_param_form in declarative_attrs:
-                    setattr(view_model, new_param_form, params[param])
-        return view_model
+    @staticmethod
+    def _get_new_form_view_model(operation):
+        # type (Operation) -> ViewModel
+        ad = ABCAdapter.build_adapter(operation.algorithm)
+        view_model = ad.get_view_model_class()()
+        if operation.parameters:
+            params = json.loads(operation.parameters)
+            declarative_attrs = type(view_model).declarative_attrs
 
-    def get_new_param_form(self, old_attribute):
-        if old_attribute[0] == "_":
-            old_attribute = old_attribute[1:]
-        old_attribute = old_attribute.lower()
-        return old_attribute
+            for param in params:
+                new_param_name = param
+                if param[0] == "_":
+                    new_param_name = param[1:]
+                new_param_name = new_param_name.lower()
+                if new_param_name in declarative_attrs:
+                    setattr(view_model, new_param_name, params[param])
+        return view_model
 
     def _import_image(self, src_folder, metadata_file, project_id, target_images_path):
         """
@@ -440,6 +442,7 @@ class ImportService(object):
             result = datatype_index
 
         # Now move storage file into correct folder if necessary
+        # TODO how about if only Link ? This move happens too early
         if move and final_storage is not None:
             final_path = h5.path_for(final_storage, h5_class, result.gid)
             if final_path != current_file and move:
