@@ -49,6 +49,7 @@ from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, Algorithm
@@ -399,6 +400,8 @@ def time_series_index_factory(time_series_factory, operation_factory):
             f.store(ts)
             f.sample_rate.store(ts.sample_rate)
             f.nr_dimensions.store(ts.data.ndim)
+            f.store_generic_attributes(GenericAttributes())
+            f.store_references(ts)
 
         ts_db = dao.store_entity(ts_db)
         return ts_db
