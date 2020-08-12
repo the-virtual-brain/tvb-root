@@ -47,6 +47,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config import VIEW_MODEL2ADAPTER
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.core.entities.file.tvb_importer_view_model import TVBImporterModel
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
 from tvb.core.entities.model.model_project import Project
@@ -279,7 +280,7 @@ class ImportService(object):
                 if main_view_model is not None:
                     alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
                     operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters='{"gid": "' + main_view_model.gid.hex + '"}',
+                                          parameters=self.get_param_from_view_model_gid(main_view_model),
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     operation.create_date = main_view_model.create_date
@@ -311,7 +312,7 @@ class ImportService(object):
                 view_model = FilesHelper.get_key_by_value(VIEW_MODEL2ADAPTER, operation_entity.algorithm)()
                 view_model = self.fill_view_model(view_model, operation_entity.parameters)
                 h5.store_view_model(view_model, new_op_folder)
-                operation_entity.parameters = '{"gid": "' + view_model.gid.hex + '"}'
+                operation_entity.parameters = self.get_param_from_view_model_gid(view_model)
                 dao.store_entity(operation_entity)
 
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
@@ -339,11 +340,26 @@ class ImportService(object):
                 self._store_imported_datatypes_in_db(project, dts)
 
             else:
-                # TODO check for links here ?
+                model = TVBImporterModel()
+                self.create_new_operation_for_model(model, project)
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
                                     "operation inside!" % operation_data.operation_folder)
 
         return imported_operations
+
+    def create_new_operation_for_model(self, view_model, project):
+        alg = VIEW_MODEL2ADAPTER[type(view_model)]
+        operation = Operation(project.fk_admin, project.id, alg.id,
+                                          parameters=self.get_param_from_view_model_gid(view_model),
+                                          status=STATUS_FINISHED,
+                                          start_date=datetime.now(), completion_date=datetime.now())
+        operation.create_date = view_model.create_date
+        operation.parameters = self.get_param_from_view_model_gid(view_model)
+        dao.store_entity(operation)
+
+    @staticmethod
+    def get_param_from_view_model_gid(view_model):
+        return '{"gid": "' + view_model.gid.hex + '"}'
 
     def fill_view_model(self, view_model, param_string):
         if param_string:
