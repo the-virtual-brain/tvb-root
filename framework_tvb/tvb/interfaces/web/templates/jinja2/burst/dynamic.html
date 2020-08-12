@@ -10,10 +10,15 @@
 
     <section class="configure-stimulus-shape view-column col-1">
         <h4> Model parameter configuration </h4>
-        <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}</div>
-        {% import 'flow/generate_help_tooltip.html' as ght with context %}
-        <div id="data_model_typeGeneric2dOscillator" style="display-block">
-            {{ ght.generate_help_tooltip(model_description[1]) }}
+        <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}
+            {% import 'flow/generate_help_tooltip.html' as ght with context %}
+
+            {% for model in model_description %}
+                <div id="data_model_{{ model.name }}" style="display:none">
+                    {{ ght.generate_help_tooltip(model) }}
+                </div>
+            {% endfor %}
+
         </div>
 
         <fieldset id='div_spatial_model_params'></fieldset>
@@ -80,7 +85,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             dynamicPage.main('{{ dynamic_gid }}');
-
+            fillDoc();
             $("#ctrl-action-export").click(function(){
                 C2I_exportFigures({suggestedName:"region-parameters"});
                 return false;
