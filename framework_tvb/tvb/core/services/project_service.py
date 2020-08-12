@@ -74,10 +74,8 @@ def initialize_storage():
         logger.exception("Could not make sure the root folder exists!")
 
 
-# TODO move this page sizes into User-Settings once we have a UI table to set it.
 OPERATIONS_PAGE_SIZE = 20
 PROJECTS_PAGE_SIZE = 20
-KEY_VALUE = "value"
 
 MONTH_YEAR_FORMAT = "%B %Y"
 DAY_MONTH_YEAR_FORMAT = "%d %B %Y"
@@ -289,7 +287,7 @@ class ProjectService:
         return available_projects, pages_no
 
     @staticmethod
-    def retrieve_all_user_projects(user_id, page_start=0, page_size= PROJECTS_PAGE_SIZE):
+    def retrieve_all_user_projects(user_id, page_start=0, page_size=PROJECTS_PAGE_SIZE):
         """
         Return a list with all projects visible for current user, without pagination.
         """
@@ -670,14 +668,16 @@ class ProjectService:
         new_data = dict()
         for key in DataTypeOverlayDetails().meta_attributes_list:
             if key in submit_data:
-                new_data[key] = submit_data[key]
+                value = submit_data[key]
+                if value == "None":
+                    value = None
+                if value == "" and key in [CommonDetails.CODE_OPERATION_TAG, CommonDetails.CODE_OPERATION_GROUP_ID]:
+                    value = None
+                new_data[key] = value
 
-        if new_data[CommonDetails.CODE_OPERATION_TAG] == '':
-            new_data[CommonDetails.CODE_OPERATION_TAG] = None
         try:
             if (CommonDetails.CODE_OPERATION_GROUP_ID in new_data
-                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID]
-                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
+                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID]):
                 # We need to edit a group
                 all_data_in_group = dao.get_datatype_in_group(operation_group_id=
                                                               new_data[CommonDetails.CODE_OPERATION_GROUP_ID])
@@ -723,32 +723,31 @@ class ProjectService:
             operation.user_group = new_group_name
             dao.store_entity(operation)
 
-        # 2. Update GenericAttributes on DataType index and in the associated H5 files:
+        # 2. Update GenericAttributes in the associated H5 files:
         h5_path = h5.path_for_stored_index(datatype)
         with H5File.from_file(h5_path) as f:
             ga = f.load_generic_attributes()
 
-        ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
-        ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
-        if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
-            ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
-        if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
-            ga.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
-        if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
-            ga.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
-        if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
-            ga.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
-        if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
-            ga.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
+            ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
+            ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
+            if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
+                ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
+            if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
+                ga.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
+            if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
+                ga.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
+            if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
+                ga.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
+            if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
+                ga.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
 
-        datatype.fill_from_generic_attributes(ga)
-        datatype = dao.store_entity(datatype)
-        # 3. Update MetaData in DT H5 as well.
-        with H5File.from_file(h5_path) as f:
             f.store_generic_attributes(ga, False)
 
-        # 4. Update the group_name/user_group into the operation meta-data file
-        #  TODO update ViewModel of the operation H5
+        # 3. Update MetaData in DT Index DB as well.
+        datatype.fill_from_generic_attributes(ga)
+        dao.store_entity(datatype)
+
+        # TODO persist on ViewModelH5 also the Operation_tag and make it editable on an operation overlay
 
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
@@ -871,7 +870,6 @@ class ProjectService:
     @staticmethod
     def get_datatypes_in_project(project_id, only_visible=False):
         return dao.get_data_in_project(project_id, only_visible)
-
 
     @staticmethod
     def set_datatype_visibility(datatype_gid, is_visible):
