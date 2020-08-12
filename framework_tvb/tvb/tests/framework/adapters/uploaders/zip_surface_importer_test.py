@@ -57,7 +57,8 @@ class TestZIPSurfaceImporter(BaseTestCase):
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_surf_zip(self):
-        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL, sync=False)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL,
+                                                 same_process=False)
         assert 4096 == surface.number_of_vertices
         assert 8188 == surface.number_of_triangles
         assert surface.valid_for_simulations

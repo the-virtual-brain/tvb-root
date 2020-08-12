@@ -41,7 +41,6 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import uuid
-from time import sleep
 
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -242,44 +241,44 @@ class TestFactory(object):
         return import_service.created_projects[0]
 
     @staticmethod
-    def launch_importer(importer_class, view_model, user, project, sync=True):
+    def launch_importer(importer_class, view_model, user, project, same_process=True):
         # type: (type, ViewModel, User, Project, bool) -> None
         """
-        sync = False will do the normal flow, with Uploaders running synchronously but in a different process. This
-        branch won't be compatible with usage in subclasses of TransactionalTestCase because the upload results won't
-        be available for the unit-test running.
-        sync = True for usage in subclasses of TransactionalTestCase, as data preparation, for example. Won't test the
-        "real" upload flow, but it is very close to that.
+        same_process = False will do the normal flow, with Uploaders running synchronously but in a different process.
+        This branch won't be compatible with usage in subclasses of TransactionalTestCase because the upload results
+        won't be available for the unit-test running.
+        same_process = True for usage in subclasses of TransactionalTestCase, as data preparation, for example. Won't
+        test the "real" upload flow, but it is very close to that.
         """
         importer = ABCAdapter.build_adapter_from_class(importer_class)
-        if sync:
+        if same_process:
             TestFactory.launch_synchronously(user, project, importer, view_model)
         else:
             OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
     @staticmethod
-    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid, sync=True):
+    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid, same_process=True):
 
         view_model = RegionMappingImporterModel()
         view_model.mapping_file = import_file_path
         view_model.surface = surface_gid
         view_model.connectivity = connectivity_gid
-        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, RegionMappingIndex)
 
     @staticmethod
-    def import_surface_gifti(user, project, path, sync=False):
+    def import_surface_gifti(user, project, path, same_process=False):
 
         view_model = GIFTISurfaceImporterModel()
         view_model.data_file = path
         view_model.should_center = False
-        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True, sync=True):
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True, same_process=True):
 
         count = dao.count_datatypes(project.id, SurfaceIndex)
 
@@ -288,43 +287,43 @@ class TestFactory(object):
         view_model.should_center = True
         view_model.zero_based_triangles = zero_based
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex, count)
 
     @staticmethod
-    def import_surface_obj(user, project, obj_path, surface_type, sync=True):
+    def import_surface_obj(user, project, obj_path, surface_type, same_process=True):
 
         view_model = ObjSurfaceImporterModel()
         view_model.data_file = obj_path
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_sensors(user, project, zip_path, sensors_type, sync=True):
+    def import_sensors(user, project, zip_path, sensors_type, same_process=True):
 
         view_model = SensorsImporterModel()
         view_model.sensors_file = zip_path
         view_model.sensors_type = sensors_type
-        TestFactory.launch_importer(SensorsImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(SensorsImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SensorsIndex)
 
     @staticmethod
-    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid, sync=True):
+    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid, same_process=True):
 
         view_model = ProjectionMatrixImporterModel()
         view_model.projection_file = file_path
         view_model.sensors = sensors_gid
         view_model.surface = surface_gid
-        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, ProjectionMatrixIndex)
 
     @staticmethod
-    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT, sync=True):
+    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT, same_process=True):
 
         if zip_path is None:
             zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
@@ -333,7 +332,7 @@ class TestFactory(object):
         view_model = ZIPConnectivityImporterModel()
         view_model.uploaded = zip_path
         view_model.data_subject = subject
-        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project, sync)
+        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
