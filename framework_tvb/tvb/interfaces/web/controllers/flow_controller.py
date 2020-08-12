@@ -48,22 +48,21 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
-from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
+from tvb.core.utils import url2path, parse_json_parameters, string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array, \
-    expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -84,8 +83,6 @@ class FlowController(BaseController):
     """
     This class takes care of executing steps in projects.
     """
-
-    DEFAULT_COPY_PREFIX = "copy_of_"
 
     def __init__(self):
         BaseController.__init__(self)
@@ -551,28 +548,9 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        self.get_burst_config_copy(str(operation.burst.id))
+        SimulatorController().copy_simulator_configuration(operation.burst.id)
 
         raise cherrypy.HTTPRedirect("/burst/")
-
-    def get_burst_config_copy(self, burst_config_id):
-        """
-            Make a copy of the given burst and add it to session.
-        """
-        burst_config = BurstService().load_burst_configuration(burst_config_id)
-        burst_config_copy = burst_config.clone()
-        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
-
-        project = common.get_current_project()
-        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
-
-        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
-        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
-        common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
-        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
-
-        return burst_config_copy
 
     @expose_json
     def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
@@ -582,16 +560,7 @@ class FlowController(BaseController):
         """
         operation_id = int(operation_id)
         is_group = int(is_group) != 0
-        # Load before we remove, to have its data in memory here
-        burst_config = BurstService.get_burst_for_operation_id(operation_id)
-
-        result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
-        if remove_after_stop:
-            current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
-                common.remove_from_session(common.KEY_BURST_CONFIG)
-                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
-        return result
+        return SimulatorController.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """
@@ -608,9 +577,6 @@ class FlowController(BaseController):
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-
-    ##### Below this point are operations that might be moved to different #####
-    ##### controller                                                       #####
 
     NEW_SELECTION_NAME = 'New selection'
 

@@ -51,11 +51,11 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException, ServicesBaseException
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import *
-from tvb.interfaces.web.controllers.flow_controller import FlowController
 
 GET_REQUEST = 'GET'
 POST_REQUEST = 'POST'
@@ -226,6 +226,7 @@ class SimulatorFragmentRenderingRules(object):
 @traced
 class SimulatorController(BurstBaseController):
     KEY_IS_LOAD_AFTER_REDIRECT = "is_load_after_redirect"
+    DEFAULT_COPY_PREFIX = "copy_of_"
 
     def __init__(self):
         BurstBaseController.__init__(self)
@@ -260,7 +261,24 @@ class SimulatorController(BurstBaseController):
             op_id = burst_configuration.fk_operation_group
             is_group = 1
 
-        return FlowController().cancel_or_remove_operation(op_id, is_group, remove_after_stop)
+        return self.cancel_or_remove_operation(op_id, is_group, remove_after_stop)
+
+    @staticmethod
+    def cancel_or_remove_operation(operation_id, is_group, remove_after_stop=False):
+        """
+        Stop the operation given by operation_id. If is_group is true stop all the
+        operations from that group.
+        """
+        # Load before we remove, to have its data in memory here
+        burst_config = BurstService.get_burst_for_operation_id(operation_id)
+        result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
+
+        if remove_after_stop:
+            current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
+            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
+                common.remove_from_session(common.KEY_BURST_CONFIG)
+                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
+        return result
 
     @expose_page
     @settings
@@ -712,7 +730,8 @@ class SimulatorController(BurstBaseController):
         if not next_monitor:
             return self._prepare_final_fragment(session_stored_simulator, rendering_rules)
 
-        next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, '', common.get_current_project().id)
+        next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, '',
+                                                             common.get_current_project().id)
         next_form.fill_from_trait(next_monitor)
 
         form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
@@ -1008,7 +1027,18 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
-        burst_config_copy = FlowController().get_burst_config_copy(burst_config_id)
+        burst_config = self.burst_service.load_burst_configuration(burst_config_id)
+        burst_config_copy = burst_config.clone()
+        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
+
+        project = common.get_current_project()
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+
+        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
+        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
+        common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
         form = self.prepare_first_fragment()

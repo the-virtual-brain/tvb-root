@@ -232,7 +232,7 @@ def determine_filepath(gid, base_dir):
 
 
 def load_view_model(gid, base_dir):
-    # type: (uuid.UUID, str) -> ViewModel
+    # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """
