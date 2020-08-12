@@ -69,10 +69,12 @@ FILTER_CATEGORIES = {'DataType.subject': {'display': 'Subject', 'type': 'string'
                                              'operations': ['!=', '==', 'like']},
                      'DataType.user_tag_5': {'display': 'Tag 5', 'type': 'string',
                                              'operations': ['!=', '==', 'like']},
-                     'Operation.start_date': {'display': 'Start date', 'type': 'date',
-                                              'operations': ['!=', '<', '>']},
                      'BurstConfiguration.name': {'display': 'Simulation name', 'type': 'string',
                                                  'operations': ['==', '!=', 'like']},
+                     'Operation.user_group': {'display': 'Operation Tag', 'type': 'string',
+                                              'operations': ['==', '!=', 'like']},
+                     'Operation.start_date': {'display': 'Start date', 'type': 'date',
+                                              'operations': ['!=', '<', '>']},
                      'Operation.completion_date': {'display': 'Completion date', 'type': 'date',
                                                    'operations': ['!=', '<', '>']}}
 

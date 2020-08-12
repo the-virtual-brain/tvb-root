@@ -84,6 +84,7 @@ class H5File(object):
         self.user_tag_3 = Scalar(Attr(str), self, name='user_tag_3')
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
+        self.operation_tag = Scalar(Attr(str), self, name='operation_tag')
         self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
@@ -184,6 +185,7 @@ class H5File(object):
         self.user_tag_3.store(self.generic_attributes.user_tag_3)
         self.user_tag_4.store(self.generic_attributes.user_tag_4)
         self.user_tag_5.store(self.generic_attributes.user_tag_5)
+        self.operation_tag.store(self.generic_attributes.operation_tag)
         self.visible.store(self.generic_attributes.visible)
         if self.generic_attributes.parent_burst is not None:
             self.parent_burst.store(uuid.UUID(self.generic_attributes.parent_burst))
@@ -199,6 +201,7 @@ class H5File(object):
         self.generic_attributes.user_tag_3 = self.user_tag_3.load()
         self.generic_attributes.user_tag_4 = self.user_tag_4.load()
         self.generic_attributes.user_tag_5 = self.user_tag_5.load()
+        self.generic_attributes.operation_tag = self.operation_tag.load()
         self.generic_attributes.visible = self.visible.load()
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
         try:
@@ -273,6 +276,7 @@ class H5File(object):
 
 class ViewModelH5(H5File):
 
+    # TODO  it will be good to be able to just call with H5File.from_file(h5_path) as f for ViewModelH5 also
     def __init__(self, path, view_model):
         super(ViewModelH5, self).__init__(path)
         self.view_model = type(view_model)

@@ -52,7 +52,7 @@ from tvb.core.entities.transient.structure_entities import StructureNode, DataTy
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
@@ -187,7 +187,6 @@ class ProjectService:
             return selected_project, 0, [], 0
 
         operations = []
-        view_categ_id = dao.get_visualisers_categories()[0].id
         for one_op in current_ops:
             try:
                 result = {}
@@ -208,7 +207,7 @@ class ProjectService:
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
                         result["datatype_group_gid"] = datatype_group.gid
                         result["gid"] = operation_group.gid
-                        ## Filter only viewers for current DataTypeGroup entity:
+                        # Filter only viewers for current DataTypeGroup entity:
                         result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
@@ -262,7 +261,7 @@ class ProjectService:
                     result['results'] = None
                 operations.append(result)
             except Exception:
-                ## We got an exception when processing one Operation Row. We will continue with the rest of the rows.
+                # We got an exception when processing one Operation Row. We will continue with the rest of the rows.
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
         return selected_project, total_ops_nr, operations, pages_no
 
@@ -528,7 +527,6 @@ class ProjectService:
         """
         :returns: an array. First entry in array is an instance of DataTypeOverlayDetails\
             The second one contains all the possible states for the specified dataType.
-
         """
         meta_atts = DataTypeOverlayDetails()
         states = DataTypeMetaData.STATES
@@ -537,7 +535,7 @@ class ProjectService:
             meta_atts.fill_from_datatype(datatype_result, datatype_result._parent_burst)
             return meta_atts, states, datatype_result
         except Exception:
-            ## We ignore exception here (it was logged above, and we want to return no details).
+            # We ignore exception here (it was logged above, and we want to return no details).
             return meta_atts, states, None
 
     def _remove_project_node_files(self, project_id, gid, skip_validation=False):
@@ -628,7 +626,6 @@ class ProjectService:
             datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
 
         operations_set = [datatype.fk_from_operation]
-
         correct = True
 
         if is_datatype_group:
@@ -722,6 +719,18 @@ class ProjectService:
             operation = dao.get_operation_by_id(datatype.fk_from_operation)
             operation.user_group = new_group_name
             dao.store_entity(operation)
+            op_folder = self.structure_helper.get_project_folder(operation.project, str(operation.id))
+            vm_gid = json.loads(operation.parameters)['gid']
+            view_model_file = h5.determine_filepath(vm_gid, op_folder)
+            if view_model_file:
+                view_model_class = H5File.determine_type(view_model_file)
+                view_model = view_model_class()
+                with ViewModelH5(view_model_file, view_model) as f:
+                    ga = f.load_generic_attributes()
+                    ga.operation_tag = new_group_name
+                    f.store_generic_attributes(ga, False)
+            else:
+                self.logger.warning("Could not find ViewModel H5 file for op: {}".format(operation))
 
         # 2. Update GenericAttributes in the associated H5 files:
         h5_path = h5.path_for_stored_index(datatype)
@@ -730,6 +739,7 @@ class ProjectService:
 
             ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
             ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
+            ga.operation_tag = new_group_name
             if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
                 ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
             if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
@@ -746,8 +756,6 @@ class ProjectService:
         # 3. Update MetaData in DT Index DB as well.
         datatype.fill_from_generic_attributes(ga)
         dao.store_entity(datatype)
-
-        # TODO persist on ViewModelH5 also the Operation_tag and make it editable on an operation overlay
 
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
