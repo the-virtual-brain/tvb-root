@@ -56,6 +56,7 @@ from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
@@ -515,6 +516,7 @@ class ABCAdapter(object):
 
     @staticmethod
     def determine_adapter_class(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
         """
         Determine the class of an adapter based on module and classname strings from stored_adapter
         :param stored_adapter: Algorithm or AlgorithmDTO type
@@ -526,6 +528,7 @@ class ABCAdapter(object):
 
     @staticmethod
     def build_adapter(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
