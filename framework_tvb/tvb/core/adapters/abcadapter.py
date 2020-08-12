@@ -40,12 +40,11 @@ import json
 import os
 import typing
 import uuid
+import numpy
+import psutil
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from functools import wraps
-
-import numpy
-import psutil
 from six import add_metaclass
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
@@ -171,22 +170,10 @@ class ABCAdapter(object):
     """
     Root Abstract class for all TVB Adapters. 
     """
-    # todo this constants copy is not nice
-    KEY_TYPE = constants.ATT_TYPE
-    KEY_OPTIONS = constants.ELEM_OPTIONS
-    KEY_ATTRIBUTES = constants.ATT_ATTRIBUTES
-    KEY_NAME = constants.ELEM_NAME
-    KEY_VALUE = constants.ATT_VALUE
-    KEY_DEFAULT = constants.ATT_DEFAULT
-    KEY_DATATYPE = "datatype"
-    KEY_FILTERABLE = "filterable"
-
-    # model.Algorithm instance that will be set for each adapter created by in build_adapter method
+    # model.Algorithm instance that will be set for each adapter class created by in build_adapter method
     stored_adapter = None
 
     def __init__(self):
-        # It will be populate with key from DataTypeMetaData
-        self.meta_data = {DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
         self.file_handler = FilesHelper()
@@ -194,8 +181,8 @@ class ABCAdapter(object):
         # Will be populate with current running operation's identifier
         self.operation_id = None
         self.user_id = None
-        self.log = get_logger(self.__class__.__module__)
         self.submitted_form = None
+        self.log = get_logger(self.__class__.__module__)
 
     @classmethod
     def get_group_name(cls):
@@ -314,21 +301,7 @@ class ABCAdapter(object):
         current_op.additional_info = message
         dao.store_entity(current_op)
 
-    def _prepare_generic_attributes(self, user_tag=None):
-
-        self.generic_attributes.subject = str(self.meta_data.get(DataTypeMetaData.KEY_SUBJECT))
-        self.generic_attributes.state = self.meta_data.get(DataTypeMetaData.KEY_STATE)
-
-        perpetuated_identifier = self.generic_attributes.user_tag_1
-        if DataTypeMetaData.KEY_TAG_1 in self.meta_data:
-            perpetuated_identifier = self.meta_data.get(DataTypeMetaData.KEY_TAG_1)
-        if not self.generic_attributes.user_tag_1:
-            self.generic_attributes.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
-        else:
-            self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
-
-    def _extract_operation_data(self, operation):
-        self.meta_data.update(json.loads(operation.meta_data))
+    def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
         project = dao.get_project_by_id(operation.fk_launched_in)
         self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
@@ -366,23 +339,23 @@ class ABCAdapter(object):
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
 
-    def fill_existing_indexes(self, operation, index_list):
-        self._extract_operation_data(operation)
-        self._prepare_generic_attributes()
-        return self._capture_operation_results(index_list)
-
     @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Method to wrap LAUNCH.
         Will prepare data, and store results on return.
         """
-        self._extract_operation_data(operation)
+        self.extract_operation_data(operation)
+        self.generic_attributes.fill_from(view_model.generic_attributes)
         self.configure(view_model)
         required_disk_size = self._ensure_enough_resources(available_disk_space, view_model)
         self._update_operation_entity(operation, required_disk_size)
 
-        self._prepare_generic_attributes(uid)
+        if not self.generic_attributes.user_tag_1:
+            self.generic_attributes.user_tag_1 = uid
+        else:
+            self.generic_attributes.user_tag_2 = uid
+
         result = self.launch(view_model)
 
         if not isinstance(result, (list, tuple)):
@@ -402,9 +375,6 @@ class ABCAdapter(object):
             operation = dao.store_entity(operation)
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
-        burst_reference = None
-        if DataTypeMetaData.KEY_BURST in self.meta_data:
-            burst_reference = self.meta_data[DataTypeMetaData.KEY_BURST]
 
         count_stored = 0
         group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
@@ -413,18 +383,22 @@ class ABCAdapter(object):
                 continue
             res.subject = self.generic_attributes.subject
             res.state = self.generic_attributes.state
-            res.fk_parent_burst = burst_reference
+            res.fk_parent_burst = self.generic_attributes.parent_burst
             res.fk_from_operation = self.operation_id
-            res.framework_metadata = self.meta_data
             res.user_tag_1 = self.generic_attributes.user_tag_1
             res.user_tag_2 = self.generic_attributes.user_tag_2
+            res.user_tag_3 = self.generic_attributes.user_tag_3
+            res.user_tag_4 = self.generic_attributes.user_tag_4
+            res.user_tag_5 = self.generic_attributes.user_tag_5
             res.fk_datatype_group = data_type_group_id
-            # Compute size-on disk, in case file-storage is used
+
             associated_file = h5.path_for_stored_index(res)
             if os.path.exists(associated_file):
-                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
                 with H5File.from_file(associated_file) as f:
                     f.store_generic_attributes(self.generic_attributes)
+                # Compute size-on disk, in case file-storage is used
+                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
+
             dao.store_entity(res)
             res.after_store()
             group_type = res.type

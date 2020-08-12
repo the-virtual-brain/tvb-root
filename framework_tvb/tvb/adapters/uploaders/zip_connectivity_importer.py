@@ -32,17 +32,17 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
 import numpy
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.connectivity import Connectivity
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.neotraits.view_model import Str, Attr
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
+from tvb.datatypes.connectivity import Connectivity
+
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
 

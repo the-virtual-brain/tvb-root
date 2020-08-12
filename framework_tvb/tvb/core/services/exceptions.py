@@ -92,7 +92,7 @@ class ProjectServiceException(ServicesBaseException):
 
 
 
-class ProjectImportException(ServicesBaseException):
+class ImportException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
     """

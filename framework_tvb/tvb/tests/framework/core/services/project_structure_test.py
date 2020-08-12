@@ -34,7 +34,6 @@
 """
 
 import os
-import numpy
 import pytest
 import tvb_data
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
@@ -47,7 +46,6 @@ from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
@@ -482,10 +480,7 @@ class TestProjectStructure(TransactionalTestCase):
         :return: a dummy `Operation` with the given specifications
         """
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(self.test_user.id, project_id, algorithm.id, 'test params',
-                              meta=json.dumps(meta), status=STATUS_FINISHED)
+        operation = Operation(self.test_user.id, project_id, algorithm.id, 'test params', status=STATUS_FINISHED)
         return dao.store_entity(operation)
 
     def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):

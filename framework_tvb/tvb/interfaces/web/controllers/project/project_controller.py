@@ -608,7 +608,6 @@ class ProjectController(BaseController):
 
         raise cherrypy.HTTPRedirect(success_link)
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user

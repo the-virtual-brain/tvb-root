@@ -462,5 +462,3 @@ function _getSelectedVisibilityFilter() {
     });
     return selectedFilter;
 }
-
-

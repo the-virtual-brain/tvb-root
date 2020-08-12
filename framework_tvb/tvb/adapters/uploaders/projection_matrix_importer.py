@@ -33,12 +33,12 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel

@@ -43,7 +43,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import ProjectImportException
+from tvb.core.services.exceptions import ImportException
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -81,7 +81,7 @@ class TestImportService(BaseTestCase):
         The project contains the following data types: Connectivity, Surface, MappedArray and ValueWrapper.
         """
         test_user = user_factory()
-        test_project = project_factory(test_user, "TestImportExport")
+        test_project = project_factory(test_user, "TestImportExport", "test_desc")
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
         value_wrapper = value_wrapper_factory(test_user, test_project)
@@ -105,7 +105,7 @@ class TestImportService(BaseTestCase):
         self.import_service.import_project_structure(self.zip_path, test_user.id)
         result = self.project_service.retrieve_projects_for_user(test_user.id)[0]
         assert len(result) == 1, "There should be only one project."
-        assert result[0].name == "GeneratedProject", "The project name is not correct."
+        assert result[0].name == "TestImportExport", "The project name is not correct."
         assert result[0].description == "test_desc", "The project description is not correct."
         test_project = result[0]
 
@@ -139,5 +139,5 @@ class TestImportService(BaseTestCase):
         self.zip_path = ExportManager().export_project(test_project)
         assert self.zip_path is not None, "Exported file is none"
 
-        with pytest.raises(ProjectImportException):
+        with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
