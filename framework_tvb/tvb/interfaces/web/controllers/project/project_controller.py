@@ -146,19 +146,7 @@ class ProjectController(BaseController):
             common.set_error_message(exc.message)
         prj = common.get_current_project()
         if prj is not None and prj.id == int(project_id):
-            common.remove_from_session(common.KEY_PROJECT)
-
-
-    def _persist_project(self, data, project_id, is_create, current_user):
-        """Private method to persist"""
-        data = EditForm().to_python(data)
-        saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-        selected_project = common.get_current_project()
-        if len(self.project_service.retrieve_projects_for_user(current_user.id, 1)) == 1:
-            selected_project = saved_project
-        if selected_project is None or (saved_project.id == selected_project.id):
-            self._mark_selected(saved_project)
-
+            common.clean_project_data_from_session()
 
     @expose_page
     @settings
@@ -195,9 +183,9 @@ class ProjectController(BaseController):
                                       editUsersEnabled=(current_user.username == admin_username))
         try:
             if cherrypy.request.method == 'POST' and save:
-                common.remove_from_session(common.KEY_PROJECT)
-                common.remove_from_session(common.KEY_CACHED_SIMULATOR_TREE)
-                self._persist_project(data, project_id, is_create, current_user)
+                data = EditForm().to_python(data)
+                saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
+                self._mark_selected(saved_project)
                 raise cherrypy.HTTPRedirect('/project/viewall')
         except formencode.Invalid as excep:
             self.logger.debug(str(excep))

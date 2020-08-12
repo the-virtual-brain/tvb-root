@@ -85,7 +85,6 @@ KEY_SIMULATOR_CONFIG = 'simulator_configuration'
 KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
 KEY_IS_SIMULATOR_LOAD = 'is_simulator_load'
 KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
-KEY_CACHED_SIMULATOR_TREE = 'simulator_input_tree'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
@@ -209,6 +208,14 @@ def get_current_project():
     return get_from_session(KEY_PROJECT)
 
 
+def clean_project_data_from_session():
+    remove_from_session(KEY_PROJECT)
+    remove_from_session(KEY_SIMULATOR_CONFIG)
+    remove_from_session(KEY_LAST_LOADED_FORM_URL)
+    remove_from_session(KEY_BURST_CONFIG)
+    add2session(KEY_IS_SIMULATOR_LOAD, False)
+
+
 class NotAllowed(TVBException):
     """
     Raised when accessing a resource is not allowed
@@ -229,10 +236,12 @@ class NotAuthenticated(NotAllowed):
         NotAllowed.__init__(self, message, redirect_url)
         self.status = 401
 
+
 class MissingDataException(TVBException):
 
     def __init__(self, message):
         TVBException.__init__(self, message)
+
 
 class InvalidFormValues(TVBException):
     """
