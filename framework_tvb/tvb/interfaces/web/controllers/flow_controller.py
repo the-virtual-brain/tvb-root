@@ -85,6 +85,8 @@ class FlowController(BaseController):
     This class takes care of executing steps in projects.
     """
 
+    DEFAULT_COPY_PREFIX = "copy_of_"
+
     def __init__(self):
         BaseController.__init__(self)
         self.context = SelectedAdapterContext()
@@ -452,7 +454,7 @@ class FlowController(BaseController):
 
         :returns: JSON representation of the attribute.
         :param entity_gid: GID for DataType entity
-        :param dataset_name: name of the dataType property /method 
+        :param dataset_name: name of the dataType property /method
         :param flatten: result should be flatten before return (use with WebGL data mainly e.g vertices/triangles)
             Ignored if the attribute is not an ndarray
         :param datatype_kwargs: if passed, will contain a dictionary of type {'name' : 'gid'}, and for each such
@@ -491,7 +493,7 @@ class FlowController(BaseController):
     @expose_fragment("flow/full_adapter_interface")
     def getadapterinterface(self, project_id, algorithm_id, back_page=None):
         """
-        AJAX exposed method. Will return only a piece of a page, 
+        AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
         template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page)
@@ -525,7 +527,7 @@ class FlowController(BaseController):
     @handle_error(redirect=True)
     @context_selected
     def reloadoperation(self, operation_id, **_):
-        """Redirect to Operation Input selection page, 
+        """Redirect to Operation Input selection page,
         with input data already selected."""
         operation = OperationService.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
@@ -539,7 +541,7 @@ class FlowController(BaseController):
     @context_selected
     def reload_burst_operation(self, operation_id, is_group, **_):
         """
-        Find out from which burst was this operation launched. Set that burst as the selected one and 
+        Find out from which burst was this operation launched. Set that burst as the selected one and
         redirect to the burst page.
         """
         is_group = int(is_group)
@@ -549,9 +551,28 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        operation.burst.prepare_after_load()
-        common.add2session(common.KEY_BURST_CONFIG, operation.burst)
+        self.get_burst_config_copy(str(operation.burst.id))
+
         raise cherrypy.HTTPRedirect("/burst/")
+
+    def get_burst_config_copy(self, burst_config_id):
+        """
+            Make a copy of the given burst and add it to session.
+        """
+        burst_config = BurstService().load_burst_configuration(burst_config_id)
+        burst_config_copy = burst_config.clone()
+        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
+
+        project = common.get_current_project()
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+
+        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
+        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
+        common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
+
+        return burst_config_copy
 
     @expose_json
     def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):

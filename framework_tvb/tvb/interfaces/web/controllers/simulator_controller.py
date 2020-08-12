@@ -226,7 +226,6 @@ class SimulatorFragmentRenderingRules(object):
 @traced
 class SimulatorController(BurstBaseController):
     KEY_IS_LOAD_AFTER_REDIRECT = "is_load_after_redirect"
-    DEFAULT_COPY_PREFIX = "copy_of_"
 
     def __init__(self):
         BurstBaseController.__init__(self)
@@ -1009,18 +1008,7 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
-        burst_config = self.burst_service.load_burst_configuration(burst_config_id)
-        burst_config_copy = burst_config.clone()
-        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
-
-        project = common.get_current_project()
-        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
-
-        common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
-        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
-        common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
-        common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
+        burst_config_copy = FlowController().get_burst_config_copy(burst_config_id)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
         form = self.prepare_first_fragment()
