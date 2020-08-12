@@ -195,22 +195,21 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
 
-    def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group, new_op_folder):
+    def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
         Loads datatypes from operation folder
-        :returns: Datatype entities list
+        :returns: Datatype entities as dict {original_path: Dt instance}
         """
-        all_datatypes = []
+        all_datatypes = {}
         for file_name in os.listdir(src_op_path):
             if file_name.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
                 h5_file = os.path.join(src_op_path, file_name)
                 try:
                     file_update_manager = FilesUpdateManager()
                     file_update_manager.upgrade_file(h5_file)
-                    datatype = self.load_datatype_from_file(src_op_path, file_name, operation_entity.id,
-                                                            datatype_group, final_storage=new_op_folder,
-                                                            current_project_id=operation_entity.fk_launched_in)
-                    all_datatypes.append(datatype)
+                    datatype = self.load_datatype_from_file(h5_file, operation_entity.id,
+                                                            datatype_group, operation_entity.fk_launched_in)
+                    all_datatypes[h5_file] = datatype
 
                 except IncompatibleFileManagerException:
                     os.remove(h5_file)
@@ -219,14 +218,13 @@ class ImportService(object):
         return all_datatypes
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
-        def by_time(dt):
-            return dt.create_date or datetime.now()
-
-        all_datatypes.sort(key=by_time)
-        for datatype in all_datatypes:
+        # type: (Project, dict) -> None
+        sorted_dts = sorted(all_datatypes.items(),
+                            key=lambda dt_item: dt_item[1].create_date or datetime.now())
+        for dt_path, datatype in sorted_dts:
             datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
             if not datatype_already_in_tvb:
-                self.store_datatype(datatype)
+                self.store_datatype(datatype, dt_path)
             else:
                 AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
 
@@ -319,8 +317,7 @@ class ImportService(object):
                 operation_entity, datatype_group = self.__import_operation(operation_data.operation)
                 new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
                 operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
-                                                                                 operation_entity,
-                                                                                 datatype_group, new_op_folder)
+                                                                                 operation_entity, datatype_group)
                 # Create and store view_model from operation
                 view_model = self._get_new_form_view_model(operation_entity)
                 h5.store_view_model(view_model, new_op_folder)
@@ -339,16 +336,13 @@ class ImportService(object):
                 for h5_file in operation_data.all_view_model_files:
                     shutil.move(h5_file, new_op_folder)
                 # Store the DataTypes in db
-                dts = []
+                dts = {}
                 for dt_path in operation_data.dt_paths:
-                    folder, filename = os.path.split(dt_path)
-                    dt = self.load_datatype_from_file(folder, filename, operation_entity.id,
-                                                      datatype_group=dt_group, final_storage=new_op_folder,
-                                                      current_project_id=project.id)
+                    dt = self.load_datatype_from_file(dt_path, operation_entity.id, dt_group, project.id)
                     if isinstance(dt, BurstConfiguration):
                         dao.store_entity(dt)
                     else:
-                        dts.append(dt)
+                        dts[dt_path] = dt
                 self._store_imported_datatypes_in_db(project, dts)
 
             else:
@@ -403,15 +397,13 @@ class ImportService(object):
         self.logger.debug("Store imported figure")
         self.files_helper.write_image_metadata(figure)
 
-    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None,
-                                move=True, final_storage=None, current_project_id=None):
-        # type: (str, str, int, DataTypeGroup, bool, str, int) -> HasTraitsIndex
+    def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
+        # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex
         """
         Creates an instance of datatype from storage / H5 file 
         :returns: DatatypeIndex
         """
-        self.logger.debug("Loading DataType from file: %s" % file_name)
-        current_file = os.path.join(storage_folder, file_name)
+        self.logger.debug("Loading DataType from file: %s" % current_file)
         h5_class = H5File.h5_class_from_file(current_file)
         if h5_class is BurstConfigurationH5:
             if current_project_id is None:
@@ -441,19 +433,18 @@ class ImportService(object):
                 datatype_index.disk_size = FilesHelper.compute_size_on_disk(associated_file)
             result = datatype_index
 
-        # Now move storage file into correct folder if necessary
-        # TODO how about if only Link ? This move happens too early
-        if move and final_storage is not None:
-            final_path = h5.path_for(final_storage, h5_class, result.gid)
-            if final_path != current_file and move:
-                shutil.move(current_file, final_path)
-
         return result
 
-    def store_datatype(self, datatype):
+    def store_datatype(self, datatype, current_file=None):
         """This method stores data type into DB"""
         try:
             self.logger.debug("Store datatype: %s with Gid: %s" % (datatype.__class__.__name__, datatype.gid))
+            # Now move storage file into correct folder if necessary
+            if current_file is not None:
+                final_path = h5.path_for_stored_index(datatype)
+                if final_path != current_file:
+                    shutil.move(current_file, final_path)
+
             return dao.store_entity(datatype)
         except MissingDataSetException as e:
             self.logger.exception(e)
