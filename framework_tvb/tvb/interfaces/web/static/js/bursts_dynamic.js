@@ -536,7 +536,7 @@ function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
 }
 
-function displayDocForModel(){
+function displayDocForModel(model){
     model_id = model.find(":selected").val();
     $("#data_model_" + model_id).css("display", "block");
 }
@@ -548,8 +548,8 @@ function fillDoc(){
             $("#data_model_" + $(this).val()).css("display", "none");
         })
 
-        displayDocForModel();
+        displayDocForModel(model);
     });
 
-    displayDocForModel();
+    displayDocForModel(model);
 }
