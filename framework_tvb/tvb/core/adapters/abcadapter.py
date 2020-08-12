@@ -389,15 +389,8 @@ class ABCAdapter(object):
         for res in result:
             if res is None:
                 continue
-            res.subject = self.generic_attributes.subject
-            res.state = self.generic_attributes.state
-            res.fk_parent_burst = self.generic_attributes.parent_burst
+            res.fill_from_generic_attributes(self.generic_attributes)
             res.fk_from_operation = self.operation_id
-            res.user_tag_1 = self.generic_attributes.user_tag_1
-            res.user_tag_2 = self.generic_attributes.user_tag_2
-            res.user_tag_3 = self.generic_attributes.user_tag_3
-            res.user_tag_4 = self.generic_attributes.user_tag_4
-            res.user_tag_5 = self.generic_attributes.user_tag_5
             res.fk_datatype_group = data_type_group_id
 
             associated_file = h5.path_for_stored_index(res)
