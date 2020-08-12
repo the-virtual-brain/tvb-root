@@ -560,6 +560,8 @@ class FlowController(BaseController):
         """
         operation_id = int(operation_id)
         is_group = int(is_group) != 0
+        if isinstance(remove_after_stop, str):
+            remove_after_stop = bool(remove_after_stop)
         return SimulatorController.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):

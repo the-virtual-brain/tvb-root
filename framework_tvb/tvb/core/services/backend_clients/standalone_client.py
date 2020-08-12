@@ -168,7 +168,7 @@ class StandAloneClient(BackendClient):
         """
         operation = dao.try_get_operation_by_id(operation_id)
         if not operation or operation.has_finished:
-            LOGGER.warning("Operation already stopped or not found is given to stop job: %s" % operation_id)
+            LOGGER.info("Operation already stopped or not found at ID: %s" % operation_id)
             return True
 
         LOGGER.debug("Stopping operation: %s" % str(operation_id))

@@ -242,9 +242,7 @@ class SimulatorController(BurstBaseController):
         self.last_loaded_form_url = current_url
         common.add2session(common.KEY_LAST_LOADED_FORM_URL, self.last_loaded_form_url)
 
-    @cherrypy.expose
-    @handle_error(redirect=False)
-    @check_user
+    @expose_json
     def cancel_or_remove_burst(self, burst_id):
         """
         Cancel or Remove the burst entity given by burst_id (and all linked entities: op, DTs)
@@ -277,7 +275,8 @@ class SimulatorController(BurstBaseController):
             current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
             if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
                 common.remove_from_session(common.KEY_BURST_CONFIG)
-                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
+                project = common.get_current_project()
+                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(project.id))
         return result
 
     @expose_page
