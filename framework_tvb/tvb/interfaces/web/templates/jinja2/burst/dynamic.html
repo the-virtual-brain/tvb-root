@@ -11,6 +11,11 @@
     <section class="configure-stimulus-shape view-column col-1">
         <h4> Model parameter configuration </h4>
         <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}</div>
+        {% import 'flow/generate_help_tooltip.html' as ght with context %}
+        <div id="data_model_typeGeneric2dOscillator" style="display-block">
+            {{ ght.generate_help_tooltip(model_description[1]) }}
+        </div>
+
         <fieldset id='div_spatial_model_params'></fieldset>
 
         <h4> Phase plane viewer settings </h4>

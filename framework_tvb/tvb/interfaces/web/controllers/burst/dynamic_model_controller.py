@@ -44,6 +44,7 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.matjax import configure_matjax_doc
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
@@ -142,6 +143,7 @@ class DynamicModelController(BurstBaseController):
         model_name_fragment = _InputTreeFragment()
         model_fragment = SimulatorModelFragment()
         integrator_fragment = SimulatorIntegratorFragment()
+        model_description = configure_matjax_doc(self.available_models)
 
         params = {
             'title': "Dynamic model",
@@ -149,7 +151,8 @@ class DynamicModelController(BurstBaseController):
             'model_name_fragment': self.render_adapter_form(model_name_fragment),
             'model_form': self.render_adapter_form(model_fragment),
             'integrator_form': self.render_adapter_form(integrator_fragment),
-            'dynamic_gid': dynamic_gid
+            'dynamic_gid': dynamic_gid,
+            'model_description': model_description
         }
         self.fill_default_attributes(params)
 
