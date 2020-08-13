@@ -53,3 +53,4 @@ class BackendClient(object):
         """
         Stop the thread for a given operation id
         """
+        return True
