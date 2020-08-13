@@ -70,12 +70,14 @@ OPERATION_XML = "Operation.xml"
 
 class Operation2ImportData(object):
     # Plain Object for transporting operation related data before import
-    def __init__(self, operation, operation_folder, main_view_model=None, dt_paths=None, all_view_model_files=None):
+    def __init__(self, operation, operation_folder, main_view_model=None,
+                 dt_paths=None, all_view_model_files=None, is_fake=False):
         self.operation = operation
         self.operation_folder = operation_folder
         self.main_view_model = main_view_model
         self.dt_paths = dt_paths
         self.all_view_model_files = all_view_model_files
+        self.is_self_generated = is_fake
 
     @property
     def is_old_form(self):
@@ -218,15 +220,18 @@ class ImportService(object):
         return all_datatypes
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
-        # type: (Project, dict) -> None
+        # type: (Project, dict) -> int
         sorted_dts = sorted(all_datatypes.items(),
                             key=lambda dt_item: dt_item[1].create_date or datetime.now())
+        count = 0
         for dt_path, datatype in sorted_dts:
             datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
             if not datatype_already_in_tvb:
                 self.store_datatype(datatype, dt_path)
+                count += 1
             else:
                 AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
+        return count
 
     def _store_imported_images(self, project, temp_project_path, project_name):
         """
@@ -301,7 +306,7 @@ class ImportService(object):
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
 
                     retrieved_operations.append(
-                        Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files))
+                        Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
@@ -330,11 +335,6 @@ class ImportService(object):
             elif operation_data.main_view_model is not None:
                 operation_entity = dao.store_entity(operation_data.operation)
                 dt_group = None  # TODO
-                imported_operations.append(operation_entity)
-                # Now we know the target Ope Folder, we move all ViewModel H5 files there
-                new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                for h5_file in operation_data.all_view_model_files:
-                    shutil.move(h5_file, new_op_folder)
                 # Store the DataTypes in db
                 dts = {}
                 for dt_path in operation_data.dt_paths:
@@ -343,7 +343,17 @@ class ImportService(object):
                         dao.store_entity(dt)
                     else:
                         dts[dt_path] = dt
-                self._store_imported_datatypes_in_db(project, dts)
+                stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
+
+                if stored_dts_count > 0 or not operation_data.is_self_generated:
+                    imported_operations.append(operation_entity)
+                    new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                    for h5_file in operation_data.all_view_model_files:
+                        shutil.move(h5_file, new_op_folder)
+                else:
+                    # In case all Dts under the current operation were Links and the ViewModel is dummy,
+                    # don't keep the Operation empty in DB
+                    dao.remove_entity(Operation, operation_entity.id)
 
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
